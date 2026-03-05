@@ -1,0 +1,61 @@
+# 别名
+jobname = capture
+
+# 日志存放目录, 目录必须存在,不配置会存储在: data/log 下
+log_dir = /opt/ripple/log
+
+# 日志级别, 支持 debug/info/warning/error
+log_level = info
+
+# 工作目录
+data = /opt/ripple/capturedata
+
+# 数据库连接串
+url = "port=5432 dbname=postgres user=postgres"
+
+# 数据库事务日志的路径
+wal_dir = /opt/postgresql/data/pg_wal
+
+# 数据库类型(postgres/highgo)
+dbtype = postgres
+
+# 数据库版本 [ v458| 4510 | v901 | 12 ]
+dbversion = 12
+
+# 同步状态表所在模式
+catalog_schema = ripple
+
+# trail 文件的大小
+trail_max_size = 16
+
+# capture job最大使用内存（MB） 
+capture_buffer = 8192
+
+# 是否同步存量数据，0关闭/1开启
+refreshstragety = 0
+
+# 存量数据同步开启线程数量
+max_work_per_refresh = 10
+
+# 存量表分片阈值
+max_page_per_refreshsharding = 10000
+
+# 是否DDL同步，1为开启，0为不开启
+ddl = 1
+
+# 同步的表
+table = "public.test"
+
+# 需要排除的表schema.table，可多行
+# tableexclude = *.*
+
+# create table 捕获的表
+# addtablepattern = "pulic.azfgasga"
+
+# 压缩方式 目前只支持bzip2(存量数据压缩)
+compress_algorithm = bzip2
+
+#兼容版本 --- trail文件格式，暂未启用
+compatibility = 10
+
+

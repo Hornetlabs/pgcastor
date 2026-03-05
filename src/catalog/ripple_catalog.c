@@ -1,0 +1,2685 @@
+#include "ripple_app_incl.h"
+#include "libpq-fe.h"
+#include "utils/conn/ripple_conn.h"
+#include "utils/list/list_func.h"
+#include "utils/guc/guc.h"
+#include "port/file/fd.h"
+#include "utils/hash/hash_utils.h"
+#include "utils/hash/hash_search.h"
+#include "misc/ripple_misc_control.h"
+#include "common/xk_pg_parser_define.h"
+#include "common/xk_pg_parser_translog.h"
+#include "catalog/ripple_control.h"
+#include "cache/ripple_cache_sysidcts.h"
+#include "cache/ripple_txn.h"
+#include "cache/ripple_cache_txn.h"
+#include "cache/ripple_transcache.h"
+#include "catalog/ripple_catalog.h"
+#include "catalog/ripple_class.h"
+#include "catalog/ripple_attribute.h"
+#include "catalog/ripple_enum.h"
+#include "catalog/ripple_namespace.h"
+#include "catalog/ripple_range.h"
+#include "catalog/ripple_type.h"
+#include "catalog/ripple_proc.h"
+#include "catalog/ripple_constraint.h"
+#include "catalog/ripple_operator.h"
+#include "catalog/ripple_authid.h"
+#include "catalog/ripple_database.h"
+#include "catalog/ripple_index.h"
+#include "works/parserwork/wal/ripple_decode_colvalue.h"
+
+#define RIPPLE_CATALOG_SYSDICT_SCHEMA   "pg_catalog"
+#define RIPPLE_CATALOG_PG_CLASS         "pg_class"
+#define RIPPLE_CATALOG_PG_ATTRIBUTE     "pg_attribute"
+#define RIPPLE_CATALOG_PG_NAMESPACE     "pg_namespace"
+#define RIPPLE_CATALOG_PG_TYPE          "pg_type"
+#define RIPPLE_CATALOG_PG_INDEX         "pg_index"
+
+static ripple_catalogdata* ripple_catalog_copy_class(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_attribute(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_type(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_namespace(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_enum(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_range(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_proc(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_constraint(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_authid(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_database(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_relmapfile(ripple_catalogdata *catalog_src);
+static ripple_catalogdata* ripple_catalog_copy_index(ripple_catalogdata *catalog_src);
+
+static ripple_catalogdata* ripple_catalog_colvalued2catalog_pg12(void* in_colvalues);
+static ripple_catalogdata* ripple_catalog_colvalued2catalog_hg457(void* in_colvalues);
+static ripple_catalogdata* ripple_catalog_colvalued2catalog_hg458(void* in_colvalues);
+static ripple_catalogdata* ripple_catalog_colvalued2catalog_hg901(void* in_colvalues);
+static ripple_catalogdata* ripple_catalog_colvalued2catalog_hg902(void* in_colvalues);
+
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_pg12(void* in_colvalues);
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_hg901(void* in_colvalues);
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_hg902(void* in_colvalues);
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_hg457(void* in_colvalues);
+#define ripple_catalog_colvalue_no_filter_conversion_hg458 ripple_catalog_colvalue_no_filter_conversion_hg457
+
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion(int dbtype, int dbversion, void* in_colvalues);
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_postgres(int dbversion, void* in_colvalues);
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_highgo(int dbversion, void* in_colvalues);
+
+typedef ripple_catalogdata* (*colvalue2catalog_dbtype_func)(int dbversion, void *in_colvalues);
+
+typedef ripple_catalogdata* (*colvalue2catalog_dbversion_func)(void *in_colvalues);
+
+typedef ripple_catalogdata* (*catalog_copy_func)(ripple_catalogdata *catalog_src);
+
+typedef struct RIPPLE_CATALOG_COPY_BY_TYPE
+{
+    int                 type;
+    catalog_copy_func   func;
+} ripple_catalog_copy_by_type;
+
+typedef struct RIPPLE_COLVALUE2CATALOG_BYDBTYPE
+{
+    int                            dbtype;
+    colvalue2catalog_dbtype_func   func;
+    colvalue2catalog_dbtype_func   no_filter_func;
+} ripple_colvalue2catalog_bydbtype;
+
+typedef struct RIPPLE_COLVALUE2CATALOG_BYDBVERSION
+{
+    int                               dbversion;
+    colvalue2catalog_dbversion_func   func;
+    colvalue2catalog_dbversion_func   no_filter_func;
+} ripple_colvalue2catalog_bydbversion;
+
+static ripple_catalog_copy_by_type m_ripple_catalog_copy_fmgr[] =
+{
+    {RIPPLE_CATALOG_TYPE_NOP, NULL},
+    {RIPPLE_CATALOG_TYPE_CLASS, ripple_catalog_copy_class},
+    {RIPPLE_CATALOG_TYPE_ATTRIBUTE, ripple_catalog_copy_attribute},
+    {RIPPLE_CATALOG_TYPE_TYPE, ripple_catalog_copy_type},
+    {RIPPLE_CATALOG_TYPE_NAMESPACE, ripple_catalog_copy_namespace},
+    {RIPPLE_CATALOG_TYPE_TABLESPACE, NULL},
+    {RIPPLE_CATALOG_TYPE_ENUM, ripple_catalog_copy_enum},
+    {RIPPLE_CATALOG_TYPE_RANGE, ripple_catalog_copy_range},
+    {RIPPLE_CATALOG_TYPE_PROC, ripple_catalog_copy_proc},
+    {RIPPLE_CATALOG_TYPE_CONSTRAINT, ripple_catalog_copy_constraint},
+    {RIPPLE_CATALOG_TYPE_OPERATOR, NULL},
+    {RIPPLE_CATALOG_TYPE_AUTHID, ripple_catalog_copy_authid},
+    {RIPPLE_CATALOG_TYPE_DATABASE, ripple_catalog_copy_database},
+    {RIPPLE_CATALOG_TYPE_INDEX, ripple_catalog_copy_index},
+    {RIPPLE_CATALOG_TYPE_RELMAPFILE, ripple_catalog_copy_relmapfile}
+};
+
+static int m_ripple_catalog_copy_fmgr_cnt = (sizeof(m_ripple_catalog_copy_fmgr))/(sizeof(ripple_catalog_copy_by_type));
+
+static ripple_colvalue2catalog_bydbversion m_colvalue2catalog_pg_distribute[] =
+{
+    {RIPPLE_PGDBVERSION_NOP,   NULL, NULL},
+    {RIPPLE_PGDBVERSION_12, ripple_catalog_colvalued2catalog_pg12, ripple_catalog_colvalue_no_filter_conversion_pg12}
+};
+
+static int m_colvalue2catalog_pg_cnt = (sizeof(m_colvalue2catalog_pg_distribute))/(sizeof(ripple_colvalue2catalog_bydbversion));
+
+static ripple_colvalue2catalog_bydbversion m_colvalue2catalog_hg_distribute[] =
+{
+    {RIPPLE_HGVERSION_NOP,   NULL, NULL},
+    {RIPPLE_HGVERSION_457, ripple_catalog_colvalued2catalog_hg457, ripple_catalog_colvalue_no_filter_conversion_hg457},
+    {RIPPLE_HGVERSION_458, ripple_catalog_colvalued2catalog_hg458, ripple_catalog_colvalue_no_filter_conversion_hg458},
+    {RIPPLE_HGVERSION_901, ripple_catalog_colvalued2catalog_hg901, ripple_catalog_colvalue_no_filter_conversion_hg901},
+    {RIPPLE_HGVERSION_902, ripple_catalog_colvalued2catalog_hg902, ripple_catalog_colvalue_no_filter_conversion_hg902}
+};
+
+static int m_colvalue2catalog_hg_cnt = (sizeof(m_colvalue2catalog_hg_distribute))/(sizeof(ripple_colvalue2catalog_bydbversion));
+
+/* colvalue to catalog postgres 分发入口 */
+static ripple_catalogdata* ripple_catalog_colvalued2catalog_postgres(int dbversion, void* in_colvalues)
+{
+    if((m_colvalue2catalog_pg_cnt - 1) < dbversion 
+        || NULL == m_colvalue2catalog_pg_distribute[dbversion].func)
+    {
+        return NULL;
+    }
+    return m_colvalue2catalog_pg_distribute[dbversion].func(in_colvalues);
+}
+
+/* colvalue to catalog highgo 分发入口 */
+static ripple_catalogdata* ripple_catalog_colvalued2catalog_highgo(int dbversion, void* in_colvalues)
+{
+    if((m_colvalue2catalog_hg_cnt - 1) < dbversion 
+        || NULL == m_colvalue2catalog_hg_distribute[dbversion].func)
+    {
+        return NULL;
+    }
+    return m_colvalue2catalog_hg_distribute[dbversion].func(in_colvalues);
+}
+
+static ripple_colvalue2catalog_bydbtype m_colvalue2catalog_dbtype_distribute[] =
+{
+    {XK_DATABASE_TYPE_NOP, NULL, NULL},
+    {XK_DATABASE_TYPE_ORACLE,       NULL, NULL},
+    {XK_DATABASE_TYPE_POSTGRESQL,   ripple_catalog_colvalued2catalog_postgres, ripple_catalog_colvalue_no_filter_conversion_postgres},
+    {XK_DATABASE_TYPE_GAUSS,        NULL, NULL},
+    {XK_DATABASE_TYPE_SQLSERVER,    NULL, NULL},
+    {XK_DATABASE_TYPE_VASTBASE,     NULL, NULL},
+    {XK_DATABASE_TYPE_MOGDB,        NULL, NULL},
+    {XK_DATABASE_TYPE_HGDB,         ripple_catalog_colvalued2catalog_highgo, ripple_catalog_colvalue_no_filter_conversion_highgo},
+    {XK_DATABASE_TYPE_KINGBASE,     NULL, NULL},
+    {XK_DATABASE_TYPE_UXDB,         NULL, NULL}
+};
+
+static int m_colvalue2catalog_bydbtype_cnt = (sizeof(m_colvalue2catalog_dbtype_distribute))/(sizeof(ripple_colvalue2catalog_bydbtype));
+
+static ripple_catalogdata* ripple_catalog_copy_class(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_class_value *classvalue_src = NULL;
+    ripple_catalog_class_value *classvalue_dst = NULL;
+    xk_pg_parser_sysdict_pgclass *class_src = NULL;
+    xk_pg_parser_sysdict_pgclass *class_dst = NULL;
+
+    classvalue_src = (ripple_catalog_class_value*)catalog_src->catalog;
+    class_src = classvalue_src->ripple_class;
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* classvalue 分配空间 */
+    classvalue_dst = rmalloc0(sizeof(ripple_catalog_class_value));
+    if (!classvalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(classvalue_dst, 0, 0, sizeof(ripple_catalog_class_value));
+
+    /* class表分配空间 */
+    class_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgclass));
+    if (!class_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(class_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgclass));
+
+    /* 没有指针, 直接拷贝 */
+    rmemcpy0(class_dst, 0, class_src, sizeof(xk_pg_parser_sysdict_pgclass));
+
+    classvalue_dst->oid = classvalue_src->oid;
+    classvalue_dst->ripple_class = class_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) classvalue_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_attribute(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_attribute_value *attributevalue_src = NULL;
+    ripple_catalog_attribute_value *attributevalue_dst = NULL;
+    xk_pg_parser_sysdict_pgattributes *attribute_src = NULL;
+    xk_pg_parser_sysdict_pgattributes *attribute_dst = NULL;
+    List *attribute_list_src = NULL;
+    List *attribute_list_dst = NULL;
+    ListCell *cell = NULL;
+
+    attributevalue_src = (ripple_catalog_attribute_value*)catalog_src->catalog;
+    attribute_list_src = attributevalue_src->attrs;
+
+    foreach(cell, attribute_list_src)
+    {
+        attribute_src = (xk_pg_parser_sysdict_pgattributes *)lfirst(cell);
+
+        /* attribute表分配空间 */
+        attribute_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgattributes));
+        if (!attribute_dst)
+        {
+            elog(RLOG_ERROR, "oom");
+        }
+        rmemset0(attribute_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgattributes)); 
+
+        /* 没有指针, 直接拷贝 */
+        rmemcpy0(attribute_dst, 0, attribute_src, sizeof(xk_pg_parser_sysdict_pgattributes));
+        attribute_list_dst = lappend(attribute_list_dst, (void *)attribute_dst);
+    }
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* attribute value 分配空间 */
+    attributevalue_dst = rmalloc0(sizeof(ripple_catalog_attribute_value));
+    if (!attributevalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(attributevalue_dst, 0, 0, sizeof(ripple_catalog_attribute_value));
+
+    attributevalue_dst->attrelid = attributevalue_src->attrelid;
+    attributevalue_dst->attrs = attribute_list_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) attributevalue_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_type(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_type_value *typevalue_src = NULL;
+    ripple_catalog_type_value *typevalue_dst = NULL;
+    xk_pg_parser_sysdict_pgtype *type_src = NULL;
+    xk_pg_parser_sysdict_pgtype *type_dst = NULL;
+
+    typevalue_src = (ripple_catalog_type_value*)catalog_src->catalog;
+    type_src = typevalue_src->ripple_type;
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* typevalue 分配空间 */
+    typevalue_dst = rmalloc0(sizeof(ripple_catalog_type_value));
+    if (!typevalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(typevalue_dst, 0, 0, sizeof(ripple_catalog_type_value));
+
+    /* type表分配空间 */
+    type_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgtype));
+    if (!type_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(type_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgtype));
+
+    /* 没有指针, 直接拷贝 */
+    rmemcpy0(type_dst, 0, type_src, sizeof(xk_pg_parser_sysdict_pgtype));
+
+    typevalue_dst->oid = typevalue_src->oid;
+    typevalue_dst->ripple_type = type_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) typevalue_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_namespace(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_namespace_value *namespacevalue_src = NULL;
+    ripple_catalog_namespace_value *namespacevalue_dst = NULL;
+    xk_pg_parser_sysdict_pgnamespace *namespace_src = NULL;
+    xk_pg_parser_sysdict_pgnamespace *namespace_dst = NULL;
+
+    namespacevalue_src = (ripple_catalog_namespace_value*)catalog_src->catalog;
+    namespace_src = namespacevalue_src->ripple_namespace;
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* namespacevalue 分配空间 */
+    namespacevalue_dst = rmalloc0(sizeof(ripple_catalog_namespace_value));
+    if (!namespacevalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(namespacevalue_dst, 0, 0, sizeof(ripple_catalog_namespace_value));
+
+    /* namespace表分配空间 */
+    namespace_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgnamespace));
+    if (!namespace_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(namespace_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgnamespace));
+
+    /* 没有指针, 直接拷贝 */
+    rmemcpy0(namespace_dst, 0, namespace_src, sizeof(xk_pg_parser_sysdict_pgnamespace));
+
+    namespacevalue_dst->oid = namespacevalue_src->oid;
+    namespacevalue_dst->ripple_namespace = namespace_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) namespacevalue_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_enum(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_enum_value *enumvalue_src = NULL;
+    ripple_catalog_enum_value *enumvalue_dst = NULL;
+    xk_pg_parser_sysdict_pgenum *enum_src = NULL;
+    xk_pg_parser_sysdict_pgenum *enum_dst = NULL;
+    List *enum_list_src = NULL;
+    List *enum_list_dst = NULL;
+    ListCell *cell = NULL;
+
+    enumvalue_src = (ripple_catalog_enum_value*)catalog_src->catalog;
+    enum_list_src = enumvalue_src->enums;
+
+    foreach(cell, enum_list_src)
+    {
+        enum_src = (xk_pg_parser_sysdict_pgenum *)lfirst(cell);
+
+        /* enum表分配空间 */
+        enum_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgenum));
+        if (!enum_dst)
+        {
+            elog(RLOG_ERROR, "oom");
+        }
+        rmemset0(enum_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgenum)); 
+
+        /* 没有指针, 直接拷贝 */
+        rmemcpy0(enum_dst, 0, enum_src, sizeof(xk_pg_parser_sysdict_pgenum));
+        enum_list_dst = lappend(enum_list_dst, (void *)enum_dst);
+    }
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* enum value 分配空间 */
+    enumvalue_dst = rmalloc0(sizeof(ripple_catalog_enum_value));
+    if (!enumvalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(enumvalue_dst, 0, 0, sizeof(ripple_catalog_enum_value));
+
+    enumvalue_dst->enumtypid = enumvalue_src->enumtypid;
+    enumvalue_dst->enums = enum_list_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) enumvalue_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_range(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_range_value *rangevalue_src = NULL;
+    ripple_catalog_range_value *rangevalue_dst = NULL;
+    xk_pg_parser_sysdict_pgrange *range_src = NULL;
+    xk_pg_parser_sysdict_pgrange *range_dst = NULL;
+
+    rangevalue_src = (ripple_catalog_range_value*)catalog_src->catalog;
+    range_src = rangevalue_src->ripple_range;
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* rangevalue 分配空间 */
+    rangevalue_dst = rmalloc0(sizeof(ripple_catalog_range_value));
+    if (!rangevalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(rangevalue_dst, 0, 0, sizeof(ripple_catalog_range_value));
+
+    /* range表分配空间 */
+    range_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgrange));
+    if (!range_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(range_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgrange));
+
+    /* 没有指针, 直接拷贝 */
+    rmemcpy0(range_dst, 0, range_src, sizeof(xk_pg_parser_sysdict_pgrange));
+
+    rangevalue_dst->rngtypid = rangevalue_src->rngtypid;
+    rangevalue_dst->ripple_range = range_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) rangevalue_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_proc(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_proc_value *procvalue_src = NULL;
+    ripple_catalog_proc_value *procvalue_dst = NULL;
+    xk_pg_parser_sysdict_pgproc *proc_src = NULL;
+    xk_pg_parser_sysdict_pgproc *proc_dst = NULL;
+
+    procvalue_src = (ripple_catalog_proc_value*)catalog_src->catalog;
+    proc_src = procvalue_src->ripple_proc;
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* procvalue 分配空间 */
+    procvalue_dst = rmalloc0(sizeof(ripple_catalog_proc_value));
+    if (!procvalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(procvalue_dst, 0, 0, sizeof(ripple_catalog_proc_value));
+
+    /* proc表分配空间 */
+    proc_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgproc));
+    if (!proc_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(proc_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgproc));
+
+    /* 没有指针, 直接拷贝 */
+    rmemcpy0(proc_dst, 0, proc_src, sizeof(xk_pg_parser_sysdict_pgproc));
+
+    procvalue_dst->oid = procvalue_src->oid;
+    procvalue_dst->ripple_proc = proc_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) procvalue_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_constraint(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_constraint_value *constraintvalue_src = NULL;
+    ripple_catalog_constraint_value *constraintvalue_dst = NULL;
+    xk_pg_parser_sysdict_pgconstraint *constraint_src = NULL;
+    xk_pg_parser_sysdict_pgconstraint *constraint_dst = NULL;
+
+    constraintvalue_src = (ripple_catalog_constraint_value*)catalog_src->catalog;
+    constraint_src = constraintvalue_src->constraint;
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* constraintvalue 分配空间 */
+    constraintvalue_dst = rmalloc0(sizeof(ripple_catalog_constraint_value));
+    if (!constraintvalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(constraintvalue_dst, 0, 0, sizeof(ripple_catalog_constraint_value));
+
+    /* constraint表分配空间 */
+    constraint_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgconstraint));
+    if (!constraint_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(constraint_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgconstraint));
+
+    /* 没有指针, 直接拷贝 */
+    rmemcpy0(constraint_dst, 0, constraint_src, sizeof(xk_pg_parser_sysdict_pgconstraint));
+
+    constraintvalue_dst->conrelid = constraintvalue_src->conrelid;
+    constraintvalue_dst->constraint = constraint_dst;
+
+    if(0 != constraint_dst->conkeycnt)
+    {
+        constraint_dst->conkey = (int16_t *)rmalloc0(constraint_dst->conkeycnt * sizeof(int16_t));
+        if(NULL == constraint_dst->conkey)
+        {
+            elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
+            return NULL;
+        }
+        rmemset0(constraint_dst->conkey, 0, '\0', constraint_dst->conkeycnt * sizeof(int16_t));
+        rmemcpy0(constraint_dst->conkey, 0, constraint_src->conkey, constraint_dst->conkeycnt * sizeof(int16_t));
+    }
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) constraintvalue_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_authid(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_authid_value *authidvalue_src = NULL;
+    ripple_catalog_authid_value *authidvalue_dst = NULL;
+    xk_pg_parser_sysdict_pgauthid *authid_src = NULL;
+    xk_pg_parser_sysdict_pgauthid *authid_dst = NULL;
+
+    authidvalue_src = (ripple_catalog_authid_value*)catalog_src->catalog;
+    authid_src = authidvalue_src->ripple_authid;
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* authidvalue 分配空间 */
+    authidvalue_dst = rmalloc0(sizeof(ripple_catalog_authid_value));
+    if (!authidvalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(authidvalue_dst, 0, 0, sizeof(ripple_catalog_authid_value));
+
+    /* authid表分配空间 */
+    authid_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgauthid));
+    if (!authid_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(authid_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgauthid));
+
+    /* 没有指针, 直接拷贝 */
+    rmemcpy0(authid_dst, 0, authid_src, sizeof(xk_pg_parser_sysdict_pgauthid));
+
+    authidvalue_dst->oid = authidvalue_src->oid;
+    authidvalue_dst->ripple_authid = authid_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) authidvalue_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_database(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_database_value *databasevalue_src = NULL;
+    ripple_catalog_database_value *databasevalue_dst = NULL;
+    xk_pg_parser_sysdict_pgdatabase *database_src = NULL;
+    xk_pg_parser_sysdict_pgdatabase *database_dst = NULL;
+
+    databasevalue_src = (ripple_catalog_database_value*)catalog_src->catalog;
+    database_src = databasevalue_src->ripple_database;
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* databasevalue 分配空间 */
+    databasevalue_dst = rmalloc0(sizeof(ripple_catalog_database_value));
+    if (!databasevalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(databasevalue_dst, 0, 0, sizeof(ripple_catalog_database_value));
+
+    /* database表分配空间 */
+    database_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgdatabase));
+    if (!database_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(database_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgdatabase));
+
+    /* 没有指针, 直接拷贝 */
+    rmemcpy0(database_dst, 0, database_src, sizeof(xk_pg_parser_sysdict_pgdatabase));
+
+    databasevalue_dst->oid = databasevalue_src->oid;
+    databasevalue_dst->ripple_database = database_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) databasevalue_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_relmapfile(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_replmapfile *relmapfile_src = NULL;
+    ripple_replmapfile *relmapfile_dst = NULL;
+    ripple_relmapping  *mapping_src = NULL;
+    ripple_relmapping  *mapping_dst = NULL;
+
+    relmapfile_src = catalog_src->catalog;
+    mapping_src = relmapfile_src->mapping;
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* relmapfile分配空间 */
+    relmapfile_dst = rmalloc0(sizeof(ripple_replmapfile));
+    if (!relmapfile_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(relmapfile_dst, 0, 0, sizeof(ripple_replmapfile));
+
+    /* mapping_dst分配空间 */
+    mapping_dst = rmalloc0(sizeof(ripple_relmapping) * relmapfile_src->num);
+    if (!mapping_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(mapping_dst, 0, 0, sizeof(ripple_relmapping) * relmapfile_src->num);
+
+    /* 没有指针, 直接拷贝 */
+    rmemcpy0(mapping_dst, 0, mapping_src, sizeof(ripple_relmapping) * relmapfile_src->num);
+
+    relmapfile_dst->num = relmapfile_src->num;
+    relmapfile_dst->mapping = mapping_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) relmapfile_dst;
+
+    return result;
+}
+
+static ripple_catalogdata* ripple_catalog_copy_index(ripple_catalogdata *catalog_src)
+{
+    ripple_catalogdata *result = NULL;
+    ripple_catalog_index_value *indexvalue_src = NULL;
+    ripple_catalog_index_value *indexvalue_dst = NULL;
+    xk_pg_parser_sysdict_pgindex *index_src = NULL;
+    xk_pg_parser_sysdict_pgindex *index_dst = NULL;
+
+    indexvalue_src = (ripple_catalog_index_value*)catalog_src->catalog;
+    index_src = indexvalue_src->ripple_index;
+
+    /* 返回值分配空间 */
+    result = rmalloc0(sizeof(ripple_catalogdata));
+    if (!result)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(result, 0, 0, sizeof(ripple_catalogdata));
+
+    /* indexvalue 分配空间 */
+    indexvalue_dst = rmalloc0(sizeof(ripple_catalog_index_value));
+    if (!indexvalue_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(indexvalue_dst, 0, 0, sizeof(ripple_catalog_index_value));
+
+    /* index表分配空间 */
+    index_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
+    if (!index_dst)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+    rmemset0(index_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgindex));
+
+    /* 有指针, 拷贝加重新分配 */
+    rmemcpy0(index_dst, 0, index_src, sizeof(xk_pg_parser_sysdict_pgindex));
+    index_dst->indkey = NULL;
+
+    index_dst->indkey = rmalloc0(sizeof(uint32_t) * index_dst->indnatts);
+    if (!index_dst->indkey)
+    {
+        elog(RLOG_ERROR, "oom");
+    }
+
+    indexvalue_dst->oid = indexvalue_src->oid;
+    indexvalue_dst->ripple_index = index_dst;
+
+    result->op = catalog_src->op;
+    result->type = catalog_src->type;
+    result->catalog = (void*) indexvalue_dst;
+
+    return result;
+}
+
+ripple_catalogdata *ripple_catalog_copy(ripple_catalogdata *catalog_in)
+{
+    if (catalog_in->type > m_ripple_catalog_copy_fmgr_cnt
+    || !m_ripple_catalog_copy_fmgr[catalog_in->type].func)
+    {
+        elog(RLOG_ERROR, "invalid catalog type: %d, please check", catalog_in->type);
+        return NULL;
+    }
+    return m_ripple_catalog_copy_fmgr[catalog_in->type].func(catalog_in);
+}
+
+/* colvalue to catalog 分发总入口 */
+ripple_catalogdata* ripple_catalog_colvalued2catalog(int dbtype, int dbversion, void* in_colvalues)
+{
+    if((m_colvalue2catalog_bydbtype_cnt - 1) < dbtype 
+        || NULL == m_colvalue2catalog_dbtype_distribute[dbtype].func)
+    {
+        return NULL;
+    }
+    return m_colvalue2catalog_dbtype_distribute[dbtype].func(dbversion, in_colvalues);
+}
+
+/* 不对列值过滤的系统表colvalue转catalog结构分发函数 开始 */
+/* no filter colvalue to catalog 分发总入口 */
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion(int dbtype, int dbversion, void* in_colvalues)
+{
+    if((m_colvalue2catalog_bydbtype_cnt - 1) < dbtype 
+        || NULL == m_colvalue2catalog_dbtype_distribute[dbtype].no_filter_func)
+    {
+        return NULL;
+    }
+    return m_colvalue2catalog_dbtype_distribute[dbtype].no_filter_func(dbversion, in_colvalues);
+}
+
+/* no filter colvalue to catalog postgres 分发入口 */
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_postgres(int dbversion, void* in_colvalues)
+{
+    if((m_colvalue2catalog_pg_cnt - 1) < dbversion 
+        || NULL == m_colvalue2catalog_pg_distribute[dbversion].no_filter_func)
+    {
+        return NULL;
+    }
+    return m_colvalue2catalog_pg_distribute[dbversion].no_filter_func(in_colvalues);
+}
+
+/* no filter colvalue to catalog highgo 分发入口 */
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_highgo(int dbversion, void* in_colvalues)
+{
+    if((m_colvalue2catalog_hg_cnt - 1) < dbversion 
+        || NULL == m_colvalue2catalog_hg_distribute[dbversion].no_filter_func)
+    {
+        return NULL;
+    }
+    return m_colvalue2catalog_hg_distribute[dbversion].no_filter_func(in_colvalues);
+}
+
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_pg12(void* in_colvalues)
+{
+    ripple_catalogdata* catalogdata = NULL;
+    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
+    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+
+    /* 根据不同的 oid，分发处理  */
+    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
+    colvalue = colvalues->m_new_values;
+    switch (colvalues->m_relid)
+    {
+        case RelationRelationId:
+            catalogdata = ripple_class_colvalue2class_nofilter(colvalue);
+            break;
+        case AttributeRelationId:
+            catalogdata = ripple_class_colvalue2attribute(colvalue);
+            break;
+        case TypeRelationId:
+            catalogdata = ripple_type_colvalue2type(colvalue);
+            break;
+        case EnumRelationId:
+            catalogdata = ripple_enum_colvalue2enum(colvalue);
+            break;
+        case NamespaceRelationId:
+            catalogdata = ripple_namespace_colvalue2namespace(colvalue);
+            break;
+        case ProcedureRelationId:
+            catalogdata = ripple_proc_colvalue2proc(colvalue);
+            break;
+        case RangeRelationId:
+            catalogdata = ripple_range_colvalue2range(colvalue);
+            break;
+        case ConstraintRelationId:
+            catalogdata = ripple_constraint_colvalue2constraint(colvalue);
+            break;
+        case AuthIdRelationId:
+            catalogdata = ripple_authid_colvalue2authid(colvalue);
+            break;
+        case DatabaseRelationId:
+            catalogdata = ripple_database_colvalue2database(colvalue);
+            break;
+        case IndexRelationId:
+            catalogdata = ripple_index_colvalue2index(colvalue);
+            break;
+        default:
+            catalogdata = NULL;
+            break;
+    }
+    if(NULL != catalogdata)
+    {
+        catalogdata->op = colvalues->m_base.m_dmltype;
+    }
+    return catalogdata;
+}
+
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_hg457(void* in_colvalues)
+{
+    ripple_catalogdata* catalogdata = NULL;
+    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
+    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+
+    /* 根据不同的 oid，分发处理  */
+    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
+    colvalue = colvalues->m_new_values;
+    switch (colvalues->m_relid)
+    {
+        case RelationRelationId:
+            catalogdata = ripple_class_colvalue2class_nofilter(colvalue);
+            break;
+        case AttributeRelationId:
+            catalogdata = ripple_class_colvalue2attribute_hg457(colvalue);
+            break;
+        case TypeRelationId:
+            catalogdata = ripple_type_colvalue2type_hg457(colvalue);
+            break;
+        case EnumRelationId:
+            catalogdata = ripple_enum_colvalue2enum_hg457(colvalue);
+            break;
+        case NamespaceRelationId:
+            catalogdata = ripple_namespace_colvalue2namespace_hg457(colvalue);
+            break;
+        case ProcedureRelationId:
+            catalogdata = ripple_proc_colvalue2proc_hg457(colvalue);
+            break;
+        case RangeRelationId:
+            catalogdata = ripple_range_colvalue2range_hg457(colvalue);
+            break;
+        case ConstraintRelationId:
+            catalogdata = ripple_constraint_colvalue2constraint_hg457(colvalue);
+            break;
+        case AuthIdRelationId:
+            catalogdata = ripple_authid_colvalue2authid_hg457(colvalue);
+            break;
+        case DatabaseRelationId:
+            catalogdata = ripple_database_colvalue2database_hg457(colvalue);
+            break;
+        default:
+            catalogdata = NULL;
+            break;
+    }
+    if(NULL != catalogdata)
+    {
+        catalogdata->op = colvalues->m_base.m_dmltype;
+    }
+    return catalogdata;
+}
+
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_hg901(void* in_colvalues)
+{
+    ripple_catalogdata* catalogdata = NULL;
+    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
+    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+
+    /* 根据不同的 oid，分发处理  */
+    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
+    colvalue = colvalues->m_new_values;
+    switch (colvalues->m_relid)
+    {
+        case RelationRelationId:
+            catalogdata = ripple_class_colvalue2class_nofilter(colvalue);
+            break;
+        case AttributeRelationId:
+            catalogdata = ripple_class_colvalue2attribute_hg901(colvalue);
+            break;
+        case TypeRelationId:
+            catalogdata = ripple_type_colvalue2type_hg901(colvalue);
+            break;
+        case EnumRelationId:
+            catalogdata = ripple_enum_colvalue2enum_hg901(colvalue);
+            break;
+        case NamespaceRelationId:
+            catalogdata = ripple_namespace_colvalue2namespace_hg901(colvalue);
+            break;
+        case ProcedureRelationId:
+            catalogdata = ripple_proc_colvalue2proc_hg901(colvalue);
+            break;
+        case RangeRelationId:
+            catalogdata = ripple_range_colvalue2range_hg901(colvalue);
+            break;
+        case ConstraintRelationId:
+            catalogdata = ripple_constraint_colvalue2constraint_hg901(colvalue);
+            break;
+        case AuthIdRelationId:
+            catalogdata = ripple_authid_colvalue2authid_hg901(colvalue);
+            break;
+        case DatabaseRelationId:
+            catalogdata = ripple_database_colvalue2database_hg901(colvalue);
+            break;
+        default:
+            catalogdata = NULL;
+            break;
+    }
+    if(NULL != catalogdata)
+    {
+        catalogdata->op = colvalues->m_base.m_dmltype;
+    }
+    return catalogdata;
+}
+
+static ripple_catalogdata* ripple_catalog_colvalue_no_filter_conversion_hg902(void* in_colvalues)
+{
+    ripple_catalogdata* catalogdata = NULL;
+    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
+    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+
+    /* 根据不同的 oid，分发处理  */
+    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
+    colvalue = colvalues->m_new_values;
+    switch (colvalues->m_relid)
+    {
+        case RelationRelationId:
+            catalogdata = ripple_class_colvalue2class_nofilter_hg902(colvalue);
+            break;
+        case AttributeRelationId:
+            catalogdata = ripple_class_colvalue2attribute_hg902(colvalue);
+            break;
+        case TypeRelationId:
+            catalogdata = ripple_type_colvalue2type_hg902(colvalue);
+            break;
+        case EnumRelationId:
+            catalogdata = ripple_enum_colvalue2enum_hg902(colvalue);
+            break;
+        case NamespaceRelationId:
+            catalogdata = ripple_namespace_colvalue2namespace_hg902(colvalue);
+            break;
+        case ProcedureRelationId:
+            catalogdata = ripple_proc_colvalue2proc_hg902(colvalue);
+            break;
+        case RangeRelationId:
+            catalogdata = ripple_range_colvalue2range_hg902(colvalue);
+            break;
+        case ConstraintRelationId:
+            catalogdata = ripple_constraint_colvalue2constraint_hg902(colvalue);
+            break;
+        case AuthIdRelationId:
+            catalogdata = ripple_authid_colvalue2authid_hg902(colvalue);
+            break;
+        case DatabaseRelationId:
+            catalogdata = ripple_database_colvalue2database_hg902(colvalue);
+            break;
+        default:
+            catalogdata = NULL;
+            break;
+    }
+    if(NULL != catalogdata)
+    {
+        catalogdata->op = colvalues->m_base.m_dmltype;
+    }
+    return catalogdata;
+}
+
+/* 不对列值过滤的系统表colvalue转catalog结构分发函数 结束 */
+
+ripple_catalogdata* ripple_catalog_colvalued2catalog_pg12(void* in_colvalues)
+{
+    ripple_catalogdata* catalogdata = NULL;
+    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
+
+    /* 根据不同的 oid，分发处理  */
+    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
+    if(XK_PG_PARSER_TRANSLOG_DMLTYPE_INVALID == colvalues->m_base.m_dmltype)
+    {
+        return NULL;
+    }
+    else if (XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == colvalues->m_base.m_dmltype
+            || XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == colvalues->m_base.m_dmltype)
+    {
+        colvalue = colvalues->m_new_values;
+    }
+    else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == colvalues->m_base.m_dmltype)
+    {
+        colvalue = colvalues->m_old_values;
+    }
+    else
+    {
+        elog(RLOG_WARNING, "unknown covalue type");
+    }
+
+    switch (colvalues->m_relid)
+    {
+        case RelationRelationId:
+            catalogdata = ripple_class_colvalue2class(colvalue);
+            break;
+        case AttributeRelationId:
+            catalogdata = ripple_class_colvalue2attribute(colvalue);
+            break;
+        case TypeRelationId:
+            catalogdata = ripple_type_colvalue2type(colvalue);
+            break;
+        case EnumRelationId:
+            catalogdata = ripple_enum_colvalue2enum(colvalue);
+            break;
+        case NamespaceRelationId:
+            catalogdata = ripple_namespace_colvalue2namespace(colvalue);
+            break;
+        case ProcedureRelationId:
+            catalogdata = ripple_proc_colvalue2proc(colvalue);
+            break;
+        case RangeRelationId:
+            catalogdata = ripple_range_colvalue2range(colvalue);
+            break;
+        case ConstraintRelationId:
+            catalogdata = ripple_constraint_colvalue2constraint(colvalue);
+            break;
+        case AuthIdRelationId:
+            catalogdata = ripple_authid_colvalue2authid(colvalue);
+            break;
+        case DatabaseRelationId:
+            catalogdata = ripple_database_colvalue2database(colvalue);
+            break;
+        case IndexRelationId:
+            catalogdata = ripple_index_colvalue2index(colvalue);
+            break;
+        default:
+            break;
+    }
+
+    if(NULL != catalogdata)
+    {
+        catalogdata->op = colvalues->m_base.m_dmltype;
+    }
+    
+    return catalogdata;
+}
+
+ripple_catalogdata* ripple_catalog_colvalued2catalog_hg901(void* in_colvalues)
+{
+    ripple_catalogdata* catalogdata = NULL;
+    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
+
+    /* 根据不同的 oid，分发处理  */
+    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
+    if(XK_PG_PARSER_TRANSLOG_DMLTYPE_INVALID == colvalues->m_base.m_dmltype)
+    {
+        return NULL;
+    }
+    else if (XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == colvalues->m_base.m_dmltype
+            || XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == colvalues->m_base.m_dmltype)
+    {
+        colvalue = colvalues->m_new_values;
+    }
+    else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == colvalues->m_base.m_dmltype)
+    {
+        colvalue = colvalues->m_old_values;
+    }
+    else
+    {
+        elog(RLOG_WARNING, "unknown covalue type");
+    }
+
+    switch (colvalues->m_relid)
+    {
+        case RelationRelationId:
+            catalogdata = ripple_class_colvalue2class_hg901(colvalue);
+            break;
+        case AttributeRelationId:
+            catalogdata = ripple_class_colvalue2attribute_hg901(colvalue);
+            break;
+        case TypeRelationId:
+            catalogdata = ripple_type_colvalue2type_hg901(colvalue);
+            break;
+        case EnumRelationId:
+            catalogdata = ripple_enum_colvalue2enum_hg901(colvalue);
+            break;
+        case NamespaceRelationId:
+            catalogdata = ripple_namespace_colvalue2namespace_hg901(colvalue);
+            break;
+        case ProcedureRelationId:
+            catalogdata = ripple_proc_colvalue2proc_hg901(colvalue);
+            break;
+        case RangeRelationId:
+            catalogdata = ripple_range_colvalue2range_hg901(colvalue);
+            break;
+        case ConstraintRelationId:
+            catalogdata = ripple_constraint_colvalue2constraint_hg901(colvalue);
+            break;
+        case AuthIdRelationId:
+            catalogdata = ripple_authid_colvalue2authid_hg901(colvalue);
+            break;
+        case DatabaseRelationId:
+            catalogdata = ripple_database_colvalue2database_hg901(colvalue);
+            break;
+        default:
+            break;
+    }
+
+    if(NULL != catalogdata)
+    {
+        catalogdata->op = colvalues->m_base.m_dmltype;
+    }
+    
+    return catalogdata;
+}
+
+ripple_catalogdata* ripple_catalog_colvalued2catalog_hg902(void* in_colvalues)
+{
+    ripple_catalogdata* catalogdata = NULL;
+    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
+
+    /* 根据不同的 oid，分发处理  */
+    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
+    if(XK_PG_PARSER_TRANSLOG_DMLTYPE_INVALID == colvalues->m_base.m_dmltype)
+    {
+        return NULL;
+    }
+    else if (XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == colvalues->m_base.m_dmltype
+            || XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == colvalues->m_base.m_dmltype)
+    {
+        colvalue = colvalues->m_new_values;
+    }
+    else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == colvalues->m_base.m_dmltype)
+    {
+        colvalue = colvalues->m_old_values;
+    }
+    else
+    {
+        elog(RLOG_WARNING, "unknown covalue type");
+    }
+
+    switch (colvalues->m_relid)
+    {
+        case RelationRelationId:
+            catalogdata = ripple_class_colvalue2class_hg902(colvalue);
+            break;
+        case AttributeRelationId:
+            catalogdata = ripple_class_colvalue2attribute_hg902(colvalue);
+            break;
+        case TypeRelationId:
+            catalogdata = ripple_type_colvalue2type_hg902(colvalue);
+            break;
+        case EnumRelationId:
+            catalogdata = ripple_enum_colvalue2enum_hg902(colvalue);
+            break;
+        case NamespaceRelationId:
+            catalogdata = ripple_namespace_colvalue2namespace_hg902(colvalue);
+            break;
+        case ProcedureRelationId:
+            catalogdata = ripple_proc_colvalue2proc_hg902(colvalue);
+            break;
+        case RangeRelationId:
+            catalogdata = ripple_range_colvalue2range_hg902(colvalue);
+            break;
+        case ConstraintRelationId:
+            catalogdata = ripple_constraint_colvalue2constraint_hg902(colvalue);
+            break;
+        case AuthIdRelationId:
+            catalogdata = ripple_authid_colvalue2authid_hg902(colvalue);
+            break;
+        case DatabaseRelationId:
+            catalogdata = ripple_database_colvalue2database_hg902(colvalue);
+            break;
+        default:
+            break;
+    }
+
+    if(NULL != catalogdata)
+    {
+        catalogdata->op = colvalues->m_base.m_dmltype;
+    }
+    
+    return catalogdata;
+}
+
+ripple_catalogdata* ripple_catalog_colvalued2catalog_hg458(void* in_colvalues)
+{
+    ripple_catalogdata* catalogdata = NULL;
+    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
+
+    /* 根据不同的 oid，分发处理  */
+    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
+    if(XK_PG_PARSER_TRANSLOG_DMLTYPE_INVALID == colvalues->m_base.m_dmltype)
+    {
+        return NULL;
+    }
+    else if (XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == colvalues->m_base.m_dmltype
+            || XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == colvalues->m_base.m_dmltype)
+    {
+        colvalue = colvalues->m_new_values;
+    }
+    else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == colvalues->m_base.m_dmltype)
+    {
+        colvalue = colvalues->m_old_values;
+    }
+    else
+    {
+        elog(RLOG_WARNING, "unknown covalue type");
+    }
+
+    switch (colvalues->m_relid)
+    {
+        case RelationRelationId:
+            catalogdata = ripple_class_colvalue2class_hg458(colvalue);
+            break;
+        case AttributeRelationId:
+            catalogdata = ripple_class_colvalue2attribute_hg458(colvalue);
+            break;
+        case TypeRelationId:
+            catalogdata = ripple_type_colvalue2type_hg458(colvalue);
+            break;
+        case EnumRelationId:
+            catalogdata = ripple_enum_colvalue2enum_hg458(colvalue);
+            break;
+        case NamespaceRelationId:
+            catalogdata = ripple_namespace_colvalue2namespace_hg458(colvalue);
+            break;
+        case ProcedureRelationId:
+            catalogdata = ripple_proc_colvalue2proc_hg458(colvalue);
+            break;
+        case RangeRelationId:
+            catalogdata = ripple_range_colvalue2range_hg458(colvalue);
+            break;
+        case ConstraintRelationId:
+            catalogdata = ripple_constraint_colvalue2constraint_hg458(colvalue);
+            break;
+        case AuthIdRelationId:
+            catalogdata = ripple_authid_colvalue2authid_hg458(colvalue);
+            break;
+        case DatabaseRelationId:
+            catalogdata = ripple_database_colvalue2database_hg458(colvalue);
+            break;
+        default:
+            break;
+    }
+
+    if(NULL != catalogdata)
+    {
+        catalogdata->op = colvalues->m_base.m_dmltype;
+    }
+    
+    return catalogdata;
+}
+
+ripple_catalogdata* ripple_catalog_colvalued2catalog_hg457(void* in_colvalues)
+{
+    ripple_catalogdata* catalogdata = NULL;
+    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
+
+    /* 根据不同的 oid，分发处理  */
+    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
+    if(XK_PG_PARSER_TRANSLOG_DMLTYPE_INVALID == colvalues->m_base.m_dmltype)
+    {
+        return NULL;
+    }
+    else if (XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == colvalues->m_base.m_dmltype
+            || XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == colvalues->m_base.m_dmltype)
+    {
+        colvalue = colvalues->m_new_values;
+    }
+    else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == colvalues->m_base.m_dmltype)
+    {
+        colvalue = colvalues->m_old_values;
+    }
+    else
+    {
+        elog(RLOG_WARNING, "unknown covalue type");
+    }
+
+    switch (colvalues->m_relid)
+    {
+        case RelationRelationId:
+            catalogdata = ripple_class_colvalue2class_hg457(colvalue);
+            break;
+        case AttributeRelationId:
+            catalogdata = ripple_class_colvalue2attribute_hg457(colvalue);
+            break;
+        case TypeRelationId:
+            catalogdata = ripple_type_colvalue2type_hg457(colvalue);
+            break;
+        case EnumRelationId:
+            catalogdata = ripple_enum_colvalue2enum_hg457(colvalue);
+            break;
+        case NamespaceRelationId:
+            catalogdata = ripple_namespace_colvalue2namespace_hg457(colvalue);
+            break;
+        case ProcedureRelationId:
+            catalogdata = ripple_proc_colvalue2proc_hg457(colvalue);
+            break;
+        case RangeRelationId:
+            catalogdata = ripple_range_colvalue2range_hg457(colvalue);
+            break;
+        case ConstraintRelationId:
+            catalogdata = ripple_constraint_colvalue2constraint_hg457(colvalue);
+            break;
+        case AuthIdRelationId:
+            catalogdata = ripple_authid_colvalue2authid_hg457(colvalue);
+            break;
+        case DatabaseRelationId:
+            catalogdata = ripple_database_colvalue2database_hg457(colvalue);
+            break;
+        default:
+            break;
+    }
+
+    if(NULL != catalogdata)
+    {
+        catalogdata->op = colvalues->m_base.m_dmltype;
+    }
+    
+    return catalogdata;
+}
+
+static void *ripple_catalog_get_sysdict_from_sysdicthash(HTAB *sysdicthash, void*search_variable, int dict_type)
+{
+    switch(dict_type)
+    {
+        case RIPPLE_CATALOG_TYPE_CLASS:
+        {
+            ripple_catalog_class_value *temp_class = NULL;
+            temp_class = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (temp_class)
+            {
+                return (void *) temp_class->ripple_class;
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_ATTRIBUTE:
+        {
+            List *temp_attribute_list = NULL;
+            ripple_catalog_attribute_value *temp_attribute_value = NULL;
+
+            /* att的匹配条件是oid和attnum对应 */
+            ripple_catalog_attribute_search *att_search =
+                (ripple_catalog_attribute_search *) search_variable;
+
+            temp_attribute_value = hash_search(sysdicthash, &att_search->attrelid, HASH_FIND, NULL);
+            if (temp_attribute_value)
+            {
+                ListCell *attcell = NULL;
+
+                temp_attribute_list = temp_attribute_value->attrs;
+                foreach(attcell, temp_attribute_list)
+                {
+                    xk_pg_parser_sysdict_pgattributes *temp_attr =
+                        (xk_pg_parser_sysdict_pgattributes *) lfirst(attcell);
+                    if (temp_attr->attnum == att_search->attnum)
+                    {
+                        return (void *) temp_attr;
+                    }
+                }
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_TYPE:
+        {
+            ripple_catalog_type_value *temp_type_value = NULL;
+            temp_type_value = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (temp_type_value)
+            {
+                return (void *) temp_type_value->ripple_type;
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_NAMESPACE:
+        {
+            ripple_catalog_namespace_value *temp_namespace_value = NULL;
+            temp_namespace_value = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (temp_namespace_value)
+            {
+                return (void *) temp_namespace_value->ripple_namespace;
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_TABLESPACE:
+        {
+            /* 未用到 */
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_ENUM:
+        {
+            /* 注意, 这里返回的实际是一个链表 */
+            ripple_catalog_enum_value *temp_enum_value = NULL;
+            temp_enum_value = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (temp_enum_value)
+            {
+                return (void *) list_copy(temp_enum_value->enums);
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_RANGE:
+        {
+            ripple_catalog_range_value *temp_range_value = NULL;
+            temp_range_value = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (temp_range_value)
+            {
+                return (void *) temp_range_value->ripple_range;
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_PROC:
+        {
+            ripple_catalog_proc_value *temp_proc_value = NULL;
+            temp_proc_value = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (temp_proc_value)
+            {
+                return (void *) temp_proc_value->ripple_proc;
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_CONSTRAINT:
+        {
+            ripple_catalog_constraint_value *temp_constraint_value = NULL;
+            temp_constraint_value = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (temp_constraint_value)
+            {
+                return (void *) temp_constraint_value->constraint;
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_OPERATOR:
+        {
+            ripple_catalog_operator_value *temp_operator_value = NULL;
+            temp_operator_value = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (temp_operator_value)
+            {
+                return (void *) temp_operator_value->ripple_operator;
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_AUTHID:
+        {
+            ripple_catalog_authid_value *temp_authid_value = NULL;
+            temp_authid_value = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (temp_authid_value)
+            {
+                return (void *) temp_authid_value->ripple_authid;
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_DATABASE:
+        {
+            ripple_catalog_database_value *temp_database_value = NULL;
+            temp_database_value = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (temp_database_value)
+            {
+                return (void *) temp_database_value->ripple_database;
+            }
+            break;
+        }
+        /* 不从这里返回index的数据 */
+        case RIPPLE_CATALOG_TYPE_INDEX:
+        {
+            return NULL;
+        }
+        default:
+        {
+            elog(RLOG_WARNING, "unknown catalog type: %d", dict_type);
+            break;
+        }
+    }
+    return NULL;
+}
+
+/* 
+ * 目前只有index用到了, 但是为了扩展性还是写成通用函数
+ * 在hash中不用考虑delete的情况
+ */
+static List *ripple_catalog_get_sysdict_list_from_sysdicthash(HTAB *sysdicthash, void*search_variable, int dict_type)
+{
+    List *result = NULL;
+
+    switch(dict_type)
+    {
+        case RIPPLE_CATALOG_TYPE_INDEX:
+        {
+            ripple_catalog_index_hash_entry *entry = NULL;
+
+            entry = hash_search(sysdicthash, search_variable, HASH_FIND, NULL);
+            if (entry)
+            {
+                /* 拷贝链表 */
+                result = list_copy(entry->ripple_index_list);
+            }
+            break;
+        }
+        default:
+        {
+            /* 不做警告 */
+            break;
+        }
+    }
+    return result;
+}
+
+static void *ripple_catalog_get_sysdict_from_sysdicthis(List *sysdicthis, void *search_variable, int dict_type)
+{
+    ListCell *hiscell = NULL;
+    void *sysdicthis_result  =NULL;
+
+    /* 遍历sysdict his */
+    foreach(hiscell, sysdicthis)
+    {
+        ripple_catalogdata *dict = (ripple_catalogdata *) lfirst(hiscell);
+        if (dict->type == dict_type
+        && ((dict->op == RIPPLE_CATALOG_OP_INSERT) || (dict->op == RIPPLE_CATALOG_OP_UPDATE)))
+        {
+            switch(dict_type)
+            {
+                case RIPPLE_CATALOG_TYPE_CLASS:
+                {
+                    ripple_catalog_class_value *temp_class_value = 
+                        (ripple_catalog_class_value *) dict->catalog;
+                    if (temp_class_value->oid == *(Oid *)search_variable)
+                    {
+                        sysdicthis_result = (void *)temp_class_value->ripple_class;
+                    }
+                    break;
+                }
+                case RIPPLE_CATALOG_TYPE_ATTRIBUTE:
+                {
+                    ripple_catalog_attribute_value *temp_attribute_value = 
+                        (ripple_catalog_attribute_value *) dict->catalog;
+
+                    /* att的匹配条件是oid和attnum对应 */
+                    ripple_catalog_attribute_search *att_search =
+                        (ripple_catalog_attribute_search *) search_variable;
+
+                    if (temp_attribute_value->attrelid == att_search->attrelid)
+                    {
+                        ListCell *attcell = NULL;
+
+                        /* 遍历attrs */
+                        foreach(attcell, temp_attribute_value->attrs)
+                        {
+                            xk_pg_parser_sysdict_pgattributes *temp_attr =
+                                (xk_pg_parser_sysdict_pgattributes *) lfirst(attcell);
+
+                            if (temp_attr->attnum == att_search->attnum)
+                            {
+                                sysdicthis_result = (void *)temp_attr;
+                            }
+                        }
+                    }
+                    break;
+                }
+                case RIPPLE_CATALOG_TYPE_TYPE:
+                {
+                    ripple_catalog_type_value *temp_type_value = 
+                        (ripple_catalog_type_value *) dict->catalog;
+                    if (temp_type_value->oid == *(Oid *)search_variable)
+                    {
+                        sysdicthis_result = (void *)temp_type_value->ripple_type;
+                    }
+                    break;
+                }
+                case RIPPLE_CATALOG_TYPE_NAMESPACE:
+                {
+                    ripple_catalog_namespace_value *temp_namespace_value = 
+                        (ripple_catalog_namespace_value *) dict->catalog;
+                    if (temp_namespace_value->oid == *(Oid *)search_variable)
+                    {
+                        sysdicthis_result = (void *)temp_namespace_value->ripple_namespace;
+                    }
+                    break;
+                }
+                case RIPPLE_CATALOG_TYPE_TABLESPACE:
+                {
+                    /* 未用到 */
+                    break;
+                }
+                case RIPPLE_CATALOG_TYPE_ENUM:
+                {
+                    /* 注意, 这里返回的实际是一个链表 */
+                    ripple_catalog_enum_value *temp_enum_value = 
+                        (ripple_catalog_enum_value *) dict->catalog;
+
+                    if (temp_enum_value->enumtypid == *(Oid *)search_variable)
+                    {
+                        xk_pg_parser_sysdict_pgenum *temp_enum_dict = 
+                            (xk_pg_parser_sysdict_pgenum *) linitial(temp_enum_value->enums);
+                        sysdicthis_result = lappend(sysdicthis_result, temp_enum_dict);
+                    }
+                    break;
+                }
+                case RIPPLE_CATALOG_TYPE_RANGE:
+                {
+                    ripple_catalog_range_value *temp_range_value = 
+                        (ripple_catalog_range_value *) dict->catalog;
+                    if (temp_range_value->rngtypid == *(Oid *)search_variable)
+                    {
+                        sysdicthis_result = (void *)temp_range_value->ripple_range;
+                    }
+                    break;
+                }
+                case RIPPLE_CATALOG_TYPE_PROC:
+                {
+                    ripple_catalog_proc_value *temp_proc_value = 
+                        (ripple_catalog_proc_value *) dict->catalog;
+                    if (temp_proc_value->oid == *(Oid *)search_variable)
+                    {
+                        sysdicthis_result = (void *)temp_proc_value->ripple_proc;
+                    }
+                    break;
+                }
+                case RIPPLE_CATALOG_TYPE_CONSTRAINT:
+                {
+                    ripple_catalog_constraint_value *temp_constraint_value = 
+                        (ripple_catalog_constraint_value *) dict->catalog;
+                    if (temp_constraint_value->conrelid == *(Oid *)search_variable)
+                    {
+                        sysdicthis_result = (void *)temp_constraint_value->constraint;
+                    }
+                    break;
+                }
+                case RIPPLE_CATALOG_TYPE_DATABASE:
+                {
+                    ripple_catalog_database_value *temp_database_value = 
+                        (ripple_catalog_database_value *) dict->catalog;
+                    if (temp_database_value->oid == *(Oid *)search_variable)
+                    {
+                        sysdicthis_result = (void *)temp_database_value->ripple_database;
+                    }
+                    break;
+                }
+                //case RIPPLE_CATALOG_TYPE_OPERATOR:
+                //{
+                //    ripple_catalog_operator_value *temp_operator_value = 
+                //        (ripple_catalog_operator_value *) dict->catalog;
+                //    if (temp_operator_value->oid == *(Oid *)search_variable)
+                //    {
+                //        sysdicthis_result = (void *)temp_operator_value->ripple_operator;
+                //    }
+                //    break;
+                //}
+                //case RIPPLE_CATALOG_TYPE_AUTHID:
+                //{
+                //    ripple_catalog_authid_value *temp_authid_value = 
+                //        (ripple_catalog_authid_value *) dict->catalog;
+                //    if (temp_authid_value->oid == *(Oid *)search_variable)
+                //    {
+                //        sysdicthis_result = (void *)temp_authid_value->ripple_authid;
+                //    }
+                //    break;
+                //}
+
+                /* index不在此返回 */
+                case RIPPLE_CATALOG_TYPE_INDEX:
+                {
+                    // ripple_catalog_index_value *temp_index_value = 
+                    //     (ripple_catalog_index_value *) dict->catalog;
+                    // if (temp_index_value->oid == *(Oid *)search_variable)
+                    // {
+                    //     sysdicthis_result = (void *)temp_index_value->ripple_index;
+                    // }
+                    // break;
+                    return NULL;
+                }
+                default:
+                {
+                    elog(RLOG_WARNING, "unknown catalog type: %d", dict_type);
+                    break;
+                }
+            }
+        }
+    }
+    return sysdicthis_result;
+}
+
+/*
+ * 处理insert情况下的sysdicthis数据
+ * 非目标表返回传入的result
+ * 目标表将数据附加到链表上返回
+ */
+static List *ripple_catalog_get_sysdict_list_from_sysdicthis_opinsert(List *result, ripple_catalogdata *dict, void *search_variable, int dict_type)
+{
+    switch(dict_type)
+    {
+        case RIPPLE_CATALOG_TYPE_INDEX:
+        {
+            ripple_catalog_index_value *temp_index_value = (ripple_catalog_index_value *) dict->catalog;
+            if (temp_index_value->oid == *(Oid *)search_variable)
+            {
+                result = lappend(result, temp_index_value);
+            }
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    return result;
+}
+
+/*
+ * 处理update情况下的sysdicthis数据
+ * 非目标表返回传入的result
+ * 目标表将数据在链表上更新
+ */
+static List *ripple_catalog_get_sysdict_list_from_sysdicthis_opupdate(List *result, ripple_catalogdata *dict, void *search_variable, int dict_type)
+{
+    switch(dict_type)
+    {
+        case RIPPLE_CATALOG_TYPE_INDEX:
+        {
+            ripple_catalog_index_value *temp_index_value = (ripple_catalog_index_value *) dict->catalog;
+            if (temp_index_value->oid == *(Oid *)search_variable)
+            {
+                ListCell *cell = NULL;
+
+                /* 不存在result时简单的append即可, 但要给一个警告 */
+                if (!result)
+                {
+                    elog(RLOG_WARNING, "search index, do update, index list is null");
+                    result = lappend(result, temp_index_value);
+                    return result;
+                }
+
+                foreach(cell, result)
+                {
+                    ripple_catalog_index_value *search_index_value = (ripple_catalog_index_value *)lfirst(cell);
+
+                    /* 查找后替换目标cell即可 */
+                    if (search_index_value->ripple_index->indexrelid == temp_index_value->ripple_index->indexrelid)
+                    {
+                        lfirst(cell) = temp_index_value;
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    return result;
+}
+
+/*
+ * 处理insert情况下的sysdicthis数据
+ * 非目标表返回传入的result
+ * 目标表将数据从链表上删除
+ */
+static List *ripple_catalog_get_sysdict_list_from_sysdicthis_opdelete(List *result, ripple_catalogdata *dict, void *search_variable, int dict_type)
+{
+    switch(dict_type)
+    {
+        case RIPPLE_CATALOG_TYPE_INDEX:
+        {
+            ripple_catalog_index_value *temp_index_value = (ripple_catalog_index_value *) dict->catalog;
+            if (temp_index_value->oid == *(Oid *)search_variable)
+            {
+                ListCell *cell = NULL;
+                ListCell *cell_prev = NULL;
+
+                /* 不存在result时返回, 但要给一个警告 */
+                if (!result)
+                {
+                    elog(RLOG_WARNING, "search index, do delete, index list is null");
+                    return result;
+                }
+
+                cell = list_head(result);
+
+                while(cell)
+                {
+                    ListCell *next_cell = cell->next;
+                    ripple_catalog_index_value *search_index_value = (ripple_catalog_index_value *)lfirst(cell);
+
+                    /* 查找后替换目标cell即可 */
+                    if (search_index_value->ripple_index->indexrelid == temp_index_value->ripple_index->indexrelid)
+                    {
+                        result = list_delete_cell(result, cell, cell_prev);
+
+                        /* 找到后处理完跳出即可 */
+                        break;
+                    }
+                    else
+                    {
+                        cell_prev = cell;
+                    }
+                    cell = next_cell;
+                }
+            }
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    return result;
+}
+
+/* 
+ * 目前只有index用到了, 但是为了扩展性还是写成通用函数
+ * 需要考虑delete和update的情况, 因此传入了链表
+ */
+static List *ripple_catalog_get_sysdict_list_from_sysdicthis(List *result, List *sysdicthis, void *search_variable, int dict_type)
+{
+    ListCell *hiscell = NULL;
+    void *sysdicthis_result = NULL;
+
+    /* 遍历sysdict his */
+    foreach(hiscell, sysdicthis)
+    {
+        ripple_catalogdata *dict = (ripple_catalogdata *) lfirst(hiscell);
+        if (dict->type == dict_type)
+        {
+            if (dict->op == RIPPLE_CATALOG_OP_INSERT)
+            {
+                sysdicthis_result = ripple_catalog_get_sysdict_list_from_sysdicthis_opinsert(sysdicthis_result,
+                                                                                             dict,
+                                                                                             search_variable,
+                                                                                             dict_type);
+            }
+            else if (dict->op == RIPPLE_CATALOG_OP_UPDATE)
+            {
+                sysdicthis_result = ripple_catalog_get_sysdict_list_from_sysdicthis_opupdate(sysdicthis_result,
+                                                                                             dict,
+                                                                                             search_variable,
+                                                                                             dict_type);
+            }
+            else if (dict->op == RIPPLE_CATALOG_OP_DELETE)
+            {
+                sysdicthis_result = ripple_catalog_get_sysdict_list_from_sysdicthis_opdelete(sysdicthis_result,
+                                                                                             dict,
+                                                                                             search_variable,
+                                                                                             dict_type);
+            }
+            else
+            {
+                elog(RLOG_WARNING, "unknown op type: %d", dict->op);
+                continue;
+            }
+        }
+    }
+    return sysdicthis_result;
+}
+
+static void *ripple_catalog_get_sysdict_from_colvalue(List *sysdict, void *search_variable, int dict_type)
+{
+    ListCell *cell = NULL;
+    ripple_catalogdata* catalogdata = NULL;
+
+    switch(dict_type)
+    {
+        case RIPPLE_CATALOG_TYPE_CLASS:
+        {
+            ripple_catalog_class_value* pgclass_v = NULL;
+
+            foreach(cell, sysdict)
+            {
+                ripple_txn_sysdict *dict = (ripple_txn_sysdict *) lfirst(cell);
+                xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+
+                if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+                col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
+                {
+                    if (!strcmp(col->m_base.m_schemaname, RIPPLE_CATALOG_SYSDICT_SCHEMA)
+                     && !strcmp(col->m_base.m_tbname, RIPPLE_CATALOG_PG_CLASS))
+                    {
+                        if (dict->convert_colvalues)
+                        {
+                            xk_pg_sysdict_Form_pg_class temp_class = NULL;
+                            catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+                            pgclass_v = (ripple_catalog_class_value*) catalogdata->catalog;
+                            temp_class = (void *) pgclass_v->ripple_class;
+                            if (temp_class->oid == *(Oid *)search_variable)
+                            {
+                                return temp_class;
+                            }
+                        }
+                        else
+                        {
+                            Oid temp_oid = (Oid) atoi((char *)ripple_get_class_value_from_colvalue(col->m_new_values,
+                                                                                        RIPPLE_CLASS_MAPNUM_OID,
+                                                                                        g_idbtype,
+                                                                                        g_idbversion));
+                            if (temp_oid == *(Oid *)search_variable)
+                            {
+                                dict->convert_colvalues = ripple_catalog_colvalue_no_filter_conversion(g_idbtype,
+                                                                                        g_idbversion,
+                                                                                        col);
+                                catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+                                pgclass_v = (ripple_catalog_class_value*) catalogdata->catalog;
+                                return (void *) pgclass_v->ripple_class;
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_ATTRIBUTE:
+        {
+            ripple_catalog_attribute_value* pgattribute_v = NULL;
+
+            foreach(cell, sysdict)
+            {
+                ripple_txn_sysdict *dict = (ripple_txn_sysdict *) lfirst(cell);
+                xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+
+                if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+                col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
+                {
+                    if (!strcmp(col->m_base.m_schemaname, RIPPLE_CATALOG_SYSDICT_SCHEMA)
+                     && !strcmp(col->m_base.m_tbname, RIPPLE_CATALOG_PG_ATTRIBUTE))
+                    {
+                        ripple_catalog_attribute_search *temp_att_search =
+                            (ripple_catalog_attribute_search *) search_variable;
+
+                        if (dict->convert_colvalues)
+                        {
+                            xk_pg_sysdict_Form_pg_attribute temp_att = NULL;
+                            catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+                            pgattribute_v = (ripple_catalog_attribute_value*) catalogdata->catalog;
+                            temp_att = linitial(pgattribute_v->attrs);
+
+                            if (temp_att->attrelid == temp_att_search->attrelid
+                             && temp_att->attnum == temp_att_search->attnum)
+                            {
+                                return temp_att;
+                            }
+                        }
+                        else
+                        {
+                            Oid temp_oid = InvalidOid;
+                            int16_t temp_attnum = 0;
+
+                            temp_oid = (Oid) atoi((char *)ripple_get_attribute_value_from_colvalue(col->m_new_values,
+                                                                                        RIPPLE_ATTRIBUTE_MAPNUM_ATTRELID,
+                                                                                        g_idbtype,
+                                                                                        g_idbversion));
+
+                            temp_attnum = (int16_t) atoi((char *)ripple_get_attribute_value_from_colvalue(col->m_new_values,
+                                                                                        RIPPLE_ATTRIBUTE_MAPNUM_ATTNUM,
+                                                                                        g_idbtype,
+                                                                                        g_idbversion));
+                            if (temp_oid == temp_att_search->attrelid && temp_attnum == temp_att_search->attnum)
+                            {
+                                dict->convert_colvalues = ripple_catalog_colvalue_no_filter_conversion(g_idbtype,
+                                                                                        g_idbversion,
+                                                                                        col);
+                                catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+                                pgattribute_v = (ripple_catalog_attribute_value*) catalogdata->catalog;
+                                return linitial(pgattribute_v->attrs);
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        /* 返回namespace的colvalues记录 */
+        case RIPPLE_CATALOG_TYPE_NAMESPACE:
+        {
+            ripple_catalog_namespace_value* pgnamespace_v = NULL;
+
+            foreach(cell, sysdict)
+            {
+                ripple_txn_sysdict *dict = (ripple_txn_sysdict *) lfirst(cell);
+                xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+
+                if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+                col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
+                {
+                    if (!strcmp(col->m_base.m_schemaname, RIPPLE_CATALOG_SYSDICT_SCHEMA)
+                     && !strcmp(col->m_base.m_tbname, RIPPLE_CATALOG_PG_NAMESPACE))
+                    {
+                        if (dict->convert_colvalues)
+                        {
+                            xk_pg_sysdict_Form_pg_namespace temp_nsp = NULL;
+                            catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+                            pgnamespace_v = (ripple_catalog_namespace_value*) catalogdata->catalog;
+                            temp_nsp = pgnamespace_v->ripple_namespace;
+                            if (temp_nsp->oid == *(Oid *)search_variable)
+                            {
+                                return temp_nsp;
+                            }
+                        }
+                        else
+                        {
+                            Oid temp_oid = InvalidOid;
+                            temp_oid = (Oid) atoi((char *)ripple_get_namespace_value_from_colvalue(col->m_new_values,
+                                                                                        RIPPLE_NAMESPACE_MAPNUM_OID,
+                                                                                        g_idbtype,
+                                                                                        g_idbversion));
+                            if (temp_oid == *(Oid *)search_variable)
+                            {
+                                dict->convert_colvalues = ripple_catalog_colvalue_no_filter_conversion(g_idbtype,
+                                                                                        g_idbversion,
+                                                                                        col);
+                                catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+                                pgnamespace_v = (ripple_catalog_namespace_value*) catalogdata->catalog;
+                                return (void *)pgnamespace_v->ripple_namespace;
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case RIPPLE_CATALOG_TYPE_TYPE:
+        {
+            ripple_catalog_type_value* pgtype_v = NULL;
+
+            foreach(cell, sysdict)
+            {
+                ripple_txn_sysdict *dict = (ripple_txn_sysdict *) lfirst(cell);
+                xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+
+                if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+                col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
+                {
+                    if (!strcmp(col->m_base.m_schemaname, RIPPLE_CATALOG_SYSDICT_SCHEMA)
+                     && !strcmp(col->m_base.m_tbname, RIPPLE_CATALOG_PG_TYPE))
+                    {
+                        if (dict->convert_colvalues)
+                        {
+                            xk_pg_sysdict_Form_pg_type temp_typ = NULL;
+                            catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+                            pgtype_v = (ripple_catalog_type_value*) catalogdata->catalog;
+                            temp_typ = pgtype_v->ripple_type;
+                            if (temp_typ->oid == *(Oid *)search_variable)
+                            {
+                                return temp_typ;
+                            }
+                        }
+                        else
+                        {
+                            Oid temp_oid = (Oid) atoi((char *)ripple_get_type_value_from_colvalue(col->m_new_values,
+                                                                                        RIPPLE_TYPE_MAPNUM_OID,
+                                                                                        g_idbtype,
+                                                                                        g_idbversion));
+                            if (temp_oid == *(Oid *)search_variable)
+                            {
+                                dict->convert_colvalues = ripple_catalog_colvalue_no_filter_conversion(g_idbtype,
+                                                                                        g_idbversion,
+                                                                                        col);
+                                catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+                                pgtype_v = (ripple_catalog_type_value*) catalogdata->catalog;
+                                return (void *) pgtype_v->ripple_type;
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        /* 不在此返回 */
+        case RIPPLE_CATALOG_TYPE_INDEX:
+        {
+            // ripple_catalog_index_value* pgindex_v = NULL;
+
+            // foreach(cell, sysdict)
+            // {
+            //     ripple_txn_sysdict *dict = (ripple_txn_sysdict *) lfirst(cell);
+            //     xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+
+            //     if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+            //     col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
+            //     {
+            //         if (!strcmp(col->m_base.m_schemaname, RIPPLE_CATALOG_SYSDICT_SCHEMA)
+            //          && !strcmp(col->m_base.m_tbname, RIPPLE_CATALOG_PG_INDEX))
+            //         {
+            //             if (dict->convert_colvalues)
+            //             {
+            //                 xk_pg_sysdict_Form_pg_index *temp_index = NULL;
+            //                 catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+            //                 pgindex_v = (ripple_catalog_index_value*) catalogdata->catalog;
+            //                 temp_index = pgindex_v->ripple_index;
+            //                 if (pgindex_v->oid == *(Oid *)search_variable)
+            //                 {
+            //                     return temp_index;
+            //                 }
+            //             }
+            //             else
+            //             {
+            //                 Oid temp_oid = (Oid) atoi((char *)ripple_get_index_value_from_colvalue(col->m_new_values,
+            //                                                                             RIPPLE_INDEX_MAPNUM_INDRELID,
+            //                                                                             g_idbtype,
+            //                                                                             g_idbversion));
+            //                 bool temp_unique = ((char *)ripple_get_index_value_from_colvalue(col->m_new_values,
+            //                                                                             RIPPLE_INDEX_MAPNUM_INDISUNIQUE,
+            //                                                                             g_idbtype,
+            //                                                                             g_idbversion))[0] == 't' ? true : false;
+
+            //                 if (temp_oid == *(Oid *)search_variable && temp_unique)
+            //                 {
+            //                     /* 非unique索引不会走到这里 */
+            //                     dict->convert_colvalues = ripple_catalog_colvalue_no_filter_conversion(g_idbtype,
+            //                                                                             g_idbversion,
+            //                                                                             col);
+            //                     catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+            //                     pgindex_v = (ripple_catalog_index_value*) catalogdata->catalog;
+            //                     return (void *) pgindex_v->ripple_index;
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
+            return NULL;
+        }
+        default:
+        {
+            break;
+        }
+    }
+    return NULL;
+}
+
+// static List *ripple_catalog_get_sysdict_list_from_colvalue(List *sysdict, void *search_variable, int dict_type)
+// {
+//     List *result = NULL;
+//     ListCell *cell = NULL;
+//     ripple_catalogdata* catalogdata = NULL;
+
+//     switch(dict_type)
+//     {
+//         case RIPPLE_CATALOG_TYPE_INDEX:
+//         {
+//             ripple_catalog_index_value* pgindex_v = NULL;
+
+//             foreach(cell, sysdict)
+//             {
+//                 ripple_txn_sysdict *dict = (ripple_txn_sysdict *) lfirst(cell);
+//                 xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+
+//                 if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+//                 col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
+//                 {
+//                     if (!strcmp(col->m_base.m_schemaname, RIPPLE_CATALOG_SYSDICT_SCHEMA)
+//                      && !strcmp(col->m_base.m_tbname, RIPPLE_CATALOG_PG_INDEX))
+//                     {
+//                         if (dict->convert_colvalues)
+//                         {
+//                             catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+//                             pgindex_v = (ripple_catalog_index_value*) catalogdata->catalog;
+//                             result = lappend(result, pgindex_v);
+//                         }
+//                         else
+//                         {
+//                             Oid temp_oid = (Oid) atoi((char *)ripple_get_index_value_from_colvalue(col->m_new_values,
+//                                                                                         RIPPLE_INDEX_MAPNUM_INDRELID,
+//                                                                                         g_idbtype,
+//                                                                                         g_idbversion));
+//                             bool temp_unique = ((char *)ripple_get_index_value_from_colvalue(col->m_new_values,
+//                                                                                         RIPPLE_INDEX_MAPNUM_INDISUNIQUE,
+//                                                                                         g_idbtype,
+//                                                                                         g_idbversion))[0] == 't' ? true : false;
+
+//                             if (temp_oid == *(Oid *)search_variable && temp_unique)
+//                             {
+//                                 /* 非unique索引不会走到这里 */
+//                                 dict->convert_colvalues = ripple_catalog_colvalue_no_filter_conversion(g_idbtype,
+//                                                                                         g_idbversion,
+//                                                                                         col);
+//                                 catalogdata = (ripple_catalogdata *) dict->convert_colvalues;
+//                                 pgindex_v = (ripple_catalog_index_value*) catalogdata->catalog;
+//                                 result = lappend(result, pgindex_v);
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//             return result;
+//         }
+//         default:
+//         {
+//             break;
+//         }
+//     }
+//     return NULL;
+// }
+
+static void *ripple_catalog_get_sysdict(HTAB *sysdict_hash,
+                                        List *sysdict,
+                                        List *sysdicthis,
+                                        void *search_variable,
+                                        int dict_type)
+{
+    void *result = NULL;
+    /* 首先查找 sysdict 并根据 sysdict 的有无, 判断是否查找 sysdict */
+    if (sysdict)
+    {
+        result = ripple_catalog_get_sysdict_from_colvalue(sysdict, search_variable, dict_type);
+        if (result)
+        {
+            return result;
+        }
+    }
+
+    /* 根据sysdicthis的有无, 判断是否查找sysdicthis */
+    if (sysdicthis)
+    {
+        result = ripple_catalog_get_sysdict_from_sysdicthis(sysdicthis, search_variable, dict_type);
+        if (result)
+        {
+            return result;
+        }
+    }
+
+    /* 根据sysdict_hash的有无, 判断是否查找sysdict_hash */
+    if (sysdict_hash)
+    {
+        result = ripple_catalog_get_sysdict_from_sysdicthash(sysdict_hash, search_variable, dict_type);
+        if (result)
+        {
+            return result;
+        }
+    }
+
+    return NULL;
+}
+
+/*
+ * 从缓存中获取sysdict, 并拼装成链表的形式返回
+ * 查找和顺序: 
+ *          sysdict_hash, sysdicthis, sysdict
+ * 目前只有index用到了, 但是为了扩展性还是写成通用函数
+ */
+static void *ripple_catalog_get_sysdict_list(HTAB *sysdict_hash,
+                                             List *sysdict,
+                                             List *sysdicthis,
+                                             void *search_variable,
+                                             int dict_type)
+{
+    List *result = NULL;
+
+    /* 首先查找sysdict_hash */
+    if (sysdict_hash)
+    {
+        result = ripple_catalog_get_sysdict_list_from_sysdicthash(sysdict_hash, search_variable, dict_type);
+    }
+
+    /* 再查找sysdicthis */
+    if (sysdicthis)
+    {
+        result = ripple_catalog_get_sysdict_list_from_sysdicthis(result, sysdicthis, search_variable, dict_type);
+    }
+
+    /* 最后查找 sysdict, 这里在index阶段其实没有用到, 但保留 */
+    if (sysdict)
+    {
+        /* now do nothing */
+    }
+
+    return (void *)result;
+}
+
+static Oid ripple_catalog_get_oid_by_relfilenode_from_colvalues(uint32_t relfilenode,
+                                                                List *list)
+{
+    ListCell *cell = NULL;
+
+    if (!list)
+    {
+        return InvalidOid;
+    }
+
+    foreach(cell, list)
+    {
+        ripple_txn_sysdict *dict = (ripple_txn_sysdict *) lfirst(cell);
+        xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+
+        if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+            col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE)
+         && !strcmp(col->m_base.m_schemaname, RIPPLE_CATALOG_SYSDICT_SCHEMA)
+         && !strcmp(col->m_base.m_tbname, RIPPLE_CATALOG_PG_CLASS)
+         && col->m_new_values)
+        {
+            uint32_t temp_relfilenode = 0;
+            temp_relfilenode = (uint32_t) atoi((char *)ripple_get_class_value_from_colvalue(col->m_new_values,
+                                                                                    RIPPLE_CLASS_MAPNUM_RELFILENODE,
+                                                                                    g_idbtype,
+                                                                                    g_idbversion));
+            if (temp_relfilenode == relfilenode)
+            {
+                return (Oid) atoi((char *)ripple_get_class_value_from_colvalue(col->m_new_values,
+                                                                       RIPPLE_CLASS_MAPNUM_OID,
+                                                                       g_idbtype,
+                                                                       g_idbversion));
+            }
+        }
+    }
+    return InvalidOid;
+}
+
+Oid ripple_catalog_get_oid_by_relfilenode(HTAB *relfilenode_htab,
+                                          List *sysdicthis,
+                                          List *sysdict,
+                                          uint32_t dboid,
+                                          uint32_t tbspcoid,
+                                          uint32_t relfilenode,
+                                          bool report_error)
+{
+    RelFileNode rnode = {'\0'};
+    ripple_relfilenode2oid *entry = NULL;
+    bool find = false;
+    Oid oid = InvalidOid;
+    rnode.dbNode = dboid;
+    rnode.relNode = relfilenode;
+    rnode.spcNode = tbspcoid;
+    entry = hash_search(relfilenode_htab, &rnode, HASH_FIND, &find);
+    if (!find)
+    {
+        if (sysdicthis)
+        {
+            ListCell *cell = NULL;
+
+            /* 遍历链表所有内容 */
+            foreach(cell, sysdicthis)
+            {
+                ripple_catalogdata *dict = (ripple_catalogdata *) lfirst(cell);
+                if (dict->type == RIPPLE_CATALOG_TYPE_CLASS
+                && ((dict->op == RIPPLE_CATALOG_OP_INSERT) || (dict->op == RIPPLE_CATALOG_OP_UPDATE)))
+                {
+                    ripple_catalog_class_value *temp_pgclass  = (ripple_catalog_class_value *)dict->catalog;
+                    if (temp_pgclass->ripple_class->relfilenode == relfilenode)
+                        oid = temp_pgclass->ripple_class->oid;
+                }
+            }
+        }
+        if (sysdict)
+        {
+            /* 还未找到, 从sysdict找 */
+            if (!oid)
+                oid = ripple_catalog_get_oid_by_relfilenode_from_colvalues(relfilenode,
+                                                                           sysdict);
+        }
+    }
+    else
+        oid = entry->oid;
+
+    if (!oid)
+    {
+        if (report_error)
+            elog(RLOG_ERROR, "can't find oid by relfilenode: %u", rnode.relNode);
+        else
+            elog(RLOG_DEBUG, "fpw capture, can't find oid by relfilenode: %u, ignore fpw tuples", rnode.relNode);
+
+        return oid;
+    }
+    return oid;
+}
+
+void *ripple_catalog_get_class_sysdict(HTAB *sysdict_hash,
+                                      List *sysdict,
+                                      List *sysdicthis,
+                                      Oid   oid)
+{
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_CLASS);
+}
+
+void *ripple_catalog_get_database_sysdict(HTAB *sysdict_hash,
+                                          List *sysdict,
+                                          List *sysdicthis,
+                                          Oid   oid)
+{
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_DATABASE);
+}
+
+void *ripple_catalog_get_namespace_sysdict(HTAB *sysdict_hash,
+                                       List *sysdict,
+                                       List *sysdicthis,
+                                       Oid   oid)
+{
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_NAMESPACE);
+}
+
+void *ripple_catalog_get_attribute_sysdict(HTAB *sysdict_hash,
+                                          List *sysdict,
+                                          List *sysdicthis,
+                                          Oid   attrelid,
+                                          int16_t attnum)
+{
+    ripple_catalog_attribute_search temp_att_search = {'\0'};
+
+    temp_att_search.attrelid = attrelid;
+    temp_att_search.attnum = attnum;
+
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &temp_att_search, RIPPLE_CATALOG_TYPE_ATTRIBUTE);
+}
+
+void *ripple_catalog_get_type_sysdict(HTAB *sysdict_hash,
+                                       List *sysdict,
+                                       List *sysdicthis,
+                                       Oid   oid)
+{
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_TYPE);
+}
+
+void *ripple_catalog_get_range_sysdict(HTAB *sysdict_hash,
+                                       List *sysdict,
+                                       List *sysdicthis,
+                                       Oid   oid)
+{
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_RANGE);
+}
+
+void *ripple_catalog_get_enum_sysdict_list(HTAB *sysdict_hash,
+                                           List *sysdict,
+                                           List *sysdicthis,
+                                           Oid   oid)
+{
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_ENUM);
+}
+
+void *ripple_catalog_get_proc_sysdict(HTAB *sysdict_hash,
+                                      List *sysdict,
+                                      List *sysdicthis,
+                                      Oid   oid)
+{
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_PROC);
+}
+
+void *ripple_catalog_get_constraint_sysdict(HTAB *sysdict_hash,
+                                            List *sysdict,
+                                            List *sysdicthis,
+                                            Oid   oid)
+{
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_CONSTRAINT);
+}
+
+void *ripple_catalog_get_authid_sysdict(HTAB *sysdict_hash,
+                                        List *sysdict,
+                                        List *sysdicthis,
+                                        Oid   oid)
+{
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_AUTHID);
+}
+
+void *ripple_catalog_get_operator_sysdict(HTAB *sysdict_hash,
+                                          List *sysdict,
+                                          List *sysdicthis,
+                                          Oid   oid)
+{
+    return ripple_catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_OPERATOR);
+}
+
+void *ripple_catalog_get_index_sysdict_list(HTAB *sysdict_hash,
+                                            List *sysdict,
+                                            List *sysdicthis,
+                                            Oid   oid)
+{
+    return ripple_catalog_get_sysdict_list(sysdict_hash, sysdict, sysdicthis, &oid, RIPPLE_CATALOG_TYPE_INDEX);
+}
+
+void ripple_catalog_sysdict_getfromdb(void* conn_in, ripple_cache_sysdicts* sysdicts)
+{
+    PGconn *conn = (PGconn *)conn_in;
+    if (NULL == sysdicts)
+    {
+        return;
+    }
+
+    ripple_class_attribute_getfromdb(conn, sysdicts);
+
+    ripple_authid_getfromdb(conn, sysdicts);
+
+    ripple_constraint_getfromdb(conn, sysdicts);
+
+    ripple_database_getfromdb(conn, sysdicts);
+
+    ripple_enum_getfromdb(conn, sysdicts);
+
+    ripple_namespace_getfromdb(conn, sysdicts);
+
+    ripple_operator_getfromdb(conn, sysdicts);
+
+    ripple_proc_getfromdb(conn, sysdicts);
+
+    ripple_range_getfromdb(conn, sysdicts);
+
+    ripple_type_getfromdb(conn, sysdicts);
+
+    ripple_index_getfromdb(conn, sysdicts);
+
+    return;
+}
+
+/* 
+ * 对表开启FULL模式
+ *  只对未开启 FULL 模式的 非系统表 开启
+*/
+bool ripple_catalog_sysdict_setfullmode(HTAB* hclass)
+{
+    PGconn *conn = NULL;
+    PGresult *res = NULL;
+    HASH_SEQ_STATUS status;
+    xk_pg_sysdict_Form_pg_class class;
+    ripple_catalog_class_value *entry;
+    char sql_exec[RIPPLE_MAX_EXEC_SQL_LEN] = {'\0'};
+
+    conn = ripple_conn_get(guc_getConfigOption("url"));
+    /* 连接错误退出 */
+    if(NULL == conn)
+    {
+        elog(RLOG_WARNING, "capture connect %s database error", guc_getConfigOption("url"));
+        return false;
+    }
+
+    hash_seq_init(&status,hclass);
+    while ((entry = hash_seq_search(&status)) != NULL)
+    {
+        class = entry->ripple_class;
+        if(RIPPLE_FirstNormalObjectId > class->oid)
+        {
+            /* 
+             * 系统表不做操作
+             * 在 PG 数据库中, 小于 RIPPLE_FirstNormalObjectId 为系统表
+             */
+            continue;
+        }
+
+        if(XK_PG_SYSDICT_REPLICA_IDENTITY_FULL == class->relreplident)
+        {
+            /* 已开启 FULL 模式的表不做操作 */
+            continue;
+        }
+
+        if(XK_PG_SYSDICT_RELKIND_RELATION != class->relkind
+            && XK_PG_SYSDICT_RELKIND_PARTITIONED_TABLE != class->relkind)
+        {
+            /* 只对普通表和分区子表开启 FULL 模式 */
+            continue;
+        }
+
+        /* 开启 full 模式 */
+        rmemset1(sql_exec, 0, '\0', RIPPLE_MAX_EXEC_SQL_LEN);
+        snprintf(sql_exec, RIPPLE_MAX_EXEC_SQL_LEN, "alter table \"%s\".\"%s\" replica identity full;",
+                            class->nspname.data, class->relname.data);
+        res = ripple_conn_exec(conn, sql_exec);
+        if (NULL == res)
+        {
+            elog(RLOG_WARNING, "capture set table %s.%s replica identity full error",
+                                class->nspname.data, class->relname.data);
+            PQfinish(conn);
+            return false;
+        }
+        
+        PQclear(res);
+    }
+    PQfinish(conn);
+    return true;
+}
+
+/* 根据redolsn过滤字典表数据
+ * 返回值dictsprev，小于redolsn的应用落盘
+ * sysdict大于redolsn等待下一次应用
+ */
+List* ripple_catalog_sysdict_filterbylsn(List **sysdict, uint64 redolsn)
+{
+    ListCell* lc = NULL;
+    List* sysdicts = NULL;
+    List* dicts = NULL;                             /* 大于redolsn的sysdicts */
+    List* dictsprev = NULL;                         /* 小于redolsn的sysdicts */
+    ripple_catalogdata* catalogdata = NULL;
+
+    sysdicts = (List*)(*sysdict);
+
+    foreach(lc, sysdicts)
+    {
+        catalogdata = (ripple_catalogdata*)lfirst(lc);
+
+        if(NULL == catalogdata)
+        {
+            continue;
+        }
+
+        if (redolsn >= catalogdata->lsn.wal.lsn)
+        {
+            dictsprev = lappend(dictsprev, catalogdata);
+        }
+        else
+        {
+            dicts = lappend(dicts, catalogdata);
+        }
+
+    }
+
+    list_free(sysdicts);
+    *sysdict = dicts;
+    return dictsprev;
+}

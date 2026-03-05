@@ -1,0 +1,33 @@
+#include "xk_pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+
+char* XK_PG_Australia_Canberra[] =
+{
+    (char *)"Rule	Aus	1917	only	-	Jan	 1	0:01	1:00	D",
+    (char *)"Rule	Aus	1917	only	-	Mar	25	2:00	0	S",
+    (char *)"Rule	Aus	1942	only	-	Jan	 1	2:00	1:00	D",
+    (char *)"Rule	Aus	1942	only	-	Mar	29	2:00	0	S",
+    (char *)"Rule	Aus	1942	only	-	Sep	27	2:00	1:00	D",
+    (char *)"Rule	Aus	1943	1944	-	Mar	lastSun	2:00	0	S",
+    (char *)"Rule	Aus	1943	only	-	Oct	 3	2:00	1:00	D",
+    (char *)"Rule	AN	1971	1985	-	Oct	lastSun	2:00s	1:00	D",
+    (char *)"Rule	AN	1972	only	-	Feb	27	2:00s	0	S",
+    (char *)"Rule	AN	1973	1981	-	Mar	Sun>=1	2:00s	0	S",
+    (char *)"Rule	AN	1982	only	-	Apr	Sun>=1	2:00s	0	S",
+    (char *)"Rule	AN	1983	1985	-	Mar	Sun>=1	2:00s	0	S",
+    (char *)"Rule	AN	1986	1989	-	Mar	Sun>=15	2:00s	0	S",
+    (char *)"Rule	AN	1986	only	-	Oct	19	2:00s	1:00	D",
+    (char *)"Rule	AN	1987	1999	-	Oct	lastSun	2:00s	1:00	D",
+    (char *)"Rule	AN	1990	1995	-	Mar	Sun>=1	2:00s	0	S",
+    (char *)"Rule	AN	1996	2005	-	Mar	lastSun	2:00s	0	S",
+    (char *)"Rule	AN	2000	only	-	Aug	lastSun	2:00s	1:00	D",
+    (char *)"Rule	AN	2001	2007	-	Oct	lastSun	2:00s	1:00	D",
+    (char *)"Rule	AN	2006	only	-	Apr	Sun>=1	2:00s	0	S",
+    (char *)"Rule	AN	2007	only	-	Mar	lastSun	2:00s	0	S",
+    (char *)"Rule	AN	2008	max	-	Apr	Sun>=1	2:00s	0	S",
+    (char *)"Rule	AN	2008	max	-	Oct	Sun>=1	2:00s	1:00	D",
+    (char *)"Zone Australia/Sydney	10:04:52 -	LMT	1895 Feb",
+    (char *)"			10:00	Aus	AE%sT	1971",
+    (char *)"			10:00	AN	AE%sT",
+    (char *)"Link	Australia/Sydney	Australia/Canberra"
+};

@@ -1,0 +1,23 @@
+# 日志级别
+log_level = info
+
+# 日志存放目录
+log_dir="/opt/receivewaldata/log"
+
+/* 工作目录/事务日志存放目录 */
+data = "/opt/receivewaldata"
+
+# 同步起点时间线
+timeline = 1
+
+# 日志丢失时, 在源端复制日志的命令, %f %p 为固定格式
+restore_command = "scp user@ip:/opt/pg/archive/%f %p"
+
+# 同步起点LSN
+startpos="0/02000000"
+
+# 源端连接串
+primary_conn_info="port=9527 dbname=postgres user=sunqk"
+
+# 复制槽名(数据库中必须存在), 可配置为空
+slot_name="recvwal"

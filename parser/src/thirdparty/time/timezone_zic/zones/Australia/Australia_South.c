@@ -1,0 +1,33 @@
+#include "xk_pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+
+char* XK_PG_Australia_South[] =
+{
+    (char *)"Rule	Aus	1917	only	-	Jan	 1	0:01	1:00	D",
+    (char *)"Rule	Aus	1917	only	-	Mar	25	2:00	0	S",
+    (char *)"Rule	Aus	1942	only	-	Jan	 1	2:00	1:00	D",
+    (char *)"Rule	Aus	1942	only	-	Mar	29	2:00	0	S",
+    (char *)"Rule	Aus	1942	only	-	Sep	27	2:00	1:00	D",
+    (char *)"Rule	Aus	1943	1944	-	Mar	lastSun	2:00	0	S",
+    (char *)"Rule	Aus	1943	only	-	Oct	 3	2:00	1:00	D",
+    (char *)"Rule	AS	1971	1985	-	Oct	lastSun	2:00s	1:00	D",
+    (char *)"Rule	AS	1986	only	-	Oct	19	2:00s	1:00	D",
+    (char *)"Rule	AS	1987	2007	-	Oct	lastSun	2:00s	1:00	D",
+    (char *)"Rule	AS	1972	only	-	Feb	27	2:00s	0	S",
+    (char *)"Rule	AS	1973	1985	-	Mar	Sun>=1	2:00s	0	S",
+    (char *)"Rule	AS	1986	1990	-	Mar	Sun>=15	2:00s	0	S",
+    (char *)"Rule	AS	1991	only	-	Mar	3	2:00s	0	S",
+    (char *)"Rule	AS	1992	only	-	Mar	22	2:00s	0	S",
+    (char *)"Rule	AS	1993	only	-	Mar	7	2:00s	0	S",
+    (char *)"Rule	AS	1994	only	-	Mar	20	2:00s	0	S",
+    (char *)"Rule	AS	1995	2005	-	Mar	lastSun	2:00s	0	S",
+    (char *)"Rule	AS	2006	only	-	Apr	2	2:00s	0	S",
+    (char *)"Rule	AS	2007	only	-	Mar	lastSun	2:00s	0	S",
+    (char *)"Rule	AS	2008	max	-	Apr	Sun>=1	2:00s	0	S",
+    (char *)"Rule	AS	2008	max	-	Oct	Sun>=1	2:00s	1:00	D",
+    (char *)"Zone Australia/Adelaide	9:14:20 -	LMT	1895 Feb",
+    (char *)"			9:00	-	ACST	1899 May",
+    (char *)"			9:30	Aus	AC%sT	1971",
+    (char *)"			9:30	AS	AC%sT",
+    (char *)"Link	Australia/Adelaide	Australia/South"
+};

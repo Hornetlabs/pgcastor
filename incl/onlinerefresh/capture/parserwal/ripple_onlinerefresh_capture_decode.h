@@ -1,0 +1,6 @@
+#ifndef RIPPLE_ONLINEREFRESH_CAPTURE_DECODE_H
+#define RIPPLE_ONLINEREFRESH_CAPTURE_DECODE_H
+
+extern void ripple_parserwork_waldecode_onlinerefresh(ripple_decodingcontext* decodingctx);
+
+#endif

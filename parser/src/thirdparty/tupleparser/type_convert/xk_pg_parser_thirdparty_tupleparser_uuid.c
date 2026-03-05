@@ -1,0 +1,58 @@
+/**
+ * @file xk_pg_parser_thirdparty_tupleparser_uuid.c
+ * @author bytesync
+ * @brief 
+ * @version 0.1
+ * @date 2023-08-03
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+#include "xk_pg_parser_os_incl.h"
+#include "xk_pg_parser_app_incl.h"
+#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgfunc.h"
+#include "thirdparty/stringinfo/xk_pg_parser_thirdparty_stringinfo.h"
+
+#define PGFUNC_UUID_MCXT NULL
+
+/* uuid size in bytes */
+#define UUID_LEN 16
+
+typedef struct pg_uuid_t
+{
+    unsigned char data[UUID_LEN];
+} pg_uuid_t;
+
+xk_pg_parser_Datum
+uuid_out(xk_pg_parser_Datum attr)
+{
+    pg_uuid_t  *uuid = (pg_uuid_t *) attr;
+    static const char hex_chars[] = "0123456789abcdef";
+    xk_pg_parser_StringInfoData buf;
+    int32_t            i;
+    char *result = NULL;
+
+    xk_pg_parser_initStringInfo(&buf);
+    for (i = 0; i < UUID_LEN; i++)
+    {
+        int32_t            hi;
+        int32_t            lo;
+
+        /*
+         * We print uuid values as a string of 8, 4, 4, 4, and then 12
+         * hexadecimal characters, with each group is separated by a hyphen
+         * ("-"). Therefore, add the hyphens at the appropriate places here.
+         */
+        if (i == 4 || i == 6 || i == 8 || i == 10)
+            xk_pg_parser_appendStringInfoChar(&buf, '-');
+
+        hi = uuid->data[i] >> 4;
+        lo = uuid->data[i] & 0x0F;
+
+        xk_pg_parser_appendStringInfoChar(&buf, hex_chars[hi]);
+        xk_pg_parser_appendStringInfoChar(&buf, hex_chars[lo]);
+    }
+    result = xk_pg_parser_mcxt_strdup(buf.data);
+    xk_pg_parser_mcxt_free(PGFUNC_UUID_MCXT, buf.data);
+    return (xk_pg_parser_Datum) result;
+}

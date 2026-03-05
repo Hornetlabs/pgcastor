@@ -1,0 +1,33 @@
+#include "xk_pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+
+char* XK_PG_America_Asuncion[] =
+{
+    (char *)"Rule	Para	1975	1988	-	Oct	 1	0:00	1:00	-",
+    (char *)"Rule	Para	1975	1978	-	Mar	 1	0:00	0	-",
+    (char *)"Rule	Para	1979	1991	-	Apr	 1	0:00	0	-",
+    (char *)"Rule	Para	1989	only	-	Oct	22	0:00	1:00	-",
+    (char *)"Rule	Para	1990	only	-	Oct	 1	0:00	1:00	-",
+    (char *)"Rule	Para	1991	only	-	Oct	 6	0:00	1:00	-",
+    (char *)"Rule	Para	1992	only	-	Mar	 1	0:00	0	-",
+    (char *)"Rule	Para	1992	only	-	Oct	 5	0:00	1:00	-",
+    (char *)"Rule	Para	1993	only	-	Mar	31	0:00	0	-",
+    (char *)"Rule	Para	1993	1995	-	Oct	 1	0:00	1:00	-",
+    (char *)"Rule	Para	1994	1995	-	Feb	lastSun	0:00	0	-",
+    (char *)"Rule	Para	1996	only	-	Mar	 1	0:00	0	-",
+    (char *)"Rule	Para	1996	2001	-	Oct	Sun>=1	0:00	1:00	-",
+    (char *)"Rule	Para	1997	only	-	Feb	lastSun	0:00	0	-",
+    (char *)"Rule	Para	1998	2001	-	Mar	Sun>=1	0:00	0	-",
+    (char *)"Rule	Para	2002	2004	-	Apr	Sun>=1	0:00	0	-",
+    (char *)"Rule	Para	2002	2003	-	Sep	Sun>=1	0:00	1:00	-",
+    (char *)"Rule	Para	2004	2009	-	Oct	Sun>=15	0:00	1:00	-",
+    (char *)"Rule	Para	2005	2009	-	Mar	Sun>=8	0:00	0	-",
+    (char *)"Rule	Para	2010	max	-	Oct	Sun>=1	0:00	1:00	-",
+    (char *)"Rule	Para	2010	2012	-	Apr	Sun>=8	0:00	0	-",
+    (char *)"Rule	Para	2013	max	-	Mar	Sun>=22	0:00	0	-",
+    (char *)"Zone America/Asuncion	-3:50:40 -	LMT	1890",
+    (char *)"			-3:50:40 -	AMT	1931 Oct 10 # Asunción Mean Time",
+    (char *)"			-4:00	-	PYT	1972 Oct",
+    (char *)"			-3:00	-	PYT	1974 Apr",
+    (char *)"			-4:00	Para	PY%sT"
+};

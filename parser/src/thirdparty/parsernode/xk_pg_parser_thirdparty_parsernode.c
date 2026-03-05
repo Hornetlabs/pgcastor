@@ -1,0 +1,3448 @@
+#include <ctype.h>
+#include "xk_pg_parser_os_incl.h"
+#include "xk_pg_parser_app_incl.h"
+#include "thirdparty/stringinfo/xk_pg_parser_thirdparty_stringinfo.h"
+#include "common/xk_pg_parser_translog.h"
+#include "sysdict/xk_pg_parser_sysdict_getinfo.h"
+#include "trans/transrec/xk_pg_parser_trans_transrec_itemptr.h"
+#include "trans/transrec/xk_pg_parser_trans_transrec_heaptuple.h"
+#include "thirdparty/list/xk_pg_parser_thirdparty_list.h"
+#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode_struct.h"
+#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode_util.h"
+#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode.h"
+#include "thirdparty/common/xk_pg_parser_thirdparty_builtins.h"
+#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode_value.h"
+
+#define XK_PARSERNODE_MCXT NULL
+#define PRETTYFLAG_INDENT 0x0002
+#define RIGHT_PAREN (1000000 + 1)
+#define LEFT_PAREN  (1000000 + 2)
+#define LEFT_BRACE  (1000000 + 3)
+#define OTHER_TOKEN (1000000 + 4)
+/* 函数声明 */
+static xk_pg_parser_nodetree *xk_pg_parser_get_expr_worker(char *expr, int32_t prettyFlags, xk_pg_parser_translog_convertinfo_with_zic *zicinfo);
+static void *stringToNode(const char *str, int16_t dbtype, char *dbversion);
+static void *stringToNodeInternal(const char *str, int16_t dbtype, char *dbversion);
+static void *nodeRead(const char *token, int32_t tok_len, char **xk_strtok_ptr, int16_t dbtype, char *dbversion);
+static const char *xk_strtok(int32_t *length, char **xk_strtok_ptr);
+static xk_pg_parser_NodeTag nodeTokenType(const char *token, int32_t length);
+static xk_pg_parser_Value *makeInteger(int32_t i);
+static xk_pg_parser_Value *makeFloat(char *numericStr);
+static xk_pg_parser_Value *makeString(char *str);
+static char *debackslash(const char *token, int32_t length);
+static xk_pg_parser_Node *parseNodeString(char **xk_strtok_ptr, int16_t dbtype, char *dbversion);
+static xk_pg_parser_Datum readDatum(bool typbyval, char** xk_strtok_ptr, bool *need_free);
+static xk_pg_parser_AttrNumber *readAttrNumberCols(int32_t numCols, char **xk_strtok_ptr);
+static uint32_t *readOidCols(int32_t numCols, char **xk_strtok_ptr);
+static int32_t *readIntCols(int32_t numCols, char **xk_strtok_ptr);
+static bool *readBoolCols(int32_t numCols, char **xk_strtok_ptr);
+static void ReadCommonScan(xk_pg_parser_Scan *local_node, char**xk_strtok_ptr, int16_t dbtype, char *dbversion);
+
+
+xk_pg_parser_nodetree *xk_pg_parser_get_expr(char *expr, xk_pg_parser_translog_convertinfo_with_zic *zicinfo)
+{
+    int32_t         prettyFlags = PRETTYFLAG_INDENT;
+    xk_pg_parser_nodetree *result = xk_pg_parser_get_expr_worker(expr, prettyFlags, zicinfo);
+    if (NULL == result)
+        return NULL;
+    return result;
+}
+
+#define WRAP_COLUMN_DEFAULT 0
+static xk_pg_parser_nodetree *deparse_expression_pretty(xk_pg_parser_Node *expr,
+                                       xk_pg_parser_List *dpcontext,
+                                       bool forceprefix,
+                                       bool showimplicit,
+                                       int32_t prettyFlags,
+                                       int32_t startIndent,
+                                       xk_pg_parser_translog_convertinfo_with_zic *zicinfo)
+{
+    xk_pg_parser_deparse_context context;
+
+    context.namespaces = dpcontext;
+    context.windowClause = NIL;
+    context.windowTList = NIL;
+    context.varprefix = forceprefix;
+    context.prettyFlags = prettyFlags;
+    context.wrapColumn = WRAP_COLUMN_DEFAULT;
+    context.indentLevel = startIndent;
+    context.special_exprkind = EXPR_KIND_NONE;
+    context.zicinfo = zicinfo;
+    context.nodetree = NULL;
+    if (!get_rule_expr(expr, &context, showimplicit))
+    {
+        /* 清理 */
+        if (context.nodetree)
+        {
+            xk_pg_parser_nodetree *nodetree = context.nodetree;
+            xk_pg_parser_nodetree *nodetree_now = nodetree;
+            while (nodetree)
+            {
+                nodetree_now = nodetree;
+                nodetree = nodetree->m_next;
+                if (nodetree_now)
+                {
+                    if (nodetree_now->m_node)
+                    {
+                        switch (nodetree_now->m_node_type)
+                        {
+                            case XK_PG_PARSER_NODETYPE_CONST:
+                            {
+                                xk_pg_parser_node_const *node_const =
+                                    (xk_pg_parser_node_const *)nodetree_now->m_node;
+                                if (node_const->m_char_value)
+                                    xk_pg_parser_mcxt_free(XK_NODE_MCXT, node_const->m_char_value);
+                                xk_pg_parser_mcxt_free(XK_NODE_MCXT, nodetree_now->m_node);
+                                break;
+                            }
+                            case XK_PG_PARSER_NODETYPE_FUNC:
+                            {
+                                xk_pg_parser_node_func *node_func =
+                                    (xk_pg_parser_node_func *)nodetree_now->m_node;
+                                if (node_func->m_funcname)
+                                    xk_pg_parser_mcxt_free(XK_NODE_MCXT, node_func->m_funcname);
+                                xk_pg_parser_mcxt_free(XK_NODE_MCXT, nodetree_now->m_node);
+                                break;
+                            }
+                            case XK_PG_PARSER_NODETYPE_OP:
+                            {
+                                xk_pg_parser_node_op *node_op =
+                                    (xk_pg_parser_node_op *)nodetree_now->m_node;
+                                if (node_op->m_opname)
+                                    xk_pg_parser_mcxt_free(XK_NODE_MCXT, node_op->m_opname);
+                                xk_pg_parser_mcxt_free(XK_NODE_MCXT, nodetree_now->m_node);
+                                break;
+                            }
+                            default:
+                                xk_pg_parser_mcxt_free(XK_NODE_MCXT, nodetree_now->m_node);
+                                break;
+                        }
+                    }
+                    xk_pg_parser_mcxt_free(XK_NODE_MCXT, nodetree_now);
+                    nodetree_now = NULL;
+                }
+            }
+        }
+        return NULL;
+    }
+    return context.nodetree;
+}
+
+static xk_pg_parser_nodetree *xk_pg_parser_get_expr_worker(char *expr, int32_t prettyFlags, xk_pg_parser_translog_convertinfo_with_zic *zicinfo)
+{
+    xk_pg_parser_Node       *node;
+    xk_pg_parser_nodetree   *result = NULL;
+
+    /* Convert expression to node tree */
+    node = (xk_pg_parser_Node *) stringToNode(expr, zicinfo->dbtype, zicinfo->dbversion);
+
+    if (NULL == node)
+        return NULL;
+    /* Deparse */
+    result = deparse_expression_pretty(node, NIL, false, false,
+                                    prettyFlags, 0, zicinfo);
+
+    /* node已经边解析边释放了 */
+    return result;
+}
+
+static void *stringToNode(const char *str, int16_t dbtype, char *dbversion)
+{
+    return stringToNodeInternal(str, dbtype, dbversion);
+}
+
+static void *stringToNodeInternal(const char *str, int16_t dbtype, char *dbversion)
+{
+    void       *retval;
+    char       *xk_strtok_ptr;
+
+    xk_strtok_ptr = (char*)str;        /* point xk_strtok at the string to read */
+
+    /*
+     * If enabled, likewise save/restore the location field handling flag.
+     */
+
+    retval = nodeRead(NULL, 0, &xk_strtok_ptr, dbtype, dbversion); /* do the reading */
+
+    return retval;
+}
+
+static xk_pg_parser_NodeTag nodeTokenType(const char *token, int32_t length)
+{
+    xk_pg_parser_NodeTag        retval;
+    const char *numptr;
+    int32_t            numlen;
+
+    /*
+     * Check if the token is a number
+     */
+    numptr = token;
+    numlen = length;
+    if (*numptr == '+' || *numptr == '-')
+        numptr++, numlen--;
+    if ((numlen > 0 && isdigit((unsigned char) *numptr)) ||
+        (numlen > 1 && *numptr == '.' && isdigit((unsigned char) numptr[1])))
+    {
+        /*
+         * Yes.  Figure out whether it is integral or float; this requires
+         * both a syntax check and a range check. strtoint() can do both for
+         * us. We know the token will end at a character that strtoint will
+         * stop at, so we do not need to modify the string.
+         */
+        char       *endptr;
+
+        errno = 0;
+        (void) strtoint(token, &endptr, 10);
+        if (endptr != token + length || errno == ERANGE)
+            return T_xk_pg_parser_Float;
+        return T_xk_pg_parser_Integer;
+    }
+
+    /*
+     * these three cases do not need length checks, since xk_strtok() will
+     * always treat them as single-byte tokens
+     */
+    else if (*token == '(')
+        retval = LEFT_PAREN;
+    else if (*token == ')')
+        retval = RIGHT_PAREN;
+    else if (*token == '{')
+        retval = LEFT_BRACE;
+    else if (*token == '"' && length > 1 && token[length - 1] == '"')
+        retval = T_xk_pg_parser_String;
+    else if (*token == 'b')
+        retval = T_xk_pg_parser_BitString;
+    else
+        retval = OTHER_TOKEN;
+    return retval;
+}
+
+/*
+ *    makeBitString
+ *
+ * Caller is responsible for passing a palloc'd string.
+ */
+static xk_pg_parser_Value *makeBitString(char *str)
+{
+    xk_pg_parser_Value       *v = xk_pg_parser_makeNode(xk_pg_parser_Value);
+
+    v->type = T_xk_pg_parser_BitString;
+    v->val.str = str;
+    return v;
+}
+
+static void *nodeRead(const char *token, int32_t tok_len, char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    xk_pg_parser_Node       *result;
+    xk_pg_parser_NodeTag     type;
+
+    if (token == NULL)            /* need to read a token? */
+    {
+        token = xk_strtok(&tok_len, xk_strtok_ptr);
+
+        if (token == NULL)        /* end of input */
+            return NULL;
+    }
+
+    type = nodeTokenType(token, tok_len);
+
+    switch ((int32_t) type)
+    {
+        case LEFT_BRACE:
+            result = parseNodeString(xk_strtok_ptr, dbtype, dbversion);
+            token = xk_strtok(&tok_len, xk_strtok_ptr);
+            if (token == NULL || token[0] != '}')
+            {
+                xk_pg_parser_mcxt_free(XK_NODE_MCXT, result);
+                return NULL;
+            }
+            break;
+        case LEFT_PAREN:
+            {
+                xk_pg_parser_List       *l = NIL;
+
+                /*----------
+                 * Could be an integer list:    (i int32_t int32_t ...)
+                 * or an OID list:                (o int32_t int32_t ...)
+                 * or a list of nodes/values:    (node node ...)
+                 *----------
+                 */
+                token = xk_strtok(&tok_len, xk_strtok_ptr);
+                if (token == NULL)
+                    return NULL;
+                if (tok_len == 1 && token[0] == 'i')
+                {
+                    /* List of integers */
+                    for (;;)
+                    {
+                        int32_t    val;
+                        char       *endptr;
+
+                        token = xk_strtok(&tok_len, xk_strtok_ptr);
+                        if (token == NULL)
+                            return NULL;
+                        if (token[0] == ')')
+                            break;
+                        val = (int32_t) strtol(token, &endptr, 10);
+                        if (endptr != token + tok_len)
+                            return NULL;
+                        l = xk_pg_parser_list_lappend_int(l, val);
+                    }
+                }
+                else if (tok_len == 1 && token[0] == 'o')
+                {
+                    /* List of OIDs */
+                    for (;;)
+                    {
+                        uint32_t    val;
+                        char       *endptr;
+
+                        token = xk_strtok(&tok_len, xk_strtok_ptr);
+                        if (token == NULL)
+                            return NULL;
+                        if (token[0] == ')')
+                            break;
+                        val = (uint32_t) strtoul(token, &endptr, 10);
+                        if (endptr != token + tok_len)
+                            return NULL;
+                        l = xk_pg_parser_list_lappend_oid(l, val);
+                    }
+                }
+                else
+                {
+                    /* List of other node types */
+                    for (;;)
+                    {
+                        /* We have already scanned next token... */
+                        if (token[0] == ')')
+                            break;
+                        l = xk_pg_parser_list_lappend(l, nodeRead(token, tok_len, xk_strtok_ptr, dbtype, dbversion));
+                        token = xk_strtok(&tok_len, xk_strtok_ptr);
+                        if (token == NULL)
+                        {
+                            xk_pg_parser_ListCell *cell = NULL;
+                            xk_pg_parser_foreach(cell, l)
+                            {
+                                void *ptr = (void *)xk_pg_parser_lfirst(cell);
+                                xk_pg_parser_mcxt_free(XK_NODE_MCXT, ptr);
+                            }
+                            xk_pg_parser_list_free(l);
+                            return NULL;
+                        }
+                    }
+                }
+                result = (xk_pg_parser_Node *) l;
+                break;
+            }
+        case RIGHT_PAREN:
+            result = NULL;        /* keep compiler happy */
+            break;
+        case OTHER_TOKEN:
+            if (tok_len == 0)
+            {
+                /* must be "<>" --- represents a null pointer */
+                result = NULL;
+            }
+            else
+            {
+                result = NULL;    /* keep compiler happy */
+            }
+            break;
+        case T_xk_pg_parser_Integer:
+
+            /*
+             * we know that the token terminates on a char atoi will stop at
+             */
+            result = (xk_pg_parser_Node *) makeInteger(atoi(token));
+            break;
+        case T_xk_pg_parser_Float:
+            {
+                char       *fval = NULL;
+
+                if(!xk_pg_parser_mcxt_malloc(XK_PARSERNODE_MCXT,
+                                                 (void **)&fval,
+                                                  tok_len + 1))
+                    return NULL;
+
+
+                rmemcpy0(fval, 0, token, tok_len);
+                fval[tok_len] = '\0';
+                result = (xk_pg_parser_Node *) makeFloat(fval);
+            }
+            break;
+        case T_xk_pg_parser_String:
+            /* need to remove leading and trailing quotes, and backslashes */
+            result = (xk_pg_parser_Node *) makeString(debackslash(token + 1, tok_len - 2));
+            break;
+        case T_xk_pg_parser_BitString:
+            {
+                char       *val = NULL;
+
+                if(!xk_pg_parser_mcxt_malloc(XK_PARSERNODE_MCXT,
+                                                 (void **)&val,
+                                                  tok_len))
+                    return NULL;
+                /* skip leading 'b' */
+                rmemcpy0(val, 0, token + 1, tok_len - 1);
+                val[tok_len - 1] = '\0';
+                result = (xk_pg_parser_Node *) makeBitString(val);
+                break;
+            }
+        default:
+            result = NULL;        /* keep compiler happy */
+            break;
+    }
+
+    return (void *) result;
+}
+
+static const char *xk_strtok(int32_t *length, char **xk_strtok_ptr)
+{
+    const char *local_str;        /* working pointer to string */
+    const char *ret_str;          /* start of token to return */
+
+    local_str = *xk_strtok_ptr;
+
+    while (*local_str == ' ' || *local_str == '\n' || *local_str == '\t')
+        local_str++;
+
+    if (*local_str == '\0')
+    {
+        *length = 0;
+        *xk_strtok_ptr = (char*)local_str;
+        return NULL;            /* no more tokens */
+    }
+
+    /*
+     * Now pointing at start of next token.
+     */
+    ret_str = local_str;
+
+    if (*local_str == '(' || *local_str == ')' ||
+        *local_str == '{' || *local_str == '}')
+    {
+        /* special 1-character token */
+        local_str++;
+    }
+    else
+    {
+        /* Normal token, possibly containing backslashes */
+        while (*local_str != '\0' &&
+               *local_str != ' ' && *local_str != '\n' &&
+               *local_str != '\t' &&
+               *local_str != '(' && *local_str != ')' &&
+               *local_str != '{' && *local_str != '}')
+        {
+            if (*local_str == '\\' && local_str[1] != '\0')
+                local_str += 2;
+            else
+                local_str++;
+        }
+    }
+
+    *length = local_str - ret_str;
+
+    /* Recognize special case for "empty" token */
+    if (*length == 2 && ret_str[0] == '<' && ret_str[1] == '>')
+        *length = 0;
+
+    *xk_strtok_ptr = (char*)local_str;
+
+    return ret_str;
+}
+
+static xk_pg_parser_Value *makeInteger(int32_t i)
+{
+    xk_pg_parser_Value *v = xk_pg_parser_makeNode(xk_pg_parser_Value);
+
+    v->type = T_xk_pg_parser_Integer;
+    v->val.ival = i;
+    return v;
+}
+
+static xk_pg_parser_Value *makeFloat(char *numericStr)
+{
+    xk_pg_parser_Value *v = xk_pg_parser_makeNode(xk_pg_parser_Value);
+
+    v->type = T_xk_pg_parser_Float;
+    v->val.str = numericStr;
+    return v;
+}
+
+static xk_pg_parser_Value *makeString(char *str)
+{
+    xk_pg_parser_Value *v = xk_pg_parser_makeNode(xk_pg_parser_Value);
+
+    v->type = T_xk_pg_parser_String;
+    v->val.str = str;
+    return v;
+}
+
+static char *debackslash(const char *token, int32_t length)
+{
+    char       *result = NULL;
+    char       *ptr = NULL;
+
+    xk_pg_parser_mcxt_malloc(XK_PARSERNODE_MCXT,
+                                     (void **)&result,
+                                      length + 1);
+
+    ptr = result;
+
+    while (length > 0)
+    {
+        if (*token == '\\' && length > 1)
+            token++, length--;
+        *ptr++ = *token++;
+        length--;
+    }
+    *ptr = '\0';
+    return result;
+}
+
+/* --------------------------- readfunc --------------------------- */
+
+#define atoui(x)  ((unsigned int) strtoul((x), NULL, 10))
+#define atooid(x) ((uint32_t) strtoul((x), NULL, 10))
+#define strtobool(x)  ((*(x) == 't') ? true : false)
+#define nullable_string(token,length)  \
+    ((length) == 0 ? NULL : debackslash(token, length))
+
+/* A few guys need only local_node */
+#define READ_LOCALS_NO_FIELDS(nodeTypeName) \
+    nodeTypeName *local_node = xk_pg_parser_makeNode(nodeTypeName)
+
+/* And a few guys need only the xk_strtok support fields */
+#define READ_TEMP_LOCALS()    \
+    const char *token;        \
+    int32_t            length
+
+/* ... but most need both */
+#define READ_LOCALS(nodeTypeName)            \
+    READ_LOCALS_NO_FIELDS(nodeTypeName);    \
+    READ_TEMP_LOCALS()
+
+/* Read an integer field (anything written as ":fldname %d") */
+#define READ_INT_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    local_node->fldname = atoi(token)
+
+/* Read an unsigned integer field (anything written as ":fldname %u") */
+#define READ_UINT_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    local_node->fldname = atoui(token)
+
+/* Read an unsigned integer field (anything written using UINT64_FORMAT) */
+#define READ_UINT64_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    local_node->fldname = strtoul(token, NULL, 10)
+
+/* Read a long integer field (anything written as ":fldname %ld") */
+#define READ_LONG_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    local_node->fldname = atol(token)
+
+/* Read an OID field (don't hard-wire assumption that OID is same as uint) */
+#define READ_OID_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    local_node->fldname = atooid(token)
+
+#define SKIP_OID_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+
+#define SKIP_INT_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+
+/* Read a char field (ie, one ascii character) */
+#define READ_CHAR_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    /* avoid overhead of calling debackslash() for one char */ \
+    local_node->fldname = (length == 0) ? '\0' : (token[0] == '\\' ? token[1] : token[0])
+
+/* Read an enumerated-type field that was written as an integer code */
+#define READ_ENUM_FIELD(fldname, enumtype) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    local_node->fldname = (enumtype) atoi(token)
+
+/* Read a float field */
+#define READ_FLOAT_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    local_node->fldname = atof(token)
+
+/* Read a boolean field */
+#define READ_BOOL_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    local_node->fldname = strtobool(token)
+
+#define SKIP_BOOL_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+
+#define SKIP_ANY_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+
+/* Read a character-string field */
+#define READ_STRING_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    local_node->fldname = nullable_string(token, length)
+
+/* Read a parse location field (and possibly throw away the value) */
+#ifdef WRITE_READ_PARSE_PLAN_TREES
+#define READ_LOCATION_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    local_node->fldname = restore_location_fields ? atoi(token) : -1
+#else
+#define READ_LOCATION_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* get field value */ \
+    (void) token;                /* in case not used elsewhere */ \
+    local_node->fldname = -1    /* set field to "unknown" */
+#endif
+
+/* Read a xk_pg_parser_Node field */
+#define READ_NODE_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    (void) token;                /* in case not used elsewhere */ \
+    local_node->fldname = nodeRead(NULL, 0, xk_strtok_ptr, dbtype, dbversion)
+
+/* Read a bitmapset field */
+#define READ_BITMAPSET_FIELD(fldname) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    (void) token;                /* in case not used elsewhere */ \
+    local_node->fldname = _readBitmapset(xk_strtok_ptr, dbtype, dbversion)
+
+/* Read an attribute number array */
+#define READ_ATTRNUMBER_ARRAY(fldname, len) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    local_node->fldname = readAttrNumberCols(len, xk_strtok_ptr)
+
+/* Read an oid array */
+#define READ_OID_ARRAY(fldname, len) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    local_node->fldname = readOidCols(len, xk_strtok_ptr)
+
+/* Read an int32_t array */
+#define READ_INT_ARRAY(fldname, len) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    local_node->fldname = readIntCols(len, xk_strtok_ptr)
+
+/* Read a bool array */
+#define READ_BOOL_ARRAY(fldname, len) \
+    token = xk_strtok(&length, xk_strtok_ptr);        /* skip :fldname */ \
+    local_node->fldname = readBoolCols(len, xk_strtok_ptr)
+
+/* Routine exit */
+#define READ_DONE() \
+    return local_node
+
+
+/*
+ * NOTE: use atoi() to read values written with %d, or atoui() to read
+ * values written with %u in outfuncs.c.  An exception is OID values,
+ * for which use atooid().  (As of 7.1, outfuncs.c writes OIDs as %u,
+ * but this will probably change in the future.)
+ */
+#define atoui(x)  ((unsigned int) strtoul((x), NULL, 10))
+
+#define strtobool(x)  ((*(x) == 't') ? true : false)
+
+#define nullable_string(token,length)  \
+    ((length) == 0 ? NULL : debackslash(token, length))
+
+#define XK_PG_PARSER_WORDNUM(x)    ((x) / 64)
+#define XK_PG_PARSER_BITNUM(x)     ((x) % 64)
+
+#define XK_PG_PARSER_BITMAPSET_SIZE(nwords)    \
+    (offsetof(xk_pg_parser_Bitmapset, words) + (nwords) * sizeof(xk_pg_parser_bitmapword))
+
+static xk_pg_parser_Bitmapset *bms_make_singleton(int x)
+{
+    xk_pg_parser_Bitmapset  *result = NULL;
+    int            wordnum,
+                   bitnum;
+
+    if (x < 0)
+        return NULL;
+    wordnum = XK_PG_PARSER_WORDNUM(x);
+    bitnum = XK_PG_PARSER_BITNUM(x);
+    if (!xk_pg_parser_mcxt_realloc(XK_NODE_MCXT,
+                                  (void **)&result,
+                                   XK_PG_PARSER_BITMAPSET_SIZE(wordnum + 1)))
+        return NULL;
+    result->nwords = wordnum + 1;
+    result->words[wordnum] = ((xk_pg_parser_bitmapword) 1 << bitnum);
+    return result;
+}
+
+static xk_pg_parser_Bitmapset *bms_add_member(xk_pg_parser_Bitmapset *a, int x)
+{
+    int wordnum,
+        bitnum;
+
+    if (x < 0)
+        return NULL;
+
+    if (a == NULL)
+        return bms_make_singleton(x);
+    wordnum = XK_PG_PARSER_WORDNUM(x);
+    bitnum = XK_PG_PARSER_BITNUM(x);
+
+    /* enlarge the set if necessary */
+    if (wordnum >= a->nwords)
+    {
+        int            oldnwords = a->nwords;
+        int            i;
+
+        if (!xk_pg_parser_mcxt_realloc(XK_NODE_MCXT,
+                                      (void **)&a,
+                                       XK_PG_PARSER_BITMAPSET_SIZE(wordnum + 1)))
+            return NULL;
+        a->nwords = wordnum + 1;
+        /* zero out the enlarged portion */
+        for (i = oldnwords; i < a->nwords; i++)
+            a->words[i] = 0;
+    }
+
+    a->words[wordnum] |= ((xk_pg_parser_bitmapword) 1 << bitnum);
+    return a;
+}
+
+/*
+ * _readBitmapset
+ */
+static xk_pg_parser_Bitmapset *_readBitmapset(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    xk_pg_parser_Bitmapset  *result = NULL;
+    READ_TEMP_LOCALS();
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    token = xk_strtok(&length, xk_strtok_ptr);
+    if (token == NULL)
+        return NULL;
+
+    if (length != 1 || token[0] != '(')
+        return NULL;
+
+    token = xk_strtok(&length, xk_strtok_ptr);
+    if (token == NULL)
+        return NULL;
+
+    if (length != 1 || token[0] != 'b')
+        return NULL;
+
+    for (;;)
+    {
+        int32_t            val;
+        char       *endptr;
+
+        token = xk_strtok(&length, xk_strtok_ptr);
+        if (token == NULL)
+            return NULL;
+        if (length == 1 && token[0] == ')')
+            break;
+        val = (int32_t) strtol(token, &endptr, 10);
+        if (endptr != token + length)
+            return NULL;
+        result = bms_add_member(result, val);
+    }
+
+    return result;
+}
+#define XK_PG_PARSER_UINT64CONST(x) (x##UL)
+/*
+ * _readQuery
+ */
+static xk_pg_parser_Query *_readQuery(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Query);
+
+    READ_ENUM_FIELD(commandType, xk_pg_parser_CmdType);
+    READ_ENUM_FIELD(querySource, xk_pg_parser_QuerySource);
+    local_node->queryId = XK_PG_PARSER_UINT64CONST(0);    /* not saved in output format */
+    READ_BOOL_FIELD(canSetTag);
+    READ_NODE_FIELD(utilityStmt);
+    READ_INT_FIELD(resultRelation);
+    READ_BOOL_FIELD(hasAggs);
+    READ_BOOL_FIELD(hasWindowFuncs);
+    READ_BOOL_FIELD(hasTargetSRFs);
+    READ_BOOL_FIELD(hasSubLinks);
+    READ_BOOL_FIELD(hasDistinctOn);
+    READ_BOOL_FIELD(hasRecursive);
+    READ_BOOL_FIELD(hasModifyingCTE);
+    READ_BOOL_FIELD(hasForUpdate);
+    READ_BOOL_FIELD(hasRowSecurity);
+    READ_NODE_FIELD(cteList);
+    READ_NODE_FIELD(rtable);
+    READ_NODE_FIELD(jointree);
+    READ_NODE_FIELD(targetList);
+    READ_ENUM_FIELD(override, xk_pg_parser_OverridingKind);
+    READ_NODE_FIELD(onConflict);
+    READ_NODE_FIELD(returningList);
+    READ_NODE_FIELD(groupClause);
+    READ_NODE_FIELD(groupingSets);
+    READ_NODE_FIELD(havingQual);
+    READ_NODE_FIELD(windowClause);
+    READ_NODE_FIELD(distinctClause);
+    READ_NODE_FIELD(sortClause);
+    READ_NODE_FIELD(limitOffset);
+    READ_NODE_FIELD(limitCount);
+    READ_NODE_FIELD(rowMarks);
+    READ_NODE_FIELD(setOperations);
+    READ_NODE_FIELD(constraintDeps);
+    READ_NODE_FIELD(withCheckOptions);
+    READ_LOCATION_FIELD(stmt_location);
+    READ_LOCATION_FIELD(stmt_len);
+
+    READ_DONE();
+}
+
+/*
+ * _readNotifyStmt
+ */
+static xk_pg_parser_NotifyStmt *_readNotifyStmt(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_NotifyStmt);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_STRING_FIELD(conditionname);
+    READ_STRING_FIELD(payload);
+
+    READ_DONE();
+}
+
+/*
+ * _readDeclareCursorStmt
+ */
+static xk_pg_parser_DeclareCursorStmt *_readDeclareCursorStmt(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_DeclareCursorStmt);
+
+    READ_STRING_FIELD(portalname);
+    READ_INT_FIELD(options);
+    READ_NODE_FIELD(query);
+
+    READ_DONE();
+}
+
+/*
+ * _readWithCheckOption
+ */
+static xk_pg_parser_WithCheckOption *_readWithCheckOption(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_WithCheckOption);
+
+    READ_ENUM_FIELD(kind, xk_pg_parser_WCOKind);
+    READ_STRING_FIELD(relname);
+    READ_STRING_FIELD(polname);
+    READ_NODE_FIELD(qual);
+    READ_BOOL_FIELD(cascaded);
+
+    READ_DONE();
+}
+
+/*
+ * _readSortGroupClause
+ */
+static xk_pg_parser_SortGroupClause *_readSortGroupClause(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_SortGroupClause);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_UINT_FIELD(tleSortGroupRef);
+    READ_OID_FIELD(eqop);
+    READ_OID_FIELD(sortop);
+    READ_BOOL_FIELD(nulls_first);
+    READ_BOOL_FIELD(hashable);
+
+    READ_DONE();
+}
+
+/*
+ * _readGroupingSet
+ */
+static xk_pg_parser_GroupingSet *_readGroupingSet(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_GroupingSet);
+
+    READ_ENUM_FIELD(kind, xk_pg_parser_GroupingSetKind);
+    READ_NODE_FIELD(content);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readWindowClause
+ */
+static xk_pg_parser_WindowClause *_readWindowClause(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_WindowClause);
+
+    READ_STRING_FIELD(name);
+    READ_STRING_FIELD(refname);
+    READ_NODE_FIELD(partitionClause);
+    READ_NODE_FIELD(orderClause);
+    READ_INT_FIELD(frameOptions);
+    READ_NODE_FIELD(startOffset);
+    READ_NODE_FIELD(endOffset);
+    READ_OID_FIELD(startInRangeFunc);
+    READ_OID_FIELD(endInRangeFunc);
+    READ_OID_FIELD(inRangeColl);
+    READ_BOOL_FIELD(inRangeAsc);
+    READ_BOOL_FIELD(inRangeNullsFirst);
+    READ_UINT_FIELD(winref);
+    READ_BOOL_FIELD(copiedOrder);
+
+    READ_DONE();
+}
+
+/*
+ * _readRowMarkClause
+ */
+static xk_pg_parser_RowMarkClause *_readRowMarkClause(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_RowMarkClause);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_UINT_FIELD(rti);
+    READ_ENUM_FIELD(strength, xk_pg_parser_LockClauseStrength);
+    READ_ENUM_FIELD(waitPolicy, xk_pg_parser_LockWaitPolicy);
+    READ_BOOL_FIELD(pushedDown);
+
+    READ_DONE();
+}
+
+/*
+ * _readCommonTableExpr
+ */
+static xk_pg_parser_CommonTableExpr *_readCommonTableExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CommonTableExpr);
+
+    READ_STRING_FIELD(ctename);
+    READ_NODE_FIELD(aliascolnames);
+    READ_ENUM_FIELD(ctematerialized, xk_pg_parser_CTEMaterialize);
+    READ_NODE_FIELD(ctequery);
+    READ_LOCATION_FIELD(location);
+    READ_BOOL_FIELD(cterecursive);
+    READ_INT_FIELD(cterefcount);
+    READ_NODE_FIELD(ctecolnames);
+    READ_NODE_FIELD(ctecoltypes);
+    READ_NODE_FIELD(ctecoltypmods);
+    READ_NODE_FIELD(ctecolcollations);
+
+    READ_DONE();
+}
+
+/*
+ * _readSetOperationStmt
+ */
+static xk_pg_parser_SetOperationStmt *_readSetOperationStmt(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_SetOperationStmt);
+
+    READ_ENUM_FIELD(op, xk_pg_parser_SetOperation);
+    READ_BOOL_FIELD(all);
+    READ_NODE_FIELD(larg);
+    READ_NODE_FIELD(rarg);
+    READ_NODE_FIELD(colTypes);
+    READ_NODE_FIELD(colTypmods);
+    READ_NODE_FIELD(colCollations);
+    READ_NODE_FIELD(groupClauses);
+
+    READ_DONE();
+}
+
+
+/*
+ *    Stuff from primnodes.h.
+ */
+
+static xk_pg_parser_Alias *_readAlias(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Alias);
+
+    READ_STRING_FIELD(aliasname);
+    READ_NODE_FIELD(colnames);
+
+    READ_DONE();
+}
+
+static xk_pg_parser_RangeVar *_readRangeVar(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_RangeVar);
+
+    local_node->catalogname = NULL; /* not currently saved in output format */
+
+    READ_STRING_FIELD(schemaname);
+    READ_STRING_FIELD(relname);
+    READ_BOOL_FIELD(inh);
+    READ_CHAR_FIELD(relpersistence);
+    READ_NODE_FIELD(alias);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readTableFunc
+ */
+static xk_pg_parser_TableFunc *_readTableFunc(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_TableFunc);
+
+    READ_NODE_FIELD(ns_uris);
+    READ_NODE_FIELD(ns_names);
+    READ_NODE_FIELD(docexpr);
+    READ_NODE_FIELD(rowexpr);
+    READ_NODE_FIELD(colnames);
+    READ_NODE_FIELD(coltypes);
+    READ_NODE_FIELD(coltypmods);
+    READ_NODE_FIELD(colcollations);
+    READ_NODE_FIELD(colexprs);
+    READ_NODE_FIELD(coldefexprs);
+    READ_BITMAPSET_FIELD(notnulls);
+    READ_INT_FIELD(ordinalitycol);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+static xk_pg_parser_IntoClause *_readIntoClause(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_IntoClause);
+
+    READ_NODE_FIELD(rel);
+    READ_NODE_FIELD(colNames);
+    READ_STRING_FIELD(accessMethod);
+    READ_NODE_FIELD(options);
+    READ_ENUM_FIELD(onCommit, xk_pg_parser_OnCommitAction);
+    READ_STRING_FIELD(tableSpaceName);
+    READ_NODE_FIELD(viewQuery);
+    READ_BOOL_FIELD(skipData);
+
+    READ_DONE();
+}
+
+/*
+ * _readVar
+ */
+static xk_pg_parser_Var *_readVar(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Var);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_UINT_FIELD(varno);
+    READ_INT_FIELD(varattno);
+    READ_OID_FIELD(vartype);
+    READ_INT_FIELD(vartypmod);
+    READ_OID_FIELD(varcollid);
+    READ_UINT_FIELD(varlevelsup);
+    READ_UINT_FIELD(varnoold);
+    READ_INT_FIELD(varoattno);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readConst
+ */
+static xk_pg_parser_Const *_readConst(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Const);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_OID_FIELD(consttype);
+    READ_INT_FIELD(consttypmod);
+    READ_OID_FIELD(constcollid);
+    READ_INT_FIELD(constlen);
+    READ_BOOL_FIELD(constbyval);
+    READ_BOOL_FIELD(constisnull);
+    READ_LOCATION_FIELD(location);
+
+    token = xk_strtok(&length, xk_strtok_ptr); /* skip :constvalue */
+    if (local_node->constisnull)
+        token = xk_strtok(&length, xk_strtok_ptr); /* skip "<>" */
+    else
+        local_node->constvalue = readDatum(local_node->constbyval, xk_strtok_ptr, &local_node->constneedfree);
+
+    READ_DONE();
+}
+
+/*
+ * _readParam
+ */
+static xk_pg_parser_Param *_readParam(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Param);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_ENUM_FIELD(paramkind, xk_pg_parser_ParamKind);
+    READ_INT_FIELD(paramid);
+    READ_OID_FIELD(paramtype);
+    READ_INT_FIELD(paramtypmod);
+    READ_OID_FIELD(paramcollid);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readAggref
+ */
+static xk_pg_parser_Aggref *_readAggref(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Aggref);
+
+    READ_OID_FIELD(aggfnoid);
+    READ_OID_FIELD(aggtype);
+    READ_OID_FIELD(aggcollid);
+    READ_OID_FIELD(inputcollid);
+    READ_OID_FIELD(aggtranstype);
+    READ_NODE_FIELD(aggargtypes);
+    READ_NODE_FIELD(aggdirectargs);
+    READ_NODE_FIELD(args);
+    READ_NODE_FIELD(aggorder);
+    READ_NODE_FIELD(aggdistinct);
+    READ_NODE_FIELD(aggfilter);
+    READ_BOOL_FIELD(aggstar);
+    READ_BOOL_FIELD(aggvariadic);
+    READ_CHAR_FIELD(aggkind);
+    READ_UINT_FIELD(agglevelsup);
+    READ_ENUM_FIELD(aggsplit, xk_pg_parser_AggSplit);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readGroupingFunc
+ */
+static xk_pg_parser_GroupingFunc *_readGroupingFunc(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_GroupingFunc);
+
+    READ_NODE_FIELD(args);
+    READ_NODE_FIELD(refs);
+    READ_NODE_FIELD(cols);
+    READ_UINT_FIELD(agglevelsup);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readWindowFunc
+ */
+static xk_pg_parser_WindowFunc *_readWindowFunc(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_WindowFunc);
+
+    READ_OID_FIELD(winfnoid);
+    READ_OID_FIELD(wintype);
+    READ_OID_FIELD(wincollid);
+    READ_OID_FIELD(inputcollid);
+    READ_NODE_FIELD(args);
+    READ_NODE_FIELD(aggfilter);
+    READ_UINT_FIELD(winref);
+    READ_BOOL_FIELD(winstar);
+    READ_BOOL_FIELD(winagg);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readSubscriptingRef
+ */
+static xk_pg_parser_SubscriptingRef *_readSubscriptingRef(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_SubscriptingRef);
+
+    READ_OID_FIELD(refcontainertype);
+    READ_OID_FIELD(refelemtype);
+    READ_INT_FIELD(reftypmod);
+    READ_OID_FIELD(refcollid);
+    READ_NODE_FIELD(refupperindexpr);
+    READ_NODE_FIELD(reflowerindexpr);
+    READ_NODE_FIELD(refexpr);
+    READ_NODE_FIELD(refassgnexpr);
+
+    READ_DONE();
+}
+
+/*
+ * _readFuncExpr
+ */
+static xk_pg_parser_FuncExpr *_readFuncExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_FuncExpr);
+
+    READ_OID_FIELD(funcid);
+    READ_OID_FIELD(funcresulttype);
+    READ_BOOL_FIELD(funcretset);
+    READ_BOOL_FIELD(funcvariadic);
+    READ_ENUM_FIELD(funcformat, xk_pg_parser_CoercionForm);
+    READ_OID_FIELD(funccollid);
+    READ_OID_FIELD(inputcollid);
+    READ_NODE_FIELD(args);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readNamedArgExpr
+ */
+static xk_pg_parser_NamedArgExpr *_readNamedArgExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_NamedArgExpr);
+
+    READ_NODE_FIELD(arg);
+    READ_STRING_FIELD(name);
+    READ_INT_FIELD(argnumber);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readOpExpr
+ */
+static xk_pg_parser_OpExpr *_readOpExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_OpExpr);
+
+    READ_OID_FIELD(opno);
+    READ_OID_FIELD(opfuncid);
+    READ_OID_FIELD(opresulttype);
+    READ_BOOL_FIELD(opretset);
+    READ_OID_FIELD(opcollid);
+    READ_OID_FIELD(inputcollid);
+    READ_NODE_FIELD(args);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readDistinctExpr
+ */
+static xk_pg_parser_DistinctExpr *_readDistinctExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_DistinctExpr);
+
+    READ_OID_FIELD(opno);
+    READ_OID_FIELD(opfuncid);
+    READ_OID_FIELD(opresulttype);
+    READ_BOOL_FIELD(opretset);
+    READ_OID_FIELD(opcollid);
+    READ_OID_FIELD(inputcollid);
+    READ_NODE_FIELD(args);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readNullIfExpr
+ */
+static xk_pg_parser_NullIfExpr *_readNullIfExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_NullIfExpr);
+
+    READ_OID_FIELD(opno);
+    READ_OID_FIELD(opfuncid);
+    READ_OID_FIELD(opresulttype);
+    READ_BOOL_FIELD(opretset);
+    READ_OID_FIELD(opcollid);
+    READ_OID_FIELD(inputcollid);
+    READ_NODE_FIELD(args);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readScalarArrayOpExpr
+ */
+static xk_pg_parser_ScalarArrayOpExpr *_readScalarArrayOpExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_ScalarArrayOpExpr);
+
+    READ_OID_FIELD(opno);
+    READ_OID_FIELD(opfuncid);
+    READ_BOOL_FIELD(useOr);
+    READ_OID_FIELD(inputcollid);
+    READ_NODE_FIELD(args);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readBoolExpr
+ */
+static xk_pg_parser_BoolExpr *_readBoolExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_BoolExpr);
+
+    /* do-it-yourself enum representation */
+    token = xk_strtok(&length, xk_strtok_ptr); /* skip :boolop */
+    token = xk_strtok(&length, xk_strtok_ptr); /* get field value */
+    if (strncmp(token, "and", 3) == 0)
+        local_node->boolop = AND_EXPR;
+    else if (strncmp(token, "or", 2) == 0)
+        local_node->boolop = OR_EXPR;
+    else if (strncmp(token, "not", 3) == 0)
+        local_node->boolop = NOT_EXPR;
+    else
+    {
+        //printf("ERROR: unrecognized boolop \"%.*s\"\n", length, token);
+    }
+
+    READ_NODE_FIELD(args);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readSubLink
+ */
+static xk_pg_parser_SubLink *_readSubLink(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_SubLink);
+
+    READ_ENUM_FIELD(subLinkType, xk_pg_parser_SubLinkType);
+    READ_INT_FIELD(subLinkId);
+    READ_NODE_FIELD(testexpr);
+    READ_NODE_FIELD(operName);
+    READ_NODE_FIELD(subselect);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readSubPlan is not needed since it doesn't appear in stored rules.
+ */
+
+/*
+ * _readFieldSelect
+ */
+static xk_pg_parser_FieldSelect *_readFieldSelect(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_FieldSelect);
+
+    READ_NODE_FIELD(arg);
+    READ_INT_FIELD(fieldnum);
+    READ_OID_FIELD(resulttype);
+    READ_INT_FIELD(resulttypmod);
+    READ_OID_FIELD(resultcollid);
+
+    READ_DONE();
+}
+
+/*
+ * _readFieldStore
+ */
+static xk_pg_parser_FieldStore *_readFieldStore(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_FieldStore);
+
+    READ_NODE_FIELD(arg);
+    READ_NODE_FIELD(newvals);
+    READ_NODE_FIELD(fieldnums);
+    READ_OID_FIELD(resulttype);
+
+    READ_DONE();
+}
+
+/*
+ * _readRelabelType
+ */
+static xk_pg_parser_RelabelType *_readRelabelType(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_RelabelType);
+
+    READ_NODE_FIELD(arg);
+    READ_OID_FIELD(resulttype);
+    READ_INT_FIELD(resulttypmod);
+    READ_OID_FIELD(resultcollid);
+    READ_ENUM_FIELD(relabelformat, xk_pg_parser_CoercionForm);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readCoerceViaIO
+ */
+static xk_pg_parser_CoerceViaIO *_readCoerceViaIO(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CoerceViaIO);
+
+    READ_NODE_FIELD(arg);
+    READ_OID_FIELD(resulttype);
+    READ_OID_FIELD(resultcollid);
+    READ_ENUM_FIELD(coerceformat, xk_pg_parser_CoercionForm);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readArrayCoerceExpr
+ */
+static xk_pg_parser_ArrayCoerceExpr *_readArrayCoerceExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_ArrayCoerceExpr);
+
+    READ_NODE_FIELD(arg);
+    READ_NODE_FIELD(elemexpr);
+    READ_OID_FIELD(resulttype);
+    READ_INT_FIELD(resulttypmod);
+    READ_OID_FIELD(resultcollid);
+    READ_ENUM_FIELD(coerceformat, xk_pg_parser_CoercionForm);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readConvertRowtypeExpr
+ */
+static xk_pg_parser_ConvertRowtypeExpr *_readConvertRowtypeExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_ConvertRowtypeExpr);
+
+    READ_NODE_FIELD(arg);
+    READ_OID_FIELD(resulttype);
+    READ_ENUM_FIELD(convertformat, xk_pg_parser_CoercionForm);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readCollateExpr
+ */
+static xk_pg_parser_CollateExpr *_readCollateExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CollateExpr);
+
+    READ_NODE_FIELD(arg);
+    READ_OID_FIELD(collOid);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readCaseExpr
+ */
+static xk_pg_parser_CaseExpr *_readCaseExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CaseExpr);
+
+    READ_OID_FIELD(casetype);
+    READ_OID_FIELD(casecollid);
+    READ_NODE_FIELD(arg);
+    READ_NODE_FIELD(args);
+    READ_NODE_FIELD(defresult);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readCaseWhen
+ */
+static xk_pg_parser_CaseWhen *_readCaseWhen(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CaseWhen);
+
+    READ_NODE_FIELD(expr);
+    READ_NODE_FIELD(result);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readCaseTestExpr
+ */
+static xk_pg_parser_CaseTestExpr *_readCaseTestExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CaseTestExpr);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_OID_FIELD(typeId);
+    READ_INT_FIELD(typeMod);
+    READ_OID_FIELD(collation);
+
+    READ_DONE();
+}
+
+/*
+ * _readArrayExpr
+ */
+static xk_pg_parser_ArrayExpr *_readArrayExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_ArrayExpr);
+
+    READ_OID_FIELD(array_typeid);
+    READ_OID_FIELD(array_collid);
+    READ_OID_FIELD(element_typeid);
+    READ_NODE_FIELD(elements);
+    READ_BOOL_FIELD(multidims);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readRowExpr
+ */
+static xk_pg_parser_RowExpr *_readRowExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_RowExpr);
+
+    READ_NODE_FIELD(args);
+    READ_OID_FIELD(row_typeid);
+    READ_ENUM_FIELD(row_format, xk_pg_parser_CoercionForm);
+    READ_NODE_FIELD(colnames);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readRowCompareExpr
+ */
+static xk_pg_parser_RowCompareExpr *_readRowCompareExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_RowCompareExpr);
+
+    READ_ENUM_FIELD(rctype, xk_pg_parser_RowCompareType);
+    READ_NODE_FIELD(opnos);
+    READ_NODE_FIELD(opfamilies);
+    READ_NODE_FIELD(inputcollids);
+    READ_NODE_FIELD(largs);
+    READ_NODE_FIELD(rargs);
+
+    READ_DONE();
+}
+
+/*
+ * _readCoalesceExpr
+ */
+static xk_pg_parser_CoalesceExpr *_readCoalesceExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CoalesceExpr);
+
+    READ_OID_FIELD(coalescetype);
+    READ_OID_FIELD(coalescecollid);
+    READ_NODE_FIELD(args);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readMinMaxExpr
+ */
+static xk_pg_parser_MinMaxExpr *_readMinMaxExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_MinMaxExpr);
+
+    READ_OID_FIELD(minmaxtype);
+    READ_OID_FIELD(minmaxcollid);
+    READ_OID_FIELD(inputcollid);
+    READ_ENUM_FIELD(op, xk_pg_parser_MinMaxOp);
+    READ_NODE_FIELD(args);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readSQLValueFunction
+ */
+static xk_pg_parser_SQLValueFunction *_readSQLValueFunction(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_SQLValueFunction);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_ENUM_FIELD(op, xk_pg_parser_SQLValueFunctionOp);
+    READ_OID_FIELD(type);
+    READ_INT_FIELD(typmod);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readXmlExpr
+ */
+static xk_pg_parser_XmlExpr *_readXmlExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_XmlExpr);
+
+    READ_ENUM_FIELD(op, xk_pg_parser_XmlExprOp);
+    READ_STRING_FIELD(name);
+    READ_NODE_FIELD(named_args);
+    READ_NODE_FIELD(arg_names);
+    READ_NODE_FIELD(args);
+    READ_ENUM_FIELD(xmloption, xk_pg_parser_XmlOptionType);
+    READ_OID_FIELD(type);
+    READ_INT_FIELD(typmod);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readNullTest
+ */
+static xk_pg_parser_NullTest *_readNullTest(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_NullTest);
+
+    READ_NODE_FIELD(arg);
+    READ_ENUM_FIELD(nulltesttype, xk_pg_parser_NullTestType);
+    READ_BOOL_FIELD(argisrow);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readBooleanTest
+ */
+static xk_pg_parser_BooleanTest *_readBooleanTest(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_BooleanTest);
+
+    READ_NODE_FIELD(arg);
+    READ_ENUM_FIELD(booltesttype, xk_pg_parser_BoolTestType);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readCoerceToDomain
+ */
+static xk_pg_parser_CoerceToDomain *_readCoerceToDomain(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CoerceToDomain);
+
+    READ_NODE_FIELD(arg);
+    READ_OID_FIELD(resulttype);
+    READ_INT_FIELD(resulttypmod);
+    READ_OID_FIELD(resultcollid);
+    READ_ENUM_FIELD(coercionformat, xk_pg_parser_CoercionForm);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readCoerceToDomainValue
+ */
+static xk_pg_parser_CoerceToDomainValue *_readCoerceToDomainValue(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CoerceToDomainValue);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_OID_FIELD(typeId);
+    READ_INT_FIELD(typeMod);
+    READ_OID_FIELD(collation);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readSetToDefault
+ */
+static xk_pg_parser_SetToDefault *_readSetToDefault(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_SetToDefault);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_OID_FIELD(typeId);
+    READ_INT_FIELD(typeMod);
+    READ_OID_FIELD(collation);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readCurrentOfExpr
+ */
+static xk_pg_parser_CurrentOfExpr *_readCurrentOfExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CurrentOfExpr);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_UINT_FIELD(cvarno);
+    READ_STRING_FIELD(cursor_name);
+    READ_INT_FIELD(cursor_param);
+
+    READ_DONE();
+}
+
+/*
+ * _readNextValueExpr
+ */
+static xk_pg_parser_NextValueExpr *_readNextValueExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_NextValueExpr);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_OID_FIELD(seqid);
+    READ_OID_FIELD(typeId);
+
+    READ_DONE();
+}
+
+/*
+ * _readInferenceElem
+ */
+static xk_pg_parser_InferenceElem *_readInferenceElem(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_InferenceElem);
+
+    READ_NODE_FIELD(expr);
+    READ_OID_FIELD(infercollid);
+    READ_OID_FIELD(inferopclass);
+
+    READ_DONE();
+}
+
+/*
+ * _readTargetEntry
+ */
+static xk_pg_parser_TargetEntry *_readTargetEntry(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_TargetEntry);
+
+    READ_NODE_FIELD(expr);
+    READ_INT_FIELD(resno);
+    READ_STRING_FIELD(resname);
+    READ_UINT_FIELD(ressortgroupref);
+    READ_OID_FIELD(resorigtbl);
+    READ_INT_FIELD(resorigcol);
+    READ_BOOL_FIELD(resjunk);
+
+    READ_DONE();
+}
+
+/*
+ * _readRangeTblRef
+ */
+static xk_pg_parser_RangeTblRef *_readRangeTblRef(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_RangeTblRef);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_INT_FIELD(rtindex);
+
+    READ_DONE();
+}
+
+/*
+ * _readJoinExpr
+ */
+static xk_pg_parser_JoinExpr *_readJoinExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_JoinExpr);
+
+    READ_ENUM_FIELD(jointype, xk_pg_parser_JoinType);
+    READ_BOOL_FIELD(isNatural);
+    READ_NODE_FIELD(larg);
+    READ_NODE_FIELD(rarg);
+    READ_NODE_FIELD(usingClause);
+    READ_NODE_FIELD(quals);
+    READ_NODE_FIELD(alias);
+    READ_INT_FIELD(rtindex);
+
+    READ_DONE();
+}
+
+/*
+ * _readFromExpr
+ */
+static xk_pg_parser_FromExpr *_readFromExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_FromExpr);
+
+    READ_NODE_FIELD(fromlist);
+    READ_NODE_FIELD(quals);
+
+    READ_DONE();
+}
+
+/*
+ * _readOnConflictExpr
+ */
+static xk_pg_parser_OnConflictExpr *_readOnConflictExpr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_OnConflictExpr);
+
+    READ_ENUM_FIELD(action, xk_pg_parser_OnConflictAction);
+    READ_NODE_FIELD(arbiterElems);
+    READ_NODE_FIELD(arbiterWhere);
+    READ_OID_FIELD(constraint);
+    READ_NODE_FIELD(onConflictSet);
+    READ_NODE_FIELD(onConflictWhere);
+    READ_INT_FIELD(exclRelIndex);
+    READ_NODE_FIELD(exclRelTlist);
+
+    READ_DONE();
+}
+
+/*
+ *    Stuff from parsenodes.h.
+ */
+
+/*
+ * _readRangeTblEntry
+ */
+static xk_pg_parser_RangeTblEntry *_readRangeTblEntry(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_RangeTblEntry);
+
+    /* put alias + eref first to make dump more legible */
+    READ_NODE_FIELD(alias);
+    READ_NODE_FIELD(eref);
+    READ_ENUM_FIELD(rtekind, xk_pg_parser_RTEKind);
+
+    switch (local_node->rtekind)
+    {
+        case RTE_RELATION:
+            READ_OID_FIELD(relid);
+            READ_CHAR_FIELD(relkind);
+            READ_INT_FIELD(rellockmode);
+            READ_NODE_FIELD(tablesample);
+            break;
+        case RTE_SUBQUERY:
+            READ_NODE_FIELD(subquery);
+            READ_BOOL_FIELD(security_barrier);
+            break;
+        case RTE_JOIN:
+            READ_ENUM_FIELD(jointype, xk_pg_parser_JoinType);
+            READ_NODE_FIELD(joinaliasvars);
+            break;
+        case RTE_FUNCTION:
+            READ_NODE_FIELD(functions);
+            READ_BOOL_FIELD(funcordinality);
+            break;
+        case RTE_TABLEFUNC:
+            READ_NODE_FIELD(tablefunc);
+            /* The RTE must have a copy of the column type info, if any */
+            if (local_node->tablefunc)
+            {
+                xk_pg_parser_TableFunc  *tf = local_node->tablefunc;
+
+                local_node->coltypes = tf->coltypes;
+                local_node->coltypmods = tf->coltypmods;
+                local_node->colcollations = tf->colcollations;
+            }
+            break;
+        case RTE_VALUES:
+            READ_NODE_FIELD(values_lists);
+            READ_NODE_FIELD(coltypes);
+            READ_NODE_FIELD(coltypmods);
+            READ_NODE_FIELD(colcollations);
+            break;
+        case RTE_CTE:
+            READ_STRING_FIELD(ctename);
+            READ_UINT_FIELD(ctelevelsup);
+            READ_BOOL_FIELD(self_reference);
+            READ_NODE_FIELD(coltypes);
+            READ_NODE_FIELD(coltypmods);
+            READ_NODE_FIELD(colcollations);
+            break;
+        case RTE_NAMEDTUPLESTORE:
+            READ_STRING_FIELD(enrname);
+            READ_FLOAT_FIELD(enrtuples);
+            READ_OID_FIELD(relid);
+            READ_NODE_FIELD(coltypes);
+            READ_NODE_FIELD(coltypmods);
+            READ_NODE_FIELD(colcollations);
+            break;
+        case RTE_RESULT:
+            /* no extra fields */
+            break;
+        default:
+            //printf("ERROR: unrecognized RTE kind: %d\n",
+            //      (int32_t) local_node->rtekind);
+            break;
+    }
+
+    READ_BOOL_FIELD(lateral);
+    READ_BOOL_FIELD(inh);
+    READ_BOOL_FIELD(inFromCl);
+    READ_UINT_FIELD(requiredPerms);
+    READ_OID_FIELD(checkAsUser);
+    READ_BITMAPSET_FIELD(selectedCols);
+    READ_BITMAPSET_FIELD(insertedCols);
+    READ_BITMAPSET_FIELD(updatedCols);
+    READ_BITMAPSET_FIELD(extraUpdatedCols);
+    READ_NODE_FIELD(securityQuals);
+
+    READ_DONE();
+}
+
+/*
+ * _readRangeTblFunction
+ */
+static xk_pg_parser_RangeTblFunction *_readRangeTblFunction(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_RangeTblFunction);
+
+    READ_NODE_FIELD(funcexpr);
+    READ_INT_FIELD(funccolcount);
+    READ_NODE_FIELD(funccolnames);
+    READ_NODE_FIELD(funccoltypes);
+    READ_NODE_FIELD(funccoltypmods);
+    READ_NODE_FIELD(funccolcollations);
+    READ_BITMAPSET_FIELD(funcparams);
+
+    READ_DONE();
+}
+
+/*
+ * _readTableSampleClause
+ */
+static xk_pg_parser_TableSampleClause *_readTableSampleClause(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_TableSampleClause);
+
+    READ_OID_FIELD(tsmhandler);
+    READ_NODE_FIELD(args);
+    READ_NODE_FIELD(repeatable);
+
+    READ_DONE();
+}
+
+/*
+ * _readDefElem
+ */
+static xk_pg_parser_DefElem *_readDefElem(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_DefElem);
+
+    READ_STRING_FIELD(defnamespace);
+    READ_STRING_FIELD(defname);
+    READ_NODE_FIELD(arg);
+    READ_ENUM_FIELD(defaction, xk_pg_parser_DefElemAction);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ *    Stuff from plannodes.h.
+ */
+
+/*
+ * _readPlannedStmt
+ */
+static xk_pg_parser_PlannedStmt *_readPlannedStmt(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_PlannedStmt);
+
+    READ_ENUM_FIELD(commandType, xk_pg_parser_CmdType);
+    READ_UINT64_FIELD(queryId);
+    READ_BOOL_FIELD(hasReturning);
+    READ_BOOL_FIELD(hasModifyingCTE);
+    READ_BOOL_FIELD(canSetTag);
+    READ_BOOL_FIELD(transientPlan);
+    READ_BOOL_FIELD(dependsOnRole);
+    READ_BOOL_FIELD(parallelModeNeeded);
+    READ_INT_FIELD(jitFlags);
+    READ_NODE_FIELD(planTree);
+    READ_NODE_FIELD(rtable);
+    READ_NODE_FIELD(resultRelations);
+    READ_NODE_FIELD(rootResultRelations);
+    READ_NODE_FIELD(subplans);
+    READ_BITMAPSET_FIELD(rewindPlanIDs);
+    READ_NODE_FIELD(rowMarks);
+    READ_NODE_FIELD(relationOids);
+    READ_NODE_FIELD(invalItems);
+    READ_NODE_FIELD(paramExecTypes);
+    READ_NODE_FIELD(utilityStmt);
+    READ_LOCATION_FIELD(stmt_location);
+    READ_LOCATION_FIELD(stmt_len);
+
+    READ_DONE();
+}
+
+/*
+ * ReadCommonPlan
+ *    Assign the basic stuff of all nodes that inherit from Plan
+ */
+static void ReadCommonPlan(xk_pg_parser_Plan *local_node, char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_TEMP_LOCALS();
+
+    READ_FLOAT_FIELD(startup_cost);
+    READ_FLOAT_FIELD(total_cost);
+    READ_FLOAT_FIELD(plan_rows);
+    READ_INT_FIELD(plan_width);
+    READ_BOOL_FIELD(parallel_aware);
+    READ_BOOL_FIELD(parallel_safe);
+    READ_INT_FIELD(plan_node_id);
+    READ_NODE_FIELD(targetlist);
+    READ_NODE_FIELD(qual);
+    READ_NODE_FIELD(lefttree);
+    READ_NODE_FIELD(righttree);
+    READ_NODE_FIELD(initPlan);
+    READ_BITMAPSET_FIELD(extParam);
+    READ_BITMAPSET_FIELD(allParam);
+}
+
+/*
+ * _readPlan
+ */
+static xk_pg_parser_Plan *_readPlan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS_NO_FIELDS(xk_pg_parser_Plan);
+
+    ReadCommonPlan(local_node, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_DONE();
+}
+
+/*
+ * _readResult
+ */
+static xk_pg_parser_Result *_readResult(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Result);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(resconstantqual);
+
+    READ_DONE();
+}
+
+/*
+ * _readProjectSet
+ */
+static xk_pg_parser_ProjectSet *_readProjectSet(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS_NO_FIELDS(xk_pg_parser_ProjectSet);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_DONE();
+}
+
+/*
+ * _readModifyTable
+ */
+static xk_pg_parser_ModifyTable *_readModifyTable(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_ModifyTable);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_ENUM_FIELD(operation, xk_pg_parser_CmdType);
+    READ_BOOL_FIELD(canSetTag);
+    READ_UINT_FIELD(nominalRelation);
+    READ_UINT_FIELD(rootRelation);
+    READ_BOOL_FIELD(partColsUpdated);
+    READ_NODE_FIELD(resultRelations);
+    READ_INT_FIELD(resultRelIndex);
+    READ_INT_FIELD(rootResultRelIndex);
+    READ_NODE_FIELD(plans);
+    READ_NODE_FIELD(withCheckOptionLists);
+    READ_NODE_FIELD(returningLists);
+    READ_NODE_FIELD(fdwPrivLists);
+    READ_BITMAPSET_FIELD(fdwDirectModifyPlans);
+    READ_NODE_FIELD(rowMarks);
+    READ_INT_FIELD(epqParam);
+    READ_ENUM_FIELD(onConflictAction, xk_pg_parser_OnConflictAction);
+    READ_NODE_FIELD(arbiterIndexes);
+    READ_NODE_FIELD(onConflictSet);
+    READ_NODE_FIELD(onConflictWhere);
+    READ_UINT_FIELD(exclRelRTI);
+    READ_NODE_FIELD(exclRelTlist);
+
+    READ_DONE();
+}
+
+/*
+ * _readAppend
+ */
+static xk_pg_parser_Append *_readAppend(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Append);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(appendplans);
+    READ_INT_FIELD(first_partial_plan);
+    READ_NODE_FIELD(part_prune_info);
+
+    READ_DONE();
+}
+
+/*
+ * _readMergeAppend
+ */
+static xk_pg_parser_MergeAppend *_readMergeAppend(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_MergeAppend);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(mergeplans);
+    READ_INT_FIELD(numCols);
+    READ_ATTRNUMBER_ARRAY(sortColIdx, local_node->numCols);
+    READ_OID_ARRAY(sortOperators, local_node->numCols);
+    READ_OID_ARRAY(collations, local_node->numCols);
+    READ_BOOL_ARRAY(nullsFirst, local_node->numCols);
+    READ_NODE_FIELD(part_prune_info);
+
+    READ_DONE();
+}
+
+/*
+ * _readRecursiveUnion
+ */
+static xk_pg_parser_RecursiveUnion *_readRecursiveUnion(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_RecursiveUnion);
+
+        ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_INT_FIELD(wtParam);
+    READ_INT_FIELD(numCols);
+    READ_ATTRNUMBER_ARRAY(dupColIdx, local_node->numCols);
+    READ_OID_ARRAY(dupOperators, local_node->numCols);
+    READ_OID_ARRAY(dupCollations, local_node->numCols);
+    READ_LONG_FIELD(numGroups);
+
+    READ_DONE();
+}
+
+/*
+ * _readBitmapAnd
+ */
+static xk_pg_parser_BitmapAnd *_readBitmapAnd(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_BitmapAnd);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(bitmapplans);
+
+    READ_DONE();
+}
+
+/*
+ * _readBitmapOr
+ */
+static xk_pg_parser_BitmapOr *_readBitmapOr(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_BitmapOr);
+
+        ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_BOOL_FIELD(isshared);
+    READ_NODE_FIELD(bitmapplans);
+
+    READ_DONE();
+}
+
+/*
+ * ReadCommonScan
+ *    Assign the basic stuff of all nodes that inherit from Scan
+ */
+static void ReadCommonScan(xk_pg_parser_Scan *local_node, char**xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_TEMP_LOCALS();
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_UINT_FIELD(scanrelid);
+}
+
+/*
+ * _readScan
+ */
+static xk_pg_parser_Scan *_readScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS_NO_FIELDS(xk_pg_parser_Scan);
+
+    ReadCommonScan(local_node, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_DONE();
+}
+
+/*
+ * _readSeqScan
+ */
+static xk_pg_parser_SeqScan *_readSeqScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS_NO_FIELDS(xk_pg_parser_SeqScan);
+
+    ReadCommonScan(local_node, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_DONE();
+}
+
+/*
+ * _readSampleScan
+ */
+static xk_pg_parser_SampleScan *_readSampleScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_SampleScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(tablesample);
+
+    READ_DONE();
+}
+
+/*
+ * _readIndexScan
+ */
+static xk_pg_parser_IndexScan *_readIndexScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_IndexScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_OID_FIELD(indexid);
+    READ_NODE_FIELD(indexqual);
+    READ_NODE_FIELD(indexqualorig);
+    READ_NODE_FIELD(indexorderby);
+    READ_NODE_FIELD(indexorderbyorig);
+    READ_NODE_FIELD(indexorderbyops);
+    READ_ENUM_FIELD(indexorderdir, xk_pg_parser_ScanDirection);
+
+    READ_DONE();
+}
+
+/*
+ * _readIndexOnlyScan
+ */
+static xk_pg_parser_IndexOnlyScan *_readIndexOnlyScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_IndexOnlyScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_OID_FIELD(indexid);
+    READ_NODE_FIELD(indexqual);
+    READ_NODE_FIELD(indexorderby);
+    READ_NODE_FIELD(indextlist);
+    READ_ENUM_FIELD(indexorderdir, xk_pg_parser_ScanDirection);
+
+    READ_DONE();
+}
+
+/*
+ * _readBitmapIndexScan
+ */
+static xk_pg_parser_BitmapIndexScan *_readBitmapIndexScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_BitmapIndexScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_OID_FIELD(indexid);
+    READ_BOOL_FIELD(isshared);
+    READ_NODE_FIELD(indexqual);
+    READ_NODE_FIELD(indexqualorig);
+
+    READ_DONE();
+}
+
+/*
+ * _readBitmapHeapScan
+ */
+static xk_pg_parser_BitmapHeapScan *_readBitmapHeapScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_BitmapHeapScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(bitmapqualorig);
+
+    READ_DONE();
+}
+
+/*
+ * _readTidScan
+ */
+static xk_pg_parser_TidScan *_readTidScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_TidScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(tidquals);
+
+    READ_DONE();
+}
+
+/*
+ * _readSubqueryScan
+ */
+static xk_pg_parser_SubqueryScan *_readSubqueryScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_SubqueryScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(subplan);
+
+    READ_DONE();
+}
+
+/*
+ * _readFunctionScan
+ */
+static xk_pg_parser_FunctionScan *_readFunctionScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_FunctionScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(functions);
+    READ_BOOL_FIELD(funcordinality);
+
+    READ_DONE();
+}
+
+/*
+ * _readValuesScan
+ */
+static xk_pg_parser_ValuesScan *_readValuesScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_ValuesScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(values_lists);
+
+    READ_DONE();
+}
+
+/*
+ * _readTableFuncScan
+ */
+static xk_pg_parser_TableFuncScan *_readTableFuncScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_TableFuncScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(tablefunc);
+
+    READ_DONE();
+}
+
+/*
+ * _readCteScan
+ */
+static xk_pg_parser_CteScan *_readCteScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CteScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_INT_FIELD(ctePlanId);
+    READ_INT_FIELD(cteParam);
+
+    READ_DONE();
+}
+
+/*
+ * _readNamedTuplestoreScan
+ */
+static xk_pg_parser_NamedTuplestoreScan *_readNamedTuplestoreScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_NamedTuplestoreScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_STRING_FIELD(enrname);
+
+    READ_DONE();
+}
+
+/*
+ * _readWorkTableScan
+ */
+static xk_pg_parser_WorkTableScan *_readWorkTableScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_WorkTableScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_INT_FIELD(wtParam);
+
+    READ_DONE();
+}
+
+/*
+ * _readForeignScan
+ */
+static xk_pg_parser_ForeignScan *_readForeignScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_ForeignScan);
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_ENUM_FIELD(operation, xk_pg_parser_CmdType);
+    READ_OID_FIELD(fs_server);
+    READ_NODE_FIELD(fdw_exprs);
+    READ_NODE_FIELD(fdw_private);
+    READ_NODE_FIELD(fdw_scan_tlist);
+    READ_NODE_FIELD(fdw_recheck_quals);
+    READ_BITMAPSET_FIELD(fs_relids);
+    READ_BOOL_FIELD(fsSystemCol);
+
+    READ_DONE();
+}
+
+/*
+ * _readCustomScan
+ */
+#if 0
+static xk_pg_parser_CustomScan *_readCustomScan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_CustomScan);
+    char       *custom_name;
+    const xk_pg_parser_CustomScanMethods *methods;
+
+    ReadCommonScan(&local_node->scan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_UINT_FIELD(flags);
+    READ_NODE_FIELD(custom_plans);
+    READ_NODE_FIELD(custom_exprs);
+    READ_NODE_FIELD(custom_private);
+    READ_NODE_FIELD(custom_scan_tlist);
+    READ_BITMAPSET_FIELD(custom_relids);
+
+    /* Lookup CustomScanMethods by CustomName */
+    token = xk_strtok(&length, xk_strtok_ptr); /* skip methods: */
+    token = xk_strtok(&length, xk_strtok_ptr); /* CustomName */
+    custom_name = nullable_string(token, length);
+    methods = GetCustomScanMethods(custom_name, false);
+    local_node->methods = methods;
+
+    READ_DONE();
+}
+#endif
+
+/*
+ * ReadCommonJoin
+ *    Assign the basic stuff of all nodes that inherit from Join
+ */
+static void ReadCommonJoin(xk_pg_parser_Join *local_node, char** xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_TEMP_LOCALS();
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_ENUM_FIELD(jointype, xk_pg_parser_JoinType);
+    READ_BOOL_FIELD(inner_unique);
+    READ_NODE_FIELD(joinqual);
+}
+
+/*
+ * _readJoin
+ */
+static xk_pg_parser_Join *_readJoin(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS_NO_FIELDS(xk_pg_parser_Join);
+
+    ReadCommonJoin(local_node, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_DONE();
+}
+
+/*
+ * _readNestLoop
+ */
+static xk_pg_parser_NestLoop *_readNestLoop(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_NestLoop);
+
+    ReadCommonJoin(&local_node->join, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(nestParams);
+
+    READ_DONE();
+}
+
+/*
+ * _readMergeJoin
+ */
+static xk_pg_parser_MergeJoin *_readMergeJoin(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    int32_t            numCols;
+
+    READ_LOCALS(xk_pg_parser_MergeJoin);
+
+    ReadCommonJoin(&local_node->join, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_BOOL_FIELD(skip_mark_restore);
+    READ_NODE_FIELD(mergeclauses);
+
+    numCols = xk_pg_parser_list_length(local_node->mergeclauses);
+
+    READ_OID_ARRAY(mergeFamilies, numCols);
+    READ_OID_ARRAY(mergeCollations, numCols);
+    READ_INT_ARRAY(mergeStrategies, numCols);
+    READ_BOOL_ARRAY(mergeNullsFirst, numCols);
+
+    READ_DONE();
+}
+
+/*
+ * _readHashJoin
+ */
+static xk_pg_parser_HashJoin *_readHashJoin(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_HashJoin);
+
+    ReadCommonJoin(&local_node->join, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(hashclauses);
+    READ_NODE_FIELD(hashoperators);
+    READ_NODE_FIELD(hashcollations);
+    READ_NODE_FIELD(hashkeys);
+
+    READ_DONE();
+}
+
+/*
+ * _readMaterial
+ */
+static xk_pg_parser_Material *_readMaterial(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS_NO_FIELDS(xk_pg_parser_Material);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_DONE();
+}
+
+/*
+ * _readSort
+ */
+static xk_pg_parser_Sort *_readSort(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Sort);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_INT_FIELD(numCols);
+    READ_ATTRNUMBER_ARRAY(sortColIdx, local_node->numCols);
+    READ_OID_ARRAY(sortOperators, local_node->numCols);
+    READ_OID_ARRAY(collations, local_node->numCols);
+    READ_BOOL_ARRAY(nullsFirst, local_node->numCols);
+
+    READ_DONE();
+}
+
+/*
+ * _readGroup
+ */
+static xk_pg_parser_Group *_readGroup(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Group);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_INT_FIELD(numCols);
+    READ_ATTRNUMBER_ARRAY(grpColIdx, local_node->numCols);
+    READ_OID_ARRAY(grpOperators, local_node->numCols);
+    READ_OID_ARRAY(grpCollations, local_node->numCols);
+
+    READ_DONE();
+}
+
+/*
+ * _readAgg
+ */
+static xk_pg_parser_Agg *_readAgg(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Agg);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_ENUM_FIELD(aggstrategy, xk_pg_parser_AggStrategy);
+    READ_ENUM_FIELD(aggsplit, xk_pg_parser_AggSplit);
+    READ_INT_FIELD(numCols);
+    READ_ATTRNUMBER_ARRAY(grpColIdx, local_node->numCols);
+    READ_OID_ARRAY(grpOperators, local_node->numCols);
+    READ_OID_ARRAY(grpCollations, local_node->numCols);
+    READ_LONG_FIELD(numGroups);
+    READ_BITMAPSET_FIELD(aggParams);
+    READ_NODE_FIELD(groupingSets);
+    READ_NODE_FIELD(chain);
+
+    READ_DONE();
+}
+
+/*
+ * _readWindowAgg
+ */
+static xk_pg_parser_WindowAgg *_readWindowAgg(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_WindowAgg);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_UINT_FIELD(winref);
+    READ_INT_FIELD(partNumCols);
+    READ_ATTRNUMBER_ARRAY(partColIdx, local_node->partNumCols);
+    READ_OID_ARRAY(partOperators, local_node->partNumCols);
+    READ_OID_ARRAY(partCollations, local_node->partNumCols);
+    READ_INT_FIELD(ordNumCols);
+    READ_ATTRNUMBER_ARRAY(ordColIdx, local_node->ordNumCols);
+    READ_OID_ARRAY(ordOperators, local_node->ordNumCols);
+    READ_OID_ARRAY(ordCollations, local_node->ordNumCols);
+    READ_INT_FIELD(frameOptions);
+    READ_NODE_FIELD(startOffset);
+    READ_NODE_FIELD(endOffset);
+    READ_OID_FIELD(startInRangeFunc);
+    READ_OID_FIELD(endInRangeFunc);
+    READ_OID_FIELD(inRangeColl);
+    READ_BOOL_FIELD(inRangeAsc);
+    READ_BOOL_FIELD(inRangeNullsFirst);
+
+    READ_DONE();
+}
+
+/*
+ * _readUnique
+ */
+static xk_pg_parser_Unique *_readUnique(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Unique);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_INT_FIELD(numCols);
+    READ_ATTRNUMBER_ARRAY(uniqColIdx, local_node->numCols);
+    READ_OID_ARRAY(uniqOperators, local_node->numCols);
+    READ_OID_ARRAY(uniqCollations, local_node->numCols);
+
+    READ_DONE();
+}
+
+/*
+ * _readGather
+ */
+static xk_pg_parser_Gather *_readGather(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Gather);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_INT_FIELD(num_workers);
+    READ_INT_FIELD(rescan_param);
+    READ_BOOL_FIELD(single_copy);
+    READ_BOOL_FIELD(invisible);
+    READ_BITMAPSET_FIELD(initParam);
+
+    READ_DONE();
+}
+
+/*
+ * _readGatherMerge
+ */
+static xk_pg_parser_GatherMerge *_readGatherMerge(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_GatherMerge);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_INT_FIELD(num_workers);
+    READ_INT_FIELD(rescan_param);
+    READ_INT_FIELD(numCols);
+    READ_ATTRNUMBER_ARRAY(sortColIdx, local_node->numCols);
+    READ_OID_ARRAY(sortOperators, local_node->numCols);
+    READ_OID_ARRAY(collations, local_node->numCols);
+    READ_BOOL_ARRAY(nullsFirst, local_node->numCols);
+    READ_BITMAPSET_FIELD(initParam);
+
+    READ_DONE();
+}
+
+/*
+ * _readHash
+ */
+static xk_pg_parser_Hash *_readHash(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Hash);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(hashkeys);
+    READ_OID_FIELD(skewTable);
+    READ_INT_FIELD(skewColumn);
+    READ_BOOL_FIELD(skewInherit);
+    READ_FLOAT_FIELD(rows_total);
+
+    READ_DONE();
+}
+
+/*
+ * _readSetOp
+ */
+static xk_pg_parser_SetOp *_readSetOp(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_SetOp);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_ENUM_FIELD(cmd, xk_pg_parser_SetOpCmd);
+    READ_ENUM_FIELD(strategy, xk_pg_parser_SetOpStrategy);
+    READ_INT_FIELD(numCols);
+    READ_ATTRNUMBER_ARRAY(dupColIdx, local_node->numCols);
+    READ_OID_ARRAY(dupOperators, local_node->numCols);
+    READ_OID_ARRAY(dupCollations, local_node->numCols);
+    READ_INT_FIELD(flagColIdx);
+    READ_INT_FIELD(firstFlag);
+    READ_LONG_FIELD(numGroups);
+
+    READ_DONE();
+}
+
+/*
+ * _readLockRows
+ */
+static xk_pg_parser_LockRows *_readLockRows(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_LockRows);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(rowMarks);
+    READ_INT_FIELD(epqParam);
+
+    READ_DONE();
+}
+
+/*
+ * _readLimit
+ */
+static xk_pg_parser_Limit *_readLimit(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_Limit);
+
+    ReadCommonPlan(&local_node->plan, xk_strtok_ptr, dbtype, dbversion);
+
+    READ_NODE_FIELD(limitOffset);
+    READ_NODE_FIELD(limitCount);
+
+    READ_DONE();
+}
+
+/*
+ * _readNestLoopParam
+ */
+static xk_pg_parser_NestLoopParam *_readNestLoopParam(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_NestLoopParam);
+
+    READ_INT_FIELD(paramno);
+    READ_NODE_FIELD(paramval);
+
+    READ_DONE();
+}
+
+/*
+ * _readPlanRowMark
+ */
+static xk_pg_parser_PlanRowMark *_readPlanRowMark(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_PlanRowMark);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_UINT_FIELD(rti);
+    READ_UINT_FIELD(prti);
+    READ_UINT_FIELD(rowmarkId);
+    READ_ENUM_FIELD(markType, xk_pg_parser_RowMarkType);
+    READ_INT_FIELD(allMarkTypes);
+    READ_ENUM_FIELD(strength, xk_pg_parser_LockClauseStrength);
+    READ_ENUM_FIELD(waitPolicy, xk_pg_parser_LockWaitPolicy);
+    READ_BOOL_FIELD(isParent);
+
+    READ_DONE();
+}
+
+static xk_pg_parser_PartitionPruneInfo *_readPartitionPruneInfo(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_PartitionPruneInfo);
+
+    READ_NODE_FIELD(prune_infos);
+    READ_BITMAPSET_FIELD(other_subplans);
+
+    READ_DONE();
+}
+
+static xk_pg_parser_PartitionedRelPruneInfo *_readPartitionedRelPruneInfo(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_PartitionedRelPruneInfo);
+
+    READ_UINT_FIELD(rtindex);
+    READ_BITMAPSET_FIELD(present_parts);
+    READ_INT_FIELD(nparts);
+    READ_INT_ARRAY(subplan_map, local_node->nparts);
+    READ_INT_ARRAY(subpart_map, local_node->nparts);
+    READ_OID_ARRAY(relid_map, local_node->nparts);
+    READ_NODE_FIELD(initial_pruning_steps);
+    READ_NODE_FIELD(exec_pruning_steps);
+    READ_BITMAPSET_FIELD(execparamids);
+
+    READ_DONE();
+}
+
+static xk_pg_parser_PartitionPruneStepOp *_readPartitionPruneStepOp(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_PartitionPruneStepOp);
+
+    READ_INT_FIELD(step.step_id);
+    READ_INT_FIELD(opstrategy);
+    READ_NODE_FIELD(exprs);
+    READ_NODE_FIELD(cmpfns);
+    READ_BITMAPSET_FIELD(nullkeys);
+
+    READ_DONE();
+}
+
+static xk_pg_parser_PartitionPruneStepCombine *_readPartitionPruneStepCombine(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_PartitionPruneStepCombine);
+
+    READ_INT_FIELD(step.step_id);
+    READ_ENUM_FIELD(combineOp, xk_pg_parser_PartitionPruneCombineOp);
+    READ_NODE_FIELD(source_stepids);
+
+    READ_DONE();
+}
+
+/*
+ * _readPlanInvalItem
+ */
+static xk_pg_parser_PlanInvalItem *_readPlanInvalItem(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_PlanInvalItem);
+
+    XK_PG_PARSER_UNUSED(dbtype);
+    XK_PG_PARSER_UNUSED(dbversion);
+
+    READ_INT_FIELD(cacheId);
+    READ_UINT_FIELD(hashValue);
+
+    READ_DONE();
+}
+
+/*
+ * _readSubPlan
+ */
+static xk_pg_parser_SubPlan *_readSubPlan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_SubPlan);
+
+    READ_ENUM_FIELD(subLinkType, xk_pg_parser_SubLinkType);
+    READ_NODE_FIELD(testexpr);
+    READ_NODE_FIELD(paramIds);
+    READ_INT_FIELD(plan_id);
+    READ_STRING_FIELD(plan_name);
+    READ_OID_FIELD(firstColType);
+    READ_INT_FIELD(firstColTypmod);
+    READ_OID_FIELD(firstColCollation);
+    READ_BOOL_FIELD(useHashTable);
+    READ_BOOL_FIELD(unknownEqFalse);
+    READ_BOOL_FIELD(parallel_safe);
+    READ_NODE_FIELD(setParam);
+    READ_NODE_FIELD(parParam);
+    READ_NODE_FIELD(args);
+    READ_FLOAT_FIELD(startup_cost);
+    READ_FLOAT_FIELD(per_call_cost);
+
+    READ_DONE();
+}
+
+/*
+ * _readAlternativeSubPlan
+ */
+static xk_pg_parser_AlternativeSubPlan *_readAlternativeSubPlan(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_AlternativeSubPlan);
+
+    READ_NODE_FIELD(subplans);
+
+    READ_DONE();
+}
+
+/* ExtensibleNode无法在前端解析 */
+#if 0
+/*
+ * Get the methods for a given type of extensible node.
+ */
+static ExtensibleNodeMethods *GetExtensibleNodeMethods(const char *extnodename,
+                                                       bool missing_ok)
+{
+    return (const ExtensibleNodeMethods *)
+        GetExtensibleNodeEntry(extensible_node_methods,
+                               extnodename,
+                               missing_ok);
+}
+
+/*
+ * _readExtensibleNode
+ */
+static xk_pg_parser_ExtensibleNode *
+_readExtensibleNode(char **xk_strtok_ptr)
+{
+    const xk_pg_parser_ExtensibleNodeMethods *methods;
+    xk_pg_parser_ExtensibleNode *local_node;
+    const char *extnodename;
+
+    READ_TEMP_LOCALS();
+
+    token = xk_strtok(&length, xk_strtok_ptr); /* skip :extnodename */
+    token = xk_strtok(&length, xk_strtok_ptr); /* get extnodename */
+
+    extnodename = nullable_string(token, length);
+    if (!extnodename)
+        printf("ERROR: extnodename has to be supplied\n");
+    methods = GetExtensibleNodeMethods(extnodename, false);
+
+    local_node = (ExtensibleNode *) newNode(methods->node_size,
+                                            T_ExtensibleNode);
+    local_node->extnodename = extnodename;
+
+    /* deserialize the private fields */
+    methods->nodeRead(local_node);
+
+    READ_DONE();
+}
+#endif
+/*
+ * _readPartitionBoundSpec
+ */
+static xk_pg_parser_PartitionBoundSpec *_readPartitionBoundSpec(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_PartitionBoundSpec);
+
+    READ_CHAR_FIELD(strategy);
+    READ_BOOL_FIELD(is_default);
+    READ_INT_FIELD(modulus);
+    READ_INT_FIELD(remainder);
+    READ_NODE_FIELD(listdatums);
+    READ_NODE_FIELD(lowerdatums);
+    READ_NODE_FIELD(upperdatums);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * _readPartitionRangeDatum
+ */
+static xk_pg_parser_PartitionRangeDatum *_readPartitionRangeDatum(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    READ_LOCALS(xk_pg_parser_PartitionRangeDatum);
+
+    READ_ENUM_FIELD(kind, xk_pg_parser_PartitionRangeDatumKind);
+    READ_NODE_FIELD(value);
+    READ_LOCATION_FIELD(location);
+
+    READ_DONE();
+}
+
+/*
+ * parseNodeString
+ *
+ * Given a character string representing a node tree, parseNodeString creates
+ * the internal node structure.
+ *
+ * The string to be read must already have been loaded into xk_strtok().
+ */
+static xk_pg_parser_Node *parseNodeString(char **xk_strtok_ptr, int16_t dbtype, char *dbversion)
+{
+    void       *return_value;
+
+    READ_TEMP_LOCALS();
+
+    token = xk_strtok(&length, xk_strtok_ptr);
+
+#define MATCH(tokname, namelen) \
+    (length == namelen && memcmp(token, tokname, namelen) == 0)
+
+    if (MATCH("QUERY", 5))
+        return_value = _readQuery(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("WITHCHECKOPTION", 15))
+        return_value = _readWithCheckOption(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SORTGROUPCLAUSE", 15))
+        return_value = _readSortGroupClause(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("GROUPINGSET", 11))
+        return_value = _readGroupingSet(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("WINDOWCLAUSE", 12))
+        return_value = _readWindowClause(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("ROWMARKCLAUSE", 13))
+        return_value = _readRowMarkClause(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("COMMONTABLEEXPR", 15))
+        return_value = _readCommonTableExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SETOPERATIONSTMT", 16))
+        return_value = _readSetOperationStmt(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("ALIAS", 5))
+        return_value = _readAlias(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("RANGEVAR", 8))
+        return_value = _readRangeVar(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("INTOCLAUSE", 10))
+        return_value = _readIntoClause(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("TABLEFUNC", 9))
+        return_value = _readTableFunc(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("VAR", 3))
+        return_value = _readVar(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("CONST", 5))
+        return_value = _readConst(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PARAM", 5))
+        return_value = _readParam(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("AGGREF", 6))
+        return_value = _readAggref(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("GROUPINGFUNC", 12))
+        return_value = _readGroupingFunc(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("WINDOWFUNC", 10))
+        return_value = _readWindowFunc(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SUBSCRIPTINGREF", 15))
+        return_value = _readSubscriptingRef(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("FUNCEXPR", 8))
+        return_value = _readFuncExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("NAMEDARGEXPR", 12))
+        return_value = _readNamedArgExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("OPEXPR", 6))
+        return_value = _readOpExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("DISTINCTEXPR", 12))
+        return_value = _readDistinctExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("NULLIFEXPR", 10))
+        return_value = _readNullIfExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SCALARARRAYOPEXPR", 17))
+        return_value = _readScalarArrayOpExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("BOOLEXPR", 8))
+        return_value = _readBoolExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SUBLINK", 7))
+        return_value = _readSubLink(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("FIELDSELECT", 11))
+        return_value = _readFieldSelect(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("FIELDSTORE", 10))
+        return_value = _readFieldStore(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("RELABELTYPE", 11))
+        return_value = _readRelabelType(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("COERCEVIAIO", 11))
+        return_value = _readCoerceViaIO(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("ARRAYCOERCEEXPR", 15))
+        return_value = _readArrayCoerceExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("CONVERTROWTYPEEXPR", 18))
+        return_value = _readConvertRowtypeExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("COLLATE", 7))
+        return_value = _readCollateExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("CASE", 4))
+        return_value = _readCaseExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("WHEN", 4))
+        return_value = _readCaseWhen(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("CASETESTEXPR", 12))
+        return_value = _readCaseTestExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("ARRAY", 5))
+        return_value = _readArrayExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("ROW", 3))
+        return_value = _readRowExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("ROWCOMPARE", 10))
+        return_value = _readRowCompareExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("COALESCE", 8))
+        return_value = _readCoalesceExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("MINMAX", 6))
+        return_value = _readMinMaxExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SQLVALUEFUNCTION", 16))
+        return_value = _readSQLValueFunction(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("XMLEXPR", 7))
+        return_value = _readXmlExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("NULLTEST", 8))
+        return_value = _readNullTest(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("BOOLEANTEST", 11))
+        return_value = _readBooleanTest(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("COERCETODOMAIN", 14))
+        return_value = _readCoerceToDomain(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("COERCETODOMAINVALUE", 19))
+        return_value = _readCoerceToDomainValue(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SETTODEFAULT", 12))
+        return_value = _readSetToDefault(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("CURRENTOFEXPR", 13))
+        return_value = _readCurrentOfExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("NEXTVALUEEXPR", 13))
+        return_value = _readNextValueExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("INFERENCEELEM", 13))
+        return_value = _readInferenceElem(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("TARGETENTRY", 11))
+        return_value = _readTargetEntry(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("RANGETBLREF", 11))
+        return_value = _readRangeTblRef(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("JOINEXPR", 8))
+        return_value = _readJoinExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("FROMEXPR", 8))
+        return_value = _readFromExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("ONCONFLICTEXPR", 14))
+        return_value = _readOnConflictExpr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("RTE", 3))
+        return_value = _readRangeTblEntry(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("RANGETBLFUNCTION", 16))
+        return_value = _readRangeTblFunction(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("TABLESAMPLECLAUSE", 17))
+        return_value = _readTableSampleClause(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("NOTIFY", 6))
+        return_value = _readNotifyStmt(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("DEFELEM", 7))
+        return_value = _readDefElem(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("DECLARECURSOR", 13))
+        return_value = _readDeclareCursorStmt(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PLANNEDSTMT", 11))
+        return_value = _readPlannedStmt(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PLAN", 4))
+        return_value = _readPlan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("RESULT", 6))
+        return_value = _readResult(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PROJECTSET", 10))
+        return_value = _readProjectSet(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("MODIFYTABLE", 11))
+        return_value = _readModifyTable(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("APPEND", 6))
+        return_value = _readAppend(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("MERGEAPPEND", 11))
+        return_value = _readMergeAppend(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("RECURSIVEUNION", 14))
+        return_value = _readRecursiveUnion(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("BITMAPAND", 9))
+        return_value = _readBitmapAnd(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("BITMAPOR", 8))
+        return_value = _readBitmapOr(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SCAN", 4))
+        return_value = _readScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SEQSCAN", 7))
+        return_value = _readSeqScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SAMPLESCAN", 10))
+        return_value = _readSampleScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("INDEXSCAN", 9))
+        return_value = _readIndexScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("INDEXONLYSCAN", 13))
+        return_value = _readIndexOnlyScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("BITMAPINDEXSCAN", 15))
+        return_value = _readBitmapIndexScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("BITMAPHEAPSCAN", 14))
+        return_value = _readBitmapHeapScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("TIDSCAN", 7))
+        return_value = _readTidScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SUBQUERYSCAN", 12))
+        return_value = _readSubqueryScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("FUNCTIONSCAN", 12))
+        return_value = _readFunctionScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("VALUESSCAN", 10))
+        return_value = _readValuesScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("TABLEFUNCSCAN", 13))
+        return_value = _readTableFuncScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("CTESCAN", 7))
+        return_value = _readCteScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("NAMEDTUPLESTORESCAN", 19))
+        return_value = _readNamedTuplestoreScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("WORKTABLESCAN", 13))
+        return_value = _readWorkTableScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("FOREIGNSCAN", 11))
+        return_value = _readForeignScan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("CUSTOMSCAN", 10))
+    {
+        //printf("ERROR: can't parser CustomScan in front\n");
+        return_value = NULL;
+    }
+    else if (MATCH("JOIN", 4))
+        return_value = _readJoin(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("NESTLOOP", 8))
+        return_value = _readNestLoop(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("MERGEJOIN", 9))
+        return_value = _readMergeJoin(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("HASHJOIN", 8))
+        return_value = _readHashJoin(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("MATERIAL", 8))
+        return_value = _readMaterial(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SORT", 4))
+        return_value = _readSort(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("GROUP", 5))
+        return_value = _readGroup(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("AGG", 3))
+        return_value = _readAgg(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("WINDOWAGG", 9))
+        return_value = _readWindowAgg(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("UNIQUE", 6))
+        return_value = _readUnique(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("GATHER", 6))
+        return_value = _readGather(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("GATHERMERGE", 11))
+        return_value = _readGatherMerge(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("HASH", 4))
+        return_value = _readHash(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SETOP", 5))
+        return_value = _readSetOp(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("LOCKROWS", 8))
+        return_value = _readLockRows(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("LIMIT", 5))
+        return_value = _readLimit(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("NESTLOOPPARAM", 13))
+        return_value = _readNestLoopParam(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PLANROWMARK", 11))
+        return_value = _readPlanRowMark(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PARTITIONPRUNEINFO", 18))
+        return_value = _readPartitionPruneInfo(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PARTITIONEDRELPRUNEINFO", 23))
+        return_value = _readPartitionedRelPruneInfo(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PARTITIONPRUNESTEPOP", 20))
+        return_value = _readPartitionPruneStepOp(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PARTITIONPRUNESTEPCOMBINE", 25))
+        return_value = _readPartitionPruneStepCombine(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PLANINVALITEM", 13))
+        return_value = _readPlanInvalItem(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("SUBPLAN", 7))
+        return_value = _readSubPlan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("ALTERNATIVESUBPLAN", 18))
+        return_value = _readAlternativeSubPlan(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("EXTENSIBLENODE", 14))
+    {
+        //printf("ERROR: can't parser extensiblenode in front\n");
+        return_value = NULL;
+    }
+    else if (MATCH("PARTITIONBOUNDSPEC", 18))
+        return_value = _readPartitionBoundSpec(xk_strtok_ptr, dbtype, dbversion);
+    else if (MATCH("PARTITIONRANGEDATUM", 19))
+        return_value = _readPartitionRangeDatum(xk_strtok_ptr, dbtype, dbversion);
+    else
+    {
+        //printf("ERROR: badly formatted node string \"%.32s\"...", token);
+        return_value = NULL;    /* keep compiler quiet */
+    }
+
+    return (xk_pg_parser_Node *) return_value;
+}
+
+
+/*
+ * readDatum
+ *
+ * Given a string representation of a constant, recreate the appropriate
+ * Datum.  The string representation embeds length info, but not byValue,
+ * so we must be told that.
+ */
+static xk_pg_parser_Datum readDatum(bool typbyval, char** xk_strtok_ptr, bool *need_free)
+{
+    size_t              length,
+                        i;
+    int32_t             tokenLength;
+    const char         *token;
+    xk_pg_parser_Datum  res;
+    char               *s;
+
+    /*
+     * read the actual length of the value
+     */
+    token = xk_strtok(&tokenLength, xk_strtok_ptr);
+    length = atoui(token);
+
+    token = xk_strtok(&tokenLength, xk_strtok_ptr);    /* read the '[' */
+    if (token == NULL || token[0] != '[')
+    {
+        //printf("ERROR: expected \"[\" to start datum, but got \"%s\"; length = %zu\n",
+        //     token ? token : "[NULL]", length);
+    }
+
+
+    if (typbyval)
+    {
+        if (length > (size_t) sizeof(xk_pg_parser_Datum))
+        {
+            //printf("ERROR: byval datum but length = %zu\n", length);
+        }
+        res = (xk_pg_parser_Datum) 0;
+        s = (char *) (&res);
+        for (i = 0; i < (size_t) sizeof(xk_pg_parser_Datum); i++)
+        {
+            token = xk_strtok(&tokenLength, xk_strtok_ptr);
+            s[i] = (char) atoi(token);
+        }
+    }
+    else if (length <= 0)
+        res = (xk_pg_parser_Datum) NULL;
+    else
+    {
+        xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void **) &s, length);
+        *need_free = true;
+        for (i = 0; i < length; i++)
+        {
+            token = xk_strtok(&tokenLength, xk_strtok_ptr);
+            s[i] = (char) atoi(token);
+        }
+        res = xk_pg_parser_PointerGetDatum(s);
+    }
+
+    token = xk_strtok(&tokenLength, xk_strtok_ptr);    /* read the ']' */
+    if (token == NULL || token[0] != ']')
+    {
+        //printf("ERROR: expected \"]\" to end datum, but got \"%s\"; length = %zu\n",
+        //     token ? token : "[NULL]", length);
+    }
+
+
+    return res;
+}
+
+/*
+ * readAttrNumberCols
+ */
+static xk_pg_parser_AttrNumber *readAttrNumberCols(int32_t numCols, char **xk_strtok_ptr)
+{
+    int32_t            tokenLength,
+                i;
+    const char *token;
+    xk_pg_parser_AttrNumber *attr_vals;
+
+    if (numCols <= 0)
+        return NULL;
+    xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void**)&attr_vals, numCols * sizeof(xk_pg_parser_AttrNumber));
+    for (i = 0; i < numCols; i++)
+    {
+        token = xk_strtok(&tokenLength, xk_strtok_ptr);
+        attr_vals[i] = atoi(token);
+    }
+
+    return attr_vals;
+}
+
+/*
+ * readOidCols
+ */
+static uint32_t *readOidCols(int32_t numCols, char **xk_strtok_ptr)
+{
+    int32_t         tokenLength,
+                    i;
+    const char     *token;
+    uint32_t       *oid_vals;
+
+    if (numCols <= 0)
+        return NULL;
+    xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void**)&oid_vals, numCols * sizeof(uint32_t));
+    for (i = 0; i < numCols; i++)
+    {
+        token = xk_strtok(&tokenLength, xk_strtok_ptr);
+        oid_vals[i] = atooid(token);
+    }
+
+    return oid_vals;
+}
+
+/*
+ * readIntCols
+ */
+static int32_t *readIntCols(int32_t numCols, char **xk_strtok_ptr)
+{
+    int32_t            tokenLength,
+                i;
+    const char *token;
+    int32_t           *int_vals;
+
+    if (numCols <= 0)
+        return NULL;
+    xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void **)&int_vals, numCols * sizeof(int32_t));
+
+    for (i = 0; i < numCols; i++)
+    {
+        token = xk_strtok(&tokenLength, xk_strtok_ptr);
+        int_vals[i] = atoi(token);
+    }
+
+    return int_vals;
+}
+
+/*
+ * readBoolCols
+ */
+static bool *readBoolCols(int32_t numCols, char **xk_strtok_ptr)
+{
+    int32_t            tokenLength,
+                i;
+    const char *token;
+    bool       *bool_vals;
+
+    if (numCols <= 0)
+        return NULL;
+    xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void **)&bool_vals, numCols * sizeof(bool));
+    for (i = 0; i < numCols; i++)
+    {
+        token = xk_strtok(&tokenLength, xk_strtok_ptr);
+        bool_vals[i] = strtobool(token);
+    }
+
+    return bool_vals;
+}

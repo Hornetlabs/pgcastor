@@ -1,0 +1,6 @@
+#ifndef _ripple_parsertrail_txnonlinerefreshabandon_H_
+#define _ripple_parsertrail_txnonlinerefreshabandon_H_
+
+extern bool ripple_parsertrail_txntxnonlinerefreshabandonapply(ripple_parsertrail*  parsertrail, void* data);
+
+#endif

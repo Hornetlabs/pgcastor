@@ -1,0 +1,6 @@
+#ignore binary file
+test_hash
+test_list
+test_stringinfo
+test_splitrecord
+test_parser

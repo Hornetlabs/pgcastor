@@ -1,0 +1,7 @@
+#ifndef RIPPLE_ONLINEREFRESH_CAPTURE_DECODE_XACT_H
+#define RIPPLE_ONLINEREFRESH_CAPTURE_DECODE_XACT_H
+
+extern void ripple_onlinerefresh_decode_xact_commit(ripple_decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase);
+extern void ripple_onlinerefresh_decode_xact_abort(ripple_decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase);
+
+#endif
