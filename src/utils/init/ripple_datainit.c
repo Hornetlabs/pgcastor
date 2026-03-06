@@ -22,23 +22,6 @@ static char *m_subdirscapture[] = {
     "onlinerefresh"
 };
 
-/* pump 子目录 */
-static char *m_subdirspump[] = {
-    "chk",
-    "trail",
-    "stat",
-    "log",
-    "filter",
-    "refresh",
-    "onlinerefresh",
-    "filetransferdata"
-};
-
-/* collector 子目录 */
-static char *m_subdirscollector[] = {
-    "log",
-};
-
 /* integrate 子目录 */
 static char *m_subdirsintegrate[] = {
     "chk",
@@ -56,25 +39,11 @@ static char *m_subdirsxmanager[] = {
     "metric"
 };
 
-
-/* collector jobname 子目录 */
-static char *m_jobnamesubdirscollector[] = {
-    "trail",
-    "stat",
-    "refresh",
-    "onlinerefresh",
-    "filetransfer"
-};
-
 static ripple_subdirs   m_subdirs[] =
 {
     {RIPPLE_PROC_TYPE_NOP,              0,                                  NULL},
     {RIPPLE_PROC_TYPE_CAPTURE,          lengthof(m_subdirscapture),         m_subdirscapture},
-    {RIPPLE_PROC_TYPE_PUMP,             lengthof(m_subdirspump),            m_subdirspump},
-    {RIPPLE_PROC_TYPE_COLLECTOR,        lengthof(m_subdirscollector),       m_subdirscollector},
     {RIPPLE_PROC_TYPE_INTEGRATE,        lengthof(m_subdirsintegrate),       m_subdirsintegrate},
-    {RIPPLE_PROC_TYPE_FASTCMPCLIENT,    0,                                  NULL},
-    {RIPPLE_PROC_TYPE_FASTCMPSVR,       0,                                  NULL},
     {RIPPLE_PROC_TYPE_HGRECEIVEWAL,     0,                                  NULL},
     {RIPPLE_PROC_TYPE_PGRECEIVEWAL,     0,                                  NULL},
     {RIPPLE_PROC_TYPE_XMANAGER,         lengthof(m_subdirsxmanager),        m_subdirsxmanager}
@@ -142,50 +111,6 @@ bool ripple_datainit_init(char* in_wdata)
         }
     }
     return true;
-}
-
-/* 创建 collector jobname 下子目录 */
-void ripple_datainit_init_jobnamesubdir(char* dir_path)
-{
-    int index = 0;
-    DIR* datadir = NULL;
-    char path[RIPPLE_MAXPATH] = { 0 };
-
-    datadir = OpenDir(dir_path);
-    if(NULL == datadir)
-    {
-        if(errno != ENOENT)
-        {
-            elog(RLOG_ERROR, "open dir error:%s", dir_path);
-        }
-
-        /* 创建目录 */
-        if(0 != MakeDir(dir_path))
-        {
-            if(errno != EEXIST)
-            {
-                elog(RLOG_ERROR, "could not create directory:%s", dir_path);
-            }
-        }
-    }
-    FreeDir(datadir);
-
-    /* 创建子目录 */
-    for(index = 0; index < lengthof(m_jobnamesubdirscollector); index++)
-    {
-        rmemset1(path, 0, '\0', RIPPLE_MAXPATH);
-        snprintf(path, RIPPLE_MAXPATH, "%s/%s", 
-                                        dir_path,
-                                        m_jobnamesubdirscollector[index]);
-
-        if(0 != MakeDir(path))
-        {
-            if(errno != EEXIST)
-            {
-                elog(RLOG_ERROR, "could not create directory:%s", path);
-            }
-        }
-    }
 }
 
 /* 临时文件清理 */

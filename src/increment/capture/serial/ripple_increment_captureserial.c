@@ -431,7 +431,7 @@ static bool ripple_increment_captureserial_recovery(ripple_increment_captureseri
 }
 
 /* 设置ffsmgrstate privdata和fdata */
-static void ripple_increment_pumpserialstate_ffsmgr_set(ripple_increment_captureserialstate* serialstate)
+static void ripple_increment_captureserialstate_ffsmgr_set(ripple_increment_captureserialstate* serialstate)
 {
     serialstate->base.ffsmgrstate->privdata = (void *)serialstate;
     serialstate->base.ffsmgrstate->fdata->ffdata2 = serialstate->dictcache;
@@ -693,7 +693,7 @@ void* ripple_increment_captureserial_main(void *args)
     ripple_serialstate_ffsmgr_set(serialstate, RIPPLE_FFSMG_IF_TYPE_TRAIL);
 
     /* 设置 fdata内容和privdata */
-    ripple_increment_pumpserialstate_ffsmgr_set(wstate);
+    ripple_increment_captureserialstate_ffsmgr_set(wstate);
 
     ripple_increment_captureserial_recovery(wstate, dbase.fileoffset);
 

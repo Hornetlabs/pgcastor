@@ -19,7 +19,6 @@
 #include "parser/trail/ripple_parsertrail.h"
 #include "queue/ripple_queue.h"
 #include "parser/trail/data/ripple_parsertrail_txnbigtxnend.h"
-#include "increment/pump/parser/ripple_increment_pumpparsertrail.h"
 
 bool ripple_parsertrail_txnbigtxnendapply(ripple_parsertrail* parsertrail, void* data)
 {

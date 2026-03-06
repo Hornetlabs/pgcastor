@@ -41,10 +41,6 @@
 #define RIPPLE_CFG_KEY_INTEGRATE_BUFFER             "integrate_buffer"
 #define RIPPLE_CFG_KEY_INTEGRATE_METHOD             "integrate_method"
 
-#define RIPPLE_CFG_KEY_FASTCMP_MAX_PARALLEL_WORKS   "max_parallel_works"
-#define RIPPLE_CFG_KEY_FASTCMP_MAXMEMARY            "max_memery"
-#define RIPPLE_CFG_KEY_FASTCMP_TABLES               "tables.dat"
-
 #define RIPPLE_CFG_KEY_ENABLE_REPLICA_IDENTITY      "enable_replica_identity"
 #define RIPPLE_CFG_KEY_XMANAGER_PORT                "xport"
 
@@ -119,54 +115,6 @@ typedef struct RIPPLE_CAPTURE_CFG
     char*           jobname;                    /* 名称                       */
 } ripple_capture_cfg;
 
-typedef struct RIPPLE_PUMP_CFG
-{
-    int             trailmaxsize;               /* trail 文件的最大值           */
-    int             compatibility;              /* 兼容版本                    */
-    int             port;                       /* 目标端监听的端口             */
-    int             xport;                      /* xmanager监听的端口             */
-    int             tcp_keepalive;
-    int             tcp_user_timeout;
-    int             tcp_keepalives_idle;
-    int             tcp_keepalives_interval;
-    int             tcp_keepalives_count;
-    int             gctime;                     /* 内存回收 */
-    char*           szloglevel;                 /* 日志级别                    */
-    char*           data;                       /* 数据存储目录                 */
-    char*           traildir;                   /* trail日志目录                */
-    char*           host;                       /* 目标端监听的IP地址            */
-    char*           dbtype;                     /* 数据库类型                   */
-    char*           dbversion;                  /* 数据库版本                   */
-    char*           dbname;                     /* 同步的数据库                 */
-    char*           logdir;                     /* 日志目录,默认为运行目录的 log  */
-    char*           jobname;                    /* 名称                        */
-    char*           ftpurl;                     /* 网闸url                    */
-    char*           ssl;                        /* ssl加密                    */
-    char*           ftpdata;                    /* 服务器文件位置              */
-} ripple_pump_cfg;
-
-typedef struct RIPPLE_COLLECTOR_CFG
-{
-    int             trailmaxsize;               /* trail 文件的最大值           */
-    int             port;                       /* 目标端监听的端口             */
-    int             xport;                      /* xmanager监听的端口          */
-    int             tcp_keepalive;
-    int             tcp_user_timeout;
-    int             tcp_keepalives_idle;
-    int             tcp_keepalives_interval;
-    int             tcp_keepalives_count;
-    int             compatibility;
-    int             gctime;                     /* 内存回收 */
-    char*           szloglevel;                 /* 日志级别                    */
-    char*           data;                       /* 数据存储目录                */
-    char*           host;                       /* 目标端监听的IP地址           */
-    char*           logdir;                     /* 日志目录,默认为运行目录的 log */
-    char*           jobname;                    /* 名称                       */
-    char*           ftpurl;                     /* 网闸url                    */
-    char*           ssl;                        /* ssl加密                    */
-    char*           ftpdata;                    /* 服务器文件位置              */
-} ripple_collector_cfg;
-
 typedef struct RIPPLE_INTEGRATE_CFG
 {
     int             trailmaxsize;               /* trail 文件的最大值           */
@@ -193,34 +141,6 @@ typedef struct RIPPLE_INTEGRATE_CFG
     char*           jobname;                    /* 名称                        */
     char*           method;                     /* 模式 burst 或者为 空      */
 } ripple_integrate_cfg;
-
-typedef struct RIPPLE_TOOLS_FASTCMPSVRCFG
-{
-    int             port;
-    int             tcp_keepalive;
-    int             tcp_user_timeout;
-    int             tcp_keepalives_idle;
-    int             tcp_keepalives_interval;
-    int             tcp_keepalives_count;
-    char*           szloglevel;                 /* 日志级别                     */
-    char*           url;                        /* 连接数据库的字符串             */
-    char*           host;                       /* 主机ip地址                   */
-} ripple_tools_fastcmpcorr_cfg;
-
-typedef struct RIPPLE_TOOLS_FASTCMPCLIENT_CFG
-{
-    int             port;                       /* 主机端口                     */
-    int             tcp_keepalive;
-    int             tcp_user_timeout;
-    int             tcp_keepalives_idle;
-    int             tcp_keepalives_interval;
-    int             tcp_keepalives_count;
-    int             max_parallel_works;
-    int             max_mem;
-    char*           szloglevel;                 /* 日志级别                     */
-    char*           url;                        /* 连接数据库的字符串             */
-    char*           host;                       /* 主机ip地址                   */
-} ripple_tools_fastcmpclient_cfg;
 
 typedef struct RIPPLE_RECEIVEWAL_CFG
 {

@@ -8,8 +8,6 @@
 #include "xmanager/ripple_xmanager_msg.h"
 #include "xmanager/ripple_xmanager_metricnode.h"
 #include "xmanager/ripple_xmanager_metriccapturenode.h"
-#include "xmanager/ripple_xmanager_metricpumpnode.h"
-#include "xmanager/ripple_xmanager_metriccollectornode.h"
 #include "xmanager/ripple_xmanager_metricintegratenode.h"
 #include "xmanager/ripple_xmanager_metric.h"
 #include "xmanager/ripple_xmanager_metricmsginfo.h"
@@ -28,12 +26,6 @@ static bool ripple_xmanager_metricmsg_assembleinforesult(ripple_xmanager_metric*
     {
     case RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE:
         result = ripple_xmanager_metricmsg_assemblecapture(pxmetricnode);
-        break;
-    case RIPPLE_XMANAGER_METRICNODETYPE_PUMP:
-        result = ripple_xmanager_metricmsg_assemblepump(pxmetricnode);
-        break;
-    case RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR:
-        result = ripple_xmanager_metricmsg_assemblecollector(pxmetricnode);
         break;
     case RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE:
         result = ripple_xmanager_metricmsg_assembleintegrate(pxmetricnode);

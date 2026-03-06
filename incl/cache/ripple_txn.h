@@ -73,7 +73,7 @@ typedef struct RIPPLE_TXN
     bool                    filter;             /* 
                                                  * 用于标识该事务是否需要过滤, true 过滤， false 不过滤
                                                  */
-    bool                    commit;             /* pump大事务中事务结束表示 */
+    bool                    commit;             /* 大事务中事务结束表示 */
     uint32                  curtlid;            /* 当前时间线id */
     uint16                  flag;               /* 用于标记该事务的特殊性, 是否处于行外存储或系统表处理流程中 */
     ripple_txn_type         type;               /* 事务类型             */

@@ -46,8 +46,6 @@ void ripple_filetransfer_ftp_file_free(ripple_filetransfer_ftp_file* ftp_file);
 
 void ripple_filetransfer_ftp_list_free(ripple_filetransfer_ftp_list* ftp_list);
 
-void ripple_filetransfer_pumprefresh(void* parsertrail, void* tables);
-
 void ripple_filetransfer_ftp_global_init(void);
 
 void ripple_filetransfer_ftp_global_cleanup(void);

@@ -25,7 +25,6 @@
 #include "refresh/ripple_refresh_table_sharding.h"
 #include "refresh/ripple_refresh_table_syncstats.h"
 #include "refresh/integrate/ripple_refresh_integrate.h"
-#include "increment/pump/parser/ripple_increment_pumpparsertrail.h"
 #include "increment/integrate/parser/ripple_increment_integrateparsertrail.h"
 
 static bool ripple_parsertrail_txnrefresh2cache(ripple_parsertrail* parsertrail,

@@ -42,14 +42,6 @@
 #include "loadrecords/ripple_loadrecords.h"
 #include "loadrecords/ripple_loadtrailrecords.h"
 #include "parser/trail/ripple_parsertrail.h"
-#include "increment/pump/split/ripple_increment_pumpsplittrail.h"
-#include "increment/pump/parser/ripple_increment_pumpparsertrail.h"
-#include "onlinerefresh/pump/netsharding/ripple_onlinerefresh_shardingnet.h"
-#include "onlinerefresh/pump/splittrail/ripple_onlinerefresh_pumpsplittrail.h"
-#include "onlinerefresh/pump/parsertrail/ripple_onlinerefresh_pumpparsertrail.h"
-#include "onlinerefresh/pump/serial/ripple_onlinerefresh_pumpserial.h"
-#include "onlinerefresh/pump/netincrement/ripple_onlinerefresh_pumpnet.h"
-
 
 typedef void (*taskworkmain)(ripple_dyworks_node *dyworknode);
 typedef void (*taskworkfree)(ripple_task_slot *slot);
@@ -120,31 +112,6 @@ static ripple_taskwork_start m_taskwork[] =
     },
     {
         RIPPLE_TASK_TYPE_INTEGRATE_ONLINEREFRESH_SYNC,
-        NULL,
-        NULL
-    },
-    {
-        RIPPLE_TASK_TYPE_PUMP_ONLINEREFRESH_SPLITTRAIL,
-        NULL,
-        NULL
-    },
-    {
-        RIPPLE_TASK_TYPE_PUMP_ONLINEREFRESH_PARSERTRAIL,
-        NULL,
-        NULL
-    },
-    {
-        RIPPLE_TASK_TYPE_PUMP_ONLINEREFRESH_SERIAL,
-        NULL,
-        NULL
-    },
-    {
-        RIPPLE_TASK_TYPE_PUMP_ONLINEREFRESH_CLIENT,
-        NULL,
-        NULL
-    },
-    {
-        RIPPLE_TASK_TYPE_PUMP_ONLINEREFRESH_P2CSHARDING,
         NULL,
         NULL
     },

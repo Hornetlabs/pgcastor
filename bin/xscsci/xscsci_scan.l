@@ -26,8 +26,6 @@
         {"info",            4,              K_INFO},
         {"manager",         7,              K_MANAGER},
         {"capture",         7,              K_CAPTURE},
-        {"pump",            4,              K_PUMP},
-        {"collector",       9,              K_COLLECTOR},
         {"integrate",       9,              K_INTEGRATE},
         {"hgreceivelog",    12,             K_HGRECEIVELOG},
         {"pgreceivelog",    12,             K_PGRECEIVELOG},

@@ -16,7 +16,6 @@
 #include "stmts/ripple_txnstmt.h"
 #include "loadrecords/ripple_record.h"
 #include "parser/trail/ripple_parsertrail.h"
-#include "increment/pump/parser/ripple_increment_pumpparsertrail.h"
 #include "increment/integrate/parser/ripple_increment_integrateparsertrail.h"
 #include "parser/trail/data/ripple_parsertrail_txnonlinerefresh_incrementend.h"
 

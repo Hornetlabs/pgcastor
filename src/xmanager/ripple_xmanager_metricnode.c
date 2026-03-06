@@ -16,8 +16,6 @@
 #include "xmanager/ripple_xmanager_metricnode.h"
 #include "xmanager/ripple_xmanager_metricxscscinode.h"
 #include "xmanager/ripple_xmanager_metriccapturenode.h"
-#include "xmanager/ripple_xmanager_metricpumpnode.h"
-#include "xmanager/ripple_xmanager_metriccollectornode.h"
 #include "xmanager/ripple_xmanager_metricintegratenode.h"
 #include "xmanager/ripple_xmanager_metric.h"
 #include "xmanager/ripple_xmanager_metricprogressnode.h"
@@ -360,26 +358,6 @@ static ripple_xmanager_metricnodeop     m_xmetricnodeops[] =
         ripple_xmanager_metriccapturenode_deserial,
         NULL,
         ripple_xmanager_metriccapturenode_destroy
-    },
-    {
-        RIPPLE_XMANAGER_METRICNODETYPE_PUMP,
-        "pump",
-        "XManager Metric Pump Node",
-        ripple_xmanager_metricpumpnode_init,
-        ripple_xmanager_metricpumpnode_serial,
-        ripple_xmanager_metricpumpnode_deserial,
-        NULL,
-        ripple_xmanager_metricpumpnode_destroy
-    },
-    {
-        RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR,
-        "collector",
-        "XManager Metric Collector Node",
-        ripple_xmanager_metriccollectornode_init,
-        ripple_xmanager_metriccollectornode_serial,
-        ripple_xmanager_metriccollectornode_deserial,
-        NULL,
-        ripple_xmanager_metriccollectornode_destroy
     },
     {
         RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE,

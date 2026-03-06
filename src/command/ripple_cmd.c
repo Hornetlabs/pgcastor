@@ -137,12 +137,6 @@ bool ripple_cmd(ripple_optype type, void *extra_config)
             /* code */
             nodetype = RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE;
             break;
-        case RIPPLE_PROC_TYPE_PUMP:
-            nodetype = RIPPLE_XMANAGER_METRICNODETYPE_PUMP;
-            break;
-        case RIPPLE_PROC_TYPE_COLLECTOR:
-            nodetype = RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR;
-            break;
         case RIPPLE_PROC_TYPE_INTEGRATE:
             nodetype = RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE;
             break;

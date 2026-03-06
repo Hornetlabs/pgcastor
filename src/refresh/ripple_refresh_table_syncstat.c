@@ -167,14 +167,14 @@ bool ripple_refresh_table_syncstat_genqueue(ripple_refresh_table_syncstats* tabl
                 }
             }
 
-            elog(RLOG_DEBUG, "pump refresh monitor, queue gen: %s.%s %4d %4d",
+            elog(RLOG_DEBUG, "refresh monitor, queue gen: %s.%s %4d %4d",
                                                                table_shard->schema,
                                                                table_shard->table,
                                                                table_shard->shardings,
                                                                table_shard->sharding_no);
             if (temp_table_state->stat)
             {
-                elog(RLOG_DEBUG, "pump refresh monitor, stat [%d]: %d",
+                elog(RLOG_DEBUG, "refresh monitor, stat [%d]: %d",
                                                                table_shard->sharding_no - 1,
                                                                temp_table_state->stat[table_shard->sharding_no - 1]);
             }

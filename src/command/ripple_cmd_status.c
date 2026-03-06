@@ -7,8 +7,6 @@
 #include "misc/ripple_misc_lockfiles.h"
 #include "net/netpacket/ripple_netpacket.h"
 #include "metric/capture/ripple_metric_capture.h"
-#include "metric/pump/ripple_statework_pump.h"
-#include "metric/collector/ripple_metric_collector.h"
 #include "metric/integrate/ripple_metric_integrate.h"
 #include "command/ripple_cmd.h"
 
@@ -25,8 +23,6 @@ typedef struct RPOC2STATUS
 } proc2status;
 
 static bool ripple_cmd_statuscapture(void);
-static bool ripple_cmd_statuspump(void);
-static bool ripple_cmd_statuscollector(void);
 static bool ripple_cmd_statusintegrate(void);
 
 static proc2status           m_typ2status[]=
@@ -42,18 +38,6 @@ static proc2status           m_typ2status[]=
         ripple_cmd_statuscapture,
         NULL,
          "capture status error"
-    },
-    {
-        RIPPLE_PROC_TYPE_PUMP,
-        ripple_cmd_statuspump,
-        NULL,
-         "pump status error"
-    },
-    {
-        RIPPLE_PROC_TYPE_COLLECTOR,
-        ripple_cmd_statuscollector,
-        NULL,
-         "collector status error"
     },
     {
         RIPPLE_PROC_TYPE_INTEGRATE,
@@ -104,98 +88,6 @@ bool ripple_cmd_statuscapture(void)
     printf("capture flushtimestamp  :%lu\n", mcapture.flushtimestamp);
     
     printf("-------------------------------------------------\n");
-    return true;
-}
-
-/* 获取状态信息 */
-bool ripple_cmd_statuspump(void)
-{
-    int fd = -1;
-    long    ripplepid;
-    ripple_state_pump_state mpump = { 0 };
-    
-    ripplepid = ripple_misc_lockfiles_getpid();
-    if(0 == ripplepid)
-    {
-        ripple_cmd_printmsg("Is ripple pump running?\n");
-        return false;
-    }
-
-    fd = BasicOpenFile(RIPPLE_PUMP_STATUS_FILE,
-                            O_RDWR | RIPPLE_BINARY);
-
-    if(-1 == fd)
-    {
-        printf("pump state open file error %s\n", strerror(errno));
-        exit(-1);
-    }
-
-    FileRead(fd, (char*)&mpump, sizeof(mpump));
-
-    FileClose(fd);
-
-    /* 输出内容 */
-    printf("\n---------------RIPPLE PARSER INFO----------------\n");
-
-    printf("pump loadlsn:           %X/%X", (uint32)(mpump.loadlsn >> 32), (uint32)(mpump.loadlsn));
-    printf("pump sendlsn:           %X/%X", (uint32)(mpump.sendlsn >> 32), (uint32)(mpump.sendlsn));
-    printf("pump loadtrail:         %lX/%lX", mpump.loadtrailno, mpump.loadtrailstart);
-    printf("pump sendtrail:         %lX/%lX", mpump.sendtrailno, mpump.sendtrailstart);
-    printf("pump loadtimestamp:     %lu", mpump.loadtimestamp);
-    printf("pump sendtimestamp:     %lu", mpump.sendtimestamp);
-    
-    printf("-------------------------------------------------\n");
-    return true;
-}
-
-/* 获取状态信息 */
-bool ripple_cmd_statuscollector(void)
-{
-    int read = 0;
-    int fd = -1;
-    long    ripplepid;
-    uint32 fileoffset = 0;
-    ripple_metric_collectornode statusnode = { {0} };
-    
-    ripplepid = ripple_misc_lockfiles_getpid();
-    if(0 == ripplepid)
-    {
-        ripple_cmd_printmsg("Is ripple collector running?\n");
-        return false;
-    }
-
-    fd = BasicOpenFile(RIPPLE_COLLECTOR_STATUS_FILE,
-                            O_RDWR | RIPPLE_BINARY);
-
-    if(-1 == fd)
-    {
-        printf("collector state open file error %s\n", strerror(errno));
-        exit(-1);
-    }
-
-    /* 输出内容 */
-    printf("\n---------------RIPPLE PARSER INFO----------------\n");
-    while((read = FilePRead(fd, (char*)&statusnode, sizeof(ripple_metric_collectornode), fileoffset)) > 0)
-    {
-        fileoffset += sizeof(statusnode);
-
-        printf("-------- Collector Job: %s --------", statusnode.jobname);
-        printf("collector recvlsn:          %X/%X", (uint32)(statusnode.recvlsn >> 32), (uint32)(statusnode.recvlsn));
-        printf("collector flushlsn:         %X/%X", (uint32)(statusnode.flushlsn >> 32), (uint32)(statusnode.flushlsn));
-        printf("collector recvtrail:        %lX/%lX", statusnode.recvtrailno, statusnode.recvtrailstart);
-        printf("collector flushtrail:       %lX/%lX", statusnode.flushtrailno, statusnode.flushtrailstart);
-        printf("collector recvtimestamp:    %lu", statusnode.recvtimestamp);
-        printf("collector flushtimestamp:   %lu", statusnode.flushtimestamp);
-        rmemset1(&statusnode, 0, '\0', sizeof(ripple_metric_collectornode));
-    }
-
-    if (read < 0)
-    {
-        printf("collector state read file error %s\n", strerror(errno));
-    }
-    printf("-------------------------------------------------\n");
-
-    FileClose(fd);
     return true;
 }
 

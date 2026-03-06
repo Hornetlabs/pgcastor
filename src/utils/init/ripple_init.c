@@ -45,49 +45,6 @@ static bool ripple_init_capture(void)
     return true;
 }
 
-
-/* send 初始化 */
-static bool ripple_init_pump(void)
-{
-    /*
-     * 1、获取执行目录，初始化执行目录信息
-     * 2、切换工作目录
-    */
-    char* wdata = NULL;
-
-    wdata = guc_getdata();
-    if (false == ripple_datainit_init(wdata))
-    {
-        return false;
-    }
-
-    /* 切换工作目录 */
-    chdir(wdata);
-
-    return true;
-}
-
-/* collector 初始化 */
-static bool ripple_init_collector(void)
-{
-    /*
-     * 1、获取执行目录，初始化执行目录信息
-     * 2、切换工作目录
-    */
-    char* wdata = NULL;
-
-    wdata = guc_getdata();
-    if (false == ripple_datainit_init(wdata))
-    {
-        return false;
-    }
-
-    /* 切换工作目录 */
-    chdir(wdata);
-
-    return true;
-}
-
 /* integrate 初始化 */
 static bool ripple_init_integrate(void)
 {
@@ -134,11 +91,7 @@ static proc2init    m_typ2init[] =
 {
     { RIPPLE_PROC_TYPE_NOP,             NULL,                   "proc nop unsupport init"},
     { RIPPLE_PROC_TYPE_CAPTURE,         ripple_init_capture,    "capture init error" },
-    { RIPPLE_PROC_TYPE_PUMP,            ripple_init_pump,       "pump init error" },
-    { RIPPLE_PROC_TYPE_COLLECTOR,       ripple_init_collector,  "collector init error" },
     { RIPPLE_PROC_TYPE_INTEGRATE,       ripple_init_integrate,  "integrate init error" },
-    { RIPPLE_PROC_TYPE_FASTCMPCLIENT,   NULL,                   "fast compare client init error" },
-    { RIPPLE_PROC_TYPE_FASTCMPSVR,      NULL,                   "fast compare server init error" },
     { RIPPLE_PROC_TYPE_HGRECEIVEWAL,    NULL,                   "hg receive log init error" },
     { RIPPLE_PROC_TYPE_PGRECEIVEWAL,    NULL,                   "pg receive log init error" },
     { RIPPLE_PROC_TYPE_XMANAGER,        ripple_init_xmanager,   "xmanager init error" }

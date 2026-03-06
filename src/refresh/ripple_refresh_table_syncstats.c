@@ -234,7 +234,7 @@ bool ripple_refreshtablesyncstats_markstatdone(ripple_refresh_table_sharding* ta
                 current_table->stat[tablesharding->sharding_no - 1] = RIPPLE_REFRESH_TABLE_SYNCS_SHARD_STAT_DONE;
             }
 
-            elog(RLOG_DEBUG, "pump refresh worker, queue: %s.%s %4d %4d, mark done",
+            elog(RLOG_DEBUG, "refresh worker, queue: %s.%s %4d %4d, mark done",
                                                                tablesharding->schema,
                                                                tablesharding->table,
                                                                tablesharding->shardings,

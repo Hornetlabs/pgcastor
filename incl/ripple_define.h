@@ -29,11 +29,7 @@ typedef enum RIPPLE_PROC_TYPE
 {
     RIPPLE_PROC_TYPE_NOP                = 0x00,
     RIPPLE_PROC_TYPE_CAPTURE            ,
-    RIPPLE_PROC_TYPE_PUMP               ,
-    RIPPLE_PROC_TYPE_COLLECTOR          ,
     RIPPLE_PROC_TYPE_INTEGRATE          ,
-    RIPPLE_PROC_TYPE_FASTCMPCLIENT      ,
-    RIPPLE_PROC_TYPE_FASTCMPSVR         ,
     RIPPLE_PROC_TYPE_HGRECEIVEWAL       ,
     RIPPLE_PROC_TYPE_PGRECEIVEWAL       ,
     RIPPLE_PROC_TYPE_XMANAGER           
@@ -56,32 +52,6 @@ typedef enum RIPPLE_CAPTURERELOAD_STATUS
     RIPPLE_CAPTURERELOAD_STATUS_RELOADING_WRITE         = 0x02
 }ripple_capturereload_status;
 
-typedef enum RIPPLE_INCREMENT_PUMPNETSTATE_STATE
-{
-    RIPPLE_INCREMENT_PUMPNETSTATE_STATE_NOP         = 0x00,
-    RIPPLE_INCREMENT_PUMPNETSTATE_STATE_RESET       = 0x01,
-    RIPPLE_INCREMENT_PUMPNETSTATE_STATE_IDENTITY    = 0x02,     /* (原 INIT) */
-    RIPPLE_INCREMENT_PUMPNETSTATE_STATE_READY       = 0x03,
-    RIPPLE_INCREMENT_PUMPNETSTATE_STATE_IDLE        = 0x04,     /* (原WORKING) */
-    RIPPLE_INCREMENT_PUMPNETSTATE_STATE_POLLOUT     = 0x05      /* 含有待发送数据 */
-}ripple_increment_pumpnetstate_state;
-
-typedef enum RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE
-{
-    RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE_NOP           = 0x00,
-
-    /* 等待认证 */
-    RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE_IDENTITY      = 0x01,
-
-    /* 认证完成后的状态为 IDLE */
-    RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE_IDLE          = 0x02,
-    RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE_SHARDING      = 0x03,
-    RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE_BEGIN         = 0x04,
-    RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE_READFILE      = 0x05,
-    RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE_SENDDATA      = 0x06,
-    RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE_END           = 0x07
-}ripple_refresh_pumpshardingnetstate_state;
-
 #define RIPPLE_DBTYPE_POSTGRES              "postgres"
 #define RIPPLE_DBTYPE_HIGHGO                "highgo"
 #define RIPPLE_DBVERSION_POSTGRES_12        "12"
@@ -97,7 +67,6 @@ typedef enum RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE
 #define RIPPLE_CACHEDIR                     "cache"
 #define RIPPLE_STAT                         "stat"
 #define RIPPLE_STAT_DECODE                  "decode.stat"
-#define RIPPLE_STAT_COLLECTOR               "collector.stat"
 #define RIPPLE_CONSTRAINT_FILE              "catalog/ripple_constraint.bat"
 #define RIPPLE_SYSDICTS_FILE                "catalog/ripple_sysdicts.bat"
 #define RIPPLE_SYSDICTS_TMP_FILE            "catalog/ripple_sysdicts.bat.tmp"
@@ -109,12 +78,8 @@ typedef enum RIPPLE_REFRESH_PUMPSHARDINGNETSTATE_STATE
 #define RIPPLE_FILTER_OIDS_FILE             "oids.bat"
 #define RIPPLE_FILTER_OID_HGTAUDITLOG       "hg_t_audit_log"
 #define RIPPLE_CAPTURE_STATUS_FILE          "capture.stat"
-#define RIPPLE_PUMP_STATUS_FILE             "pump.stat"
-#define RIPPLE_COLLECTOR_STATUS_FILE        "collector.stat"
 #define RIPPLE_INTEGRATE_STATUS_FILE        "integrate.stat"
 #define RIPPLE_CAPTURE_STATUS_FILE_TEMP     "capture.stat.tmp"
-#define RIPPLE_PUMP_STATUS_FILE_TEMP        "pump.stat.tmp"
-#define RIPPLE_COLLECTOR_STATUS_FILE_TEMP   "collector.stat.tmp"
 #define RIPPLE_INTEGRATE_STATUS_FILE_TEMP   "integrate.stat.tmp"
 #define RIPPLE_FILTER_DATASET_TMP           "filterdataset.dat.tmp"
 #define RIPPLE_FILTER_DATASET               "filterdataset.dat"
@@ -199,63 +164,13 @@ typedef enum RIPPLE_WORK_STATUS
     RIPPLE_WORK_STATUS_WAITSTART    = 0x07                      /* 等待启动              */
 } ripple_work_status;
 
-typedef enum RIPPLE_NETIDENTITY_TYPE
-{
-    RIPPLE_NETIDENTITY_TYPE_NOP                     = 0x00,
-    RIPPLE_NETIDENTITY_TYPE_PUMPINCREAMENT          = 0x01,     /* pump增量数据类型 */
-    RIPPLE_NETIDENTITY_TYPE_PUMPREFRESHARDING       = 0x02,     /* pump存量数据类型 */
-    RIPPLE_NETIDENTITY_TYPE_ONLINEREFRESH_INC       = 0x03,
-    RIPPLE_NETIDENTITY_TYPE_ONLINEREFRESH_SHARDING  = 0x04,
-    RIPPLE_NETIDENTITY_TYPE_BIGTRANSACTION	        ,           /* 大事务类型标识 */
-}ripple_netidentity_type;
-
 /* poll 超时时间 */
 #define RIPPLE_NET_POLLTIMEOUT                          50
 
-/* pump 发送心跳的间隔 */
-#define RIPPLE_NET_PUMP_HBTIME                          5000
-
-/* collector 发送心跳的时间间隔 */
-#define RIPPLE_NET_COLLECTOR_HBTIME                     5000
+#define RIPPLE_NET_HBTIME                               5000
 
 /* 网络的超时时间 */
 #define RIPPLE_NET_TIMEOUT                              60000
-
-/*-------------------------pump 线程状态 begin------------------*/
-/*
- * 用于标识 split 线程的初始状态，此状态下不做任何操作，
- * 等待 netclient 线程设置为 INIT
- */
-#define RIPPLE_PUMP_STATUS_SPLIT_RESET          0x01
-
-/*
- * split此状态时，操作如下:
- *  1、关闭当前在读 trail 文件，等待设置新的读取信息
- *  2、清理 record 缓存
- *  3、设置解析线程的状态为 init
- *  4、设置split线程的状态为 READY
- */
-#define RIPPLE_PUMP_STATUS_SPLIT_INIT           0x02
-
-/*
- * split此状态时，不做操作
- *  等待被 parser 线程将状态设置为 WORK
- */
-#define RIPPLE_PUMP_STATUS_SPLIT_READY          0x03
-
-/*
- * split此状态时，操作如下:
- *  中间状态, 将会直接转变为working
- */
-#define RIPPLE_PUMP_STATUS_SPLIT_WORK           0x04
-
-/*
- * split此状态时，操作如下:
- *  打开 trail 文件，开始解析
- */
-#define RIPPLE_PUMP_STATUS_SPLIT_WORKING        0x05
-
-/*--------------------------------split status end-----------------------------------*/
 
 /*-------------------------integrate split status begin------------------*/
 /*
@@ -288,89 +203,6 @@ typedef enum RIPPLE_NETIDENTITY_TYPE
 
 /*-------------------------integrate parser status end-------------------------*/
 
-
-/*
- * 用于标识 解析线程的初始状态，此状态下不做任何操作，
- * 等待 split 线程设置为 INIT
- */
-#define RIPPLE_PUMP_STATUS_PARSER_RESET         0x01
-
-/*
- * parser 此状态时，操作如下:
- *  1、清理 事务缓存 及 parser 线程中的动态申请的空间
- *  2、设置 序列化的线程为 init
- *  3、设置parser线程的状态为 READY
-*/
-#define RIPPLE_PUMP_STATUS_PARSER_INIT          0x02
-
-/*
- * parser此状态时，不做操作
- *  等待 序列化 线程将状态设置为 WORK
- */
-#define RIPPLE_PUMP_STATUS_PARSER_READY         0x03
-
-/*
- * parser此状态时，操作如下:
- *  1、设置 split 线程为 work
- *  2、并设置 WORKING
- */
-#define RIPPLE_PUMP_STATUS_PARSER_WORK          0x04
-
-/*
- * 工作状态
-*/
-#define RIPPLE_PUMP_STATUS_PARSER_WORKING       0x05
-
-/*--------------------------------parser status end-----------------------------------*/
-
-/*--------------------------------pump bigtxn status begin-----------------------------------*/
-
-#define RIPPLE_PUMP_STATUS_PARSER_STATE_INIT    0x00
-#define RIPPLE_PUMP_STATUS_PARSER_STATE_WORK    0x01
-#define RIPPLE_PUMP_STATUS_PARSER_STATE_EXIT    0x02
-
-/*--------------------------------pump bigtxn status end-----------------------------------*/
-
-/*
- * 用于标识序列化的初始状态，此状态下不做任何操作，
- * 等待 parser 线程设置为 INIT
- */
-#define RIPPLE_PUMP_STATUS_SERIAL_RESET         0x01
-
-/*
- * 序列化 此状态时，操作如下:
- *  1、清理 页缓存 及 序列化 线程中的动态申请的空间(包含数据字典)
- *  2、设置 序列化的线程为 READY
- *  3、设置 netclient 线程的状态为 ready
-*/
-#define RIPPLE_PUMP_STATUS_SERIAL_INIT          0x02
-
-
-/*
- * 序列化 此状态时，
- *  不做操作，等待 netclient 设置为 work 状态
-*/
-#define RIPPLE_PUMP_STATUS_SERIAL_READY         0x03
-
-
-/*
- * 序列化 此状态时，
- *  1、设置 parser 线程为 work
- *  2、设置自己的状态为 working
-*/
-#define RIPPLE_PUMP_STATUS_SERIAL_WORK          0x04
-
-/*
- * 工作状态
-*/
-#define RIPPLE_PUMP_STATUS_SERIAL_WORKING       0x05
-
-
-/*--------------------------------serial status end-----------------------------------*/
-
-
-/*-------------------------pump 线程状态   end------------------*/
-
 #define RIPPLE_UNUSED(x) (void) (x)
 
 #define RIPPLE_NAMEDATALEN                          64
@@ -387,9 +219,5 @@ typedef enum RIPPLE_NETIDENTITY_TYPE
 #define RIPPLE_CHECK_TRANSIND_START_TRUE            1
 #define RIPPLE_CHECK_TRANSIND_START_METADATA        2
 #define RIPPLE_CHECK_TRANSIND_START_OTHER           3
-
-#define PUMP_INFO_FILEID                            0
-#define PUMP_BLKNUM_START                           1
-#define PUMP_OFFSET_START                           0
 
 #endif

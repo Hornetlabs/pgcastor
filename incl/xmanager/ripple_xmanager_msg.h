@@ -20,27 +20,13 @@ typedef enum RIPPLE_XMANAGER_MSG
     RIPPLE_XMANAGER_MSG_REFRESHCMD                      ,
     RIPPLE_XMANAGER_MSG_LISTCMD                         ,
 
-    /* xmanager 与 capture/pump/collector/integrate/receivelog 内部使用 */
+    /* xmanager 与 capture/integrate/receivelog 内部使用 */
     /*-----------capture begin------------*/
     RIPPLE_XMANAGER_MSG_CAPTUREINCREMENT                ,
     RIPPLE_XMANAGER_MSG_CAPTUREREFRESH            ,
     RIPPLE_XMANAGER_MSG_CAPTUREBIGTXN                   ,
 
     /*-----------capture   end------------*/
-
-    /*-----------pump begin---------------*/
-    RIPPLE_XMANAGER_MSG_PUMPINCREMENT                   ,
-    RIPPLE_XMANAGER_MSG_PUMPONLINEREFRESH               ,
-    RIPPLE_XMANAGER_MSG_PUMPBIGTXN                      ,
-
-    /*-----------pump   end---------------*/
-
-    /*-----------collector begin----------*/
-    RIPPLE_XMANAGER_MSG_COLLECTORINCREMENT              ,
-    RIPPLE_XMANAGER_MSG_COLLECTORONLINEREFRESH          ,
-    RIPPLE_XMANAGER_MSG_COLLECTORBIGTXN                 ,
-
-    /*-----------collector   end----------*/
 
     /*-----------integrate begin----------*/
     RIPPLE_XMANAGER_MSG_INTEGRATEINCREMENT              ,
@@ -70,12 +56,6 @@ typedef enum RIPPLE_XMANAGER_METRICNODETYPE
 
     /* capture */
     RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE              ,
-
-    /* pump */
-    RIPPLE_XMANAGER_METRICNODETYPE_PUMP                 ,
-
-    /* collector */
-    RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR            ,
 
     /* integrate */
     RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE            ,

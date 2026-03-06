@@ -344,7 +344,7 @@ bool ripple_onlinerefresh_integrate_persist2onlinerefreshmgr(ripple_onlinerefres
         }
 
         /* 包含了对txn的创建 */
-        /* 构建pumpmanager并初始化 设置xid 和 begin*/
+        /* 构建manager并初始化 设置xid 和 begin*/
         olrmgr = ripple_onlinerefresh_integrate_init(persistnode->increment);
         if(NULL == olrmgr)
         {

@@ -45,7 +45,7 @@ bool ripple_parsertrail_trailheadapply(ripple_parsertrail* parsertrail, void* da
     privdata->restartlsn = ffheader->restartlsn;
     privdata->confirmlsn = ffheader->confirmlsn;
 
-    /* 创建shiftfile事务，保存redolsn、restartlsn、confirmlsn在pump序列化时使用*/
+    /* 创建shiftfile事务，保存redolsn、restartlsn、confirmlsn在序列化时使用*/
     cur_txn = ripple_txn_init(RIPPLE_FROZEN_TXNID, InvalidXLogRecPtr, InvalidXLogRecPtr);
 
     stmt = rmalloc0(sizeof(ripple_txnstmt));

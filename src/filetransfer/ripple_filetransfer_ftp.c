@@ -22,7 +22,6 @@
 #include "filetransfer/ripple_filetransfer.h"
 #include "filetransfer/ripple_filetransfer_ftp.h"
 #include "parser/trail/ripple_parsertrail.h"
-#include "increment/pump/parser/ripple_increment_pumpparsertrail.h"
 
 /* 接收到数据但不处理数据，ftp执行语句时,保证数据正确 */
 static uint64 ripple_filetransfer_ftp_discard(void *ptr, uint64 size, uint64 nmemb, void *stream)
@@ -635,64 +634,6 @@ void ripple_filetransfer_ftp_list_free(ripple_filetransfer_ftp_list* ftp_list)
         ftp_list->memory = NULL;
     }
     ftp_list->size = 0;
-}
-
-/* 生成refresh分片数文件和校验文件节点并加入到队列中 */
-static void ripple_filetransfer_refresh_getshardings(ripple_increment_pumpparsertrail* pumpparsertrail, ripple_refresh_table* table)
-{
-    StringInfo path = NULL;
-    ripple_filetransfer_refreshshards *refresh = NULL;
-
-    /* shardings文件下载 */
-    refresh = ripple_filetransfer_refreshshards_init();
-    ripple_filetransfer_download_refreshshards_set(refresh, table->schema, table->table);
-
-    /* 提前创建好schema_table文件夹, 故障恢复时需要 */
-    path = makeStringInfo();
-    appendStringInfo(path, "%s/%s", refresh->base.localdir, RIPPLE_REFRESH_PARTIAL);
-    while(!DirExist(path->data))
-    {
-        if(true == g_gotsigterm)
-        {
-            deleteStringInfo(path);
-            return;
-        }
-        /* 创建目录 */
-        MakeDir(path->data);
-    }
-    deleteStringInfo(path);
-    pumpparsertrail->callback.filetransfernode_add(pumpparsertrail->privdata, (void*)refresh);
-    refresh = NULL;
-
-    return;
-}
-
-/* 生成refresh分片数文件并加入到队列中 */
-void ripple_filetransfer_pumprefresh(void* parsertrail, void* tables)
-{
-    char* url = NULL;
-    ripple_refresh_tables* refreshtb = NULL;
-    ripple_refresh_table* current_table = NULL;
-    ripple_increment_pumpparsertrail* pumpparsertrail = NULL;
-
-    url = guc_getConfigOption(RIPPLE_CFG_KEY_FTPURL);
-
-    if (url == NULL || url[0] == '\0')
-    {
-        return;
-    }
-
-    pumpparsertrail = (ripple_increment_pumpparsertrail*)parsertrail;
-
-    refreshtb = (ripple_refresh_tables*)tables;
-
-    current_table = refreshtb->tables;
-
-    while (current_table)
-    {
-        ripple_filetransfer_refresh_getshardings(pumpparsertrail, current_table);
-        current_table = current_table->next;
-    }
 }
 
 /* 执行 FTP 命令 */

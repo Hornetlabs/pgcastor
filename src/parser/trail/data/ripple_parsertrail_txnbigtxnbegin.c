@@ -17,7 +17,6 @@
 #include "loadrecords/ripple_record.h"
 #include "parser/trail/ripple_parsertrail.h"
 #include "parser/trail/data/ripple_parsertrail_txnbigtxnbegin.h"
-#include "increment/pump/parser/ripple_increment_pumpparsertrail.h"
 
 static void ripple_parsertrail_txnbigtxnbegin2hash(ripple_parsertrail* parsertrail,
                                                         ripple_ff_txndata* txndata)

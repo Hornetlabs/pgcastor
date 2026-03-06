@@ -9,8 +9,6 @@
 #include "xmanager/ripple_xmanager_msg.h"
 #include "xmanager/ripple_xmanager_metricnode.h"
 #include "xmanager/ripple_xmanager_metriccapturenode.h"
-#include "xmanager/ripple_xmanager_metricpumpnode.h"
-#include "xmanager/ripple_xmanager_metriccollectornode.h"
 #include "xmanager/ripple_xmanager_metricintegratenode.h"
 #include "xmanager/ripple_xmanager_metric.h"
 #include "xmanager/ripple_xmanager_metricmsglist.h"
@@ -43,8 +41,6 @@ static ripple_xmanager_metricnodestat_name ripple_metricnodetype_name[] =
 {
     { RIPPLE_XMANAGER_METRICNODETYPE_NOP,           "NOP" },
     { RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE,       "CAPTURE" },
-    { RIPPLE_XMANAGER_METRICNODETYPE_PUMP,          "PUMP" },
-    { RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR,     "COLLECTOR" },
     { RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE,     "INTEGRATE" },
     { RIPPLE_XMANAGER_METRICNODETYPE_HGRECEIVELOG,  "HGRECEIVELOG" },
     { RIPPLE_XMANAGER_METRICNODETYPE_PGRECEIVELOG,  "PGRECEIVELOG" },
@@ -87,21 +83,7 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
             continue;
         }
 
-        if (RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR == pxmetricnode->type)
-        {
-            ripple_xmanager_metriccollectornode* xmetriccollectornode   = NULL;
-            xmetriccollectornode = (ripple_xmanager_metriccollectornode*)pxmetricnode;
-            if (false== dlist_isnull(xmetriccollectornode->collectorinfo))
-            {
-                /* 空格 1 + jobname 128 */
-                ivalue = (129 * xmetriccollectornode->collectorinfo->length);
-                if (ivalue > maxoptionlen)
-                {
-                    maxoptionlen = ivalue;
-                }
-            }
-        }
-        else if(RIPPLE_XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
+        if(RIPPLE_XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
         {
             ripple_xmanager_metricprogressnode* xmetricprogressnode = NULL;
             xmetricprogressnode = (ripple_xmanager_metricprogressnode*)pxmetricnode;
@@ -366,22 +348,7 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
         rowlen += valuelen;
         npacket->used += valuelen;
 
-        if (RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR == pxmetricnode->type)
-        {
-            ripple_xmanager_metriccollectornode* xmetriccollectornode   = NULL;
-            ripple_xmanager_metriccollectorinfo* xmetriccollectorinfo   = NULL;
-
-            xmetriccollectornode = (ripple_xmanager_metriccollectornode*)pxmetricnode;
-
-            opdlnode = xmetriccollectornode->collectorinfo ? xmetriccollectornode->collectorinfo->head:NULL;
-            while (opdlnode != NULL)
-            {
-                xmetriccollectorinfo = (ripple_xmanager_metriccollectorinfo*)opdlnode->value;
-                appendStringInfo(option, "%s ", xmetriccollectorinfo->pumpname);
-                opdlnode = opdlnode->next;
-            }
-        }
-        else if(RIPPLE_XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
+        if(RIPPLE_XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
         {
             ripple_xmanager_metricnode* metricnode                  = NULL;
             ripple_xmanager_metricprogressnode* xmetricprogressnode = NULL;
@@ -395,14 +362,6 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
                 if (RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE == metricnode->type)
                 {
                     appendStringInfo(option, "capture %s", metricnode->name);
-                }
-                else if (RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR == metricnode->type)
-                {
-                    appendStringInfo(option, "collector %s", metricnode->name);
-                }
-                else if (RIPPLE_XMANAGER_METRICNODETYPE_PUMP == metricnode->type)
-                {
-                    appendStringInfo(option, "pump %s", metricnode->name);
                 }
                 else if (RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE == metricnode->type)
                 {

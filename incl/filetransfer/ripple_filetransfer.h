@@ -27,7 +27,7 @@ typedef struct RIPPLE_FILETRANSFERNODE
     char                localdir[RIPPLE_MAXPATH];       /* 本地文件夹，下载时创建本地文件夹 */
 }ripple_filetransfernode;
 
-/* collector保存未上传文件信息 */
+/* 保存未上传文件信息 */
 typedef struct RIPPLE_FILETRANSFER_METADATA
 {
     int                 type;

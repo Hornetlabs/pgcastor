@@ -30,34 +30,10 @@ static proc2stop           m_typ2stop[]=
         "capture stop error"
     },
     {
-        RIPPLE_PROC_TYPE_PUMP,
-        ripple_cmd_stopproc,
-        "pump",
-        "pump stop error"
-    },
-    {
-        RIPPLE_PROC_TYPE_COLLECTOR,
-        ripple_cmd_stopproc,
-        "collector",
-        "collector stop error"
-    },
-    {
         RIPPLE_PROC_TYPE_INTEGRATE,
         ripple_cmd_stopproc,
         "integrate",
         "integrate stop error"
-    },
-    {
-        RIPPLE_PROC_TYPE_FASTCMPCLIENT,
-        NULL,
-        "fastcmpclient",
-        "fastcmpclient stop error"
-    },
-    {
-        RIPPLE_PROC_TYPE_FASTCMPSVR,
-        NULL,
-        "fastcmpserver",
-        "fastcmpserver stop error"
     },
     {
         RIPPLE_PROC_TYPE_HGRECEIVEWAL,

@@ -235,79 +235,6 @@ void ripple_cache_sysdictsload(void** ref_sysdicts)
     return;
 }
 
-/* 初始化pump端系统字典 */
-ripple_cache_sysdicts *ripple_cache_sysdicts_pump_init(void)
-{
-    ripple_cache_sysdicts* sysdicts = NULL;
-    HASHCTL hctl = {'\0'};
-
-    if(NULL == sysdicts)
-    {
-        sysdicts = (ripple_cache_sysdicts*)rmalloc0(sizeof(ripple_cache_sysdicts));
-        if(NULL == sysdicts)
-        {
-            elog(RLOG_ERROR, "out of memeory");
-        }
-        rmemset0(sysdicts, 0, '\0', sizeof(ripple_cache_sysdicts));
-    }
-
-    /* pg_class初始化 */
-    rmemset1(&hctl, 0, 0, sizeof(hctl));
-    hctl.keysize = sizeof(Oid);
-    hctl.entrysize = sizeof(ripple_catalog_class_value);
-    sysdicts->by_class = hash_create("pump_class",
-                                      1024,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
-
-    /* pg_attribute初始化 */
-    rmemset1(&hctl, 0, 0, sizeof(hctl));
-    hctl.keysize = sizeof(Oid);
-    hctl.entrysize = sizeof(ripple_catalog_attribute_value);
-    sysdicts->by_attribute = hash_create("pump_attr",
-                                      2048,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
-
-    /* pg_database初始化 */
-    rmemset1(&hctl, 0, 0, sizeof(hctl));
-    hctl.keysize = sizeof(Oid);
-    hctl.entrysize = sizeof(ripple_catalog_database_value);
-    sysdicts->by_database = hash_create("pump_database",
-                                      256,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
-
-    /* pg_datname2oid初始化 */
-    rmemset1(&hctl, 0, 0, sizeof(hctl));
-    hctl.keysize = sizeof(xk_pg_parser_NameData);
-    hctl.entrysize = sizeof(ripple_catalog_datname2oid_value);
-    sysdicts->by_datname2oid = hash_create("pump_datname2oid",
-                                      256,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
-
-    /* pg_index初始化 */
-    rmemset1(&hctl, 0, 0, sizeof(hctl));
-    hctl.keysize = sizeof(Oid);
-    hctl.entrysize = sizeof(ripple_catalog_index_hash_entry);
-    sysdicts->by_index = hash_create("pump_index",
-                                      1024,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
-
-    /* pg_type初始化 */
-    rmemset1(&hctl, 0, 0, sizeof(hctl));
-    hctl.keysize = sizeof(Oid);
-    hctl.entrysize = sizeof(ripple_catalog_type_value);
-    sysdicts->by_type = hash_create("pump_type",
-                                      1024,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
-
-    return sysdicts;
-}
-
 /* 初始化integrate端系统字典 */
 ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
 {
@@ -328,7 +255,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(ripple_catalog_class_value);
-    sysdicts->by_class = hash_create("pump_class",
+    sysdicts->by_class = hash_create("integrate_class",
                                       1024,
                                      &hctl,
                                       HASH_ELEM | HASH_BLOBS);
@@ -337,7 +264,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(ripple_catalog_attribute_value);
-    sysdicts->by_attribute = hash_create("pump_attr",
+    sysdicts->by_attribute = hash_create("integrate_attr",
                                       2048,
                                      &hctl,
                                       HASH_ELEM | HASH_BLOBS);
@@ -346,7 +273,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(ripple_catalog_database_value);
-    sysdicts->by_database = hash_create("pump_database",
+    sysdicts->by_database = hash_create("integrate_database",
                                       256,
                                      &hctl,
                                       HASH_ELEM | HASH_BLOBS);
@@ -355,7 +282,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(xk_pg_parser_NameData);
     hctl.entrysize = sizeof(ripple_catalog_datname2oid_value);
-    sysdicts->by_datname2oid = hash_create("pump_datname2oid",
+    sysdicts->by_datname2oid = hash_create("integrate_datname2oid",
                                       256,
                                      &hctl,
                                       HASH_ELEM | HASH_BLOBS);
@@ -364,7 +291,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(ripple_catalog_index_hash_entry);
-    sysdicts->by_index = hash_create("pump_index",
+    sysdicts->by_index = hash_create("integrate_index",
                                       1024,
                                      &hctl,
                                       HASH_ELEM | HASH_BLOBS);
@@ -373,7 +300,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(ripple_catalog_type_value);
-    sysdicts->by_type = hash_create("pump_type",
+    sysdicts->by_type = hash_create("integrate_type",
                                       1024,
                                      &hctl,
                                       HASH_ELEM | HASH_BLOBS);

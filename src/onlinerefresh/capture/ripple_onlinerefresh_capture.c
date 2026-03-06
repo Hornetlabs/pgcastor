@@ -38,7 +38,6 @@
 #include "refresh/ripple_refresh_table_syncstats.h"
 #include "refresh/capture/ripple_refresh_capture.h"
 #include "refresh/sharding2file/ripple_refresh_sharding2file.h"
-#include "increment/collector/netclient/ripple_increment_collectornetclient.h"
 #include "stmts/ripple_txnstmt_refresh.h"
 #include "stmts/ripple_txnstmt_onlinerefresh.h"
 #include "works/parserwork/wal/ripple_onlinerefresh.h"

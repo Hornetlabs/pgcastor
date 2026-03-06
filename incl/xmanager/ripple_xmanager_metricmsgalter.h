@@ -4,7 +4,7 @@
 /*
  * 处理 alter 命令
  *  1、jobtype 等于 PROCESS
- *  2、如果是capture/collector, 检查是否有同类型job
+ *  2、如果是capture, 检查是否有同类型job
  *  3、add/remove job
  *  4、组装返回消息
 */

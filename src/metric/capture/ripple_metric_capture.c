@@ -499,7 +499,7 @@ void* ripple_metric_capture_main(void *args)
     /* 设置类型 */
     ripple_netclient_setprotocoltype(&netclient, RIPPLE_NETCLIENT_PROTOCOLTYPE_UNIXDOMAIN);
 
-    ripple_netclient_sethbtimeout(&netclient, RIPPLE_NET_PUMP_HBTIME);
+    ripple_netclient_sethbtimeout(&netclient, RIPPLE_NET_HBTIME);
     ripple_netclient_settimeout(&netclient, 0);
 
     netclient.base->timeout = RIPPLE_NET_POLLTIMEOUT;

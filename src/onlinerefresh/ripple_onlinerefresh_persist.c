@@ -35,7 +35,7 @@ ripple_onlinerefresh_persistnode* ripple_onlinerefresh_persistnode_init(void)
     persistnode = (ripple_onlinerefresh_persistnode *)rmalloc0(sizeof(ripple_onlinerefresh_persistnode));
     if (NULL == persistnode)
     {
-        elog(RLOG_WARNING, "pump onlinerefresh persistnode malloc out of memory, %s", strerror(errno));
+        elog(RLOG_WARNING, "onlinerefresh persistnode malloc out of memory, %s", strerror(errno));
         return NULL;
     }
     rmemset0(persistnode, 0, 0, sizeof(ripple_onlinerefresh_persistnode));
@@ -59,7 +59,7 @@ ripple_onlinerefresh_persist* ripple_onlinerefresh_persist_init(void)
     persist = (ripple_onlinerefresh_persist *)rmalloc0(sizeof(ripple_onlinerefresh_persist));
     if (NULL == persist)
     {
-        elog(RLOG_WARNING, "pump onlinerefresh persist malloc out of memory, %s", strerror(errno));
+        elog(RLOG_WARNING, "onlinerefresh persist malloc out of memory, %s", strerror(errno));
         return NULL;
     }
     rmemset0(persist, 0, 0, sizeof(ripple_onlinerefresh_persist));

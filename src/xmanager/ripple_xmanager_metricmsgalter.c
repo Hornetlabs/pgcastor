@@ -18,7 +18,7 @@
 /*
  * 处理 alter 命令
  *  1、jobtype 等于 PROCESS
- *  2、如果是capture/collector, 检查是否有同类型job
+ *  2、如果是capture, 检查是否有同类型job
  *  3、add/remove job
  *  4、组装返回消息
 */
@@ -168,9 +168,8 @@ bool ripple_xmanager_metricmsg_parsealter(ripple_xmanager_metric* xmetric,
             continue;
         }
 
-        /* 如果是capture/collector已经在progressjop退出 */
-        if(RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE == jobtype
-           || RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR == jobtype)
+        /* 如果是capture已经在progressjop退出 */
+        if (RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE == jobtype)
         {
             if (false == dlist_isnull(xmetricprogressnode->progressjop))
             {
@@ -180,7 +179,7 @@ bool ripple_xmanager_metricmsg_parsealter(ripple_xmanager_metric* xmetric,
                     if (jobtype == tmpxmetricnode->type)
                     {
                         errcode = RIPPLE_ERROR_MSGEXIST;
-                        snprintf(errormsg, 2048, "ERROR: xmanager recv alter progress command, capture/collector %s already exists", jobname);
+                        snprintf(errormsg, 2048, "ERROR: xmanager recv alter progress command, capture %s already exists", jobname);
                         goto ripple_xmanager_metricmsg_parsealter_error;
                     }
                 }

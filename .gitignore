@@ -1,0 +1,24 @@
+# Special file excludes
+c_cpp_properties.json
+
+# Program file excludes
+/bin/capture/capture
+/bin/integrate/integrate
+/bin/receivehglog/receivelog
+/bin/receivepglog/receivelog
+/bin/xmanager/xmanager
+/bin/xscsci/xscsci
+
+# yacc flex gen file excludes
+/bin/xscsci/xscsci_gram.c
+/bin/xscsci/xscsci_gram.h
+/bin/xscsci/xscsci_scan.c
+
+
+# Global excludes across all subdirectories
+*.o
+*.so
+
+# Build file excludes 
+Makefile.global
+Makefile

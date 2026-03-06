@@ -89,49 +89,10 @@ function configSpecialMK
     echo ""                                                                             >> Makefile
 }
 
-function configFastCompareMK
-{
-    cd $1
-    configMKHead Makefile
-
-    echo "include ${RIPPLE_BASE}/Makefile.global"                                       >> Makefile
-    echo "RIPPLE_SOURCE = \$(wildcard *.c)"                                             >> Makefile
-    echo "RIPPLE_LIBOBJS = \$(wildcard ${RIPPLE_BASE}/lib/*.o)"                          >> Makefile
-    echo "RIPPLE_OBJS = \$(patsubst %.c, %.o, \$(RIPPLE_SOURCE))"                       >> Makefile
-    echo ""                                                                             >> Makefile
-    echo ""                                                                             >> Makefile
-    echo "all:\${RIPPLE_OBJS} $2 $3 ok"                                                    >> Makefile
-    echo ""                                                                             >> Makefile
-    echo "\${RIPPLE_OBJS}:%.o:%.c"                                                      >> Makefile
-    echo "	\${CC} \${RIPPLE_CFLAGS} \${RIPPLE_INCL} -c $< -o \$@"                      >> Makefile
-    echo ""                                                                             >> Makefile
-    echo "$2:$2.o"                                                                  >> Makefile
-    echo "	\${CC} \${RIPPLE_CFLAGS} \${RIPPLE_INCL} $< -o $2 -L\${RIPPLE_LIBDIR} \${RIPPLE_LIBOBJS} -L\${RIPPLE_DB_LIBDIR} \${RIPPLE_DB_LIB} \${RIPPLE_OS_LIB} -L\${RIPPLE_CURL_LIBDIR} \${RIPPLE_CURL_LIB}"  >> Makefile
-    echo ""                                                                             >> Makefile
-    echo "$3:$3.o"                                                                  >> Makefile
-    echo "	\${CC} \${RIPPLE_CFLAGS} \${RIPPLE_INCL} $< -o $3 -L\${RIPPLE_LIBDIR} \${RIPPLE_LIBOBJS} -L\${RIPPLE_DB_LIBDIR} \${RIPPLE_DB_LIB} \${RIPPLE_OS_LIB} -L\${RIPPLE_CURL_LIBDIR} \${RIPPLE_CURL_LIB}"  >> Makefile
-    echo ""                                                                             >> Makefile
-    echo ""                                                                             >> Makefile
-    echo "ok:"                                                                          >> Makefile
-    echo "	rm -f \${RIPPLE_OBJS}"                                                      >> Makefile
-    echo "	@echo \"-------------------------------------------\" "                     >> Makefile
-    echo "	@echo \"    |      make $2 success        | \""                             >> Makefile
-    echo "	@echo \"    |      make $3 success        | \""                             >> Makefile
-    echo "	@echo \"-------------------------------------------\" "                     >> Makefile
-    echo "clean:"                                                                       >> Makefile
-    echo "	rm -f \${RIPPLE_OBJS}"                                                      >> Makefile
-    echo "	rm -f $2"                                                                   >> Makefile
-    echo "	rm -f $3"                                                                   >> Makefile
-    echo ""                                                                             >> Makefile
-}
-
-
 ##bin 目录下删除Makefile
 function configMKBinClear
 {
     rm -f ${RIPPLE_BASE}/bin/capture/Makefile
-    rm -f ${RIPPLE_BASE}/bin/pump/Makefile
-    rm -f ${RIPPLE_BASE}/bin/collector/Makefile
     rm -f ${RIPPLE_BASE}/bin/integrate/Makefile
     rm -f ${RIPPLE_BASE}/bin/receivepglog/Makefile
     rm -f ${RIPPLE_BASE}/bin/receivehglog/Makefile
@@ -157,16 +118,7 @@ function configMKBin
     subdirs[$subdircnt]=${RIPPLE_BASE}/bin/capture
     let subdircnt+=1
 
-    subdirs[$subdircnt]=${RIPPLE_BASE}/bin/pump
-    let subdircnt+=1
-
-    subdirs[$subdircnt]=${RIPPLE_BASE}/bin/collector
-    let subdircnt+=1
-
     subdirs[$subdircnt]=${RIPPLE_BASE}/bin/integrate
-    let subdircnt+=1
-
-    subdirs[$subdircnt]=${RIPPLE_BASE}/bin/fastcompare
     let subdircnt+=1
 
 # recivelog begin
@@ -195,17 +147,8 @@ function configMKBin
     ##capture
     configSpecialMK ${RIPPLE_BASE}/bin/capture capture
 
-    ##pump
-    configSpecialMK ${RIPPLE_BASE}/bin/pump pump
-
-    ##collector
-    configSpecialMK ${RIPPLE_BASE}/bin/collector collector
-
     ##integrate
     configSpecialMK ${RIPPLE_BASE}/bin/integrate integrate
-
-    ##fastcompare
-    configFastCompareMK ${RIPPLE_BASE}/bin/fastcompare fastcompareserver fastcompareclient
 
     ##pgreceivewal
     configSpecialMK ${RIPPLE_BASE}/bin/receivepglog receivelog

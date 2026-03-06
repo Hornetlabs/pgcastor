@@ -115,7 +115,7 @@ typedef struct RIPPLE_FFSMGR_STATE_CALLBACK
     /*获取 recordcache callback parser线程 */
     void* (*getrecords)(void* parser);
 
-    /* pump 获取  parser线程状态 */
+    /* 获取  parser线程状态 */
     int (*getparserstate)(void* parser);
 
     /*获取 txn2filebuffer 序列化*/

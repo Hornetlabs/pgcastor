@@ -52,24 +52,8 @@
 #include "works/parserwork/wal/ripple_rewind.h"
 #include "works/parserwork/wal/ripple_parserwork_decode.h"
 #include "works/splitwork/wal/ripple_splitwork_wal.h"
-#include "fastcompare/ripple_fastcompare_chunk.h"
-#include "fastcompare/ripple_fastcompare_tablecomparecatalog.h"
-#include "fastcompare/ripple_fastcompare_tableslicetask.h"
-#include "fastcompare/ripple_fastcompare_tableslice.h"
-#include "fastcompare/ripple_fastcompare_simpledatachunk.h"
-#include "fastcompare/ripple_fastcompare_datacmpresult.h"
-#include "fastcompare/ripple_fastcompare_datacompare.h"
-#include "fastcompare/ripple_fastcompare_columnvalue.h"
-#include "fastcompare/ripple_fastcompare_beginchunk.h"
-#include "fastcompare/ripple_fastcompare_beginslice.h"
-#include "fastcompare/ripple_fastcompare_tablecorrectslice.h"
-#include "fastcompare/ripple_fastcompare_tableslicecorrectmanager.h"
 #include "bigtransaction/persist/ripple_bigtxn_persist.h"
 #include "bigtransaction/ripple_bigtxn.h"
-#include "increment/pump/split/ripple_increment_pumpsplittrail.h"
-#include "increment/pump/parser/ripple_increment_pumpparsertrail.h"
-#include "increment/pump/serial/ripple_increment_pumpserial.h"
-#include "increment/pump/net/ripple_increment_pumpnet.h"
 
 typedef void (*dyworksnodefree)();
 typedef void* (*dyworkthread)(void* args);
@@ -89,12 +73,6 @@ static ripple_dyworks_typ2opt    m_dyworksopt[] =
     {
         RIPPLE_DYTHREAD_TYPE_NOP,
         "NOP",
-        NULL,
-        NULL
-    },
-    {
-        RIPPLE_DYTHREAD_TYPE_NETSVR,
-        "COLLECTOR NET SVR",
         NULL,
         NULL
     },
@@ -147,50 +125,8 @@ static ripple_dyworks_typ2opt    m_dyworksopt[] =
         NULL
     },
     {
-        RIPPLE_DYTHREAD_TYPE_PUMP_ONLINEREFRESH_MANAGE,
-        "CAPTURE ONLINEREFRESH MANAGE",
-        NULL,
-        NULL
-    },
-    {
         RIPPLE_DYTHREAD_TYPE_INTEGRATE_ONLINEREFRESH_MANAGE,
         "INTEGRATE ONLINEREFRESH MANAGE",
-        NULL,
-        NULL
-    },
-    {
-        RIPPLE_DYTHREAD_TYPE_FASTCMPTABLESLICECORRECT,
-        "Fast Compare TableSliceCorrect",
-        riple_fastcompare_tableslicecorrectmanager_main,
-        riple_fastcompare_tableslicecorrectmanager_free
-    },
-    {
-        RIPPLE_DYTHREAD_TYPE_FASTCMPTABLESLICE,
-        "Fast Compare TableSlice",
-        ripple_fastcompare_tableslicetask_main,
-        ripple_fastcompare_tableslicetask_free
-    },
-    {
-        RIPPLE_DYTHREAD_TYPE_PUMP_BIGTXN_SPLITTRAIL,
-        "Bigtransaction Pump Split",
-        NULL,
-        NULL
-    },
-    {
-        RIPPLE_DYTHREAD_TYPE_PUMP_BIGTXN_PARSERTRAIL,
-        "Bigtransaction Pump Parser",
-        NULL,
-        NULL
-    },
-    {
-        RIPPLE_DYTHREAD_TYPE_PUMP_BIGTXN_SERIAL,
-        "Bigtransaction Pump Serial",
-        NULL,
-        NULL
-    },
-    {
-        RIPPLE_DYTHREAD_TYPE_PUMP_BIGTXN_CLIENT,
-        "Bigtransaction Pump Client",
         NULL,
         NULL
     }

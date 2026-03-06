@@ -100,82 +100,8 @@ typedef enum RIPPLE_THRNODE_IDENTITY
 
     /*------------capture 线程类型在上面添加---------------------*/
 
-    /* 增量网络发送线程 */
-    RIPPLE_THRNODE_IDENTITY_INC_PUMP_NETCLIENT                      ,
-
-    /* 增量序列化线程 */
-    RIPPLE_THRNODE_IDENTITY_INC_PUMP_SERIAL                         ,
-
-    /* 增量解析器线程 */
-    RIPPLE_THRNODE_IDENTITY_INC_PUMP_PARSER                         ,
-
-    /* 增量加载 records线程 */
-    RIPPLE_THRNODE_IDENTITY_INC_PUMP_LOADRECORD                     ,
-
-    /* 指标线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_METRIC                             ,
-
     /* 网闸线程 */
     RIPPLE_THRNODE_IDENTITY_GAP                                     ,
-
-    /* refresh 管理线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_REFRESH_MGR                        ,
-
-    /* refresh 工作线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_REFRESH_JOB                        ,
-
-    /* onlinerefresh 管理线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_ONLINEREFRESH_INC_MGR              ,
-
-    /* onlinerefresh refresh 工作线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_ONLINEREFRESH_JOB                  ,
-
-    /* onlinerefresh increment net 线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_OLINEREFRESH_INC_NET               ,
-
-    /* onlinerefresh increment serial 线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_OLINEREFRESH_INC_SERIAL            ,
-
-    /* onlinerefresh increment parser 线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_OLINEREFRESH_INC_PARSER            ,
-
-    /* onlinerefresh increment loadrecords 线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_OLINEREFRESH_INC_LOADRECORDS       ,
-
-    /* bigtxn 管理线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_BIGTXN_MGR                         ,
-
-    /* bigtxn 网络发送线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_BIGTXN_NETCLIENT                   ,
-
-    /* bigtxn 序列化线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_BIGTXN_SERIAL                      ,
-
-    /* bigtxn 解析器线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_BIGTXN_PARSER                      ,
-
-    /* bigtxn 管理线程 */
-    RIPPLE_THRNODE_IDENTITY_PUMP_BIGTXN_LOADRECORD                  ,
-
-    /*------------pump 线程类型在上面添加------------------------*/
-
-
-    /*------------collector 线程类型在此添加 BEGIN --------------*/
-    /* 网络服务线程 */
-    RIPPLE_THRNODE_IDENTITY_INC_COLLECTOR_SVR                       ,
-
-    /* 网闸线程 */
-    RIPPLE_THRNODE_IDENTITY_INC_COLLECTOR_FTP                       ,
-
-    /* 指标线程 */
-    RIPPLE_THRNODE_IDENTITY_COLLECTOR_METRIC                        ,
-
-    /* 落盘线程 */
-    RIPPLE_THRNODE_IDENTITY_INC_COLLECTOR_FLUSH                     ,
-
-    /* 网络发送线程 */
-    RIPPLE_THRNODE_IDENTITY_INC_COLLECTOR_NETCLINT                  ,
-    /*------------collector 线程类型 END -----------------------*/
 
     /*------------integrate 线程类型在此添加 BEGIN --------------*/
     /* 应用线程 */

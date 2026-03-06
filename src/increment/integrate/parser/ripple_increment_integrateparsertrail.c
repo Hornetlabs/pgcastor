@@ -175,7 +175,7 @@ static bool ripple_increment_integrateparsertrail_refresh(ripple_increment_integ
 
     if(0 == list_length(txn->stmts))
     {
-        elog(RLOG_WARNING, "pump refresh stmts is null");
+        elog(RLOG_WARNING, "refresh stmts is null");
         return false;
     }
 

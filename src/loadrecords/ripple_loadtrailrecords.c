@@ -465,7 +465,7 @@ bool ripple_loadtrailrecords_filterfortransbegin(ripple_loadtrailrecords* loadre
      * |record     |                  |
      * | -----------------------------
      * 
-     * 当重启时, 在 pump 端会在文件头部开始解析, 此时因为找到该文件中第一个事务的开始.
+     * 当重启时, 会在文件头部开始解析, 此时因为找到该文件中第一个事务的开始.
      *  1、元数据需要, 包含 database metadata 和 table metadata
      *  2、若该文件存在了 RESET 或 TAIL,那说明到了解析到了文件的尾部也没有需要的数据, 所以此时也不在需要在过滤了
      */

@@ -9,8 +9,6 @@ typedef bool (*netserver_handler)(void* netserver, rsocket  sock);
 typedef enum RIPPLE_NETSERVER_TYPE
 {
     RIPPLE_NETSERVER_TYPE_NOP               = 0x00,
-    RIPPLE_NETSERVER_TYPE_COLLECTOR         ,
-    RIPPLE_NETSERVER_TYPE_FASTCMP           ,
     RIPPLE_NETSERVER_TYPE_XMANAGER          
 } ripple_netserver_type;
 

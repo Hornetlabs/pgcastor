@@ -145,18 +145,6 @@ bool ripple_fftrail_txnmetadata(void* data, void* state)
         }
     }
 
-    // /* 过滤掉pump生成的无用的事务 */
-    // if(RIPPLE_FF_DATA_TRANSIND_END == (RIPPLE_FF_DATA_TRANSIND_END & txndata->header.transind)
-    //     && RIPPLE_FROZEN_TXNID != txndata->header.transid)
-    // {
-    //     /* 最后一个需要添加结束标识 */
-    //     ripple_ff_txndata  txncommitdata = { {'\0'} };
-    //     txncommitdata.data = NULL;
-    //     txncommitdata.header.orgpos = rstmt->extra0.wal.lsn;
-
-    //     ripple_fftrail_txncommit_serial(&txncommitdata, state);
-    // }
-
     return true;
 }
 

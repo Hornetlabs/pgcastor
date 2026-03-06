@@ -215,40 +215,35 @@ static void xscsci_help(void)
     printf("---------use create command create a job----------------\n");
     printf("create manager              create progress\n");
     printf("create pgreceivelog         create hgreceivelog\n");
-    printf("create capture              create pump\n");
-    printf("create collector            create integrate\n");
+    printf("create capture              create integrate\n");
     printf("\n");
 
     /* edit 支持 */
     printf("---------use edit command edit job config file----------\n");
     printf("edit manager\n");
     printf("edit pgreceivelog           edit hgreceivelog\n");
-    printf("edit capture                edit pump\n");
-    printf("edit collector              edit integrate\n");
+    printf("edit capture                edit integrate\n");
     printf("\n");
 
     /* init 支持 */
     printf("---------use init command init job work dir-------------\n");
     printf("init manager\n");
     printf("init pgreceivelog           init hgreceivelog\n");
-    printf("init capture                init pump\n");
-    printf("init collector              init integrate\n");
+    printf("init capture                init integrate\n");
     printf("\n");
 
     /* start 支持 */
     printf("---------use start command start job -------------------\n");
     printf("start manager\n");
     printf("start pgreceivelog          start hgreceivelog\n");
-    printf("start capture               start pump\n");
-    printf("start collector             start integrate\n");
+    printf("start capture               start integrate\n");
     printf("\n");
 
     /* stop 支持 */
     printf("---------use stop command stop job ---------------------\n");
     printf("stop manager\n");
     printf("stop pgreceivelog           stop hgreceivelog\n");
-    printf("stop capture                stop pump\n");
-    printf("stop collector              stop integrate\n");
+    printf("stop capture                stop integrate\n");
     printf("\n");
 
     /* alter 支持 */
@@ -259,40 +254,35 @@ static void xscsci_help(void)
     printf("---------use reload command reload config file----------\n");
     printf("reload manager\n");
     printf("reload pgreceivelog         reload hgreceivelog\n");
-    printf("reload capture              reload pump\n");
-    printf("reload collector            reload integrate\n");
+    printf("reload capture              reload integrate\n");
     printf("\n");
 
     /* remove 支持 */
     printf("---------use remove command remove config file----------\n");
     printf("remove manager\n");
     printf("remove pgreceivelog         remove hgreceivelog\n");
-    printf("remove capture              remove pump\n");
-    printf("remove collector            remove integrate\n");
+    printf("remove capture              remove integrate\n");
     printf("\n");
 
     /* drop 支持 */
     printf("---------use drop command drop job----------------------\n");
     printf("drop manager                drop progress\n");
     printf("drop pgreceivelog           drop hgreceivelog\n");
-    printf("drop capture                drop pump\n");
-    printf("drop collector              drop integrate\n");
+    printf("drop capture                drop integrate\n");
     printf("\n");
 
     /* info 支持 */
     printf("---------use info command view job base info------------\n");
     printf("info manager                info progress\n");
     printf("info pgreceivelog           info hgreceivelog\n");
-    printf("info capture                info pump\n");
-    printf("info collector              info integrate\n");
+    printf("info capture                info integrate\n");
     printf("\n");
 
     /* watch 支持 */
     printf("---------use watch command view job info every seconds--\n");
     printf("watch manager               watch progress\n");
     printf("watch pgreceivelog          watch hgreceivelog\n");
-    printf("watch capture               watch pump\n");
-    printf("watch collector             watch integrate\n");
+    printf("watch capture               watch integrate\n");
     printf("\n");
 
     /* watch 支持 */

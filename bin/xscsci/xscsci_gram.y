@@ -44,8 +44,6 @@
 %token K_INFO
 %token K_MANAGER
 %token K_CAPTURE
-%token K_PUMP
-%token K_COLLECTOR
 %token K_INTEGRATE
 %token K_HGRECEIVELOG
 %token K_PGRECEIVELOG
@@ -337,14 +335,6 @@ jobkind:
             | K_CAPTURE
                 { 
                     $$ = XSYNCH_JOBKIND_CAPTURE; 
-                }
-            | K_PUMP
-                {
-                    $$ = XSYNCH_JOBKIND_PUMP;
-                }
-            | K_COLLECTOR
-                {
-                    $$ = XSYNCH_JOBKIND_COLLECTOR;
                 }
             | K_INTEGRATE
                 {

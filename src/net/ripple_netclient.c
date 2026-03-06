@@ -243,7 +243,7 @@ bool ripple_netclient_isconnect(ripple_netclient* netclient)
             {
                 continue;
             }
-            elog(RLOG_WARNING, "can't connect collector");
+            elog(RLOG_WARNING, "can't connect");
             FileClose(netclient->fd);
             netclient->fd = -1;
             return false;
@@ -482,7 +482,7 @@ bool ripple_netclient_senddata(ripple_netclient_protocoltype ptype,
 
     /* 设置类型 */
     ripple_netclient_setprotocoltype(&netclient, ptype);
-    ripple_netclient_sethbtimeout(&netclient, RIPPLE_NET_PUMP_HBTIME);
+    ripple_netclient_sethbtimeout(&netclient, RIPPLE_NET_HBTIME);
     ripple_netclient_settimeout(&netclient, 0);
 
     netclient.base->timeout = RIPPLE_NET_POLLTIMEOUT;
@@ -649,7 +649,7 @@ bool ripple_netclient_desc(ripple_netclient* netclient)
                 /* 读取数据失败,退出 */
                 if(0 == msglen)
                 {
-                    elog(RLOG_WARNING, "collector close sock, %s", strerror(errno));
+                    elog(RLOG_WARNING, "close sock, %s", strerror(errno));
                 }
                 else
                 {
@@ -689,7 +689,7 @@ bool ripple_netclient_desc(ripple_netclient* netclient)
                     /* 读取数据失败,退出 */
                     if(0 == msglen)
                     {
-                        elog(RLOG_WARNING, "collector close sock");
+                        elog(RLOG_WARNING, "close sock");
                     }
                     else
                     {
@@ -721,13 +721,13 @@ bool ripple_netclient_desc(ripple_netclient* netclient)
         uptr = netpacket->data;
         debugmsgtype = get32bit(&uptr);
         debugmsglen = get32bit(&uptr);
-        elog(RLOG_DEBUG, "pump send msgtype:%u, msglen:%u", debugmsgtype, debugmsglen);
+        elog(RLOG_DEBUG, "send msgtype:%u, msglen:%u", debugmsgtype, debugmsglen);
         /* FOR DEBUG END */
 
         if(false == ripple_net_write(netclient->fd, netpacket->data, netpacket->used))
         {
             /* 发送数据失败，关闭连接 */
-            elog(RLOG_WARNING, "pump write data 2 collector error, %s", strerror(errno));
+            elog(RLOG_WARNING, "write data 2 error, %s", strerror(errno));
             ripple_netpacket_destroy(netpacket);
             return false;
         }
@@ -886,25 +886,6 @@ bool ripple_netclient_packets_handler(void* netclient, ripple_netpacket* netpack
 
     return true;
 
-}
-
-/* 创建 心跳包 挂载到 wpackets 上 */
-void ripple_netclient_wpacketsadd_hb(ripple_netclient* netclient)
-{
-    uint8* wuptr = NULL;
-    ripple_netpacket* netpacket = NULL;
-    netpacket = ripple_netpacket_init();
-    netpacket->max = RIPPLE_MAXALIGN(RIPPLE_NETMSG_TYPE_P2C_HB_SIZE);
-    netpacket->offset = RIPPLE_NETMSG_TYPE_HDR_SIZE;
-    netpacket->used = RIPPLE_NETMSG_TYPE_P2C_HB_SIZE;
-    netpacket->data = ripple_netpacket_data_init(netpacket->max);
-
-    /* 发送请求，获取标识 */
-    wuptr = netpacket->data;
-    RIPPLE_CONCAT(put, 32bit)(&wuptr, RIPPLE_NETMSG_TYPE_P2C_HB);
-    RIPPLE_CONCAT(put, 32bit)(&wuptr, RIPPLE_NETMSG_TYPE_P2C_HB_SIZE);
-
-    ripple_netclient_addwpacket(netclient, (void*)netpacket);
 }
 
 /*

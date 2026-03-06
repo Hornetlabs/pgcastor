@@ -13,10 +13,10 @@ data = /opt/ripple/integratedata
 # 目标数据库连接
 url = "port=5438 dbname=postgres user=postgres"
 
-# trail文件目录，这里填collector的data目录
-trail_dir = /opt/ripple/ripple/collectordata
+# trail文件目录，这里填capture的data目录
+trail_dir = /opt/ripple/ripple/capturedata
 
-# trail 文件大小  MB（与collector相同）
+# trail 文件大小  MB（与capture相同）
 trail_max_size = 16
 
 # 初始化时，存放状态表的schema，建议创建单独schema 

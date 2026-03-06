@@ -45,8 +45,6 @@ typedef struct RIPPLE_CACHE_SYSDICTS
 /* 加载数据 */
 void ripple_cache_sysdictsload(void** ref_sysdicts);
 
-ripple_cache_sysdicts *ripple_cache_sysdicts_pump_init(void);
-
 ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void);
 
 void ripple_cache_sysdicts_free(void* args);

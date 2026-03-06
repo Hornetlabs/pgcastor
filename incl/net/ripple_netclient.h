@@ -91,8 +91,6 @@ bool ripple_netclient_rpacketisnull(ripple_netclient* netclient);
 
 bool ripple_netclient_packets_handler(void* netclient, ripple_netpacket* netpacket);
 
-void ripple_netclient_wpacketsadd_hb(ripple_netclient* netclient);
-
 /* 清理描述符/队列 */
 void ripple_netclient_clear(ripple_netclient* netclient);
 

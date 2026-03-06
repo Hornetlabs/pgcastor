@@ -123,7 +123,7 @@ static void ripple_increment_integrate_loadlsn_set(void* privdata, XLogRecPtr lo
     return;
 }
 
-/* integrate端 设置metric加载 collector trail 文件编号 */
+/* integrate端 设置metric加载 trail 文件编号 */
 static void ripple_increment_integrate_loadtrailno_set(void* privdata, uint64 loadtrailno)
 {
     ripple_increment_integrate* incintegrate = NULL;
@@ -144,7 +144,7 @@ static void ripple_increment_integrate_loadtrailno_set(void* privdata, uint64 lo
     return;
 }
 
-/* integrate端 设置metric加载 collector trail 文件内的偏移 */
+/* integrate端 设置metric加载 trail 文件内的偏移 */
 static void ripple_increment_integrate_loadtrailstart_set(void* privdata, uint64 loadtrailstart)
 {
     ripple_increment_integrate* incintegrate = NULL;
@@ -210,7 +210,7 @@ static void ripple_increment_integrate_synclsn_set(void* privdata, XLogRecPtr sy
     return;
 }
 
-/* integrate端 设置metric已入库的 collector trail 文件编号 */
+/* integrate端 设置metric已入库的 trail 文件编号 */
 static void ripple_increment_integrate_synctrailno_set(void* privdata, uint64 synctrailno)
 {
     ripple_increment_integrate* incintegrate = NULL;
@@ -231,7 +231,7 @@ static void ripple_increment_integrate_synctrailno_set(void* privdata, uint64 sy
     return;
 }
 
-/* integrate端 设置metric已入库的 collector trail 文件内的偏移 */
+/* integrate端 设置metric已入库的 trail 文件内的偏移 */
 static void ripple_increment_integrate_synctrailstart_set(void* privdata, uint64 synctrailstart)
 {
     ripple_increment_integrate* incintegrate = NULL;

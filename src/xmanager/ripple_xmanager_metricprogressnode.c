@@ -18,8 +18,6 @@
 #include "xmanager/ripple_xmanager_msg.h"
 #include "xmanager/ripple_xmanager_metricnode.h"
 #include "xmanager/ripple_xmanager_metriccapturenode.h"
-#include "xmanager/ripple_xmanager_metricpumpnode.h"
-#include "xmanager/ripple_xmanager_metriccollectornode.h"
 #include "xmanager/ripple_xmanager_metricintegratenode.h"
 #include "xmanager/ripple_xmanager_metric.h"
 #include "xmanager/ripple_xmanager_metricprogressnode.h"
@@ -333,46 +331,6 @@ ripple_xmanager_metricnode* ripple_xmanager_metricprogressnode_deserial(uint8* b
     return (ripple_xmanager_metricnode*)xmetricprogressnode;
 }
 
-static void ripple_xmanager_metricprogressnode_timediff(int64_t tmdiff, char *buf, size_t buflen)
-{
-    int64_t hours = 0;
-    int64_t mins = 0;
-    int64_t secs = 0;
-
-    if (tmdiff < 0)
-    {
-        snprintf(buf, buflen, "%s", "0s");
-        return ;
-    }
-
-    if (tmdiff >= DTTIME_USECS_PER_HOUR)
-    {
-        hours = tmdiff / DTTIME_USECS_PER_HOUR;
-        tmdiff  %= DTTIME_USECS_PER_HOUR;
-
-        mins = tmdiff / DTTIME_USECS_PER_MINUTE;
-        snprintf(buf, buflen, "%02ldh %02ldm",
-                               hours, mins);
-    }
-    else if (tmdiff >= DTTIME_USECS_PER_MINUTE)
-    {
-        tmdiff  %= DTTIME_USECS_PER_HOUR;
-        mins = tmdiff / DTTIME_USECS_PER_MINUTE;
-        tmdiff %= DTTIME_USECS_PER_MINUTE;
-        secs = tmdiff / DTTIME_USECS_PER_SEC;
-        snprintf(buf, buflen, "%ldm:%lds",
-                               mins, secs);
-    }
-    else
-    {
-        tmdiff  %= DTTIME_USECS_PER_HOUR;
-        tmdiff %= DTTIME_USECS_PER_MINUTE;
-        secs = tmdiff / DTTIME_USECS_PER_SEC;
-        snprintf(buf, buflen, "%lds", secs);
-    }
-    return;
-}
-
 /* 从配置文件中获取key--valve */
 static bool ripple_xmanager_metricprogressnode_getdatafromcfgfile(const char *config_file, char* key, char* data)
 {
@@ -547,7 +505,6 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
 {
     bool find                                               = false;
     uint8 u8value                                           = 0;
-    uint16 u16value                                         = 0;
     int rowlen                                              = 0;
     int msglen                                              = 0;
     int ivalue                                              = 0;
@@ -555,27 +512,13 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
     uint32 hi                                               = 0;
     uint32 lo                                               = 0;
     int64 dbtime                                            = 0;
-    uint32 valuelen                                         = 0;
-    int64 timelag                                           = 0;
-    uint64 lsnlag                                           = 0;
-    uint64 traillag                                         = 0;
-    uint64 currentlsn                                       = 0;
-    uint8* nullmap                                          = NULL;
     uint8* rowuptr                                          = NULL;
     uint8* uptr                                             = NULL;
     PGconn *conn                                            = NULL;
     PGresult *res                                           = NULL;
-    dlistnode* dlnode                                       = NULL;
     ripple_netpacket* npacket                               = NULL;
-    ripple_xmanager_metricnode* pmetricnode                 = NULL;
-    ripple_xmanager_metricnode* tmpmetricnode               = NULL;
-    ripple_xmanager_metriccapturenode* capture              = NULL;
-    ripple_xmanager_metricpumpnode* pump                    = NULL;
-    char values[128]                                        = {'\0'};
     char conninfo[512]                                      = {'\0'};
     char sql_exec[1024]                                     = {'\0'};
-
-    capture = (ripple_xmanager_metriccapturenode*)xmetricnode;
 
     rmemset1(conninfo, 0, 0, 512);
     ripple_xmanager_metricprogressnode_getdatafromcfgfile(xmetricnode->conf, RIPPLE_CFG_KEY_URL, conninfo);
@@ -611,9 +554,6 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
         return NULL;
     }
     PQclear(res);
-
-    /*组装currentlsn信息*/
-    currentlsn = ((uint64) hi) << 32 | lo;
 
     rmemset1(sql_exec, 0, '\0', 1024);
     sprintf(sql_exec, "SELECT (EXTRACT(EPOCH\n"
@@ -690,14 +630,14 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
     npacket = ripple_netpacket_init();
     if (NULL == npacket)
     {
-        elog(RLOG_WARNING, "xmanager metric assemble info  msg out of memory");
+        elog(RLOG_WARNING, "xmanager metric assemble info msg out of memory");
         return NULL;
     }
     msglen += 1;
     npacket->data = ripple_netpacket_data_init(msglen);
     if (NULL == npacket->data)
     {
-        elog(RLOG_WARNING, "xmanager metric assemble info pump msg data, out of memory");
+        elog(RLOG_WARNING, "xmanager metric assemble info msg data, out of memory");
         ripple_netpacket_destroy(npacket);
         return NULL;
     }
@@ -807,603 +747,15 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
     rowlen = r_hton32(rowlen);
     rmemcpy1(rowuptr, 0, &rowlen, 4);
 
-    for (dlnode = job->head; NULL != dlnode; dlnode = dlnode->next)
-    {
-        pmetricnode = (ripple_xmanager_metricnode*)dlnode->value;
-        if (RIPPLE_XMANAGER_METRICNODETYPE_PUMP == pmetricnode->type)
-        {
-            /* 获取 metricnode */
-            tmpmetricnode = dlist_get(xmetric->metricnodes, pmetricnode, ripple_xmanager_metricnode_cmp);
-            if (NULL == tmpmetricnode)
-            {
-                elog(RLOG_WARNING, "not find valid pump job %s in metricnodes ", pmetricnode->name);
-                return NULL;
-            }
-            find = true;
-            pump = (ripple_xmanager_metricpumpnode*) tmpmetricnode;
-
-            lsnlag = currentlsn - capture->confirmlsn;
-            timelag = dbtime - capture->parsetimestamp;
-            traillag = capture->trailno - pump->loadtrailno;
-
-            rowlen = 0;
-            rowuptr = uptr;
-
-            /* 跳过行长度 */
-            uptr += 4;
-            rowlen = 4;
-            npacket->used += 4;
-
-            /* 空列map的个数 */
-            u16value = 1;
-            u16value = r_hton16(u16value);
-            rmemcpy1(uptr, 0, &u16value, 2);
-            uptr += 2;
-            rowlen += 2;
-            npacket->used += 2;
-
-            /* 空列 map */
-            u16value = 1;
-            uptr += u16value;
-            rowlen += u16value;
-            nullmap = rmalloc0(u16value);
-            if (NULL == nullmap)
-            {
-                elog(RLOG_WARNING, "xmanager metric assemble info collector nullmap, out of memory");
-                ripple_netpacket_destroy(npacket);
-                return NULL;
-            }
-            rmemset0(nullmap, 0, 0, u16value);
-            npacket->used += 1;
-
-            /* name 长度 */
-            valuelen = strlen(pump->base.name);
-            ivalue = valuelen;
-            ivalue = r_hton32(ivalue);
-            rmemcpy1(uptr, 0, &ivalue, 4);
-            uptr += 4;
-            rowlen += 4;
-            npacket->used += 4;
-
-            /* name */
-            rmemcpy1(uptr, 0, pump->base.name, valuelen);
-            uptr += valuelen;
-            rowlen += valuelen;
-            npacket->used += valuelen;
-
-            /* lsnlag 长度 */
-            valuelen = snprintf(values, 128, "%X/%X", (uint32)(lsnlag >> 32), (uint32)(lsnlag));
-            ivalue = valuelen;
-            ivalue = r_hton32(ivalue);
-            rmemcpy1(uptr, 0, &ivalue, 4);
-            uptr += 4;
-            rowlen += 4;
-            npacket->used += 4;
-
-            /* lsnlag */
-            rmemcpy1(uptr, 0, values, valuelen);
-            uptr += valuelen;
-            rowlen += valuelen;
-            npacket->used += valuelen;
-
-            /* timelag 长度 */
-            ripple_xmanager_metricprogressnode_timediff(timelag, values, 128);
-            valuelen = strlen(values);
-            ivalue = valuelen;
-            ivalue = r_hton32(ivalue);
-            rmemcpy1(uptr, 0, &ivalue, 4);
-            uptr += 4;
-            rowlen += 4;
-            npacket->used += 4;
-
-            /* timelag */
-            rmemcpy1(uptr, 0, values, valuelen);
-            uptr += valuelen;
-            rowlen += valuelen;
-            npacket->used += valuelen;
-
-            /* traillag 长度 */
-            valuelen = snprintf(values, 128, "%" PRIu64, traillag);
-            ivalue = valuelen;
-            ivalue = r_hton32(ivalue);
-            rmemcpy1(uptr, 0, &ivalue, 4);
-            uptr += 4;
-            rowlen += 4;
-            npacket->used += 4;
-
-            /* traillag */
-            rmemcpy1(uptr, 0, values, valuelen);
-            uptr += valuelen;
-            rowlen += valuelen;
-            npacket->used += valuelen;
-
-            /* 行总长度 */
-            rowlen = r_hton32(rowlen);
-            rmemcpy1(rowuptr, 0, &rowlen, 4);
-            rowuptr += 4;
-
-            rowuptr += 2;
-            rmemcpy1(rowuptr, 0, nullmap, u16value);
-
-            rfree(nullmap);
-            nullmap = NULL;
-        }
-    }
-
     if (false == find)
     {
-        elog(RLOG_WARNING, "xmanager metric assemble progress msg no valid pump found");
+        elog(RLOG_WARNING, "xmanager metric assemble progress msg no valid found");
         ripple_netpacket_destroy(npacket);
         return NULL;
     }
 
     /* 数据总长度 */
     ivalue = npacket->used ;
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(npacket->data, 0, &ivalue, 4);
-
-    return npacket;
-}
-
-/* progress collector info 组装 */
-static void* ripple_xmanager_metricmsg_assembleprogresscollector(ripple_xmanager_metric* xmetric,
-                                                                 ripple_xmanager_metricnode* xmetricnode,
-                                                                 dlist* job)
-{
-    bool intgfind                                           = false;
-    bool trailfind                                          = false;
-    uint8 u8value                                           = 0;
-    uint16 u16value                                         = 0;
-    int rowlen                                              = 0;
-    int msglen                                              = 0;
-    int ivalue                                              = 0;
-    int rowcnt                                              = 0;
-    uint32 valuelen                                         = 0;
-    int64 timelag                                           = 0;
-    uint64 lsnlag                                           = 0;
-    uint64 traillag                                         = 0;
-    uint8* nullmap                                          = NULL;
-    uint8* rowuptr                                          = NULL;
-    uint8* uptr                                             = NULL;
-    dlistnode* mdlnode                                      = NULL;
-    dlistnode* dlnode                                      = NULL;
-    ripple_netpacket* npacket                               = NULL;
-    ripple_xmanager_metricnode* pmetricnode                 = NULL;
-    ripple_xmanager_metricnode* tmpmetricnode               = NULL;
-    ripple_xmanager_metriccollectornode* collector          = NULL;
-    ripple_xmanager_metriccollectorinfo* collectorinfo      = NULL;
-    ripple_xmanager_metricintegratenode* integrate          = NULL;
-    char values[128]                                        = {'\0'};
-    char traildir[1024]                                     = {'\0'};
-
-    collector = (ripple_xmanager_metriccollectornode*)xmetricnode;
-
-    /* 4 总长度 + 4 crc32 + 4 msgtype + 1 成功/失败 + 4 rowcnt */
-    msglen = 4 + 4 + 4 + 1 + 4;
-
-    /* rowlen */
-    msglen += 4;
-
-    /* name */
-    msglen += (4 + strlen("name"));
-
-    /* lsnlag */
-    msglen += (4 + strlen("lsnlag"));
-
-    /* timelag */
-    msglen += (4 + strlen("timelag"));
-
-    /* traillag */
-    msglen += (4 + strlen("traillag"));
-
-    rowcnt = job->length;
-
-    /* rowlen 4 + nullmapcnt 2 + nullmap 1 */
-    rowlen += (4 + 2 + 1);
-
-    /* name */
-    rowlen += 4;
-    rowlen += 128;
-
-    /* lsnlag */
-    rowlen += 4;
-    rowlen += 32;
-
-    /* timelag */
-    rowlen += 4;
-    rowlen += 128;
-
-    /* traillag */
-    rowlen += 4;
-    rowlen += 32;
-
-    msglen += (rowlen * (rowcnt - 1));
-
-/* 申请空间 */
-    npacket = ripple_netpacket_init();
-    if (NULL == npacket)
-    {
-        elog(RLOG_WARNING, "xmanager metric assemble info pump msg out of memory");
-        return NULL;
-    }
-    msglen += 1;
-    npacket->data = ripple_netpacket_data_init(msglen);
-    if (NULL == npacket->data)
-    {
-        elog(RLOG_WARNING, "xmanager metric assemble info pump msg data, out of memory");
-        ripple_netpacket_destroy(npacket);
-        return NULL;
-    }
-    msglen -= 1;
-
-    /* 组装数据 */
-    uptr = npacket->data;
-
-    /* 数据总长度 */
-    uptr += 4;
-    npacket->used += 4;
-
-    /* crc32 */
-    uptr += 4;
-    npacket->used += 4;
-
-    /* 类型 */
-    ivalue = RIPPLE_XMANAGER_MSG_STARTCMD;
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    npacket->used += 4;
-
-    /* 类型成功标识 */
-    u8value = 0;
-    rmemcpy1(uptr, 0, &u8value, 1);
-    uptr += 1;
-    npacket->used += 1;
-
-    /* rowcnt */
-    ivalue = rowcnt;
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    npacket->used += 4;
-
-    rowlen = 0;
-    rowuptr = uptr;
-
-    /* 偏过行长度 */
-    uptr += 4;
-    rowlen = 4;
-    npacket->used += 4;
-
-    /* 列头组装 */
-    /* name len */
-    ivalue = strlen("name") ;
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    rowlen += 4;
-    npacket->used += 4;
-
-    /* name */
-    ivalue = strlen("name");
-    rmemcpy1(uptr, 0, "name", ivalue);
-    uptr += ivalue;
-    rowlen += ivalue;
-    npacket->used += ivalue;
-
-    /* lsnlag len */
-    ivalue = strlen("lsnlag") ;
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    rowlen += 4;
-    npacket->used += 4;
-
-    /* lsnlag */
-    ivalue = strlen("lsnlag");
-    rmemcpy1(uptr, 0, "lsnlag", ivalue);
-    uptr += ivalue;
-    rowlen += ivalue;
-    npacket->used += ivalue;
-
-    /* timelag len */
-    ivalue = strlen("timelag") ;
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    rowlen += 4;
-    npacket->used += 4;
-
-    /* timelag */
-    ivalue = strlen("timelag");
-    rmemcpy1(uptr, 0, "timelag", ivalue);
-    uptr += ivalue;
-    rowlen += ivalue;
-    npacket->used += ivalue;
-
-    /* traillag len */
-    ivalue = strlen("traillag");
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    rowlen += 4;
-    npacket->used += 4;
-
-    /* traillag */
-    ivalue = strlen("traillag");
-    rmemcpy1(uptr, 0, "traillag", ivalue);
-    uptr += ivalue;
-    rowlen += ivalue;
-    npacket->used += ivalue;
-
-    /* 行总长度 */
-    rowlen = r_hton32(rowlen);
-    rmemcpy1(rowuptr, 0, &rowlen, 4);
-
-    for (mdlnode = job->head; NULL != mdlnode; mdlnode = mdlnode->next)
-    {
-        pmetricnode = (ripple_xmanager_metricnode*)mdlnode->value;
-        if (RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE == pmetricnode->type)
-        {
-            /* 获取 metricnode */
-            tmpmetricnode = dlist_get(xmetric->metricnodes, pmetricnode, ripple_xmanager_metricnode_cmp);
-            if (NULL == tmpmetricnode)
-            {
-                elog(RLOG_WARNING, "not find valid integrate job %s in metricnodes ", tmpmetricnode->name);
-                return NULL;
-            }
-            intgfind = true;
-            integrate = (ripple_xmanager_metricintegratenode*) tmpmetricnode;
-
-            /* 根据traildri获取对应collectorinfo */
-            trailfind = false;
-            for (dlnode = collector->collectorinfo->head; NULL != dlnode; dlnode = dlnode->next)
-            {
-                collectorinfo = (ripple_xmanager_metriccollectorinfo*)dlnode->value;
-                if(NULL == integrate->base.traildir || '0' == integrate->base.traildir[0])
-                {
-                    trailfind = false;
-                    break;
-                }
-
-                rmemset1(traildir, 0, 0, 1024);
-                snprintf(traildir, 1024, "%s/%s", collector->base.data,
-                                                  collectorinfo->pumpname);
-
-                if (0 == strcmp(traildir, integrate->base.traildir))
-                {
-                    trailfind = true;
-                    break;
-                }
-            }
-
-            if (false == trailfind)
-            {
-                rowlen = 0;
-                rowuptr = uptr;
-
-                /* 跳过行长度 */
-                uptr += 4;
-                rowlen = 4;
-                npacket->used += 4;
-
-                /* 空列map的个数 */
-                u16value = 1;
-                u16value = r_hton16(u16value);
-                rmemcpy1(uptr, 0, &u16value, 2);
-                uptr += 2;
-                rowlen += 2;
-                npacket->used += 2;
-
-                /* 空列 map */
-                u16value = 1;
-                uptr += u16value;
-                rowlen += u16value;
-                nullmap = rmalloc0(u16value);
-                if (NULL == nullmap)
-                {
-                    elog(RLOG_WARNING, "xmanager metric assemble info collector nullmap, out of memory");
-                    ripple_netpacket_destroy(npacket);
-                    return NULL;
-                }
-                rmemset0(nullmap, 0, 0, u16value);
-                npacket->used += 1;
-
-                /* name 长度 */
-                valuelen = strlen(integrate->base.name);
-                ivalue = valuelen;
-                ivalue = r_hton32(ivalue);
-                rmemcpy1(uptr, 0, &ivalue, 4);
-                uptr += 4;
-                rowlen += 4;
-                npacket->used += 4;
-
-                /* name */
-                rmemcpy1(uptr, 0, integrate->base.name, valuelen);
-                uptr += valuelen;
-                rowlen += valuelen;
-                npacket->used += valuelen;
-
-                /* lsnlag 长度 */
-                valuelen = snprintf(values, 128, "%s", "XX");
-                ivalue = valuelen;
-                ivalue = r_hton32(ivalue);
-                rmemcpy1(uptr, 0, &ivalue, 4);
-                uptr += 4;
-                rowlen += 4;
-                npacket->used += 4;
-
-                /* lsnlag */
-                rmemcpy1(uptr, 0, values, valuelen);
-                uptr += valuelen;
-                rowlen += valuelen;
-                npacket->used += valuelen;
-
-                /* timelag 长度 */
-                valuelen = snprintf(values, 128, "%s", "XX");
-                ivalue = valuelen;
-                ivalue = r_hton32(ivalue);
-                rmemcpy1(uptr, 0, &ivalue, 4);
-                uptr += 4;
-                rowlen += 4;
-                npacket->used += 4;
-
-                /* timelag */
-                rmemcpy1(uptr, 0, values, valuelen);
-                uptr += valuelen;
-                rowlen += valuelen;
-                npacket->used += valuelen;
-
-                /* traillag 长度 */
-                valuelen = snprintf(values, 128, "%s", "XX");
-                ivalue = valuelen;
-                ivalue = r_hton32(ivalue);
-                rmemcpy1(uptr, 0, &ivalue, 4);
-                uptr += 4;
-                rowlen += 4;
-                npacket->used += 4;
-
-                /* traillag */
-                rmemcpy1(uptr, 0, values, valuelen);
-                uptr += valuelen;
-                rowlen += valuelen;
-                npacket->used += valuelen;
-
-                /* 行总长度 */
-                rowlen = r_hton32(rowlen);
-                rmemcpy1(rowuptr, 0, &rowlen, 4);
-                rowuptr += 4;
-
-                rowuptr += 2;
-                rmemcpy1(rowuptr, 0, nullmap, u16value);
-
-                rfree(nullmap);
-                nullmap = NULL;
-                continue;
-            }
-            
-            lsnlag = collectorinfo->recvlsn - integrate->synclsn;
-            if (collectorinfo->recvlsn < integrate->synclsn)
-            {
-                lsnlag = 0;
-            }
-            
-            timelag = collectorinfo->flushtimestamp - integrate->synctimestamp;
-            traillag = collectorinfo->recvtrailno - integrate->synctrailno;
-
-            rowlen = 0;
-            rowuptr = uptr;
-
-            /* 跳过行长度 */
-            uptr += 4;
-            rowlen = 4;
-            npacket->used += 4;
-
-            /* 空列map的个数 */
-            u16value = 1;
-            u16value = r_hton16(u16value);
-            rmemcpy1(uptr, 0, &u16value, 2);
-            uptr += 2;
-            rowlen += 2;
-            npacket->used += 2;
-
-            /* 空列 map */
-            u16value = 1;
-            uptr += u16value;
-            rowlen += u16value;
-            nullmap = rmalloc0(u16value);
-            if (NULL == nullmap)
-            {
-                elog(RLOG_WARNING, "xmanager metric assemble info collector nullmap, out of memory");
-                ripple_netpacket_destroy(npacket);
-                return NULL;
-            }
-            rmemset0(nullmap, 0, 0, u16value);
-            npacket->used += 1;
-
-            /* name 长度 */
-            valuelen = strlen(integrate->base.name);
-            ivalue = valuelen;
-            ivalue = r_hton32(ivalue);
-            rmemcpy1(uptr, 0, &ivalue, 4);
-            uptr += 4;
-            rowlen += 4;
-            npacket->used += 4;
-
-            /* name */
-            rmemcpy1(uptr, 0, integrate->base.name, valuelen);
-            uptr += valuelen;
-            rowlen += valuelen;
-            npacket->used += valuelen;
-
-            /* lsnlag 长度 */
-            valuelen = snprintf(values, 128, "%X/%X", (uint32)(lsnlag >> 32), (uint32)(lsnlag));
-            ivalue = valuelen;
-            ivalue = r_hton32(ivalue);
-            rmemcpy1(uptr, 0, &ivalue, 4);
-            uptr += 4;
-            rowlen += 4;
-            npacket->used += 4;
-
-            /* lsnlag */
-            rmemcpy1(uptr, 0, values, valuelen);
-            uptr += valuelen;
-            rowlen += valuelen;
-            npacket->used += valuelen;
-
-            /* timelag 长度 */
-            ripple_xmanager_metricprogressnode_timediff(timelag, values, 128);
-            valuelen = strlen(values);
-            ivalue = valuelen;
-            ivalue = r_hton32(ivalue);
-            rmemcpy1(uptr, 0, &ivalue, 4);
-            uptr += 4;
-            rowlen += 4;
-            npacket->used += 4;
-
-            /* timelag */
-            rmemcpy1(uptr, 0, values, valuelen);
-            uptr += valuelen;
-            rowlen += valuelen;
-            npacket->used += valuelen;
-
-            /* traillag 长度 */
-            valuelen = snprintf(values, 128, "%" PRIu64, traillag);
-            ivalue = valuelen;
-            ivalue = r_hton32(ivalue);
-            rmemcpy1(uptr, 0, &ivalue, 4);
-            uptr += 4;
-            rowlen += 4;
-            npacket->used += 4;
-
-            /* traillag */
-            rmemcpy1(uptr, 0, values, valuelen);
-            uptr += valuelen;
-            rowlen += valuelen;
-            npacket->used += valuelen;
-
-            /* 行总长度 */
-            rowlen = r_hton32(rowlen);
-            rmemcpy1(rowuptr, 0, &rowlen, 4);
-            rowuptr += 4;
-
-            rowuptr += 2;
-            rmemcpy1(rowuptr, 0, nullmap, u16value);
-
-            rfree(nullmap);
-            nullmap = NULL;
-        }
-    }
-
-    if (false == intgfind)
-    {
-        elog(RLOG_WARNING, "xmanager metric assemble progress msg no valid integrate found");
-        ripple_netpacket_destroy(npacket);
-        return NULL;
-    }
-
-    /* 数据总长度 */
-    ivalue = npacket->used;
     ivalue = r_hton32(ivalue);
     rmemcpy1(npacket->data, 0, &ivalue, 4);
 
@@ -1429,8 +781,7 @@ void* ripple_xmanager_metricmsg_assembleprogress(ripple_xmanager_metric* xmetric
     for (dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode; dlnode = dlnode->next)
     {
         pmetricnode = (ripple_xmanager_metricnode*)dlnode->value;
-        if (RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type
-            || RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR == pmetricnode->type)
+        if (RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
         {
             break;
         }
@@ -1464,10 +815,6 @@ void* ripple_xmanager_metricmsg_assembleprogress(ripple_xmanager_metric* xmetric
     if (RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
     {
         return ripple_xmanager_metricmsg_assembleprogresscapture(xmetric, pmetricnode, xmetricprogressnode->progressjop);
-    }
-    else if (RIPPLE_XMANAGER_METRICNODETYPE_COLLECTOR == pmetricnode->type)
-    {
-        return ripple_xmanager_metricmsg_assembleprogresscollector(xmetric, pmetricnode, xmetricprogressnode->progressjop);
     }
     else
     {

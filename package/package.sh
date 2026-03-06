@@ -88,12 +88,7 @@ function pCopyFile
 
     # 将执行文件 copy 到对应的目录中
     cp ${RBASE}/bin/capture/capture                  $RINSTALL/bin/.
-    cp ${RBASE}/bin/pump/pump                        $RINSTALL/bin/.
-    cp ${RBASE}/bin/collector/collector              $RINSTALL/bin/.
     cp ${RBASE}/bin/integrate/integrate              $RINSTALL/bin/.
-    cp ${RBASE}/bin/fastcompare/fastcompareclient    $RINSTALL/bin/.
-    cp ${RBASE}/bin/fastcompare/fastcompareserver    $RINSTALL/bin/.
-    cp ${RBASE}/bin/fastcompare/fastcompareserver    $RINSTALL/bin/.
     cp ${RBASE}/bin/receivepglog/receivelog          $RINSTALL/bin/pgreceivelog/.
     cp ${RBASE}/bin/receivehglog/receivelog          $RINSTALL/bin/hgreceivelog/.
     cp ${RBASE}/bin/xmanager/xmanager                $RINSTALL/bin/.

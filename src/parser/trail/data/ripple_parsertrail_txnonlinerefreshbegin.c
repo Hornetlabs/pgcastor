@@ -24,9 +24,7 @@
 #include "stmts/ripple_txnstmt_onlinerefresh.h"
 #include "loadrecords/ripple_record.h"
 #include "onlinerefresh/ripple_onlinerefresh_persist.h"
-#include "onlinerefresh/pump/ripple_onlinerefesh_pump.h"
 #include "parser/trail/ripple_parsertrail.h"
-#include "increment/pump/parser/ripple_increment_pumpparsertrail.h"
 #include "parser/trail/data/ripple_parsertrail_txnonlinerefreshbegin.h"
 
 /* 将表数据加入到事务缓存中 */

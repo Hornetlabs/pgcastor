@@ -34,38 +34,6 @@ static ripple_thridentityname    m_threadname[]=
 
     /*------------capture 线程类型   end---------------------*/
 
-    /*------------pump 线程类型 begin------------------------*/
-    {RIPPLE_THRNODE_IDENTITY_INC_PUMP_NETCLIENT,                        "IncNetClt"},
-    {RIPPLE_THRNODE_IDENTITY_INC_PUMP_SERIAL,                           "IncSerial"},
-    {RIPPLE_THRNODE_IDENTITY_INC_PUMP_PARSER,                           "IncParser"},
-    {RIPPLE_THRNODE_IDENTITY_INC_PUMP_LOADRECORD,                       "IncLoadRec"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_METRIC,                               "Metric"},
-    {RIPPLE_THRNODE_IDENTITY_GAP,                                       "Gap"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_REFRESH_MGR,                          "RefreshMgr"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_REFRESH_JOB,                          "RefreshJob"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_ONLINEREFRESH_INC_MGR,                "OLRMgr"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_ONLINEREFRESH_JOB,                    "OLRJob"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_OLINEREFRESH_INC_NET,                 "OLRIncNet"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_OLINEREFRESH_INC_SERIAL,              "OLRIncSerial"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_OLINEREFRESH_INC_PARSER,              "OLRIncParser"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_OLINEREFRESH_INC_LOADRECORDS,         "OLRIncLoadRec"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_BIGTXN_MGR,                           "BigTxnMgr"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_BIGTXN_NETCLIENT,                     "BigTxnNetClt"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_BIGTXN_SERIAL,                        "BigTxnSerial"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_BIGTXN_PARSER,                        "BigTxnParser"},
-    {RIPPLE_THRNODE_IDENTITY_PUMP_BIGTXN_LOADRECORD,                    "BigTxnLoadRec"},
-
-    /*------------pump 线程类型   end------------------------*/
-
-    /*------------collector 线程类型 begin-------------------*/
-    /* 网络服务线程 */
-    {RIPPLE_THRNODE_IDENTITY_INC_COLLECTOR_SVR,                         "IncNetSvr"},
-    {RIPPLE_THRNODE_IDENTITY_INC_COLLECTOR_FTP,                         "IncFTP"},
-    {RIPPLE_THRNODE_IDENTITY_COLLECTOR_METRIC,                          "Metric"},
-    {RIPPLE_THRNODE_IDENTITY_INC_COLLECTOR_FLUSH,                       "IncFlush"},
-    {RIPPLE_THRNODE_IDENTITY_INC_COLLECTOR_NETCLINT,                    "IncNetClt"},
-    /*------------collector 线程类型   end-------------------*/
-
     /*------------integrate 线程类型 begin-------------------*/
     {RIPPLE_THRNODE_IDENTITY_INC_INTEGRATE_SYNC,                        "IncSync"},
     {RIPPLE_THRNODE_IDENTITY_INC_INTEGRATE_REBUILD,                     "IncRebuild"},

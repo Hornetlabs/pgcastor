@@ -48,7 +48,7 @@ static const char *const m_commands[] = {
  * create progress后的关键字 
 */
 static const char *const m_createprogresscommands[] = {
-    "capture", "collector",
+    "capture",
     NULL
 };
 
@@ -57,7 +57,7 @@ static const char *const m_createprogresscommands[] = {
 */
 static const char *const m_createcommands[] = {
     "manager", "pgreceivelog", "hgreceivelog",
-    "capture", "pump", "collector", "integrate", "progress",
+    "capture", "integrate", "progress",
     NULL
 };
 
@@ -77,63 +77,63 @@ static const char *const m_alterprogresscommands[] = {
 /* remove 关键字后的内容 */
 static const char *const m_removecommands[] = {
     "manager", "pgreceivelog", "hgreceivelog",
-    "capture", "pump", "collector", "integrate",
+    "capture", "integrate",
     NULL
 };
 
 /* drop 关键字后的内容 */
 static const char *const m_dropcommands[] = {
     "manager", "pgreceivelog", "hgreceivelog",
-    "capture", "pump", "collector", "integrate", "progress",
+    "capture", "integrate", "progress",
     NULL
 };
 
 /* init 关键字后的内容 */
 static const char *const m_initcommands[] = {
     "manager", "pgreceivelog", "hgreceivelog",
-    "capture", "pump", "collector", "integrate",
+    "capture", "integrate",
     NULL
 };
 
 /* edit 关键字后的内容 */
 static const char *const m_editcommands[] = {
     "manager", "pgreceivelog", "hgreceivelog",
-    "capture", "pump", "collector", "integrate",
+    "capture", "integrate",
     NULL
 };
 
 /* start 关键字后的内容 */
 static const char *const m_startcommands[] = {
     "manager", "pgreceivelog", "hgreceivelog",
-    "capture", "pump", "collector", "integrate", "all",
+    "capture", "integrate", "all",
     NULL
 };
 
 /* stop 关键字后的内容 */
 static const char *const m_stopcommands[] = {
     "manager", "pgreceivelog", "hgreceivelog",
-    "capture", "pump", "collector", "integrate", "all",
+    "capture", "integrate", "all",
     NULL
 };
 
 /* reload 关键字后的内容 */
 static const char *const m_reloadcommands[] = {
     "manager", "pgreceivelog", "hgreceivelog",
-    "capture", "pump", "collector", "integrate",
+    "capture", "integrate",
     NULL
 };
 
 /* info 关键字后的内容 */
 static const char *const m_infocommands[] = {
     "manager", "pgreceivelog", "hgreceivelog",
-    "capture", "pump", "collector", "integrate", "progress", "all",
+    "capture", "integrate", "progress", "all",
     NULL
 };
 
 /* watch 关键字后的内容 */
 static const char *const m_watchcommands[] = {
     "manager", "pgreceivelog", "hgreceivelog",
-    "capture", "pump", "collector", "integrate", "progress", "all",
+    "capture", "integrate", "progress", "all",
     NULL
 };
 

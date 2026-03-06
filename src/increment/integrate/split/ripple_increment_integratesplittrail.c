@@ -82,22 +82,22 @@ ripple_increment_integratesplittrail* ripple_increment_integratesplittrail_init(
     splittrail->loadrecords = ripple_loadtrailrecords_init();
     if(NULL == splittrail->loadrecords)
     {
-        elog(RLOG_WARNING, "pump increment load records error");
+        elog(RLOG_WARNING, "integrate increment load records error");
         return NULL;
     }
 
     if(false == ripple_loadtrailrecords_setloadpageroutine(splittrail->loadrecords, RIPPLE_LOADPAGE_TYPE_FILE))
     {
-        elog(RLOG_WARNING, "pump increment set load page error");
+        elog(RLOG_WARNING, "integrate increment set load page error");
         return NULL;
     }
 
     if(false == ripple_loadtrailrecords_setloadsource(splittrail->loadrecords, splittrail->capturedata))
     {
-        elog(RLOG_WARNING, "pump increment set capture data error");
+        elog(RLOG_WARNING, "integrate increment set capture data error");
         return NULL;
     }
-    ripple_loadtrailrecords_setloadposition(splittrail->loadrecords, PUMP_INFO_FILEID, 0);
+    ripple_loadtrailrecords_setloadposition(splittrail->loadrecords, 0, 0);
     /*------------------------load record 模块初始化   end---------------------------*/
 
     /* 设置状态为等待设置 */

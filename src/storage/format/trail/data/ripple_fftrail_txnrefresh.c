@@ -152,7 +152,7 @@ bool ripple_fftrail_txnrefresh_serial(void* data, void* state)
     /* 增加头部信息 */
     ripple_fftrail_data_hdrserail(&txndata->header, ffstate);
 
-    /* 为了 collector 端能够正确记录切换文件,所以设置segno = segno + 1 */
+    /* 为了能够正确记录切换文件,所以设置segno = segno + 1 */
     fbuffer = ripple_file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     fbuffer->extra.chkpoint.segno.trail.fileid++;
 
