@@ -1411,7 +1411,6 @@ static bool xk_pg_parser_trans_rmgr_heap_delete_trans(xk_pg_parser_trans_transre
     size_t datalen = 0;
     size_t tuplelen = 0;
     char *page = NULL;
-    bool  use_logical = false;
     int16_t dbtype = state->trans_data->m_dbtype;
     char *dbversion = state->trans_data->m_dbversion;
     bool have_oid = false;
@@ -1634,7 +1633,6 @@ static bool xk_pg_parser_trans_rmgr_heap_delete_trans(xk_pg_parser_trans_transre
     else
     {
         /* logical模式, delete语句在logical模式下会将旧元组存放在maindata后 */
-        use_logical = true;
         if (!(xlrec->flags & XK_PG_PARSER_TRANS_XLH_DELETE_CONTAINS_OLD))
         {
             /* logical下对toast进行过滤处理, 这里不使用goto */
