@@ -161,45 +161,9 @@ int main(int argc, char **argv)
             return 1;
         }
     }
-    else if(strlen(dbtype) == strlen(RIPPLE_DBTYPE_HIGHGO)
-        && 0 == strcmp(dbtype, RIPPLE_DBTYPE_HIGHGO))
-    {
-        g_idbtype = XK_DATABASE_TYPE_HGDB;
-        if(strlen(dbversion) == strlen(RIPPLE_DBVERSION_HIGHGO_V457)
-            && 0 == strcmp(dbversion, RIPPLE_DBVERSION_HIGHGO_V457))
-        {
-            g_idbversion = RIPPLE_HGVERSION_457;
-        }
-        else if(strlen(dbversion) == strlen(RIPPLE_DBVERSION_HIGHGO_V458)
-            && 0 == strcmp(dbversion, RIPPLE_DBVERSION_HIGHGO_V458))
-        {
-            g_idbversion = RIPPLE_HGVERSION_458;
-        }
-        else if(strlen(dbversion) == strlen(RIPPLE_DBVERSION_HIGHGO_V901)
-            && 0 == strcmp(dbversion, RIPPLE_DBVERSION_HIGHGO_V901))
-        {
-            g_idbversion = RIPPLE_HGVERSION_901;
-        }
-        else if(strlen(dbversion) == strlen(RIPPLE_DBVERSION_HIGHGO_V903)
-            && 0 == strcmp(dbversion, RIPPLE_DBVERSION_HIGHGO_V903))
-        {
-            g_idbversion = RIPPLE_HGVERSION_901;
-        }
-        else if(strlen(dbversion) == strlen(RIPPLE_DBVERSION_HIGHGO_V902)
-            && 0 == strcmp(dbversion, RIPPLE_DBVERSION_HIGHGO_V902))
-        {
-            g_idbversion = RIPPLE_HGVERSION_902;
-        }
-        else
-        {
-            elog(RLOG_WARNING, "unknow highgo dbversion, support 457/458/901/902/903");
-            return 1;
-        }
-
-    }
     else
     {
-        elog(RLOG_WARNING, "unknow dbtype, support postgres/highgo");
+        elog(RLOG_WARNING, "unknow dbtype, support postgres");
         return 1;
     }
 

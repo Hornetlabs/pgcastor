@@ -369,7 +369,7 @@ static bool ripple_xmanager_metricmsg_parsecreateprocess(ripple_xmanager_metric*
         jobtype = r_ntoh32(jobtype);
         uptr += 4;
 
-        if (RIPPLE_XMANAGER_METRICNODETYPE_HGRECEIVELOG < jobtype)
+        if (RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE < jobtype)
         {
             elog(RLOG_WARNING, "xmanager recv create progress command, need jobtype less then HGRECEIVELOG");
             ripple_xmanager_metricprogressnode_destroy((ripple_xmanager_metricnode*)xmetricprogressnode);

@@ -71,19 +71,6 @@ static xk_pg_parser_trans_rmgr m_record_rmgr_get_tuple[] =
     { XK_PG_PARSER_TRANSLOG_RMGR_HEAP_ID, NULL, xk_pg_parser_trans_rmgr_heap_trans_get_tuple}
 };
 
-#if 0
-/**
- * @brief        rmgid kingbase分发
- */
-static xk_pg_parser_trans_rmgr m_record_rmgr_kingbase[] =
-{
-    { XK_PG_PARSER_TRANSLOG_KINGBASE_RMGR_XLOG_ID, xk_pg_parser_trans_rmgr_xlog_pre, NULL},
-    { XK_PG_PARSER_TRANSLOG_KINGBASE_RMGR_XACT_ID, xk_pg_parser_trans_rmgr_xact_pre, NULL},
-    { XK_PG_PARSER_TRANSLOG_KINGBASE_RMGR_HEAP2_ID, xk_pg_parser_trans_rmgr_heap2_pre, xk_pg_parser_trans_rmgr_heap2_trans},
-    { XK_PG_PARSER_TRANSLOG_KINGBASE_RMGR_HEAP_ID, xk_pg_parser_trans_rmgr_heap_pre, xk_pg_parser_trans_rmgr_heap_trans}
-};
-#endif
-
 /* 预解析接口 */
 //名称加ref in 标记出入参
 bool xk_pg_parser_trans_preTrans(xk_pg_parser_translog_pre *xk_pg_parser_pre_data,

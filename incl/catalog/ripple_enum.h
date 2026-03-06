@@ -12,11 +12,6 @@ void ripple_enumcache_write(HTAB* enumscache, uint64 *offset, ripple_sysdict_hea
 
 /* colvalue2enum */
 ripple_catalogdata* ripple_enum_colvalue2enum(void* in_colvalue);
-ripple_catalogdata* ripple_enum_colvalue2enum_hg902(void* in_colvalue);
-
-#define ripple_enum_colvalue2enum_hg458 ripple_enum_colvalue2enum
-#define ripple_enum_colvalue2enum_hg457 ripple_enum_colvalue2enum
-#define ripple_enum_colvalue2enum_hg901 ripple_enum_colvalue2enum
 
 /* catalogdata2transcache */
 void ripple_enum_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);

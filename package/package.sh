@@ -82,7 +82,6 @@ function pCopyFile
     
     mkdir -p  ${RINSTALL}/bin
     mkdir -p  ${RINSTALL}/bin/pgreceivelog
-    mkdir -p  ${RINSTALL}/bin/hgreceivelog
     mkdir -p  ${RINSTALL}/config
     mkdir -p  ${RINSTALL}/lib
 
@@ -90,7 +89,6 @@ function pCopyFile
     cp ${RBASE}/bin/capture/capture                  $RINSTALL/bin/.
     cp ${RBASE}/bin/integrate/integrate              $RINSTALL/bin/.
     cp ${RBASE}/bin/receivepglog/receivelog          $RINSTALL/bin/pgreceivelog/.
-    cp ${RBASE}/bin/receivehglog/receivelog          $RINSTALL/bin/hgreceivelog/.
     cp ${RBASE}/bin/xmanager/xmanager                $RINSTALL/bin/.
     cp ${RBASE}/bin/xscsci/xscsci                    $RINSTALL/bin/.
     cp ${RBASE}/interfaces/lib/libxsynch.so          $RINSTALL/lib/.

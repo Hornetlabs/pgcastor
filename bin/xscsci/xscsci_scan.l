@@ -27,7 +27,6 @@
         {"manager",         7,              K_MANAGER},
         {"capture",         7,              K_CAPTURE},
         {"integrate",       9,              K_INTEGRATE},
-        {"hgreceivelog",    12,             K_HGRECEIVELOG},
         {"pgreceivelog",    12,             K_PGRECEIVELOG},
         {"progress",        8,              K_PROGRESS},
         {"refresh",         7,              K_REFRESH},

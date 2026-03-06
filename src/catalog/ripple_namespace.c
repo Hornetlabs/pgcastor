@@ -247,50 +247,6 @@ ripple_catalogdata* ripple_namespace_colvalue2namespace(void* in_colvalue)
     return catalogdata;
 }
 
-ripple_catalogdata* ripple_namespace_colvalue2namespace_hg902(void* in_colvalue)
-{
-    ripple_catalogdata* catalogdata = NULL;
-    ripple_catalog_namespace_value* namespacevalue = NULL;
-    xk_pg_sysdict_Form_pg_namespace pgnamespace = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
-
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
-
-    /* 值转换 */
-    catalogdata = (ripple_catalogdata*)rmalloc0(sizeof(ripple_catalogdata));
-    if(NULL == catalogdata)
-    {
-        elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
-    }
-    rmemset0(catalogdata, 0, '\0', sizeof(ripple_catalogdata));
-
-    namespacevalue = (ripple_catalog_namespace_value*)rmalloc0(sizeof(ripple_catalog_namespace_value));
-    if(NULL == namespacevalue)
-    {
-        elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
-    }
-    rmemset0(namespacevalue, 0, '\0', sizeof(ripple_catalog_namespace_value));
-    catalogdata->catalog = namespacevalue;
-    catalogdata->type = RIPPLE_CATALOG_TYPE_NAMESPACE;
-
-    pgnamespace = (xk_pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(xk_pg_parser_sysdict_pgnamespace));
-    if(NULL == pgnamespace)
-    {
-        elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
-    }
-    rmemset0(pgnamespace, 0, '\0', sizeof(xk_pg_parser_sysdict_pgnamespace));
-    namespacevalue->ripple_namespace = pgnamespace;
-
-    /* nspname 0 */
-    rmemcpy1(pgnamespace->nspname.data, 0, (char*)((colvalue + 0)->m_value), (colvalue + 0)->m_valueLen);
-
-    /* oid 3 */
-    sscanf((char*)((colvalue + 3)->m_value), "%u", &pgnamespace->oid);
-    namespacevalue->oid = pgnamespace->oid;
-
-    return catalogdata;
-}
-
 /* catalogdata2transcache */
 void ripple_namespace_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata)
 {

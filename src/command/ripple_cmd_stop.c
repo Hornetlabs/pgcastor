@@ -36,12 +36,6 @@ static proc2stop           m_typ2stop[]=
         "integrate stop error"
     },
     {
-        RIPPLE_PROC_TYPE_HGRECEIVEWAL,
-        ripple_cmd_stopproc,
-        "receivewal",
-        "receivewal stop error"
-    },
-    {
         RIPPLE_PROC_TYPE_PGRECEIVEWAL,
         ripple_cmd_stopproc,
         "receivewal",

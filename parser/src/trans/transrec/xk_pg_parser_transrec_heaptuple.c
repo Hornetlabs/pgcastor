@@ -21,55 +21,22 @@
 
 #define Min(x,y) ((x) < (y) ? (x) : (y))
 
-static bool check_special_hgdb_version(int16_t dbtype,
-                                       char *dbversion)
-{
-    if (XK_DATABASE_TYPE_HGDB == dbtype)
-    {
-        if (!strcmp(dbversion, XK_DATABASE_HGDBV9PG)
-         || !strcmp(dbversion, XK_DATABASE_HGDBV901))
-            return false;
-        else
-            return true;
-    }
-    return false;
-}
-
 xk_pg_parser_ReorderBufferTupleBuf * xk_pg_parser_heaptuple_get_tuple_space(size_t tuple_len,
                                                                             int16_t dbtype,
                                                                             char *dbversion)
 {
-    if (check_special_hgdb_version(dbtype, dbversion))
-    {
-        xk_pg_parser_HGDB_ReorderBufferTupleBuf *tuple;
-        size_t alloc_len;
+    xk_pg_parser_ReorderBufferTupleBuf *tuple;
+    size_t alloc_len;
 
-        alloc_len = tuple_len + xk_pg_parser_HGDB_SizeofHeapTupleHeader;
+    alloc_len = tuple_len + xk_pg_parser_SizeofHeapTupleHeader;
 
-        if (!xk_pg_parser_mcxt_malloc(HEAP_TUPLE_MCXT, (void **)&tuple,
-                                    sizeof(xk_pg_parser_HGDB_ReorderBufferTupleBuf)
-                                + XK_PG_PARSER_MAXIMUM_ALIGNOF + alloc_len))
-            return NULL;
-
-        tuple->alloc_tuple_size = alloc_len;
-        tuple->tuple.t_data = xk_pg_parser_HGDB_ReorderBufferTupleBufData(tuple);
-        return (xk_pg_parser_ReorderBufferTupleBuf *)tuple;
-    }
-    else
-    {
-        xk_pg_parser_ReorderBufferTupleBuf *tuple;
-        size_t alloc_len;
-
-        alloc_len = tuple_len + xk_pg_parser_SizeofHeapTupleHeader;
-
-        if (!xk_pg_parser_mcxt_malloc(HEAP_TUPLE_MCXT, (void **)&tuple,
-                                    sizeof(xk_pg_parser_ReorderBufferTupleBuf)
-                                + XK_PG_PARSER_MAXIMUM_ALIGNOF + alloc_len))
-            return NULL;
-        tuple->alloc_tuple_size = alloc_len;
-        tuple->tuple.t_data = xk_pg_parser_ReorderBufferTupleBufData(tuple);
-        return tuple;
-    }
+    if (!xk_pg_parser_mcxt_malloc(HEAP_TUPLE_MCXT, (void **)&tuple,
+                                sizeof(xk_pg_parser_ReorderBufferTupleBuf)
+                            + XK_PG_PARSER_MAXIMUM_ALIGNOF + alloc_len))
+        return NULL;
+    tuple->alloc_tuple_size = alloc_len;
+    tuple->tuple.t_data = xk_pg_parser_ReorderBufferTupleBufData(tuple);
+    return tuple;
 }
 
 void xk_pg_parser_reassemble_tuple_from_heap_tuple_header(
@@ -79,31 +46,15 @@ void xk_pg_parser_reassemble_tuple_from_heap_tuple_header(
                                              int16_t dbtype,
                                              char *dbversion)
 {
-    if (check_special_hgdb_version(dbtype, dbversion))
-    {
-        xk_pg_parser_HGDB_HeapTupleHeader header = NULL;
-        xk_pg_parser_HGDB_ReorderBufferTupleBuf *tuple_hgdb =
-                                (xk_pg_parser_HGDB_ReorderBufferTupleBuf *) tuple;
-        tuple_hgdb->tuple.t_len = len;
-        header = tuple_hgdb->tuple.t_data;
+    xk_pg_parser_HeapTupleHeader header = NULL;
 
-        xk_pg_parser_ItemPointerSetInvalid(&tuple_hgdb->tuple.t_self);
-        tuple_hgdb->tuple.t_tableOid = xk_pg_parser_InvalidOid;
+    tuple->tuple.t_len = len;
+    header = tuple->tuple.t_data;
 
-        rmemcpy1(header, 0, hth, len);
-    }
-    else
-    {
-        xk_pg_parser_HeapTupleHeader header = NULL;
+    xk_pg_parser_ItemPointerSetInvalid(&tuple->tuple.t_self);
+    tuple->tuple.t_tableOid = xk_pg_parser_InvalidOid;
 
-        tuple->tuple.t_len = len;
-        header = tuple->tuple.t_data;
-
-        xk_pg_parser_ItemPointerSetInvalid(&tuple->tuple.t_self);
-        tuple->tuple.t_tableOid = xk_pg_parser_InvalidOid;
-
-        rmemcpy1(header, 0, hth, len);
-    }
+    rmemcpy1(header, 0, hth, len);
 }
 
 void xk_pg_parser_reassemble_tuple_from_wal_data(char *data,
@@ -114,119 +65,40 @@ void xk_pg_parser_reassemble_tuple_from_wal_data(char *data,
                                     int16_t dbtype,
                                     char *dbversion)
 {
-    if (XK_DATABASE_TYPE_HGDB == dbtype && !strcmp(dbversion, XK_DATABASE_HGDBV458))
-    {
-        xk_pg_parser_HGDB_xl_heap_header xlhdr;
-        int32_t datalen = len - xk_pg_parser_HGDB_SizeOfHeapHeader;
-        xk_pg_parser_HGDB_HeapTupleHeader header;
-        xk_pg_parser_HGDB_ReorderBufferTupleBuf *tuple = (xk_pg_parser_HGDB_ReorderBufferTupleBuf *)
-                                                          tup;
+    xk_pg_parser_xl_heap_header xlhdr;
+    int32_t datalen = len - xk_pg_parser_SizeOfHeapHeader;
+    xk_pg_parser_HeapTupleHeader header;
+    xk_pg_parser_ReorderBufferTupleBuf *tuple = tup;
 
-        tuple->tuple.t_len = datalen + xk_pg_parser_HGDB_SizeofHeapTupleHeader;
-        header = tuple->tuple.t_data;
+    tuple->tuple.t_len = datalen + xk_pg_parser_SizeofHeapTupleHeader;
+    header = tuple->tuple.t_data;
 
-        /* not a disk based tuple. */
-        xk_pg_parser_ItemPointerSetInvalid(&tuple->tuple.t_self);
+    /* not a disk based tuple. */
+    xk_pg_parser_ItemPointerSetInvalid(&tuple->tuple.t_self);
 
-        /* we can only figure this out after reassembling the transactions. */
-        tuple->tuple.t_tableOid = xk_pg_parser_InvalidOid;
+    /* we can only figure this out after reassembling the transactions. */
+    tuple->tuple.t_tableOid = xk_pg_parser_InvalidOid;
 
-        /* data is not stored aligned, copy to aligned storage. */
-        rmemcpy1((char *)&xlhdr,
-            0,
-            data,
-            xk_pg_parser_HGDB_SizeOfHeapHeader);
+    /* data is not stored aligned, copy to aligned storage. */
+    rmemcpy1((char *)&xlhdr,
+        0,
+        data,
+        xk_pg_parser_SizeOfHeapHeader);
 
-        rmemset1(header, 0, 0, xk_pg_parser_HGDB_SizeofHeapTupleHeader);
+    rmemset1(header, 0, 0, xk_pg_parser_SizeofHeapTupleHeader);
 
-        rmemcpy1(((char *)tuple->tuple.t_data) + xk_pg_parser_HGDB_SizeofHeapTupleHeader,
-            0,
-            data + xk_pg_parser_HGDB_SizeOfHeapHeader,
-            datalen);
+    rmemcpy1(((char *)tuple->tuple.t_data) + xk_pg_parser_SizeofHeapTupleHeader,
+        0,
+        data + xk_pg_parser_SizeOfHeapHeader,
+        datalen);
 
-        header->t_infomask = xlhdr.t_infomask;
-        header->t_infomask2 = xlhdr.t_infomask2;
-        header->t_hoff = xlhdr.t_hoff;
-        if (xk_pg_parser_InvalidTransactionId != xmin)
-            xk_pg_parser_HeapTupleHeaderSetXmin(header, xmin);
-        if (xk_pg_parser_InvalidTransactionId != xmax)
-            xk_pg_parser_HeapTupleHeaderSetXmax(header, xmax);
-    }
-    else if (XK_DATABASE_TYPE_HGDB == dbtype && !strcmp(dbversion, XK_DATABASE_HGDBV457))
-    {
-        xk_pg_parser_xl_heap_header xlhdr;
-        int32_t datalen = len - xk_pg_parser_SizeOfHeapHeader;
-        xk_pg_parser_HGDB_HeapTupleHeader header;
-        xk_pg_parser_HGDB_ReorderBufferTupleBuf *tuple = (xk_pg_parser_HGDB_ReorderBufferTupleBuf *)
-                                                          tup;
-
-        tuple->tuple.t_len = datalen + xk_pg_parser_HGDB_SizeofHeapTupleHeader;
-        header = tuple->tuple.t_data;
-
-        /* not a disk based tuple. */
-        xk_pg_parser_ItemPointerSetInvalid(&tuple->tuple.t_self);
-
-        /* we can only figure this out after reassembling the transactions. */
-        tuple->tuple.t_tableOid = xk_pg_parser_InvalidOid;
-
-        /* data is not stored aligned, copy to aligned storage. */
-        rmemcpy1((char *)&xlhdr,
-            0,
-            data,
-            xk_pg_parser_SizeOfHeapHeader);
-
-        rmemset1(header, 0, 0, xk_pg_parser_HGDB_SizeofHeapTupleHeader);
-
-        rmemcpy1(((char *)tuple->tuple.t_data) + xk_pg_parser_HGDB_SizeofHeapTupleHeader,
-            0,
-            data + xk_pg_parser_SizeOfHeapHeader,
-            datalen);
-
-        header->t_infomask = xlhdr.t_infomask;
-        header->t_infomask2 = xlhdr.t_infomask2;
-        header->t_hoff = xlhdr.t_hoff;
-        if (xk_pg_parser_InvalidTransactionId != xmin)
-            xk_pg_parser_HeapTupleHeaderSetXmin(header, xmin);
-        if (xk_pg_parser_InvalidTransactionId != xmax)
-            xk_pg_parser_HeapTupleHeaderSetXmax(header, xmax);
-    }
-    else
-    {
-        xk_pg_parser_xl_heap_header xlhdr;
-        int32_t datalen = len - xk_pg_parser_SizeOfHeapHeader;
-        xk_pg_parser_HeapTupleHeader header;
-        xk_pg_parser_ReorderBufferTupleBuf *tuple = tup;
-
-        tuple->tuple.t_len = datalen + xk_pg_parser_SizeofHeapTupleHeader;
-        header = tuple->tuple.t_data;
-
-        /* not a disk based tuple. */
-        xk_pg_parser_ItemPointerSetInvalid(&tuple->tuple.t_self);
-
-        /* we can only figure this out after reassembling the transactions. */
-        tuple->tuple.t_tableOid = xk_pg_parser_InvalidOid;
-
-        /* data is not stored aligned, copy to aligned storage. */
-        rmemcpy1((char *)&xlhdr,
-            0,
-            data,
-            xk_pg_parser_SizeOfHeapHeader);
-
-        rmemset1(header, 0, 0, xk_pg_parser_SizeofHeapTupleHeader);
-
-        rmemcpy1(((char *)tuple->tuple.t_data) + xk_pg_parser_SizeofHeapTupleHeader,
-            0,
-            data + xk_pg_parser_SizeOfHeapHeader,
-            datalen);
-
-        header->t_infomask = xlhdr.t_infomask;
-        header->t_infomask2 = xlhdr.t_infomask2;
-        header->t_hoff = xlhdr.t_hoff;
-        if (xk_pg_parser_InvalidTransactionId != xmin)
-            xk_pg_parser_HeapTupleHeaderSetXmin(header, xmin);
-        if (xk_pg_parser_InvalidTransactionId != xmax)
-            xk_pg_parser_HeapTupleHeaderSetXmax(header, xmax);
-    }
+    header->t_infomask = xlhdr.t_infomask;
+    header->t_infomask2 = xlhdr.t_infomask2;
+    header->t_hoff = xlhdr.t_hoff;
+    if (xk_pg_parser_InvalidTransactionId != xmin)
+        xk_pg_parser_HeapTupleHeaderSetXmin(header, xmin);
+    if (xk_pg_parser_InvalidTransactionId != xmax)
+        xk_pg_parser_HeapTupleHeaderSetXmax(header, xmax);
 }
 
 #if XK_PG_VERSION_NUM < 120000
@@ -319,7 +191,6 @@ xk_pg_parser_Datum xk_pg_parser_nocachegetattr(xk_pg_parser_HeapTuple tuple,
                                   char *dbversion)
 {
     xk_pg_parser_HeapTupleHeader tup = NULL;
-    xk_pg_parser_HGDB_HeapTupleHeader tup_hg = NULL;
     char            *tp;                    /* ptr to data part of tuple */
     uint8_t         *bp = NULL;             /* ptr to null bitmap in tuple */
     bool             slow = false;          /* do we have to walk attrs? */
@@ -333,16 +204,10 @@ xk_pg_parser_Datum xk_pg_parser_nocachegetattr(xk_pg_parser_HeapTuple tuple,
      *     3: Has nulls or var-widths BEFORE att.
      * ----------------
      */
-    if (check_special_hgdb_version(dbtype, dbversion))
-    {
-        tup_hg = ((xk_pg_parser_HGDB_HeapTuple)tuple)->t_data;
-        bp = tup_hg->t_bits;
-    }
-    else
-    {
-        tup = tuple->t_data;
-        bp = tup->t_bits;
-    }
+
+    tup = tuple->t_data;
+    bp = tup->t_bits;
+
     attnum--;
 
     if (!xk_pg_parser_HeapTupleNoNulls(tuple))
@@ -374,10 +239,7 @@ xk_pg_parser_Datum xk_pg_parser_nocachegetattr(xk_pg_parser_HeapTuple tuple,
         }
     }
 
-    if (check_special_hgdb_version(dbtype, dbversion))
-        tp = (char *) tup_hg + tup_hg->t_hoff;
-    else
-        tp = (char *) tup + tup->t_hoff;
+    tp = (char *) tup + tup->t_hoff;
 
     if (!slow)
     {
@@ -527,83 +389,45 @@ xk_pg_parser_Datum xk_pg_parser_heap_getsysattr(xk_pg_parser_HeapTuple tuple,
                                    char *dbversion)
 {
     xk_pg_parser_Datum        result;
+    xk_pg_parser_HeapTuple tup = tuple;
+
     XK_PG_PARSER_UNUSED(tupleDesc);
-        if (check_special_hgdb_version(dbtype, dbversion))
+
+    /* Currently, no sys attribute ever reads as NULL. */
+    *isnull = false;
+
+    switch (attnum)
     {
-        xk_pg_parser_HGDB_HeapTuple tup = (xk_pg_parser_HGDB_HeapTuple)tuple;
-        /* Currently, no sys attribute ever reads as NULL. */
-        *isnull = false;
+        case xk_pg_parser_SelfItemPointerAttributeNumber:
+            /* pass-by-reference datatype */
+            result = xk_pg_parser_PointerGetDatum(&(tup->t_self));
+            break;
+        case xk_pg_parser_MinTransactionIdAttributeNumber:
+            result = xk_pg_parser_TransactionIdGetDatum(xk_pg_parser_HeapTupleHeaderGetRawXmin(tup->t_data));
+            break;
+        case xk_pg_parser_MaxTransactionIdAttributeNumber:
+            result = xk_pg_parser_TransactionIdGetDatum(xk_pg_parser_HeapTupleHeaderGetRawXmax(tup->t_data));
+            break;
+        case xk_pg_parser_MinCommandIdAttributeNumber:
+        case xk_pg_parser_MaxCommandIdAttributeNumber:
 
-        switch (attnum)
-        {
-            case xk_pg_parser_SelfItemPointerAttributeNumber:
-                /* pass-by-reference datatype */
-                result = xk_pg_parser_PointerGetDatum(&(tup->t_self));
-                break;
-            case xk_pg_parser_MinTransactionIdAttributeNumber:
-                result = xk_pg_parser_TransactionIdGetDatum(xk_pg_parser_HeapTupleHeaderGetRawXmin(tup->t_data));
-                break;
-            case xk_pg_parser_MaxTransactionIdAttributeNumber:
-                result = xk_pg_parser_TransactionIdGetDatum(xk_pg_parser_HeapTupleHeaderGetRawXmax(tup->t_data));
-                break;
-            case xk_pg_parser_MinCommandIdAttributeNumber:
-            case xk_pg_parser_MaxCommandIdAttributeNumber:
-
-                /*
-                * cmin and cmax are now both aliases for the same field, which
-                * can in fact also be a combo command id.  XXX perhaps we should
-                * return the "real" cmin or cmax if possible, that is if we are
-                * inside the originating transaction?
-                */
-                result = xk_pg_parser_CommandIdGetDatum(xk_pg_parser_HeapTupleHeaderGetRawCommandId(tup->t_data));
-                break;
-            case xk_pg_parser_TableOidAttributeNumber:
-                result = xk_pg_parser_ObjectIdGetDatum(tup->t_tableOid);
-                break;
-            default:
-                result = 0;            /* keep compiler quiet */
-                break;
-        }
-        return result;
+            /*
+            * cmin and cmax are now both aliases for the same field, which
+            * can in fact also be a combo command id.  XXX perhaps we should
+            * return the "real" cmin or cmax if possible, that is if we are
+            * inside the originating transaction?
+            */
+            result = xk_pg_parser_CommandIdGetDatum(xk_pg_parser_HeapTupleHeaderGetRawCommandId(tup->t_data));
+            break;
+        case xk_pg_parser_TableOidAttributeNumber:
+            result = xk_pg_parser_ObjectIdGetDatum(tup->t_tableOid);
+            break;
+        default:
+            result = 0;            /* keep compiler quiet */
+            break;
     }
-    else
-    {
-        xk_pg_parser_HeapTuple tup = tuple;
-        /* Currently, no sys attribute ever reads as NULL. */
-        *isnull = false;
 
-        switch (attnum)
-        {
-            case xk_pg_parser_SelfItemPointerAttributeNumber:
-                /* pass-by-reference datatype */
-                result = xk_pg_parser_PointerGetDatum(&(tup->t_self));
-                break;
-            case xk_pg_parser_MinTransactionIdAttributeNumber:
-                result = xk_pg_parser_TransactionIdGetDatum(xk_pg_parser_HeapTupleHeaderGetRawXmin(tup->t_data));
-                break;
-            case xk_pg_parser_MaxTransactionIdAttributeNumber:
-                result = xk_pg_parser_TransactionIdGetDatum(xk_pg_parser_HeapTupleHeaderGetRawXmax(tup->t_data));
-                break;
-            case xk_pg_parser_MinCommandIdAttributeNumber:
-            case xk_pg_parser_MaxCommandIdAttributeNumber:
-
-                /*
-                * cmin and cmax are now both aliases for the same field, which
-                * can in fact also be a combo command id.  XXX perhaps we should
-                * return the "real" cmin or cmax if possible, that is if we are
-                * inside the originating transaction?
-                */
-                result = xk_pg_parser_CommandIdGetDatum(xk_pg_parser_HeapTupleHeaderGetRawCommandId(tup->t_data));
-                break;
-            case xk_pg_parser_TableOidAttributeNumber:
-                result = xk_pg_parser_ObjectIdGetDatum(tup->t_tableOid);
-                break;
-            default:
-                result = 0;            /* keep compiler quiet */
-                break;
-        }
-        return result;
-    }
+    return result;
 }
 
 void xk_pg_parser_DecodeXLogTuple(char *data,
@@ -612,107 +436,36 @@ void xk_pg_parser_DecodeXLogTuple(char *data,
                                   int16_t dbtype,
                                   char *dbversion)
 {
-    if (XK_DATABASE_TYPE_HGDB == dbtype && !strcmp(dbversion, XK_DATABASE_HGDBV458))
-    {
-        xk_pg_parser_HGDB_xl_heap_header xlhdr;
-        int32_t datalen = len - xk_pg_parser_HGDB_SizeOfHeapHeader;
-        xk_pg_parser_HGDB_HeapTupleHeader header;
-        xk_pg_parser_HGDB_ReorderBufferTupleBuf *tuple = (xk_pg_parser_HGDB_ReorderBufferTupleBuf *)
-                                                          tup;
+    xk_pg_parser_xl_heap_header xlhdr;
+    int32_t datalen = len - xk_pg_parser_SizeOfHeapHeader;
+    xk_pg_parser_HeapTupleHeader header;
+    xk_pg_parser_ReorderBufferTupleBuf *tuple = tup;
 
-        tuple->tuple.t_len = datalen + xk_pg_parser_HGDB_SizeofHeapTupleHeader;
-        header = tuple->tuple.t_data;
+    tuple->tuple.t_len = datalen + xk_pg_parser_SizeofHeapTupleHeader;
+    header = tuple->tuple.t_data;
 
-        /* not a disk based tuple */
-        xk_pg_parser_ItemPointerSetInvalid(&tuple->tuple.t_self);
+    /* not a disk based tuple */
+    xk_pg_parser_ItemPointerSetInvalid(&tuple->tuple.t_self);
 
-        /* we can only figure this out after reassembling the transactions */
-        tuple->tuple.t_tableOid = xk_pg_parser_InvalidOid;
+    /* we can only figure this out after reassembling the transactions */
+    tuple->tuple.t_tableOid = xk_pg_parser_InvalidOid;
 
-        /* data is not stored aligned, copy to aligned storage */
-        rmemcpy1((char *) &xlhdr,
-            0,
-            data,
-            xk_pg_parser_HGDB_SizeOfHeapHeader);
+    /* data is not stored aligned, copy to aligned storage */
+    rmemcpy1((char *) &xlhdr,
+        0,
+        data,
+        xk_pg_parser_SizeOfHeapHeader);
 
-        rmemset1(header, 0, 0, xk_pg_parser_HGDB_SizeofHeapTupleHeader);
+    rmemset1(header, 0, 0, xk_pg_parser_SizeofHeapTupleHeader);
 
-        rmemcpy1(((char *) tuple->tuple.t_data) + xk_pg_parser_HGDB_SizeofHeapTupleHeader,
-            0,
-            data + xk_pg_parser_HGDB_SizeOfHeapHeader,
-            datalen);
+    rmemcpy1(((char *) tuple->tuple.t_data) + xk_pg_parser_SizeofHeapTupleHeader,
+        0,
+        data + xk_pg_parser_SizeOfHeapHeader,
+        datalen);
 
-        header->t_infomask = xlhdr.t_infomask;
-        header->t_infomask2 = xlhdr.t_infomask2;
-        header->t_hoff = xlhdr.t_hoff;
-    }
-    else if (XK_DATABASE_TYPE_HGDB == dbtype && !strcmp(dbversion, XK_DATABASE_HGDBV457))
-    {
-        xk_pg_parser_xl_heap_header xlhdr;
-        int32_t datalen = len - xk_pg_parser_SizeOfHeapHeader;
-        xk_pg_parser_HGDB_HeapTupleHeader header;
-        xk_pg_parser_HGDB_ReorderBufferTupleBuf *tuple = (xk_pg_parser_HGDB_ReorderBufferTupleBuf *)
-                                                          tup;
-
-        tuple->tuple.t_len = datalen + xk_pg_parser_HGDB_SizeofHeapTupleHeader;
-        header = tuple->tuple.t_data;
-
-        /* not a disk based tuple */
-        xk_pg_parser_ItemPointerSetInvalid(&tuple->tuple.t_self);
-
-        /* we can only figure this out after reassembling the transactions */
-        tuple->tuple.t_tableOid = xk_pg_parser_InvalidOid;
-
-        /* data is not stored aligned, copy to aligned storage */
-        rmemcpy1((char *) &xlhdr,
-            0,
-            data,
-            xk_pg_parser_SizeOfHeapHeader);
-
-        rmemset1(header, 0, 0, xk_pg_parser_HGDB_SizeofHeapTupleHeader);
-
-        rmemcpy1(((char *) tuple->tuple.t_data) + xk_pg_parser_HGDB_SizeofHeapTupleHeader,
-            0,
-            data + xk_pg_parser_SizeOfHeapHeader,
-            datalen);
-
-        header->t_infomask = xlhdr.t_infomask;
-        header->t_infomask2 = xlhdr.t_infomask2;
-        header->t_hoff = xlhdr.t_hoff;
-    }
-    else
-    {
-        xk_pg_parser_xl_heap_header xlhdr;
-        int32_t datalen = len - xk_pg_parser_SizeOfHeapHeader;
-        xk_pg_parser_HeapTupleHeader header;
-        xk_pg_parser_ReorderBufferTupleBuf *tuple = tup;
-
-        tuple->tuple.t_len = datalen + xk_pg_parser_SizeofHeapTupleHeader;
-        header = tuple->tuple.t_data;
-
-        /* not a disk based tuple */
-        xk_pg_parser_ItemPointerSetInvalid(&tuple->tuple.t_self);
-
-        /* we can only figure this out after reassembling the transactions */
-        tuple->tuple.t_tableOid = xk_pg_parser_InvalidOid;
-
-        /* data is not stored aligned, copy to aligned storage */
-        rmemcpy1((char *) &xlhdr,
-            0,
-            data,
-            xk_pg_parser_SizeOfHeapHeader);
-
-        rmemset1(header, 0, 0, xk_pg_parser_SizeofHeapTupleHeader);
-
-        rmemcpy1(((char *) tuple->tuple.t_data) + xk_pg_parser_SizeofHeapTupleHeader,
-            0,
-            data + xk_pg_parser_SizeOfHeapHeader,
-            datalen);
-
-        header->t_infomask = xlhdr.t_infomask;
-        header->t_infomask2 = xlhdr.t_infomask2;
-        header->t_hoff = xlhdr.t_hoff;
-    }
+    header->t_infomask = xlhdr.t_infomask;
+    header->t_infomask2 = xlhdr.t_infomask2;
+    header->t_hoff = xlhdr.t_hoff;
 }
 
 /*
@@ -827,101 +580,6 @@ void xk_pg_parser_heap_deform_tuple(xk_pg_parser_HeapTuple tuple,
 #endif
 }
 
-void xk_pg_parser_heap_deform_tuple_HGDB(xk_pg_parser_HGDB_HeapTuple tuple,
-                               xk_pg_parser_TupleDesc tupleDesc,
-                               xk_pg_parser_Datum *values,
-                               bool *isnull)
-{
-    xk_pg_parser_HGDB_HeapTupleHeader tup = tuple->t_data;
-    bool                         hasnulls = xk_pg_parser_HeapTupleHasNulls(tuple);
-    int                          tdesc_natts = tupleDesc->natts;
-    int                          natts;            /* number of atts to extract */
-    int                          attnum;
-    char                        *tp;                /* ptr to tuple data */
-    uint32_t        off;            /* offset in tuple data */
-    uint8_t       *bp = tup->t_bits;    /* ptr to null bitmap in tuple */
-    bool        slow = false;    /* can we use/set attcacheoff? */
-
-    natts = xk_pg_parser_HeapTupleHeaderGetNatts(tup);
-
-    /*
-     * In inheritance situations, it is possible that the given tuple actually
-     * has more fields than the caller is expecting.  Don't run off the end of
-     * the caller's arrays.
-     */
-    natts = Min(natts, tdesc_natts);
-
-    tp = (char *) tup + tup->t_hoff;
-
-    off = 0;
-
-    for (attnum = 0; attnum < natts; attnum++)
-    {
-        xk_pg_sysdict_Form_pg_attribute thisatt = xk_pg_parser_TupleDescAttr(tupleDesc, attnum);
-
-        if (hasnulls && xk_pg_parser_att_isnull(attnum, bp))
-        {
-            values[attnum] = (xk_pg_parser_Datum) 0;
-            isnull[attnum] = true;
-            slow = true;        /* can't use attcacheoff anymore */
-            continue;
-        }
-
-        isnull[attnum] = false;
-
-        if (!slow && thisatt->attcacheoff >= 0)
-            off = thisatt->attcacheoff;
-        else if (thisatt->attlen == -1)
-        {
-            /*
-             * We can only cache the offset for a varlena attribute if the
-             * offset is already suitably aligned, so that there would be no
-             * pad bytes in any case: then the offset will be valid for either
-             * an aligned or unaligned value.
-             */
-            if (!slow &&
-                off == xk_pg_parser_att_align_nominal(off, thisatt->attalign))
-                thisatt->attcacheoff = off;
-            else
-            {
-                off = xk_pg_parser_att_align_pointer(off, thisatt->attalign, -1,
-                                        tp + off);
-                slow = true;
-            }
-        }
-        else
-        {
-            /* not varlena, so safe to use att_align_nominal */
-            off = xk_pg_parser_att_align_nominal(off, thisatt->attalign);
-
-            if (!slow)
-                thisatt->attcacheoff = off;
-        }
-
-        values[attnum] = xk_pg_parser_fetchatt(thisatt, tp + off);
-
-        off = xk_pg_parser_att_addlength_pointer(off, thisatt->attlen, tp + off);
-
-        if (thisatt->attlen <= 0)
-            slow = true;        /* can't use attcacheoff anymore */
-    }
-
-    /*
-     * If tuple doesn't have all the atts indicated by tupleDesc, read the
-     * rest as nulls or missing values as appropriate.
-     */
-#if PG_VERSION_NUM >= 110000
-    for (; attnum < tdesc_natts; attnum++)
-        values[attnum] = getmissingattr(tupleDesc, attnum + 1, &isnull[attnum]);
-#else
-    for (; attnum < tdesc_natts; attnum++)
-    {
-        values[attnum] = (xk_pg_parser_Datum) 0;
-        isnull[attnum] = true;
-    }
-#endif
-}
-
 static xk_pg_parser_ReorderBufferTupleBuf *xk_pg_parser_assemble_tuple_pg(char* page, uint16_t offnum)
 {
     xk_pg_parser_ReorderBufferTupleBuf *tuple = NULL;
@@ -943,28 +601,6 @@ static xk_pg_parser_ReorderBufferTupleBuf *xk_pg_parser_assemble_tuple_pg(char* 
     return tuple;
 }
 
-static xk_pg_parser_ReorderBufferTupleBuf *xk_pg_parser_assemble_tuple_hgdb(char* page, uint16_t offnum)
-{
-    xk_pg_parser_HGDB_ReorderBufferTupleBuf *tuple = NULL;
-    xk_pg_parser_ItemId id = NULL;
-    xk_pg_parser_HGDB_HeapTupleHeader tuphdr = NULL;
-    size_t tuplelen = 0;
-
-    id = xk_pg_parser_PageGetItemId(page, offnum);
-    tuphdr = (xk_pg_parser_HGDB_HeapTupleHeader)xk_pg_parser_PageGetItem(page, id);
-    tuplelen = (size_t)id->lp_len;
-    tuple = (xk_pg_parser_HGDB_ReorderBufferTupleBuf *)
-             xk_pg_parser_heaptuple_get_tuple_space(tuplelen, XK_DATABASE_TYPE_HGDB, XK_DATABASE_HGDBV458);
-    if (!tuple)
-        return NULL;
-    xk_pg_parser_reassemble_tuple_from_heap_tuple_header(tuphdr,
-                                                         tuplelen,
-                                                         (xk_pg_parser_ReorderBufferTupleBuf *)tuple,
-                                                         XK_DATABASE_TYPE_HGDB,
-                                                         XK_DATABASE_HGDBV458);
-    return (xk_pg_parser_ReorderBufferTupleBuf*)tuple;
-}
-
 xk_pg_parser_ReorderBufferTupleBuf *xk_pg_parser_assemble_tuple(int32_t dbtype,
                                                                 char* dbversion,
                                                                 uint32_t pagesize,
@@ -972,11 +608,17 @@ xk_pg_parser_ReorderBufferTupleBuf *xk_pg_parser_assemble_tuple(int32_t dbtype,
                                                                 uint16_t offnum)
 {
     XK_PG_PARSER_UNUSED(pagesize);
-    if (XK_DATABASE_TYPE_POSTGRESQL == dbtype)
-        return xk_pg_parser_assemble_tuple_pg(page, offnum);
-    else if (check_special_hgdb_version(dbtype, dbversion))
-        return xk_pg_parser_assemble_tuple_hgdb(page, offnum);
-    else
-        return xk_pg_parser_assemble_tuple_pg(page, offnum);
+
+    switch (dbtype)
+    {
+        case XK_DATABASE_TYPE_POSTGRESQL:
+        {
+            return xk_pg_parser_assemble_tuple_pg(page, offnum);
+        }
+        default:
+        {
+            return xk_pg_parser_assemble_tuple_pg(page, offnum);
+        }
+    }
 }
 

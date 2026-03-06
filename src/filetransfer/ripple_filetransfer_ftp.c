@@ -2,7 +2,6 @@
 #include <curl/curl.h>
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
-#include "utils/md5/ripple_md5.h"
 #include "utils/string/stringinfo.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"

@@ -14,15 +14,8 @@ void ripple_classcache_write(HTAB* classcache, uint64 *offset, ripple_sysdict_he
 
 /* colvalue2class */
 ripple_catalogdata* ripple_class_colvalue2class(void* in_colvalue);
-ripple_catalogdata* ripple_class_colvalue2class_hg902(void* in_colvalue);
-
-#define ripple_class_colvalue2class_hg458 ripple_class_colvalue2class
-#define ripple_class_colvalue2class_hg457 ripple_class_colvalue2class
-#define ripple_class_colvalue2class_hg901 ripple_class_colvalue2class
 
 ripple_catalogdata* ripple_class_colvalue2class_nofilter(void* in_colvalue);
-
-ripple_catalogdata* ripple_class_colvalue2class_nofilter_hg902(void* in_colvalue);
 
 /* catalog2his */
 void ripple_class_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);

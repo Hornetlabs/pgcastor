@@ -140,9 +140,6 @@ bool ripple_cmd(ripple_optype type, void *extra_config)
         case RIPPLE_PROC_TYPE_INTEGRATE:
             nodetype = RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE;
             break;
-        case RIPPLE_PROC_TYPE_HGRECEIVEWAL:
-            nodetype = RIPPLE_XMANAGER_METRICNODETYPE_HGRECEIVELOG;
-            break;
         case RIPPLE_PROC_TYPE_PGRECEIVEWAL:
             nodetype = RIPPLE_XMANAGER_METRICNODETYPE_PGRECEIVELOG;
             break;

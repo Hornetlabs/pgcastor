@@ -63,11 +63,6 @@ void* ripple_ffsmgr_headinit(int compatibility, FullTransactionId xid, uint64 fi
     ffheader->compatibility = compatibility;
     ffheader->dbtype = g_idbtype;
     ffheader->dbversion = (char*)guc_getConfigOption(RIPPLE_CFG_KEY_DBVERION);
-    if(strlen(ffheader->dbversion) == strlen(RIPPLE_DBVERSION_HIGHGO_V903)
-            && 0 == strcmp(ffheader->dbversion, RIPPLE_DBVERSION_HIGHGO_V903))
-    {
-        ffheader->dbversion = RIPPLE_DBVERSION_HIGHGO_V901;
-    }
     ffheader->encryption = 0;
     ffheader->endxid = InvalidFullTransactionId;
 

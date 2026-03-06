@@ -35,11 +35,6 @@ typedef enum RIPPLE_XMANAGER_MSG
 
     /*-----------integrate   end----------*/
 
-    /*-----------hgreceivelog begin-------*/
-    RIPPLE_XMANAGER_MSG_HGRECEIVELOG                    ,
-
-    /*-----------hgreceivelog   end-------*/
-
     /*-----------pgreceivelog begin-------*/
     RIPPLE_XMANAGER_MSG_PGRECEIVELOG                    ,
 
@@ -59,9 +54,6 @@ typedef enum RIPPLE_XMANAGER_METRICNODETYPE
 
     /* integrate */
     RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE            ,
-
-    /* hgreceivelog */
-    RIPPLE_XMANAGER_METRICNODETYPE_HGRECEIVELOG         ,
 
     /* pgreceivelog */
     RIPPLE_XMANAGER_METRICNODETYPE_PGRECEIVELOG         ,

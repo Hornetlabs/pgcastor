@@ -4,7 +4,6 @@ c_cpp_properties.json
 # Program file excludes
 /bin/capture/capture
 /bin/integrate/integrate
-/bin/receivehglog/receivelog
 /bin/receivepglog/receivelog
 /bin/xmanager/xmanager
 /bin/xscsci/xscsci

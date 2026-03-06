@@ -11,7 +11,6 @@
 #include "translog/wal/ripple_translog_walmsg.h"
 #include "translog/wal/ripple_translog_recvlog.h"
 #include "translog/wal/ripple_translog_recvpglog.h"
-#include "translog/wal/ripple_translog_recvhglog.h"
 #include "translog/wal/ripple_translog_walam.h"
 
 /*----------------------------------版本路由器PG begin---------------------*/
@@ -81,27 +80,6 @@ static ripple_translog_recvlog_amroutine m_pg18routine =
 
 /*----------------------------------版本路由器PG   end---------------------*/
 
-/*----------------------------------版本路由器HG begin---------------------*/
-
-/*----------------------------------版本路由器HG   end---------------------*/
-/* v457---v4510 版本处理 */
-static ripple_translog_recvlog_amroutine m_hglow4510routine =
-{
-    .version        = RIPPLE_TRANSLOG_RECVLOG_HGVERSION_4510,
-    .desc           = "HG457-HG4510",
-    .msgop          = ripple_translog_recvhglog_4510msgop,
-    .endreplication = ripple_translog_recvhglog_endreplication
-};
-
-/* v4511 版本处理 */
-static ripple_translog_recvlog_amroutine m_hglow4511routine =
-{
-    .version        = RIPPLE_TRANSLOG_RECVLOG_HGVERSION_4511,
-    .desc           = "HG4511-HG904",
-    .msgop          = ripple_translog_recvhglog_4511msgop,
-    .endreplication = ripple_translog_recvhglog_endreplication
-};
-
 /*----------------------------------数据库版本 begin-----------------------*/
 static ripple_translog_recvlog_dbtyperoutine m_pgtyperoutine[] =
 {
@@ -116,12 +94,6 @@ static ripple_translog_recvlog_dbtyperoutine m_pgtyperoutine[] =
         .desc               = "Postgres",
         .getdbversion       = ripple_translog_recvpglog_getpgversion,
         .getconfigurefde    = NULL
-    },
-    {
-        .type               = RIPPLE_TRANSLOG_RECVLOG_DBTYPE_HGDB,
-        .desc               = "Highgo",
-        .getdbversion       = ripple_translog_recvhglog_gethgversion,
-        .getconfigurefde    = ripple_translog_recvhglog_getconfigurefde
     }
 };
 
@@ -186,14 +158,6 @@ ripple_translog_recvlog_amroutine* ripple_translog_recvlog_getroutine(ripple_tra
             return &m_pg17routine;
         case RIPPLE_TRANSLOG_RECVLOG_PGVERSION_18:
             return &m_pg18routine;
-        case RIPPLE_TRANSLOG_RECVLOG_HGVERSION_457:
-        case RIPPLE_TRANSLOG_RECVLOG_HGVERSION_458:
-        case RIPPLE_TRANSLOG_RECVLOG_HGVERSION_459:
-        case RIPPLE_TRANSLOG_RECVLOG_HGVERSION_4510:
-            return &m_hglow4510routine;
-        case RIPPLE_TRANSLOG_RECVLOG_HGVERSION_4511:
-        case RIPPLE_TRANSLOG_RECVLOG_HGVERSION_9:
-            return &m_hglow4511routine;
         default:
             elog(RLOG_WARNING, "not support database version %d", dbversion);
             return NULL;

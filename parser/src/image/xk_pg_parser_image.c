@@ -147,17 +147,6 @@ bool xk_pg_parser_image_get_block_image(xk_pg_parser_trans_transrec_decode_XLogR
      ((((xk_pg_parser_PageHeader) (page))->pd_lower - xk_pg_parser_SizeOfPageHeaderData) \
       / sizeof(xk_pg_parser_ItemIdData)))
 
-#define PageGetMaxOffsetNumber_Kingbase_sizeS(page) \
-    (((xk_pg_parser_PageHeader_Kingbase_S) (page))->pd_lower <= xk_pg_parser_SizeOfPageHeaderData_Kingbase_sizeS ? 0 : \
-     ((((xk_pg_parser_PageHeader_Kingbase_S) (page))->pd_lower - xk_pg_parser_SizeOfPageHeaderData_Kingbase_sizeS) \
-      / sizeof(xk_pg_parser_ItemIdData)))
-
-#define PageGetMaxOffsetNumber_Kingbase_sizeB(page) \
-    (((xk_pg_parser_PageHeader_Kingbase_B) (page))->pd_lower <= xk_pg_parser_SizeOfPageHeaderData_Kingbase_sizeB ? 0 : \
-     ((((xk_pg_parser_PageHeader_Kingbase_B) (page))->pd_lower - xk_pg_parser_SizeOfPageHeaderData_Kingbase_sizeB) \
-      / sizeof(xk_pg_parser_ItemIdData_Kingbase_sizeB)))
-
-
 xk_pg_parser_translog_tuplecache *xk_pg_parser_image_get_tuple_from_image(char *page,
                                                                           uint32_t *tupcnt,
                                                                           uint32_t pageno,
@@ -191,102 +180,6 @@ xk_pg_parser_translog_tuplecache *xk_pg_parser_image_get_tuple_from_image(char *
     for (i = 0; i < item_num; i++)
     {
         if (xk_pg_parser_ItemIdIsNormal(&phdr->pd_linp[i]))
-        {
-            if (!xk_pg_parser_mcxt_malloc(IMAGE_MCXT, (void **) &(result[count].m_tupledata), (int32_t)(phdr->pd_linp[i].lp_len)))
-                return NULL;
-            result[count].m_itemoffnum = i + 1;
-            result[count].m_pageno = pageno;
-            rmemcpy0(result[count].m_tupledata, 0, xk_pg_parser_PageGetItem(page, &phdr->pd_linp[i]), (size_t)(phdr->pd_linp[i].lp_len));
-            result[count].m_tuplelen = phdr->pd_linp[i].lp_len;
-            count++;
-        }
-    }
-    if (XK_PG_PARSER_DEBUG_SILENCE < debug_level)
-    {
-        for (i = 0; i < *tupcnt; i++)
-            printf("DEBUG: get tuple from FPW image, itemoff[%u], pageno[%u], tuplen[%u]\n",
-                    result[i].m_itemoffnum, result[i].m_pageno, result[i].m_tuplelen);
-    }
-    return result;
-}
-
-xk_pg_parser_translog_tuplecache *xk_pg_parser_image_get_tuple_from_image_Kingbase_szieS(char *page,
-                                                                          uint32_t *tupcnt,
-                                                                          uint32_t pageno,
-                                                                          uint8_t  debug_level)
-{
-    xk_pg_parser_PageHeader_Kingbase_S phdr = (xk_pg_parser_PageHeader_Kingbase_S) page;
-    xk_pg_parser_translog_tuplecache *result = NULL;
-    uint32_t i = 0,
-            count = 0;
-    uint32_t item_num = PageGetMaxOffsetNumber_Kingbase_sizeS(phdr);
-
-    for (i = 0; i < item_num; i++)
-    {
-        if (xk_pg_parser_ItemIdIsUsed(&phdr->pd_linp[i]) || xk_pg_parser_ItemIdHasStorage(&phdr->pd_linp[i]))
-            count++;
-    }
-    if (count != 0)
-    {
-        if (!xk_pg_parser_mcxt_malloc(IMAGE_MCXT, (void **) &result, count * sizeof(xk_pg_parser_translog_tuplecache)))
-            return NULL;
-    }
-    else
-        return NULL;
-
-    *tupcnt = count;
-    count = 0;
-    for (i = 0; i < item_num; i++)
-    {
-        if (xk_pg_parser_ItemIdIsUsed(&phdr->pd_linp[i]) || xk_pg_parser_ItemIdHasStorage(&phdr->pd_linp[i]))
-        {
-            if (!xk_pg_parser_mcxt_malloc(IMAGE_MCXT, (void **) &(result[count].m_tupledata), (int32_t)(phdr->pd_linp[i].lp_len)))
-                return NULL;
-            result[count].m_itemoffnum = i + 1;
-            result[count].m_pageno = pageno;
-            rmemcpy0(result[count].m_tupledata, 0, xk_pg_parser_PageGetItem(page, &phdr->pd_linp[i]), (size_t)(phdr->pd_linp[i].lp_len));
-            result[count].m_tuplelen = phdr->pd_linp[i].lp_len;
-            count++;
-        }
-    }
-    if (XK_PG_PARSER_DEBUG_SILENCE < debug_level)
-    {
-        for (i = 0; i < *tupcnt; i++)
-            printf("DEBUG: get tuple from FPW image, itemoff[%u], pageno[%u], tuplen[%u]\n",
-                    result[i].m_itemoffnum, result[i].m_pageno, result[i].m_tuplelen);
-    }
-    return result;
-}
-
-xk_pg_parser_translog_tuplecache *xk_pg_parser_image_get_tuple_from_image_Kingbase_szieB(char *page,
-                                                                          uint32_t *tupcnt,
-                                                                          uint32_t pageno,
-                                                                          uint8_t  debug_level)
-{
-    xk_pg_parser_PageHeader_Kingbase_B phdr = (xk_pg_parser_PageHeader_Kingbase_B) page;
-    xk_pg_parser_translog_tuplecache *result = NULL;
-    uint32_t i = 0,
-            count = 0;
-    uint32_t item_num = PageGetMaxOffsetNumber_Kingbase_sizeB(phdr);
-
-    for (i = 0; i < item_num; i++)
-    {
-        if (xk_pg_parser_ItemIdIsUsed(&phdr->pd_linp[i]) || xk_pg_parser_ItemIdHasStorage(&phdr->pd_linp[i]))
-            count++;
-    }
-    if (count != 0)
-    {
-        if (!xk_pg_parser_mcxt_malloc(IMAGE_MCXT, (void **) &result, count * sizeof(xk_pg_parser_translog_tuplecache)))
-            return NULL;
-    }
-    else
-        return NULL;
-
-    *tupcnt = count;
-    count = 0;
-    for (i = 0; i < item_num; i++)
-    {
-        if (xk_pg_parser_ItemIdIsUsed(&phdr->pd_linp[i]) || xk_pg_parser_ItemIdHasStorage(&phdr->pd_linp[i]))
         {
             if (!xk_pg_parser_mcxt_malloc(IMAGE_MCXT, (void **) &(result[count].m_tupledata), (int32_t)(phdr->pd_linp[i].lp_len)))
                 return NULL;

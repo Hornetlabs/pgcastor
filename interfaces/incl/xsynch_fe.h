@@ -51,7 +51,6 @@ typedef enum XSYNCH_JOBKIND
     XSYNCH_JOBKIND_NOP                      = 0,
     XSYNCH_JOBKIND_CAPTURE                  ,
     XSYNCH_JOBKIND_INTEGRATE                ,
-    XSYNCH_JOBKIND_HGRECEIVELOG             ,
     XSYNCH_JOBKIND_PGRECEIVELOG             ,
     XSYNCH_JOBKIND_PROCESS                  ,
 

@@ -41,18 +41,6 @@ typedef struct xk_pg_parser_xl_heap_header
 
 #define xk_pg_parser_SizeOfHeapHeader (offsetof(xk_pg_parser_xl_heap_header, t_hoff) \
                                      + sizeof(uint8_t))
-
-typedef struct xk_pg_parser_HGDB_xl_heap_header
-{
-    uint16_t        t_infomask2;
-    uint16_t        t_infomask;
-    int16_t         t_seclabel_len;
-    uint8_t         t_hoff;
-} xk_pg_parser_HGDB_xl_heap_header;
-
-#define xk_pg_parser_HGDB_SizeOfHeapHeader (offsetof(xk_pg_parser_HGDB_xl_heap_header, t_hoff) \
-                                     + sizeof(uint8_t))
-
 typedef struct xk_pg_parser_HeapTupleFields
 {
     uint32_t t_xmin;        /* inserting xact ID */
@@ -105,50 +93,11 @@ struct xk_pg_parser_HeapTupleHeaderData
     /* MORE DATA FOLLOWS AT END OF STRUCT */
 };
 
-struct xk_pg_parser_HGDB_HeapTupleHeaderData
-{
-    union
-    {
-        xk_pg_parser_HeapTupleFields t_heap;
-        xk_pg_parser_DatumTupleFields t_datum;
-    }            t_choice;
-
-    xk_pg_parser_ItemPointerData t_ctid;        /* current TID of this or newer tuple (or a
-                                 * speculative insertion token) */
-
-    /* Fields below here must match MinimalTupleData! */
-
-#define FIELDNO_HEAPTUPLEHEADERDATA_INFOMASK2 2
-    uint16_t        t_infomask2;    /* number of attributes + various flags */
-
-#define FIELDNO_HEAPTUPLEHEADERDATA_INFOMASK 3
-    uint16_t        t_infomask;        /* various flag bits, see below */
-
-    /* support for highgo database */
-    int16_t         t_seclabel_len;
-
-#define FIELDNO_HEAPTUPLEHEADERDATA_HOFF 4
-    uint8_t        t_hoff;            /* sizeof header incl. bitmap, padding */
-
-    /* ^ - 23 bytes - ^ */
-
-#define FIELDNO_HEAPTUPLEHEADERDATA_BITS 5
-    uint8_t        t_bits[FLEXIBLE_ARRAY_MEMBER];    /* bitmap of NULLs */
-
-    /* MORE DATA FOLLOWS AT END OF STRUCT */
-};
-
 typedef struct xk_pg_parser_HeapTupleHeaderData xk_pg_parser_HeapTupleHeaderData;
 
 #define xk_pg_parser_SizeofHeapTupleHeader offsetof(xk_pg_parser_HeapTupleHeaderData, t_bits)
 
 typedef xk_pg_parser_HeapTupleHeaderData *xk_pg_parser_HeapTupleHeader;
-
-typedef struct xk_pg_parser_HGDB_HeapTupleHeaderData xk_pg_parser_HGDB_HeapTupleHeaderData;
-
-#define xk_pg_parser_HGDB_SizeofHeapTupleHeader offsetof(xk_pg_parser_HGDB_HeapTupleHeaderData, t_bits)
-
-typedef xk_pg_parser_HGDB_HeapTupleHeaderData *xk_pg_parser_HGDB_HeapTupleHeader;
 
 typedef struct xk_pg_parser_HeapTupleData
 {
@@ -160,17 +109,6 @@ typedef struct xk_pg_parser_HeapTupleData
 } xk_pg_parser_HeapTupleData;
 
 typedef xk_pg_parser_HeapTupleData *xk_pg_parser_HeapTuple;
-
-typedef struct xk_pg_parser_HGDB_HeapTupleData
-{
-    uint32_t          t_len;              /* length of *t_data */
-    xk_pg_parser_ItemPointerData t_self;             /* SelfItemPointer */
-    uint32_t             t_tableOid;         /* table the tuple came from */
-#define FIELDNO_HEAPTUPLEDATA_DATA 3
-    xk_pg_parser_HGDB_HeapTupleHeader t_data;        /* -> tuple header and data */
-} xk_pg_parser_HGDB_HeapTupleData;
-
-typedef xk_pg_parser_HGDB_HeapTupleData *xk_pg_parser_HGDB_HeapTuple;
 
 typedef struct xk_pg_parser_slist_node xk_pg_parser_slist_node;
 struct xk_pg_parser_slist_node
@@ -191,20 +129,6 @@ typedef struct xk_pg_parser_ReorderBufferTupleBuf
 
     /* actual tuple data follows */
 } xk_pg_parser_ReorderBufferTupleBuf;
-
-typedef struct xk_pg_parser_HGDB_ReorderBufferTupleBuf
-{
-    /* position in preallocated list */
-    xk_pg_parser_slist_node    node;
-
-    /* tuple header, the interesting bit for users of logical decoding */
-    xk_pg_parser_HGDB_HeapTupleData tuple;
-
-    /* pre-allocated size of tuple buffer, different from tuple size */
-    size_t        alloc_tuple_size;
-
-    /* actual tuple data follows */
-} xk_pg_parser_HGDB_ReorderBufferTupleBuf;
 
 /* tupledesc begin */
 typedef struct xk_pg_parser_AttrMissing
@@ -275,15 +199,10 @@ typedef struct xk_pg_parser_TupleDescData *xk_pg_parser_TupleDesc;
 /* tupledesc end */
 
 #define XK_PG_PARSER_HEAPTUPLESIZE    XK_PG_PARSER_MAXALIGN(sizeof(xk_pg_parser_HeapTupleData))
-#define XK_PG_PARSER_HGDB_HEAPTUPLESIZE    XK_PG_PARSER_MAXALIGN(sizeof(xk_pg_parser_HGDB_HeapTupleData))
 
 #define xk_pg_parser_ReorderBufferTupleBufData(p) \
     ((xk_pg_parser_HeapTupleHeader) XK_PG_PARSER_MAXALIGN(((char *) p) \
     + sizeof(xk_pg_parser_ReorderBufferTupleBuf)))
-
-#define xk_pg_parser_HGDB_ReorderBufferTupleBufData(p) \
-    ((xk_pg_parser_HGDB_HeapTupleHeader) XK_PG_PARSER_MAXALIGN(((char *) p) \
-    + sizeof(xk_pg_parser_HGDB_ReorderBufferTupleBuf)))
 
 /*
  * Accessor macros to be used with xk_pg_parser_HeapTuple pointers.
@@ -402,19 +321,9 @@ do { \
     (                                    \
         xk_pg_parser_TupleDescAttr((tupleDesc), (attnum)-1)->attcacheoff >= 0 ?    \
         (                                \
-            (check_special_hgdb_version((dbtype), (dbversion))) ? \
-            (                           \
-                xk_pg_parser_fetchatt(xk_pg_parser_TupleDescAttr((tupleDesc), (attnum)-1),    \
-                    (char *) ((xk_pg_parser_HGDB_HeapTuple)(tup))->t_data + \
-                    ((xk_pg_parser_HGDB_HeapTuple)(tup))->t_data->t_hoff +\
-                    xk_pg_parser_TupleDescAttr((tupleDesc), (attnum)-1)->attcacheoff)\
-            )                            \
-            :                            \
-            ( \
-                xk_pg_parser_fetchatt(xk_pg_parser_TupleDescAttr((tupleDesc), (attnum)-1),    \
-                    (char *) (tup)->t_data + (tup)->t_data->t_hoff +\
-                    xk_pg_parser_TupleDescAttr((tupleDesc), (attnum)-1)->attcacheoff)\
-            ) \
+            xk_pg_parser_fetchatt(xk_pg_parser_TupleDescAttr((tupleDesc), (attnum)-1),    \
+                (char *) (tup)->t_data + (tup)->t_data->t_hoff +\
+                xk_pg_parser_TupleDescAttr((tupleDesc), (attnum)-1)->attcacheoff)\
         )                                \
         :                                \
             xk_pg_parser_nocachegetattr((tup), (attnum), (tupleDesc), (dbtype), (dbversion))        \
@@ -422,30 +331,15 @@ do { \
     :                                    \
     (                                    \
         ( \
-            (check_special_hgdb_version((dbtype), (dbversion))) ? \
-            ( \
-                xk_pg_parser_att_isnull((attnum)-1, ((xk_pg_parser_HGDB_HeapTuple)(tup))->t_data->t_bits) ?            \
-                (                                \
-                    (*(isnull) = true),                    \
-                    (xk_pg_parser_Datum)NULL                        \
-                )                                \
-                :                                \
-                (                                \
-                    xk_pg_parser_nocachegetattr((tup), (attnum), (tupleDesc), (dbtype), (dbversion))        \
-                )                                \
-            ) \
-            : \
-            ( \
-                xk_pg_parser_att_isnull((attnum)-1, (tup)->t_data->t_bits) ?            \
-                (                                \
-                    (*(isnull) = true),                    \
-                    (xk_pg_parser_Datum)NULL                        \
-                )                                \
-                :                                \
-                (                                \
-                    xk_pg_parser_nocachegetattr((tup), (attnum), (tupleDesc), (dbtype), (dbversion))        \
-                )                                \
-            ) \
+            xk_pg_parser_att_isnull((attnum)-1, (tup)->t_data->t_bits) ?            \
+            (                                \
+                (*(isnull) = true),                    \
+                (xk_pg_parser_Datum)NULL                        \
+            )                                \
+            :                                \
+            (                                \
+                xk_pg_parser_nocachegetattr((tup), (attnum), (tupleDesc), (dbtype), (dbversion))        \
+            )                                \
         ) \
     )                                    \
 )
@@ -572,11 +466,6 @@ extern void xk_pg_parser_reassemble_tuple_from_wal_data(char *data,
                                                         int16_t dbtype,
                                                         char *dbversion);
 extern void xk_pg_parser_heap_deform_tuple(xk_pg_parser_HeapTuple tuple,
-                                           xk_pg_parser_TupleDesc tupleDesc,
-                                           xk_pg_parser_Datum *values,
-                                           bool *isnull);
-
-extern void xk_pg_parser_heap_deform_tuple_HGDB(xk_pg_parser_HGDB_HeapTuple tuple,
                                            xk_pg_parser_TupleDesc tupleDesc,
                                            xk_pg_parser_Datum *values,
                                            bool *isnull);

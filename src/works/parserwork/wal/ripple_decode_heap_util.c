@@ -792,14 +792,6 @@ static bool check_high_version(int dbtype, char *dbversion)
             }
             break;
         }
-        case XK_DATABASE_TYPE_HGDB:
-        {
-            if (!strcmp(XK_DATABASE_HGDBV901, dbversion))
-            {
-                result = true;
-            }
-            break;
-        }
         default:
         {
             break;

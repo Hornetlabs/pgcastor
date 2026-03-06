@@ -218,25 +218,25 @@ static struct config_string ConfigureNamesStringCapture[] =
             NULL
         },
         &(g_capturecfg.waldir),
-        "/opt/highgodb/dat/pg_wal",
+        "/opt/pgsql/dat/pg_wal",
         NULL, NULL
     },
     {
         {RIPPLE_CFG_KEY_DBTYPE, PGC_INTERNAL,
-            gettext_noop("Type of parsing database(postgres/highgo)"),
+            gettext_noop("Type of parsing database(postgres)"),
             NULL
         },
         &(g_capturecfg.dbtype),
-        "highgo",
+        "postgres",
         NULL, NULL
     },
     {
         {RIPPLE_CFG_KEY_DBVERION, PGC_INTERNAL,
-            gettext_noop("Type of parsing database version(458)"),
+            gettext_noop("Type of parsing database version(127)"),
             NULL
         },
         &(g_capturecfg.dbversion),
-        "458",
+        "127",
         NULL, NULL
     },
     {
@@ -474,7 +474,7 @@ static struct config_string ConfigureNamesStringIntegrate[] =
             NULL
         },
         &(g_integratecfg.traildir),
-        "/opt/highgodb/dat/pg_wal",
+        "/opt/ripple/capture/trail",
         NULL, NULL
     },
     {
@@ -960,12 +960,6 @@ static ripple_guc_cfg m_guccfg[] =
         ConfigureNamesIntIntegrate,
         ConfigureNamesStringIntegrate,
         guc_integratedebug
-    },
-    {
-        RIPPLE_PROC_TYPE_HGRECEIVEWAL,
-        ConfigureNamesIntReceivewal,
-        ConfigureNamesStringReceivewal,
-        guc_receivewaldebug
     },
     {
         RIPPLE_PROC_TYPE_PGRECEIVEWAL,
@@ -1698,7 +1692,6 @@ char* guc_getdata(void)
             break;
         case RIPPLE_PROC_TYPE_INTEGRATE:
             return g_integratecfg.data;
-        case RIPPLE_PROC_TYPE_HGRECEIVEWAL:
         case RIPPLE_PROC_TYPE_PGRECEIVEWAL:
             return m_receivewalcfg.data;
         case RIPPLE_PROC_TYPE_XMANAGER:
@@ -1714,7 +1707,6 @@ char* guc_gettrail(void)
     {
         case RIPPLE_PROC_TYPE_INTEGRATE:
             return g_integratecfg.traildir;
-        case RIPPLE_PROC_TYPE_HGRECEIVEWAL:
         case RIPPLE_PROC_TYPE_PGRECEIVEWAL:
         case RIPPLE_PROC_TYPE_CAPTURE:
         case RIPPLE_PROC_TYPE_XMANAGER:

@@ -170,18 +170,6 @@ struct xk_pg_parser_varlena *xk_pg_parser_heap_tuple_untoast_attr(struct xk_pg_p
                 }
                 break;
             }
-            case XK_DATABASE_TYPE_HGDB:
-            {
-                if (!strcmp(XK_DATABASE_HGDBV901, dbversion))
-                {
-                    attr = toast_decompress_datum_pg14(attr, need_free);
-                }
-                else
-                {
-                    attr = toast_decompress_datum(attr, need_free);
-                }
-                break;
-            }
             default:
             {
                 attr = toast_decompress_datum(attr, need_free);

@@ -12,11 +12,6 @@ void ripple_rangecache_write(HTAB* rangecache, uint64 *offset, ripple_sysdict_he
 /* colvalue2range */
 ripple_catalogdata* ripple_range_colvalue2range(void* in_colvalue);
 
-#define ripple_range_colvalue2range_hg458 ripple_range_colvalue2range
-#define ripple_range_colvalue2range_hg457 ripple_range_colvalue2range
-#define ripple_range_colvalue2range_hg901 ripple_range_colvalue2range
-#define ripple_range_colvalue2range_hg902 ripple_range_colvalue2range
-
 /* catalogdata2transcache */
 void ripple_range_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);
 

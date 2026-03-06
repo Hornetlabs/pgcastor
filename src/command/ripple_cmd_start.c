@@ -19,7 +19,6 @@ static proc2start           m_typ2start[]=
     { RIPPLE_PROC_TYPE_NOP,             NULL,                           "proc nop unsupport start"},
     { RIPPLE_PROC_TYPE_CAPTURE,         ripple_cmd_startcapture,        "capture start error" },
     { RIPPLE_PROC_TYPE_INTEGRATE,       ripple_cmd_startintegrate,      "integrate start error" },
-    { RIPPLE_PROC_TYPE_HGRECEIVEWAL,    NULL,                           "hg receivelog start error" },
     { RIPPLE_PROC_TYPE_PGRECEIVEWAL,    NULL,                           "pg receivelog start error" },
     { RIPPLE_PROC_TYPE_XMANAGER,        ripple_cmd_startxmanager,       "xmanager start error" }
 };

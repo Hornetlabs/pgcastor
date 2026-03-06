@@ -25,15 +25,7 @@ typedef struct xk_pg_parser_ItemIdData
                 lp_len:15;         /* byte length of tuple */
 } xk_pg_parser_ItemIdData;
 
-typedef struct xk_pg_parser_ItemIdData_Kingbase_sizeB
-{
-uint64_t        lp_off:31,        /* offset to tuple (from start of page) */
-                lp_flags:2,        /* state of line pointer, see below */
-                lp_len:31;        /* byte length of tuple */
-} xk_pg_parser_ItemIdData_Kingbase_sizeB;
-
 typedef xk_pg_parser_ItemIdData *xk_pg_parser_ItemId;
-typedef xk_pg_parser_ItemIdData_Kingbase_sizeB *xk_pg_parser_ItemId_kingbase_sizeB;
 
 #define xk_pg_parser_ItemPointerSetInvalid(pointer) \
 ( \

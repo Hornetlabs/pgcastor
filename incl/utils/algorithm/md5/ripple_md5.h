@@ -1,5 +1,5 @@
-#ifndef RIPPLE_ENCRYPTION_MD5_H
-#define RIPPLE_ENCRYPTION_MD5_H
+#ifndef _RIPPLE_MD5_H
+#define _RIPPLE_MD5_H
 
 #define MD5_BUFLEN 64
 

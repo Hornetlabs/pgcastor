@@ -4,8 +4,7 @@
 typedef enum RIPPLE_DBTYPE
 {
     RIPPLE_DBTYPE_NOP       = 0x00,
-    RIPPLE_DBTYPE_POSTGRES  = 0x01,
-    RIPPLE_DBTYPE_HIGHGO    = 0x02
+    RIPPLE_DBTYPE_POSTGRES  = 0x01
 } ripple_dbtype;
 
 
@@ -15,22 +14,11 @@ typedef enum RIPPLE_CATALOG_PGVERSION
     RIPPLE_PGDBVERSION_12       = 0x01
 } ripple_catalog_pgversion;
 
-typedef enum RIPPLE_HGVERSION
-{
-    RIPPLE_HGVERSION_NOP    = 0x00,
-    RIPPLE_HGVERSION_457    = 0x01,
-    RIPPLE_HGVERSION_458    = 0x02,
-    RIPPLE_HGVERSION_901    = 0x03,
-    RIPPLE_HGVERSION_902    = 0x04,
-    RIPPLE_HGVERSION_903    = 0x05
-} ripple_hgversion;
-
 typedef enum RIPPLE_PROC_TYPE
 {
     RIPPLE_PROC_TYPE_NOP                = 0x00,
     RIPPLE_PROC_TYPE_CAPTURE            ,
     RIPPLE_PROC_TYPE_INTEGRATE          ,
-    RIPPLE_PROC_TYPE_HGRECEIVEWAL       ,
     RIPPLE_PROC_TYPE_PGRECEIVEWAL       ,
     RIPPLE_PROC_TYPE_XMANAGER           
 } ripple_proc_type;
@@ -53,13 +41,7 @@ typedef enum RIPPLE_CAPTURERELOAD_STATUS
 }ripple_capturereload_status;
 
 #define RIPPLE_DBTYPE_POSTGRES              "postgres"
-#define RIPPLE_DBTYPE_HIGHGO                "highgo"
 #define RIPPLE_DBVERSION_POSTGRES_12        "12"
-#define RIPPLE_DBVERSION_HIGHGO_V457        "v457"
-#define RIPPLE_DBVERSION_HIGHGO_V458        "v458"
-#define RIPPLE_DBVERSION_HIGHGO_V901        "v901"
-#define RIPPLE_DBVERSION_HIGHGO_V902        "v902"
-#define RIPPLE_DBVERSION_HIGHGO_V903        "v903"
 
 #define RIPPLE_LOCK_FILE                    "proc.lock"
 #define RIPPLE_CONTROL_FILE                 "ripple.ctrl"
@@ -76,7 +58,6 @@ typedef enum RIPPLE_CAPTURERELOAD_STATUS
 #define RIPPLE_STORAGE_TRAIL_DIR            "trail"
 #define RIPPLE_STORAGE_BIG_TRANSACTION_DIR  "bigtxn"
 #define RIPPLE_FILTER_OIDS_FILE             "oids.bat"
-#define RIPPLE_FILTER_OID_HGTAUDITLOG       "hg_t_audit_log"
 #define RIPPLE_CAPTURE_STATUS_FILE          "capture.stat"
 #define RIPPLE_INTEGRATE_STATUS_FILE        "integrate.stat"
 #define RIPPLE_CAPTURE_STATUS_FILE_TEMP     "capture.stat.tmp"

@@ -45,7 +45,6 @@
 %token K_MANAGER
 %token K_CAPTURE
 %token K_INTEGRATE
-%token K_HGRECEIVELOG
 %token K_PGRECEIVELOG
 %token K_PROGRESS
 %token K_REFRESH
@@ -339,10 +338,6 @@ jobkind:
             | K_INTEGRATE
                 {
                     $$ = XSYNCH_JOBKIND_INTEGRATE;
-                }
-            | K_HGRECEIVELOG
-                {
-                    $$ = XSYNCH_JOBKIND_HGRECEIVELOG;
                 }
             | K_PGRECEIVELOG
                 {

@@ -20,7 +20,6 @@ typedef enum SysdictName
     SYS_PARTITIONED,
     SYS_INHERITS,
     SYS_SEQUENCE,
-    SYS_HIGHGO_SECLABEL,
     TEMPTABLE_PREFIX
 }SysdictName;
 
@@ -49,60 +48,10 @@ static const xk_pg_parser_sysdict_with_name xk_pg_parser_postgresql_v127[] =
     {SYS_PARTITIONED, "pg_partitioned_table"},
     {SYS_INHERITS, "pg_inherits"},
     {SYS_SEQUENCE, "pg_sequence"},
-    {SYS_HIGHGO_SECLABEL, "pg_seclabel"},
     {TEMPTABLE_PREFIX, "pg_temp"},
-};
-
-static const xk_pg_parser_sysdict_with_name xk_pg_parser_kingbase_v9[] =
-{
-    {SYS_CLASS, "_rel"},
-    {SYS_INDEX, "_ind"},
-    {SYS_NAMESPACE, "_nsp"},
-    {SYS_ATTRDEF, "_attdef"},
-    {SYS_DATABASE, "_db"},
-    {SYS_PROC, "_proc"},
-    {SYS_TRIGGER, "_trigger"},
-    {SYS_TYPE, "_typ"},
-    {SYS_CONSTRAINT, "_con"},
-    {SYS_ATTRIBUTE, "_att"},
-    {SYS_ENUM, "_enum"},
-    {SYS_RANGE, "_range"},
-    {SYS_DEPEND, "_dep"},
-    {SYS_REWRITE, "_rewrite"},
-    {SYS_PARTITIONED, "_defpart"},
-    {SYS_INHERITS, "_inh"},
-    {SYS_SEQUENCE, "_seq"},
-    {SYS_HIGHGO_SECLABEL, "pg_seclabel"}, //这里只是占位, 实际用不到
-    {TEMPTABLE_PREFIX, "pg_temp"},
-};
-
-static const xk_pg_parser_sysdict_with_name xk_pg_parser_uxdb[] =
-{
-    {SYS_CLASS, "ux_class"},
-    {SYS_INDEX, "ux_index"},
-    {SYS_NAMESPACE, "ux_namespace"},
-    {SYS_ATTRDEF, "ux_attrdef"},
-    {SYS_DATABASE, "ux_database"},
-    {SYS_PROC, "ux_proc"},
-    {SYS_TRIGGER, "ux_trigger"},
-    {SYS_TYPE, "ux_type"},
-    {SYS_CONSTRAINT, "ux_constraint"},
-    {SYS_ATTRIBUTE, "ux_attribute"},
-    {SYS_ENUM, "ux_enum"},
-    {SYS_RANGE, "ux_range"},
-    {SYS_DEPEND, "ux_depend"},
-    {SYS_REWRITE, "ux_rewrite"},
-    {SYS_PARTITIONED, "ux_partitioned_table"},
-    {SYS_INHERITS, "ux_inherits"},
-    {SYS_SEQUENCE, "ux_sequence"},
-    {SYS_HIGHGO_SECLABEL, "pg_seclabel"}, //这里只是占位, 实际用不到
-    {TEMPTABLE_PREFIX, "ux_temp"},
 };
 
 #define XK_PG_SYSDICT_PG_TEMPTABLE_NAME             "pg_temp"
-
-#define XK_PG_SYSDICT_UXDB_TEMPTABLE_NAME             "ux_temp"
-#define XK_PG_SYSDICT_UXDB_TEMPTABLE_NAME_LARGE       "UX_TEMP"
 
 #define IS_INSERT(x) (XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == x->m_base.m_dmltype)
 #define IS_DELETE(x) (XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == x->m_base.m_dmltype)

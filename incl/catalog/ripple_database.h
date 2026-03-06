@@ -15,10 +15,6 @@ void ripple_databasecache_write(HTAB* databasecache, uint64 *offset, ripple_sysd
 /* colvalue2database */
 ripple_catalogdata* ripple_database_colvalue2database(void* in_colvalue);
 #define ripple_database_colvalue2database_pg14 ripple_database_colvalue2database
-#define ripple_database_colvalue2database_hg458 ripple_database_colvalue2database
-#define ripple_database_colvalue2database_hg457 ripple_database_colvalue2database
-#define ripple_database_colvalue2database_hg901 ripple_database_colvalue2database
-#define ripple_database_colvalue2database_hg902 ripple_database_colvalue2database
 
 /* catalogdata2transcache */
 void ripple_database_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);

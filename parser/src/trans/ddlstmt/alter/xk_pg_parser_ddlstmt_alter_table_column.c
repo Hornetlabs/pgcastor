@@ -321,10 +321,7 @@ xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_column_alter_type(
                                                     current_record->m_record->m_new_values,
                                                     current_record->m_record->m_valueCnt,
                                                     temp_relname);
-            if ('r' == temp_kind[0] && (XK_DATABASE_TYPE_UXDB == xk_pg_parser_ddl->m_dbtype
-                                     ? (!strncmp(temp_relname, XK_PG_SYSDICT_UXDB_TEMPTABLE_NAME, 7)
-                                         || !strncmp(temp_relname, XK_PG_SYSDICT_UXDB_TEMPTABLE_NAME_LARGE, 7))
-                                     : !strncmp(temp_relname, XK_PG_SYSDICT_PG_TEMPTABLE_NAME, 7)))
+            if ('r' == temp_kind[0] && (!strncmp(temp_relname, XK_PG_SYSDICT_PG_TEMPTABLE_NAME, 7)))
             {
                 xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
                            "DEBUG, DDL PARSER: alter table alter column type, step: get create temp table \n");
@@ -347,10 +344,7 @@ xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_column_alter_type(
                                                     current_record->m_record->m_new_values,
                                                     current_record->m_record->m_valueCnt,
                                                     temp_relname);
-            if ('r' == temp_kind[0] && (XK_DATABASE_TYPE_UXDB == xk_pg_parser_ddl->m_dbtype
-                                     ? (strncmp(temp_relname, XK_PG_SYSDICT_UXDB_TEMPTABLE_NAME, 7)
-                                         || strncmp(temp_relname, XK_PG_SYSDICT_UXDB_TEMPTABLE_NAME_LARGE, 7))
-                                     : strncmp(temp_relname, XK_PG_SYSDICT_PG_TEMPTABLE_NAME, 7)))
+            if ('r' == temp_kind[0] && (strncmp(temp_relname, XK_PG_SYSDICT_PG_TEMPTABLE_NAME, 7)))
             {
                 bool change_relfilenode = xk_pg_parser_ddl_checkChangeColumn("relfilenode",
                                                     current_record->m_record->m_new_values,
@@ -387,10 +381,7 @@ xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_column_alter_type(
                                                     current_record->m_record->m_old_values,
                                                     current_record->m_record->m_valueCnt,
                                                     temp_relname);
-            if ('r' == temp_kind[0] && (XK_DATABASE_TYPE_UXDB == xk_pg_parser_ddl->m_dbtype
-                                     ? (!strncmp(temp_relname, XK_PG_SYSDICT_UXDB_TEMPTABLE_NAME, 7)
-                                         || !strncmp(temp_relname, XK_PG_SYSDICT_UXDB_TEMPTABLE_NAME_LARGE, 7))
-                                     : !strncmp(temp_relname, XK_PG_SYSDICT_PG_TEMPTABLE_NAME, 7)))
+            if ('r' == temp_kind[0] && (!strncmp(temp_relname, XK_PG_SYSDICT_PG_TEMPTABLE_NAME, 7)))
                 result = xk_pg_parser_ddl_assemble_alter_table_type(xk_pg_parser_ddl,
                                                                     ddlstate,
                                                                     xk_pg_parser_errno);

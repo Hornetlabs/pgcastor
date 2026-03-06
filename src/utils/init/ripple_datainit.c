@@ -44,7 +44,6 @@ static ripple_subdirs   m_subdirs[] =
     {RIPPLE_PROC_TYPE_NOP,              0,                                  NULL},
     {RIPPLE_PROC_TYPE_CAPTURE,          lengthof(m_subdirscapture),         m_subdirscapture},
     {RIPPLE_PROC_TYPE_INTEGRATE,        lengthof(m_subdirsintegrate),       m_subdirsintegrate},
-    {RIPPLE_PROC_TYPE_HGRECEIVEWAL,     0,                                  NULL},
     {RIPPLE_PROC_TYPE_PGRECEIVEWAL,     0,                                  NULL},
     {RIPPLE_PROC_TYPE_XMANAGER,         lengthof(m_subdirsxmanager),        m_subdirsxmanager}
 };

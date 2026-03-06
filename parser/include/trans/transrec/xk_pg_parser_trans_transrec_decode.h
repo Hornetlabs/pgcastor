@@ -31,12 +31,6 @@
 #define xk_pg_parser_PageGetItemId(page, offsetNumber) \
     ((xk_pg_parser_ItemId) (&((xk_pg_parser_PageHeader) (page))->pd_linp[(offsetNumber) - 1]))
 
-#define xk_pg_parser_PageGetItemId_kingbase_sizeS(page, offsetNumber) \
-    ((xk_pg_parser_ItemId) (&((xk_pg_parser_PageHeader_Kingbase_S) (page))->pd_linp[(offsetNumber) - 1]))
-
-#define xk_pg_parser_PageGetItemId_kingbase_sizeB(page, offsetNumber) \
-    ((xk_pg_parser_ItemId_kingbase_sizeB) (&((xk_pg_parser_PageHeader_Kingbase_B) (page))->pd_linp[(offsetNumber) - 1]))
-
 #define xk_pg_parser_PageIsValid(page) ((const void*)(page) != NULL)
 
 #define xk_pg_parser_ItemIdHasStorage(itemId) \

@@ -260,36 +260,6 @@ xk_pg_parser_Datum timestamptz_out(xk_pg_parser_Datum attr,
     return (xk_pg_parser_Datum) result;
 }
 
-/* 
- * hgdb v902 的类型输出函数 输出当地时区的timestamp
- * 依赖于传入的时区设置
- * 会根据时区不同自动转换时间, 同时去除了最后的时间标识
- */
-xk_pg_parser_Datum oratimestampltz_out(xk_pg_parser_Datum attr,
-                                   xk_pg_parser_extraTypoutInfo *info)
-{
-    TimestampTz dt = (Timestamp) attr;
-    char       *result;
-    int32_t         tz;
-    struct xk_pg_parser_tm tt,
-               *tm = &tt;
-    fsec_t      fsec;
-    const char *tzn;
-    char        buf[MAXDATELEN + 1];
-    uint32_t    len = 0;
-
-    if (TIMESTAMP_NOT_FINITE(dt))
-        EncodeSpecialTimestamp(dt, buf);
-    else if (timestamp2tm(dt, &tz, tm, &fsec, &tzn, NULL, info) == 0)
-        EncodeDateTime(tm, fsec, true, tz, tzn, USE_ISO_DATES, buf);
-    else
-        return (xk_pg_parser_Datum) 0;
-    len = strlen(buf) - 3;
-    result = xk_pg_parser_mcxt_strndup(buf, len);
-    info->valuelen = len;
-    return (xk_pg_parser_Datum) result;
-}
-
 char *xk_pg_parser_timestamptz_to_str(int64_t t)
 {
     char           buf[MAXDATELEN + 1];
@@ -402,39 +372,6 @@ xk_pg_parser_Datum timestamp_out(xk_pg_parser_Datum attr,
 
     result = xk_pg_parser_mcxt_strdup(buf);
     info->valuelen = strlen(result);
-    return (xk_pg_parser_Datum) result;
-}
-
-/*
- * highgo v902 特殊的oradate处理
- * 该类型记录的是一个timestamp, 但是在输出时, 不输出时间部分, 只输出日期
- * 因此该函数与timestamp_out的区别仅仅是将时间部分截断
- */
-xk_pg_parser_Datum oradate_out(xk_pg_parser_Datum attr,
-                                 xk_pg_parser_extraTypoutInfo *info)
-{
-    Timestamp    timestamp = (Timestamp) attr;
-    char        *result;
-    struct xk_pg_parser_tm tt,
-                *tm = &tt;
-    fsec_t       fsec;
-    char         buf[MAXDATELEN + 1];
-    uint32_t     len = 0;
-
-    if (TIMESTAMP_NOT_FINITE(timestamp))
-        EncodeSpecialTimestamp(timestamp, buf);
-    else if (timestamp2tm(timestamp, NULL, tm, &fsec, NULL, NULL, info) == 0)
-        EncodeDateTime(tm, fsec, false, 0, NULL, USE_ISO_DATES, buf);
-    else
-    {
-        /* ereport(ERROR,
-                (errcode(ERRCODE_DATETIME_VALUE_OUT_OF_RANGE),
-                 errmsg("timestamp out of range"))); */
-        return (xk_pg_parser_Datum) NULL;
-    }
-    len = strstr(buf, " ") - buf;
-    result = xk_pg_parser_mcxt_strndup(buf, len);
-    info->valuelen = len;
     return (xk_pg_parser_Datum) result;
 }
 

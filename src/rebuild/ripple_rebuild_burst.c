@@ -5,7 +5,7 @@
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
 #include "utils/string/stringinfo.h"
-#include "utils/encryption/md5/ripple_encryption_md5.h"
+#include "utils/algorithm/md5/ripple_md5.h"
 #include "stmts/ripple_txnstmt.h"
 #include "stmts/ripple_txnstmt_burst.h"
 #include "common/xk_pg_parser_define.h"

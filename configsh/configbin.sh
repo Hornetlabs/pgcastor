@@ -95,7 +95,6 @@ function configMKBinClear
     rm -f ${RIPPLE_BASE}/bin/capture/Makefile
     rm -f ${RIPPLE_BASE}/bin/integrate/Makefile
     rm -f ${RIPPLE_BASE}/bin/receivepglog/Makefile
-    rm -f ${RIPPLE_BASE}/bin/receivehglog/Makefile
     rm -f ${RIPPLE_BASE}/bin/xscsci/Makefile
     rm -f ${RIPPLE_BASE}/bin/ripple/Makefile
     rm -f ${RIPPLE_BASE}/bin/Makefile
@@ -126,9 +125,6 @@ function configMKBin
     subdirs[$subdircnt]=${RIPPLE_BASE}/bin/receivepglog
     let subdircnt+=1
 
-    subdirs[$subdircnt]=${RIPPLE_BASE}/bin/receivehglog
-    let subdircnt+=1
-
 # recivelog   end
 
 # xscsci begin
@@ -152,9 +148,6 @@ function configMKBin
 
     ##pgreceivewal
     configSpecialMK ${RIPPLE_BASE}/bin/receivepglog receivelog
-
-    ##hgreceivewal
-    configSpecialMK ${RIPPLE_BASE}/bin/receivehglog receivelog
 
     ##xscsci
     configXSCSCIMK ${RIPPLE_BASE}/bin/xscsci xscsci

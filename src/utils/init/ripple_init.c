@@ -92,7 +92,6 @@ static proc2init    m_typ2init[] =
     { RIPPLE_PROC_TYPE_NOP,             NULL,                   "proc nop unsupport init"},
     { RIPPLE_PROC_TYPE_CAPTURE,         ripple_init_capture,    "capture init error" },
     { RIPPLE_PROC_TYPE_INTEGRATE,       ripple_init_integrate,  "integrate init error" },
-    { RIPPLE_PROC_TYPE_HGRECEIVEWAL,    NULL,                   "hg receive log init error" },
     { RIPPLE_PROC_TYPE_PGRECEIVEWAL,    NULL,                   "pg receive log init error" },
     { RIPPLE_PROC_TYPE_XMANAGER,        ripple_init_xmanager,   "xmanager init error" }
 };

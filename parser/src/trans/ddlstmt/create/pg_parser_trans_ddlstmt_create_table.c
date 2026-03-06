@@ -200,12 +200,6 @@ xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_create_table(xk_pg_parser_transl
                             }
                             break;
                         }
-                        /* 瀚高数据库, pg_seclabel的跳过处理 */
-                        else if ((XK_DATABASE_TYPE_HGDB == xk_pg_parser_ddl->m_dbtype)
-                            && xk_pg_parser_check_table_name(next_record->m_record->m_base.m_tbname, SYS_HIGHGO_SECLABEL, xk_pg_parser_ddl->m_dbtype, xk_pg_parser_ddl->m_dbversion))
-                        {
-                            next_record = next_record->m_next;
-                        }
                         /* 处理默认值的跳过处理 */
                         else if (xk_pg_parser_check_table_name(next_record->m_record->m_base.m_tbname, SYS_ATTRDEF, xk_pg_parser_ddl->m_dbtype, xk_pg_parser_ddl->m_dbversion))
                         {

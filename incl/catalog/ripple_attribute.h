@@ -12,7 +12,6 @@ void ripple_attributecache_write(HTAB* attributecache, uint64 *offset, ripple_sy
 /* colvalue2attr */
 ripple_catalogdata* ripple_class_colvalue2attribute(void* in_colvalue);
 ripple_catalogdata* ripple_class_colvalue2attribute_pg14(void* in_colvalue);
-ripple_catalogdata* ripple_class_colvalue2attribute_hg902(void* in_colvalue);
 
 void ripple_attribute_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);
 
@@ -21,8 +20,5 @@ void ripple_attribute_catalogdatafree(ripple_catalogdata* catalogdata);
 /* 根据oid获取attribute数据 */
 void* ripple_attribute_getbyoid(Oid oid, HTAB* by_attribute);
 
-#define ripple_class_colvalue2attribute_hg458 ripple_class_colvalue2attribute
-#define ripple_class_colvalue2attribute_hg457 ripple_class_colvalue2attribute
-#define ripple_class_colvalue2attribute_hg901 ripple_class_colvalue2attribute_pg14
 
 #endif

@@ -494,12 +494,6 @@ static ripple_xmanager_metricmsgop m_metricmsgops[] =
         NULL
     },
     {
-        RIPPLE_XMANAGER_MSG_HGRECEIVELOG,
-        "XManager Msg HGReceivelog",
-        NULL,
-        NULL
-    },
-    {
         RIPPLE_XMANAGER_MSG_PGRECEIVELOG,
         "XManager Msg PGReceivelog",
         NULL,

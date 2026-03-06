@@ -49,13 +49,7 @@ extern xk_pg_parser_Datum varcharout(xk_pg_parser_Datum attr,
 extern xk_pg_parser_Datum timestamptz_out(xk_pg_parser_Datum attr,
                                           xk_pg_parser_extraTypoutInfo *info);
 
-extern xk_pg_parser_Datum oratimestampltz_out(xk_pg_parser_Datum attr,
-                                              xk_pg_parser_extraTypoutInfo *info);
-
 extern xk_pg_parser_Datum timestamp_out(xk_pg_parser_Datum attr,
-                                        xk_pg_parser_extraTypoutInfo *info);
-
-extern xk_pg_parser_Datum oradate_out(xk_pg_parser_Datum attr,
                                         xk_pg_parser_extraTypoutInfo *info);
 
 extern xk_pg_parser_Datum numeric_out(xk_pg_parser_Datum attr,
@@ -96,23 +90,12 @@ extern xk_pg_parser_Datum int2vectorout(xk_pg_parser_Datum attr,
 
 extern xk_pg_parser_Datum record_out(xk_pg_parser_Datum attr,
                                      xk_pg_parser_extraTypoutInfo *info);
-//extern xk_pg_parser_Datum anyarray_out(xk_pg_parser_Datum attr,
-//                                       xk_pg_parser_extraTypoutInfo *info);
-//
+
 extern xk_pg_parser_Datum jsonb_out(xk_pg_parser_Datum attr,
                                     xk_pg_parser_extraTypoutInfo *info);
 
-//extern xk_pg_parser_Datum anyrange_out(xk_pg_parser_Datum attr,
-//                                       xk_pg_parser_extraTypoutInfo *info);
-//
 extern xk_pg_parser_Datum range_out(xk_pg_parser_Datum attr,
                                     xk_pg_parser_extraTypoutInfo *info);
-
-extern xk_pg_parser_Datum rowidout(xk_pg_parser_Datum attr,
-                                   xk_pg_parser_extraTypoutInfo *info);
-
-//extern xk_pg_parser_Datum jsonpath_out(xk_pg_parser_Datum attr,
-//                                       xk_pg_parser_extraTypoutInfo *info);
 
 extern xk_pg_parser_Datum spheroid_out(xk_pg_parser_Datum attr,
                                    xk_pg_parser_extraTypoutInfo *info);

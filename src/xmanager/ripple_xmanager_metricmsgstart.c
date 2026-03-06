@@ -137,15 +137,7 @@ bool ripple_xmanager_metricmsg_parsestart(ripple_xmanager_metric* xmetric,
     asyncmsg->result = 0;
 
     /* 执行 start 命令 execcmd */
-    if (RIPPLE_XMANAGER_METRICNODETYPE_HGRECEIVELOG == jobtype)
-    {
-        snprintf(execcmd,
-                 1024,
-                 "%s/bin/hgreceivelog/receivelog -f %s start",
-                 xmetric->xsynchpath,
-                 xmetric->configpath);
-    }
-    else if (RIPPLE_XMANAGER_METRICNODETYPE_PGRECEIVELOG == jobtype)
+    if (RIPPLE_XMANAGER_METRICNODETYPE_PGRECEIVELOG == jobtype)
     {
         snprintf(execcmd,
                  1024,

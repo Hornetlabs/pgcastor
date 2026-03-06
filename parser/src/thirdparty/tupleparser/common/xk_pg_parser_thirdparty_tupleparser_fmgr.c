@@ -23,8 +23,6 @@ const xk_pg_parser_FmgrBuiltinNormal xk_pg_parser_fmgr_builtins_normal[] = {
     { "box_out", box_out },
     { "float4out", float4out },
     { "float8out", float8out },
-    { "binary_float_out", float4out },          /* hgdb v902 */
-    { "binary_double_out", float8out },         /* hgdb v902 */
     { "macaddr_out", macaddr_out },
     { "int8out", int8out },
     { "inet_out", inet_out },
@@ -45,10 +43,8 @@ const xk_pg_parser_FmgrBuiltinNormal xk_pg_parser_fmgr_builtins_normal[] = {
     { "uuid_out", uuid_out },
     { "tsqueryout", tsqueryout },
     { "macaddr8_out", macaddr8_out },
-    { "tinyintout", int2out },
     { "pg_lsn_out", pg_lsn_out },
     { "regprocout", oidout },
-    { "ux_lsn_out", pg_lsn_out },
     { "regclassout", regclassout }
 };
 
@@ -66,17 +62,7 @@ const xk_pg_parser_FmgrBuiltinSpecial xk_pg_parser_fmgr_builtins_special[] = {
     { "bpcharout", bpcharout },
     { "varcharout", varcharout },
     { "timestamptz_out", timestamptz_out },
-    { "ora_date_out", timestamp_out },
     { "timestamp_out", timestamp_out },
-    { "number_out", numeric_out },              /* hgdb v902 */
-    { "oradate_out", oradate_out },             /* hgdb v902 */
-    { "oratimestamp_out", timestamp_out },      /* hgdb v902 */
-    { "oratimestamptz_out", timestamptz_out },  /* hgdb v902 */
-    { "oratimestampltz_out", oratimestampltz_out },  /* hgdb v902 */
-    { "oracharcharout", bpcharout },            /* hgdb v902 */
-    { "oravarcharcharout", varcharout },        /* hgdb v902 */
-    { "oracharbyteout", textout },              /* hgdb v902 */
-    { "oravarcharbyteout", textout },           /* hgdb v902 */
     { "numeric_out", numeric_out },
     { "xml_out", xml_out },
     { "enum_out", enum_out },
@@ -89,14 +75,6 @@ const xk_pg_parser_FmgrBuiltinSpecial xk_pg_parser_fmgr_builtins_special[] = {
     { "array_out", array_out },
     { "range_out", range_out },
     { "jsonb_out", jsonb_out },
-    { "rowidout", rowidout },       /* kingbase & hgdb902 */
-    { "blobout", byteaout },        /* kingbase */
-    { "binaryout", byteaout },      /* kingbase */
-    { "varbinaryout", byteaout },   /* kingbase */
-    { "rawout", byteaout },         /* kingbase */
-    { "long_rawout", byteaout },    /* hgdb */
-    { "varchar2out", textout },     /* hgdb */
-    { "nvarchar2out", textout },    /* hgdb */
     { "spheroid_out", spheroid_out },       /* postgis support */
     { "box3d_out", box3d_out },             /* postgis support */
     { "box2d_out", box2d_out },             /* postgis support */
@@ -105,13 +83,6 @@ const xk_pg_parser_FmgrBuiltinSpecial xk_pg_parser_fmgr_builtins_special[] = {
     { "raster_out", raster_out },           /* postgis support */
     { "geometry_out", geometry_out },       /* postgis support */
     { "geography_out", geography_out }      /* postgis support */
-    //{ "anyarray_out", array_out }
-    //{ "gtsvectorout", gtsvectorout },
-
-    //{ "anyrange_out", anyrange_out },
-
-    //{ "jsonpath_out", jsonpath_out }
-
 };
 const int32_t xk_pg_parser_fmgr_nbuiltins_special = (sizeof(xk_pg_parser_fmgr_builtins_special)
                                                     / sizeof(xk_pg_parser_FmgrBuiltinSpecial));

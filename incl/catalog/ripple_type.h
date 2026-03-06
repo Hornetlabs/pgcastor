@@ -12,11 +12,6 @@ void ripple_typecache_write(HTAB* typecache, uint64 *offset, ripple_sysdict_head
 /* colvalue2type */
 ripple_catalogdata* ripple_type_colvalue2type(void* in_colvalue);
 ripple_catalogdata* ripple_type_colvalue2type_pg14(void* in_colvalue);
-ripple_catalogdata* ripple_type_colvalue2type_hg902(void* in_colvalue);
-
-#define ripple_type_colvalue2type_hg458 ripple_type_colvalue2type
-#define ripple_type_colvalue2type_hg457 ripple_type_colvalue2type
-#define ripple_type_colvalue2type_hg901 ripple_type_colvalue2type_pg14
 
 /* catalogdata2transcache */
 void ripple_type_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);

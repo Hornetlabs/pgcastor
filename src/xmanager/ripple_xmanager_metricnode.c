@@ -370,16 +370,6 @@ static ripple_xmanager_metricnodeop     m_xmetricnodeops[] =
         ripple_xmanager_metricintegratenode_destroy
     },
     {
-        RIPPLE_XMANAGER_METRICNODETYPE_HGRECEIVELOG,
-        "hgreceivelog",
-        "XManager Metric HGReceivelog Node",
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    },
-    {
         RIPPLE_XMANAGER_METRICNODETYPE_PGRECEIVELOG,
         "pgreceivelog",
         "XManager Metric PGReceivelog Node",

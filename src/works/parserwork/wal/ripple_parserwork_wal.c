@@ -167,11 +167,6 @@ ripple_decodingcontext* ripple_parserwork_walinitphase1(void)
     /* 添加解析库需要的信息 */
     decodingctx->walpre.m_dbtype = g_idbtype;
     decodingctx->walpre.m_dbversion = guc_getConfigOption(RIPPLE_CFG_KEY_DBVERION);
-    if(strlen(decodingctx->walpre.m_dbversion) == strlen(RIPPLE_DBVERSION_HIGHGO_V903)
-            && 0 == strcmp(decodingctx->walpre.m_dbversion, RIPPLE_DBVERSION_HIGHGO_V903))
-    {
-        decodingctx->walpre.m_dbversion = RIPPLE_DBVERSION_HIGHGO_V901;
-    }
     decodingctx->walpre.m_debugLevel = 0;
     decodingctx->walpre.m_pagesize = g_blocksize;
     decodingctx->walpre.m_walLevel = XK_PG_PARSER_WALLEVEL_LOGICAL;

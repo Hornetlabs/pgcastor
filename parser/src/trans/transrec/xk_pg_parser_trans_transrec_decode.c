@@ -108,11 +108,6 @@ bool xk_pg_parser_trans_transrec_decodeXlogRecord(xk_pg_parser_trans_transrec_de
             blk->has_data = ((fork_flags & XK_PG_PARSER_TRANS_TRANSREC_BKPBLOCK_HAS_DATA) != 0);
 
             COPY_HEADER_FIELD(&blk->data_len, sizeof(uint16_t));
-            if (XK_DATABASE_TYPE_HGDB == dbtype && (!strcmp(dbversion, XK_DATABASE_HGDBV457) || !strcmp(dbversion, XK_DATABASE_HGDBV458)))
-            {
-                uint32_t temp_hgdb_change = 0;
-                COPY_HEADER_FIELD(&temp_hgdb_change, sizeof(uint32_t));
-            }
             /* cross-check that the HAS_DATA flag is set iff data_length > 0 */
             if (blk->has_data && blk->data_len == 0)
             {

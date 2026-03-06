@@ -121,7 +121,7 @@ bool ripple_xmanager_metricmsg_parsealter(ripple_xmanager_metric* xmetric,
         jobtype = r_ntoh32(jobtype);
         uptr += 4;
 
-        if (RIPPLE_XMANAGER_METRICNODETYPE_HGRECEIVELOG < jobtype)
+        if (RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE < jobtype)
         {
             errcode = RIPPLE_ERROR_MSGUNSPPORT;
             snprintf(errormsg, 2048, "ERROR: xmanager recv alter progress command, need jobtype less then HGRECEIVELOG");

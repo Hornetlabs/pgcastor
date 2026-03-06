@@ -16,7 +16,7 @@ url = "port=5432 dbname=postgres user=postgres"
 # 数据库事务日志的路径
 wal_dir = /opt/postgresql/data/pg_wal
 
-# 数据库类型(postgres/highgo)
+# 数据库类型(postgres)
 dbtype = postgres
 
 # 数据库版本 [ v458| 4510 | v901 | 12 ]

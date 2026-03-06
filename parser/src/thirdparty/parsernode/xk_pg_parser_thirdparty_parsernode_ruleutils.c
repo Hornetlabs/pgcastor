@@ -1647,28 +1647,11 @@ static bool get_func_expr(xk_pg_parser_FuncExpr * funcval,
         }
     }
     node_func = xk_pg_parser_make_nodetree_func(funcval, context);
-    if (node_func)
-    {
-        if (context->zicinfo->dbtype == XK_DATABASE_TYPE_HGDB && !strcmp(context->zicinfo->dbversion, XK_DATABASE_HGDBV9PG))
-        {
-            /* v902改动, current_[] 系列sql函数被重写为了func, 同时语法上不允许带(), 因此在这里进行调整 */
-            xk_pg_parser_node_func *funcnode = (xk_pg_parser_node_func *) node_func;
-            if (funcnode->m_funcname && !strncmp(funcnode->m_funcname, "current_", 8))
-            {
-                if (!funcval->args
-                && (!strcmp(funcnode->m_funcname, "current_date")
-                    || !strcmp(funcnode->m_funcname, "current_timestamp")
-                    || !strcmp(funcnode->m_funcname, "current_user")))
-                {
-                    skip_brackets = true;
-                }
-            }
-        }
-    }
-    else
+    if (!node_func)
     {
         return false;
     }
+
     context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
                                                               (void*)node_func,
                                                                XK_PG_PARSER_NODETYPE_FUNC);

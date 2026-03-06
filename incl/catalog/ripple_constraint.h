@@ -3,11 +3,6 @@
 
 /* colvalue2constraint */
 ripple_catalogdata* ripple_constraint_colvalue2constraint(void* in_colvalue);
-ripple_catalogdata* ripple_constraint_colvalue2constraint_hg902(void* in_colvalue);
-ripple_catalogdata* ripple_constraint_colvalue2constraint_hg458(void* in_colvalue);
-
-#define ripple_constraint_colvalue2constraint_hg457 ripple_constraint_colvalue2constraint_hg458
-#define ripple_constraint_colvalue2constraint_hg901 ripple_constraint_colvalue2constraint
 
 /* catalogdata2transcache */
 void ripple_constraint_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);

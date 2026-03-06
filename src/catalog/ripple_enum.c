@@ -246,48 +246,6 @@ ripple_catalogdata* ripple_enum_colvalue2enum(void* in_colvalue)
     return catalogdata;
 }
 
-ripple_catalogdata* ripple_enum_colvalue2enum_hg902(void* in_colvalue)
-{
-    ripple_catalogdata* catalogdata = NULL;
-    ripple_catalog_enum_value* enumvalue = NULL;
-    xk_pg_sysdict_Form_pg_enum pgenum = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
-    /* 值转换 */
-    catalogdata = (ripple_catalogdata*)rmalloc0(sizeof(ripple_catalogdata));
-    if(NULL == catalogdata)
-    {
-        elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
-    }
-    rmemset0(catalogdata, 0, '\0', sizeof(ripple_catalogdata));
-    enumvalue = (ripple_catalog_enum_value*)rmalloc0(sizeof(ripple_catalog_enum_value));
-    if(NULL == enumvalue)
-    {
-        elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
-    }
-    rmemset0(enumvalue, 0, '\0', sizeof(ripple_catalog_enum_value));
-    catalogdata->catalog = enumvalue;
-    catalogdata->type = RIPPLE_CATALOG_TYPE_ENUM;
-    pgenum = (xk_pg_sysdict_Form_pg_enum)rmalloc1(sizeof(xk_pg_parser_sysdict_pgenum));
-    if(NULL == pgenum)
-    {
-        elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
-    }
-    rmemset0(pgenum, 0, '\0', sizeof(xk_pg_parser_sysdict_pgenum));
-    enumvalue->enums = lappend(enumvalue->enums, pgenum);
-    /* enumlabel 2 */
-    rmemcpy1(pgenum->enumlabel.data, 0, (char*)((colvalue + 2)->m_value), (colvalue + 2)->m_valueLen);
-
-    /* enumtypid 0 */
-    sscanf((char*)((colvalue + 0)->m_value), "%u", &pgenum->enumtypid);
-    enumvalue->enumtypid = pgenum->enumtypid;
-
-    /* oid 3 */
-    sscanf((char*)((colvalue + 3)->m_value), "%u", &pgenum->oid);
-
-    return catalogdata;
-}
-
 /* catalogdata2transcache */
 void ripple_enum_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata)
 {

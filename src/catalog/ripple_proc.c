@@ -254,56 +254,6 @@ ripple_catalogdata* ripple_proc_colvalue2proc(void* in_colvalue)
     return catalogdata;
 }
 
-ripple_catalogdata* ripple_proc_colvalue2proc_hg902(void* in_colvalue)
-{
-    ripple_catalogdata* catalogdata = NULL;
-    ripple_catalog_proc_value* procvalue = NULL;
-    xk_pg_sysdict_Form_pg_proc pgproc = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
-
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
-
-    /* 值转换 */
-    catalogdata = (ripple_catalogdata*)rmalloc0(sizeof(ripple_catalogdata));
-    if(NULL == catalogdata)
-    {
-        elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
-    }
-    rmemset0(catalogdata, 0, '\0', sizeof(ripple_catalogdata));
-
-    procvalue = (ripple_catalog_proc_value*)rmalloc0(sizeof(ripple_catalog_proc_value));
-    if(NULL == procvalue)
-    {
-        elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
-    }
-    rmemset0(procvalue, 0, '\0', sizeof(ripple_catalog_proc_value));
-    catalogdata->catalog = procvalue;
-    catalogdata->type = RIPPLE_CATALOG_TYPE_PROC;
-
-    pgproc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
-    if(NULL == pgproc)
-    {
-        elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
-    }
-    rmemset0(pgproc, 0, '\0', sizeof(xk_pg_parser_sysdict_pgproc));
-    procvalue->ripple_proc = pgproc;
-
-    /* oid 33 */
-    sscanf((char*)((colvalue + 33)->m_value), "%u", &pgproc->oid);
-    procvalue->oid = pgproc->oid;
-
-    /* proname 0 */
-    rmemcpy1(pgproc->proname.data, 0, (char*)((colvalue + 0)->m_value), (colvalue + 0)->m_valueLen);
-
-    /* pronamespace 1 */
-    sscanf((char*)((colvalue + 1)->m_value), "%u", &pgproc->pronamespace);
-
-    /* pronargs 16 */
-    sscanf((char*)((colvalue + 16)->m_value), "%hd", &pgproc->pronargs);
-
-    return catalogdata;
-}
-
 /* catalogdata2transcache */
 void ripple_proc_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata)
 {

@@ -11,11 +11,6 @@ void ripple_namespacecache_write(HTAB* namespacecache, uint64 *offset, ripple_sy
 
 /* colvalue2namespace */
 ripple_catalogdata* ripple_namespace_colvalue2namespace(void* in_colvalue);
-ripple_catalogdata* ripple_namespace_colvalue2namespace_hg902(void* in_colvalue);
-
-#define ripple_namespace_colvalue2namespace_hg458 ripple_namespace_colvalue2namespace
-#define ripple_namespace_colvalue2namespace_hg457 ripple_namespace_colvalue2namespace
-#define ripple_namespace_colvalue2namespace_hg901 ripple_namespace_colvalue2namespace
 
 /* catalogdata2transcache */
 void ripple_namespace_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);

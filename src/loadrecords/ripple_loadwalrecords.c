@@ -3,7 +3,6 @@
 #include "utils/guc/guc.h"
 #include "utils/mpage/mpage.h"
 #include "utils/algorithm/crc/crc_check.h"
-#include "utils/encryption/ripple_encryption_func.h"
 #include "works/splitwork/wal/ripple_wal_define.h"
 #include "loadrecords/ripple_record.h"
 #include "loadrecords/ripple_loadpage.h"
@@ -274,19 +273,6 @@ static bool ripple_loadtwalrecords_loadpage(ripple_loadwalrecords *loadrecords)
     {
         /* 关闭文件描述符 */
         loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
-    }
-
-    /* 解密 */
-    if (loadrecords->need_decrypt && result)
-    {
-        if (!ripple_encryption_decrypt_waldata((char *)buff->data,
-                                               (char *)buff->data,
-                                               buff->size,
-                                               loadrecords->loadpage->blksize,
-                                               RIPPLE_ENCRYPTION_SM4))
-        {
-            elog(RLOG_ERROR, "decrypt wal error");
-        }
     }
 
     return result;
