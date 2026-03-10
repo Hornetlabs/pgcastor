@@ -234,7 +234,7 @@ void* ripple_refresh_sharding2db_work(void* args)
             res = PQexec(sharding2db->syncstats->base.conn, sql->data);
             if (PGRES_COMMAND_OK != PQresultStatus(res))
             {
-                elog(RLOG_WARNING,"Failed to copy from data in: %s", PQerrorMessage(sharding2db->syncstats->base.conn));
+                elog(RLOG_WARNING,"Failed to copy from data in: %s %s", PQerrorMessage(sharding2db->syncstats->base.conn), sql->data);
                 ripple_refresh_sharding2db_checkconn(sharding2db, table_shard);
                 continue;
             }

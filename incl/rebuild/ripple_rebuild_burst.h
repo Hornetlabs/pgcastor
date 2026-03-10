@@ -125,10 +125,18 @@ extern bool ripple_rebuild_burst_mergeinsert(ripple_rebuild_burstnode* pburstnod
 */
 extern bool ripple_rebuild_burst_mergedelete(ripple_rebuild_burstnode* pburstnode,
                                              ripple_rebuild_burstrow* delrow);
-/* update合并 delete/insert */
+/*
+ * update合并 delete/insert
+ * 参数说明: delrow update拆分出的befor值
+ * 
+ * 返回值说明: 返回 true 说明合并成功, 返回 false 说明合并失败
+ *          ：in_updaterow合并成功返回匹配上的insertrow，不成功updaterow
+ *          ：error false执行失败退出，true执行成功
+*/
 extern bool ripple_rebuild_burst_updatemergedelete(ripple_rebuild_burstnode* burstnode,
                                                    ripple_rebuild_burstrow* delrow,
-                                                   ripple_rebuild_burstrow* updaterow);
+                                                   ripple_rebuild_burstrow** updaterow,
+                                                   bool* error);
 
 /* burstnode 拼接语句 */
 extern bool ripple_rebuild_burst_bursts2stmt(ripple_rebuild_burst* burst, ripple_cache_sysdicts* sysdicts, ripple_txn* txn);

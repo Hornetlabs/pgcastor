@@ -235,6 +235,14 @@ static void tryUpdateTimeLine(ripple_loadwalrecords *readCtl)
     }
 }
 
+static void ripple_splitwork_wal_freerecorddlist(void *dlist_v)
+{
+    dlist* list = (dlist*)dlist_v;
+
+    /* record 双向链表 内存释放 */
+    dlist_free(list, (dlistvaluefree )ripple_record_free);
+}
+
 /* 将 records 加入到队列中 */
 static bool ripple_splitwork_wal_addrecords2queue(ripple_splitwalcontext *walctx,
                                                   ripple_thrnode* thrnode)
@@ -323,6 +331,9 @@ void* ripple_splitwork_wal_main(void *args)
 
         if (walctx->change)
         {
+            /* 先清理queue缓存 */
+            ripple_queue_clear(walctx->recordqueue, ripple_splitwork_wal_freerecorddlist);
+
             walctx->callback.parserwal_rewindstat_setemiting(walctx->privdata);
             walctx->change = false;
 
@@ -331,10 +342,13 @@ void* ripple_splitwork_wal_main(void *args)
 
             /* 设置起点为新起点 */
             loadrecords->startptr = walctx->change_startptr;
+            loadrecords->endptr = InvalidFullTransactionId;
             elog(RLOG_DEBUG, "rewind finish, start lsn:%lu", loadrecords->startptr);
 
+            walctx->status = RIPPLE_SPLITWORK_WAL_STATUS_NORMAL;
             /* 重新获取timeline */
             tryUpdateTimeLine(loadrecords);
+            continue;
         }
 
         delay = false;

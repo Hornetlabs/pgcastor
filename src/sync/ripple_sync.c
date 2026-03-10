@@ -314,7 +314,7 @@ stmts_write_retry:
         stmtnode = (ripple_txnstmt*)lfirst(lcdebug);
 
         /* 组装preparestmt和paramvalues */
-        if (stmtnode->type == RIPPLE_TXNSTMT_TYPE_UPDATESYNCTABLE)
+        if (RIPPLE_TXNSTMT_TYPE_UPDATESYNCTABLE == stmtnode->type)
         {
             if (false == ripple_syncstate_update_statustb(syncstate, entry, true))
             {
@@ -322,7 +322,7 @@ stmts_write_retry:
             }
             update = false;
         }
-        else if (stmtnode->type == RIPPLE_TXNSTMT_TYPE_UPDATEREWIND)
+        else if (RIPPLE_TXNSTMT_TYPE_UPDATEREWIND == stmtnode->type)
         {
             ripple_txnstmt_updaterewind* updaterewind = (ripple_txnstmt_updaterewind*)stmtnode->stmt;
             if (false == ripple_syncstate_update_rewind(syncstate, updaterewind->rewind))
@@ -330,7 +330,7 @@ stmts_write_retry:
                 return false;
             }
         }
-        else if (stmtnode->type == RIPPLE_TXNSTMT_TYPE_PREPARED)
+        else if (RIPPLE_TXNSTMT_TYPE_PREPARED == stmtnode->type)
         {
             ripple_txnstmt_prepared* preparedstmt = NULL;
             preparedstmt = (ripple_txnstmt_prepared*)stmtnode->stmt;
@@ -368,7 +368,7 @@ stmts_write_retry:
                 return false;
             }
         }
-        else if(stmtnode->type == RIPPLE_TXNSTMT_TYPE_DDL)
+        else if(RIPPLE_TXNSTMT_TYPE_DDL == stmtnode->type)
         {
             ripple_txnstmt_ddl* ddlstmt = NULL;
             ddlstmt = (ripple_txnstmt_ddl*)stmtnode->stmt;
@@ -387,10 +387,11 @@ stmts_write_retry:
             }
             PQclear(res);
         }
-        else if(stmtnode->type == RIPPLE_TXNSTMT_TYPE_BURST)
+        else if(RIPPLE_TXNSTMT_TYPE_BURST == stmtnode->type)
         {
             ripple_txnstmt_burst* burststmt = NULL;
             burststmt = (ripple_txnstmt_burst*)stmtnode->stmt;
+
             res = PQexec(syncstate->conn, (char*)burststmt->batchcmd);
             if (PGRES_COMMAND_OK != PQresultStatus(res))
             {

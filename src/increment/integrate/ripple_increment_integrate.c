@@ -63,8 +63,12 @@ static void ripple_increment_integrate_addrefresh(void* privdata, void* refresh)
         elog(RLOG_ERROR, "get lock error:%s", strerror(errno));
     }
 
-    incintegrate->refresh = lappend(incintegrate->refresh, refresh);
-
+    if (NULL == incintegrate->refresh
+        || 0 == incintegrate->refresh->length)
+    {
+        incintegrate->refresh = lappend(incintegrate->refresh, refresh);
+    }
+    
     ripple_thread_unlock(&incintegrate->refreshlock);
 
     return;
