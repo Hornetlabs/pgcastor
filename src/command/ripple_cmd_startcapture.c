@@ -5,7 +5,6 @@
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
-#include "utils/license/license.h"
 #include "utils/guc/guc.h"
 #include "utils/uuid/ripple_uuid.h"
 #include "utils/conn/ripple_conn.h"
@@ -602,14 +601,13 @@ static bool ripple_cmd_startcapture_startonlinerefresh(ripple_increment_capture*
 bool ripple_cmd_startcapture(void)
 {
     /*
-     * 1、license check
-     * 2、切换工作目录
-     * 3、创建锁文件
-     * 4、初始化 log 信息
-     * 5、加载 Control 信息
-     * 6、临时文件删除
-     * 7、Control 文件锁初始化
-     * 8、同步策略初始化
+     * 1、切换工作目录
+     * 2、创建锁文件
+     * 3、初始化 log 信息
+     * 4、加载 Control 信息
+     * 5、临时文件删除
+     * 6、Control 文件锁初始化
+     * 7、同步策略初始化
      */
     bool bret                               = true;
     int gctime                              = 0;
@@ -628,14 +626,6 @@ bool ripple_cmd_startcapture(void)
 
     /* 获取工作目录 */
     wdata = guc_getdata();
-
-    /* 校验license */
-    if (false == ripple_license_check(g_cfgpath))
-    {
-        elog(RLOG_WARNING, "license expired");
-        bret = false;
-        goto ripple_cmd_startcapture_done;
-    }
 
     /* 检测 data 目录是否存在 */
     if(false == DirExist(wdata))

@@ -5,7 +5,6 @@
 #include "command/ripple_cmd.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
-#include "utils/license/license.h"
 #include "misc/ripple_misc_lockfiles.h"
 
 static bool ripple_cmd_onlinerefresh_append_result(char *input, StringInfo str)
@@ -192,13 +191,6 @@ bool ripple_cmd_onlinerefresh(void *extra_config)
 
     /* 获取工作目录 */
     wdata = guc_getdata();
-
-    /* 校验license */
-    if (false == ripple_license_check(g_cfgpath))
-    {
-        printf("license expired.\n");
-        return false;
-    }
 
     /* 检测 data 目录是否存在 */
     if(false == DirExist(wdata))

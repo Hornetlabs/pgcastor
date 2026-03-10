@@ -8,7 +8,6 @@
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
 #include "utils/path/ripple_path.h"
-#include "utils/license/license.h"
 #include "utils/daemon/ripple_process.h"
 #include "signal/ripple_signal.h"
 #include "misc/ripple_misc_lockfiles.h"
@@ -32,7 +31,6 @@ static void pgreceivewalversion()
 /* receivewal */
 int main(int argc, char** argv)
 {
-    int index                           = 0;
     uint32 hlsn                         = 0;
     uint32 llsn                         = 0;
     ripple_optype optype                = RIPPLE_OPTYPE_NOP;
@@ -46,7 +44,6 @@ int main(int argc, char** argv)
     char* restorecmd                    = NULL;
     ripple_translog_recvlog* recvwal    = NULL;
     ripple_translog_walcontrol* walctrl = NULL;
-    char abscfgpath[RIPPLE_MAXPATH]     = { 0 };
     char controlfile[RIPPLE_ABSPATH]    = { 0 };
 
     if (1 < argc)
@@ -107,19 +104,6 @@ int main(int argc, char** argv)
     /* 保存配置文件路径绝对路径 */
     profilepath = ripple_make_absolute_path(argv[2]);
 
-    /* 获取绝对路径，并加载 license */
-    rmemcpy1(abscfgpath, 0, argv[2], strlen(argv[2]));
-    ripple_path_canonicalize_path(abscfgpath);
-    for(index = strlen(abscfgpath); index > 0; index--)
-    {
-        if(abscfgpath[index - 1] != '/')
-        {
-            abscfgpath[index - 1] = '\0';
-            continue;
-        }
-        break;
-    }
-
     /* 参数解析 */
     guc_loadcfg(profilepath, false);
 
@@ -159,13 +143,6 @@ int main(int argc, char** argv)
 
     /* 查看解析内容是否正确 */
     guc_debug();
-
-    /* 校验license */
-    if (false == ripple_license_check(abscfgpath))
-    {
-        elog(RLOG_WARNING, "license expired");
-        return 1;
-    }
 
     /* 设置为后台运行 */
     ripple_makedaemon();

@@ -5,7 +5,7 @@
 #define RMANAGER_UNIXDOMAINDIR         "/tmp"
 #define RMANAGER_UNIXDOMAINPREFIX      ".s.XSYNCH."
 #define RMANAGER_PORT                  "6543"
-#define XSYNCH_BUILD                   "XSynch build at 2026年 03月 06日 星期五 18:06:40 CST on x86_64 platform."
+#define XSYNCH_BUILD                   "XSynch build at 2026年 03月 10日 星期二 15:57:22 CST on x86_64 platform."
 
 
 #define RIPPLE_CACHELINE_SIZE           128

@@ -5,7 +5,6 @@
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/guc/guc.h"
-#include "utils/license/license.h"
 #include "utils/daemon/ripple_process.h"
 #include "misc/ripple_misc_lockfiles.h"
 #include "signal/ripple_signal.h"
@@ -96,13 +95,6 @@ bool ripple_cmd_startxmanager(void)
 
     /* 切换工作目录 */
     chdir(wdata);
-
-    /* 校验license */
-    if (false == ripple_license_check(g_cfgpath))
-    {
-        elog(RLOG_WARNING, "license expired");
-        return false;
-    }
 
     /* 设置为后台运行 */
     ripple_makedaemon();

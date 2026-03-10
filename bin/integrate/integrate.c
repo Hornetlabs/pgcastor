@@ -23,7 +23,6 @@ help()
 
 int main(int argc, char **argv)
 {
-    int index = 0;
     ripple_optype   optype      = RIPPLE_OPTYPE_NOP;
     const char*     loglevel    = NULL;
     char*           profilepath = NULL;
@@ -92,20 +91,6 @@ int main(int argc, char **argv)
     profilepath = ripple_make_absolute_path(argv[2]);
     rmemcpy1(g_profilepath, 0, profilepath, strlen(profilepath));
     rfree(profilepath);
-
-    /* 获取绝对路径，并加载 license */
-    rmemcpy1(g_cfgpath, 0, argv[2], strlen(argv[2]));
-    ripple_path_canonicalize_path(g_cfgpath);
-    for(index = strlen(g_cfgpath); index > 0; index--)
-    {
-        if(g_cfgpath[index - 1] != '/')
-        {
-            g_cfgpath[index - 1] = '\0';
-            continue;
-        }
-        break;
-    }
-    snprintf(g_cfgpath + strlen(g_cfgpath), RIPPLE_MAXPATH, "%s", RIPPLE_LICENSE_NAME);
 
     /* 参数解析 */
     guc_loadcfg(argv[2], false);

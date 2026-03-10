@@ -6,7 +6,6 @@ volatile bool   g_closestd      = false;
 volatile int    g_xsynchstat    = RIPPLE_XSYNCHSTAT_INIT;
 volatile int    g_gotsigreload  = RIPPLE_CAPTURERELOAD_STATUS_UNSET;
 
-char            g_cfgpath[RIPPLE_MAXPATH] = { 0 };
 char            g_profilepath[RIPPLE_MAXPATH] = { 0 };
 
 pthread_t   g_mainthrid     = 0;

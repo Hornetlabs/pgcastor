@@ -2,7 +2,6 @@
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
-#include "utils/license/license.h"
 #include "utils/dlist/dlist.h"
 #include "misc/ripple_misc_lockfiles.h"
 #include "net/netpacket/ripple_netpacket.h"

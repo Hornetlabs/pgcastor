@@ -78,8 +78,6 @@ typedef enum RIPPLE_CAPTURERELOAD_STATUS
 #define RIPPLE_ORGENCODING                  "UTF8"
 #define RIPPLE_DSTENCODING                  "UTF8"
 
-#define RIPPLE_LICENSE_NAME                 "license.lic"
-
 #define RIPPLE_TBINCLUDE                    "table"
 #define RIPPLE_TBEXCLUDE                    "tableexclude"
 #define RIPPLE_ADDTABLEPATTERN              "addtablepattern"
