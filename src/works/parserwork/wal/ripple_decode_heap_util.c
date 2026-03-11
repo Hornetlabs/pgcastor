@@ -1713,21 +1713,60 @@ void heap_parser_count_size(void* decodingctx_in,
             (xk_pg_parser_translog_tbcol_values*) trans_return;
 
         int index_column = 0;
+        int index_key = 0;
+        List* index_list = NULL;
+        ripple_catalog_index_value* index_value = NULL;
+        uint32_t index_key_num = 0;
+        uint32_t* index_key_ptr = NULL;
+
+        if (XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == trans_return->m_dmltype)
+        {
+            ListCell* cell = NULL;
+
+            index_list = ripple_catalog_get_index_sysdict_list(decodingctx->transcache->sysdicts->by_index,
+                                                               NULL,
+                                                               txn->sysdictHis,
+                                                               oid);
+
+            /* 存在索引 */
+            if (index_list)
+            {
+                foreach(cell, index_list)
+                {
+                    ripple_catalog_index_value* temp_index_value = (ripple_catalog_index_value*)lfirst(cell);
+
+                    index_value = temp_index_value;
+
+                    /* 优先设置主键索引 */
+                    if (temp_index_value->ripple_index->indisprimary)
+                    {
+                        break;
+                    }
+                }
+                /* 设置索引键 */
+                index_key_num = index_value->ripple_index->indnatts;
+                index_key_ptr = index_value->ripple_index->indkey;
+            }
+        }
 
         for (index_column = 0; index_column < tbcolvalues->m_valueCnt; index_column++)
         {
+            xk_pg_parser_translog_tbcol_value *column_new = NULL;
+            xk_pg_parser_translog_tbcol_value *column_old = NULL;
+
             if (tbcolvalues->m_new_values)
             {
-                xk_pg_parser_translog_tbcol_value *column = &tbcolvalues->m_new_values[index_column];
+                column_new = &tbcolvalues->m_new_values[index_column];
+
                 /* 只处理toast, 将toast的值解析出来 */
-                if (column->m_info == INFO_COL_IS_TOAST)
+                if (INFO_COL_IS_TOAST == column_new->m_info)
                 {
                     xk_pg_parser_translog_tbcol_value *toast_col = NULL;
                     deal_toast = true;
-                    toast_col = heap_get_detoast_column(decodingctx, txn, column);
+                    toast_col = heap_get_detoast_column(decodingctx, txn, column_new);
                     if (toast_col)
                     {
-                        if (toast_col->m_info != INFO_NOTHING)
+                        if (INFO_NOTHING != toast_col->m_info)
                         {
                             elog(RLOG_WARNING, "decode heap record, when decode detoast data, unsupport data type");
                             toast_col->m_info = INFO_COL_MAY_NULL;
@@ -1740,52 +1779,52 @@ void heap_parser_count_size(void* decodingctx_in,
                                 toast_col->m_value = NULL;
                             }
                         }
-                        column->m_info = toast_col->m_info;
-                        if (column->m_value)
+                        column_new->m_info = toast_col->m_info;
+                        if (column_new->m_value)
                         {
-                            rfree(column->m_value);
-                            column->m_value = NULL;
+                            rfree(column_new->m_value);
+                            column_new->m_value = NULL;
                         }
 
-                        column->m_valueLen = toast_col->m_valueLen;
+                        column_new->m_valueLen = toast_col->m_valueLen;
 
-                        if (column->m_valueLen > 0)
+                        if (column_new->m_valueLen > 0)
                         {
-                            column->m_value = rmalloc0(column->m_valueLen + 1);
-                            rmemset0(column->m_value, 0, 0, column->m_valueLen + 1);
-                            rmemcpy0(column->m_value, 0, toast_col->m_value, column->m_valueLen);
+                            column_new->m_value = rmalloc0(column_new->m_valueLen + 1);
+                            rmemset0(column_new->m_value, 0, 0, column_new->m_valueLen + 1);
+                            rmemcpy0(column_new->m_value, 0, toast_col->m_value, column_new->m_valueLen);
                         }
                         heap_free_toast(toast_col);
                     }
                     else
                     {
-                        column->m_valueLen = 0;
-                        if (column->m_value)
+                        column_new->m_valueLen = 0;
+                        if (column_new->m_value)
                         {
-                            rfree(column->m_value);
-                            column->m_value = NULL;
+                            rfree(column_new->m_value);
+                            column_new->m_value = NULL;
                         }
-                        column->m_info = INFO_COL_MAY_NULL;
+                        column_new->m_info = INFO_COL_MAY_NULL;
                     }
                 }
                 /* 排除null和may null */
-                if (column->m_valueLen > 0)
+                if (column_new->m_valueLen > 0)
                 {
-                    stmt->len += column->m_valueLen;
+                    stmt->len += column_new->m_valueLen;
                 }
             }
             if (tbcolvalues->m_old_values)
             {
-                xk_pg_parser_translog_tbcol_value *column = &tbcolvalues->m_old_values[index_column];
+                column_old = &tbcolvalues->m_old_values[index_column];
                 /* 只处理toast, 将toast的值解析出来 */
-                if (column->m_info == INFO_COL_IS_TOAST)
+                if (INFO_COL_IS_TOAST == column_old->m_info)
                 {
                     xk_pg_parser_translog_tbcol_value *toast_col = NULL;
                     deal_toast = true;
-                    toast_col = heap_get_detoast_column(decodingctx, txn, column);
+                    toast_col = heap_get_detoast_column(decodingctx, txn, column_old);
                     if (toast_col)
                     {
-                        if (toast_col->m_info != INFO_NOTHING)
+                        if (INFO_NOTHING != toast_col->m_info)
                         {
                             elog(RLOG_WARNING, "decode heap record, when decode detoast data, unsupport data type");
                             toast_col->m_info = INFO_COL_MAY_NULL;
@@ -1798,40 +1837,69 @@ void heap_parser_count_size(void* decodingctx_in,
                                 toast_col->m_value = NULL;
                             }
                         }
-                        column->m_info = toast_col->m_info;
-                        if (column->m_value)
+                        column_old->m_info = toast_col->m_info;
+                        if (column_old->m_value)
                         {
-                            rfree(column->m_value);
-                            column->m_value = NULL;
+                            rfree(column_old->m_value);
+                            column_old->m_value = NULL;
                         }
 
-                        column->m_valueLen = toast_col->m_valueLen;
+                        column_old->m_valueLen = toast_col->m_valueLen;
 
-                        if (column->m_valueLen > 0)
+                        if (column_old->m_valueLen > 0)
                         {
-                            column->m_value = rmalloc0(column->m_valueLen + 1);
-                            rmemset0(column->m_value, 0, 0, column->m_valueLen + 1);
-                            rmemcpy0(column->m_value, 0, toast_col->m_value, column->m_valueLen);
+                            column_old->m_value = rmalloc0(column_old->m_valueLen + 1);
+                            rmemset0(column_old->m_value, 0, 0, column_old->m_valueLen + 1);
+                            rmemcpy0(column_old->m_value, 0, toast_col->m_value, column_old->m_valueLen);
                         }
                         heap_free_toast(toast_col);
                     }
                     else
                     {
-                        column->m_valueLen = 0;
-                        if (column->m_value)
+                        column_old->m_valueLen = 0;
+                        if (column_old->m_value)
                         {
-                            rfree(column->m_value);
-                            column->m_value = NULL;
+                            rfree(column_old->m_value);
+                            column_old->m_value = NULL;
                         }
-                        column->m_info = INFO_COL_MAY_NULL;
+                        column_old->m_info = INFO_COL_MAY_NULL;
                     }
                 }
-                /* 排除null和may null */
-                if (column->m_valueLen > 0)
+
+                /* 
+                 * 判断是否需要替换
+                 * 条件:
+                 *      存在 index_value
+                 *      且 值为missing
+                 *      且 key没有遍历完
+                 *      且 key值与列号相同
+                 */
+                if (index_value
+                 && (INFO_COL_MAY_NULL == column_old->m_info)
+                 && (index_key < index_key_num)
+                 && (index_key_ptr[index_key] == (index_column + 1)))
                 {
-                    stmt->len += column->m_valueLen;
+                    /* 索引自增 */
+                    index_key++;
+
+                    /* 拷贝内容, 列名无需拷贝 */
+                    column_old->m_coltype = column_new->m_coltype;
+                    column_old->m_freeFlag = column_new->m_freeFlag;
+                    column_old->m_info = column_new->m_info;
+                    column_old->m_valueLen = column_new->m_valueLen;
+                    column_old->m_value = rstrdup(column_new->m_value);
+                }
+                /* 排除null和may null */
+                if (column_old->m_valueLen > 0)
+                {
+                    stmt->len += column_old->m_valueLen;
                 }
             }
+        }
+        /* 释放 */
+        if (index_list)
+        {
+            list_free(index_list);
         }
     }
     stmt->stmt = (void *)trans_return;
