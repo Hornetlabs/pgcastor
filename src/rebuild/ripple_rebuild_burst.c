@@ -15,6 +15,7 @@
 #include "catalog/ripple_catalog.h"
 #include "catalog/ripple_class.h"
 #include "catalog/ripple_index.h"
+#include "catalog/ripple_type.h"
 #include "catalog/ripple_attribute.h"
 #include "rebuild/ripple_rebuild_burst.h"
 #include "works/parserwork/wal/ripple_decode_heap_util.h"
@@ -270,13 +271,21 @@ static bool ripple_rebuild_burst_colisconskey(ripple_rebuild_bursttable *table, 
 }
 
 /* 根据typeid获取typename */
-static char * ripple_rebuild_burst_gettypename(List* lattrs, Oid typeoid, char* colname)
+static char* ripple_rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, char* colname)
 {
     bool find                                   = false;
     int typmod                                  = -1;
     ListCell* attrlc                            = NULL;
+    xk_pg_sysdict_Form_pg_type type             = NULL;
     xk_pg_sysdict_Form_pg_attribute attr        = NULL;
     StringInfoData result                       = {0};
+
+    type = (xk_pg_sysdict_Form_pg_type)ripple_type_getbyoid(typeoid, htype);
+    if (NULL == type)
+    {
+        elog(RLOG_WARNING, "cache lookup failed for type %u", typeoid);
+        return NULL;
+    }
 
     foreach(attrlc, lattrs)
     {
@@ -297,264 +306,147 @@ static char * ripple_rebuild_burst_gettypename(List* lattrs, Oid typeoid, char* 
 
     initStringInfo(&result);
 
+    /* 计算类型长度和精度 */
     switch (typeoid)
     {
+        case XK_PG_SYSDICT_BITOID:
+            if (typmod == -1)
+            {
+                appendStringInfoString(&result, "bit");
+            }
+            else
+            {
+                appendStringInfo(&result, "bit(%d)", typmod);
+            }
+            break;
+        case XK_PG_SYSDICT_VARBITOID:
+            if (typmod == -1)
+            {
+                appendStringInfoString(&result, "varbit");
+            }
+            else
+            {
+                appendStringInfo(&result, "varbit(%d)", typmod);
+            }
+            break;
+        case XK_PG_SYSDICT_CHAROID:
         case XK_PG_SYSDICT_BPCHAROID:
             if (typmod == -1)
-                appendStringInfoString(&result, "CHAR");
+            {
+                appendStringInfoString(&result, "char");
+            }
             else
-                appendStringInfo(&result, "CHAR(%d)", typmod - VARHDRSZ);
-            break;
-        case XK_PG_SYSDICT_TEXTOID:
-            appendStringInfo(&result, "TEXT");
+            {
+                appendStringInfo(&result, "char(%d)", typmod - VARHDRSZ);
+            }
             break;
         case XK_PG_SYSDICT_VARCHAROID:
             if (typmod == -1)
-                appendStringInfoString(&result, "VARCHAR");
+            {
+                appendStringInfoString(&result, "varchar");
+            }
             else
-                appendStringInfo(&result, "VARCHAR(%d)", typmod - VARHDRSZ);
+            {
+                appendStringInfo(&result, "varchar(%d)", typmod - VARHDRSZ);
+            }
             break;
         case XK_PG_SYSDICT_NUMERICOID:
             if (typmod == -1)
-                appendStringInfoString(&result, "NUMERIC");
+            {
+                appendStringInfoString(&result, "numeric");
+            }
             else
-                appendStringInfo(&result, "NUMERIC(%d, %d)",
+            {
+                appendStringInfo(&result, "numeric(%d, %d)",
                                  ((typmod - VARHDRSZ) >> 16) & 0xffff,
                                  (typmod - VARHDRSZ) & 0xffff);
-            break;
-        case XK_PG_SYSDICT_INT4OID:
-            appendStringInfoString(&result, "INTEGER");
-            break;
-        case XK_PG_SYSDICT_INT2OID:
-            appendStringInfoString(&result, "SMALLINT");
-            break;
-        case XK_PG_SYSDICT_INT8OID:
-            appendStringInfoString(&result, "BIGINT");
-            break;
-        case XK_PG_SYSDICT_FLOAT4OID:
-            appendStringInfoString(&result, "REAL");
-            break;
-        case XK_PG_SYSDICT_FLOAT8OID:
-            appendStringInfoString(&result, "DOUBLE");
-            break;
-        case XK_PG_SYSDICT_BOOLOID:
-            appendStringInfoString(&result, "BOOLEAN");
+            }
             break;
         case XK_PG_SYSDICT_TIMEOID:
             if (typmod == -1)
-                appendStringInfoString(&result, "TIME");
+            {
+                appendStringInfoString(&result, "time without time zone");
+            }
             else
-                appendStringInfo(&result, "TIME(%d)", typmod);
+            {
+                appendStringInfo(&result, "time(%d) without time zone", typmod);
+            }
             break;
         case XK_PG_SYSDICT_TIMETZOID:
             if (typmod == -1)
-                appendStringInfoString(&result, "TIME WITH TIME ZONE");
+            {
+                appendStringInfoString(&result, "time with time zone");
+            }
             else
-                appendStringInfo(&result, "TIME(%d) WITH TIME ZONE", typmod);
+            {
+                appendStringInfo(&result, "time(%d) with time zone", typmod);
+            }
             break;
         case XK_PG_SYSDICT_TIMESTAMPOID:
             if (typmod == -1)
-                appendStringInfoString(&result, "TIMESTAMP");
+            {
+                appendStringInfoString(&result, "timestamp without time zone");
+            }
             else
-                appendStringInfo(&result, "TIMESTAMP(%d)", typmod);
+            {
+                appendStringInfo(&result, "timestamp(%d) without time zone", typmod);
+            }
             break;
         case XK_PG_SYSDICT_TIMESTAMPTZOID:
             if (typmod == -1)
-                appendStringInfoString(&result, "TIMESTAMPWITH TIME ZONE");
+            {
+                appendStringInfoString(&result, "timestamp with time zone");
+            }
             else
-                appendStringInfo(&result, "TIMESTAMP(%d) WITH TIME ZONE", typmod);
-            break;
-        case XK_PG_SYSDICT_DATEOID:
-            appendStringInfoString(&result, "DATE");
-            break;
-        case XK_PG_SYSDICT_XMLOID:
-            appendStringInfoString(&result, "XML");
-            break;
-        case XK_PG_SYSDICT_UUIDOID:
-            appendStringInfoString(&result, "UUID");
+            {
+                appendStringInfo(&result, "timestamp(%d) with time zone", typmod);
+            }
             break;
         default:
-            elog(RLOG_WARNING, "cache lookup failed for type %u", typeoid);
-            return NULL;
+            appendStringInfo(&result, "%s", type->typname.data);
+            break;
     }
     return result.data;
 }
 
 /* 补全missing值 */
-static bool ripple_rebuild_burst_updatematchdata(ripple_rebuild_burstnode* burstnode,
+static bool ripple_rebuild_burst_updatematchdata(ripple_rebuild_burstrow* insertrow,
                                                  ripple_rebuild_burstrow* delrow,
                                                  ripple_rebuild_burstrow* updaterow)
 {
-    bool same                                           = true;
-    int keycnt                                          = 0;
-    int keyindex                                        = 0;
-    int key                                             = 0;
-    dlistnode* dlnode                                   = NULL;
-    ripple_rebuild_burstcolumn* keys                    = NULL;
-    ripple_rebuild_burstrow* insertrow                  = NULL;
-    xk_pg_parser_translog_tbcol_values* del             = NULL;
     xk_pg_parser_translog_tbcol_values* insert          = NULL;
     xk_pg_parser_translog_tbcol_values* update          = NULL;
-    xk_pg_parser_translog_tbcol_values* delete          = NULL;
     xk_pg_parser_translog_tbcol_value* insertvalue      = NULL;
     xk_pg_parser_translog_tbcol_value* nupdatevalue     = NULL;
     xk_pg_parser_translog_tbcol_value* oupdatevalue     = NULL;
-    xk_pg_parser_translog_tbcol_value* deletevalue      = NULL;
 
-    if(true == dlist_isnull(burstnode->dlinsertrows))
+    /*  update的before和after都没有missing值 直接返回 */
+    if (0 == updaterow->missingcnt && 0 == delrow->missingcnt)
     {
         return true;
     }
 
-    /* 没有missing列,返回true */
-    if(0 == delrow->missingcnt && 0 == updaterow->missingcnt)
-    {
-        return true;
-    }
-
-    /* 查找与delete相同的insert */
-    for (dlnode = burstnode->dlinsertrows->head; NULL != dlnode; dlnode = dlnode->next)
-    {
-        same = false;
-        insertrow = (ripple_rebuild_burstrow*)dlnode->value;
-
-        if (RIPPLE_REBUILD_BURSTNODEFLAG_NOINDEX == burstnode->flag)
-        {
-            /* 找到相同insert，链表中删除insert、释放delete 返回true */
-            if (0 == memcmp(insertrow->md5, delrow->md5, 16))
-            {
-                same = true;
-                break;
-            }
-        }
-        else
-        {
-            same = true;
-            keycnt = burstnode->table.keycnt;
-            keys = burstnode->table.keys;
-            del = (xk_pg_parser_translog_tbcol_values*)delrow->row;
-            insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
-
-            /* 比较约束列值是否相同 */
-            for (keyindex = 0; keyindex < keycnt; keyindex++)
-            {
-                key = keys[keyindex].colno;
-                if (0 != strcmp(del->m_old_values[key - 1].m_value, insert->m_new_values[key - 1].m_value))
-                {
-                    same = false;
-                    break;
-                }
-            }
-
-            /* 找到匹配值退出循环 */
-            if (true == same)
-            {
-                break;
-            }
-        }
-    }
-
-    /* 没有找到insert, 不需要补全 */
-    if (false == same)
-    {
-        return true;
-    }
-
-    /* 根据查到的insert, 补全delete和update中missing值 */
     insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
     update = (xk_pg_parser_translog_tbcol_values*)updaterow->row;
-    delete = (xk_pg_parser_translog_tbcol_values*)delrow->row;
     insertvalue = insert->m_new_values;
     oupdatevalue = update->m_old_values;
     nupdatevalue = update->m_new_values;
-    deletevalue = delete->m_old_values;
 
-    for (keyindex = 0; keyindex < insert->m_valueCnt; keyindex++)
+    /* 匹配上的insert 补全 update拆出的insert值 */
+    if (false == xk_pg_parser_trans_matchmissing(nupdatevalue, insertvalue, insert->m_valueCnt))
     {
-        if (INFO_COL_MAY_NULL == insertvalue[keyindex].m_info)
-        {
-            continue;
-        }
-
-        if (INFO_COL_MAY_NULL == deletevalue[keyindex].m_info)
-        {
-            deletevalue[keyindex].m_freeFlag = insertvalue[keyindex].m_freeFlag;
-            deletevalue[keyindex].m_info = insertvalue[keyindex].m_info;
-            deletevalue[keyindex].m_coltype = insertvalue[keyindex].m_coltype;
-            deletevalue[keyindex].m_valueLen = insertvalue[keyindex].m_valueLen;
-            rfree(deletevalue[keyindex].m_colName);
-            deletevalue[keyindex].m_colName = rstrdup(insertvalue[keyindex].m_colName);
-            
-            if (0 != deletevalue[keyindex].m_valueLen)
-            {
-                deletevalue[keyindex].m_value = rmalloc0(deletevalue[keyindex].m_valueLen + 1);
-                if (NULL == deletevalue[keyindex].m_value)
-                {
-                    elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
-                    return false;
-                }
-                rmemset0(deletevalue[keyindex].m_value, 0, 0, deletevalue[keyindex].m_valueLen + 1);
-                rmemcpy0(deletevalue[keyindex].m_value, 0, insertvalue[keyindex].m_value, deletevalue[keyindex].m_valueLen);
-            }
-            else
-            {
-                deletevalue[keyindex].m_value = NULL;
-            }
-        }
-
-        if (INFO_COL_MAY_NULL == nupdatevalue[keyindex].m_info)
-        {
-            nupdatevalue[keyindex].m_freeFlag = insertvalue[keyindex].m_freeFlag;
-            nupdatevalue[keyindex].m_info = insertvalue[keyindex].m_info;
-            nupdatevalue[keyindex].m_coltype = insertvalue[keyindex].m_coltype;
-            nupdatevalue[keyindex].m_valueLen = insertvalue[keyindex].m_valueLen;
-            rfree(nupdatevalue[keyindex].m_colName);
-            nupdatevalue[keyindex].m_colName = rstrdup(insertvalue[keyindex].m_colName);
-            
-            if (0 != nupdatevalue[keyindex].m_valueLen)
-            {
-                nupdatevalue[keyindex].m_value = rmalloc0(nupdatevalue[keyindex].m_valueLen + 1);
-                if (NULL == nupdatevalue[keyindex].m_value)
-                {
-                    elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
-                    return false;
-                }
-                rmemset0(nupdatevalue[keyindex].m_value, 0, 0, nupdatevalue[keyindex].m_valueLen + 1);
-                rmemcpy0(nupdatevalue[keyindex].m_value, 0, insertvalue[keyindex].m_value, nupdatevalue[keyindex].m_valueLen);
-            }
-            else
-            {
-                nupdatevalue[keyindex].m_value = NULL;
-            }
-        }
-
-        if (INFO_COL_MAY_NULL == oupdatevalue[keyindex].m_info)
-        {
-            oupdatevalue[keyindex].m_freeFlag = insertvalue[keyindex].m_freeFlag;
-            oupdatevalue[keyindex].m_info = insertvalue[keyindex].m_info;
-            oupdatevalue[keyindex].m_coltype = insertvalue[keyindex].m_coltype;
-            oupdatevalue[keyindex].m_valueLen = insertvalue[keyindex].m_valueLen;
-            rfree(oupdatevalue[keyindex].m_colName);
-            oupdatevalue[keyindex].m_colName = rstrdup(insertvalue[keyindex].m_colName);
-
-            if (0 != oupdatevalue[keyindex].m_valueLen)
-            {
-                oupdatevalue[keyindex].m_value = rmalloc0(insertvalue[keyindex].m_valueLen + 1);
-                if (NULL == insertvalue[keyindex].m_value)
-                {
-                    elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
-                    return false;
-                }
-                rmemset0(oupdatevalue[keyindex].m_value, 0, 0, insertvalue[keyindex].m_valueLen + 1);
-                rmemcpy0(oupdatevalue[keyindex].m_value, 0, insertvalue[keyindex].m_value, insertvalue[keyindex].m_valueLen);
-            }
-            else
-            {
-                oupdatevalue[keyindex].m_value = NULL;
-            }
-        }
+        elog(RLOG_WARNING, "rebuild burst updatematchdata insert/delete failed");
+        return false;
     }
 
+    if (RIPPLE_REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
+    {
+        if (false == xk_pg_parser_trans_matchmissing(oupdatevalue, insertvalue, insert->m_valueCnt))
+        {
+            elog(RLOG_WARNING, "rebuild burst updatematchdata insert/update before failed");
+            return false;
+        }
+    }
     return true;
 }
 
@@ -886,75 +778,18 @@ bool ripple_rebuild_burst_decomposeupdate(ripple_rebuild_burstnode* burstnode,
                                           ripple_rebuild_burstrow** insertrow,
                                           void* rows)
 {
-    int colindex = 0;
     ripple_rebuild_burstrow* tmpdelrow              = NULL;
     ripple_rebuild_burstrow* tmpinsertrow           = NULL;
     xk_pg_parser_translog_tbcol_values* update      = NULL;
     xk_pg_parser_translog_tbcol_values* delete      = NULL;
-    xk_pg_parser_translog_tbcol_value* newvalue     = NULL;
-    xk_pg_parser_translog_tbcol_value* oldvalue     = NULL;
 
     update = (xk_pg_parser_translog_tbcol_values*)rows;
 
     /* update 新旧值missing值互补 */
-    for (colindex = 0; colindex < update->m_valueCnt; colindex++)
+    if (false == xk_pg_parser_trans_matchmissing(update->m_new_values, update->m_old_values, update->m_valueCnt))
     {
-        newvalue = &update->m_new_values[colindex];
-        oldvalue = &update->m_old_values[colindex];
-
-        if (INFO_COL_MAY_NULL == newvalue->m_info
-            && INFO_COL_MAY_NULL != oldvalue->m_info)
-        {
-            newvalue->m_freeFlag = oldvalue->m_freeFlag;
-            newvalue->m_info = oldvalue->m_info;
-            newvalue->m_coltype = oldvalue->m_coltype;
-            newvalue->m_valueLen = oldvalue->m_valueLen;
-            rfree(newvalue->m_colName);
-            newvalue->m_colName = rstrdup(oldvalue->m_colName);
-            
-            if (0 != newvalue->m_valueLen)
-            {
-                newvalue->m_value = rmalloc0(newvalue->m_valueLen + 1);
-                if (NULL == newvalue->m_value)
-                {
-                    elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
-                    return false;
-                }
-                rmemset0(newvalue->m_value, 0, 0, newvalue->m_valueLen + 1);
-                rmemcpy0(newvalue->m_value, 0, oldvalue->m_value, newvalue->m_valueLen);
-            }
-            else
-            {
-                newvalue->m_value = NULL;
-            }
-        }
-
-        if (INFO_COL_MAY_NULL != newvalue->m_info
-            && INFO_COL_MAY_NULL == oldvalue->m_info)
-        {
-            oldvalue->m_freeFlag = newvalue->m_freeFlag;
-            oldvalue->m_info = newvalue->m_info;
-            oldvalue->m_coltype = newvalue->m_coltype;
-            oldvalue->m_valueLen = newvalue->m_valueLen;
-            rfree(oldvalue->m_colName);
-            oldvalue->m_colName = rstrdup(newvalue->m_colName);
-            
-            if (0 != oldvalue->m_valueLen)
-            {
-                oldvalue->m_value = rmalloc0(oldvalue->m_valueLen + 1);
-                if (NULL == oldvalue->m_value)
-                {
-                    elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
-                    return false;
-                }
-                rmemset0(oldvalue->m_value, 0, 0, oldvalue->m_valueLen + 1);
-                rmemcpy0(oldvalue->m_value, 0, newvalue->m_value, oldvalue->m_valueLen);
-            }
-            else
-            {
-                oldvalue->m_value = NULL;
-            }
-        }
+        elog(RLOG_WARNING, "rebuild burst decomposeupdate match missing failed");
+        return false;
     }
 
     tmpdelrow = ripple_rebuild_burstrow_init(update->m_valueCnt);
@@ -1236,7 +1071,6 @@ bool ripple_rebuild_burst_updatemergedelete(ripple_rebuild_burstnode* burstnode,
     xk_pg_parser_translog_tbcol_values* insert          = NULL;
     xk_pg_parser_translog_tbcol_values* update          = NULL;
     xk_pg_parser_translog_tbcol_value* insertvalue      = NULL;
-    xk_pg_parser_translog_tbcol_value* updatevalue      = NULL;
 
     updaterow = *in_updaterow;
 
@@ -1294,30 +1128,24 @@ bool ripple_rebuild_burst_updatemergedelete(ripple_rebuild_burstnode* burstnode,
         return false;
     }
 
+    /* 补全missing值 */
+    if(false == ripple_rebuild_burst_updatematchdata(insertrow,
+                                                     delrow,
+                                                     updaterow))
+    {
+        elog(RLOG_WARNING, "rebuild burst updatemergedelete update matchdata failed");
+        return false;
+    }
+
     /* 将update after值替换到insert上 */
     if (RIPPLE_REBUILD_BURSTROWTYPE_INSERT == insertrow->op
         || RIPPLE_REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
     {
         insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
         insertvalue = insert->m_new_values;
-        updatevalue = update->m_new_values;
-        for (keyindex = 0; keyindex < insert->m_valueCnt; keyindex++)
-        {
-            insertvalue[keyindex].m_freeFlag = updatevalue[keyindex].m_freeFlag;
-            insertvalue[keyindex].m_info = updatevalue[keyindex].m_info;
-            insertvalue[keyindex].m_valueLen = updatevalue[keyindex].m_valueLen;
-            
-            if (0 != insertvalue[keyindex].m_valueLen)
-            {
-                rfree(insertvalue[keyindex].m_value);
-                insertvalue[keyindex].m_value = updatevalue[keyindex].m_value;
-                updatevalue[keyindex].m_value = NULL;
-            }
-            else
-            {
-                insertvalue[keyindex].m_value = NULL;
-            }
-        }
+
+        insert->m_new_values = update->m_new_values;
+        update->m_new_values = insertvalue;
 
         /* 只断开update->insert的关联row */
         if (NULL != insertrow->relatedrow)
@@ -1568,15 +1396,6 @@ static bool ripple_rebuild_burst_txn2bursts_update(ripple_rebuild_burst* burst,
                                                      row))
     {
         elog(RLOG_WARNING, "rebuild burst txn2bursts update decomposeupdate failed");
-        return false;
-    }
-
-    /* 补全missing值 */
-    if(false == ripple_rebuild_burst_updatematchdata(burstnode,
-                                                     delrow,
-                                                     insertrow))
-    {
-        elog(RLOG_WARNING, "rebuild burst txn2bursts update matchdata failed");
         return false;
     }
 
@@ -2288,7 +2107,7 @@ static bool ripple_rebuild_burst_assembledelete(ripple_rebuild_burstnode* burstn
 }
 
 /* 拼接burst insert语句 临时表，全列，ON CONFLICT */
-static bool ripple_rebuild_burst_assembleinsert(HTAB* hattrs, ripple_rebuild_burstnode* burstnode, ripple_txn* txn)
+static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts, ripple_rebuild_burstnode* burstnode, ripple_txn* txn)
 {
     bool first                                  = true;
     bool need_comma                             = false;
@@ -2340,7 +2159,7 @@ static bool ripple_rebuild_burst_assembleinsert(HTAB* hattrs, ripple_rebuild_bur
     rmemset0(sortrow, 0, 0, len);
 
     /* 获取attribute */
-    lattrs = (List*)ripple_attribute_getbyoid(burstnode->table.oid, hattrs);
+    lattrs = (List*)ripple_attribute_getbyoid(burstnode->table.oid, sysdicts->by_attribute);
 
     if (NULL == lattrs || NULL == lattrs->head)
     {
@@ -2386,7 +2205,7 @@ static bool ripple_rebuild_burst_assembleinsert(HTAB* hattrs, ripple_rebuild_bur
                 for (keyindex = 0; keyindex < table->keycnt; keyindex++)
                 {
                     key = &table->keys[keyindex];
-                    type = ripple_rebuild_burst_gettypename(lattrs, key->coltype, key->colname);
+                    type = ripple_rebuild_burst_gettypename(lattrs, sysdicts->by_type, key->coltype, key->colname);
                     if (NULL == type )
                     {
                         deleteStringInfo(conskeystr);
@@ -2419,7 +2238,7 @@ static bool ripple_rebuild_burst_assembleinsert(HTAB* hattrs, ripple_rebuild_bur
                     {
                         continue;
                     }
-                    type = ripple_rebuild_burst_gettypename(lattrs, values->m_coltype, values->m_colName);
+                    type = ripple_rebuild_burst_gettypename(lattrs, sysdicts->by_type, values->m_coltype, values->m_colName);
                     if (NULL == type )
                     {
                         deleteStringInfo(conskeystr);
@@ -2969,7 +2788,7 @@ bool ripple_rebuild_burst_bursts2stmt(ripple_rebuild_burst* burst, ripple_cache_
                 return false;
             }
 
-            if (false == ripple_rebuild_burst_assembleinsert(sysdicts->by_attribute, burstnode, txn))
+            if (false == ripple_rebuild_burst_assembleinsert(sysdicts, burstnode, txn))
             {
                 elog(RLOG_WARNING, "rebuild burst assembleinsert failed");
                 return false;

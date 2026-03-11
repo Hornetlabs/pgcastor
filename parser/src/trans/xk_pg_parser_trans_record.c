@@ -412,6 +412,61 @@ bool xk_pg_parser_trans_external_trans(xk_pg_parser_translog_external *xk_pg_par
     return true;
 }
 
+/*
+ * tbcol_value 补全missing值
+ * 参数说明: v1需要含有missing值需要补全的值
+ *          v2 用v2的值去补v1的missing值
+ * 
+ * 返回值说明:
+ * 
+*/
+bool xk_pg_parser_trans_matchmissing(xk_pg_parser_translog_tbcol_value *v1,
+                                     xk_pg_parser_translog_tbcol_value *v2,
+                                     uint16_t valuecnt)
+{
+    int colindex = 0;
+    xk_pg_parser_translog_tbcol_value* value1     = NULL;
+    xk_pg_parser_translog_tbcol_value* value2     = NULL;
+
+    if (NULL == v1 || NULL == v2)
+    {
+        return false;
+    }
+    
+    /* missing值互补 */
+    for (colindex = 0; colindex < valuecnt; colindex++)
+    {
+        value1 = &v1[colindex];
+        value2 = &v2[colindex];
+        if (INFO_COL_MAY_NULL == value1->m_info)
+        {
+            value1->m_freeFlag = value2->m_freeFlag;
+            value1->m_info = value2->m_info;
+            value1->m_coltype = value2->m_coltype;
+            value1->m_valueLen = value2->m_valueLen;
+            
+            if (0 != value1->m_valueLen)
+            {
+                value1->m_value = rmalloc0(value1->m_valueLen + 1);
+                if (NULL == value1->m_value)
+                {
+                    elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
+                    return false;
+                }
+                rmemset0(value1->m_value, 0, 0, value1->m_valueLen + 1);
+                rmemcpy0(value1->m_value, 0, value2->m_value, value1->m_valueLen);
+            }
+            else
+            {
+                value1->m_value = NULL;
+            }
+        }
+    }
+
+    return true;
+
+}
+
 void xk_pg_parser_trans_preTrans_free(xk_pg_parser_translog_pre_base *xk_pg_parser_result)
 {
     if (xk_pg_parser_result)

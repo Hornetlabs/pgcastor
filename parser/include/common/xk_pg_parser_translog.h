@@ -823,5 +823,9 @@ extern void xk_pg_parser_trans_external_free(xk_pg_parser_translog_external *ext
 extern void xk_pg_parser_trans_ddl_free(xk_pg_parser_translog_systb2ddl *ddl,
                                  xk_pg_parser_translog_ddlstmt *result);
 
+extern bool xk_pg_parser_trans_matchmissing(xk_pg_parser_translog_tbcol_value *value1,
+                                            xk_pg_parser_translog_tbcol_value *value2,
+                                            uint16_t valuecnt);
+
 extern void xk_pg_parser_free_value_ext(xk_pg_parser_translog_tbcol_value *value);
 #endif
