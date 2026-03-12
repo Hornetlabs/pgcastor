@@ -24,7 +24,6 @@
 #include "storage/ripple_ffsmgr.h"
 #include "storage/trail/ripple_fftrail.h"
 #include "storage/trail/data/ripple_fftrail_data.h"
-#include "works/ripple_workthreadmgr.h"
 #include "works/parserwork/wal/ripple_decode_heap_util.h"
 #include "serial/ripple_serial.h"
 #include "increment/capture/serial/ripple_increment_captureserial.h"

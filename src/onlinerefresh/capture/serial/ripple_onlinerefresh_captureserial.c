@@ -15,7 +15,6 @@
 #include "cache/ripple_cache_txn.h"
 #include "cache/ripple_cache_sysidcts.h"
 #include "cache/ripple_transcache.h"
-#include "works/dyworks/ripple_dyworks.h"
 #include "misc/ripple_misc_control.h"
 #include "queue/ripple_queue.h"
 #include "task/ripple_task_slot.h"

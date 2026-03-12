@@ -38,7 +38,6 @@
 #include "storage/ripple_file_buffer.h"
 #include "storage/ripple_ff_detail.h"
 #include "storage/ripple_ffsmgr.h"
-#include "works/ripple_workthreadmgr.h"
 #include "snapshot/ripple_snapshot.h"
 #include "works/parserwork/wal/ripple_rewind.h"
 #include "works/parserwork/wal/ripple_parserwork_decode.h"

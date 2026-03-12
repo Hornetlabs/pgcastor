@@ -89,8 +89,6 @@ typedef enum RIPPLE_CAPTURERELOAD_STATUS
 #define RIPPLE_REFRESH_COMPLETE             "complete"
 #define RIPPLE_REFRESH_ONLINEREFRESH        "onlinerefresh"
 
-#define RIPPLE_FILETRANSFER_DIR             "filetransfer"
-
 #define RIPPLE_MAX_MAPPINGS                 62
 #define RIPPLE_CONTROL_FILE_SIZE            1024
 #define RIPPLE_DECODE_STAT                  RIPPLE_CONTROL_FILE_SIZE

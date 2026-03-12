@@ -11,9 +11,7 @@
 #include "sync/ripple_sync.h"
 #include "works/syncwork/ripple_refresh_integratesync.h"
 #include "task/ripple_task_slot.h"
-#include "works/dyworks/ripple_dyworks.h"
 #include "refresh/p2csharding/ripple_refresh_p2csharding.h"
-
 
 /* 增量应用结构初始化 */
 ripple_refresh_integratesyncstate* ripple_refresh_integratesyncstate_init(void)

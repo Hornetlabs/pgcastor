@@ -7,7 +7,6 @@ pgcastor-pro is a project that provides a set of tools for PostgreSQL, including
 
 ### Required Dependencies
 - **PostgreSQL**: A powerful open-source relational database system
-- **cURL**: A command-line tool for transferring data with URLs
 - **Readline**: A library for line input and editing
 - **LZ4**: A lossless compression algorithm
 - **Threads**: System thread library
@@ -34,9 +33,9 @@ pgcastor-pro is a project that provides a set of tools for PostgreSQL, including
    ```bash
    mkdir -p build
    cd build
-   cmake .. -DPOSTGRES_INSTALL_DIR=/path/to/postgresql -DCURL_INSTALL_DIR=/path/to/curl
+   cmake .. -DPOSTGRES_INSTALL_DIR=/path/to/postgresql
    ```
-   If PostgreSQL and curl are installed in standard locations, you can omit the installation directories:
+   If PostgreSQL installed in standard locations, you can omit the installation directories:
    ```bash
    cmake ..
    ```
@@ -49,7 +48,7 @@ pgcastor-pro is a project that provides a set of tools for PostgreSQL, including
 
    To build the project in debug mode:
    ```bash
-   cmake .. -DCMAKE_BUILD_TYPE=debug -DPOSTGRES_INSTALL_DIR=/path/to/postgresql -DCURL_INSTALL_DIR=/path/to/curl
+   cmake .. -DCMAKE_BUILD_TYPE=debug -DPOSTGRES_INSTALL_DIR=/path/to/postgresql
    make -j4
    ```
 

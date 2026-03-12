@@ -22,7 +22,6 @@
 #include "cache/ripple_cache_txn.h"
 #include "cache/ripple_cache_sysidcts.h"
 #include "cache/ripple_transcache.h"
-#include "works/ripple_workthreadmgr.h"
 #include "increment/capture/flush/ripple_increment_captureflush.h"
 #include "bigtransaction/capture/flush/ripple_bigtxn_captureflush.h"
 #include "metric/capture/ripple_metric_capture.h"

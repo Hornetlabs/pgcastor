@@ -9,7 +9,6 @@
 #include "queue/ripple_queue.h"
 #include "task/ripple_task_slot.h"
 #include "storage/ripple_file_buffer.h"
-#include "works/dyworks/ripple_dyworks.h"
 #include "refresh/sharding2file/ripple_refresh_sharding2file.h"
 
 void ripple_taskslot_stat_setidle(ripple_task_slot* slot)

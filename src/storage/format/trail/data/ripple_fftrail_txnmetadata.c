@@ -17,7 +17,6 @@
 #include "storage/trail/data/ripple_fftrail_txn.h"
 #include "storage/trail/data/ripple_fftrail_txnmetadata.h"
 #include "storage/trail/data/ripple_fftrail_txncommit.h"
-#include "works/ripple_workthreadmgr.h"
 
 /* 在私有域中删除 */
 static bool ripple_fftrail_txnmetadata_remove(ripple_fftrail_privdata* privdata,

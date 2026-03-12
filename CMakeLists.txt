@@ -11,9 +11,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE -fPIC -Wall -Wunused-but-set-v
 # Enable multi-threaded compilation
 set(CMAKE_BUILD_PARALLEL_LEVEL 4)
 
-# Options: Allow users to specify PostgreSQL and curl installation directories
+# Options: Allow users to specify PostgreSQL installation directories
 option(POSTGRES_INSTALL_DIR "PostgreSQL installation directory" "")
-option(CURL_INSTALL_DIR "Curl installation directory" "")
 
 # Find PostgreSQL
 if(POSTGRES_INSTALL_DIR)
@@ -26,17 +25,6 @@ else()
     find_library(PG_LIBRARY NAMES pq)
 endif()
 
-# Find curl
-if(CURL_INSTALL_DIR)
-    set(CURL_INCLUDE_DIR "${CURL_INSTALL_DIR}/include")
-    set(CURL_LIBRARY_DIR "${CURL_INSTALL_DIR}/lib")
-    find_path(CURL_INCLUDE_DIR NAMES curl/curl.h PATHS ${CURL_INCLUDE_DIR} NO_DEFAULT_PATH)
-    find_library(CURL_LIBRARY NAMES curl PATHS ${CURL_LIBRARY_DIR} NO_DEFAULT_PATH)
-else()
-    find_path(CURL_INCLUDE_DIR NAMES curl/curl.h)
-    find_library(CURL_LIBRARY NAMES curl)
-endif()
-
 # Find other dependencies
 find_library(READLINE_LIBRARY NAMES readline)
 find_library(LZ4_LIBRARY NAMES lz4)
@@ -45,10 +33,6 @@ find_package(Threads REQUIRED)
 # Check dependencies
 if(NOT PG_INCLUDE_DIR OR NOT PG_LIBRARY)
     message(FATAL_ERROR "PostgreSQL not found. Please specify POSTGRES_INSTALL_DIR.")
-endif()
-
-if(NOT CURL_INCLUDE_DIR OR NOT CURL_LIBRARY)
-    message(FATAL_ERROR "Curl not found. Please specify CURL_INSTALL_DIR.")
 endif()
 
 if(NOT READLINE_LIBRARY)
@@ -81,7 +65,6 @@ file(MAKE_DIRECTORY ${INTERFACE_LIB_DIR})
 include_directories(
     ${INCL_DIR}
     ${PG_INCLUDE_DIR}
-    ${CURL_INCLUDE_DIR}
     ${PARSER_INCL_DIR}
     ${INTERFACE_INCL_DIR}
 )
@@ -181,7 +164,7 @@ foreach(SUBDIR ${BIN_SUBDIRS})
     
     # Compile executable
     add_executable(${SUBDIR} ${SUBDIR_SOURCES})
-    target_link_libraries(${SUBDIR} castor_static ${PG_LIBRARY} ${CURL_LIBRARY} ${SYSTEM_LIBS})
+    target_link_libraries(${SUBDIR} castor_static ${PG_LIBRARY} ${SYSTEM_LIBS})
     set_target_properties(${SUBDIR} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${SUBDIR_DIR})
 endforeach()
 

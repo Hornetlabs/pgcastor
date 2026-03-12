@@ -17,7 +17,6 @@
 #include "cache/ripple_cache_txn.h"
 #include "cache/ripple_transcache.h"
 #include "serial/ripple_serial.h"
-#include "works/ripple_workthreadmgr.h"
 #include "bigtransaction/persist/ripple_bigtxn_persist.h"
 #include "bigtransaction/ripple_bigtxn.h"
 #include "bigtransaction/capture/serial/ripple_bigtxn_captureserial.h"

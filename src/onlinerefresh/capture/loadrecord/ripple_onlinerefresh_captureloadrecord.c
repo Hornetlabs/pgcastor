@@ -31,7 +31,6 @@
 #include "stmts/ripple_txnstmt_refresh.h"
 #include "stmts/ripple_txnstmt_onlinerefresh.h"
 #include "works/parserwork/wal/ripple_onlinerefresh.h"
-#include "works/dyworks/ripple_dyworks.h"
 #include "onlinerefresh/capture/ripple_onlinerefresh_capture.h"
 #include "works/splitwork/wal/ripple_splitwork_wal.h"
 #include "works/splitwork/wal/ripple_wal_define.h"

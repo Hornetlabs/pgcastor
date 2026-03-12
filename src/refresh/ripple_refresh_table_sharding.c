@@ -7,7 +7,6 @@
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
 #include "storage/ripple_file_buffer.h"
-#include "works/dyworks/ripple_dyworks.h"
 #include "refresh/ripple_refresh_tables.h"
 #include "refresh/ripple_refresh_table_sharding.h"
 #include "refresh/ripple_refresh_table_syncstats.h"

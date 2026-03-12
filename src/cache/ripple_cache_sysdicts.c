@@ -38,7 +38,6 @@
 #include "catalog/ripple_database.h"
 #include "catalog/ripple_index.h"
 #include "catalog/ripple_relmapfile.h"
-#include "works/ripple_workthreadmgr.h"
 #include "snapshot/ripple_snapshot.h"
 #include "works/parserwork/wal/ripple_rewind.h"
 #include "works/parserwork/wal/ripple_parserwork_decode.h"

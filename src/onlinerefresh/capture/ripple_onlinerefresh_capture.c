@@ -33,7 +33,6 @@
 #include "task/ripple_task_slot.h"
 #include "snapshot/ripple_snapshot.h"
 #include "refresh/ripple_refresh_tables.h"
-#include "works/dyworks/taskwork/ripple_taskwork.h"
 #include "refresh/ripple_refresh_table_sharding.h"
 #include "refresh/ripple_refresh_table_syncstats.h"
 #include "refresh/capture/ripple_refresh_capture.h"

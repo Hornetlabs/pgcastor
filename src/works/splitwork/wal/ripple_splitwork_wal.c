@@ -19,7 +19,6 @@
 #include "cache/ripple_cache_sysidcts.h"
 #include "cache/ripple_transcache.h"
 #include "queue/ripple_queue.h"
-#include "works/ripple_workthreadmgr.h"
 #include "loadrecords/ripple_record.h"
 #include "loadrecords/ripple_loadpage.h"
 #include "loadrecords/ripple_loadpageam.h"
@@ -38,7 +37,6 @@
 #include "works/parserwork/wal/ripple_onlinerefresh.h"
 #include "works/parserwork/wal/ripple_parserwork_wal.h"
 #include "task/ripple_task_slot.h"
-#include "works/dyworks/ripple_dyworks.h"
 #include "onlinerefresh/capture/loadrecord/ripple_onlinerefresh_captureloadrecord.h"
 
 typedef struct HISTORY_TIMELINE_ENDLSN
