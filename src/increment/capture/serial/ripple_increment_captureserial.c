@@ -437,19 +437,6 @@ static void ripple_increment_captureserialstate_ffsmgr_set(ripple_increment_capt
     serialstate->base.ffsmgrstate->fdata->ffdata2 = serialstate->dictcache;
 }
 
-/* 检查主键, 此处用于序列化DML时, 在capture序列化dml时系统表已完成应用, 因此这里不考虑事务内系统表缓存 */
-static bool ripple_increment_captureserial_dealindexkey(void *table_values, void *serial, uint64 *reduce_len)
-{
-    bool result = false;
-    ripple_increment_captureserialstate* captureserialstate = NULL;
-    ripple_cache_sysdicts *sysdicts = NULL;
-
-    captureserialstate = (ripple_increment_captureserialstate*)serial;
-    sysdicts = captureserialstate->dictcache->sysdicts;
-    result = ripple_decode_heap_check_indexkey(table_values, sysdicts, NULL, reduce_len);
-    return result;
-}
-
 /* 设置redo保存的系统字典 */
 static void  ripple_increment_captureserial_setredosysdicts(void* serial, void* catalogdata)
 {

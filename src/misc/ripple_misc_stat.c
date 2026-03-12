@@ -59,7 +59,7 @@ void ripple_misc_stat_loaddecode(ripple_capturebase* decodebase)
 */
 void ripple_misc_stat_decodewrite(ripple_capturebase* decodebase, int* pfd)
 {
-    int     fd;
+    int     fd = -1;
     char    path[RIPPLE_MAXPATH] = {'\0'};
     char buffer[RIPPLE_DECODE_STAT] = { 0 };    /* need not be aligned */
 

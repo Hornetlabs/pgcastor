@@ -36,7 +36,6 @@ extern void add_oidmap(HTAB *htab, Oid temp, Oid real);
 
 extern Oid get_real_oid_from_oidmap(HTAB *htab, Oid temp);
 
-extern bool ripple_decode_heap_check_indexkey(void *table_values, void *sysdict, void *sysdict_his, uint64 *reduce_len);
 
 extern List *ripple_decode_heap_multi_insert_save_sysdict_as_insert(List *sysdict,
                                                                     xk_pg_parser_translog_tbcolbase *trans_return);
