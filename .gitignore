@@ -4,7 +4,7 @@ c_cpp_properties.json
 # Program file excludes
 /bin/capture/capture
 /bin/integrate/integrate
-/bin/receivepglog/receivelog
+/bin/receivepglog/receivepglog
 /bin/xmanager/xmanager
 /bin/xscsci/xscsci
 
@@ -13,6 +13,9 @@ c_cpp_properties.json
 /bin/xscsci/xscsci_gram.h
 /bin/xscsci/xscsci_scan.c
 /bin/xscsci/xscsci_prescan.c
+
+# lib file excludes
+/lib/*.a
 
 # Global excludes across all subdirectories
 *.o
