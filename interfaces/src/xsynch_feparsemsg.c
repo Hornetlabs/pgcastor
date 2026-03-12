@@ -17,7 +17,7 @@
 
 typedef struct XSYNCH_FEPARSEMSG_PARSER
 {
-    xysnch_cmdtag           cmd;
+    xsynch_cmdtag           cmd;
     char*                   desc;
 
     bool (*parser)(xsynch_exbuffer msg, xsynch_conn* conn);

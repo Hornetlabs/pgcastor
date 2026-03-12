@@ -16,7 +16,7 @@
 
 typedef struct XSYNCH_FEBUILDMSG_ASSEMBLE
 {
-    xysnch_cmdtag           cmd;
+    xsynch_cmdtag           cmd;
     char*                   desc;
 
     bool (*assemble)(xsynch_cmd* cmd, xsynch_exbuffer msg);

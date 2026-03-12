@@ -39,11 +39,11 @@ typedef enum XSYNCH_CMDTAG
 
     /* 在此前添加 */
     T_XSYNCH_MAX                            
-} xysnch_cmdtag;
+} xsynch_cmdtag;
 
 typedef struct XSYNCH_CMD
 {
-    xysnch_cmdtag                          type;
+    xsynch_cmdtag                          type;
 } xsynch_cmd;
 
 typedef enum XSYNCH_JOBKIND

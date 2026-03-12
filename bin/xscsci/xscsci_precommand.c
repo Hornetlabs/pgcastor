@@ -21,7 +21,7 @@ typedef void (*precommandfunc)(xsciscistat* xscisc, xsynch_cmd* cmd);
 
 typedef struct XSCSCI_PRECOMMANDOPS
 {
-    xysnch_cmdtag                   type;
+    xsynch_cmdtag                   type;
     char*                           desc;
     precommandfunc                  func;
 } xscsci_precommandops;

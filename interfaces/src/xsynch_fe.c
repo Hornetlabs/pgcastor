@@ -20,7 +20,7 @@ typedef void (*commandfuncfree)(xsynch_cmd* cmd);
 
 typedef struct XSYNCH_COMMANDOPS
 {
-    xysnch_cmdtag                   type;
+    xsynch_cmdtag                   type;
     char*                           desc;
     commandfuncfree                 free;
 } xsynch_commandops;
