@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 #include "./unicode_map/utf8_to_koi8r.map"
 #include "./unicode_map/koi8r_to_utf8.map"
 #include "./unicode_map/utf8_to_koi8u.map"
@@ -37,13 +37,13 @@ void utf8_to_koi8r(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_UTF8, XK_KOI8R);
+    CHECK_ENCODING_CONVERSION_ARGS(UTF8, KOI8R);
 
     UtfToLocal(src, len, dest,
                &koi8r_from_unicode_tree,
                NULL, 0,
                NULL,
-               XK_KOI8R);
+               KOI8R);
 }
 
 void koi8r_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -52,13 +52,13 @@ void koi8r_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_KOI8R, XK_UTF8);
+    CHECK_ENCODING_CONVERSION_ARGS(KOI8R, UTF8);
 
     LocalToUtf(src, len, dest,
                &koi8r_to_unicode_tree,
                NULL, 0,
                NULL,
-               XK_KOI8R);
+               KOI8R);
 }
 
 void utf8_to_koi8u(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -67,13 +67,13 @@ void utf8_to_koi8u(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_UTF8, XK_KOI8U);
+    CHECK_ENCODING_CONVERSION_ARGS(UTF8, KOI8U);
 
     UtfToLocal(src, len, dest,
                &koi8u_from_unicode_tree,
                NULL, 0,
                NULL,
-               XK_KOI8U);
+               KOI8U);
 }
 
 void koi8u_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -82,11 +82,11 @@ void koi8u_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_KOI8U, XK_UTF8);
+    CHECK_ENCODING_CONVERSION_ARGS(KOI8U, UTF8);
 
     LocalToUtf(src, len, dest,
                &koi8u_to_unicode_tree,
                NULL, 0,
                NULL,
-               XK_KOI8U);
+               KOI8U);
 }

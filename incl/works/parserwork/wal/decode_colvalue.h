@@ -35,38 +35,38 @@ typedef enum CATALOG_MAPNUM_PG_TYPE
 //     INDEX_MAPNUM_INDISUNIQUE = 2
 // } catalog_mapnum_pg_index;
 
-extern char *get_class_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+extern char *get_class_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                                   int pnum,
                                                   int dbtype,
                                                   int dbversion);
 
-extern char *set_class_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+extern char *set_class_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                                   char *new_value,
                                                   int pnum,
                                                   int dbtype,
                                                   int dbversion);
 
-extern char *free_class_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+extern char *free_class_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                                   int pnum,
                                                   int dbtype,
                                                   int dbversion);
 
-extern char *get_attribute_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+extern char *get_attribute_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                                   int pnum,
                                                   int dbtype,
                                                   int dbversion);
 
-extern char *get_namespace_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+extern char *get_namespace_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                                   int pnum,
                                                   int dbtype,
                                                   int dbversion);
 
-extern char *get_type_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+extern char *get_type_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                           int pnum,
                                           int dbtype,
                                           int dbversion);
 
-extern char *get_index_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+extern char *get_index_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                           int pnum,
                                           int dbtype,
                                           int dbversion);

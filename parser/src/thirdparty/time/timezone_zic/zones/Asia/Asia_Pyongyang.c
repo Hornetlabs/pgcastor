@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Pyongyang[] =
+char* PG_Asia_Pyongyang[] =
 {
     (char *)"Zone	Asia/Pyongyang	8:23:00 -	LMT	1908 Apr  1",
     (char *)"			8:30	-	KST	1912 Jan  1",

@@ -3,7 +3,7 @@
 
 static const uint16_t koi8r_from_unicode_tree_table[678];
 
-static const xk_character_mb_radix_tree koi8r_from_unicode_tree =
+static const character_mb_radix_tree koi8r_from_unicode_tree =
 {
   koi8r_from_unicode_tree_table,
   NULL, /* 32-bit table not used */

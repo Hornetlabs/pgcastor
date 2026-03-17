@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Pacific_Niue[] =
+char* PG_Pacific_Niue[] =
 {
     (char *)"Zone	Pacific/Niue	-11:19:40 -	LMT	1901        # Alofi",
     (char *)"			-11:20	-	NUT	1951",

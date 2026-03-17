@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_NZ[] =
+char* PG_NZ[] =
 {
     (char *)"Rule	NZ	1927	only	-	Nov	 6	2:00	1:00	S",
     (char *)"Rule	NZ	1928	only	-	Mar	 4	2:00	0	M",

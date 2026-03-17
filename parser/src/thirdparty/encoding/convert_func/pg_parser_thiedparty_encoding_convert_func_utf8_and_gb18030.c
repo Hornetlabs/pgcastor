@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 #include "./unicode_map/gb18030_to_utf8.map"
 #include "./unicode_map/utf8_to_gb18030.map"
 
@@ -183,13 +183,13 @@ void gb18030_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t st
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_GB18030, XK_UTF8);
+    CHECK_ENCODING_CONVERSION_ARGS(GB18030, UTF8);
 
     LocalToUtf(src, len, dest,
                &gb18030_to_unicode_tree,
                NULL, 0,
                conv_18030_to_utf8,
-               XK_GB18030);
+               GB18030);
 }
 
 void utf8_to_gb18030(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -198,11 +198,11 @@ void utf8_to_gb18030(unsigned char *src_str, unsigned char *dest_str, int32_t st
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_UTF8, XK_GB18030);
+    CHECK_ENCODING_CONVERSION_ARGS(UTF8, GB18030);
 
     UtfToLocal(src, len, dest,
                &gb18030_from_unicode_tree,
                NULL, 0,
                conv_utf8_to_18030,
-               XK_GB18030);
+               GB18030);
 }

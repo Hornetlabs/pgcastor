@@ -8,8 +8,8 @@
 #include "utils/conn/conn.h"
 #include "misc/misc_stat.h"
 #include "misc/misc_control.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -17,7 +17,7 @@
 #include "catalog/catalog.h"
 #include "catalog/index.h"
 
-static void index_dict_index_free(xk_pg_sysdict_Form_pg_index index)
+static void index_dict_index_free(pg_sysdict_Form_pg_index index)
 {
     if (index)
     {
@@ -79,7 +79,7 @@ void index_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     bool find;
     char sql_exec[MAX_EXEC_SQL_LEN];
     PGresult* res;
-    xk_pg_sysdict_Form_pg_index catalog_index;
+    pg_sysdict_Form_pg_index catalog_index;
     catalog_index_value *idx_val;
     HASHCTL index_hash_ctl;
     catalog_index_hash_entry *index_entry;
@@ -127,12 +127,12 @@ void index_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     {
         index_col = 0;
 
-        catalog_index = (xk_pg_sysdict_Form_pg_index)rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
+        catalog_index = (pg_sysdict_Form_pg_index)rmalloc0(sizeof(pg_parser_sysdict_pgindex));
         if(NULL == catalog_index)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemset0(catalog_index, 0, '\0', sizeof(xk_pg_parser_sysdict_pgindex));
+        rmemset0(catalog_index, 0, '\0', sizeof(pg_parser_sysdict_pgindex));
 
         /* indrelid */
         sscanf(PQgetvalue(res, index_row, index_col++), "%u", &catalog_index->indrelid);
@@ -182,13 +182,13 @@ catalogdata* index_colvalue2index(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_index_value* index_value = NULL;
-    xk_pg_sysdict_Form_pg_index pgindex = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_index pgindex = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
     uint32_t temp_oid = InvalidOid;
     bool unique = false;
     char *temp_key = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 首先检查 indrelid 和 indisunique */
     temp_oid = (uint32)atoi((char*)((colvalue + 1)->m_value));
@@ -217,12 +217,12 @@ catalogdata* index_colvalue2index(void* in_colvalue)
     catalog_data->catalog = index_value;
     catalog_data->type = CATALOG_TYPE_INDEX;
 
-    pgindex = (xk_pg_sysdict_Form_pg_index)rmalloc1(sizeof(xk_pg_parser_sysdict_pgindex));
+    pgindex = (pg_sysdict_Form_pg_index)rmalloc1(sizeof(pg_parser_sysdict_pgindex));
     if(NULL == pgindex)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgindex, 0, '\0', sizeof(xk_pg_parser_sysdict_pgindex));
+    rmemset0(pgindex, 0, '\0', sizeof(pg_parser_sysdict_pgindex));
     index_value->index = pgindex;
 
     /* indrelid 1 */
@@ -261,7 +261,7 @@ static bool check_index_catalog_data_in_list(List *index_list, catalog_index_val
     foreach(cell, index_list)
     {
         catalog_index_value* index_value = (catalog_index_value*)lfirst(cell);
-        xk_pg_sysdict_Form_pg_index dict_index = index_value->index;
+        pg_sysdict_Form_pg_index dict_index = index_value->index;
         if (dict_index->indexrelid == new_index_value->index->indexrelid)
         {
             find = true;
@@ -288,7 +288,7 @@ static bool update_index_catalog_data_in_lsit(List *index_list, catalog_index_va
     {
         ListCell *next_cell = cell->next;
         catalog_index_value* index_value = (catalog_index_value*)lfirst(cell);
-        xk_pg_sysdict_Form_pg_index dict_index = index_value->index;
+        pg_sysdict_Form_pg_index dict_index = index_value->index;
 
         /* 查找指定的index记录 */
         if (dict_index->indexrelid == new_index_value->index->indexrelid)
@@ -311,7 +311,7 @@ static bool update_index_catalog_data_in_lsit(List *index_list, catalog_index_va
             }
 
             /* 重新赋值 */
-            rmemcpy0(dict_index, 0, new_index_value->index, offsetof(xk_pg_parser_sysdict_pgindex, indkey));
+            rmemcpy0(dict_index, 0, new_index_value->index, offsetof(pg_parser_sysdict_pgindex, indkey));
             find = true;
             break;
         }
@@ -343,7 +343,7 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
     if(CATALOG_OP_INSERT == catalogdata->op)
     {
         catalog_index_value* index_value = NULL;
-        xk_pg_sysdict_Form_pg_index dict_index = NULL;
+        pg_sysdict_Form_pg_index dict_index = NULL;
 
         indexInHash = hash_search(sysdicts->by_index, &new_index_value->oid, HASH_ENTER, &found);
         if(false == found)
@@ -355,12 +355,12 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
         if (!check_index_catalog_data_in_list(indexInHash->index_list, new_index_value))
         {
             /* 申请空间，并赋值 */
-            dict_index = (xk_pg_sysdict_Form_pg_index)rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
+            dict_index = (pg_sysdict_Form_pg_index)rmalloc0(sizeof(pg_parser_sysdict_pgindex));
             if(NULL == dict_index)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemcpy0(dict_index, 0, new_index_value->index, sizeof(xk_pg_parser_sysdict_pgindex));
+            rmemcpy0(dict_index, 0, new_index_value->index, sizeof(pg_parser_sysdict_pgindex));
 
             dict_index->indkey = rmalloc0(sizeof(uint32) * dict_index->indnatts);
             if(NULL == dict_index->indkey)
@@ -403,7 +403,7 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
                 {
                     ListCell *next_cell = cell->next;
                     catalog_index_value* index_value = (catalog_index_value*)lfirst(cell);
-                    xk_pg_sysdict_Form_pg_index dict_index = index_value->index;
+                    pg_sysdict_Form_pg_index dict_index = index_value->index;
 
                     /* 查找指定的index记录 */
                     if (dict_index->indexrelid == new_index_value->index->indexrelid)
@@ -497,7 +497,7 @@ void indexcache_write(HTAB* indexcache, uint64 *offset, sysdict_header_array* ar
     uint64 page_offset = PAGE_HEADER_SIZE;
     HASH_SEQ_STATUS status;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_index index = NULL;
+    pg_sysdict_Form_pg_index index = NULL;
     catalog_index_hash_entry *index_entry = NULL;
     catalog_index_value *index_value = NULL;
 
@@ -527,7 +527,7 @@ void indexcache_write(HTAB* indexcache, uint64 *offset, sysdict_header_array* ar
             index_value = (catalog_index_value*)lfirst(cell);
             index = index_value->index;
 
-            fix_len = offsetof(xk_pg_parser_sysdict_pgindex, indkey);
+            fix_len = offsetof(pg_parser_sysdict_pgindex, indkey);
             varlena_len = sizeof(uint32) * index->indnatts;
 
             if(page_offset + fix_len + varlena_len > FILE_BLK_SIZE)
@@ -591,7 +591,7 @@ HTAB* indexcache_load(sysdict_header_array* array)
     uint64 fileoffset = 0;
 
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_index index;
+    pg_sysdict_Form_pg_index index;
     catalog_index_hash_entry *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -623,15 +623,15 @@ HTAB* indexcache_load(sysdict_header_array* array)
         {
             catalog_index_value *index_value = NULL;
 
-            index = (xk_pg_sysdict_Form_pg_index)rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
+            index = (pg_sysdict_Form_pg_index)rmalloc0(sizeof(pg_parser_sysdict_pgindex));
             if(NULL == index)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
 
-            rmemset0(index, 0, '\0', sizeof(xk_pg_parser_sysdict_pgindex));
-            rmemcpy0(index, 0, buffer + offset, offsetof(xk_pg_parser_sysdict_pgindex, indkey));
-            offset += offsetof(xk_pg_parser_sysdict_pgindex, indkey);
+            rmemset0(index, 0, '\0', sizeof(pg_parser_sysdict_pgindex));
+            rmemcpy0(index, 0, buffer + offset, offsetof(pg_parser_sysdict_pgindex, indkey));
+            offset += offsetof(pg_parser_sysdict_pgindex, indkey);
 
             index->indkey = rmalloc0(sizeof(uint32) * index->indnatts);
             if(NULL == index->indkey)

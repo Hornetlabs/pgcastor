@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Pacific_Fiji[] =
+char* PG_Pacific_Fiji[] =
 {
     (char *)"Rule	Fiji	1998	1999	-	Nov	Sun>=1	2:00	1:00	-",
     (char *)"Rule	Fiji	1999	2000	-	Feb	lastSun	3:00	0	-",

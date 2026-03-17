@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Thule[] =
+char* PG_America_Thule[] =
 {
     (char *)"Rule	Thule	1991	1992	-	Mar	lastSun	2:00	1:00	D",
     (char *)"Rule	Thule	1991	1992	-	Sep	lastSun	2:00	0	S",

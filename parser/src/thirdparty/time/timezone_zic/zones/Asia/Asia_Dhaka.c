@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Dhaka[] =
+char* PG_Asia_Dhaka[] =
 {
     (char *)"Rule	Dhaka	2009	only	-	Jun	19	23:00	1:00	-",
     (char *)"Rule	Dhaka	2009	only	-	Dec	31	24:00	0	-",

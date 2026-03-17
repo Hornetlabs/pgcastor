@@ -3,7 +3,7 @@
 
 static const uint32_t win874_to_unicode_tree_table[248];
 
-static const xk_character_mb_radix_tree win874_to_unicode_tree =
+static const character_mb_radix_tree win874_to_unicode_tree =
 {
   NULL, /* 16-bit table not used */
   win874_to_unicode_tree_table,

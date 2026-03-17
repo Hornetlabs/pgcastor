@@ -9,8 +9,8 @@
 #include "port/thread/thread.h"
 #include "misc/misc_control.h"
 #include "misc/misc_stat.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "storage/file_buffer.h"
 #include "storage/ff_detail.h"
 #include "storage/ffsmgr.h"
@@ -460,7 +460,7 @@ void transcache_sysdict_free(txn* txn)
         {
             cache_sysdicts_catalogdatafreevoid(dict->convert_colvalues);
         }
-        heap_free_trans_result((xk_pg_parser_translog_tbcolbase *)dict->colvalues);
+        heap_free_trans_result((pg_parser_translog_tbcolbase *)dict->colvalues);
         rfree(dict);
     }
     list_free(sysdict_List);

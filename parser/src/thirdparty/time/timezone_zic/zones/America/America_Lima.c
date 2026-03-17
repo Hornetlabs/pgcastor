@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Lima[] =
+char* PG_America_Lima[] =
 {
     (char *)"Rule	Peru	1938	only	-	Jan	 1	0:00	1:00	-",
     (char *)"Rule	Peru	1938	only	-	Apr	 1	0:00	0	-",

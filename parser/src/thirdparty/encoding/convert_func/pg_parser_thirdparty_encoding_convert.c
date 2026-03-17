@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_encoding_convert.c
+ * @file pg_parser_thirdparty_encoding_convert.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -8,10 +8,10 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
 
 static void report_invalid_encoding(int32_t encoding, const char *mbstr, int32_t len)
 {
@@ -121,7 +121,7 @@ void mic2latin(const unsigned char *mic, unsigned char *p, int32_t len,
     {
         c1 = *mic;
         if (c1 == 0)
-            report_invalid_encoding(XK_MULE_INTERNAL, (const char *) mic, len);
+            report_invalid_encoding(MULE_INTERNAL, (const char *) mic, len);
         if (!IS_HIGHBIT_SET(c1))
         {
             /* easy for ASCII */
@@ -131,13 +131,13 @@ void mic2latin(const unsigned char *mic, unsigned char *p, int32_t len,
         }
         else
         {
-            int32_t l = xk_character_mic_mblen(mic);
+            int32_t l = character_mic_mblen(mic);
 
             if (len < l)
-                report_invalid_encoding(XK_MULE_INTERNAL, (const char *) mic,
+                report_invalid_encoding(MULE_INTERNAL, (const char *) mic,
                                         len);
             if (l != 2 || c1 != lc || !IS_HIGHBIT_SET(mic[1]))
-                report_untranslatable_char(XK_MULE_INTERNAL, encoding,
+                report_untranslatable_char(MULE_INTERNAL, encoding,
                                            (const char *) mic, len);
             *p++ = mic[1];
             mic += 2;
@@ -155,7 +155,7 @@ void mic2latin(const unsigned char *mic, unsigned char *p, int32_t len,
  * characters, here we must take a hard line because we don't know
  * the appropriate MIC equivalent.
  */
-void xk_conv_ascii2mic(const unsigned char *l, unsigned char *p, int32_t len)
+void conv_ascii2mic(const unsigned char *l, unsigned char *p, int32_t len)
 {
     int32_t            c1;
 
@@ -163,7 +163,7 @@ void xk_conv_ascii2mic(const unsigned char *l, unsigned char *p, int32_t len)
     {
         c1 = *l;
         if (c1 == 0 || IS_HIGHBIT_SET(c1))
-            report_invalid_encoding(XK_SQL_ASCII, (const char *) l, len);
+            report_invalid_encoding(SQL_ASCII, (const char *) l, len);
         *p++ = c1;
         l++;
         len--;
@@ -174,7 +174,7 @@ void xk_conv_ascii2mic(const unsigned char *l, unsigned char *p, int32_t len)
 /*
  * MIC ---> ASCII
  */
-void xk_conv_mic2ascii(const unsigned char *mic, unsigned char *p, int32_t len)
+void conv_mic2ascii(const unsigned char *mic, unsigned char *p, int32_t len)
 {
     int32_t            c1;
 
@@ -182,7 +182,7 @@ void xk_conv_mic2ascii(const unsigned char *mic, unsigned char *p, int32_t len)
     {
         c1 = *mic;
         if (c1 == 0 || IS_HIGHBIT_SET(c1))
-            report_untranslatable_char(XK_MULE_INTERNAL, XK_SQL_ASCII,
+            report_untranslatable_char(MULE_INTERNAL, SQL_ASCII,
                                        (const char *) mic, len);
         *p++ = c1;
         mic++;
@@ -229,7 +229,7 @@ void latin2mic_with_table(const unsigned char *l,
                 *p++ = c2;
             }
             else
-                report_untranslatable_char(encoding, XK_MULE_INTERNAL,
+                report_untranslatable_char(encoding, MULE_INTERNAL,
                                            (const char *) l, len);
         }
         l++;
@@ -264,7 +264,7 @@ void mic2latin_with_table(const unsigned char *mic,
     {
         c1 = *mic;
         if (c1 == 0)
-            report_invalid_encoding(XK_MULE_INTERNAL, (const char *) mic, len);
+            report_invalid_encoding(MULE_INTERNAL, (const char *) mic, len);
         if (!IS_HIGHBIT_SET(c1))
         {
             /* easy for ASCII */
@@ -274,15 +274,15 @@ void mic2latin_with_table(const unsigned char *mic,
         }
         else
         {
-            int32_t l = xk_character_mic_mblen(mic);
+            int32_t l = character_mic_mblen(mic);
 
             if (len < l)
-                report_invalid_encoding(XK_MULE_INTERNAL, (const char *) mic,
+                report_invalid_encoding(MULE_INTERNAL, (const char *) mic,
                                         len);
             if (l != 2 || c1 != lc || !IS_HIGHBIT_SET(mic[1]) ||
                 (c2 = tab[mic[1] - HIGHBIT]) == 0)
             {
-                report_untranslatable_char(XK_MULE_INTERNAL, encoding,
+                report_untranslatable_char(MULE_INTERNAL, encoding,
                                            (const char *) mic, len);
                 break;            /* keep compiler quiet */
             }
@@ -307,8 +307,8 @@ static int32_t compare3(const void *p1, const void *p2)
 
     s1 = *(const uint32_t *) p1;
     s2 = *((const uint32_t *) p1 + 1);
-    d1 = ((const xk_character_utf_to_local_combined *) p2)->utf1;
-    d2 = ((const xk_character_utf_to_local_combined *) p2)->utf2;
+    d1 = ((const character_utf_to_local_combined *) p2)->utf1;
+    d2 = ((const character_utf_to_local_combined *) p2)->utf2;
     return (s1 > d1 || (s1 == d1 && s2 > d2)) ? 1 : ((s1 == d1 && s2 == d2) ? 0 : -1);
 }
 
@@ -322,7 +322,7 @@ static int32_t compare4(const void *p1, const void *p2)
                 v2;
 
     v1 = *(const uint32_t *) p1;
-    v2 = ((const xk_character_local_to_utf_combined *) p2)->code;
+    v2 = ((const character_local_to_utf_combined *) p2)->code;
     return (v1 > v2) ? 1 : ((v1 == v2) ? 0 : -1);
 }
 
@@ -348,7 +348,7 @@ static inline unsigned char *store_coded_char(unsigned char *dest, uint32_t code
  * 'l' is the length of the input character in bytes, and b1-b4 are
  * the input character's bytes.
  */
-static inline uint32_t xk_conv_mb_radix_conv(const xk_character_mb_radix_tree *rt,
+static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree *rt,
                                              int32_t l,
                                              unsigned char b1,
                                              unsigned char b2,
@@ -480,17 +480,17 @@ static inline uint32_t xk_conv_mb_radix_conv(const xk_character_mb_radix_tree *r
  */
 void UtfToLocal(const unsigned char *utf, int32_t len,
                 unsigned char *iso,
-                const xk_character_mb_radix_tree *map,
-                const xk_character_utf_to_local_combined *cmap,
+                const character_mb_radix_tree *map,
+                const character_utf_to_local_combined *cmap,
                 int32_t cmapsize,
                 utf_local_conversion_func conv_func,
                 int32_t encoding)
 {
     uint32_t        iutf;
     int32_t            l;
-    const xk_character_utf_to_local_combined *cp;
+    const character_utf_to_local_combined *cp;
 
-    if (!XK_CHARACTER_VALID_ENCODING(encoding))
+    if (!CHARACTER_VALID_ENCODING(encoding))
     {
         //printf("ERROR, invalid encoding number: %d", encoding);
     }
@@ -506,11 +506,11 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
         if (*utf == '\0')
             break;
 
-        l = xk_character_utf_mblen(utf);
+        l = character_utf_mblen(utf);
         if (len < l)
             break;
 
-        if (!xk_character_utf8_islegal(utf, l))
+        if (!character_utf8_islegal(utf, l))
             break;
 
         if (l == 1)
@@ -556,11 +556,11 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
             /* collect next character, same as above */
             len -= l;
 
-            l = xk_character_utf_mblen(utf);
+            l = character_utf_mblen(utf);
             if (len < l)
                 break;
 
-            if (!xk_character_utf8_islegal(utf, l))
+            if (!character_utf8_islegal(utf, l))
                 break;
 
             /* We assume ASCII character cannot be in combined map */
@@ -596,7 +596,7 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
                 cutf[0] = iutf;
                 cutf[1] = iutf2;
                 cp = bsearch(cutf, cmap, cmapsize,
-                             sizeof(xk_character_utf_to_local_combined), compare3);
+                             sizeof(character_utf_to_local_combined), compare3);
 
                 if (cp)
                 {
@@ -614,7 +614,7 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
         /* Now check ordinary map */
         if (map)
         {
-            uint32_t        converted = xk_conv_mb_radix_conv(map, l, b1, b2, b3, b4);
+            uint32_t        converted = conv_mb_radix_conv(map, l, b1, b2, b3, b4);
 
             if (converted)
             {
@@ -636,13 +636,13 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
         }
 
         /* failed to translate this character */
-        report_untranslatable_char(XK_UTF8, encoding,
+        report_untranslatable_char(UTF8, encoding,
                                    (const char *) (utf - l), len);
     }
 
     /* if we broke out of loop early, must be invalid input */
     if (len > 0)
-        report_invalid_encoding(XK_UTF8, (const char *) utf, len);
+        report_invalid_encoding(UTF8, (const char *) utf, len);
 
     *iso = '\0';
 }
@@ -671,17 +671,17 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
  */
 void LocalToUtf(const unsigned char *iso, int32_t len,
                 unsigned char *utf,
-                const xk_character_mb_radix_tree *map,
-                const xk_character_local_to_utf_combined *cmap,
+                const character_mb_radix_tree *map,
+                const character_local_to_utf_combined *cmap,
                 int32_t cmapsize,
                 utf_local_conversion_func conv_func,
                 int32_t encoding)
 {
     uint32_t iiso;
     int32_t  l;
-    const xk_character_local_to_utf_combined *cp;
+    const character_local_to_utf_combined *cp;
 
-    if (!XK_CHARACTER_VALID_ENCODING(encoding))
+    if (!CHARACTER_VALID_ENCODING(encoding))
     {
         //printf("ERROR, invalid encoding number: %d", encoding);
     }
@@ -705,7 +705,7 @@ void LocalToUtf(const unsigned char *iso, int32_t len,
             continue;
         }
 
-        l = xk_character_encoding_verifymb(encoding, (const char *) iso, len);
+        l = character_encoding_verifymb(encoding, (const char *) iso, len);
         if (l < 0)
             break;
 
@@ -739,7 +739,7 @@ void LocalToUtf(const unsigned char *iso, int32_t len,
 
         if (map)
         {
-            uint32_t        converted = xk_conv_mb_radix_conv(map, l, b1, b2, b3, b4);
+            uint32_t        converted = conv_mb_radix_conv(map, l, b1, b2, b3, b4);
 
             if (converted)
             {
@@ -751,7 +751,7 @@ void LocalToUtf(const unsigned char *iso, int32_t len,
             if (cmap)
             {
                 cp = bsearch(&iiso, cmap, cmapsize,
-                             sizeof(xk_character_local_to_utf_combined), compare4);
+                             sizeof(character_local_to_utf_combined), compare4);
 
                 if (cp)
                 {
@@ -775,7 +775,7 @@ void LocalToUtf(const unsigned char *iso, int32_t len,
         }
 
         /* failed to translate this character */
-        report_untranslatable_char(encoding, XK_UTF8,
+        report_untranslatable_char(encoding, UTF8,
                                    (const char *) (iso - l), len);
     }
 

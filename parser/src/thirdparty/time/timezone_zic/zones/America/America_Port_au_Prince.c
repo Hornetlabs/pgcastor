@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Port_au_Prince[] =
+char* PG_America_Port_au_Prince[] =
 {
     (char *)"Rule	Haiti	1983	only	-	May	8	0:00	1:00	D",
     (char *)"Rule	Haiti	1984	1987	-	Apr	lastSun	0:00	1:00	D",

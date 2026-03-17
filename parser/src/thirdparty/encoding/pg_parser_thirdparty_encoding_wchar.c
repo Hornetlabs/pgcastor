@@ -1,6 +1,6 @@
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 #define HIGHBIT             (0x80)
 #define IS_HIGHBIT_SET(ch) ((unsigned char)(ch) & HIGHBIT)
@@ -34,8 +34,8 @@
 /*
  * SQL/ASCII
  */
-static int32_t xk_character_ascii2wchar_with_len(const unsigned char *from,
-                                                 xk_character_wchar *to, int32_t len)
+static int32_t character_ascii2wchar_with_len(const unsigned char *from,
+                                                 character_wchar *to, int32_t len)
 {
     int32_t            cnt = 0;
 
@@ -49,13 +49,13 @@ static int32_t xk_character_ascii2wchar_with_len(const unsigned char *from,
     return cnt;
 }
 
-static int32_t xk_character_ascii_mblen(const unsigned char *s)
+static int32_t character_ascii_mblen(const unsigned char *s)
 {
-    XK_PG_PARSER_UNUSED(s);
+    PG_PARSER_UNUSED(s);
     return 1;
 }
 
-static int32_t xk_character_ascii_dsplen(const unsigned char *s)
+static int32_t character_ascii_dsplen(const unsigned char *s)
 {
     if (*s == '\0')
         return 0;
@@ -68,8 +68,8 @@ static int32_t xk_character_ascii_dsplen(const unsigned char *s)
 /*
  * EUC
  */
-static int32_t xk_character_euc2wchar_with_len(const unsigned char *from,
-                                               xk_character_wchar *to,
+static int32_t character_euc2wchar_with_len(const unsigned char *from,
+                                               character_wchar *to,
                                                int32_t len)
 {
     int32_t            cnt = 0;
@@ -108,7 +108,7 @@ static int32_t xk_character_euc2wchar_with_len(const unsigned char *from,
     return cnt;
 }
 
-static inline int32_t xk_character_euc_mblen(const unsigned char *s)
+static inline int32_t character_euc_mblen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -123,7 +123,7 @@ static inline int32_t xk_character_euc_mblen(const unsigned char *s)
     return len;
 }
 
-static inline int32_t xk_character_euc_dsplen(const unsigned char *s)
+static inline int32_t character_euc_dsplen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -134,25 +134,25 @@ static inline int32_t xk_character_euc_dsplen(const unsigned char *s)
     else if (IS_HIGHBIT_SET(*s))
         len = 2;
     else
-        len = xk_character_ascii_dsplen(s);
+        len = character_ascii_dsplen(s);
     return len;
 }
 
 /*
  * EUC_JP
  */
-static int32_t xk_character_eucjp2wchar_with_len(const unsigned char *from,
-                                                 xk_character_wchar *to, int32_t len)
+static int32_t character_eucjp2wchar_with_len(const unsigned char *from,
+                                                 character_wchar *to, int32_t len)
 {
-    return xk_character_euc2wchar_with_len(from, to, len);
+    return character_euc2wchar_with_len(from, to, len);
 }
 
-static int32_t xk_character_eucjp_mblen(const unsigned char *s)
+static int32_t character_eucjp_mblen(const unsigned char *s)
 {
-    return xk_character_euc_mblen(s);
+    return character_euc_mblen(s);
 }
 
-static int32_t xk_character_eucjp_dsplen(const unsigned char *s)
+static int32_t character_eucjp_dsplen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -163,36 +163,36 @@ static int32_t xk_character_eucjp_dsplen(const unsigned char *s)
     else if (IS_HIGHBIT_SET(*s))
         len = 2;
     else
-        len = xk_character_ascii_dsplen(s);
+        len = character_ascii_dsplen(s);
     return len;
 }
 
 /*
  * EUC_KR
  */
-static int32_t xk_character_euckr2wchar_with_len(const unsigned char *from,
-                                                 xk_character_wchar *to,
+static int32_t character_euckr2wchar_with_len(const unsigned char *from,
+                                                 character_wchar *to,
                                                  int32_t len)
 {
-    return xk_character_euc2wchar_with_len(from, to, len);
+    return character_euc2wchar_with_len(from, to, len);
 }
 
-static int32_t xk_character_euckr_mblen(const unsigned char *s)
+static int32_t character_euckr_mblen(const unsigned char *s)
 {
-    return xk_character_euc_mblen(s);
+    return character_euc_mblen(s);
 }
 
-static int32_t xk_character_euckr_dsplen(const unsigned char *s)
+static int32_t character_euckr_dsplen(const unsigned char *s)
 {
-    return xk_character_euc_dsplen(s);
+    return character_euc_dsplen(s);
 }
 
 /*
  * EUC_CN
  *
  */
-static int32_t xk_character_euccn2wchar_with_len(const unsigned char *from,
-                                                 xk_character_wchar *to, int32_t len)
+static int32_t character_euccn2wchar_with_len(const unsigned char *from,
+                                                 character_wchar *to, int32_t len)
 {
     int32_t            cnt = 0;
 
@@ -230,7 +230,7 @@ static int32_t xk_character_euccn2wchar_with_len(const unsigned char *from,
     return cnt;
 }
 
-static int32_t xk_character_euccn_mblen(const unsigned char *s)
+static int32_t character_euccn_mblen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -241,14 +241,14 @@ static int32_t xk_character_euccn_mblen(const unsigned char *s)
     return len;
 }
 
-static int32_t xk_character_euccn_dsplen(const unsigned char *s)
+static int32_t character_euccn_dsplen(const unsigned char *s)
 {
     int32_t            len;
 
     if (IS_HIGHBIT_SET(*s))
         len = 2;
     else
-        len = xk_character_ascii_dsplen(s);
+        len = character_ascii_dsplen(s);
     return len;
 }
 
@@ -256,8 +256,8 @@ static int32_t xk_character_euccn_dsplen(const unsigned char *s)
  * EUC_TW
  *
  */
-static int32_t xk_character_euctw2wchar_with_len(const unsigned char *from,
-                                                 xk_character_wchar *to,
+static int32_t character_euctw2wchar_with_len(const unsigned char *from,
+                                                 character_wchar *to,
                                                  int32_t len)
 {
     int32_t            cnt = 0;
@@ -297,7 +297,7 @@ static int32_t xk_character_euctw2wchar_with_len(const unsigned char *from,
     return cnt;
 }
 
-static int32_t xk_character_euctw_mblen(const unsigned char *s)
+static int32_t character_euctw_mblen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -312,7 +312,7 @@ static int32_t xk_character_euctw_mblen(const unsigned char *s)
     return len;
 }
 
-static int32_t xk_character_euctw_dsplen(const unsigned char *s)
+static int32_t character_euctw_dsplen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -323,17 +323,17 @@ static int32_t xk_character_euctw_dsplen(const unsigned char *s)
     else if (IS_HIGHBIT_SET(*s))
         len = 2;
     else
-        len = xk_character_ascii_dsplen(s);
+        len = character_ascii_dsplen(s);
     return len;
 }
 
 /*
- * Convert xk_character_wchar to EUC_* encoding.
+ * Convert character_wchar to EUC_* encoding.
  * caller must allocate enough space for "to", including a trailing zero!
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t xk_character_wchar2euc_with_len(const xk_character_wchar *from,
+static int32_t character_wchar2euc_with_len(const character_wchar *from,
                                      unsigned char *to,
                                      int32_t len)
 {
@@ -380,24 +380,24 @@ static int32_t xk_character_wchar2euc_with_len(const xk_character_wchar *from,
 /*
  * JOHAB
  */
-static int32_t xk_character_johab_mblen(const unsigned char *s)
+static int32_t character_johab_mblen(const unsigned char *s)
 {
-    return xk_character_euc_mblen(s);
+    return character_euc_mblen(s);
 }
 
-static int32_t xk_character_johab_dsplen(const unsigned char *s)
+static int32_t character_johab_dsplen(const unsigned char *s)
 {
-    return xk_character_euc_dsplen(s);
+    return character_euc_dsplen(s);
 }
 
 /*
- * convert UTF8 string to xk_character_wchar (UCS-4)
+ * convert UTF8 string to character_wchar (UCS-4)
  * caller must allocate enough space for "to", including a trailing zero!
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t xk_character_utf2wchar_with_len(const unsigned char *from,
-                                               xk_character_wchar *to,
+static int32_t character_utf2wchar_with_len(const unsigned char *from,
+                                               character_wchar *to,
                                                int32_t len)
 {
     int32_t     cnt = 0;
@@ -461,7 +461,7 @@ static int32_t xk_character_utf2wchar_with_len(const unsigned char *from,
  * Map a Unicode code point to UTF-8.  utf8string must have 4 bytes of
  * space allocated.
  */
-unsigned char * xk_character_unicode_to_utf8(xk_character_wchar c,
+unsigned char * character_unicode_to_utf8(character_wchar c,
                                              unsigned char *utf8string)
 {
     if (c <= 0x7F)
@@ -498,10 +498,10 @@ unsigned char * xk_character_unicode_to_utf8(xk_character_wchar c,
  * We return "1" for any leading byte that is either flat-out illegal or
  * indicates a length larger than we support.
  *
- * xk_character_utf2wchar_with_len(), xk_character_utf8_to_unicode(), xk_character_utf8_islegal(), and perhaps
+ * character_utf2wchar_with_len(), character_utf8_to_unicode(), character_utf8_islegal(), and perhaps
  * other places would need to be fixed to change this.
  */
-int32_t xk_character_utf_mblen(const unsigned char *s)
+int32_t character_utf_mblen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -525,12 +525,12 @@ int32_t xk_character_utf_mblen(const unsigned char *s)
 }
 
 /*
- * Trivial conversion from xk_character_wchar to UTF-8.
+ * Trivial conversion from character_wchar to UTF-8.
  * caller should allocate enough space for "to"
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t xk_character_wchar2utf_with_len(const xk_character_wchar *from,
+static int32_t character_wchar2utf_with_len(const character_wchar *from,
                                      unsigned char *to,
                                      int32_t len)
 {
@@ -540,8 +540,8 @@ static int32_t xk_character_wchar2utf_with_len(const xk_character_wchar *from,
     {
         int32_t            char_len;
 
-        xk_character_unicode_to_utf8(*from, to);
-        char_len = xk_character_utf_mblen(to);
+        character_unicode_to_utf8(*from, to);
+        char_len = character_utf_mblen(to);
         cnt += char_len;
         to += char_len;
         from++;
@@ -570,7 +570,7 @@ struct mbinterval
 };
 
 /* auxiliary function for binary search in interval table */
-static int32_t xk_character_mbbisearch(xk_character_wchar ucs,
+static int32_t character_mbbisearch(character_wchar ucs,
                                        const struct mbinterval *table,
                                        int32_t max)
 {
@@ -624,7 +624,7 @@ static int32_t xk_character_mbbisearch(xk_character_wchar ucs,
  * in ISO 10646.
  */
 
-static int32_t xk_character_ucs_wcwidth(xk_character_wchar ucs)
+static int32_t character_ucs_wcwidth(character_wchar ucs)
 {
     /* sorted list of non-overlapping intervals of non-spacing characters */
     static const struct mbinterval combining[] = {
@@ -702,7 +702,7 @@ static int32_t xk_character_ucs_wcwidth(xk_character_wchar ucs)
         return -1;
 
     /* binary search in table of non-spacing characters */
-    if (xk_character_mbbisearch(ucs, combining,
+    if (character_mbbisearch(ucs, combining,
                    sizeof(combining) / sizeof(struct mbinterval) - 1))
         return 0;
 
@@ -726,23 +726,23 @@ static int32_t xk_character_ucs_wcwidth(xk_character_wchar ucs)
 
 /*
  * Convert a UTF-8 character to a Unicode code point.
- * This is a one-character version of xk_character_utf2wchar_with_len.
+ * This is a one-character version of character_utf2wchar_with_len.
  *
  * No error checks here, c must point to a long-enough string.
  */
-xk_character_wchar xk_character_utf8_to_unicode(const unsigned char *c)
+character_wchar character_utf8_to_unicode(const unsigned char *c)
 {
     if ((*c & 0x80) == 0)
-        return (xk_character_wchar) c[0];
+        return (character_wchar) c[0];
     else if ((*c & 0xe0) == 0xc0)
-        return (xk_character_wchar) (((c[0] & 0x1f) << 6) |
+        return (character_wchar) (((c[0] & 0x1f) << 6) |
                            (c[1] & 0x3f));
     else if ((*c & 0xf0) == 0xe0)
-        return (xk_character_wchar) (((c[0] & 0x0f) << 12) |
+        return (character_wchar) (((c[0] & 0x0f) << 12) |
                            ((c[1] & 0x3f) << 6) |
                            (c[2] & 0x3f));
     else if ((*c & 0xf8) == 0xf0)
-        return (xk_character_wchar) (((c[0] & 0x07) << 18) |
+        return (character_wchar) (((c[0] & 0x07) << 18) |
                            ((c[1] & 0x3f) << 12) |
                            ((c[2] & 0x3f) << 6) |
                            (c[3] & 0x3f));
@@ -751,19 +751,19 @@ xk_character_wchar xk_character_utf8_to_unicode(const unsigned char *c)
         return 0xffffffff;
 }
 
-static int32_t xk_character_utf_dsplen(const unsigned char *s)
+static int32_t character_utf_dsplen(const unsigned char *s)
 {
-    return xk_character_ucs_wcwidth(xk_character_utf8_to_unicode(s));
+    return character_ucs_wcwidth(character_utf8_to_unicode(s));
 }
 
 /*
- * convert mule internal code to xk_character_wchar
+ * convert mule internal code to character_wchar
  * caller should allocate enough space for "to"
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t xk_character_mule2wchar_with_len(const unsigned char *from,
-                                                xk_character_wchar *to,
+static int32_t character_mule2wchar_with_len(const unsigned char *from,
+                                                character_wchar *to,
                                                 int32_t len)
 {
     int32_t            cnt = 0;
@@ -811,12 +811,12 @@ static int32_t xk_character_mule2wchar_with_len(const unsigned char *from,
 }
 
 /*
- * convert xk_character_wchar to mule internal code
+ * convert character_wchar to mule internal code
  * caller should allocate enough space for "to"
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t xk_character_wchar2mule_with_len(const xk_character_wchar *from,
+static int32_t character_wchar2mule_with_len(const character_wchar *from,
                                                 unsigned char *to,
                                                 int32_t len)
 {
@@ -882,7 +882,7 @@ static int32_t xk_character_wchar2mule_with_len(const xk_character_wchar *from,
     return cnt;
 }
 
-int32_t xk_character_mule_mblen(const unsigned char *s)
+int32_t character_mule_mblen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -899,7 +899,7 @@ int32_t xk_character_mule_mblen(const unsigned char *s)
     return len;
 }
 
-static int32_t xk_character_mule_dsplen(const unsigned char *s)
+static int32_t character_mule_dsplen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -926,8 +926,8 @@ static int32_t xk_character_mule_dsplen(const unsigned char *s)
 /*
  * ISO8859-1
  */
-static int32_t xk_character_latin12wchar_with_len(const unsigned char *from,
-                                                  xk_character_wchar *to,
+static int32_t character_latin12wchar_with_len(const unsigned char *from,
+                                                  character_wchar *to,
                                                   int32_t len)
 {
     int32_t            cnt = 0;
@@ -943,13 +943,13 @@ static int32_t xk_character_latin12wchar_with_len(const unsigned char *from,
 }
 
 /*
- * Trivial conversion from xk_character_wchar to single byte encoding. Just ignores
+ * Trivial conversion from character_wchar to single byte encoding. Just ignores
  * high bits.
  * caller should allocate enough space for "to"
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t xk_character_wchar2single_with_len(const xk_character_wchar *from,
+static int32_t character_wchar2single_with_len(const character_wchar *from,
                                                   unsigned char *to,
                                                   int32_t len)
 {
@@ -965,21 +965,21 @@ static int32_t xk_character_wchar2single_with_len(const xk_character_wchar *from
     return cnt;
 }
 
-static int32_t xk_character_latin1_mblen(const unsigned char *s)
+static int32_t character_latin1_mblen(const unsigned char *s)
 {
-    XK_PG_PARSER_UNUSED(s);
+    PG_PARSER_UNUSED(s);
     return 1;
 }
 
-static int32_t xk_character_latin1_dsplen(const unsigned char *s)
+static int32_t character_latin1_dsplen(const unsigned char *s)
 {
-    return xk_character_ascii_dsplen(s);
+    return character_ascii_dsplen(s);
 }
 
 /*
  * SJIS
  */
-static int32_t xk_character_sjis_mblen(const unsigned char *s)
+static int32_t character_sjis_mblen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -992,7 +992,7 @@ static int32_t xk_character_sjis_mblen(const unsigned char *s)
     return len;
 }
 
-static int32_t xk_character_sjis_dsplen(const unsigned char *s)
+static int32_t character_sjis_dsplen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -1001,14 +1001,14 @@ static int32_t xk_character_sjis_dsplen(const unsigned char *s)
     else if (IS_HIGHBIT_SET(*s))
         len = 2;                /* kanji? */
     else
-        len = xk_character_ascii_dsplen(s);    /* should be ASCII */
+        len = character_ascii_dsplen(s);    /* should be ASCII */
     return len;
 }
 
 /*
  * Big5
  */
-static int32_t xk_character_big5_mblen(const unsigned char *s)
+static int32_t character_big5_mblen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -1019,21 +1019,21 @@ static int32_t xk_character_big5_mblen(const unsigned char *s)
     return len;
 }
 
-static int32_t xk_character_big5_dsplen(const unsigned char *s)
+static int32_t character_big5_dsplen(const unsigned char *s)
 {
     int32_t            len;
 
     if (IS_HIGHBIT_SET(*s))
         len = 2;                /* kanji? */
     else
-        len = xk_character_ascii_dsplen(s);    /* should be ASCII */
+        len = character_ascii_dsplen(s);    /* should be ASCII */
     return len;
 }
 
 /*
  * GBK
  */
-static int32_t xk_character_gbk_mblen(const unsigned char *s)
+static int32_t character_gbk_mblen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -1044,21 +1044,21 @@ static int32_t xk_character_gbk_mblen(const unsigned char *s)
     return len;
 }
 
-static int32_t xk_character_gbk_dsplen(const unsigned char *s)
+static int32_t character_gbk_dsplen(const unsigned char *s)
 {
     int32_t            len;
 
     if (IS_HIGHBIT_SET(*s))
         len = 2;                /* kanji? */
     else
-        len = xk_character_ascii_dsplen(s);    /* should be ASCII */
+        len = character_ascii_dsplen(s);    /* should be ASCII */
     return len;
 }
 
 /*
  * UHC
  */
-static int32_t xk_character_uhc_mblen(const unsigned char *s)
+static int32_t character_uhc_mblen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -1069,14 +1069,14 @@ static int32_t xk_character_uhc_mblen(const unsigned char *s)
     return len;
 }
 
-static int32_t xk_character_uhc_dsplen(const unsigned char *s)
+static int32_t character_uhc_dsplen(const unsigned char *s)
 {
     int32_t            len;
 
     if (IS_HIGHBIT_SET(*s))
         len = 2;                /* 2byte? */
     else
-        len = xk_character_ascii_dsplen(s);    /* should be ASCII */
+        len = character_ascii_dsplen(s);    /* should be ASCII */
     return len;
 }
 
@@ -1095,7 +1095,7 @@ static int32_t xk_character_uhc_dsplen(const unsigned char *s)
  * fourth byte look like a 2-byte encoded character, when looked at
  * separately.
  */
-static int32_t xk_character_gb18030_mblen(const unsigned char *s)
+static int32_t character_gb18030_mblen(const unsigned char *s)
 {
     int32_t            len;
 
@@ -1108,14 +1108,14 @@ static int32_t xk_character_gb18030_mblen(const unsigned char *s)
     return len;
 }
 
-static int32_t xk_character_gb18030_dsplen(const unsigned char *s)
+static int32_t character_gb18030_dsplen(const unsigned char *s)
 {
     int32_t            len;
 
     if (IS_HIGHBIT_SET(*s))
         len = 2;
     else
-        len = xk_character_ascii_dsplen(s);    /* ASCII */
+        len = character_ascii_dsplen(s);    /* ASCII */
     return len;
 }
 
@@ -1136,16 +1136,16 @@ static int32_t xk_character_gb18030_dsplen(const unsigned char *s)
  *-------------------------------------------------------------------
  */
 
-static int32_t xk_character_ascii_verifier(const unsigned char *s, int32_t len)
+static int32_t character_ascii_verifier(const unsigned char *s, int32_t len)
 {
-    XK_PG_PARSER_UNUSED(s);
-    XK_PG_PARSER_UNUSED(len);
+    PG_PARSER_UNUSED(s);
+    PG_PARSER_UNUSED(len);
     return 1;
 }
 
 #define IS_EUC_RANGE_VALID(c)    ((c) >= 0xa1 && (c) <= 0xfe)
 
-static int32_t xk_character_eucjp_verifier(const unsigned char *s, int32_t len)
+static int32_t character_eucjp_verifier(const unsigned char *s, int32_t len)
 {
     int32_t            l;
     unsigned char c1,
@@ -1199,7 +1199,7 @@ static int32_t xk_character_eucjp_verifier(const unsigned char *s, int32_t len)
     return l;
 }
 
-static int32_t xk_character_euckr_verifier(const unsigned char *s, int32_t len)
+static int32_t character_euckr_verifier(const unsigned char *s, int32_t len)
 {
     int32_t            l;
     unsigned char c1,
@@ -1228,9 +1228,9 @@ static int32_t xk_character_euckr_verifier(const unsigned char *s, int32_t len)
 }
 
 /* EUC-CN byte sequences are exactly same as EUC-KR */
-#define xk_character_euccn_verifier    xk_character_euckr_verifier
+#define character_euccn_verifier    character_euckr_verifier
 
-static int32_t xk_character_euctw_verifier(const unsigned char *s, int32_t len)
+static int32_t character_euctw_verifier(const unsigned char *s, int32_t len)
 {
     int32_t            l;
     unsigned char c1,
@@ -1279,13 +1279,13 @@ static int32_t xk_character_euctw_verifier(const unsigned char *s, int32_t len)
     return l;
 }
 
-static int32_t xk_character_johab_verifier(const unsigned char *s, int32_t len)
+static int32_t character_johab_verifier(const unsigned char *s, int32_t len)
 {
     int32_t            l,
                 mbl;
     unsigned char c;
 
-    l = mbl = xk_character_johab_mblen(s);
+    l = mbl = character_johab_mblen(s);
 
     if (len < l)
         return -1;
@@ -1302,13 +1302,13 @@ static int32_t xk_character_johab_verifier(const unsigned char *s, int32_t len)
     return mbl;
 }
 
-static int32_t xk_character_mule_verifier(const unsigned char *s, int32_t len)
+static int32_t character_mule_verifier(const unsigned char *s, int32_t len)
 {
     int32_t            l,
                 mbl;
     unsigned char c;
 
-    l = mbl = xk_character_mule_mblen(s);
+    l = mbl = character_mule_mblen(s);
 
     if (len < l)
         return -1;
@@ -1322,26 +1322,26 @@ static int32_t xk_character_mule_verifier(const unsigned char *s, int32_t len)
     return mbl;
 }
 
-static int32_t xk_character_latin1_verifier(const unsigned char *s, int32_t len)
+static int32_t character_latin1_verifier(const unsigned char *s, int32_t len)
 {
-    XK_PG_PARSER_UNUSED(s);
-    XK_PG_PARSER_UNUSED(len);
+    PG_PARSER_UNUSED(s);
+    PG_PARSER_UNUSED(len);
     return 1;
 }
 
-static int32_t xk_character_sjis_verifier(const unsigned char *s, int32_t len)
+static int32_t character_sjis_verifier(const unsigned char *s, int32_t len)
 {
     int32_t            l,
                 mbl;
     unsigned char c1,
                 c2;
 
-    l = mbl = xk_character_sjis_mblen(s);
+    l = mbl = character_sjis_mblen(s);
 
     if (len < l)
         return -1;
 
-    if (l == 1)                    /* xk_character_sjis_mblen already verified it */
+    if (l == 1)                    /* character_sjis_mblen already verified it */
         return mbl;
 
     c1 = *s++;
@@ -1351,12 +1351,12 @@ static int32_t xk_character_sjis_verifier(const unsigned char *s, int32_t len)
     return mbl;
 }
 
-static int32_t xk_character_big5_verifier(const unsigned char *s, int32_t len)
+static int32_t character_big5_verifier(const unsigned char *s, int32_t len)
 {
     int32_t            l,
                 mbl;
 
-    l = mbl = xk_character_big5_mblen(s);
+    l = mbl = character_big5_mblen(s);
 
     if (len < l)
         return -1;
@@ -1370,12 +1370,12 @@ static int32_t xk_character_big5_verifier(const unsigned char *s, int32_t len)
     return mbl;
 }
 
-static int32_t xk_character_gbk_verifier(const unsigned char *s, int32_t len)
+static int32_t character_gbk_verifier(const unsigned char *s, int32_t len)
 {
     int32_t            l,
                 mbl;
 
-    l = mbl = xk_character_gbk_mblen(s);
+    l = mbl = character_gbk_mblen(s);
 
     if (len < l)
         return -1;
@@ -1389,12 +1389,12 @@ static int32_t xk_character_gbk_verifier(const unsigned char *s, int32_t len)
     return mbl;
 }
 
-static int32_t xk_character_uhc_verifier(const unsigned char *s, int32_t len)
+static int32_t character_uhc_verifier(const unsigned char *s, int32_t len)
 {
     int32_t            l,
                 mbl;
 
-    l = mbl = xk_character_uhc_mblen(s);
+    l = mbl = character_uhc_mblen(s);
 
     if (len < l)
         return -1;
@@ -1408,7 +1408,7 @@ static int32_t xk_character_uhc_verifier(const unsigned char *s, int32_t len)
     return mbl;
 }
 
-static int32_t xk_character_gb18030_verifier(const unsigned char *s, int32_t len)
+static int32_t character_gb18030_verifier(const unsigned char *s, int32_t len)
 {
     int32_t            l;
 
@@ -1438,14 +1438,14 @@ static int32_t xk_character_gb18030_verifier(const unsigned char *s, int32_t len
     return l;
 }
 
-static int32_t xk_character_utf8_verifier(const unsigned char *s, int32_t len)
+static int32_t character_utf8_verifier(const unsigned char *s, int32_t len)
 {
-    int32_t l = xk_character_utf_mblen(s);
+    int32_t l = character_utf_mblen(s);
 
     if (len < l)
         return -1;
 
-    if (!xk_character_utf8_islegal(s, l))
+    if (!character_utf8_islegal(s, l))
         return -1;
 
     return l;
@@ -1462,10 +1462,10 @@ static int32_t xk_character_utf8_verifier(const unsigned char *s, int32_t len)
  * To do otherwise is to create security hazards (eg, create an apparent
  * non-ASCII character that decodes to plain ASCII).
  *
- * length is assumed to have been obtained by xk_character_utf_mblen(), and the
+ * length is assumed to have been obtained by character_utf_mblen(), and the
  * caller must have checked that that many bytes are present in the buffer.
  */
-bool xk_character_utf8_islegal(const unsigned char *source, int32_t length)
+bool character_utf8_islegal(const unsigned char *source, int32_t length)
 {
     unsigned char a;
 
@@ -1524,60 +1524,60 @@ bool xk_character_utf8_islegal(const unsigned char *source, int32_t length)
 /*
  *-------------------------------------------------------------------
  * encoding info table
- * XXX must be sorted by the same order as enum xk_character_enc (in mb/xk_character_wchar.h)
+ * XXX must be sorted by the same order as enum character_enc (in mb/character_wchar.h)
  *-------------------------------------------------------------------
  */
-const xk_character_wchar_tbl xk_character_wchar_table[] = {
-    {xk_character_ascii2wchar_with_len, xk_character_wchar2single_with_len, xk_character_ascii_mblen, xk_character_ascii_dsplen, xk_character_ascii_verifier, 1}, /* PG_SQL_ASCII */
-    {xk_character_eucjp2wchar_with_len, xk_character_wchar2euc_with_len, xk_character_eucjp_mblen, xk_character_eucjp_dsplen, xk_character_eucjp_verifier, 3},    /* PG_EUC_JP */
-    {xk_character_euccn2wchar_with_len, xk_character_wchar2euc_with_len, xk_character_euccn_mblen, xk_character_euccn_dsplen, xk_character_euccn_verifier, 2},    /* PG_EUC_CN */
-    {xk_character_euckr2wchar_with_len, xk_character_wchar2euc_with_len, xk_character_euckr_mblen, xk_character_euckr_dsplen, xk_character_euckr_verifier, 3},    /* PG_EUC_KR */
-    {xk_character_euctw2wchar_with_len, xk_character_wchar2euc_with_len, xk_character_euctw_mblen, xk_character_euctw_dsplen, xk_character_euctw_verifier, 4},    /* PG_EUC_TW */
-    {xk_character_eucjp2wchar_with_len, xk_character_wchar2euc_with_len, xk_character_eucjp_mblen, xk_character_eucjp_dsplen, xk_character_eucjp_verifier, 3},    /* PG_EUC_JIS_2004 */
-    {xk_character_utf2wchar_with_len, xk_character_wchar2utf_with_len, xk_character_utf_mblen, xk_character_utf_dsplen, xk_character_utf8_verifier, 4},    /* PG_UTF8 */
-    {xk_character_mule2wchar_with_len, xk_character_wchar2mule_with_len, xk_character_mule_mblen, xk_character_mule_dsplen, xk_character_mule_verifier, 4},    /* PG_MULE_INTERNAL */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_LATIN1 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_LATIN2 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_LATIN3 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_LATIN4 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_LATIN5 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_LATIN6 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_LATIN7 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_LATIN8 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_LATIN9 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_LATIN10 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN1256 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN1258 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN866 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN874 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_KOI8R */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN1251 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN1252 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* ISO-8859-5 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* ISO-8859-6 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* ISO-8859-7 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* ISO-8859-8 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN1250 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN1253 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN1254 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN1255 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* PG_WIN1257 */
-    {xk_character_latin12wchar_with_len, xk_character_wchar2single_with_len, xk_character_latin1_mblen, xk_character_latin1_dsplen, xk_character_latin1_verifier, 1}, /* XK_CHARACTER_PG_KOI8U */
-    {0, 0, xk_character_sjis_mblen, xk_character_sjis_dsplen, xk_character_sjis_verifier, 2}, /* PG_SJIS */
-    {0, 0, xk_character_big5_mblen, xk_character_big5_dsplen, xk_character_big5_verifier, 2}, /* PG_BIG5 */
-    {0, 0, xk_character_gbk_mblen, xk_character_gbk_dsplen, xk_character_gbk_verifier, 2},    /* PG_GBK */
-    {0, 0, xk_character_uhc_mblen, xk_character_uhc_dsplen, xk_character_uhc_verifier, 2},    /* PG_UHC */
-    {0, 0, xk_character_gb18030_mblen, xk_character_gb18030_dsplen, xk_character_gb18030_verifier, 4},    /* PG_GB18030 */
-    {0, 0, xk_character_johab_mblen, xk_character_johab_dsplen, xk_character_johab_verifier, 3},    /* PG_JOHAB */
-    {0, 0, xk_character_sjis_mblen, xk_character_sjis_dsplen, xk_character_sjis_verifier, 2}    /* PG_SHIFT_JIS_2004 */
+const character_wchar_tbl character_wchar_table[] = {
+    {character_ascii2wchar_with_len, character_wchar2single_with_len, character_ascii_mblen, character_ascii_dsplen, character_ascii_verifier, 1}, /* PG_SQL_ASCII */
+    {character_eucjp2wchar_with_len, character_wchar2euc_with_len, character_eucjp_mblen, character_eucjp_dsplen, character_eucjp_verifier, 3},    /* PG_EUC_JP */
+    {character_euccn2wchar_with_len, character_wchar2euc_with_len, character_euccn_mblen, character_euccn_dsplen, character_euccn_verifier, 2},    /* PG_EUC_CN */
+    {character_euckr2wchar_with_len, character_wchar2euc_with_len, character_euckr_mblen, character_euckr_dsplen, character_euckr_verifier, 3},    /* PG_EUC_KR */
+    {character_euctw2wchar_with_len, character_wchar2euc_with_len, character_euctw_mblen, character_euctw_dsplen, character_euctw_verifier, 4},    /* PG_EUC_TW */
+    {character_eucjp2wchar_with_len, character_wchar2euc_with_len, character_eucjp_mblen, character_eucjp_dsplen, character_eucjp_verifier, 3},    /* PG_EUC_JIS_2004 */
+    {character_utf2wchar_with_len, character_wchar2utf_with_len, character_utf_mblen, character_utf_dsplen, character_utf8_verifier, 4},    /* PG_UTF8 */
+    {character_mule2wchar_with_len, character_wchar2mule_with_len, character_mule_mblen, character_mule_dsplen, character_mule_verifier, 4},    /* PG_MULE_INTERNAL */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN1 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN2 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN3 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN4 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN5 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN6 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN7 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN8 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN9 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN10 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1256 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1258 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN866 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN874 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_KOI8R */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1251 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1252 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* ISO-8859-5 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* ISO-8859-6 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* ISO-8859-7 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* ISO-8859-8 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1250 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1253 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1254 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1255 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1257 */
+    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen, character_latin1_dsplen, character_latin1_verifier, 1}, /* CHARACTER_PG_KOI8U */
+    {0, 0, character_sjis_mblen, character_sjis_dsplen, character_sjis_verifier, 2}, /* PG_SJIS */
+    {0, 0, character_big5_mblen, character_big5_dsplen, character_big5_verifier, 2}, /* PG_BIG5 */
+    {0, 0, character_gbk_mblen, character_gbk_dsplen, character_gbk_verifier, 2},    /* PG_GBK */
+    {0, 0, character_uhc_mblen, character_uhc_dsplen, character_uhc_verifier, 2},    /* PG_UHC */
+    {0, 0, character_gb18030_mblen, character_gb18030_dsplen, character_gb18030_verifier, 4},    /* PG_GB18030 */
+    {0, 0, character_johab_mblen, character_johab_dsplen, character_johab_verifier, 3},    /* PG_JOHAB */
+    {0, 0, character_sjis_mblen, character_sjis_dsplen, character_sjis_verifier, 2}    /* PG_SHIFT_JIS_2004 */
 };
 
 /*
  * fetch maximum length of a given encoding
  */
-int32_t xk_character_encoding_max_length(int32_t encoding)
+int32_t character_encoding_max_length(int32_t encoding)
 {
-    return xk_character_wchar_table[encoding].maxmblen;
+    return character_wchar_table[encoding].maxmblen;
 }
 
 /*
@@ -1593,8 +1593,8 @@ int32_t xk_character_encoding_max_length(int32_t encoding)
 void check_encoding_conversion_args(int32_t expected_src_encoding,
                                int32_t expected_dest_encoding)
 {
-    XK_PG_PARSER_UNUSED(expected_src_encoding);
-    XK_PG_PARSER_UNUSED(expected_dest_encoding);
+    PG_PARSER_UNUSED(expected_src_encoding);
+    PG_PARSER_UNUSED(expected_dest_encoding);
 #if 0
     if (!PG_VALID_ENCODING(src_encoding))
         elog(ERROR, "invalid source encoding ID: %d", src_encoding);
@@ -1616,25 +1616,25 @@ void check_encoding_conversion_args(int32_t expected_src_encoding,
 /*
  * Returns the byte length of a multibyte character.
  */
-int32_t xk_character_encoding_mblen(int32_t encoding, const char *mbstr)
+int32_t character_encoding_mblen(int32_t encoding, const char *mbstr)
 {
-    return (XK_CHARACTER_VALID_ENCODING(encoding) ?
-            xk_character_wchar_table[encoding].mblen((const unsigned char *) mbstr) :
-            xk_character_wchar_table[XK_CHARACTER_SQL_ASCII].mblen((const unsigned char *) mbstr));
+    return (CHARACTER_VALID_ENCODING(encoding) ?
+            character_wchar_table[encoding].mblen((const unsigned char *) mbstr) :
+            character_wchar_table[CHARACTER_SQL_ASCII].mblen((const unsigned char *) mbstr));
 }
 
 /* returns the byte length of a word for mule internal code */
-int32_t xk_character_mic_mblen(const unsigned char *mbstr)
+int32_t character_mic_mblen(const unsigned char *mbstr)
 {
-    return xk_character_mule_mblen(mbstr);
+    return character_mule_mblen(mbstr);
 }
 
 /* just use once, so define it instead of include .h file */
-#define TEMP_XK_SQL_ASCII 0
+#define TEMP_SQL_ASCII 0
 
-int32_t xk_character_encoding_verifymb(int32_t encoding, const char *mbstr, int32_t len)
+int32_t character_encoding_verifymb(int32_t encoding, const char *mbstr, int32_t len)
 {
-    return (XK_CHARACTER_VALID_ENCODING(encoding) ?
-        xk_character_wchar_table[encoding].mbverify((const unsigned char *) mbstr, len) :
-        xk_character_wchar_table[TEMP_XK_SQL_ASCII].mbverify((const unsigned char *) mbstr, len));
+    return (CHARACTER_VALID_ENCODING(encoding) ?
+        character_wchar_table[encoding].mbverify((const unsigned char *) mbstr, len) :
+        character_wchar_table[TEMP_SQL_ASCII].mbverify((const unsigned char *) mbstr, len));
 }

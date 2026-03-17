@@ -3,8 +3,8 @@
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -37,8 +37,8 @@ static int32 parsertrail_tbmetadata_gettypmod(ff_column* column)
     precision = column->precision;
     scale = column->scale;
 
-    if (typid == XK_PG_SYSDICT_BPCHAROID ||
-        typid == XK_PG_SYSDICT_VARCHAROID)
+    if (typid == PG_SYSDICT_BPCHAROID ||
+        typid == PG_SYSDICT_VARCHAROID)
     {
         /* varchar(n), bpchar(n) */
         if (length > 0)
@@ -50,10 +50,10 @@ static int32 parsertrail_tbmetadata_gettypmod(ff_column* column)
             typmod = -1;
         }
     }
-    else if (typid == XK_PG_SYSDICT_TIMEOID ||
-             typid == XK_PG_SYSDICT_TIMETZOID ||
-             typid == XK_PG_SYSDICT_TIMESTAMPOID ||
-             typid == XK_PG_SYSDICT_TIMESTAMPTZOID)
+    else if (typid == PG_SYSDICT_TIMEOID ||
+             typid == PG_SYSDICT_TIMETZOID ||
+             typid == PG_SYSDICT_TIMESTAMPOID ||
+             typid == PG_SYSDICT_TIMESTAMPTZOID)
     {
         /* time(p), timetz(p), timestamp(p), timestamptz(p) */
         if (precision >= 0)
@@ -65,7 +65,7 @@ static int32 parsertrail_tbmetadata_gettypmod(ff_column* column)
             typmod = -1;
         }
     }
-    else if (typid == XK_PG_SYSDICT_NUMERICOID)
+    else if (typid == PG_SYSDICT_NUMERICOID)
     {
         /* numeric(p,s) */
         if (precision > 0 && scale >= 0)
@@ -78,8 +78,8 @@ static int32 parsertrail_tbmetadata_gettypmod(ff_column* column)
             typmod = -1;
         }
     }
-    else if (typid == XK_PG_SYSDICT_BITOID ||
-             typid == XK_PG_SYSDICT_VARBITOID)
+    else if (typid == PG_SYSDICT_BITOID ||
+             typid == PG_SYSDICT_VARBITOID)
     {
         /* bit(n), varbit(n) */
         if (length > 0)
@@ -112,7 +112,7 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
     catalog_class_value *classentry = NULL;
     catalog_index_hash_entry *indexentry = NULL;
     catalog_attribute_value* attrentry = NULL;
-    xk_pg_sysdict_Form_pg_attribute attribute = NULL;
+    pg_sysdict_Form_pg_attribute attribute = NULL;
     catalog_index_value* index_value = NULL;
 
     HASHCTL hctl = { 0 };
@@ -143,13 +143,13 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
     {
         /* 添加 */
         classentry->oid = fftbmd->oid;
-        classentry->class = (xk_pg_sysdict_Form_pg_class)rmalloc0(sizeof(xk_pg_parser_sysdict_pgclass));
+        classentry->class = (pg_sysdict_Form_pg_class)rmalloc0(sizeof(pg_parser_sysdict_pgclass));
         if(NULL == classentry->class)
         {
             elog(RLOG_WARNING, "out of memory");
             return false;
         }
-        rmemset0(classentry->class, 0, '\0', sizeof(xk_pg_parser_sysdict_pgclass));
+        rmemset0(classentry->class, 0, '\0', sizeof(pg_parser_sysdict_pgclass));
         classentry->class->oid = fftbmd->oid;
     }
 
@@ -201,13 +201,13 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
     /* 加入到hash表中 */
     for(index = 0; index < fftbmd->colcnt; )
     {
-        attribute = (xk_pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(xk_pg_parser_sysdict_pgattributes));
+        attribute = (pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(pg_parser_sysdict_pgattributes));
         if(NULL == attribute)
         {
             elog(RLOG_WARNING, "out of memory");
             return false;
         }
-        rmemset0(attribute, 0, '\0', sizeof(xk_pg_parser_sysdict_pgattributes));
+        rmemset0(attribute, 0, '\0', sizeof(pg_parser_sysdict_pgattributes));
         attribute->attrelid = fftbmd->oid;
         attribute->atttypid = fftbmd->columns[index].typid;
         rmemcpy1(attribute->attname.data, 0, fftbmd->columns[index].column, strlen(fftbmd->columns[index].column));
@@ -216,13 +216,13 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
         if (false == found)
         {
             typeentry->oid = attribute->atttypid;
-            typeentry->type = (xk_pg_sysdict_Form_pg_type)rmalloc0(sizeof(xk_pg_parser_sysdict_pgtype));
+            typeentry->type = (pg_sysdict_Form_pg_type)rmalloc0(sizeof(pg_parser_sysdict_pgtype));
             if(NULL == typeentry->type)
             {
                 elog(RLOG_WARNING, "out of memory");
                 return false;
             }
-            rmemset0(typeentry->type, 0, '\0', sizeof(xk_pg_parser_sysdict_pgtype));
+            rmemset0(typeentry->type, 0, '\0', sizeof(pg_parser_sysdict_pgtype));
             typeentry->type->oid = attribute->atttypid;
             rmemcpy1(typeentry->type->typname.data, 0, fftbmd->columns[index].typename, strlen(fftbmd->columns[index].typename));
         }
@@ -294,7 +294,7 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
                 case FF_TBINDEX_TYPE_UNIQUE:
                 {
                     catalog_index_value *indexvalue = NULL;
-                    xk_pg_sysdict_Form_pg_index indexcatalog = NULL;
+                    pg_sysdict_Form_pg_index indexcatalog = NULL;
 
                     indexvalue = rmalloc0(sizeof(catalog_index_value));
                     if (!indexvalue)
@@ -304,13 +304,13 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
                     }
                     rmemset0(indexvalue, 0, 0, sizeof(catalog_index_value));
 
-                    indexcatalog = rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
+                    indexcatalog = rmalloc0(sizeof(pg_parser_sysdict_pgindex));
                     if (!indexcatalog)
                     {
                         elog(RLOG_WARNING, "oom");
                         return false;
                     }
-                    rmemset0(indexcatalog, 0, 0, sizeof(xk_pg_parser_sysdict_pgindex));
+                    rmemset0(indexcatalog, 0, 0, sizeof(pg_parser_sysdict_pgindex));
 
                     indexcatalog->indkey = rmalloc0(sizeof(uint32) * metaindex->index_key_num);
                     if (!indexcatalog->indkey)
@@ -368,8 +368,8 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
         catalog_class->type = CATALOG_TYPE_CLASS;
 
         /* class_value赋值 */
-        class_value->class = rmalloc0(sizeof(xk_pg_parser_sysdict_pgclass));
-        rmemset0(class_value->class, 0, 0, sizeof(xk_pg_parser_sysdict_pgclass));
+        class_value->class = rmalloc0(sizeof(pg_parser_sysdict_pgclass));
+        rmemset0(class_value->class, 0, 0, sizeof(pg_parser_sysdict_pgclass));
         class_value->oid = fftbmd->oid;
 
         /* 
@@ -398,7 +398,7 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
         {
             catalogdata *catalog_type = NULL;
             catalog_type_value *type_value = NULL;
-            xk_pg_sysdict_Form_pg_attribute attr = NULL;
+            pg_sysdict_Form_pg_attribute attr = NULL;
             catalogdata *catalog_attribute = NULL;
             catalog_attribute_value *attribute_value = NULL;
 
@@ -423,13 +423,13 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
             rmemset0(attribute_value, 0, 0, sizeof(catalog_attribute_value));
             attribute_value->attrelid = fftbmd->oid;
 
-            attr = rmalloc0(sizeof(xk_pg_parser_sysdict_pgattributes));
+            attr = rmalloc0(sizeof(pg_parser_sysdict_pgattributes));
             if(NULL == attr)
             {
                 elog(RLOG_WARNING, "out of memory");
                 return false;
             }
-            rmemset0(attr, 0, 0, sizeof(xk_pg_parser_sysdict_pgattributes));
+            rmemset0(attr, 0, 0, sizeof(pg_parser_sysdict_pgattributes));
 
             /* 
              * attribute结构体赋值
@@ -474,13 +474,13 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
             rmemset0(type_value, 0, 0, sizeof(catalog_type_value));
             type_value->oid = fftbmd->columns[index_attrs].typid;
 
-            type_value->type = rmalloc0(sizeof(xk_pg_parser_sysdict_pgtype));
+            type_value->type = rmalloc0(sizeof(pg_parser_sysdict_pgtype));
             if(NULL == type_value->type)
             {
                 elog(RLOG_WARNING, "out of memory");
                 return false;
             }
-            rmemset0(type_value->type, 0, 0, sizeof(xk_pg_parser_sysdict_pgtype));
+            rmemset0(type_value->type, 0, 0, sizeof(pg_parser_sysdict_pgtype));
             type_value->type->oid = fftbmd->columns[index_attrs].typid;
             rmemcpy1(type_value->type->typname.data, 0, fftbmd->columns[index_attrs].typename, strlen(fftbmd->columns[index_attrs].typename));
             catalog_type->catalog = (void *) type_value;
@@ -518,7 +518,7 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
                     case FF_TBINDEX_TYPE_UNIQUE:
                     {
                         catalog_index_value *indexvalue = NULL;
-                        xk_pg_sysdict_Form_pg_index indexcatalog = NULL;
+                        pg_sysdict_Form_pg_index indexcatalog = NULL;
 
                         indexvalue = rmalloc0(sizeof(catalog_index_value));
                         if (!indexvalue)
@@ -528,13 +528,13 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
                         }
                         rmemset0(indexvalue, 0, 0, sizeof(catalog_index_value));
 
-                        indexcatalog = rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
+                        indexcatalog = rmalloc0(sizeof(pg_parser_sysdict_pgindex));
                         if (!indexcatalog)
                         {
                             elog(RLOG_WARNING, "oom");
                             return false;
                         }
-                        rmemset0(indexcatalog, 0, 0, sizeof(xk_pg_parser_sysdict_pgindex));
+                        rmemset0(indexcatalog, 0, 0, sizeof(pg_parser_sysdict_pgindex));
 
                         indexcatalog->indkey = rmalloc0(sizeof(uint32) * metaindex->index_key_num);
                         if (!indexcatalog->indkey)

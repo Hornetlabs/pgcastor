@@ -6,8 +6,8 @@
 #include "utils/guc/guc.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/conn/conn.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -23,7 +23,7 @@ void namespace_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	bool found = false;
 	PGresult *res  = NULL;
 	catalog_namespace_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_namespace namespace = NULL;
+	pg_sysdict_Form_pg_namespace namespace = NULL;
 	const char *query = "SELECT rel.oid,rel.nspname FROM pg_namespace rel;";
 
 	rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -41,12 +41,12 @@ void namespace_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	// 打印行数据
 	for (i = 0; i < PQntuples(res); i++) 
 	{
-		namespace = (xk_pg_sysdict_Form_pg_namespace)rmalloc0(sizeof(xk_pg_parser_sysdict_pgnamespace));
+		namespace = (pg_sysdict_Form_pg_namespace)rmalloc0(sizeof(pg_parser_sysdict_pgnamespace));
 		if(NULL == namespace)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemset0(namespace, 0, '\0', sizeof(xk_pg_parser_sysdict_pgnamespace));
+		rmemset0(namespace, 0, '\0', sizeof(pg_parser_sysdict_pgnamespace));
 		j=0;
 		sscanf(PQgetvalue(res, i, j++), "%u", &namespace->oid);
 		strcpy(namespace->nspname.data, PQgetvalue(res, i, j++));
@@ -71,7 +71,7 @@ void namespacedata_write(List* namespace, uint64 *offset, sysdict_header_array* 
 	uint64 page_offset = 0;
 	ListCell*	cell = NULL;
 	char buffer[FILE_BLK_SIZE];
-	xk_pg_sysdict_Form_pg_namespace riplenamespace;
+	pg_sysdict_Form_pg_namespace riplenamespace;
 
 	array->type = CATALOG_TYPE_NAMESPACE;
 	array->offset = *offset;
@@ -88,9 +88,9 @@ void namespacedata_write(List* namespace, uint64 *offset, sysdict_header_array* 
 	
 	foreach(cell, namespace)
 	{
-		riplenamespace = (xk_pg_sysdict_Form_pg_namespace) lfirst(cell);
+		riplenamespace = (pg_sysdict_Form_pg_namespace) lfirst(cell);
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgnamespace) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgnamespace) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
@@ -102,8 +102,8 @@ void namespacedata_write(List* namespace, uint64 *offset, sysdict_header_array* 
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, riplenamespace, sizeof(xk_pg_parser_sysdict_pgnamespace));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgnamespace);
+		rmemcpy1(buffer, page_offset, riplenamespace, sizeof(pg_parser_sysdict_pgnamespace));
+		page_offset += sizeof(pg_parser_sysdict_pgnamespace);
 	}
 
 	if (page_offset > 0) {
@@ -138,7 +138,7 @@ HTAB* namespacecache_load(sysdict_header_array* array)
     bool found = false;
     uint64 fileoffset = 0;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_namespace namespace;
+    pg_sysdict_Form_pg_namespace namespace;
     catalog_namespace_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -165,15 +165,15 @@ HTAB* namespacecache_load(sysdict_header_array* array)
     {
         uint64 offset = 0;
 
-        while (offset + sizeof(xk_pg_parser_sysdict_pgnamespace) < FILE_BLK_SIZE)
+        while (offset + sizeof(pg_parser_sysdict_pgnamespace) < FILE_BLK_SIZE)
         {
-            namespace = (xk_pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(xk_pg_parser_sysdict_pgnamespace));
+            namespace = (pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(pg_parser_sysdict_pgnamespace));
             if(NULL == namespace)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(namespace, 0, '\0', sizeof(xk_pg_parser_sysdict_pgnamespace));
-            rmemcpy0(namespace, 0, buffer + offset, sizeof(xk_pg_parser_sysdict_pgnamespace));
+            rmemset0(namespace, 0, '\0', sizeof(pg_parser_sysdict_pgnamespace));
+            rmemcpy0(namespace, 0, buffer + offset, sizeof(pg_parser_sysdict_pgnamespace));
             entry = hash_search(namespacehtab, &namespace->oid, HASH_ENTER, &found);
             if(found)
             {
@@ -181,7 +181,7 @@ HTAB* namespacecache_load(sysdict_header_array* array)
             }
             entry->oid = namespace->oid;
             entry->namespace = namespace;
-            offset += sizeof(xk_pg_parser_sysdict_pgnamespace);
+            offset += sizeof(pg_parser_sysdict_pgnamespace);
             if (fileoffset + offset == array[CATALOG_TYPE_NAMESPACE - 1].len)
             {
                 if(osal_file_close(fd))
@@ -207,10 +207,10 @@ catalogdata* namespace_colvalue2namespace(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_namespace_value* namespacevalue = NULL;
-    xk_pg_sysdict_Form_pg_namespace pgnamespace = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_namespace pgnamespace = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
     catalog_data = (catalogdata*)rmalloc1(sizeof(catalogdata));
@@ -229,12 +229,12 @@ catalogdata* namespace_colvalue2namespace(void* in_colvalue)
     catalog_data->catalog = namespacevalue;
     catalog_data->type = CATALOG_TYPE_NAMESPACE;
 
-    pgnamespace = (xk_pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(xk_pg_parser_sysdict_pgnamespace));
+    pgnamespace = (pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(pg_parser_sysdict_pgnamespace));
     if(NULL == pgnamespace)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgnamespace, 0, '\0', sizeof(xk_pg_parser_sysdict_pgnamespace));
+    rmemset0(pgnamespace, 0, '\0', sizeof(pg_parser_sysdict_pgnamespace));
     namespacevalue->namespace = pgnamespace;
 
     /* nspname 1 */
@@ -253,7 +253,7 @@ void namespace_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
     bool found = false;
     catalog_namespace_value* newcatalog = NULL;
     catalog_namespace_value* catalogInHash = NULL;
-	xk_pg_sysdict_Form_pg_namespace duppgnsp = NULL;
+	pg_sysdict_Form_pg_namespace duppgnsp = NULL;
 
     if(NULL == catalogdata || NULL == catalogdata->catalog)
     {
@@ -276,12 +276,12 @@ void namespace_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
             }
         }
 
-		duppgnsp = (xk_pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(xk_pg_parser_sysdict_pgnamespace));
+		duppgnsp = (pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(pg_parser_sysdict_pgnamespace));
 		if(NULL == duppgnsp)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemcpy0(duppgnsp, 0, newcatalog->namespace, sizeof(xk_pg_parser_sysdict_pgnamespace));
+		rmemcpy0(duppgnsp, 0, newcatalog->namespace, sizeof(pg_parser_sysdict_pgnamespace));
 
         catalogInHash->oid = newcatalog->oid;
         catalogInHash->namespace = duppgnsp;
@@ -309,12 +309,12 @@ void namespace_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
         }
         rfree(catalogInHash->namespace);
 
-		duppgnsp = (xk_pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(xk_pg_parser_sysdict_pgnamespace));
+		duppgnsp = (pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(pg_parser_sysdict_pgnamespace));
 		if(NULL == duppgnsp)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemcpy0(duppgnsp, 0, newcatalog->namespace, sizeof(xk_pg_parser_sysdict_pgnamespace));
+		rmemcpy0(duppgnsp, 0, newcatalog->namespace, sizeof(pg_parser_sysdict_pgnamespace));
 
         catalogInHash->namespace = duppgnsp;
     }
@@ -332,7 +332,7 @@ void namespacecache_write(HTAB* namespacecache, uint64 *offset, sysdict_header_a
 	HASH_SEQ_STATUS status;
 	char buffer[FILE_BLK_SIZE];
 	catalog_namespace_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_namespace riplenamespace = NULL;
+	pg_sysdict_Form_pg_namespace riplenamespace = NULL;
 
 	array[CATALOG_TYPE_NAMESPACE - 1].type = CATALOG_TYPE_NAMESPACE;
 	array[CATALOG_TYPE_NAMESPACE - 1].offset = *offset;
@@ -352,7 +352,7 @@ void namespacecache_write(HTAB* namespacecache, uint64 *offset, sysdict_header_a
 	{
 		riplenamespace = entry->namespace;
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgnamespace) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgnamespace) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
@@ -364,8 +364,8 @@ void namespacecache_write(HTAB* namespacecache, uint64 *offset, sysdict_header_a
             *offset += FILE_BLK_SIZE;
             page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, riplenamespace, sizeof(xk_pg_parser_sysdict_pgnamespace));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgnamespace);
+		rmemcpy1(buffer, page_offset, riplenamespace, sizeof(pg_parser_sysdict_pgnamespace));
+		page_offset += sizeof(pg_parser_sysdict_pgnamespace);
 	}
 
 	if (page_offset > 0) {

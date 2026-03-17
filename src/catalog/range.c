@@ -6,8 +6,8 @@
 #include "utils/guc/guc.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/conn/conn.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -22,7 +22,7 @@ void range_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	bool found = false;
 	PGresult *res  = NULL;
 	catalog_range_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_range range = NULL;
+	pg_sysdict_Form_pg_range range = NULL;
 	const char *query = "SELECT rel.rngtypid,rel.rngsubtype FROM pg_range rel;";
 
 	rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -40,12 +40,12 @@ void range_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	// 打印行数据
 	for (i = 0; i < PQntuples(res); i++) 
 	{
-		range = (xk_pg_sysdict_Form_pg_range)rmalloc0(sizeof(xk_pg_parser_sysdict_pgrange));
+		range = (pg_sysdict_Form_pg_range)rmalloc0(sizeof(pg_parser_sysdict_pgrange));
 		if(NULL == range)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemset0(range, 0, '\0', sizeof(xk_pg_parser_sysdict_pgrange));
+		rmemset0(range, 0, '\0', sizeof(pg_parser_sysdict_pgrange));
 		j=0;
 		sscanf(PQgetvalue(res, i, j++), "%u", &range->rngtypid);
 		sscanf(PQgetvalue(res, i, j++), "%u", &range->rngsubtype);
@@ -69,7 +69,7 @@ void rangedata_write(List* range, uint64 *offset, sysdict_header_array* array)
 	uint64 page_offset = 0;
 	ListCell*	cell = NULL;
 	char buffer[FILE_BLK_SIZE];
-	xk_pg_sysdict_Form_pg_range riplerange;
+	pg_sysdict_Form_pg_range riplerange;
 	
 	array->type = CATALOG_TYPE_RANGE;
 	array->offset = *offset;
@@ -86,8 +86,8 @@ void rangedata_write(List* range, uint64 *offset, sysdict_header_array* array)
 
 	foreach(cell, range)
 	{
-		riplerange = (xk_pg_sysdict_Form_pg_range) lfirst(cell);
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgrange) > FILE_BLK_SIZE)
+		riplerange = (pg_sysdict_Form_pg_range) lfirst(cell);
+		if(page_offset + sizeof(pg_parser_sysdict_pgrange) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
@@ -99,8 +99,8 @@ void rangedata_write(List* range, uint64 *offset, sysdict_header_array* array)
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, riplerange, sizeof(xk_pg_parser_sysdict_pgrange));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgrange);
+		rmemcpy1(buffer, page_offset, riplerange, sizeof(pg_parser_sysdict_pgrange));
+		page_offset += sizeof(pg_parser_sysdict_pgrange);
 	}
 
 	if (page_offset > 0) {
@@ -136,7 +136,7 @@ HTAB* rangecache_load(sysdict_header_array* array)
     bool found = false;
     uint64 fileoffset = 0;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_range range;
+    pg_sysdict_Form_pg_range range;
     catalog_range_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -163,15 +163,15 @@ HTAB* rangecache_load(sysdict_header_array* array)
     {
         uint64 offset = 0;
 
-        while (offset + sizeof(xk_pg_parser_sysdict_pgrange) < FILE_BLK_SIZE)
+        while (offset + sizeof(pg_parser_sysdict_pgrange) < FILE_BLK_SIZE)
         {
-            range = (xk_pg_sysdict_Form_pg_range)rmalloc1(sizeof(xk_pg_parser_sysdict_pgrange));
+            range = (pg_sysdict_Form_pg_range)rmalloc1(sizeof(pg_parser_sysdict_pgrange));
             if(NULL == range)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(range, 0, '\0', sizeof(xk_pg_parser_sysdict_pgrange));
-            rmemcpy0(range, 0, buffer + offset, sizeof(xk_pg_parser_sysdict_pgrange));
+            rmemset0(range, 0, '\0', sizeof(pg_parser_sysdict_pgrange));
+            rmemcpy0(range, 0, buffer + offset, sizeof(pg_parser_sysdict_pgrange));
             entry = hash_search(rangehtab, &range->rngtypid, HASH_ENTER, &found);
             if(found)
             {
@@ -179,7 +179,7 @@ HTAB* rangecache_load(sysdict_header_array* array)
             }
             entry->rngtypid = range->rngtypid;
             entry->range = range;
-            offset += sizeof(xk_pg_parser_sysdict_pgrange);
+            offset += sizeof(pg_parser_sysdict_pgrange);
             if (fileoffset + offset == array[CATALOG_TYPE_RANGE - 1].len)
             {
                 if(osal_file_close(fd))
@@ -206,10 +206,10 @@ catalogdata* range_colvalue2range(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_range_value* rangevalue = NULL;
-    xk_pg_sysdict_Form_pg_range pgrange = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_range pgrange = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
     catalog_data = (catalogdata*)rmalloc0(sizeof(catalogdata));
@@ -228,12 +228,12 @@ catalogdata* range_colvalue2range(void* in_colvalue)
     catalog_data->catalog = rangevalue;
     catalog_data->type = CATALOG_TYPE_RANGE;
 
-    pgrange = (xk_pg_sysdict_Form_pg_range)rmalloc1(sizeof(xk_pg_parser_sysdict_pgrange));
+    pgrange = (pg_sysdict_Form_pg_range)rmalloc1(sizeof(pg_parser_sysdict_pgrange));
     if(NULL == pgrange)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgrange, 0, '\0', sizeof(xk_pg_parser_sysdict_pgrange));
+    rmemset0(pgrange, 0, '\0', sizeof(pg_parser_sysdict_pgrange));
     rangevalue->range = pgrange;
 
     /* rngsubtype 1 */
@@ -275,12 +275,12 @@ void range_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
             }
         }
         catalogInHash->rngtypid = newcatalog->rngtypid;
-		catalogInHash->range = (xk_pg_sysdict_Form_pg_range)rmalloc1(sizeof(xk_pg_parser_sysdict_pgrange));
+		catalogInHash->range = (pg_sysdict_Form_pg_range)rmalloc1(sizeof(pg_parser_sysdict_pgrange));
 		if(NULL == catalogInHash->range)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-        rmemcpy0(catalogInHash->range, 0, newcatalog->range, sizeof(xk_pg_parser_sysdict_pgrange));
+        rmemcpy0(catalogInHash->range, 0, newcatalog->range, sizeof(pg_parser_sysdict_pgrange));
     }
     else if(CATALOG_OP_DELETE == catalogdata->op)
     {
@@ -305,12 +305,12 @@ void range_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
         }
         rfree(catalogInHash->range);
 
-		catalogInHash->range = (xk_pg_sysdict_Form_pg_range)rmalloc1(sizeof(xk_pg_parser_sysdict_pgrange));
+		catalogInHash->range = (pg_sysdict_Form_pg_range)rmalloc1(sizeof(pg_parser_sysdict_pgrange));
 		if(NULL == catalogInHash->range)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-        rmemcpy0(catalogInHash->range, 0, newcatalog->range, sizeof(xk_pg_parser_sysdict_pgrange));
+        rmemcpy0(catalogInHash->range, 0, newcatalog->range, sizeof(pg_parser_sysdict_pgrange));
     }
     else
     {
@@ -327,7 +327,7 @@ void rangecache_write(HTAB* rangecache, uint64 *offset, sysdict_header_array* ar
 	HASH_SEQ_STATUS status;
 	char buffer[FILE_BLK_SIZE];
 	catalog_range_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_range riplerange = NULL;
+	pg_sysdict_Form_pg_range riplerange = NULL;
 	
 	array[CATALOG_TYPE_RANGE - 1].type = CATALOG_TYPE_RANGE;
 	array[CATALOG_TYPE_RANGE - 1].offset = *offset;
@@ -347,7 +347,7 @@ void rangecache_write(HTAB* rangecache, uint64 *offset, sysdict_header_array* ar
 	{
 		riplerange = entry->range;
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgrange) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgrange) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
@@ -359,8 +359,8 @@ void rangecache_write(HTAB* rangecache, uint64 *offset, sysdict_header_array* ar
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, riplerange, sizeof(xk_pg_parser_sysdict_pgrange));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgrange);
+		rmemcpy1(buffer, page_offset, riplerange, sizeof(pg_parser_sysdict_pgrange));
+		page_offset += sizeof(pg_parser_sysdict_pgrange);
 	}
 	if (page_offset > 0) {
 		if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {

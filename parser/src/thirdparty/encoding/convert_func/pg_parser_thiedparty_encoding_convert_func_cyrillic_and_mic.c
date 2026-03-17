@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 
 /* ----------
@@ -283,9 +283,9 @@ void koi8r_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_l
     unsigned char *dest = dest_str;
     int32_t        len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_KOI8R, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(KOI8R, MULE_INTERNAL);
 
-    latin2mic(src, dest, len, LC_KOI8_R, XK_KOI8R);
+    latin2mic(src, dest, len, LC_KOI8_R, KOI8R);
 }
 
 void mic_to_koi8r(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -294,9 +294,9 @@ void mic_to_koi8r(unsigned char *src_str, unsigned char *dest_str, int32_t str_l
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_KOI8R);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, KOI8R);
 
-    mic2latin(src, dest, len, LC_KOI8_R, XK_KOI8R);
+    mic2latin(src, dest, len, LC_KOI8_R, KOI8R);
 }
 
 void iso_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -305,9 +305,9 @@ void iso_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_ISO_8859_5, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(ISO_8859_5, MULE_INTERNAL);
 
-    latin2mic_with_table(src, dest, len, LC_KOI8_R, XK_ISO_8859_5, iso2koi);
+    latin2mic_with_table(src, dest, len, LC_KOI8_R, ISO_8859_5, iso2koi);
 }
 
 void mic_to_iso(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -316,9 +316,9 @@ void mic_to_iso(unsigned char *src_str, unsigned char *dest_str, int32_t str_len
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_ISO_8859_5);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, ISO_8859_5);
 
-    mic2latin_with_table(src, dest, len, LC_KOI8_R, XK_ISO_8859_5, koi2iso);
+    mic2latin_with_table(src, dest, len, LC_KOI8_R, ISO_8859_5, koi2iso);
 }
 
 void win1251_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -327,9 +327,9 @@ void win1251_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_WIN1251, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(WIN1251, MULE_INTERNAL);
 
-    latin2mic_with_table(src, dest, len, LC_KOI8_R, XK_WIN1251, win12512koi);
+    latin2mic_with_table(src, dest, len, LC_KOI8_R, WIN1251, win12512koi);
 }
 
 void mic_to_win1251(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -338,9 +338,9 @@ void mic_to_win1251(unsigned char *src_str, unsigned char *dest_str, int32_t str
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_WIN1251);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, WIN1251);
 
-    mic2latin_with_table(src, dest, len, LC_KOI8_R, XK_WIN1251, koi2win1251);
+    mic2latin_with_table(src, dest, len, LC_KOI8_R, WIN1251, koi2win1251);
 }
 
 void win866_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -349,9 +349,9 @@ void win866_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_WIN866, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(WIN866, MULE_INTERNAL);
 
-    latin2mic_with_table(src, dest, len, LC_KOI8_R, XK_WIN866, win8662koi);
+    latin2mic_with_table(src, dest, len, LC_KOI8_R, WIN866, win8662koi);
 }
 
 void mic_to_win866(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -360,9 +360,9 @@ void mic_to_win866(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_WIN866);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, WIN866);
 
-    mic2latin_with_table(src, dest, len, LC_KOI8_R, XK_WIN866, koi2win866);
+    mic2latin_with_table(src, dest, len, LC_KOI8_R, WIN866, koi2win866);
 }
 
 void koi8r_to_win1251(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -371,9 +371,9 @@ void koi8r_to_win1251(unsigned char *src_str, unsigned char *dest_str, int32_t s
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_KOI8R, XK_WIN1251);
+    CHECK_ENCODING_CONVERSION_ARGS(KOI8R, WIN1251);
 
-    local2local(src, dest, len, XK_KOI8R, XK_WIN1251, koi2win1251);
+    local2local(src, dest, len, KOI8R, WIN1251, koi2win1251);
 }
 
 void win1251_to_koi8r(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -382,9 +382,9 @@ void win1251_to_koi8r(unsigned char *src_str, unsigned char *dest_str, int32_t s
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_WIN1251, XK_KOI8R);
+    CHECK_ENCODING_CONVERSION_ARGS(WIN1251, KOI8R);
 
-    local2local(src, dest, len, XK_WIN1251, XK_KOI8R, win12512koi);
+    local2local(src, dest, len, WIN1251, KOI8R, win12512koi);
 }
 
 void koi8r_to_win866(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -393,9 +393,9 @@ void koi8r_to_win866(unsigned char *src_str, unsigned char *dest_str, int32_t st
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_KOI8R, XK_WIN866);
+    CHECK_ENCODING_CONVERSION_ARGS(KOI8R, WIN866);
 
-    local2local(src, dest, len, XK_KOI8R, XK_WIN866, koi2win866);
+    local2local(src, dest, len, KOI8R, WIN866, koi2win866);
 }
 
 void win866_to_koi8r(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -404,9 +404,9 @@ void win866_to_koi8r(unsigned char *src_str, unsigned char *dest_str, int32_t st
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_WIN866, XK_KOI8R);
+    CHECK_ENCODING_CONVERSION_ARGS(WIN866, KOI8R);
 
-    local2local(src, dest, len, XK_WIN866, XK_KOI8R, win8662koi);
+    local2local(src, dest, len, WIN866, KOI8R, win8662koi);
 }
 
 void win866_to_win1251(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -415,9 +415,9 @@ void win866_to_win1251(unsigned char *src_str, unsigned char *dest_str, int32_t 
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_WIN866, XK_WIN1251);
+    CHECK_ENCODING_CONVERSION_ARGS(WIN866, WIN1251);
 
-    local2local(src, dest, len, XK_WIN866, XK_WIN1251, win8662win1251);
+    local2local(src, dest, len, WIN866, WIN1251, win8662win1251);
 }
 
 void win1251_to_win866(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -426,9 +426,9 @@ void win1251_to_win866(unsigned char *src_str, unsigned char *dest_str, int32_t 
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_WIN1251, XK_WIN866);
+    CHECK_ENCODING_CONVERSION_ARGS(WIN1251, WIN866);
 
-    local2local(src, dest, len, XK_WIN1251, XK_WIN866, win12512win866);
+    local2local(src, dest, len, WIN1251, WIN866, win12512win866);
 }
 
 void iso_to_koi8r(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -437,9 +437,9 @@ void iso_to_koi8r(unsigned char *src_str, unsigned char *dest_str, int32_t str_l
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_ISO_8859_5, XK_KOI8R);
+    CHECK_ENCODING_CONVERSION_ARGS(ISO_8859_5, KOI8R);
 
-    local2local(src, dest, len, XK_ISO_8859_5, XK_KOI8R, iso2koi);
+    local2local(src, dest, len, ISO_8859_5, KOI8R, iso2koi);
 }
 
 void koi8r_to_iso(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -448,9 +448,9 @@ void koi8r_to_iso(unsigned char *src_str, unsigned char *dest_str, int32_t str_l
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_KOI8R, XK_ISO_8859_5);
+    CHECK_ENCODING_CONVERSION_ARGS(KOI8R, ISO_8859_5);
 
-    local2local(src, dest, len, XK_KOI8R, XK_ISO_8859_5, koi2iso);
+    local2local(src, dest, len, KOI8R, ISO_8859_5, koi2iso);
 }
 
 void iso_to_win1251(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -459,9 +459,9 @@ void iso_to_win1251(unsigned char *src_str, unsigned char *dest_str, int32_t str
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_ISO_8859_5, XK_WIN1251);
+    CHECK_ENCODING_CONVERSION_ARGS(ISO_8859_5, WIN1251);
 
-    local2local(src, dest, len, XK_ISO_8859_5, XK_WIN1251, iso2win1251);
+    local2local(src, dest, len, ISO_8859_5, WIN1251, iso2win1251);
 }
 
 void win1251_to_iso(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -470,9 +470,9 @@ void win1251_to_iso(unsigned char *src_str, unsigned char *dest_str, int32_t str
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_WIN1251, XK_ISO_8859_5);
+    CHECK_ENCODING_CONVERSION_ARGS(WIN1251, ISO_8859_5);
 
-    local2local(src, dest, len, XK_WIN1251, XK_ISO_8859_5, win12512iso);
+    local2local(src, dest, len, WIN1251, ISO_8859_5, win12512iso);
 }
 
 void iso_to_win866(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -481,9 +481,9 @@ void iso_to_win866(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_ISO_8859_5, XK_WIN866);
+    CHECK_ENCODING_CONVERSION_ARGS(ISO_8859_5, WIN866);
 
-    local2local(src, dest, len, XK_ISO_8859_5, XK_WIN866, iso2win866);
+    local2local(src, dest, len, ISO_8859_5, WIN866, iso2win866);
 }
 
 void win866_to_iso(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -492,7 +492,7 @@ void win866_to_iso(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_WIN866, XK_ISO_8859_5);
+    CHECK_ENCODING_CONVERSION_ARGS(WIN866, ISO_8859_5);
 
-    local2local(src, dest, len, XK_WIN866, XK_ISO_8859_5, win8662iso);
+    local2local(src, dest, len, WIN866, ISO_8859_5, win8662iso);
 }

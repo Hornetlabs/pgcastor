@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_array.c
+ * @file pg_parser_thirdparty_tupleparser_array.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -9,30 +9,30 @@
  * 
  */
 
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "common/xk_pg_parser_translog.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgsfunc.h"
-#include "thirdparty/tupleparser/toast/xk_pg_parser_thirdparty_tupleparser_toast.h"
-#include "sysdict/xk_pg_parser_sysdict_getinfo.h"
-#include "trans/transrec/xk_pg_parser_trans_transrec_itemptr.h"
-#include "trans/transrec/xk_pg_parser_trans_transrec_heaptuple.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_fmgr.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "common/pg_parser_translog.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgsfunc.h"
+#include "thirdparty/tupleparser/toast/pg_parser_thirdparty_tupleparser_toast.h"
+#include "sysdict/pg_parser_sysdict_getinfo.h"
+#include "trans/transrec/pg_parser_trans_transrec_itemptr.h"
+#include "trans/transrec/pg_parser_trans_transrec_heaptuple.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_fmgr.h"
 
 #define PGFUNC_ARRAY_MCXT NULL
 
 #define MAXDIM 6
 #define MaxAllocSize    ((size_t) 0x3fffffff) /* 1 gigabyte - 1 */
 
-static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
-                                             xk_pg_parser_extraTypoutInfo *info);
+static pg_parser_Datum array_out_assemble(pg_parser_Datum attr,
+                                             pg_parser_extraTypoutInfo *info);
 
 typedef struct array_iter
 {
     /* datumptr being NULL or not tells if we have flat or expanded array */
 
     /* Fields used when we have an expanded array */
-    xk_pg_parser_Datum        *datumptr;        /* Pointer to xk_pg_parser_Datum array */
+    pg_parser_Datum        *datumptr;        /* Pointer to pg_parser_Datum array */
     bool                      *isnullptr;       /* Pointer to isnull array */
 
     /* Fields used when we have a flat array */
@@ -49,7 +49,7 @@ typedef struct
     uint32_t         elemtype;       /* element type OID */
 } ArrayType;
 
-#define ARR_SIZE(a)                XK_PG_PARSER_VARSIZE(a)
+#define ARR_SIZE(a)                PG_PARSER_VARSIZE(a)
 #define ARR_NDIM(a)                ((a)->ndim)
 #define ARR_HASNULL(a)             ((a)->dataoffset != 0)
 #define ARR_ELEMTYPE(a)            ((a)->elemtype)
@@ -66,10 +66,10 @@ typedef struct
          : (uint8_t *) NULL)
 
 #define ARR_OVERHEAD_NONULLS(ndims) \
-        XK_PG_PARSER_MAXALIGN(sizeof(ArrayType) + 2 * sizeof(int32_t) * (ndims))
+        PG_PARSER_MAXALIGN(sizeof(ArrayType) + 2 * sizeof(int32_t) * (ndims))
 
 #define ARR_OVERHEAD_WITHNULLS(ndims, nitems) \
-        XK_PG_PARSER_MAXALIGN(sizeof(ArrayType) + 2 * sizeof(int32_t) * (ndims) + \
+        PG_PARSER_MAXALIGN(sizeof(ArrayType) + 2 * sizeof(int32_t) * (ndims) + \
                  ((nitems) + 7) / 8)
 
 #define ARR_DATA_OFFSET(a) \
@@ -85,7 +85,7 @@ static int32_t ArrayGetNItems(int32_t ndim, const int32_t *dims)
     int32_t        ret;
     int32_t        i;
 
-#define MaxArraySize ((size_t) (MaxAllocSize / sizeof(xk_pg_parser_Datum)))
+#define MaxArraySize ((size_t) (MaxAllocSize / sizeof(pg_parser_Datum)))
 
     if (ndim <= 0)
         return 0;
@@ -120,10 +120,10 @@ static inline void array_iter_setup(array_iter *it, ArrayType *a)
     it->bitmask = 1;
 }
 
-static inline xk_pg_parser_Datum array_iter_next(array_iter *it, bool *isnull, int32_t i,
+static inline pg_parser_Datum array_iter_next(array_iter *it, bool *isnull, int32_t i,
                                                  int32_t elmlen, bool elmbyval, char elmalign)
 {
-    xk_pg_parser_Datum        ret;
+    pg_parser_Datum        ret;
 
     if (it->datumptr)
     {
@@ -135,15 +135,15 @@ static inline xk_pg_parser_Datum array_iter_next(array_iter *it, bool *isnull, i
         if (it->bitmapptr && (*(it->bitmapptr) & it->bitmask) == 0)
         {
             *isnull = true;
-            ret = (xk_pg_parser_Datum) 0;
+            ret = (pg_parser_Datum) 0;
         }
         else
         {
             *isnull = false;
-            ret = xk_pg_parser_fetch_att(it->dataptr, elmbyval, elmlen);
-            it->dataptr = xk_pg_parser_att_addlength_pointer(it->dataptr, elmlen,
+            ret = pg_parser_fetch_att(it->dataptr, elmbyval, elmlen);
+            it->dataptr = pg_parser_att_addlength_pointer(it->dataptr, elmlen,
                                                 it->dataptr);
-            it->dataptr = (char *) xk_pg_parser_att_align_nominal(it->dataptr, elmalign);
+            it->dataptr = (char *) pg_parser_att_align_nominal(it->dataptr, elmalign);
         }
         it->bitmask <<= 1;
         if (it->bitmask == 0x100)
@@ -205,11 +205,11 @@ static int32_t pg_strcasecmp(const char *s1, const char *s2)
  *           takes the internal representation of an array and returns a string
  *          containing the array in its external format.
  */
-xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum array_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     bool is_toast = false;
     bool need_free = false;
-    ArrayType *v = (ArrayType *) xk_pg_parser_detoast_datum((struct xk_pg_parser_varlena *) attr,
+    ArrayType *v = (ArrayType *) pg_parser_detoast_datum((struct pg_parser_varlena *) attr,
                                                              &is_toast,
                                                              &need_free,
                                                              info->zicinfo->dbtype,
@@ -224,7 +224,7 @@ xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
                *retval,
               **values,
                 dims_str[(MAXDIM * 33) + 2];
-    xk_pg_parser_sysdict_pgtype *sys_type = NULL;
+    pg_parser_sysdict_pgtype *sys_type = NULL;
     /*
      * 33 per dim since we assume 15 digits per number + ':' +'[]'
      *
@@ -249,15 +249,15 @@ xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
         if (info != NULL)
             info->valueinfo = INFO_COL_MAY_NULL;
         info->valuelen = 0;
-        return (xk_pg_parser_Datum)v;
+        return (pg_parser_Datum)v;
     }
     element_type = v->elemtype;
 
-    sys_type = xk_pg_parser_sysdict_getSysdictType(element_type, info->sysdicts);
+    sys_type = pg_parser_sysdict_getSysdictType(element_type, info->sysdicts);
     if (!sys_type)
     {
-        xk_pg_parser_log_errlog(info->zicinfo->debuglevel, "ERROR: sys_type is NULL\n");
-        return (xk_pg_parser_Datum)0;
+        pg_parser_log_errlog(info->zicinfo->debuglevel, "ERROR: sys_type is NULL\n");
+        return (pg_parser_Datum)0;
     }
     typlen = sys_type->typlen;
     typbyval = sys_type->typbyval;
@@ -271,8 +271,8 @@ xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
 
     if (nitems == 0)
     {
-        retval = xk_pg_parser_mcxt_strdup("{}");
-        return (xk_pg_parser_Datum) retval;
+        retval = pg_parser_mcxt_strdup("{}");
+        return (pg_parser_Datum) retval;
     }
 
     /*
@@ -293,11 +293,11 @@ xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
      * any overhead such as escaping backslashes), and detect whether each
      * item needs double quotes.
      */
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&values, nitems * sizeof(char *)))
-        return (xk_pg_parser_Datum)0;
+    if (!pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&values, nitems * sizeof(char *)))
+        return (pg_parser_Datum)0;
 
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&needquotes, nitems * sizeof(bool)))
-        return (xk_pg_parser_Datum)0;
+    if (!pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&needquotes, nitems * sizeof(bool)))
+        return (pg_parser_Datum)0;
 
     overall_length = 0;
 
@@ -305,7 +305,7 @@ xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
 
     for (i = 0; i < nitems; i++)
     {
-        xk_pg_parser_Datum        itemvalue;
+        pg_parser_Datum        itemvalue;
         bool        isnull;
         bool        needquote;
 
@@ -315,24 +315,24 @@ xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
 
         if (isnull)
         {
-            values[i] = xk_pg_parser_mcxt_strdup("NULL");
+            values[i] = pg_parser_mcxt_strdup("NULL");
             overall_length += 4;
             needquote = false;
         }
         else
         {
-            if (XK_PG_SYSDICT_TYPTYPE_BASE == sys_type->typtype
-             || XK_PG_SYSDICT_TYPTYPE_DOMAIN == sys_type->typtype
-             || XK_PG_SYSDICT_TYPTYPE_ENUM == sys_type->typtype
-             || XK_PG_SYSDICT_TYPTYPE_RANGE == sys_type->typtype)
+            if (PG_SYSDICT_TYPTYPE_BASE == sys_type->typtype
+             || PG_SYSDICT_TYPTYPE_DOMAIN == sys_type->typtype
+             || PG_SYSDICT_TYPTYPE_ENUM == sys_type->typtype
+             || PG_SYSDICT_TYPTYPE_RANGE == sys_type->typtype)
             {
                 bool istoast = false;
 
-                values[i] = xk_pg_parser_convert_attr_to_str_char(itemvalue, info->sysdicts,
+                values[i] = pg_parser_convert_attr_to_str_char(itemvalue, info->sysdicts,
                                                                   element_type, &istoast, info->zicinfo);
                 if (!values[i])
                 {
-                    return (xk_pg_parser_Datum) 0;
+                    return (pg_parser_Datum) 0;
                 }
                 /* 先进行非toast存储时的简单处理 */
                 if (!is_toast)
@@ -360,14 +360,14 @@ xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
                     }
                 }
                 else
-                    goto xk_pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble;
+                    goto pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble;
             }
-            else if (XK_PG_SYSDICT_TYPTYPE_COMPOSITE == sys_type->typtype)
-                goto xk_pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble;
+            else if (PG_SYSDICT_TYPTYPE_COMPOSITE == sys_type->typtype)
+                goto pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble;
             /* 这里不会被走到, 以防万一, 抛出一个错误 */
             else
             {
-                return (xk_pg_parser_Datum) 0;
+                return (pg_parser_Datum) 0;
             }
 
         }
@@ -410,8 +410,8 @@ xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
     }
 
     /* Now construct the output string */
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&retval, overall_length))
-        return (xk_pg_parser_Datum)0;
+    if (!pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&retval, overall_length))
+        return (pg_parser_Datum)0;
     p = retval;
 
 #define APPENDSTR(str)    (strcpy(p, (str)), p += strlen(p))
@@ -445,7 +445,7 @@ xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
         }
         else
             APPENDSTR(values[k]);
-        xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, values[k++]);
+        pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, values[k++]);
 
         for (i = ndim - 1; i >= 0; i--)
         {
@@ -468,31 +468,31 @@ xk_pg_parser_Datum array_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
 
     /* Assert that we calculated the string length accurately */
 
-    xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, values);
-    xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, needquotes);
+    pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, values);
+    pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, needquotes);
     if (need_free)
-        xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, v);
+        pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, v);
     info->valuelen = strlen(retval);
-    return (xk_pg_parser_Datum) retval;
-xk_pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble:
-    xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, values);
-    xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, needquotes);
+    return (pg_parser_Datum) retval;
+pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble:
+    pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, values);
+    pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, needquotes);
     if (need_free)
-        xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, v);
+        pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, v);
     return array_out_assemble(attr, info);
 }
 
 /* 当无法简单的用字符串返回array类型时, 我们需要对其进行拼装 */
-static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
-                                             xk_pg_parser_extraTypoutInfo *info)
+static pg_parser_Datum array_out_assemble(pg_parser_Datum attr,
+                                             pg_parser_extraTypoutInfo *info)
 {
     //todo
-    XK_PG_PARSER_UNUSED(attr);
-    XK_PG_PARSER_UNUSED(info);
+    PG_PARSER_UNUSED(attr);
+    PG_PARSER_UNUSED(info);
 #if 0
     bool is_toast = false;
     bool need_free = false;
-    ArrayType *v = (ArrayType *) xk_pg_parser_detoast_datum((struct xk_pg_parser_varlena *) attr,
+    ArrayType *v = (ArrayType *) pg_parser_detoast_datum((struct pg_parser_varlena *) attr,
                                                              &is_toast,
                                                              &need_free);
     uint32_t    element_type = 0;
@@ -505,7 +505,7 @@ static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
                *retval,
               **values,
                 dims_str[(MAXDIM * 33) + 2];
-    xk_pg_parser_sysdict_pgtype *sys_type = NULL;
+    pg_parser_sysdict_pgtype *sys_type = NULL;
     /*
      * 33 per dim since we assume 15 digits per number + ':' +'[]'
      *
@@ -528,12 +528,12 @@ static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
     {
         if (info != NULL)
             info->valueinfo = INFO_COL_IS_TOAST;
-        info->valuelen = sizeof(struct xk_pg_parser_varatt_external);
-        return (xk_pg_parser_Datum)0;
+        info->valuelen = sizeof(struct pg_parser_varatt_external);
+        return (pg_parser_Datum)0;
     }
     element_type = v->elemtype;
 
-    sys_type = xk_pg_parser_sysdict_getSysdictType(element_type, info->sysdicts);
+    sys_type = pg_parser_sysdict_getSysdictType(element_type, info->sysdicts);
     typlen = sys_type->typlen;
     typbyval = sys_type->typbyval;
     typalign = sys_type->typalign;
@@ -546,8 +546,8 @@ static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
 
     if (nitems == 0)
     {
-        retval = xk_pg_parser_mcxt_strdup("{}");
-        return (xk_pg_parser_Datum) retval;
+        retval = pg_parser_mcxt_strdup("{}");
+        return (pg_parser_Datum) retval;
     }
 
     /*
@@ -568,11 +568,11 @@ static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
      * any overhead such as escaping backslashes), and detect whether each
      * item needs double quotes.
      */
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&values, nitems * sizeof(char *)))
-        return (xk_pg_parser_Datum)0;
+    if (!pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&values, nitems * sizeof(char *)))
+        return (pg_parser_Datum)0;
 
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&needquotes, nitems * sizeof(bool)))
-        return (xk_pg_parser_Datum)0;
+    if (!pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&needquotes, nitems * sizeof(bool)))
+        return (pg_parser_Datum)0;
 
     overall_length = 0;
 
@@ -580,7 +580,7 @@ static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
 
     for (i = 0; i < nitems; i++)
     {
-        xk_pg_parser_Datum        itemvalue;
+        pg_parser_Datum        itemvalue;
         bool        isnull;
         bool        needquote;
 
@@ -590,20 +590,20 @@ static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
 
         if (isnull)
         {
-            values[i] = xk_pg_parser_mcxt_strdup("NULL");
+            values[i] = pg_parser_mcxt_strdup("NULL");
             overall_length += 4;
             needquote = false;
         }
         else
         {
-            if (XK_PG_SYSDICT_TYPTYPE_BASE == sys_type->typtype
-             || XK_PG_SYSDICT_TYPTYPE_DOMAIN == sys_type->typtype
-             || XK_PG_SYSDICT_TYPTYPE_ENUM == sys_type->typtype
-             || XK_PG_SYSDICT_TYPTYPE_RANGE == sys_type->typtype)
+            if (PG_SYSDICT_TYPTYPE_BASE == sys_type->typtype
+             || PG_SYSDICT_TYPTYPE_DOMAIN == sys_type->typtype
+             || PG_SYSDICT_TYPTYPE_ENUM == sys_type->typtype
+             || PG_SYSDICT_TYPTYPE_RANGE == sys_type->typtype)
             {
                 bool istoast = false;
 
-                values[i] = xk_pg_parser_convert_attr_to_str_char(itemvalue, info->sysdicts,
+                values[i] = pg_parser_convert_attr_to_str_char(itemvalue, info->sysdicts,
                                                                   element_type, &istoast, info->zicinfo);
                 /* 先进行非toast存储时的简单处理 */
                 if (!is_toast)
@@ -631,10 +631,10 @@ static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
                     }
                 }
                 else
-                    goto xk_pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble;
+                    goto pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble;
             }
-            else if (XK_PG_SYSDICT_TYPTYPE_COMPOSITE == sys_type->typtype)
-                goto xk_pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble;
+            else if (PG_SYSDICT_TYPTYPE_COMPOSITE == sys_type->typtype)
+                goto pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble;
             /* 这里不会被走到, 以防万一, 抛出一个错误 */
             else
             {
@@ -681,8 +681,8 @@ static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
     }
 
     /* Now construct the output string */
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&retval, overall_length))
-        return (xk_pg_parser_Datum)0;
+    if (!pg_parser_mcxt_malloc(PGFUNC_ARRAY_MCXT, (void **)&retval, overall_length))
+        return (pg_parser_Datum)0;
     p = retval;
 
 #define APPENDSTR(str)    (strcpy(p, (str)), p += strlen(p))
@@ -716,7 +716,7 @@ static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
         }
         else
             APPENDSTR(values[k]);
-        xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, values[k++]);
+        pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, values[k++]);
 
         for (i = ndim - 1; i >= 0; i--)
         {
@@ -739,11 +739,11 @@ static xk_pg_parser_Datum array_out_assemble(xk_pg_parser_Datum attr,
 
     /* Assert that we calculated the string length accurately */
 
-    xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, values);
-    xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, needquotes);
+    pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, values);
+    pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, needquotes);
     if (need_free)
-        xk_pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, v);
-    return (xk_pg_parser_Datum) retval;
+        pg_parser_mcxt_free(PGFUNC_ARRAY_MCXT, v);
+    return (pg_parser_Datum) retval;
 #endif
-    return (xk_pg_parser_Datum) xk_pg_parser_mcxt_strdup(">NOT SUPPORTED<");
+    return (pg_parser_Datum) pg_parser_mcxt_strdup(">NOT SUPPORTED<");
 }

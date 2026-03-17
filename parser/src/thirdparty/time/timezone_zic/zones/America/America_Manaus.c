@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Manaus[] =
+char* PG_America_Manaus[] =
 {
     (char *)"Rule	Brazil	1931	only	-	Oct	 3	11:00	1:00	-",
     (char *)"Rule	Brazil	1932	1933	-	Apr	 1	 0:00	0	-",

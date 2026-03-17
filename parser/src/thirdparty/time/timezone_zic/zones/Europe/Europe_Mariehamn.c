@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Europe_Mariehamn[] =
+char* PG_Europe_Mariehamn[] =
 {
     (char *)"Rule	Finland	1942	only	-	Apr	2	24:00	1:00	S",
     (char *)"Rule	Finland	1942	only	-	Oct	4	1:00	0	-",

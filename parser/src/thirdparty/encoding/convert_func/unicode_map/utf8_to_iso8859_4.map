@@ -3,7 +3,7 @@
 
 static const uint16_t iso8859_4_from_unicode_tree_table[385];
 
-static const xk_character_mb_radix_tree iso8859_4_from_unicode_tree =
+static const character_mb_radix_tree iso8859_4_from_unicode_tree =
 {
   iso8859_4_from_unicode_tree_table,
   NULL, /* 32-bit table not used */

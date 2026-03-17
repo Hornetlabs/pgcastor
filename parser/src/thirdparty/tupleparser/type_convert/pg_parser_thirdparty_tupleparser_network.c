@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_network.c
+ * @file pg_parser_thirdparty_tupleparser_network.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -12,9 +12,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgfunc.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgfunc.h"
 
 #define PGFUNC_NETWORK_MCXT NULL
 
@@ -27,13 +27,13 @@
 #define SPRINTF(x) ((size_t)sprintf x)
 
 #define ip_family(inetptr) \
-    (((inet_struct *) XK_PG_PARSER_VARDATA_ANY(inetptr))->family)
+    (((inet_struct *) PG_PARSER_VARDATA_ANY(inetptr))->family)
 
 #define ip_bits(inetptr) \
-    (((inet_struct *) XK_PG_PARSER_VARDATA_ANY(inetptr))->bits)
+    (((inet_struct *) PG_PARSER_VARDATA_ANY(inetptr))->bits)
 
 #define ip_addr(inetptr) \
-    (((inet_struct *) XK_PG_PARSER_VARDATA_ANY(inetptr))->ipaddr)
+    (((inet_struct *) PG_PARSER_VARDATA_ANY(inetptr))->ipaddr)
 
 typedef struct
 {
@@ -48,7 +48,7 @@ typedef struct
     inet_struct inet_data;
 } inet;
 
-static char *xk_pg_parser_inet_net_ntop(int32_t af, const void *src, int32_t bits, char *dst, size_t size);
+static char *pg_parser_inet_net_ntop(int32_t af, const void *src, int32_t bits, char *dst, size_t size);
 static int32_t decoct(const unsigned char *src,int32_t bytes, char *dst, size_t size);
 
 static char *inet_net_ntop_ipv4(const unsigned char *src,
@@ -264,7 +264,7 @@ static char *inet_net_ntop_ipv6(const unsigned char *src,
 
 /*
  * char *
- * xk_pg_parser_inet_net_ntop(af, src, bits, dst, size)
+ * pg_parser_inet_net_ntop(af, src, bits, dst, size)
  *    convert host/network address from network to presentation format.
  *    "src"'s size is determined from its "af".
  * return:
@@ -276,7 +276,7 @@ static char *inet_net_ntop_ipv6(const unsigned char *src,
  * author:
  *    Paul Vixie (ISC), October 1998
  */
-static char *xk_pg_parser_inet_net_ntop(int32_t af, const void *src, int32_t bits, char *dst, size_t size)
+static char *pg_parser_inet_net_ntop(int32_t af, const void *src, int32_t bits, char *dst, size_t size)
 {
     /*
      * We need to cover both the address family constants used by the PG inet
@@ -309,7 +309,7 @@ static char *network_out(inet *src, bool is_cidr)
     char       *dst;
     int32_t         len;
 
-    dst = xk_pg_parser_inet_net_ntop(ip_family(src), ip_addr(src), ip_bits(src),
+    dst = pg_parser_inet_net_ntop(ip_family(src), ip_addr(src), ip_bits(src),
                                      tmp, sizeof(tmp));
     if (dst == NULL)
     {
@@ -326,19 +326,19 @@ static char *network_out(inet *src, bool is_cidr)
         snprintf(tmp + len, sizeof(tmp) - len, "/%u", ip_bits(src));
     }
 
-    return xk_pg_parser_mcxt_strdup(tmp);
+    return pg_parser_mcxt_strdup(tmp);
 }
 
-xk_pg_parser_Datum inet_out(xk_pg_parser_Datum attr)
+pg_parser_Datum inet_out(pg_parser_Datum attr)
 {
     inet       *src = (inet *) attr;
 
-    return (xk_pg_parser_Datum) network_out(src, false);
+    return (pg_parser_Datum) network_out(src, false);
 }
 
-xk_pg_parser_Datum cidr_out(xk_pg_parser_Datum attr)
+pg_parser_Datum cidr_out(pg_parser_Datum attr)
 {
     inet       *src = (inet *) attr;
 
-    return (xk_pg_parser_Datum) network_out(src, true);
+    return (pg_parser_Datum) network_out(src, true);
 }

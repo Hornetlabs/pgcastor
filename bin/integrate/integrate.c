@@ -8,8 +8,8 @@
 #include "port/ipc/ipc.h"
 #include "port/file/fd.h"
 #include "utils/path/path.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "command/cmd.h"
 
 static void

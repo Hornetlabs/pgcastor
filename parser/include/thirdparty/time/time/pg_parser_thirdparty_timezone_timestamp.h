@@ -1,5 +1,5 @@
 /**
- * @file                xk_pg_parser_thirdparty_timezone_timestamp.h
+ * @file                pg_parser_thirdparty_timezone_timestamp.h
  * @author              ByteSynch
  * @brief               定义 timestamp/timestamp with timezone 类型的数据结构和宏函数
  * @version             0.1
@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef XK_PG_PARSER_THIRDPARTY_TIMEZONE_TIMESTAMP_H
-#define XK_PG_PARSER_THIRDPARTY_TIMEZONE_TIMESTAMP_H
+#ifndef PG_PARSER_THIRDPARTY_TIMEZONE_TIMESTAMP_H
+#define PG_PARSER_THIRDPARTY_TIMEZONE_TIMESTAMP_H
 
 typedef int64_t                     Timestamp;
 typedef int64_t                     TimestampTz;
@@ -62,16 +62,16 @@ typedef struct
 #define SECS_PER_MINUTE             60
 #define MINS_PER_HOUR               60
 
-#define USECS_PER_DAY               XK_PG_PARSER_INT64CONST(86400000000)
-#define USECS_PER_HOUR              XK_PG_PARSER_INT64CONST(3600000000)
-#define USECS_PER_MINUTE            XK_PG_PARSER_INT64CONST(60000000)
-#define USECS_PER_SEC               XK_PG_PARSER_INT64CONST(1000000)
+#define USECS_PER_DAY               PG_PARSER_INT64CONST(86400000000)
+#define USECS_PER_HOUR              PG_PARSER_INT64CONST(3600000000)
+#define USECS_PER_MINUTE            PG_PARSER_INT64CONST(60000000)
+#define USECS_PER_SEC               PG_PARSER_INT64CONST(1000000)
 
-#define NSECS_PER_DAY    XK_PG_PARSER_INT64CONST(86400000000000)
-#define NSECS_PER_HOUR   XK_PG_PARSER_INT64CONST(3600000000000)
-#define NSECS_PER_MINUTE XK_PG_PARSER_INT64CONST(60000000000)
-#define NSECS_PER_SEC    XK_PG_PARSER_INT64CONST(1000000000)
-#define NSECS_PER_USEC   XK_PG_PARSER_INT64CONST(1000)
+#define NSECS_PER_DAY    PG_PARSER_INT64CONST(86400000000000)
+#define NSECS_PER_HOUR   PG_PARSER_INT64CONST(3600000000000)
+#define NSECS_PER_MINUTE PG_PARSER_INT64CONST(60000000000)
+#define NSECS_PER_SEC    PG_PARSER_INT64CONST(1000000000)
+#define NSECS_PER_USEC   PG_PARSER_INT64CONST(1000)
 
 /*
  * We allow numeric timezone offsets up to 15:59:59 either way from Greenwich.
@@ -86,8 +86,8 @@ typedef struct
 /*
  * DT_NOBEGIN represents timestamp -infinity; DT_NOEND represents +infinity
  */
-#define DT_NOBEGIN                  XK_PG_PARSER_INT64_MIN
-#define DT_NOEND                    XK_PG_PARSER_INT64_MAX
+#define DT_NOBEGIN                  PG_PARSER_INT64_MIN
+#define DT_NOEND                    PG_PARSER_INT64_MAX
 
 #define TIMESTAMP_NOBEGIN(j)    \
     do {(j) = DT_NOBEGIN;} while (0)
@@ -124,9 +124,9 @@ typedef struct
 #define TIMESTAMP_END_JULIAN        (109203528)     /* == date2j(294277, 1, 1) */
 
 /* Timestamp limits */
-#define MIN_TIMESTAMP               XK_PG_PARSER_INT64CONST(-211813488000000000)
+#define MIN_TIMESTAMP               PG_PARSER_INT64CONST(-211813488000000000)
 /* == (DATETIME_MIN_JULIAN - POSTGRES_EPOCH_JDATE) * USECS_PER_DAY */
-#define END_TIMESTAMP               XK_PG_PARSER_INT64CONST(9223371331200000000)
+#define END_TIMESTAMP               PG_PARSER_INT64CONST(9223371331200000000)
 /* == (TIMESTAMP_END_JULIAN - POSTGRES_EPOCH_JDATE) * USECS_PER_DAY */
 
 /* Range-check a date (given in Postgres, not Julian, numbering) */
@@ -145,4 +145,4 @@ typedef struct
 
 typedef TimeIntervalData*       TimeInterval;
 
-#endif /* XK_PG_PARSER_THIRDPARTY_TIMEZONE_TIMESTAMP_H */
+#endif /* PG_PARSER_THIRDPARTY_TIMEZONE_TIMESTAMP_H */

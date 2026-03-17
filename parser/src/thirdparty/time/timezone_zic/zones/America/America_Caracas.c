@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Caracas[] =
+char* PG_America_Caracas[] =
 {
     (char *)"Zone	America/Caracas	-4:27:44 -	LMT	1890",
     (char *)"			-4:27:40 -	CMT	1912 Feb 12 # Caracas Mean Time?",

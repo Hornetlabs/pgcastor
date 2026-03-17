@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_bool.c
+ * @file pg_parser_thirdparty_tupleparser_bool.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -8,16 +8,16 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "common/xk_pg_parser_translog.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgsfunc.h"
-#include "thirdparty/tupleparser/toast/xk_pg_parser_thirdparty_tupleparser_toast.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_fmgr.h"
-#include "sysdict/xk_pg_parser_sysdict_getinfo.h"
-#include "trans/transrec/xk_pg_parser_trans_transrec_itemptr.h"
-#include "trans/transrec/xk_pg_parser_trans_transrec_heaptuple.h"
-#include "thirdparty/stringinfo/xk_pg_parser_thirdparty_stringinfo.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "common/pg_parser_translog.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgsfunc.h"
+#include "thirdparty/tupleparser/toast/pg_parser_thirdparty_tupleparser_toast.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_fmgr.h"
+#include "sysdict/pg_parser_sysdict_getinfo.h"
+#include "trans/transrec/pg_parser_trans_transrec_itemptr.h"
+#include "trans/transrec/pg_parser_trans_transrec_heaptuple.h"
+#include "thirdparty/stringinfo/pg_parser_thirdparty_stringinfo.h"
 
 #define PGFUNC_RANGE_MCXT NULL
 #define RANGE_EMPTY_LITERAL "empty"
@@ -32,7 +32,7 @@ typedef struct
 /* Internal representation of either bound of a range (not what's on disk) */
 typedef struct
 {
-    xk_pg_parser_Datum  val;            /* the bound value, if any */
+    pg_parser_Datum  val;            /* the bound value, if any */
     bool                infinite;       /* bound is +/- infinity */
     bool                inclusive;      /* bound is inclusive (vs exclusive) */
     bool                lower;          /* this is the lower (vs upper) bound */
@@ -73,7 +73,7 @@ static char range_get_flags(RangeType *range);
 static char range_get_flags(RangeType *range)
 {
     /* fetch the flag byte from datum's last byte */
-    return *((char *) range + XK_PG_PARSER_VARSIZE(range) - 1);
+    return *((char *) range + PG_PARSER_VARSIZE(range) - 1);
 }
 
 /*
@@ -85,19 +85,19 @@ static char range_get_flags(RangeType *range)
  * Note that if the element type is pass-by-reference, the datums in the
  * RangeBound structs will be pointers into the given range object.
  */
-static void range_deserialize(xk_pg_parser_sysdict_pgtype *npt, RangeType *range,
+static void range_deserialize(pg_parser_sysdict_pgtype *npt, RangeType *range,
                   RangeBound *lower, RangeBound *upper, bool *empty)
 {
     char                    flags;
     int16_t                 typlen;
     bool                    typbyval;
     char                    typalign;
-    xk_pg_parser_Pointer    ptr;
-    xk_pg_parser_Datum      lbound;
-    xk_pg_parser_Datum      ubound;
+    pg_parser_Pointer    ptr;
+    pg_parser_Datum      lbound;
+    pg_parser_Datum      ubound;
 
     /* fetch the flag byte from datum's last byte */
-    flags = *((char *) range + XK_PG_PARSER_VARSIZE(range) - 1);
+    flags = *((char *) range + PG_PARSER_VARSIZE(range) - 1);
 
     /* fetch information about range's element type */
     typlen = npt->typlen;
@@ -105,27 +105,27 @@ static void range_deserialize(xk_pg_parser_sysdict_pgtype *npt, RangeType *range
     typalign = npt->typalign;
 
     /* initialize data pointer just after the range OID */
-    ptr = (xk_pg_parser_Pointer) (range + 1);
+    ptr = (pg_parser_Pointer) (range + 1);
 
     /* fetch lower bound, if any */
     if (RANGE_HAS_LBOUND(flags))
     {
         /* att_align_pointer cannot be necessary here */
-        lbound = xk_pg_parser_fetch_att(ptr, typbyval, typlen);
-        ptr = (xk_pg_parser_Pointer) xk_pg_parser_att_addlength_pointer(ptr, typlen, ptr);
+        lbound = pg_parser_fetch_att(ptr, typbyval, typlen);
+        ptr = (pg_parser_Pointer) pg_parser_att_addlength_pointer(ptr, typlen, ptr);
     }
     else
-        lbound = (xk_pg_parser_Datum) 0;
+        lbound = (pg_parser_Datum) 0;
 
     /* fetch upper bound, if any */
     if (RANGE_HAS_UBOUND(flags))
     {
-        ptr = (xk_pg_parser_Pointer) xk_pg_parser_att_align_pointer(ptr, typalign, typlen, ptr);
-        ubound = xk_pg_parser_fetch_att(ptr, typbyval, typlen);
+        ptr = (pg_parser_Pointer) pg_parser_att_align_pointer(ptr, typalign, typlen, ptr);
+        ubound = pg_parser_fetch_att(ptr, typbyval, typlen);
         /* no need for att_addlength_pointer */
     }
     else
-        ubound = (xk_pg_parser_Datum) 0;
+        ubound = (pg_parser_Datum) 0;
 
     /* emit results */
 
@@ -159,9 +159,9 @@ static char *range_bound_escape(const char *value)
     bool        nq;
     const char *ptr;
     char       *result = NULL;
-    xk_pg_parser_StringInfoData buf;
+    pg_parser_StringInfoData buf;
 
-    xk_pg_parser_initStringInfo(&buf);
+    pg_parser_initStringInfo(&buf);
 
     /* Detect whether we need double quotes for this value */
     nq = (value[0] == '\0');    /* force quotes for empty string */
@@ -182,20 +182,20 @@ static char *range_bound_escape(const char *value)
 
     /* And emit the string */
     if (nq)
-        xk_pg_parser_appendStringInfoChar(&buf, '"');
+        pg_parser_appendStringInfoChar(&buf, '"');
     for (ptr = value; *ptr; ptr++)
     {
         char        ch = *ptr;
 
         if (ch == '"' || ch == '\\')
-            xk_pg_parser_appendStringInfoChar(&buf, ch);
-        xk_pg_parser_appendStringInfoChar(&buf, ch);
+            pg_parser_appendStringInfoChar(&buf, ch);
+        pg_parser_appendStringInfoChar(&buf, ch);
     }
     if (nq)
-        xk_pg_parser_appendStringInfoChar(&buf, '"');
+        pg_parser_appendStringInfoChar(&buf, '"');
 
-    result = xk_pg_parser_mcxt_strdup(buf.data);
-    xk_pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, buf.data);
+    result = pg_parser_mcxt_strdup(buf.data);
+    pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, buf.data);
     return result;
 }
 
@@ -209,44 +209,44 @@ static char *range_bound_escape(const char *value)
  */
 static char *range_deparse(char flags, const char *lbound_str, const char *ubound_str)
 {
-    xk_pg_parser_StringInfoData buf;
+    pg_parser_StringInfoData buf;
     char *result = NULL;
 
     if (flags & RANGE_EMPTY)
-        return xk_pg_parser_mcxt_strdup(RANGE_EMPTY_LITERAL);
+        return pg_parser_mcxt_strdup(RANGE_EMPTY_LITERAL);
 
-    xk_pg_parser_initStringInfo(&buf);
+    pg_parser_initStringInfo(&buf);
 
-    xk_pg_parser_appendStringInfoChar(&buf, (flags & RANGE_LB_INC) ? '[' : '(');
+    pg_parser_appendStringInfoChar(&buf, (flags & RANGE_LB_INC) ? '[' : '(');
 
     if (RANGE_HAS_LBOUND(flags))
     {
         char *range_bound_temp = range_bound_escape(lbound_str);
-        xk_pg_parser_appendStringInfoString(&buf, range_bound_temp);
-        xk_pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, range_bound_temp);
+        pg_parser_appendStringInfoString(&buf, range_bound_temp);
+        pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, range_bound_temp);
     }
 
-    xk_pg_parser_appendStringInfoChar(&buf, ',');
+    pg_parser_appendStringInfoChar(&buf, ',');
 
     if (RANGE_HAS_UBOUND(flags))
     {
         char *range_bound_temp = range_bound_escape(ubound_str);
-        xk_pg_parser_appendStringInfoString(&buf, range_bound_temp);
-        xk_pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, range_bound_temp);
+        pg_parser_appendStringInfoString(&buf, range_bound_temp);
+        pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, range_bound_temp);
     }
 
-    xk_pg_parser_appendStringInfoChar(&buf, (flags & RANGE_UB_INC) ? ']' : ')');
-    result = xk_pg_parser_mcxt_strdup(buf.data);
-    xk_pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, buf.data);
+    pg_parser_appendStringInfoChar(&buf, (flags & RANGE_UB_INC) ? ']' : ')');
+    result = pg_parser_mcxt_strdup(buf.data);
+    pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, buf.data);
     return result;
 }
 
-xk_pg_parser_Datum range_out(xk_pg_parser_Datum attr,
-                             xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum range_out(pg_parser_Datum attr,
+                             pg_parser_extraTypoutInfo *info)
 {
     bool        is_toast = false;
     bool        need_free = false;
-    RangeType  *range = (RangeType*)xk_pg_parser_detoast_datum((struct xk_pg_parser_varlena *) attr,
+    RangeType  *range = (RangeType*)pg_parser_detoast_datum((struct pg_parser_varlena *) attr,
                                                                &is_toast,
                                                                &need_free,
                                                                 info->zicinfo->dbtype,
@@ -258,20 +258,20 @@ xk_pg_parser_Datum range_out(xk_pg_parser_Datum attr,
     RangeBound  lower;
     RangeBound  upper;
     bool        empty;
-    xk_pg_parser_sysdict_pgtype *type = NULL;
+    pg_parser_sysdict_pgtype *type = NULL;
 
     if (is_toast)
     {
         /* 暂不支持range的行外存储解析 */
         info->valueinfo = INFO_COL_MAY_NULL;
         info->valuelen = 0;
-        return (xk_pg_parser_Datum) range;
+        return (pg_parser_Datum) range;
     }
 
-    type = xk_pg_parser_sysdict_getSubTypeByRange(range->rangetypid, info->sysdicts);
+    type = pg_parser_sysdict_getSubTypeByRange(range->rangetypid, info->sysdicts);
     if (!type)
     {
-        return (xk_pg_parser_Datum) 0;
+        return (pg_parser_Datum) 0;
     }
     /* deserialize */
     range_deserialize(type, range, &lower, &upper, &empty);
@@ -280,51 +280,51 @@ xk_pg_parser_Datum range_out(xk_pg_parser_Datum attr,
     /* call element type's output function */
     if (RANGE_HAS_LBOUND(flags))
     {
-        lbound_str = xk_pg_parser_convert_attr_to_str_char(lower.val,
+        lbound_str = pg_parser_convert_attr_to_str_char(lower.val,
                                                            info->sysdicts,
                                                            type->oid,
                                                            &is_toast,
                                                            info->zicinfo);
         if (!lbound_str)
         {
-            return (xk_pg_parser_Datum) 0;
+            return (pg_parser_Datum) 0;
         }
         if (is_toast)
         {
-            xk_pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, lbound_str);
-            xk_pg_parser_log_errlog(info->zicinfo->debuglevel, "error: toast value in range out\n");
-            return (xk_pg_parser_Datum) 0;
+            pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, lbound_str);
+            pg_parser_log_errlog(info->zicinfo->debuglevel, "error: toast value in range out\n");
+            return (pg_parser_Datum) 0;
         }
     }
     if (RANGE_HAS_UBOUND(flags))
     {
-        ubound_str = xk_pg_parser_convert_attr_to_str_char(upper.val,
+        ubound_str = pg_parser_convert_attr_to_str_char(upper.val,
                                                            info->sysdicts,
                                                            type->oid,
                                                            &is_toast,
                                                            info->zicinfo);
         if (!ubound_str)
         {
-            return (xk_pg_parser_Datum) 0;
+            return (pg_parser_Datum) 0;
         }
         if (is_toast)
         {
-            xk_pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, ubound_str);
-            xk_pg_parser_log_errlog(info->zicinfo->debuglevel, "error: toast value in range out\n");
-            return (xk_pg_parser_Datum) 0;
+            pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, ubound_str);
+            pg_parser_log_errlog(info->zicinfo->debuglevel, "error: toast value in range out\n");
+            return (pg_parser_Datum) 0;
         }
     }
 
     /* construct result string */
     output_str = range_deparse(flags, lbound_str, ubound_str);
     if (lbound_str)
-        xk_pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, lbound_str);
+        pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, lbound_str);
     if (ubound_str)
-        xk_pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, ubound_str);
+        pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, ubound_str);
     if (need_free)
-        xk_pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, range);
+        pg_parser_mcxt_free(PGFUNC_RANGE_MCXT, range);
 
     info->valuelen = strlen(output_str);
 
-    return (xk_pg_parser_Datum) output_str;
+    return (pg_parser_Datum) output_str;
 }

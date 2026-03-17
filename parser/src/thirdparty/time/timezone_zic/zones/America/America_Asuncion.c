@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Asuncion[] =
+char* PG_America_Asuncion[] =
 {
     (char *)"Rule	Para	1975	1988	-	Oct	 1	0:00	1:00	-",
     (char *)"Rule	Para	1975	1978	-	Mar	 1	0:00	0	-",

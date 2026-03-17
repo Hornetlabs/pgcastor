@@ -3,7 +3,7 @@
 
 static const uint16_t euc_kr_from_unicode_tree_table[33954];
 
-static const xk_character_mb_radix_tree euc_kr_from_unicode_tree =
+static const character_mb_radix_tree euc_kr_from_unicode_tree =
 {
   euc_kr_from_unicode_tree_table,
   NULL, /* 32-bit table not used */

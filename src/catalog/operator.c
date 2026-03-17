@@ -5,8 +5,8 @@
 #include "utils/hash/hash_utils.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -21,7 +21,7 @@ void operator_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	HASHCTL hash_ctl;
 	bool found = false;
 	catalog_operator_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_operator operator = NULL;
+	pg_sysdict_Form_pg_operator operator = NULL;
 	const char *query = "SELECT rel.oid,rel.oprname FROM pg_operator rel;";
 
 	rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -39,12 +39,12 @@ void operator_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	// 打印行数据
 	for (i = 0; i < PQntuples(res); i++) 
 	{
-		operator = (xk_pg_sysdict_Form_pg_operator)rmalloc0(sizeof(xk_pg_parser_sysdict_pgoperator));
+		operator = (pg_sysdict_Form_pg_operator)rmalloc0(sizeof(pg_parser_sysdict_pgoperator));
 		if(NULL == operator)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemset0(operator, 0, '\0', sizeof(xk_pg_parser_sysdict_pgoperator));
+		rmemset0(operator, 0, '\0', sizeof(pg_parser_sysdict_pgoperator));
 		j=0;
 		sscanf(PQgetvalue(res, i, j++), "%u", &operator->oid);
 		strcpy(operator->oprname.data ,PQgetvalue(res, i, j++));
@@ -70,7 +70,7 @@ void operatordata_write(List* operator_list, uint64 *offset, sysdict_header_arra
 	uint64 page_offset = 0;
 	ListCell*	cell = NULL;
 	char buffer[FILE_BLK_SIZE];
-	xk_pg_sysdict_Form_pg_operator rippleoperator;
+	pg_sysdict_Form_pg_operator rippleoperator;
 	
 	array->type = CATALOG_TYPE_OPERATOR;
 	array->offset = *offset;
@@ -87,9 +87,9 @@ void operatordata_write(List* operator_list, uint64 *offset, sysdict_header_arra
 
 	foreach(cell, operator_list)
 	{
-		rippleoperator = (xk_pg_sysdict_Form_pg_operator) lfirst(cell);
+		rippleoperator = (pg_sysdict_Form_pg_operator) lfirst(cell);
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgoperator) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgoperator) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
@@ -101,8 +101,8 @@ void operatordata_write(List* operator_list, uint64 *offset, sysdict_header_arra
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, rippleoperator, sizeof(xk_pg_parser_sysdict_pgoperator));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgoperator);
+		rmemcpy1(buffer, page_offset, rippleoperator, sizeof(pg_parser_sysdict_pgoperator));
+		page_offset += sizeof(pg_parser_sysdict_pgoperator);
 	}
 	if (page_offset > 0) {
 		if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
@@ -137,7 +137,7 @@ HTAB* operatorcache_load(sysdict_header_array* array)
     bool found = false;
     uint64 fileoffset = 0;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_operator operator;
+    pg_sysdict_Form_pg_operator operator;
     catalog_operator_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -164,15 +164,15 @@ HTAB* operatorcache_load(sysdict_header_array* array)
     {
         uint64 offset = 0;
 
-        while (offset + sizeof(xk_pg_parser_sysdict_pgoperator) < FILE_BLK_SIZE)
+        while (offset + sizeof(pg_parser_sysdict_pgoperator) < FILE_BLK_SIZE)
         {
-            operator = (xk_pg_sysdict_Form_pg_operator)rmalloc1(sizeof(xk_pg_parser_sysdict_pgoperator));
+            operator = (pg_sysdict_Form_pg_operator)rmalloc1(sizeof(pg_parser_sysdict_pgoperator));
             if(NULL == operator)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(operator, 0, '\0', sizeof(xk_pg_parser_sysdict_pgoperator));
-            rmemcpy0(operator, 0, buffer + offset, sizeof(xk_pg_parser_sysdict_pgoperator));
+            rmemset0(operator, 0, '\0', sizeof(pg_parser_sysdict_pgoperator));
+            rmemcpy0(operator, 0, buffer + offset, sizeof(pg_parser_sysdict_pgoperator));
             entry = hash_search(operatorhtab, &operator->oid, HASH_ENTER, &found);
             if(found)
             {
@@ -180,7 +180,7 @@ HTAB* operatorcache_load(sysdict_header_array* array)
             }
             entry->oid = operator->oid;
             entry->operator = operator;
-            offset += sizeof(xk_pg_parser_sysdict_pgoperator);
+            offset += sizeof(pg_parser_sysdict_pgoperator);
             if (fileoffset + offset == array[CATALOG_TYPE_OPERATOR - 1].len)
             {
                 if(osal_file_close(fd))
@@ -209,7 +209,7 @@ void operatorcache_write(HTAB* operatorcache, uint64 *offset, sysdict_header_arr
 	HASH_SEQ_STATUS status;
 	char buffer[FILE_BLK_SIZE];
 	catalog_operator_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_operator operator = NULL;
+	pg_sysdict_Form_pg_operator operator = NULL;
 	
 	array[CATALOG_TYPE_OPERATOR - 1].type = CATALOG_TYPE_OPERATOR;
 	array[CATALOG_TYPE_OPERATOR - 1].offset = *offset;
@@ -229,7 +229,7 @@ void operatorcache_write(HTAB* operatorcache, uint64 *offset, sysdict_header_arr
 	{
 		operator = entry->operator;
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgoperator) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgoperator) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
@@ -241,8 +241,8 @@ void operatorcache_write(HTAB* operatorcache, uint64 *offset, sysdict_header_arr
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, operator, sizeof(xk_pg_parser_sysdict_pgoperator));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgoperator);
+		rmemcpy1(buffer, page_offset, operator, sizeof(pg_parser_sysdict_pgoperator));
+		page_offset += sizeof(pg_parser_sysdict_pgoperator);
 	}
 
 	if (page_offset > 0) {

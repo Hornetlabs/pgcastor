@@ -2,8 +2,8 @@
 #include "libpq-fe.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "storage/file_buffer.h"
 #include "storage/ff_detail.h"
 #include "storage/ffsmgr.h"
@@ -50,9 +50,9 @@ bool fftrail_tbmetadata_serial(bool force,
     fftrail_privdata* ffprivdata = NULL;
     fftrail_table_serialentry* fftbentry = NULL;
     fftrail_database_serialentry* ffdbentry = NULL;
-    xk_pg_sysdict_Form_pg_class class = NULL;
-    xk_pg_sysdict_Form_pg_type type = NULL;
-    xk_pg_sysdict_Form_pg_namespace namespace = NULL;
+    pg_sysdict_Form_pg_class class = NULL;
+    pg_sysdict_Form_pg_type type = NULL;
+    pg_sysdict_Form_pg_namespace namespace = NULL;
     fftrail_table_serialkey   fftbkey = { 0 };
     List* index_list = NULL;
     uint32 indexnum = 0;
@@ -116,8 +116,8 @@ bool fftrail_tbmetadata_serial(bool force,
 
     foreach(lc, attrs)
     {
-        xk_pg_parser_sysdict_pgattributes* pgattrs = NULL;
-        pgattrs = (xk_pg_parser_sysdict_pgattributes*)lfirst(lc);
+        pg_parser_sysdict_pgattributes* pgattrs = NULL;
+        pgattrs = (pg_parser_sysdict_pgattributes*)lfirst(lc);
 
         /* 在 pg 中小于 0 的字段为系统列，不关注 */
         if(0 >= pgattrs->attnum)
@@ -131,7 +131,7 @@ bool fftrail_tbmetadata_serial(bool force,
         rmemcpy1(fftbmd->columns[pgattrs->attnum - 1].column, 0, pgattrs->attname.data, strlen(pgattrs->attname.data));
         if (0 < pgattrs->atttypid)
         {
-            type = (xk_pg_sysdict_Form_pg_type)ffstate->callback.gettype(ffstate->privdata, pgattrs->atttypid);
+            type = (pg_sysdict_Form_pg_type)ffstate->callback.gettype(ffstate->privdata, pgattrs->atttypid);
             rmemcpy1(fftbmd->columns[pgattrs->attnum - 1].typename, 0, type->typname.data, strlen(type->typname.data));
         }
 
@@ -139,28 +139,28 @@ bool fftrail_tbmetadata_serial(bool force,
         typid = pgattrs->atttypid;
         if (0 <= pgattrs->atttypmod)
         {
-            if (XK_PG_SYSDICT_BPCHAROID == typid || XK_PG_SYSDICT_VARCHAROID == typid)
+            if (PG_SYSDICT_BPCHAROID == typid || PG_SYSDICT_VARCHAROID == typid)
             {
                 pgattrs->atttypmod -= (int32_t) sizeof(int32_t);
                 fftbmd->columns[pgattrs->attnum - 1].length = pgattrs->atttypmod;
                 fftbmd->columns[pgattrs->attnum - 1].precision = -1;
                 fftbmd->columns[pgattrs->attnum - 1].scale = -1;
             }
-            else if (XK_PG_SYSDICT_TIMEOID == typid || XK_PG_SYSDICT_TIMETZOID == typid
-                || XK_PG_SYSDICT_TIMESTAMPOID == typid || XK_PG_SYSDICT_TIMESTAMPTZOID == typid)
+            else if (PG_SYSDICT_TIMEOID == typid || PG_SYSDICT_TIMETZOID == typid
+                || PG_SYSDICT_TIMESTAMPOID == typid || PG_SYSDICT_TIMESTAMPTZOID == typid)
             {
                 fftbmd->columns[pgattrs->attnum - 1].length = -1;
                 fftbmd->columns[pgattrs->attnum - 1].precision = pgattrs->atttypmod;
                 fftbmd->columns[pgattrs->attnum - 1].scale = -1;
             }
-            else if (XK_PG_SYSDICT_NUMERICOID == typid)
+            else if (PG_SYSDICT_NUMERICOID == typid)
             {
                 pgattrs->atttypmod -= (int32_t) sizeof(int32_t);
                 fftbmd->columns[pgattrs->attnum - 1].length = -1;
                 fftbmd->columns[pgattrs->attnum - 1].precision = (pgattrs->atttypmod >> 16) & 0xffff;
                 fftbmd->columns[pgattrs->attnum - 1].scale = pgattrs->atttypmod & 0xffff;
             }
-            else if (XK_PG_SYSDICT_BITOID == typid|| XK_PG_SYSDICT_VARBITOID == typid)
+            else if (PG_SYSDICT_BITOID == typid|| PG_SYSDICT_VARBITOID == typid)
             {
                 fftbmd->columns[pgattrs->attnum - 1].length = pgattrs->atttypmod;
                 fftbmd->columns[pgattrs->attnum - 1].precision = -1;
@@ -200,7 +200,7 @@ bool fftrail_tbmetadata_serial(bool force,
     }
 
     /* 根据 oid 获取表信息 */
-    class = (xk_pg_sysdict_Form_pg_class)ffstate->callback.getclass(ffstate->privdata, tbid);
+    class = (pg_sysdict_Form_pg_class)ffstate->callback.getclass(ffstate->privdata, tbid);
 
     /* 根据 oid 获取索引信息 */
     index_list = (List *)ffstate->callback.getindex(ffstate->privdata, tbid);
@@ -217,7 +217,7 @@ bool fftrail_tbmetadata_serial(bool force,
     if('\0' == class->nspname.data[0])
     {
         /* 根据 nspoid 获取模式信息 */
-        namespace = (xk_pg_sysdict_Form_pg_namespace)ffstate->callback.getnamespace(ffstate->privdata, class->relnamespace);
+        namespace = (pg_sysdict_Form_pg_namespace)ffstate->callback.getnamespace(ffstate->privdata, class->relnamespace);
         fftbmd->schema = namespace->nspname.data;
     }
     else
@@ -484,7 +484,7 @@ bool fftrail_tbmetadata_serial(bool force,
         {
             int key_index = 0;
             catalog_index_value *index_value = (catalog_index_value*)lfirst(lc);
-            xk_pg_sysdict_Form_pg_index index_catalog = index_value->index;
+            pg_sysdict_Form_pg_index index_catalog = index_value->index;
 
             /* indexrelid 4 */
             fftrail_data_data2buffer(&fftbmd->header,

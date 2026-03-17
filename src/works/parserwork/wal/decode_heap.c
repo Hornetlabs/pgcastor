@@ -7,9 +7,9 @@
 #include "utils/hash/hash_search.h"
 #include "utils/hash/hash_utils.h"
 #include "misc/misc_stat.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_errnodef.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_errnodef.h"
+#include "common/pg_parser_translog.h"
 #include "stmts/txnstmt.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -68,8 +68,8 @@ static bool heap_check_special_table(Oid oid,
                                 txn *txn)
 {
     HTAB *class_htab = decodingctx->trans_cache->sysdicts->by_class;
-    xk_pg_sysdict_Form_pg_class class = NULL;
-    class = (xk_pg_sysdict_Form_pg_class) catalog_get_class_sysdict(class_htab,
+    pg_sysdict_Form_pg_class class = NULL;
+    class = (pg_sysdict_Form_pg_class) catalog_get_class_sysdict(class_htab,
                                                                            txn->sysdict,
                                                                            txn->sysdictHis,
                                                                            oid);
@@ -80,10 +80,10 @@ static bool heap_check_special_table(Oid oid,
     return false;
 }
 
-static xk_pg_parser_translog_tuplecache *get_tuple_from_cache(HTAB *tuple_cache,
-                                                              xk_pg_parser_translog_pre_heap *heap_pre)
+static pg_parser_translog_tuplecache *get_tuple_from_cache(HTAB *tuple_cache,
+                                                              pg_parser_translog_pre_heap *heap_pre)
 {
-    xk_pg_parser_translog_tuplecache *result = NULL;
+    pg_parser_translog_tuplecache *result = NULL;
     ReorderBufferFPWKey key = {'\0'};
     ReorderBufferFPWEntry *entry = NULL;
     bool find = false;
@@ -100,7 +100,7 @@ static xk_pg_parser_translog_tuplecache *get_tuple_from_cache(HTAB *tuple_cache,
                          key.blcknum,
                          key.itemoffset);
     elog(RLOG_DEBUG, "get tuple, rel: %u, blk: %u, off:%hu", key.relfilenode, key.blcknum, key.itemoffset);
-    result = rmalloc0(sizeof(xk_pg_parser_translog_tuplecache));
+    result = rmalloc0(sizeof(pg_parser_translog_tuplecache));
     result->m_itemoffnum = key.itemoffset;
     result->m_pageno = key.blcknum;
     result->m_tuplelen = entry->len;
@@ -113,7 +113,7 @@ static xk_pg_parser_translog_tuplecache *get_tuple_from_cache(HTAB *tuple_cache,
 
 static void storage_tuple(transcache *storage,
                           XLogRecPtr lsn,
-                          xk_pg_parser_translog_tbcolbase *trans_return)
+                          pg_parser_translog_tbcolbase *trans_return)
 {
     ReorderBufferFPWKey key = {'\0'};
     ReorderBufferFPWEntry entry = {'\0'};
@@ -124,11 +124,11 @@ static void storage_tuple(transcache *storage,
     entry.lsn = lsn;
 
     /* multi insert返回结构不同, 需要与其他dml分别处理 */
-    if (trans_return->m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
+    if (trans_return->m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
     {
         int index_tuple_cnt = 0;
-        xk_pg_parser_translog_tbcol_nvalues *nvalues =
-            (xk_pg_parser_translog_tbcol_nvalues *)trans_return;
+        pg_parser_translog_tbcol_nvalues *nvalues =
+            (pg_parser_translog_tbcol_nvalues *)trans_return;
 
         key.relfilenode = nvalues->m_relfilenode;
         for (index_tuple_cnt = 0; index_tuple_cnt < nvalues->m_tupleCnt; index_tuple_cnt++)
@@ -149,8 +149,8 @@ static void storage_tuple(transcache *storage,
     else
     {
         int index_tuple_cnt = 0;
-        xk_pg_parser_translog_tbcol_values *values =
-            (xk_pg_parser_translog_tbcol_values *)trans_return;
+        pg_parser_translog_tbcol_values *values =
+            (pg_parser_translog_tbcol_values *)trans_return;
 
         key.relfilenode = values->m_relfilenode;
         for (index_tuple_cnt = 0; index_tuple_cnt < values->m_tupleCnt; index_tuple_cnt++)
@@ -331,10 +331,10 @@ static bool large_txn_filter(decodingcontext* ctx)
     return true;
 }
 
-static void init_heap_trans_data(xk_pg_parser_translog_translog2col *trans_data,
+static void init_heap_trans_data(pg_parser_translog_translog2col *trans_data,
                                  decodingcontext* decodingctx,
                                  txn *txn,
-                                 xk_pg_parser_translog_pre_heap *heap_pre,
+                                 pg_parser_translog_pre_heap *heap_pre,
                                  Oid oid)
 {
     bool search_his = true;
@@ -362,7 +362,7 @@ static void init_heap_trans_data(xk_pg_parser_translog_translog2col *trans_data,
 
     //todo free
     /* 构建convert结构 */
-    trans_data->m_convert = rmalloc0(sizeof(xk_pg_parser_translog_convertinfo));
+    trans_data->m_convert = rmalloc0(sizeof(pg_parser_translog_convertinfo));
     trans_data->m_convert->m_dbcharset = decodingctx->orgdbcharset;
     trans_data->m_convert->m_tartgetcharset = decodingctx->tgtdbcharset;
     trans_data->m_convert->m_tzname = decodingctx->tzname;
@@ -387,7 +387,7 @@ static bool heap_check_dboid(uint32_t dboid, uint32_t capture_dboid)
     return true;
 }
 
-void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_heap(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase)
 {
     bool find                                       = false;
     bool isexternal                                 = false;
@@ -397,12 +397,12 @@ void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* p
     int32_t err_num                                 = 0;
     txn *txn                                 = NULL;
     char* table_name                                = NULL;
-    xk_pg_parser_translog_translog2col *trans_data  = NULL;
-    xk_pg_parser_translog_tbcolbase *trans_return   = NULL;
-    xk_pg_parser_translog_pre_heap *heap_pre        = NULL;
-    xk_pg_parser_sysdict_pgclass *temp_class        = NULL;
+    pg_parser_translog_translog2col *trans_data  = NULL;
+    pg_parser_translog_tbcolbase *trans_return   = NULL;
+    pg_parser_translog_pre_heap *heap_pre        = NULL;
+    pg_parser_sysdict_pgclass *temp_class        = NULL;
 
-    heap_pre = (xk_pg_parser_translog_pre_heap*)pbase;
+    heap_pre = (pg_parser_translog_pre_heap*)pbase;
 
     /*----------------调用解析接口数据前处理 begin------------------------*/
     /* 查看是否为需要解析的库 */
@@ -449,7 +449,7 @@ void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* p
         }
     }
 
-    temp_class = (xk_pg_parser_sysdict_pgclass *)catalog_get_class_sysdict(decodingctx->trans_cache->sysdicts->by_class,
+    temp_class = (pg_parser_sysdict_pgclass *)catalog_get_class_sysdict(decodingctx->trans_cache->sysdicts->by_class,
                                                                                   txn->sysdict,
                                                                                   txn->sysdictHis,
                                                                                   oid);
@@ -515,13 +515,13 @@ void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* p
     /*----------------调用解析接口数据前处理   end------------------------*/
 
     /*----------------调用解析接口数据准备 begin--------------------------*/
-    trans_data = rmalloc0(sizeof(xk_pg_parser_translog_translog2col));
+    trans_data = rmalloc0(sizeof(pg_parser_translog_translog2col));
     if(NULL == trans_data)
     {
         elog(RLOG_WARNING, "heap out of memory");
         return;
     }
-    rmemset0(trans_data, 0, 0, sizeof(xk_pg_parser_translog_translog2col));
+    rmemset0(trans_data, 0, 0, sizeof(pg_parser_translog_translog2col));
     trans_data->m_iscatalog = is_catalog;
     elog(RLOG_DEBUG, "oid: %u, relfilenode:%u, iscatalog: %s", oid, heap_pre->m_relfilenode, trans_data->m_iscatalog ? "true" : "false");
 
@@ -534,9 +534,9 @@ void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* p
     /*----------------调用解析接口数据准备   end--------------------------*/
 
     /* 调用解析接口 */
-    if (!xk_pg_parser_trans_TransRecord(trans_data, &trans_return, &err_num))
+    if (!pg_parser_trans_TransRecord(trans_data, &trans_return, &err_num))
     {
-        elog(RLOG_ERROR, "error in trans heap errcode: %x, msg: %s", err_num, xk_pg_parser_errno_getErrInfo(err_num));
+        elog(RLOG_ERROR, "error in trans heap errcode: %x, msg: %s", err_num, pg_parser_errno_getErrInfo(err_num));
     }
 
     if (trans_data->m_iscatalog)
@@ -549,12 +549,12 @@ void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* p
      */
     if (0 == strcmp(trans_return->m_schemaname, "pg_catalog")
         && 0 == strcmp(trans_return->m_tbname, "pg_class")
-        && XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == trans_return->m_dmltype)
+        && PG_PARSER_TRANSLOG_DMLTYPE_INSERT == trans_return->m_dmltype)
     {
         char* temp_relname = NULL;
-        xk_pg_parser_translog_tbcol_values *col = NULL;
+        pg_parser_translog_tbcol_values *col = NULL;
 
-        col = (xk_pg_parser_translog_tbcol_values *)trans_return;
+        col = (pg_parser_translog_tbcol_values *)trans_return;
         temp_relname = get_class_value_from_colvalue(col->m_new_values,
                                                                   CLASS_MAPNUM_RELNAME,
                                                                   g_idbtype,
@@ -633,7 +633,7 @@ void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* p
          * 添加系统表数据到trans_cache_txn->sysdict
          * 系统表数据无需转为sql语句
          */
-        if (trans_return->m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
+        if (trans_return->m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
         {
             /* pg14版本以上, ddl语句针对系统表的insert优化为了multi insert */
             txn->sysdict = decode_heap_multi_insert_save_sysdict_as_insert(txn->sysdict, trans_return);
@@ -644,7 +644,7 @@ void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* p
         {
             txn_sysdict *dict = rmalloc0(sizeof(txn_sysdict));
 
-            dict->colvalues = (xk_pg_parser_translog_tbcol_values *)trans_return;
+            dict->colvalues = (pg_parser_translog_tbcol_values *)trans_return;
             dict->convert_colvalues = NULL;
             HEAP_STORAGE_CATALOG(txn, dict);
             TXN_SET_TRANS_DDL(txn->flag);
@@ -665,12 +665,12 @@ void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* p
     heap_free_trans_pre(trans_data);
 }
 
-void decode_heap_emit(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_heap_emit(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase)
 {
-    xk_pg_parser_translog_translog2col *trans_data = NULL;
-    xk_pg_parser_translog_tbcolbase *trans_return = NULL;
-    xk_pg_parser_translog_pre_heap *heap_pre = (xk_pg_parser_translog_pre_heap*)pbase;
-     xk_pg_parser_sysdict_pgclass *temp_class = NULL;
+    pg_parser_translog_translog2col *trans_data = NULL;
+    pg_parser_translog_tbcolbase *trans_return = NULL;
+    pg_parser_translog_pre_heap *heap_pre = (pg_parser_translog_pre_heap*)pbase;
+     pg_parser_sysdict_pgclass *temp_class = NULL;
     txn *txn = NULL;
     bool        is_catalog = false;
     bool        find = false;
@@ -708,7 +708,7 @@ void decode_heap_emit(decodingcontext* decodingctx, xk_pg_parser_translog_pre_ba
 
     is_catalog = heap_check_catalog(txn, oid);
 
-    temp_class = (xk_pg_parser_sysdict_pgclass *)catalog_get_class_sysdict(decodingctx->trans_cache->sysdicts->by_class,
+    temp_class = (pg_parser_sysdict_pgclass *)catalog_get_class_sysdict(decodingctx->trans_cache->sysdicts->by_class,
                                                                                   txn->sysdict,
                                                                                   txn->sysdictHis,
                                                                                   oid);
@@ -750,8 +750,8 @@ void decode_heap_emit(decodingcontext* decodingctx, xk_pg_parser_translog_pre_ba
         }
     }
 
-    trans_data = rmalloc0(sizeof(xk_pg_parser_translog_translog2col));
-    rmemset0(trans_data, 0, 0, sizeof(xk_pg_parser_translog_translog2col));
+    trans_data = rmalloc0(sizeof(pg_parser_translog_translog2col));
+    rmemset0(trans_data, 0, 0, sizeof(pg_parser_translog_translog2col));
     trans_data->m_iscatalog = is_catalog;
     elog(RLOG_DEBUG, "oid: %u, relfilenode:%u, iscatalog: %s", oid, heap_pre->m_relfilenode, trans_data->m_iscatalog ? "true" : "false");
 
@@ -762,9 +762,9 @@ void decode_heap_emit(decodingcontext* decodingctx, xk_pg_parser_translog_pre_ba
     isexternal = CHECK_EXTERNAL(&trans_data->m_sysdicts->m_pg_class.m_pg_class[0]);
 
     /* 调用解析接口 */
-    if (!xk_pg_parser_trans_TransRecord(trans_data, &trans_return, &err_num))
+    if (!pg_parser_trans_TransRecord(trans_data, &trans_return, &err_num))
     {
-        elog(RLOG_ERROR, "error in trans heap errcode: %x, msg: %s", err_num, xk_pg_parser_errno_getErrInfo(err_num));
+        elog(RLOG_ERROR, "error in trans heap errcode: %x, msg: %s", err_num, pg_parser_errno_getErrInfo(err_num));
     }
 
     if (trans_data->m_iscatalog)
@@ -773,10 +773,10 @@ void decode_heap_emit(decodingcontext* decodingctx, xk_pg_parser_translog_pre_ba
     /* 如果是对pg_class的pg_temp表进行操作, 首先使用我们保存的映射 */
     if (!strcmp(trans_return->m_schemaname, "pg_catalog")
      && !strcmp(trans_return->m_tbname, "pg_class")
-     && trans_return->m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT)
+     && trans_return->m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_INSERT)
     {
-        xk_pg_parser_translog_tbcol_values *col = 
-            (xk_pg_parser_translog_tbcol_values *) trans_return;
+        pg_parser_translog_tbcol_values *col = 
+            (pg_parser_translog_tbcol_values *) trans_return;
 
         char *temp_relname = get_class_value_from_colvalue(col->m_new_values,
                                                                   CLASS_MAPNUM_RELNAME,
@@ -846,7 +846,7 @@ void decode_heap_emit(decodingcontext* decodingctx, xk_pg_parser_translog_pre_ba
          * 添加系统表数据到trans_cache_txn->sysdict
          * 系统表数据无需转为sql语句
          */
-        if (trans_return->m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
+        if (trans_return->m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
         {
             /* pg14版本以上, ddl语句针对系统表的insert优化为了multi insert */
             txn->sysdict = decode_heap_multi_insert_save_sysdict_as_insert(txn->sysdict, trans_return);
@@ -857,7 +857,7 @@ void decode_heap_emit(decodingcontext* decodingctx, xk_pg_parser_translog_pre_ba
         {
             txn_sysdict *dict = rmalloc0(sizeof(txn_sysdict));
 
-            dict->colvalues = (xk_pg_parser_translog_tbcol_values *)trans_return;
+            dict->colvalues = (pg_parser_translog_tbcol_values *)trans_return;
             dict->convert_colvalues = NULL;
             HEAP_STORAGE_CATALOG(txn, dict);
             TXN_SET_TRANS_DDL(txn->flag);
@@ -878,10 +878,10 @@ void decode_heap_emit(decodingcontext* decodingctx, xk_pg_parser_translog_pre_ba
     heap_free_trans_pre(trans_data);
 }
 
-void heap_truncate(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
+void heap_truncate(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase)
 {
-    xk_pg_parser_translog_pre_heap_truncate *truncate =
-        (xk_pg_parser_translog_pre_heap_truncate*)pbase;
+    pg_parser_translog_pre_heap_truncate *truncate =
+        (pg_parser_translog_pre_heap_truncate*)pbase;
     txn *txn = NULL;
     int index_relnum = 0;
 
@@ -897,10 +897,10 @@ void heap_truncate(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base*
     /* 内存释放在预解析释放中完成 */
 }
 
-void heap_fpw_tuples(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
+void heap_fpw_tuples(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase)
 {
     Oid oid = 0;
-    xk_pg_parser_translog_pre_image_tuple *tup = (xk_pg_parser_translog_pre_image_tuple *)pbase;
+    pg_parser_translog_pre_image_tuple *tup = (pg_parser_translog_pre_image_tuple *)pbase;
     transcache *storage = decodingctx->trans_cache;
     txn *txn = NULL;
     List *sysdict = NULL;

@@ -9,8 +9,8 @@
 #include "queue/queue.h"
 #include "task/task_slot.h"
 #include "threads/threads.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
 #include "cache/cache_sysidcts.h"
@@ -736,9 +736,9 @@ void* increment_integraterebuild_main(void* args)
     thrnode* thr_node                                             = NULL;
     txnstmt* stmtnode                                            = NULL;
     increment_integraterebuild* rebuild_obj                          = NULL;
-    xk_pg_parser_translog_tbcol_values* values                          = NULL;
-    xk_pg_parser_translog_tbcolbase* tbcolbase                          = NULL;
-    xk_pg_parser_translog_tbcol_nvalues* nvalues                        = NULL;
+    pg_parser_translog_tbcol_values* values                          = NULL;
+    pg_parser_translog_tbcolbase* tbcolbase                          = NULL;
+    pg_parser_translog_tbcol_nvalues* nvalues                        = NULL;
     onlinerefresh_integratedatasetnode *node                     = NULL;
     onlinerefresh_integratefilterdataset* filterdatasetentry     = NULL;
 
@@ -848,16 +848,16 @@ void* increment_integraterebuild_main(void* args)
                         continue;
                     }
 
-                    tbcolbase = (xk_pg_parser_translog_tbcolbase *)stmtnode->stmt;
+                    tbcolbase = (pg_parser_translog_tbcolbase *)stmtnode->stmt;
             
-                    if(XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
+                    if(PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
                     {
-                        nvalues = (xk_pg_parser_translog_tbcol_nvalues *)stmtnode->stmt;
+                        nvalues = (pg_parser_translog_tbcol_nvalues *)stmtnode->stmt;
                         relid = nvalues->m_relid;
                     }
                     else
                     {
-                        values = (xk_pg_parser_translog_tbcol_values *)stmtnode->stmt;
+                        values = (pg_parser_translog_tbcol_values *)stmtnode->stmt;
                         relid = values->m_relid;
                     }
 

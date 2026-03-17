@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Damascus[] =
+char* PG_Asia_Damascus[] =
 {
     (char *)"Rule	Syria	1920	1923	-	Apr	Sun>=15	2:00	1:00	S",
     (char *)"Rule	Syria	1920	1923	-	Oct	Sun>=1	2:00	0	-",

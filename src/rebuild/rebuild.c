@@ -5,8 +5,8 @@
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
 #include "utils/string/stringinfo.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -20,26 +20,26 @@
 #include "works/parserwork/wal/decode_heap_util.h"
 
 /* multiinsert拆分为多条insert */
-static bool rebuild_prepared_multiinsert2insert(xk_pg_parser_translog_tbcol_nvalues* nvalues,
-                                                       xk_pg_parser_translog_tbcol_value* column,
+static bool rebuild_prepared_multiinsert2insert(pg_parser_translog_tbcol_nvalues* nvalues,
+                                                       pg_parser_translog_tbcol_value* column,
                                                        txnstmt_prepared* stmtprepared)
 {
-    xk_pg_parser_translog_tbcol_values* row = NULL;
+    pg_parser_translog_tbcol_values* row = NULL;
 
     /* 申请insert data空间 */
-    row = (xk_pg_parser_translog_tbcol_values*)rmalloc0(sizeof(xk_pg_parser_translog_tbcol_values));
+    row = (pg_parser_translog_tbcol_values*)rmalloc0(sizeof(pg_parser_translog_tbcol_values));
     if(NULL == row)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return false;
     }
-    rmemset0(row, 0, '\0', sizeof(xk_pg_parser_translog_tbcol_values));
+    rmemset0(row, 0, '\0', sizeof(pg_parser_translog_tbcol_values));
 
     /* 复制m_base */
     row->m_base.m_dmltype = nvalues->m_base.m_dmltype;
     row->m_base.m_originid = nvalues->m_base.m_originid;
     row->m_base.m_tabletype = nvalues->m_base.m_tabletype;
-    row->m_base.m_type = XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT;
+    row->m_base.m_type = PG_PARSER_TRANSLOG_DMLTYPE_INSERT;
     row->m_base.m_schemaname = rstrdup(nvalues->m_base.m_schemaname);
     row->m_base.m_tbname = rstrdup(nvalues->m_base.m_tbname);
 
@@ -313,13 +313,13 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild,
     uint32                                  colcnts = 0;
     txnstmt*                         nstmt = NULL;
     txnstmt_prepared*                stmtprepared = NULL;
-    xk_pg_parser_translog_tbcol_value*      column = NULL;
-    xk_pg_parser_translog_tbcol_nvalues*    nvalues = NULL;
+    pg_parser_translog_tbcol_value*      column = NULL;
+    pg_parser_translog_tbcol_nvalues*    nvalues = NULL;
     StringInfo                              preparestmtname;
 
     /* MULTIINSERT处理 */
     has_valid_column = false;
-    nvalues = (xk_pg_parser_translog_tbcol_nvalues *)stmt->stmt;
+    nvalues = (pg_parser_translog_tbcol_nvalues *)stmt->stmt;
 
     preparestmtname = makeStringInfo();
     appendStringInfo(preparestmtname,
@@ -392,7 +392,7 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild,
         /* 初始化 txnstmt */
         nstmt = rebuild_initpreparestmt(rebuild,
                                                 nvalues->m_relid,
-                                                XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
+                                                PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
                                                 colcnts,
                                                 preparestmtname->data,
                                                 preparestmtname->len);
@@ -456,11 +456,11 @@ static bool rebuild_prepared_insert(rebuild* rebuild,
     StringInfo                              preparedstmt = NULL;
     txnstmt*                         nstmt = NULL;
     txnstmt_prepared*                stmtprepared = NULL;
-    xk_pg_parser_translog_tbcol_values*     row = NULL;
-    xk_pg_parser_translog_tbcol_value*      colvalue = NULL;
+    pg_parser_translog_tbcol_values*     row = NULL;
+    pg_parser_translog_tbcol_value*      colvalue = NULL;
 
     /* 入参转换 */
-    row = (xk_pg_parser_translog_tbcol_values *)stmt->stmt;
+    row = (pg_parser_translog_tbcol_values *)stmt->stmt;
 
     /* 申请空间 */
     preparedstmt = makeStringInfo();
@@ -523,7 +523,7 @@ static bool rebuild_prepared_insert(rebuild* rebuild,
 
     nstmt = rebuild_initpreparestmt(rebuild,
                                            row->m_relid,
-                                           XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
+                                           PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
                                            colcnt,
                                            preparedstmt->data,
                                            preparedstmt->len);
@@ -570,7 +570,7 @@ static bool rebuild_prepared_insert(rebuild* rebuild,
 
 /* 拼接bind参数函数 */
 static int rebuild_appendbindparam(StringInfoData *stmt,
-                                          xk_pg_parser_translog_tbcol_value *values,
+                                          pg_parser_translog_tbcol_value *values,
                                           int count,
                                           int nParams,
                                           bool with_comma)
@@ -611,11 +611,11 @@ static bool rebuild_prepared_delete(rebuild* rebuild,
     StringInfo                              preparedstmt = NULL;
     txnstmt*                         nstmt = NULL;
     txnstmt_prepared*                stmtprepared = NULL;
-    xk_pg_parser_translog_tbcol_values*     row = NULL;
-    xk_pg_parser_translog_tbcol_value*      colvalue = NULL;
+    pg_parser_translog_tbcol_values*     row = NULL;
+    pg_parser_translog_tbcol_value*      colvalue = NULL;
 
     /* 入参转换 */
-    row = (xk_pg_parser_translog_tbcol_values *)stmt->stmt;
+    row = (pg_parser_translog_tbcol_values *)stmt->stmt;
 
     /* 申请空间 */
     preparedstmt = makeStringInfo();
@@ -648,7 +648,7 @@ static bool rebuild_prepared_delete(rebuild* rebuild,
 
     nstmt = rebuild_initpreparestmt(rebuild,
                                            row->m_relid,
-                                           XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE,
+                                           PG_PARSER_TRANSLOG_DMLTYPE_DELETE,
                                            colcnt,
                                            preparedstmt->data,
                                            preparedstmt->len);
@@ -703,11 +703,11 @@ static bool rebuild_prepared_update(rebuild* rebuild,
     StringInfo                              preparedstmt = NULL;
     txnstmt*                         nstmt = NULL;
     txnstmt_prepared*                stmtprepared = NULL;
-    xk_pg_parser_translog_tbcol_values*     row = NULL;
-    xk_pg_parser_translog_tbcol_value*      colvalue = NULL;
+    pg_parser_translog_tbcol_values*     row = NULL;
+    pg_parser_translog_tbcol_value*      colvalue = NULL;
 
     /* 入参转换 */
-    row = (xk_pg_parser_translog_tbcol_values *)stmt->stmt;
+    row = (pg_parser_translog_tbcol_values *)stmt->stmt;
 
     /* 申请空间 */
     preparedstmt = makeStringInfo();
@@ -748,7 +748,7 @@ static bool rebuild_prepared_update(rebuild* rebuild,
 
     nstmt = rebuild_initpreparestmt(rebuild,
                                            row->m_relid,
-                                           XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE,
+                                           PG_PARSER_TRANSLOG_DMLTYPE_UPDATE,
                                            colcnt,
                                            preparedstmt->data,
                                            preparedstmt->len);
@@ -822,7 +822,7 @@ bool rebuild_prepared(rebuild* rebuild, txn* txn)
     txnstmt* stmtnode                    = NULL;
     catalogdata *catalog_data             = NULL;
     txnstmt_metadata* metadatastmt       = NULL;
-    xk_pg_parser_translog_tbcolbase* tbcolbase  = NULL;
+    pg_parser_translog_tbcolbase* tbcolbase  = NULL;
 
     if(NULL == txn->stmts)
     {
@@ -838,29 +838,29 @@ bool rebuild_prepared(rebuild* rebuild, txn* txn)
 
         if (stmtnode->type == TXNSTMT_TYPE_DML)
         {
-            tbcolbase = (xk_pg_parser_translog_tbcolbase *)stmtnode->stmt;
-            if(XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
+            tbcolbase = (pg_parser_translog_tbcolbase *)stmtnode->stmt;
+            if(PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
             {
                 if(false == rebuild_prepared_multiinsert(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
-            else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == tbcolbase->m_dmltype)
+            else if(PG_PARSER_TRANSLOG_DMLTYPE_INSERT == tbcolbase->m_dmltype)
             {
                 if(false == rebuild_prepared_insert(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
-            else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == tbcolbase->m_dmltype)
+            else if(PG_PARSER_TRANSLOG_DMLTYPE_DELETE == tbcolbase->m_dmltype)
             {
                 if(false == rebuild_prepared_delete(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
-            else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == tbcolbase->m_dmltype)
+            else if(PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == tbcolbase->m_dmltype)
             {
                 if(false == rebuild_prepared_update(rebuild, stmtnode, &txn->stmts))
                 {

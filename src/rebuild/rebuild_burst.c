@@ -8,8 +8,8 @@
 #include "utils/algorithm/md5/md5.h"
 #include "stmts/txnstmt.h"
 #include "stmts/txnstmt_burst.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "catalog/catalog.h"
@@ -147,14 +147,14 @@ rebuild_burst* rebuild_burst_init(void)
 }
 
 /* 计算MD5值和missingmap */
-static bool rebuild_burst_setmd5andmissing(rebuild_burstrow* row, xk_pg_parser_translog_tbcol_value* value)
+static bool rebuild_burst_setmd5andmissing(rebuild_burstrow* row, pg_parser_translog_tbcol_value* value)
 {
     MD5_CTX md5;
     int colindex                                        = 0;
     varstr* vstr                                        = NULL;
-    xk_pg_parser_translog_tbcol_values* colvalues       = NULL;
+    pg_parser_translog_tbcol_values* colvalues       = NULL;
 
-    colvalues = (xk_pg_parser_translog_tbcol_values*)row->row;
+    colvalues = (pg_parser_translog_tbcol_values*)row->row;
 
     vstr = varstr_init(256);
     if (NULL == vstr)
@@ -276,11 +276,11 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
     bool find                                   = false;
     int typmod                                  = -1;
     ListCell* attrlc                            = NULL;
-    xk_pg_sysdict_Form_pg_type type             = NULL;
-    xk_pg_sysdict_Form_pg_attribute attr        = NULL;
+    pg_sysdict_Form_pg_type type             = NULL;
+    pg_sysdict_Form_pg_attribute attr        = NULL;
     StringInfoData result                       = {0};
 
-    type = (xk_pg_sysdict_Form_pg_type)type_getbyoid(typeoid, htype);
+    type = (pg_sysdict_Form_pg_type)type_getbyoid(typeoid, htype);
     if (NULL == type)
     {
         elog(RLOG_WARNING, "cache lookup failed for type %u", typeoid);
@@ -289,7 +289,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
 
     foreach(attrlc, lattrs)
     {
-        attr = (xk_pg_sysdict_Form_pg_attribute)lfirst(attrlc);
+        attr = (pg_sysdict_Form_pg_attribute)lfirst(attrlc);
         if (0 == strcmp(colname, attr->attname.data))
         {
             find = true;
@@ -309,7 +309,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
     /* 计算类型长度和精度 */
     switch (typeoid)
     {
-        case XK_PG_SYSDICT_BITOID:
+        case PG_SYSDICT_BITOID:
             if (typmod == -1)
             {
                 appendStringInfoString(&result, "bit");
@@ -319,7 +319,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
                 appendStringInfo(&result, "bit(%d)", typmod);
             }
             break;
-        case XK_PG_SYSDICT_VARBITOID:
+        case PG_SYSDICT_VARBITOID:
             if (typmod == -1)
             {
                 appendStringInfoString(&result, "varbit");
@@ -329,8 +329,8 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
                 appendStringInfo(&result, "varbit(%d)", typmod);
             }
             break;
-        case XK_PG_SYSDICT_CHAROID:
-        case XK_PG_SYSDICT_BPCHAROID:
+        case PG_SYSDICT_CHAROID:
+        case PG_SYSDICT_BPCHAROID:
             if (typmod == -1)
             {
                 appendStringInfoString(&result, "char");
@@ -340,7 +340,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
                 appendStringInfo(&result, "char(%d)", typmod - VARHDRSZ);
             }
             break;
-        case XK_PG_SYSDICT_VARCHAROID:
+        case PG_SYSDICT_VARCHAROID:
             if (typmod == -1)
             {
                 appendStringInfoString(&result, "varchar");
@@ -350,7 +350,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
                 appendStringInfo(&result, "varchar(%d)", typmod - VARHDRSZ);
             }
             break;
-        case XK_PG_SYSDICT_NUMERICOID:
+        case PG_SYSDICT_NUMERICOID:
             if (typmod == -1)
             {
                 appendStringInfoString(&result, "numeric");
@@ -362,7 +362,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
                                  (typmod - VARHDRSZ) & 0xffff);
             }
             break;
-        case XK_PG_SYSDICT_TIMEOID:
+        case PG_SYSDICT_TIMEOID:
             if (typmod == -1)
             {
                 appendStringInfoString(&result, "time without time zone");
@@ -372,7 +372,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
                 appendStringInfo(&result, "time(%d) without time zone", typmod);
             }
             break;
-        case XK_PG_SYSDICT_TIMETZOID:
+        case PG_SYSDICT_TIMETZOID:
             if (typmod == -1)
             {
                 appendStringInfoString(&result, "time with time zone");
@@ -382,7 +382,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
                 appendStringInfo(&result, "time(%d) with time zone", typmod);
             }
             break;
-        case XK_PG_SYSDICT_TIMESTAMPOID:
+        case PG_SYSDICT_TIMESTAMPOID:
             if (typmod == -1)
             {
                 appendStringInfoString(&result, "timestamp without time zone");
@@ -392,7 +392,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
                 appendStringInfo(&result, "timestamp(%d) without time zone", typmod);
             }
             break;
-        case XK_PG_SYSDICT_TIMESTAMPTZOID:
+        case PG_SYSDICT_TIMESTAMPTZOID:
             if (typmod == -1)
             {
                 appendStringInfoString(&result, "timestamp with time zone");
@@ -414,11 +414,11 @@ static bool rebuild_burst_updatematchdata(rebuild_burstrow* insertrow,
                                                  rebuild_burstrow* delrow,
                                                  rebuild_burstrow* updaterow)
 {
-    xk_pg_parser_translog_tbcol_values* insert          = NULL;
-    xk_pg_parser_translog_tbcol_values* update          = NULL;
-    xk_pg_parser_translog_tbcol_value* insertvalue      = NULL;
-    xk_pg_parser_translog_tbcol_value* nupdatevalue     = NULL;
-    xk_pg_parser_translog_tbcol_value* oupdatevalue     = NULL;
+    pg_parser_translog_tbcol_values* insert          = NULL;
+    pg_parser_translog_tbcol_values* update          = NULL;
+    pg_parser_translog_tbcol_value* insertvalue      = NULL;
+    pg_parser_translog_tbcol_value* nupdatevalue     = NULL;
+    pg_parser_translog_tbcol_value* oupdatevalue     = NULL;
 
     /*  update的before和after都没有missing值 直接返回 */
     if (0 == updaterow->missingcnt && 0 == delrow->missingcnt)
@@ -426,14 +426,14 @@ static bool rebuild_burst_updatematchdata(rebuild_burstrow* insertrow,
         return true;
     }
 
-    insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
-    update = (xk_pg_parser_translog_tbcol_values*)updaterow->row;
+    insert = (pg_parser_translog_tbcol_values*)insertrow->row;
+    update = (pg_parser_translog_tbcol_values*)updaterow->row;
     insertvalue = insert->m_new_values;
     oupdatevalue = update->m_old_values;
     nupdatevalue = update->m_new_values;
 
     /* 匹配上的insert 补全 update拆出的insert值 */
-    if (false == xk_pg_parser_trans_matchmissing(nupdatevalue, insertvalue, insert->m_valueCnt))
+    if (false == pg_parser_trans_matchmissing(nupdatevalue, insertvalue, insert->m_valueCnt))
     {
         elog(RLOG_WARNING, "rebuild burst updatematchdata insert/delete failed");
         return false;
@@ -441,7 +441,7 @@ static bool rebuild_burst_updatematchdata(rebuild_burstrow* insertrow,
 
     if (REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
     {
-        if (false == xk_pg_parser_trans_matchmissing(oupdatevalue, insertvalue, insert->m_valueCnt))
+        if (false == pg_parser_trans_matchmissing(oupdatevalue, insertvalue, insert->m_valueCnt))
         {
             elog(RLOG_WARNING, "rebuild burst updatematchdata insert/update before failed");
             return false;
@@ -457,11 +457,11 @@ static void rebuild_burst_ischangeconskey(rebuild_burstnode* burstnode,
     int key                                             = 0;
     int colindex                                        = 0;
     rebuild_burstcolumn* column                  = NULL;
-    xk_pg_parser_translog_tbcol_values* update          = NULL;
-    xk_pg_parser_translog_tbcol_value* nupdatevalue     = NULL;
-    xk_pg_parser_translog_tbcol_value* oupdatevalue     = NULL;
+    pg_parser_translog_tbcol_values* update          = NULL;
+    pg_parser_translog_tbcol_value* nupdatevalue     = NULL;
+    pg_parser_translog_tbcol_value* oupdatevalue     = NULL;
 
-    update = (xk_pg_parser_translog_tbcol_values*)updaterow->row;
+    update = (pg_parser_translog_tbcol_values*)updaterow->row;
 
     nupdatevalue = update->m_new_values;
     oupdatevalue = update->m_old_values;
@@ -496,13 +496,13 @@ static bool rebuild_composekey(HTAB* hclass,
     List* lattrs                                = NULL;
     ListCell* indlc                             = NULL;
     ListCell* attrlc                            = NULL;
-    xk_pg_sysdict_Form_pg_class class           = NULL;
+    pg_sysdict_Form_pg_class class           = NULL;
     catalog_index_value* indvalue        = NULL;
-    xk_pg_sysdict_Form_pg_index index           = NULL;
-    xk_pg_sysdict_Form_pg_attribute attr        = NULL;
+    pg_sysdict_Form_pg_index index           = NULL;
+    pg_sysdict_Form_pg_attribute attr        = NULL;
 
     /* 获取class */
-    class = (xk_pg_sysdict_Form_pg_class)class_getbyoid(pburstnode->table.oid, hclass);
+    class = (pg_sysdict_Form_pg_class)class_getbyoid(pburstnode->table.oid, hclass);
 
     if (NULL == class)
     {
@@ -572,7 +572,7 @@ static bool rebuild_composekey(HTAB* hclass,
         find = false;
         foreach(attrlc, lattrs)
         {
-            attr = (xk_pg_sysdict_Form_pg_attribute)lfirst(attrlc);
+            attr = (pg_sysdict_Form_pg_attribute)lfirst(attrlc);
             if (indkey == attr->attnum)
             {
                 find = true;
@@ -603,8 +603,8 @@ static bool rebuild_composekey(HTAB* hclass,
  * 入参: tbcolbase1源数据
  *       tbcolbase2目标数据
 */
-static void rebuild_burst_tbcolbasecopy(xk_pg_parser_translog_tbcolbase* tbcolbase1,
-                                               xk_pg_parser_translog_tbcolbase* tbcolbase2)
+static void rebuild_burst_tbcolbasecopy(pg_parser_translog_tbcolbase* tbcolbase1,
+                                               pg_parser_translog_tbcolbase* tbcolbase2)
 {
     if (NULL == tbcolbase1 || NULL == tbcolbase2)
     {
@@ -626,13 +626,13 @@ static void rebuild_burst_tbcolbasecopy(xk_pg_parser_translog_tbcolbase* tbcolba
  * 
  * 返回值：是否复制成功，value2复制结果
 */
-static bool rebuild_burst_tbcolvaluecopy(xk_pg_parser_translog_tbcol_value* value1,
-                                                xk_pg_parser_translog_tbcol_value** value2,
+static bool rebuild_burst_tbcolvaluecopy(pg_parser_translog_tbcol_value* value1,
+                                                pg_parser_translog_tbcol_value** value2,
                                                 uint32 valuecnt)
 {
     int len                                     = 0;
     int colindex                                = 0;
-    xk_pg_parser_translog_tbcol_value* value    = NULL;
+    pg_parser_translog_tbcol_value* value    = NULL;
 
     if (NULL == value1)
     {
@@ -640,8 +640,8 @@ static bool rebuild_burst_tbcolvaluecopy(xk_pg_parser_translog_tbcol_value* valu
         return false;
     }
 
-    len = sizeof(xk_pg_parser_translog_tbcol_value) * valuecnt;
-    value = (xk_pg_parser_translog_tbcol_value*)rmalloc0(len);
+    len = sizeof(pg_parser_translog_tbcol_value) * valuecnt;
+    value = (pg_parser_translog_tbcol_value*)rmalloc0(len);
     if (NULL == value)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
@@ -780,13 +780,13 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
 {
     rebuild_burstrow* tmpdelrow              = NULL;
     rebuild_burstrow* tmpinsertrow           = NULL;
-    xk_pg_parser_translog_tbcol_values* update      = NULL;
-    xk_pg_parser_translog_tbcol_values* delete      = NULL;
+    pg_parser_translog_tbcol_values* update      = NULL;
+    pg_parser_translog_tbcol_values* delete      = NULL;
 
-    update = (xk_pg_parser_translog_tbcol_values*)rows;
+    update = (pg_parser_translog_tbcol_values*)rows;
 
     /* update 新旧值missing值互补 */
-    if (false == xk_pg_parser_trans_matchmissing(update->m_new_values, update->m_old_values, update->m_valueCnt))
+    if (false == pg_parser_trans_matchmissing(update->m_new_values, update->m_old_values, update->m_valueCnt))
     {
         elog(RLOG_WARNING, "rebuild burst decomposeupdate match missing failed");
         return false;
@@ -800,18 +800,18 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
     }
 
     /* 申请delete value空间 */
-    delete = (xk_pg_parser_translog_tbcol_values*)rmalloc0(sizeof(xk_pg_parser_translog_tbcol_values));
+    delete = (pg_parser_translog_tbcol_values*)rmalloc0(sizeof(pg_parser_translog_tbcol_values));
     if(NULL == delete)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return false;
     }
-    rmemset0(delete, 0, '\0', sizeof(xk_pg_parser_translog_tbcol_values));
+    rmemset0(delete, 0, '\0', sizeof(pg_parser_translog_tbcol_values));
 
     /* 复制表信息 */
     rebuild_burst_tbcolbasecopy(&update->m_base, &delete->m_base);
 
-    delete->m_base.m_dmltype = XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE;
+    delete->m_base.m_dmltype = PG_PARSER_TRANSLOG_DMLTYPE_DELETE;
     delete->m_haspkey = update->m_haspkey;
     delete->m_relfilenode = update->m_relfilenode;
     delete->m_relid = update->m_relid;
@@ -824,7 +824,7 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
     if (false == rebuild_burst_tbcolvaluecopy(update->m_old_values, &delete->m_old_values, update->m_valueCnt))
     {
         elog(RLOG_WARNING, "rebuild burst decomposeupdate copy before failed");
-        heap_free_trans_result((xk_pg_parser_translog_tbcolbase*)delete);
+        heap_free_trans_result((pg_parser_translog_tbcolbase*)delete);
         return false;
     }
     tmpdelrow->row = delete;
@@ -977,8 +977,8 @@ bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode,
     dlistnode* dlnode                           = NULL;
     rebuild_burstcolumn* keys            = NULL;
     rebuild_burstrow* insertrow          = NULL;
-    xk_pg_parser_translog_tbcol_values* del     = NULL;
-    xk_pg_parser_translog_tbcol_values* insert  = NULL;
+    pg_parser_translog_tbcol_values* del     = NULL;
+    pg_parser_translog_tbcol_values* insert  = NULL;
 
     if(true == dlist_isnull(pburstnode->dlinsertrows))
     {
@@ -1005,8 +1005,8 @@ bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode,
             bool same = true;
             keycnt = pburstnode->table.keycnt;
             keys = pburstnode->table.keys;
-            del = (xk_pg_parser_translog_tbcol_values*)delrow->row;
-            insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
+            del = (pg_parser_translog_tbcol_values*)delrow->row;
+            insert = (pg_parser_translog_tbcol_values*)insertrow->row;
 
             /* 比较约束列值是否相同 */
             for (keyindex = 0; keyindex < keycnt; keyindex++)
@@ -1067,10 +1067,10 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
     rebuild_burstcolumn* keys                    = NULL;
     rebuild_burstrow* insertrow                  = NULL;
     rebuild_burstrow* updaterow                  = NULL;
-    xk_pg_parser_translog_tbcol_values* del             = NULL;
-    xk_pg_parser_translog_tbcol_values* insert          = NULL;
-    xk_pg_parser_translog_tbcol_values* update          = NULL;
-    xk_pg_parser_translog_tbcol_value* insertvalue      = NULL;
+    pg_parser_translog_tbcol_values* del             = NULL;
+    pg_parser_translog_tbcol_values* insert          = NULL;
+    pg_parser_translog_tbcol_values* update          = NULL;
+    pg_parser_translog_tbcol_value* insertvalue      = NULL;
 
     updaterow = *in_updaterow;
 
@@ -1079,14 +1079,14 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
         return false;
     }
 
-    update = (xk_pg_parser_translog_tbcol_values*)updaterow->row;
+    update = (pg_parser_translog_tbcol_values*)updaterow->row;
 
     /* 查找与insert相同的delete */
     for (dlnode = burstnode->dlinsertrows->tail; NULL != dlnode; dlnode = dlnode->prev)
     {
         same = false;
         insertrow = (rebuild_burstrow*)dlnode->value;
-        insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
+        insert = (pg_parser_translog_tbcol_values*)insertrow->row;
 
         if (REBUILD_BURSTNODEFLAG_NOINDEX == burstnode->flag)
         {
@@ -1102,7 +1102,7 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
             same = true;
             keycnt = burstnode->table.keycnt;
             keys = burstnode->table.keys;
-            del = (xk_pg_parser_translog_tbcol_values*)delrow->row;
+            del = (pg_parser_translog_tbcol_values*)delrow->row;
 
             /* 比较约束列值是否相同 */
             for (keyindex = 0; keyindex < keycnt; keyindex++)
@@ -1141,7 +1141,7 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
     if (REBUILD_BURSTROWTYPE_INSERT == insertrow->op
         || REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
     {
-        insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
+        insert = (pg_parser_translog_tbcol_values*)insertrow->row;
         insertvalue = insert->m_new_values;
 
         insert->m_new_values = update->m_new_values;
@@ -1188,9 +1188,9 @@ static bool rebuild_burst_txn2bursts_insert(rebuild_burst* burst,
     rebuild_bursttable table             = {0};
     rebuild_burstrow* insertrow          = NULL;
     rebuild_burstnode* burstnode         = NULL;
-    xk_pg_parser_translog_tbcol_values* insert  = NULL;
+    pg_parser_translog_tbcol_values* insert  = NULL;
 
-    insert = (xk_pg_parser_translog_tbcol_values*)row;
+    insert = (pg_parser_translog_tbcol_values*)row;
 
     table.oid = insert->m_relid;
     table.schema = insert->m_base.m_schemaname;
@@ -1239,9 +1239,9 @@ static bool rebuild_burst_txn2bursts_delete(rebuild_burst* burst,
     rebuild_bursttable table             = {0};
     rebuild_burstrow* delrow             = NULL;
     rebuild_burstnode* burstnode         = NULL;
-    xk_pg_parser_translog_tbcol_values* delete  = NULL;
+    pg_parser_translog_tbcol_values* delete  = NULL;
 
-    delete = (xk_pg_parser_translog_tbcol_values*)row;
+    delete = (pg_parser_translog_tbcol_values*)row;
 
     table.oid = delete->m_relid;
     table.schema = delete->m_base.m_schemaname;
@@ -1292,11 +1292,11 @@ static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst* burst,
     rebuild_bursttable table                     = {0};
     rebuild_burstrow* insertrow                  = NULL;
     rebuild_burstnode* burstnode                 = NULL;
-    xk_pg_parser_translog_tbcol_value* value            = NULL;
-    xk_pg_parser_translog_tbcol_values* insert          = NULL;
-    xk_pg_parser_translog_tbcol_nvalues* multiinsert    = NULL;
+    pg_parser_translog_tbcol_value* value            = NULL;
+    pg_parser_translog_tbcol_values* insert          = NULL;
+    pg_parser_translog_tbcol_nvalues* multiinsert    = NULL;
 
-    multiinsert = (xk_pg_parser_translog_tbcol_nvalues*)row;
+    multiinsert = (pg_parser_translog_tbcol_nvalues*)row;
 
     table.oid = multiinsert->m_relid;
     table.schema = multiinsert->m_base.m_schemaname;
@@ -1317,16 +1317,16 @@ static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst* burst,
     {
         value = multiinsert->m_rows[rowindx].m_new_values;
         /* 拆分为多条insert */
-        insert = (xk_pg_parser_translog_tbcol_values*)rmalloc0(sizeof(xk_pg_parser_translog_tbcol_values));
+        insert = (pg_parser_translog_tbcol_values*)rmalloc0(sizeof(pg_parser_translog_tbcol_values));
         if(NULL == insert)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
             return false;
         }
-        rmemset0(insert, 0, '\0', sizeof(xk_pg_parser_translog_tbcol_values));
+        rmemset0(insert, 0, '\0', sizeof(pg_parser_translog_tbcol_values));
 
         rebuild_burst_tbcolbasecopy(&multiinsert->m_base, &insert->m_base);
-        insert->m_base.m_dmltype = XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT;
+        insert->m_base.m_dmltype = PG_PARSER_TRANSLOG_DMLTYPE_INSERT;
         insert->m_haspkey = multiinsert->m_haspkey;
         insert->m_relid = multiinsert->m_relid;
         insert->m_relfilenode = multiinsert->m_relfilenode;
@@ -1370,9 +1370,9 @@ static bool rebuild_burst_txn2bursts_update(rebuild_burst* burst,
     rebuild_burstrow* delrow             = NULL;
     rebuild_burstrow* insertrow          = NULL;
     rebuild_burstnode* burstnode         = NULL;
-    xk_pg_parser_translog_tbcol_values* update  = NULL;
+    pg_parser_translog_tbcol_values* update  = NULL;
 
-    update = (xk_pg_parser_translog_tbcol_values*)row;
+    update = (pg_parser_translog_tbcol_values*)row;
 
     table.oid = update->m_relid;
     table.schema = update->m_base.m_schemaname;
@@ -1440,7 +1440,7 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
     catalogdata *catalog_data             = NULL;
     catalog_class_value* class           = NULL;
     txnstmt_metadata* metadatastmt       = NULL;
-    xk_pg_parser_translog_tbcolbase* tbcolbase  = NULL;
+    pg_parser_translog_tbcolbase* tbcolbase  = NULL;
     rebuild_bursttable dltable           = {0};
 
     txnstmt* stmtnode = NULL;
@@ -1587,8 +1587,8 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
         }
         else if(TXNSTMT_TYPE_DML == stmtnode->type)
         {
-            tbcolbase = (xk_pg_parser_translog_tbcolbase *)stmtnode->stmt;
-            if(XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
+            tbcolbase = (pg_parser_translog_tbcolbase *)stmtnode->stmt;
+            if(PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
             {
                 if (false == rebuild_burst_txn2bursts_multiinsert(burst, sysdicts, stmtnode->stmt))
                 {
@@ -1597,7 +1597,7 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                 }
                 
             }
-            else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == tbcolbase->m_dmltype)
+            else if(PG_PARSER_TRANSLOG_DMLTYPE_INSERT == tbcolbase->m_dmltype)
             {
                 if (false == rebuild_burst_txn2bursts_insert(burst, sysdicts, stmtnode->stmt))
                 {
@@ -1606,7 +1606,7 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                 }
                 stmtnode->stmt = NULL;
             }
-            else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == tbcolbase->m_dmltype)
+            else if(PG_PARSER_TRANSLOG_DMLTYPE_DELETE == tbcolbase->m_dmltype)
             {
                 if (false == rebuild_burst_txn2bursts_delete(burst, sysdicts, stmtnode->stmt))
                 {
@@ -1615,7 +1615,7 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                 }
                 stmtnode->stmt = NULL;
             }
-            else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == tbcolbase->m_dmltype)
+            else if(PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == tbcolbase->m_dmltype)
             {
                 if (false == rebuild_burst_txn2bursts_update(burst, sysdicts, stmtnode->stmt))
                 {
@@ -1700,8 +1700,8 @@ static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* t
     txnstmt_burst* stmtburst             = NULL;
     rebuild_burstrow* delrow             = NULL;
     rebuild_burstrow** sortrow           = NULL;
-    xk_pg_parser_translog_tbcol_value* values   = NULL;
-    xk_pg_parser_translog_tbcol_values* delete  = NULL;
+    pg_parser_translog_tbcol_value* values   = NULL;
+    pg_parser_translog_tbcol_values* delete  = NULL;
 
     if (true == dlist_isnull(burstnode->dldeleterows))
     {
@@ -1745,7 +1745,7 @@ static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* t
     for (sortindex = 0; sortindex < burstnode->dldeleterows->length; sortindex++)
     {
         delrow = sortrow[sortindex];
-        delete = (xk_pg_parser_translog_tbcol_values*)delrow->row;
+        delete = (pg_parser_translog_tbcol_values*)delrow->row;
         /* 当列被drop或可能为空时, 不设置该列的值 */
         if (0 != memcmp(md5, delrow->md5, 16))
         {
@@ -1847,8 +1847,8 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
     txnstmt* stmt                        = NULL;
     txnstmt_burst* stmtburst             = NULL;
     rebuild_burstrow* insertrow          = NULL;
-    xk_pg_parser_translog_tbcol_value* values   = NULL;
-    xk_pg_parser_translog_tbcol_values* insert  = NULL;
+    pg_parser_translog_tbcol_value* values   = NULL;
+    pg_parser_translog_tbcol_values* insert  = NULL;
 
     if (true == dlist_isnull(burstnode->dlinsertrows))
     {
@@ -1872,7 +1872,7 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
     for (dlnode = burstnode->dlinsertrows->head; dlnode != NULL; dlnode = dlnode->next)
     {
         insertrow = (rebuild_burstrow*)dlnode->value;
-        insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
+        insert = (pg_parser_translog_tbcol_values*)insertrow->row;
 
         need_comma = false;
         appendStringInfo(valuestr, "(");
@@ -1977,8 +1977,8 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
     txnstmt_burst* stmtburst             = NULL;
     rebuild_burstrow* delrow             = NULL;
     rebuild_burstcolumn* column          = NULL;
-    xk_pg_parser_translog_tbcol_value* values   = NULL;
-    xk_pg_parser_translog_tbcol_values* delete  = NULL;
+    pg_parser_translog_tbcol_value* values   = NULL;
+    pg_parser_translog_tbcol_values* delete  = NULL;
 
     if (true == dlist_isnull(burstnode->dldeleterows))
     {
@@ -2021,7 +2021,7 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
             continue;
         }
 
-        delete = (xk_pg_parser_translog_tbcol_values*)delrow->row;
+        delete = (pg_parser_translog_tbcol_values*)delrow->row;
         if (in_comma)
         {
             appendStringInfo(str, ",");
@@ -2138,8 +2138,8 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
     rebuild_burstrow** tmprow            = NULL;
     rebuild_burstrow* insertrow          = NULL;
     rebuild_bursttable* table            = NULL;
-    xk_pg_parser_translog_tbcol_value* values   = NULL;
-    xk_pg_parser_translog_tbcol_values* insert  = NULL;
+    pg_parser_translog_tbcol_value* values   = NULL;
+    pg_parser_translog_tbcol_values* insert  = NULL;
 
     if (true == dlist_isnull(burstnode->dlinsertrows))
     {
@@ -2172,7 +2172,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
     for (dlnode = burstnode->dlinsertrows->head; NULL != dlnode; dlnode = dlnode->next)
     {
         insertrow = (rebuild_burstrow*)dlnode->value;
-        insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
+        insert = (pg_parser_translog_tbcol_values*)insertrow->row;
         /* 拼接约束修改的语句，临时表 */
         if (REBUILD_BURSTROWFLAG_CHANGECONSKEY == insertrow->flag)
         {
@@ -2421,7 +2421,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
     for (sortindex = 0; sortindex < colcnt; sortindex++)
     {
         insertrow = sortrow[sortindex];
-        insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
+        insert = (pg_parser_translog_tbcol_values*)insertrow->row;
 
         /* 原始insert语句直接插入 */
         if (insertrow->op == REBUILD_BURSTROWTYPE_INSERT)
@@ -2843,7 +2843,7 @@ void rebuild_burstrow_free(void* args)
     if (burstrow->row)
     {
         //todo 释放row
-        heap_free_trans_result((xk_pg_parser_translog_tbcolbase*)burstrow->row);
+        heap_free_trans_result((pg_parser_translog_tbcolbase*)burstrow->row);
         
     }
 

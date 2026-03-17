@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 #include "./unicode_map/sjis_to_utf8.map"
 #include "./unicode_map/utf8_to_sjis.map"
 
@@ -34,13 +34,13 @@ void sjis_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_l
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_SJIS, XK_UTF8);
+    CHECK_ENCODING_CONVERSION_ARGS(SJIS, UTF8);
 
     LocalToUtf(src, len, dest,
                &sjis_to_unicode_tree,
                NULL, 0,
                NULL,
-               XK_SJIS);
+               SJIS);
 }
 
 void utf8_to_sjis(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -49,11 +49,11 @@ void utf8_to_sjis(unsigned char *src_str, unsigned char *dest_str, int32_t str_l
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_UTF8, XK_SJIS);
+    CHECK_ENCODING_CONVERSION_ARGS(UTF8, SJIS);
 
     UtfToLocal(src, len, dest,
                &sjis_from_unicode_tree,
                NULL, 0,
                NULL,
-               XK_SJIS);
+               SJIS);
 }

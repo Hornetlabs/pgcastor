@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_timestamp.c
+ * @file pg_parser_thirdparty_tupleparser_timestamp.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -9,20 +9,20 @@
  * 
  */
 #include <sys/types.h>
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "common/xk_pg_parser_translog.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgfunc.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgsfunc.h"
-#include "thirdparty/time/time/xk_pg_parser_thirdparty_timezone_timestamp.h"
-#include "thirdparty/time/time/xk_pg_parser_thirdparty_timezone_time.h"
-#include "thirdparty/time/date/xk_pg_parser_thirdparty_timezone_date.h"
-#include "thirdparty/time/timezone/xk_pg_parser_thirdparty_timezone_tz.h"
-#include "thirdparty/time/timezone/xk_pg_parser_thirdparty_timezone_tzfile.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_private.h"
-#include "thirdparty/common/xk_pg_parser_thirdparty_builtins.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_fmgr.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "common/pg_parser_translog.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgfunc.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgsfunc.h"
+#include "thirdparty/time/time/pg_parser_thirdparty_timezone_timestamp.h"
+#include "thirdparty/time/time/pg_parser_thirdparty_timezone_time.h"
+#include "thirdparty/time/date/pg_parser_thirdparty_timezone_date.h"
+#include "thirdparty/time/timezone/pg_parser_thirdparty_timezone_tz.h"
+#include "thirdparty/time/timezone/pg_parser_thirdparty_timezone_tzfile.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_private.h"
+#include "thirdparty/common/pg_parser_thirdparty_builtins.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_fmgr.h"
 
 #define PGFUNC_TIMESTAMP_MCXT NULL
 
@@ -69,12 +69,12 @@ do { \
 union input_buffer
 {
     /* The first part of the buffer, interpreted as a header.  */
-    struct xk_time_tzhead tzhead;
+    struct time_tzhead tzhead;
 
     /* The entire buffer.  */
-    char buf[2 * sizeof(struct xk_time_tzhead)
-            + 2 * sizeof(struct xk_pg_parser_time_state)
-            + 4 * XK_TIME_TZ_MAX_TIMES];
+    char buf[2 * sizeof(struct time_tzhead)
+            + 2 * sizeof(struct pg_parser_time_state)
+            + 4 * TIME_TZ_MAX_TIMES];
 };
 
 /* Local storage needed for 'tzloadbody'.  */
@@ -87,7 +87,7 @@ union local_storage
         union input_buffer u;
 
         /* A temporary state used for parsing a TZ string in the file.  */
-        struct xk_pg_parser_time_state st;
+        struct pg_parser_time_state st;
     } u;
 
     /* We don't need the "fullname" member */
@@ -110,9 +110,9 @@ struct rule
 };
 
 static const int32_t year_lengths[2] = {
-    XK_TIME_DAYSPERNYEAR, XK_TIME_DAYSPERLYEAR};
+    TIME_DAYSPERNYEAR, TIME_DAYSPERLYEAR};
 
-static const int32_t mon_lengths[2][XK_TIME_MONSPERYEAR] = {
+static const int32_t mon_lengths[2][TIME_MONSPERYEAR] = {
     {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
     {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
 
@@ -130,33 +130,33 @@ static void EncodeSpecialTimestamp(Timestamp dt, char *str);
 
 static int32_t timestamp2tm(Timestamp dt,
                         int32_t *tzp,
-                        struct xk_pg_parser_tm *tm,
+                        struct pg_parser_tm *tm,
                         fsec_t *fsec,
                         const char **tzn,
-                        xk_pg_parser_tz *attimezone,
-                        xk_pg_parser_extraTypoutInfo *info);
+                        pg_parser_tz *attimezone,
+                        pg_parser_extraTypoutInfo *info);
 
 static int32_t tzload(const char *name,
                       char *canonname,
-                      struct xk_pg_parser_time_state *sp,
+                      struct pg_parser_time_state *sp,
                       bool doextend,
-                      xk_pg_parser_extraTypoutInfo *info);
+                      pg_parser_extraTypoutInfo *info);
 
 static int32_t tzloadbody(char const *name,
                       char *canonname,
-                      struct xk_pg_parser_time_state *sp,
+                      struct pg_parser_time_state *sp,
                       bool doextend,
                       union local_storage *lsp,
-                      xk_pg_parser_extraTypoutInfo *info);
+                      pg_parser_extraTypoutInfo *info);
 
-static bool typesequiv(const struct xk_pg_parser_time_state *sp, int32_t a, int32_t b);
+static bool typesequiv(const struct pg_parser_time_state *sp, int32_t a, int32_t b);
 
-static bool differ_by_repeat(const xk_pg_parser_time_t t1, const xk_pg_parser_time_t t0);
+static bool differ_by_repeat(const pg_parser_time_t t1, const pg_parser_time_t t0);
 
 bool tzparse(const char *name,
-             struct xk_pg_parser_time_state *sp,
+             struct pg_parser_time_state *sp,
              bool lastditch,
-             xk_pg_parser_extraTypoutInfo *info);
+             pg_parser_extraTypoutInfo *info);
 
 static const char *getnum(const char *strp, int32_t *const nump, const int32_t min, const int32_t max);
 static const char *getsecs(const char *strp, int32_t *const secsp);
@@ -164,27 +164,27 @@ static const char *getoffset(const char *strp, int32_t *const offsetp);
 static const char *getqzname(const char *strp, const int32_t delim);
 static const char *getzname(const char *strp);
 static const char *getrule(const char *strp, struct rule *const rulep);
-static void init_ttinfo(struct xk_time_ttinfo *s,
+static void init_ttinfo(struct time_ttinfo *s,
                         int32_t utoff,
                         bool isdst,
                         int32_t desigidx);
-static bool increment_overflow_time(xk_pg_parser_time_t *tp, int32_t j);
+static bool increment_overflow_time(pg_parser_time_t *tp, int32_t j);
 static int32_t transtime(const int32_t year,
                          const struct rule *const rulep,
                          const int32_t offset);
 void j2date(int32_t jd, int32_t *year, int32_t *month, int32_t *day);
 void dt2time(Timestamp jd, int32_t *hour, int32_t *min, int32_t *sec, fsec_t *fsec);
 
-static struct xk_pg_parser_tm *localsub(struct xk_pg_parser_time_state const *sp,
-                                        xk_pg_parser_time_t const *timep,
-                                        struct xk_pg_parser_tm *const tmp);
-static struct xk_pg_parser_tm *gmtsub(xk_pg_parser_time_t const *timep,
+static struct pg_parser_tm *localsub(struct pg_parser_time_state const *sp,
+                                        pg_parser_time_t const *timep,
+                                        struct pg_parser_tm *const tmp);
+static struct pg_parser_tm *gmtsub(pg_parser_time_t const *timep,
                                       int32_t offset,
-                                      struct xk_pg_parser_tm *tmp);
+                                      struct pg_parser_tm *tmp);
 static bool increment_overflow(int32_t *ip, int32_t j);
 static int32_t leaps_thru_end_of(const int32_t y);
 static int32_t leaps_thru_end_of_nonneg(int32_t y);
-void EncodeDateTime(struct xk_pg_parser_tm *tm,
+void EncodeDateTime(struct pg_parser_tm *tm,
                     fsec_t fsec,
                     bool print_tz,
                     int32_t tz,
@@ -199,9 +199,9 @@ static char *AppendSeconds(char *cp,
                            bool fillzeros);
 static int32_t date2j(int32_t y, int32_t m, int32_t d);
 static int32_t j2day(int32_t date);
-static int32_t interval2tm(Interval span, struct xk_pg_parser_tm *tm, fsec_t *fsec);
-static int32_t dsinterval2tm(Interval span, struct xk_pg_parser_tm *tm, fsec_t *fsec);
-static void EncodeInterval(struct xk_pg_parser_tm *tm,
+static int32_t interval2tm(Interval span, struct pg_parser_tm *tm, fsec_t *fsec);
+static int32_t dsinterval2tm(Interval span, struct pg_parser_tm *tm, fsec_t *fsec);
+static void EncodeInterval(struct pg_parser_tm *tm,
                            fsec_t fsec,
                            int32_t style,
                            char *str);
@@ -212,7 +212,7 @@ static char *AddPostgresIntPart(char *cp,
                                 bool *is_zero,
                                 bool *is_before);
 static int32_t timetz2tm(TimeTzADT *time,
-                         struct xk_pg_parser_tm *tm,
+                         struct pg_parser_tm *tm,
                          fsec_t *fsec,
                          int32_t *tzp);
 
@@ -223,10 +223,10 @@ static char *AddVerboseIntPart(char *cp,
 
 static int64_t detzcode64(const char *const codep);
 
-static int64_t leapcorr(struct xk_pg_parser_time_state const *sp, xk_pg_parser_time_t t);
-static char *AppendTimestampSeconds(char *cp, struct xk_pg_parser_tm *tm, fsec_t fsec);
+static int64_t leapcorr(struct pg_parser_time_state const *sp, pg_parser_time_t t);
+static char *AppendTimestampSeconds(char *cp, struct pg_parser_tm *tm, fsec_t fsec);
 
-static void EncodeTimeOnly(struct xk_pg_parser_tm *tm,
+static void EncodeTimeOnly(struct pg_parser_tm *tm,
                            fsec_t fsec,
                            bool print_tz,
                            int32_t tz,
@@ -236,13 +236,13 @@ static void EncodeTimeOnly(struct xk_pg_parser_tm *tm,
 /* timestamptz_out()
  * Convert a timestamp to external form.
  */
-xk_pg_parser_Datum timestamptz_out(xk_pg_parser_Datum attr,
-                                   xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum timestamptz_out(pg_parser_Datum attr,
+                                   pg_parser_extraTypoutInfo *info)
 {
     TimestampTz dt = (Timestamp) attr;
     char       *result;
     int32_t         tz;
-    struct xk_pg_parser_tm tt,
+    struct pg_parser_tm tt,
                *tm = &tt;
     fsec_t      fsec;
     const char *tzn;
@@ -253,31 +253,31 @@ xk_pg_parser_Datum timestamptz_out(xk_pg_parser_Datum attr,
     else if (timestamp2tm(dt, &tz, tm, &fsec, &tzn, NULL, info) == 0)
         EncodeDateTime(tm, fsec, true, tz, tzn, USE_ISO_DATES, buf);
     else
-        return (xk_pg_parser_Datum) 0;
+        return (pg_parser_Datum) 0;
 
-    result = xk_pg_parser_mcxt_strdup(buf);
+    result = pg_parser_mcxt_strdup(buf);
     info->valuelen = strlen(result);
-    return (xk_pg_parser_Datum) result;
+    return (pg_parser_Datum) result;
 }
 
-char *xk_pg_parser_timestamptz_to_str(int64_t t)
+char *pg_parser_timestamptz_to_str(int64_t t)
 {
     char           buf[MAXDATELEN + 1];
     int            tz;
-    struct xk_pg_parser_tm tt,
+    struct pg_parser_tm tt,
                *tm = &tt;
     fsec_t        fsec;
     const char *tzn;
-    xk_pg_parser_extraTypoutInfo info;
+    pg_parser_extraTypoutInfo info;
 
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT,
+    if (!pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT,
                                  (void**)&(info.zicinfo),
-                                  sizeof(xk_pg_parser_translog_convertinfo_with_zic)))
+                                  sizeof(pg_parser_translog_convertinfo_with_zic)))
         strcpy(buf, "UNKNOWN");
 
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT,
+    if (!pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT,
                                  (void**)&(info.zicinfo->convertinfo),
-                                  sizeof(xk_pg_parser_translog_convertinfo)))
+                                  sizeof(pg_parser_translog_convertinfo)))
         strcpy(buf, "UNKNOWN");
 
     info.zicinfo->convertinfo->m_tzname = "CST";
@@ -291,23 +291,23 @@ char *xk_pg_parser_timestamptz_to_str(int64_t t)
     if (info.zicinfo)
     {
         if (info.zicinfo->convertinfo)
-            xk_pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, info.zicinfo->convertinfo);
+            pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, info.zicinfo->convertinfo);
         if (info.zicinfo->zicdata)
-            xk_pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, info.zicinfo->zicdata);
-        xk_pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, info.zicinfo);
+            pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, info.zicinfo->zicdata);
+        pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, info.zicinfo);
     }
 
-    return xk_pg_parser_mcxt_strdup(buf);
+    return pg_parser_mcxt_strdup(buf);
 }
 
 /* interval_out()
  * Convert a time span to external form.
  */
-xk_pg_parser_Datum interval_out(xk_pg_parser_Datum attr)
+pg_parser_Datum interval_out(pg_parser_Datum attr)
 {
     Interval   *span = (Interval *) attr;
     char       *result;
-    struct xk_pg_parser_tm tt,
+    struct pg_parser_tm tt,
                *tm = &tt;
     fsec_t        fsec;
     char        buf[MAXDATELEN + 1];
@@ -315,20 +315,20 @@ xk_pg_parser_Datum interval_out(xk_pg_parser_Datum attr)
     if (interval2tm(*span, tm, &fsec) != 0)
     {
         /* elog(ERROR, "could not convert interval to tm"); */
-        return (xk_pg_parser_Datum) 0;
+        return (pg_parser_Datum) 0;
     }
 
     EncodeInterval(tm, fsec, INTSTYLE_ISO_8601, buf);
 
-    result = xk_pg_parser_mcxt_strdup(buf);
-    return (xk_pg_parser_Datum) result;
+    result = pg_parser_mcxt_strdup(buf);
+    return (pg_parser_Datum) result;
 }
 
-xk_pg_parser_Datum dsinterval_out(xk_pg_parser_Datum attr)
+pg_parser_Datum dsinterval_out(pg_parser_Datum attr)
 {
     Interval   *span = (Interval *) attr;
     char       *result;
-    struct xk_pg_parser_tm tt,
+    struct pg_parser_tm tt,
                *tm = &tt;
     fsec_t        fsec;
     char        buf[MAXDATELEN + 1];
@@ -336,24 +336,24 @@ xk_pg_parser_Datum dsinterval_out(xk_pg_parser_Datum attr)
     if (dsinterval2tm(*span, tm, &fsec) != 0)
     {
         /* elog(ERROR, "could not convert interval to tm"); */
-        return (xk_pg_parser_Datum) 0;
+        return (pg_parser_Datum) 0;
     }
 
     EncodeInterval(tm, fsec, INTSTYLE_ISO_8601, buf);
 
-    result = xk_pg_parser_mcxt_strdup(buf);
-    return (xk_pg_parser_Datum) result;
+    result = pg_parser_mcxt_strdup(buf);
+    return (pg_parser_Datum) result;
 }
 
 /* timestamp_out()
  * Convert a timestamp to external form.
  */
-xk_pg_parser_Datum timestamp_out(xk_pg_parser_Datum attr,
-                                 xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum timestamp_out(pg_parser_Datum attr,
+                                 pg_parser_extraTypoutInfo *info)
 {
     Timestamp    timestamp = (Timestamp) attr;
     char        *result;
-    struct xk_pg_parser_tm tt,
+    struct pg_parser_tm tt,
                 *tm = &tt;
     fsec_t       fsec;
     char         buf[MAXDATELEN + 1];
@@ -367,24 +367,24 @@ xk_pg_parser_Datum timestamp_out(xk_pg_parser_Datum attr,
         /* ereport(ERROR,
                 (errcode(ERRCODE_DATETIME_VALUE_OUT_OF_RANGE),
                  errmsg("timestamp out of range"))); */
-        return (xk_pg_parser_Datum) NULL;
+        return (pg_parser_Datum) NULL;
     }
 
-    result = xk_pg_parser_mcxt_strdup(buf);
+    result = pg_parser_mcxt_strdup(buf);
     info->valuelen = strlen(result);
-    return (xk_pg_parser_Datum) result;
+    return (pg_parser_Datum) result;
 }
 
 /*****************************************************************************
  *     Time With Time Zone ADT
  *****************************************************************************/
 
-xk_pg_parser_Datum
-timetz_out(xk_pg_parser_Datum attr)
+pg_parser_Datum
+timetz_out(pg_parser_Datum attr)
 {
     TimeTzADT  *time = (TimeTzADT *) attr;
     char       *result;
-    struct xk_pg_parser_tm tt,
+    struct pg_parser_tm tt,
                *tm = &tt;
     fsec_t      fsec;
     int32_t     tz;
@@ -393,15 +393,15 @@ timetz_out(xk_pg_parser_Datum attr)
     timetz2tm(time, tm, &fsec, &tz);
     EncodeTimeOnly(tm, fsec, true, tz, DateStyle, buf);
 
-    result = xk_pg_parser_mcxt_strdup(buf);
-    return (xk_pg_parser_Datum) result;
+    result = pg_parser_mcxt_strdup(buf);
+    return (pg_parser_Datum) result;
 }
 
 /* timetz2tm()
  * Convert TIME WITH TIME ZONE data type to POSIX time structure.
  */
 static int32_t timetz2tm(TimeTzADT *time,
-                         struct xk_pg_parser_tm *tm,
+                         struct pg_parser_tm *tm,
                          fsec_t *fsec,
                          int32_t *tzp)
 {
@@ -428,16 +428,16 @@ static int32_t timetz2tm(TimeTzADT *time,
  * numeric time zone offset, style is the date style, str is where to write the
  * output.
  */
-static void EncodeTimeOnly(struct xk_pg_parser_tm *tm,
+static void EncodeTimeOnly(struct pg_parser_tm *tm,
                            fsec_t fsec,
                            bool print_tz,
                            int32_t tz,
                            int32_t style,
                            char *str)
 {
-    str = xk_numutils_ltostr_zeropad(str, tm->tm_hour, 2);
+    str = numutils_ltostr_zeropad(str, tm->tm_hour, 2);
     *str++ = ':';
-    str = xk_numutils_ltostr_zeropad(str, tm->tm_min, 2);
+    str = numutils_ltostr_zeropad(str, tm->tm_min, 2);
     *str++ = ':';
     str = AppendSeconds(str, tm->tm_sec, fsec, MAX_TIME_PRECISION, true);
     if (print_tz)
@@ -464,7 +464,7 @@ static void EncodeTimeOnly(struct xk_pg_parser_tm *tm,
  * "year-month literal"s (that look like '2-3') and
  * "day-time literal"s (that look like ('4 5:6:7')
  */
-static void EncodeInterval(struct xk_pg_parser_tm *tm,
+static void EncodeInterval(struct pg_parser_tm *tm,
                            fsec_t fsec,
                            int32_t style,
                            char *str)
@@ -714,7 +714,7 @@ static char *AddISO8601IntPart(char *cp, int32_t value, char units)
 /* interval2tm()
  * Convert an interval data type to a tm structure.
  */
-static int32_t interval2tm(Interval span, struct xk_pg_parser_tm *tm, fsec_t *fsec)
+static int32_t interval2tm(Interval span, struct pg_parser_tm *tm, fsec_t *fsec)
 {
     TimeOffset    time;
     TimeOffset    tfrac;
@@ -747,7 +747,7 @@ static int32_t interval2tm(Interval span, struct xk_pg_parser_tm *tm, fsec_t *fs
 /* dsinterval2tm()
  * Convert an dsinterval data type to a tm structure.
  */
-static int32_t dsinterval2tm(Interval span, struct xk_pg_parser_tm *tm, fsec_t *fsec)
+static int32_t dsinterval2tm(Interval span, struct pg_parser_tm *tm, fsec_t *fsec)
 {
     TimeOffset    time;
     TimeOffset    tfrac;
@@ -869,13 +869,13 @@ static int32_t leaps_thru_end_of(const int32_t y)
                 : leaps_thru_end_of_nonneg(y));
 }
 
-static struct xk_pg_parser_tm *timesub(const xk_pg_parser_time_t *timep,
+static struct pg_parser_tm *timesub(const pg_parser_time_t *timep,
                                        int32_t offset,
-                                       const struct xk_pg_parser_time_state *sp,
-                                       struct xk_pg_parser_tm *tmp)
+                                       const struct pg_parser_time_state *sp,
+                                       struct pg_parser_tm *tmp)
 {
-    const struct xk_time_lsinfo *lp;
-    xk_pg_parser_time_t tdays;
+    const struct time_lsinfo *lp;
+    pg_parser_time_t tdays;
     int32_t idays; /* unsigned would be so 2003 */
     int64_t rem;
     int32_t y;
@@ -897,18 +897,18 @@ static struct xk_pg_parser_tm *timesub(const xk_pg_parser_time_t *timep,
             break;
         }
     }
-    y = XK_TIME_EPOCH_YEAR;
-    tdays = *timep / XK_TIME_SECSPERDAY;
-    rem = *timep % XK_TIME_SECSPERDAY;
-    while (tdays < 0 || tdays >= year_lengths[xk_time_isleap(y)])
+    y = TIME_EPOCH_YEAR;
+    tdays = *timep / TIME_SECSPERDAY;
+    rem = *timep % TIME_SECSPERDAY;
+    while (tdays < 0 || tdays >= year_lengths[time_isleap(y)])
     {
         int32_t newy;
-        xk_pg_parser_time_t tdelta;
+        pg_parser_time_t tdelta;
         int32_t idelta;
         int32_t leapdays;
 
-        tdelta = tdays / XK_TIME_DAYSPERLYEAR;
-        if (!((!XK_TIME_TYPE_SIGNED(xk_pg_parser_time_t)
+        tdelta = tdays / TIME_DAYSPERLYEAR;
+        if (!((!TIME_TYPE_SIGNED(pg_parser_time_t)
                 || INT_MIN <= tdelta) && tdelta <= INT_MAX))
             goto timestamp_out_of_range;
         idelta = tdelta;
@@ -919,7 +919,7 @@ static struct xk_pg_parser_tm *timesub(const xk_pg_parser_time_t *timep,
             goto timestamp_out_of_range;
         leapdays = leaps_thru_end_of(newy - 1) -
                    leaps_thru_end_of(y - 1);
-        tdays -= ((xk_pg_parser_time_t)newy - y) * XK_TIME_DAYSPERNYEAR;
+        tdays -= ((pg_parser_time_t)newy - y) * TIME_DAYSPERNYEAR;
         tdays -= leapdays;
         y = newy;
     }
@@ -931,53 +931,53 @@ static struct xk_pg_parser_tm *timesub(const xk_pg_parser_time_t *timep,
     rem += offset - corr;
     while (rem < 0)
     {
-        rem += XK_TIME_SECSPERDAY;
+        rem += TIME_SECSPERDAY;
         --idays;
     }
-    while (rem >= XK_TIME_SECSPERDAY)
+    while (rem >= TIME_SECSPERDAY)
     {
-        rem -= XK_TIME_SECSPERDAY;
+        rem -= TIME_SECSPERDAY;
         ++idays;
     }
     while (idays < 0)
     {
         if (increment_overflow(&y, -1))
             goto timestamp_out_of_range;
-        idays += year_lengths[xk_time_isleap(y)];
+        idays += year_lengths[time_isleap(y)];
     }
-    while (idays >= year_lengths[xk_time_isleap(y)])
+    while (idays >= year_lengths[time_isleap(y)])
     {
-        idays -= year_lengths[xk_time_isleap(y)];
+        idays -= year_lengths[time_isleap(y)];
         if (increment_overflow(&y, 1))
             goto timestamp_out_of_range;
     }
     tmp->tm_year = y;
-    if (increment_overflow(&tmp->tm_year, -XK_TIME_TM_YEAR_BASE))
+    if (increment_overflow(&tmp->tm_year, -TIME_TM_YEAR_BASE))
         goto timestamp_out_of_range;
     tmp->tm_yday = idays;
 
     /*
      * The "extra" mods below avoid overflow problems.
      */
-    tmp->tm_wday = XK_TIME_EPOCH_WDAY +
-                   ((y - XK_TIME_EPOCH_YEAR) % XK_TIME_DAYSPERWEEK) *
-                       (XK_TIME_DAYSPERNYEAR % XK_TIME_DAYSPERWEEK) +
+    tmp->tm_wday = TIME_EPOCH_WDAY +
+                   ((y - TIME_EPOCH_YEAR) % TIME_DAYSPERWEEK) *
+                       (TIME_DAYSPERNYEAR % TIME_DAYSPERWEEK) +
                    leaps_thru_end_of(y - 1) -
-                   leaps_thru_end_of(XK_TIME_EPOCH_YEAR - 1) +
+                   leaps_thru_end_of(TIME_EPOCH_YEAR - 1) +
                    idays;
-    tmp->tm_wday %= XK_TIME_DAYSPERWEEK;
+    tmp->tm_wday %= TIME_DAYSPERWEEK;
     if (tmp->tm_wday < 0)
-        tmp->tm_wday += XK_TIME_DAYSPERWEEK;
-    tmp->tm_hour = (int32_t)(rem / XK_TIME_SECSPERHOUR);
-    rem %= XK_TIME_SECSPERHOUR;
-    tmp->tm_min = (int32_t)(rem / XK_TIME_SECSPERMIN);
+        tmp->tm_wday += TIME_DAYSPERWEEK;
+    tmp->tm_hour = (int32_t)(rem / TIME_SECSPERHOUR);
+    rem %= TIME_SECSPERHOUR;
+    tmp->tm_min = (int32_t)(rem / TIME_SECSPERMIN);
 
     /*
      * A positive leap second requires a special representation. This uses
      * "... ??:59:60" et seq.
      */
-    tmp->tm_sec = (int32_t)(rem % XK_TIME_SECSPERMIN) + hit;
-    ip = mon_lengths[xk_time_isleap(y)];
+    tmp->tm_sec = (int32_t)(rem % TIME_SECSPERMIN) + hit;
+    ip = mon_lengths[time_isleap(y)];
     for (tmp->tm_mon = 0; idays >= ip[tmp->tm_mon]; ++(tmp->tm_mon))
         idays -= ip[tmp->tm_mon];
     tmp->tm_mday = (int32_t)(idays + 1);
@@ -996,21 +996,21 @@ timestamp_out_of_range:
  * Except we have a private "struct state" for GMT, so no sp is passed in.
  */
 
-static struct xk_pg_parser_tm *gmtsub(xk_pg_parser_time_t const *timep,
+static struct pg_parser_tm *gmtsub(pg_parser_time_t const *timep,
                                       int32_t offset,
-                                      struct xk_pg_parser_tm *tmp)
+                                      struct pg_parser_tm *tmp)
 {
-    struct xk_pg_parser_tm *result;
+    struct pg_parser_tm *result;
 
     /* GMT timezone state data is kept here */
-    static struct xk_pg_parser_time_state *gmtptr = NULL;
+    static struct pg_parser_time_state *gmtptr = NULL;
 
     if (gmtptr == NULL)
     {
         /* Allocate on first use */
-        if (!xk_pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT,
+        if (!pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT,
                                       (void **)&gmtptr,
-                                      sizeof(struct xk_pg_parser_time_state)))
+                                      sizeof(struct pg_parser_time_state)))
             return NULL; /* errno should be set by malloc */
                          /* gmtload(gmtptr); */
     }
@@ -1035,31 +1035,31 @@ static struct xk_pg_parser_tm *gmtsub(xk_pg_parser_time_t const *timep,
  * freely called. (And no, the PANS doesn't require the above behavior,
  * but it *is* desirable.)
  */
-static struct xk_pg_parser_tm *localsub(struct xk_pg_parser_time_state const *sp,
-                                        xk_pg_parser_time_t const *timep,
-                                        struct xk_pg_parser_tm *const tmp)
+static struct pg_parser_tm *localsub(struct pg_parser_time_state const *sp,
+                                        pg_parser_time_t const *timep,
+                                        struct pg_parser_tm *const tmp)
 {
-    const struct xk_time_ttinfo *ttisp;
+    const struct time_ttinfo *ttisp;
     int32_t i;
-    struct xk_pg_parser_tm *result;
-    const xk_pg_parser_time_t t = *timep;
+    struct pg_parser_tm *result;
+    const pg_parser_time_t t = *timep;
 
     if (sp == NULL)
         return gmtsub(timep, 0, tmp);
     if ((sp->goback && t < sp->ats[0]) ||
         (sp->goahead && t > sp->ats[sp->timecnt - 1]))
     {
-        xk_pg_parser_time_t newt = t;
-        xk_pg_parser_time_t seconds;
-        xk_pg_parser_time_t years;
+        pg_parser_time_t newt = t;
+        pg_parser_time_t seconds;
+        pg_parser_time_t years;
 
         if (t < sp->ats[0])
             seconds = sp->ats[0] - t;
         else
             seconds = t - sp->ats[sp->timecnt - 1];
         --seconds;
-        years = (seconds / XK_TIME_SECSPERREPEAT + 1) * XK_TIME_YEARSPERREPEAT;
-        seconds = years * XK_TIME_AVGSECSPERYEAR;
+        years = (seconds / TIME_SECSPERREPEAT + 1) * TIME_YEARSPERREPEAT;
+        seconds = years * TIME_AVGSECSPERYEAR;
         if (t < sp->ats[0])
             newt += seconds;
         else
@@ -1132,23 +1132,23 @@ static struct xk_pg_parser_tm *localsub(struct xk_pg_parser_time_state const *sp
  */
 static int32_t timestamp2tm(Timestamp dt,
                         int32_t *tzp,
-                        struct xk_pg_parser_tm *tm,
+                        struct pg_parser_tm *tm,
                         fsec_t *fsec,
                         const char **tzn,
-                        xk_pg_parser_tz *attimezone,
-                        xk_pg_parser_extraTypoutInfo *info)
+                        pg_parser_tz *attimezone,
+                        pg_parser_extraTypoutInfo *info)
 {
     Timestamp    date;
     Timestamp    time;
-    xk_pg_parser_time_t    utime;
+    pg_parser_time_t    utime;
     char *tzname = info->zicinfo->convertinfo->m_tzname;
 
     /* Use session timezone if caller asks for default */
     if (attimezone == NULL && tzp)
     {
-        xk_pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT,
+        pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT,
                                 (void**)&attimezone,
-                                 sizeof(xk_pg_parser_tz));
+                                 sizeof(pg_parser_tz));
         rmemcpy1(attimezone->TZname, 0, tzname, strlen(tzname));
         tzload(attimezone->TZname, NULL, &attimezone->state, true, info);
         tzparse(attimezone->TZname, &attimezone->state, false, info);
@@ -1156,7 +1156,7 @@ static int32_t timestamp2tm(Timestamp dt,
     time = dt;
     TMODULO(time, date, USECS_PER_DAY);
 
-    if (time < XK_PG_PARSER_INT64CONST(0))
+    if (time < PG_PARSER_INT64CONST(0))
     {
         time += USECS_PER_DAY;
         date -= 1;
@@ -1195,11 +1195,11 @@ static int32_t timestamp2tm(Timestamp dt,
      */
     dt = (dt - *fsec) / USECS_PER_SEC +
         (POSTGRES_EPOCH_JDATE - UNIX_EPOCH_JDATE) * SECS_PER_DAY;
-    utime = (xk_pg_parser_time_t) dt;
+    utime = (pg_parser_time_t) dt;
     if ((Timestamp) utime == dt)
     {
-        struct xk_pg_parser_tm temp ={'\0'} ;
-        struct xk_pg_parser_tm *tx = localsub(&attimezone->state, &utime, &temp);
+        struct pg_parser_tm temp ={'\0'} ;
+        struct pg_parser_tm *tx = localsub(&attimezone->state, &utime, &temp);
 
         tm->tm_year = tx->tm_year + 1900;
         tm->tm_mon = tx->tm_mon + 1;
@@ -1229,7 +1229,7 @@ static int32_t timestamp2tm(Timestamp dt,
     }
 
     if (attimezone)
-        xk_pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, attimezone);
+        pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, attimezone);
 
     return 0;
 }
@@ -1241,12 +1241,12 @@ static int32_t timestamp2tm(Timestamp dt,
  */
 static int32_t tzload(const char *name,
                   char *canonname,
-                  struct xk_pg_parser_time_state *sp,
+                  struct pg_parser_time_state *sp,
                   bool doextend,
-                  xk_pg_parser_extraTypoutInfo *info)
+                  pg_parser_extraTypoutInfo *info)
 {
     union local_storage *lsp = NULL;
-    if(!xk_pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT, (void**) &lsp, sizeof *lsp))
+    if(!pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT, (void**) &lsp, sizeof *lsp))
     {
         return -1;
     }
@@ -1254,7 +1254,7 @@ static int32_t tzload(const char *name,
     {
         int32_t err = tzloadbody(name, canonname, sp, doextend, lsp, info);
 
-        xk_pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, lsp);
+        pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, lsp);
         return err;
     }
 }
@@ -1309,9 +1309,9 @@ static int64_t detzcode64(const char *const codep)
     return result;
 }
 
-static int64_t leapcorr(struct xk_pg_parser_time_state const *sp, xk_pg_parser_time_t t)
+static int64_t leapcorr(struct pg_parser_time_state const *sp, pg_parser_time_t t)
 {
-    struct xk_time_lsinfo const *lp;
+    struct time_lsinfo const *lp;
     int32_t i;
 
     i = sp->leapcnt;
@@ -1332,26 +1332,26 @@ static int64_t leapcorr(struct xk_pg_parser_time_state const *sp, xk_pg_parser_t
  */
 static int32_t tzloadbody(char const *name,
                       char *canonname,
-                      struct xk_pg_parser_time_state *sp,
+                      struct pg_parser_time_state *sp,
                       bool doextend,
                       union local_storage *lsp,
-                      xk_pg_parser_extraTypoutInfo *info)
+                      pg_parser_extraTypoutInfo *info)
 {
     int32_t i;
     /* int32_t fid; */
     int32_t stored;
     ssize_t nread;
     union input_buffer *up = &lsp->u.u;
-    int32_t tzheadsize = sizeof(struct xk_time_tzhead);
-    xk_pg_parser_StringInfoData strdata = {'\0'};
+    int32_t tzheadsize = sizeof(struct time_tzhead);
+    pg_parser_StringInfoData strdata = {'\0'};
 
-    XK_PG_PARSER_UNUSED(canonname);
+    PG_PARSER_UNUSED(canonname);
 
     sp->goback = sp->goahead = false;
 
     if (!name)
     {
-        name = XK_TIME_TZDEFAULT;
+        name = TIME_TZDEFAULT;
         if (!name)
             return EINVAL;
     }
@@ -1362,12 +1362,12 @@ static int32_t tzloadbody(char const *name,
     if (!info->zicinfo->zicdata || !info->zicinfo->ziclen)
     {
         char *tzdata_temp = NULL;
-        xk_pg_parser_initStringInfo(&strdata);
-        xk_pg_parser_zic_get_tzdata(info->zicinfo->convertinfo->m_tzname, &strdata);
-        tzdata_temp = xk_pg_parser_mcxt_strdup(strdata.data);
+        pg_parser_initStringInfo(&strdata);
+        pg_parser_zic_get_tzdata(info->zicinfo->convertinfo->m_tzname, &strdata);
+        tzdata_temp = pg_parser_mcxt_strdup(strdata.data);
         info->zicinfo->zicdata = tzdata_temp;
         info->zicinfo->ziclen = strlen(tzdata_temp);
-        xk_pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, strdata.data);
+        pg_parser_mcxt_free(PGFUNC_TIMESTAMP_MCXT, strdata.data);
     }
 
     nread = info->zicinfo->ziclen;
@@ -1391,9 +1391,9 @@ static int32_t tzloadbody(char const *name,
          * support future formats that may allow zero typecnt in files that
          * have a TZ string and no transitions.
          */
-        if (!(0 <= leapcnt && leapcnt < XK_TIME_TZ_MAX_LEAPS && 0 <= typecnt &&
-              typecnt < XK_TIME_TZ_MAX_TYPES && 0 <= timecnt && timecnt < XK_TIME_TZ_MAX_TIMES &&
-              0 <= charcnt && charcnt < XK_TIME_TZ_MAX_CHARS &&
+        if (!(0 <= leapcnt && leapcnt < TIME_TZ_MAX_LEAPS && 0 <= typecnt &&
+              typecnt < TIME_TZ_MAX_TYPES && 0 <= timecnt && timecnt < TIME_TZ_MAX_TIMES &&
+              0 <= charcnt && charcnt < TIME_TZ_MAX_CHARS &&
               (ttisstdcnt == typecnt || ttisstdcnt == 0) &&
               (ttisutcnt == typecnt || ttisutcnt == 0)))
             return EINVAL;
@@ -1421,11 +1421,11 @@ static int32_t tzloadbody(char const *name,
         {
             int64_t at = stored == 4 ? detzcode(p) : detzcode64(p);
 
-            sp->types[i] = at <= XK_TIME_TIME_T_MAX;
+            sp->types[i] = at <= TIME_TIME_T_MAX;
             if (sp->types[i])
             {
-                xk_pg_parser_time_t attime = ((XK_TIME_TYPE_SIGNED(xk_pg_parser_time_t) ? at < XK_TIME_TIME_T_MIN : at < 0)
-                                        ? XK_TIME_TIME_T_MIN
+                pg_parser_time_t attime = ((TIME_TYPE_SIGNED(pg_parser_time_t) ? at < TIME_TIME_T_MIN : at < 0)
+                                        ? TIME_TIME_T_MIN
                                         : at);
 
                 if (timecnt && attime <= sp->ats[timecnt - 1])
@@ -1453,7 +1453,7 @@ static int32_t tzloadbody(char const *name,
         sp->timecnt = timecnt;
         for (i = 0; i < sp->typecnt; ++i)
         {
-            struct xk_time_ttinfo *ttisp;
+            struct time_ttinfo *ttisp;
             unsigned char isdst,
                 desigidx;
 
@@ -1484,7 +1484,7 @@ static int32_t tzloadbody(char const *name,
             /* Leap seconds cannot occur before the Epoch.  */
             if (tr < 0)
                 return EINVAL;
-            if (tr <= XK_TIME_TIME_T_MAX)
+            if (tr <= TIME_TIME_T_MAX)
             {
                 /*
                  * Leap seconds cannot occur more than once per UTC month, and
@@ -1492,7 +1492,7 @@ static int32_t tzloadbody(char const *name,
                  * negative leap second).  Each leap second's correction must
                  * differ from the previous one's by 1 second.
                  */
-                if (tr - prevtr < 28 * XK_TIME_SECSPERDAY - 1 || (corr != prevcorr - 1 && corr != prevcorr + 1))
+                if (tr - prevtr < 28 * TIME_SECSPERDAY - 1 || (corr != prevcorr - 1 && corr != prevcorr + 1))
                     return EINVAL;
                 sp->lsis[leapcnt].ls_trans = prevtr = tr;
                 sp->lsis[leapcnt].ls_corr = prevcorr = corr;
@@ -1503,7 +1503,7 @@ static int32_t tzloadbody(char const *name,
 
         for (i = 0; i < sp->typecnt; ++i)
         {
-            struct xk_time_ttinfo *ttisp;
+            struct time_ttinfo *ttisp;
 
             ttisp = &sp->ttis[i];
             if (ttisstdcnt == 0)
@@ -1517,7 +1517,7 @@ static int32_t tzloadbody(char const *name,
         }
         for (i = 0; i < sp->typecnt; ++i)
         {
-            struct xk_time_ttinfo *ttisp;
+            struct time_ttinfo *ttisp;
 
             ttisp = &sp->ttis[i];
             if (ttisutcnt == 0)
@@ -1540,9 +1540,9 @@ static int32_t tzloadbody(char const *name,
     }
     if (doextend && nread > 2 &&
         up->buf[0] == '\n' && up->buf[nread - 1] == '\n' &&
-        sp->typecnt + 2 <= XK_TIME_TZ_MAX_TYPES)
+        sp->typecnt + 2 <= TIME_TZ_MAX_TYPES)
     {
-        struct xk_pg_parser_time_state *ts = &lsp->u.st;
+        struct pg_parser_time_state *ts = &lsp->u.st;
 
         up->buf[nread - 1] = '\0';
         if (tzparse(&up->buf[1], ts, false, info))
@@ -1574,7 +1574,7 @@ static int32_t tzloadbody(char const *name,
                 {
                     int32_t tsabbrlen = strlen(tsabbr);
 
-                    if (j + tsabbrlen < XK_TIME_TZ_MAX_CHARS)
+                    if (j + tsabbrlen < TIME_TZ_MAX_CHARS)
                     {
                         strcpy(sp->chars + j, tsabbr);
                         charcnt = j + tsabbrlen + 1;
@@ -1598,7 +1598,7 @@ static int32_t tzloadbody(char const *name,
                 for (i = 0; i < ts->timecnt; i++)
                     if (sp->timecnt == 0 || (sp->ats[sp->timecnt - 1] < ts->ats[i] + leapcorr(sp, ts->ats[i])))
                         break;
-                while (i < ts->timecnt && sp->timecnt < XK_TIME_TZ_MAX_TIMES)
+                while (i < ts->timecnt && sp->timecnt < TIME_TZ_MAX_TIMES)
                 {
                     sp->ats[sp->timecnt] = ts->ats[i] + leapcorr(sp, ts->ats[i]);
                     sp->types[sp->timecnt] = (sp->typecnt + ts->types[i]);
@@ -1696,7 +1696,7 @@ static int32_t tzloadbody(char const *name,
     return 0;
 }
 
-static bool typesequiv(const struct xk_pg_parser_time_state *sp, int32_t a, int32_t b)
+static bool typesequiv(const struct pg_parser_time_state *sp, int32_t a, int32_t b)
 {
     bool result;
 
@@ -1706,27 +1706,27 @@ static bool typesequiv(const struct xk_pg_parser_time_state *sp, int32_t a, int3
         result = false;
     else
     {
-        const struct xk_time_ttinfo *ap = &sp->ttis[a];
-        const struct xk_time_ttinfo *bp = &sp->ttis[b];
+        const struct time_ttinfo *ap = &sp->ttis[a];
+        const struct time_ttinfo *bp = &sp->ttis[b];
 
         result = (ap->tt_utoff == bp->tt_utoff && ap->tt_isdst == bp->tt_isdst && ap->tt_ttisstd == bp->tt_ttisstd && ap->tt_ttisut == bp->tt_ttisut && (strcmp(&sp->chars[ap->tt_desigidx], &sp->chars[bp->tt_desigidx]) == 0));
     }
     return result;
 }
 
-static bool differ_by_repeat(const xk_pg_parser_time_t t1, const xk_pg_parser_time_t t0)
+static bool differ_by_repeat(const pg_parser_time_t t1, const pg_parser_time_t t0)
 {
-    if ((XK_TIME_TYPE_BIT(xk_pg_parser_time_t)
-        - XK_TIME_TYPE_SIGNED(xk_pg_parser_time_t))
-        < XK_TIME_SECSPERREPEAT_BITS)
+    if ((TIME_TYPE_BIT(pg_parser_time_t)
+        - TIME_TYPE_SIGNED(pg_parser_time_t))
+        < TIME_SECSPERREPEAT_BITS)
         return 0;
-    return t1 - t0 == XK_TIME_SECSPERREPEAT;
+    return t1 - t0 == TIME_SECSPERREPEAT;
 }
 
 bool tzparse(const char *name,
-             struct xk_pg_parser_time_state *sp,
+             struct pg_parser_time_state *sp,
              bool lastditch,
-             xk_pg_parser_extraTypoutInfo *info)
+             pg_parser_extraTypoutInfo *info)
 {
     const char *stdname;
     const char *dstname = NULL;
@@ -1737,7 +1737,7 @@ bool tzparse(const char *name,
     int32_t dstoffset;
     char *cp;
     /* bool load_ok; */
-    static struct xk_pg_parser_time_state *tzdefrules_s = NULL;
+    static struct pg_parser_time_state *tzdefrules_s = NULL;
 
     stdname = name;
     if (lastditch)
@@ -1815,7 +1815,7 @@ bool tzparse(const char *name,
                 return false;
         }
         else
-            dstoffset = stdoffset - XK_TIME_SECSPERHOUR;
+            dstoffset = stdoffset - TIME_SECSPERHOUR;
         if (*name == '\0')
         {
             /*
@@ -1824,8 +1824,8 @@ bool tzparse(const char *name,
              * source data for the transition dates.  Unlike the IANA code, we
              * try to cache the data so it's only loaded once.
              */
-            if (tzload(XK_TIME_TZDEFRULES, NULL, tzdefrules_s, false, info) == 0)
-                rmemcpy1(sp, 0, tzdefrules_s, sizeof(struct xk_pg_parser_time_state));
+            if (tzload(TIME_TZDEFRULES, NULL, tzdefrules_s, false, info) == 0)
+                rmemcpy1(sp, 0, tzdefrules_s, sizeof(struct pg_parser_time_state));
             else
             {
                 /* If we can't load TZDEFRULES, fall back to hard-wired rule */
@@ -1839,7 +1839,7 @@ bool tzparse(const char *name,
             int32_t year;
             int32_t yearlim;
             int32_t timecnt;
-            xk_pg_parser_time_t janfirst;
+            pg_parser_time_t janfirst;
             int32_t janoffset = 0;
             int32_t yearbeg;
 
@@ -1862,11 +1862,11 @@ bool tzparse(const char *name,
             sp->defaulttype = 0;
             timecnt = 0;
             janfirst = 0;
-            yearbeg = XK_TIME_EPOCH_YEAR;
+            yearbeg = TIME_EPOCH_YEAR;
 
             do
             {
-                int32_t yearsecs = year_lengths[xk_time_isleap(yearbeg - 1)] * XK_TIME_SECSPERDAY;
+                int32_t yearsecs = year_lengths[time_isleap(yearbeg - 1)] * TIME_SECSPERDAY;
 
                 yearbeg--;
                 if (increment_overflow_time(&janfirst, -yearsecs))
@@ -1874,16 +1874,16 @@ bool tzparse(const char *name,
                     janoffset = -yearsecs;
                     break;
                 }
-            } while (XK_TIME_EPOCH_YEAR - XK_TIME_YEARSPERREPEAT / 2 < yearbeg);
+            } while (TIME_EPOCH_YEAR - TIME_YEARSPERREPEAT / 2 < yearbeg);
 
-            yearlim = yearbeg + XK_TIME_YEARSPERREPEAT + 1;
+            yearlim = yearbeg + TIME_YEARSPERREPEAT + 1;
             for (year = yearbeg; year < yearlim; year++)
             {
                 int32_t
                     starttime = transtime(year, &start, stdoffset),
                     endtime = transtime(year, &end, dstoffset);
                 int32_t
-                    yearsecs = (year_lengths[xk_time_isleap(year)] * XK_TIME_SECSPERDAY);
+                    yearsecs = (year_lengths[time_isleap(year)] * TIME_SECSPERDAY);
                 bool reversed = endtime < starttime;
 
                 if (reversed)
@@ -1895,7 +1895,7 @@ bool tzparse(const char *name,
                 }
                 if (reversed || (starttime < endtime && (endtime - starttime < (yearsecs + (stdoffset - dstoffset)))))
                 {
-                    if (XK_TIME_TZ_MAX_TIMES - 2 < timecnt)
+                    if (TIME_TZ_MAX_TIMES - 2 < timecnt)
                         break;
                     sp->ats[timecnt] = janfirst;
                     if (!increment_overflow_time(&sp->ats[timecnt],
@@ -1906,7 +1906,7 @@ bool tzparse(const char *name,
                                                  janoffset + endtime))
                     {
                         sp->types[timecnt++] = reversed;
-                        yearlim = year + XK_TIME_YEARSPERREPEAT + 1;
+                        yearlim = year + TIME_YEARSPERREPEAT + 1;
                     }
                 }
                 if (increment_overflow_time(&janfirst, janoffset + yearsecs))
@@ -1919,7 +1919,7 @@ bool tzparse(const char *name,
                 sp->ttis[0] = sp->ttis[1];
                 sp->typecnt = 1; /* Perpetual DST.  */
             }
-            else if (XK_TIME_YEARSPERREPEAT < year - yearbeg)
+            else if (TIME_YEARSPERREPEAT < year - yearbeg)
                 sp->goback = sp->goahead = true;
         }
         else
@@ -2068,7 +2068,7 @@ static const char *getzname(const char *strp)
 {
     char c;
 
-    while ((c = *strp) != '\0' && !xk_time_is_digit(c) && c != ',' && c != '-' &&
+    while ((c = *strp) != '\0' && !time_is_digit(c) && c != ',' && c != '-' &&
            c != '+')
         ++strp;
     return strp;
@@ -2117,22 +2117,22 @@ static const char *getsecs(const char *strp, int32_t *const secsp)
      * "M10.4.6/26", which does not conform to Posix, but which specifies the
      * equivalent of "02:00 on the first Sunday on or after 23 Oct".
      */
-    strp = getnum(strp, &num, 0, XK_TIME_HOURSPERDAY * XK_TIME_DAYSPERWEEK - 1);
+    strp = getnum(strp, &num, 0, TIME_HOURSPERDAY * TIME_DAYSPERWEEK - 1);
     if (strp == NULL)
         return NULL;
-    *secsp = num * (int32_t)XK_TIME_SECSPERHOUR;
+    *secsp = num * (int32_t)TIME_SECSPERHOUR;
     if (*strp == ':')
     {
         ++strp;
-        strp = getnum(strp, &num, 0, XK_TIME_MINSPERHOUR - 1);
+        strp = getnum(strp, &num, 0, TIME_MINSPERHOUR - 1);
         if (strp == NULL)
             return NULL;
-        *secsp += num * XK_TIME_SECSPERMIN;
+        *secsp += num * TIME_SECSPERMIN;
         if (*strp == ':')
         {
             ++strp;
             /* 'SECSPERMIN' allows for leap seconds.  */
-            strp = getnum(strp, &num, 0, XK_TIME_SECSPERMIN);
+            strp = getnum(strp, &num, 0, TIME_SECSPERMIN);
             if (strp == NULL)
                 return NULL;
             *secsp += num;
@@ -2153,7 +2153,7 @@ static const char *getnum(const char *strp, int32_t *const nump, const int32_t m
     char c;
     int32_t num;
 
-    if (strp == NULL || !xk_time_is_digit(c = *strp))
+    if (strp == NULL || !time_is_digit(c = *strp))
         return NULL;
     num = 0;
     do
@@ -2162,7 +2162,7 @@ static const char *getnum(const char *strp, int32_t *const nump, const int32_t m
         if (num > max)
             return NULL; /* illegal value */
         c = *++strp;
-    } while (xk_time_is_digit(c));
+    } while (time_is_digit(c));
     if (num < min)
         return NULL; /* illegal value */
     *nump = num;
@@ -2185,7 +2185,7 @@ static const char *getrule(const char *strp, struct rule *const rulep)
          */
         rulep->r_type = JULIAN_DAY;
         ++strp;
-        strp = getnum(strp, &rulep->r_day, 1, XK_TIME_DAYSPERNYEAR);
+        strp = getnum(strp, &rulep->r_day, 1, TIME_DAYSPERNYEAR);
     }
     else if (*strp == 'M')
     {
@@ -2194,7 +2194,7 @@ static const char *getrule(const char *strp, struct rule *const rulep)
          */
         rulep->r_type = MONTH_NTH_DAY_OF_WEEK;
         ++strp;
-        strp = getnum(strp, &rulep->r_mon, 1, XK_TIME_MONSPERYEAR);
+        strp = getnum(strp, &rulep->r_mon, 1, TIME_MONSPERYEAR);
         if (strp == NULL)
             return NULL;
         if (*strp++ != '.')
@@ -2204,15 +2204,15 @@ static const char *getrule(const char *strp, struct rule *const rulep)
             return NULL;
         if (*strp++ != '.')
             return NULL;
-        strp = getnum(strp, &rulep->r_day, 0, XK_TIME_DAYSPERWEEK - 1);
+        strp = getnum(strp, &rulep->r_day, 0, TIME_DAYSPERWEEK - 1);
     }
-    else if (xk_time_is_digit(*strp))
+    else if (time_is_digit(*strp))
     {
         /*
          * Day of year.
          */
         rulep->r_type = DAY_OF_YEAR;
-        strp = getnum(strp, &rulep->r_day, 0, XK_TIME_DAYSPERLYEAR - 1);
+        strp = getnum(strp, &rulep->r_day, 0, TIME_DAYSPERLYEAR - 1);
     }
     else
         return NULL; /* invalid format */
@@ -2227,12 +2227,12 @@ static const char *getrule(const char *strp, struct rule *const rulep)
         strp = getoffset(strp, &rulep->r_time);
     }
     else
-        rulep->r_time = 2 * XK_TIME_SECSPERHOUR; /* default = 2:00:00 */
+        rulep->r_time = 2 * TIME_SECSPERHOUR; /* default = 2:00:00 */
     return strp;
 }
 
 /* Initialize *S to a value based on UTOFF, ISDST, and DESIGIDX.  */
-static void init_ttinfo(struct xk_time_ttinfo *s,
+static void init_ttinfo(struct time_ttinfo *s,
                         int32_t utoff,
                         bool isdst,
                         int32_t desigidx)
@@ -2244,7 +2244,7 @@ static void init_ttinfo(struct xk_time_ttinfo *s,
     s->tt_ttisut = false;
 }
 
-static bool increment_overflow_time(xk_pg_parser_time_t *tp, int32_t j)
+static bool increment_overflow_time(pg_parser_time_t *tp, int32_t j)
 {
     /*----------
      * This is like
@@ -2253,8 +2253,8 @@ static bool increment_overflow_time(xk_pg_parser_time_t *tp, int32_t j)
      *----------
      */
     if (!(j < 0
-              ? (XK_TIME_TYPE_SIGNED(xk_pg_parser_time_t) ? XK_TIME_TIME_T_MIN - j <= *tp : -1 - j < *tp)
-              : *tp <= XK_TIME_TIME_T_MAX - j))
+              ? (TIME_TYPE_SIGNED(pg_parser_time_t) ? TIME_TIME_T_MIN - j <= *tp : -1 - j < *tp)
+              : *tp <= TIME_TIME_T_MAX - j))
         return true;
     *tp += j;
     return false;
@@ -2279,8 +2279,8 @@ static int32_t transtime(const int32_t year,
         yy2,
         dow;
 
-    XK_TIME_INITIALIZE(value);
-    leapyear = xk_time_isleap(year);
+    TIME_INITIALIZE(value);
+    leapyear = time_isleap(year);
     switch (rulep->r_type)
     {
 
@@ -2292,9 +2292,9 @@ static int32_t transtime(const int32_t year,
          * just add SECSPERDAY times the day number-1 to the time of
          * January 1, midnight, to get the day.
          */
-        value = (rulep->r_day - 1) * XK_TIME_SECSPERDAY;
+        value = (rulep->r_day - 1) * TIME_SECSPERDAY;
         if (leapyear && rulep->r_day >= 60)
-            value += XK_TIME_SECSPERDAY;
+            value += TIME_SECSPERDAY;
         break;
 
     case DAY_OF_YEAR:
@@ -2303,7 +2303,7 @@ static int32_t transtime(const int32_t year,
          * n - day of year. Just add SECSPERDAY times the day number to
          * the time of January 1, midnight, to get the day.
          */
-        value = rulep->r_day * XK_TIME_SECSPERDAY;
+        value = rulep->r_day * TIME_SECSPERDAY;
         break;
 
     case MONTH_NTH_DAY_OF_WEEK:
@@ -2324,7 +2324,7 @@ static int32_t transtime(const int32_t year,
                1 + yy2 + yy2 / 4 + yy1 / 4 - 2 * yy1) %
               7;
         if (dow < 0)
-            dow += XK_TIME_DAYSPERWEEK;
+            dow += TIME_DAYSPERWEEK;
 
         /*
          * "dow" is the day-of-week of the first day of the month. Get the
@@ -2332,21 +2332,21 @@ static int32_t transtime(const int32_t year,
          */
         d = rulep->r_day - dow;
         if (d < 0)
-            d += XK_TIME_DAYSPERWEEK;
+            d += TIME_DAYSPERWEEK;
         for (i = 1; i < rulep->r_week; ++i)
         {
-            if (d + XK_TIME_DAYSPERWEEK >=
+            if (d + TIME_DAYSPERWEEK >=
                 mon_lengths[(int32_t)leapyear][rulep->r_mon - 1])
                 break;
-            d += XK_TIME_DAYSPERWEEK;
+            d += TIME_DAYSPERWEEK;
         }
 
         /*
          * "d" is the day-of-month (zero-origin) of the day we want.
          */
-        value = d * XK_TIME_SECSPERDAY;
+        value = d * TIME_SECSPERDAY;
         for (i = 0; i < rulep->r_mon - 1; ++i)
-            value += mon_lengths[(int32_t)leapyear][i] * XK_TIME_SECSPERDAY;
+            value += mon_lengths[(int32_t)leapyear][i] * TIME_SECSPERDAY;
         break;
     }
 
@@ -2364,7 +2364,7 @@ static int32_t transtime(const int32_t year,
  * Returns a pointer to the new end of string.  No NUL terminator is put
  * there; callers are responsible for NUL terminating str themselves.
  */
-static char *AppendTimestampSeconds(char *cp, struct xk_pg_parser_tm *tm, fsec_t fsec)
+static char *AppendTimestampSeconds(char *cp, struct pg_parser_tm *tm, fsec_t fsec)
 {
     return AppendSeconds(cp, tm->tm_sec, fsec, MAX_TIMESTAMP_PRECISION, true);
 }
@@ -2385,7 +2385,7 @@ static char *AppendTimestampSeconds(char *cp, struct xk_pg_parser_tm *tm, fsec_t
  *    German - dd.mm.yyyy hh:mm:ss tz
  *    XSD - yyyy-mm-ddThh:mm:ss.ss+/-tz
  */
-void EncodeDateTime(struct xk_pg_parser_tm *tm,
+void EncodeDateTime(struct pg_parser_tm *tm,
                     fsec_t fsec,
                     bool print_tz,
                     int32_t tz,
@@ -2408,16 +2408,16 @@ void EncodeDateTime(struct xk_pg_parser_tm *tm,
         case USE_ISO_DATES:
         case USE_XSD_DATES:
             /* Compatible with ISO-8601 date formats */
-            str = xk_numutils_ltostr_zeropad(str,
+            str = numutils_ltostr_zeropad(str,
                                     (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             *str++ = '-';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_mon, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             *str++ = '-';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             *str++ = (style == USE_ISO_DATES) ? ' ' : 'T';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_hour, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_hour, 2);
             *str++ = ':';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_min, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_min, 2);
             *str++ = ':';
             str = AppendSeconds(str, tm->tm_sec, fsec, MAX_TIMESTAMP_PRECISION, true);
             if (print_tz)
@@ -2428,23 +2428,23 @@ void EncodeDateTime(struct xk_pg_parser_tm *tm,
             /* Compatible with Oracle/Ingres date formats */
             if (DateOrder == DATEORDER_DMY)
             {
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
                 *str++ = '/';
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mon, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             }
             else
             {
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mon, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
                 *str++ = '/';
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             }
             *str++ = '/';
-            str = xk_numutils_ltostr_zeropad(str,
+            str = numutils_ltostr_zeropad(str,
                                     (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             *str++ = ' ';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_hour, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_hour, 2);
             *str++ = ':';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_min, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_min, 2);
             *str++ = ':';
             str = AppendSeconds(str, tm->tm_sec, fsec, MAX_TIMESTAMP_PRECISION, true);
 
@@ -2467,16 +2467,16 @@ void EncodeDateTime(struct xk_pg_parser_tm *tm,
 
         case USE_GERMAN_DATES:
             /* German variant on European style */
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             *str++ = '.';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_mon, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             *str++ = '.';
-            str = xk_numutils_ltostr_zeropad(str,
+            str = numutils_ltostr_zeropad(str,
                                     (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             *str++ = ' ';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_hour, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_hour, 2);
             *str++ = ':';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_min, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_min, 2);
             *str++ = ':';
             str = AppendSeconds(str, tm->tm_sec, fsec, MAX_TIMESTAMP_PRECISION, true);
 
@@ -2502,7 +2502,7 @@ void EncodeDateTime(struct xk_pg_parser_tm *tm,
             *str++ = ' ';
             if (DateOrder == DATEORDER_DMY)
             {
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
                 *str++ = ' ';
                 rmemcpy1(str, 0, months[tm->tm_mon - 1], 3);
                 str += 3;
@@ -2512,16 +2512,16 @@ void EncodeDateTime(struct xk_pg_parser_tm *tm,
                 rmemcpy1(str, 0, months[tm->tm_mon - 1], 3);
                 str += 3;
                 *str++ = ' ';
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             }
             *str++ = ' ';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_hour, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_hour, 2);
             *str++ = ':';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_min, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_min, 2);
             *str++ = ':';
             str = AppendTimestampSeconds(str, tm, fsec);
             *str++ = ' ';
-            str = xk_numutils_ltostr_zeropad(str,
+            str = numutils_ltostr_zeropad(str,
                                     (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
 
             if (print_tz)
@@ -2577,20 +2577,20 @@ static char *EncodeTimezone(char *str, int32_t tz, int32_t style)
 
     if (sec != 0)
     {
-        str = xk_numutils_ltostr_zeropad(str, hour, 2);
+        str = numutils_ltostr_zeropad(str, hour, 2);
         *str++ = ':';
-        str = xk_numutils_ltostr_zeropad(str, min, 2);
+        str = numutils_ltostr_zeropad(str, min, 2);
         *str++ = ':';
-        str = xk_numutils_ltostr_zeropad(str, sec, 2);
+        str = numutils_ltostr_zeropad(str, sec, 2);
     }
     else if (min != 0 || style == USE_XSD_DATES)
     {
-        str = xk_numutils_ltostr_zeropad(str, hour, 2);
+        str = numutils_ltostr_zeropad(str, hour, 2);
         *str++ = ':';
-        str = xk_numutils_ltostr_zeropad(str, min, 2);
+        str = numutils_ltostr_zeropad(str, min, 2);
     }
     else
-        str = xk_numutils_ltostr_zeropad(str, hour, 2);
+        str = numutils_ltostr_zeropad(str, hour, 2);
     return str;
 }
 
@@ -2612,9 +2612,9 @@ static char *AppendSeconds(char *cp,
                            bool fillzeros)
 {
     if (fillzeros)
-        cp = xk_numutils_ltostr_zeropad(cp, Abs(sec), 2);
+        cp = numutils_ltostr_zeropad(cp, Abs(sec), 2);
     else
-        cp = xk_numutils_ltostr(cp, Abs(sec));
+        cp = numutils_ltostr(cp, Abs(sec));
 
     /* fsec_t is just an int32_t */
     if (fsec != 0)
@@ -2654,7 +2654,7 @@ static char *AppendSeconds(char *cp,
          * which will generate a correct answer in the minimum valid width.
          */
         if (value)
-            return xk_numutils_ltostr(cp, Abs(fsec));
+            return numutils_ltostr(cp, Abs(fsec));
 
         return end;
     }

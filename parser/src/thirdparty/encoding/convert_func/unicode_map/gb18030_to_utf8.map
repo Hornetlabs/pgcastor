@@ -3,7 +3,7 @@
 
 static const uint32_t gb18030_to_unicode_tree_table[32795];
 
-static const xk_character_mb_radix_tree gb18030_to_unicode_tree =
+static const character_mb_radix_tree gb18030_to_unicode_tree =
 {
   NULL, /* 16-bit table not used */
   gb18030_to_unicode_tree_table,

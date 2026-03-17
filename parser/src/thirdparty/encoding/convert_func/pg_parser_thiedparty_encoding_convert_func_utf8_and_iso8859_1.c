@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 
 /* ----------
@@ -34,14 +34,14 @@ void iso8859_1_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t 
     int32_t        len = str_len;
     unsigned short c;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_LATIN1, XK_UTF8);
+    CHECK_ENCODING_CONVERSION_ARGS(LATIN1, UTF8);
 
     while (len > 0)
     {
         c = *src;
         if (c == 0)
         {
-            /* report_invalid_encoding(XK_LATIN1, (const char *) src, len); */
+            /* report_invalid_encoding(LATIN1, (const char *) src, len); */
             break;
         }
         if (!IS_HIGHBIT_SET(c))
@@ -65,14 +65,14 @@ void utf8_to_iso8859_1(unsigned char *src_str, unsigned char *dest_str, int32_t 
     unsigned short c,
                 c1;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_UTF8, XK_LATIN1);
+    CHECK_ENCODING_CONVERSION_ARGS(UTF8, LATIN1);
 
     while (len > 0)
     {
         c = *src;
         if (c == 0)
         {
-            /* report_invalid_encoding(XK_UTF8, (const char *) src, len); */
+            /* report_invalid_encoding(UTF8, (const char *) src, len); */
             break;
         }
         /* fast path for ASCII-subset characters */
@@ -84,16 +84,16 @@ void utf8_to_iso8859_1(unsigned char *src_str, unsigned char *dest_str, int32_t 
         }
         else
         {
-            int32_t l = xk_character_utf_mblen(src);
+            int32_t l = character_utf_mblen(src);
 
-            if (l > len || !xk_character_utf8_islegal(src, l))
+            if (l > len || !character_utf8_islegal(src, l))
             {
-                /* report_invalid_encoding(XK_UTF8, (const char *) src, len); */
+                /* report_invalid_encoding(UTF8, (const char *) src, len); */
                 break;
             }
             if (l != 2)
             {
-                /* report_untranslatable_char(XK_UTF8, XK_LATIN1,
+                /* report_untranslatable_char(UTF8, LATIN1,
                                            (const char *) src, len); */
                 break;
             }
@@ -107,7 +107,7 @@ void utf8_to_iso8859_1(unsigned char *src_str, unsigned char *dest_str, int32_t 
             }
             else
             {
-                /* report_untranslatable_char(XK_UTF8, XK_LATIN1,
+                /* report_untranslatable_char(UTF8, LATIN1,
                                            (const char *) src, len); */
                 break;
             }

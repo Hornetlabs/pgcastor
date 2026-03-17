@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Santa_Isabel[] =
+char* PG_America_Santa_Isabel[] =
 {
     (char *)"Rule	CA	1948	only	-	Mar	14	2:01	1:00	D",
     (char *)"Rule	CA	1949	only	-	Jan	 1	2:00	0	S",

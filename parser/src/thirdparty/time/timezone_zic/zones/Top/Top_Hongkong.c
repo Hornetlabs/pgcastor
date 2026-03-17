@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Hongkong[] =
+char* PG_Hongkong[] =
 {
     (char *)"Rule	HK	1946	only	-	Apr	21	0:00	1:00	S",
     (char *)"Rule	HK	1946	only	-	Dec	1	3:30s	0	-",

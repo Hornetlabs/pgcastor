@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 #include "./unicode_map/gbk_to_utf8.map"
 #include "./unicode_map/utf8_to_gbk.map"
 
@@ -34,13 +34,13 @@ void gbk_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_le
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_GBK, XK_UTF8);
+    CHECK_ENCODING_CONVERSION_ARGS(GBK, UTF8);
 
     LocalToUtf(src, len, dest,
                &gbk_to_unicode_tree,
                NULL, 0,
                NULL,
-               XK_GBK);
+               GBK);
 }
 
 void utf8_to_gbk(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -49,11 +49,11 @@ void utf8_to_gbk(unsigned char *src_str, unsigned char *dest_str, int32_t str_le
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_UTF8, XK_GBK);
+    CHECK_ENCODING_CONVERSION_ARGS(UTF8, GBK);
 
     UtfToLocal(src, len, dest,
                &gbk_from_unicode_tree,
                NULL, 0,
                NULL,
-               XK_GBK);
+               GBK);
 }

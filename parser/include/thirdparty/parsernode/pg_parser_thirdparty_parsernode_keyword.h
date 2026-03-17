@@ -1,5 +1,5 @@
-#ifndef XK_PG_PARSER_THIRDPARTY_PARSERNODE_KEYWORD_H
-#define XK_PG_PARSER_THIRDPARTY_PARSERNODE_KEYWORD_H
+#ifndef PG_PARSER_THIRDPARTY_PARSERNODE_KEYWORD_H
+#define PG_PARSER_THIRDPARTY_PARSERNODE_KEYWORD_H
 static const char ScanKeywords_kw_string[] =
     "abort\0"
     "absolute\0"
@@ -1022,7 +1022,7 @@ ScanKeywords_hash_func(const void *key, size_t keylen)
     return h[a % 885] + h[b % 885];
 }
 
-const xk_pg_parser_ScanKeywordList xk_pg_parser_ScanKeywords = {
+const pg_parser_ScanKeywordList pg_parser_ScanKeywords = {
     ScanKeywords_kw_string,
     ScanKeywords_kw_offsets,
     ScanKeywords_hash_func,
@@ -1035,7 +1035,7 @@ const xk_pg_parser_ScanKeywordList xk_pg_parser_ScanKeywords = {
 #define TYPE_FUNC_NAME_KEYWORD    2
 #define RESERVED_KEYWORD          3
 #define PG_KEYWORD(kwname, value, category) category,
-const uint8_t xk_pg_parser_ScanKeywordCategories[SCANKEYWORDS_NUM_KEYWORDS] =
+const uint8_t pg_parser_ScanKeywordCategories[SCANKEYWORDS_NUM_KEYWORDS] =
 {
 PG_KEYWORD("abort", ABORT_P, UNRESERVED_KEYWORD)
 PG_KEYWORD("absolute", ABSOLUTE_P, UNRESERVED_KEYWORD)

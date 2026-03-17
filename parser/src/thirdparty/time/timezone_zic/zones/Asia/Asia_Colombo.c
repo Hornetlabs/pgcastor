@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Colombo[] =
+char* PG_Asia_Colombo[] =
 {
     (char *)"Zone	Asia/Colombo	5:19:24 -	LMT	1880",
     (char *)"			5:19:32	-	MMT	1906        # Moratuwa Mean Time",

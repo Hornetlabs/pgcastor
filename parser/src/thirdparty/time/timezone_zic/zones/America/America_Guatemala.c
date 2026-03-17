@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Guatemala[] =
+char* PG_America_Guatemala[] =
 {
     (char *)"Rule	Guat	1973	only	-	Nov	25	0:00	1:00	D",
     (char *)"Rule	Guat	1974	only	-	Feb	24	0:00	0	S",

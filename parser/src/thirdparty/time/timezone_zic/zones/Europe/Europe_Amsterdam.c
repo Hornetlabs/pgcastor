@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Europe_Amsterdam[] =
+char* PG_Europe_Amsterdam[] =
 {
     (char *)"Rule	Neth	1916	only	-	May	 1	0:00	1:00	NST	# Netherlands Summer Time",
     (char *)"Rule	Neth	1916	only	-	Oct	 1	0:00	0	AMT	# Amsterdam Mean Time",

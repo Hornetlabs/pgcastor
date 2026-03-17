@@ -1,7 +1,7 @@
-#ifndef XK_PG_PARSER_THIRDPARTY_CHARACTER_SET_WCHAR_H
-#define XK_PG_PARSER_THIRDPARTY_CHARACTER_SET_WCHAR_H
+#ifndef PG_PARSER_THIRDPARTY_CHARACTER_SET_WCHAR_H
+#define PG_PARSER_THIRDPARTY_CHARACTER_SET_WCHAR_H
 
-typedef uint32_t xk_character_wchar;
+typedef uint32_t character_wchar;
 /*
  * Maximum byte length of multibyte characters in any backend encoding
  */
@@ -10,7 +10,7 @@ typedef uint32_t xk_character_wchar;
 #define HIGHBIT             (0x80)
 #define IS_HIGHBIT_SET(ch)  ((unsigned char)(ch) & HIGHBIT)
 
-#define xk_conv_lengthof(array) (sizeof (array) / sizeof ((array)[0]))
+#define conv_lengthof(array) (sizeof (array) / sizeof ((array)[0]))
 
 /*
  * various definitions for EUC
@@ -205,11 +205,11 @@ typedef uint32_t xk_character_wchar;
  * PostgreSQL encoding identifiers
  *
  * WARNING: the order of this enum must be same as order of entries
- *            in the xk_character_enc2name_tbl[] array (in mb/encnames.c), and
- *            in the xk_character_wchar_table[] array (in mb/wchar.c)!
+ *            in the character_enc2name_tbl[] array (in mb/encnames.c), and
+ *            in the character_wchar_table[] array (in mb/wchar.c)!
  *
  *            If you add some encoding don't forget to check
- *            XK_CHARACTER_ENCODING_BE_LAST macro.
+ *            CHARACTER_ENCODING_BE_LAST macro.
  *
  * PG_SQL_ASCII is default encoding and must be = 0.
  *
@@ -218,74 +218,74 @@ typedef uint32_t xk_character_wchar;
  * encoding IDs are effectively part of libpq's ABI as far as 8.2 initdb and
  * psql are concerned.
  */
-typedef enum xk_character_enc
+typedef enum character_enc
 {
-    XK_CHARACTER_SQL_ASCII = 0,             /* SQL/ASCII */
-    XK_CHARACTER_EUC_JP,                    /* EUC for Japanese */
-    XK_CHARACTER_EUC_CN,                    /* EUC for Chinese */
-    XK_CHARACTER_EUC_KR,                    /* EUC for Korean */
-    XK_CHARACTER_EUC_TW,                    /* EUC for Taiwan */
-    XK_CHARACTER_EUC_JIS_2004,              /* EUC-JIS-2004 */
-    XK_CHARACTER_UTF8,                      /* Unicode UTF8 */
-    XK_CHARACTER_MULE_INTERNAL,             /* Mule internal code */
-    XK_CHARACTER_LATIN1,                    /* ISO-8859-1 Latin 1 */
-    XK_CHARACTER_LATIN2,                    /* ISO-8859-2 Latin 2 */
-    XK_CHARACTER_LATIN3,                    /* ISO-8859-3 Latin 3 */
-    XK_CHARACTER_LATIN4,                    /* ISO-8859-4 Latin 4 */
-    XK_CHARACTER_LATIN5,                    /* ISO-8859-9 Latin 5 */
-    XK_CHARACTER_LATIN6,                    /* ISO-8859-10 Latin6 */
-    XK_CHARACTER_LATIN7,                    /* ISO-8859-13 Latin7 */
-    XK_CHARACTER_LATIN8,                    /* ISO-8859-14 Latin8 */
-    XK_CHARACTER_LATIN9,                    /* ISO-8859-15 Latin9 */
-    XK_CHARACTER_LATIN10,                   /* ISO-8859-16 Latin10 */
-    XK_CHARACTER_WIN1256,                   /* windows-1256 */
-    XK_CHARACTER_WIN1258,                   /* Windows-1258 */
-    XK_CHARACTER_WIN866,                    /* (MS-DOS CP866) */
-    XK_CHARACTER_WIN874,                    /* windows-874 */
-    XK_CHARACTER_KOI8R,                     /* KOI8-R */
-    XK_CHARACTER_WIN1251,                   /* windows-1251 */
-    XK_CHARACTER_WIN1252,                   /* windows-1252 */
-    XK_CHARACTER_ISO_8859_5,                /* ISO-8859-5 */
-    XK_CHARACTER_ISO_8859_6,                /* ISO-8859-6 */
-    XK_CHARACTER_ISO_8859_7,                /* ISO-8859-7 */
-    XK_CHARACTER_ISO_8859_8,                /* ISO-8859-8 */
-    XK_CHARACTER_WIN1250,                   /* windows-1250 */
-    XK_CHARACTER_WIN1253,                   /* windows-1253 */
-    XK_CHARACTER_WIN1254,                   /* windows-1254 */
-    XK_CHARACTER_WIN1255,                   /* windows-1255 */
-    XK_CHARACTER_WIN1257,                   /* windows-1257 */
-    XK_CHARACTER_KOI8U,                     /* KOI8-U */
-    /* XK_CHARACTER_ENCODING_BE_LAST points to the above entry */
+    CHARACTER_SQL_ASCII = 0,             /* SQL/ASCII */
+    CHARACTER_EUC_JP,                    /* EUC for Japanese */
+    CHARACTER_EUC_CN,                    /* EUC for Chinese */
+    CHARACTER_EUC_KR,                    /* EUC for Korean */
+    CHARACTER_EUC_TW,                    /* EUC for Taiwan */
+    CHARACTER_EUC_JIS_2004,              /* EUC-JIS-2004 */
+    CHARACTER_UTF8,                      /* Unicode UTF8 */
+    CHARACTER_MULE_INTERNAL,             /* Mule internal code */
+    CHARACTER_LATIN1,                    /* ISO-8859-1 Latin 1 */
+    CHARACTER_LATIN2,                    /* ISO-8859-2 Latin 2 */
+    CHARACTER_LATIN3,                    /* ISO-8859-3 Latin 3 */
+    CHARACTER_LATIN4,                    /* ISO-8859-4 Latin 4 */
+    CHARACTER_LATIN5,                    /* ISO-8859-9 Latin 5 */
+    CHARACTER_LATIN6,                    /* ISO-8859-10 Latin6 */
+    CHARACTER_LATIN7,                    /* ISO-8859-13 Latin7 */
+    CHARACTER_LATIN8,                    /* ISO-8859-14 Latin8 */
+    CHARACTER_LATIN9,                    /* ISO-8859-15 Latin9 */
+    CHARACTER_LATIN10,                   /* ISO-8859-16 Latin10 */
+    CHARACTER_WIN1256,                   /* windows-1256 */
+    CHARACTER_WIN1258,                   /* Windows-1258 */
+    CHARACTER_WIN866,                    /* (MS-DOS CP866) */
+    CHARACTER_WIN874,                    /* windows-874 */
+    CHARACTER_KOI8R,                     /* KOI8-R */
+    CHARACTER_WIN1251,                   /* windows-1251 */
+    CHARACTER_WIN1252,                   /* windows-1252 */
+    CHARACTER_ISO_8859_5,                /* ISO-8859-5 */
+    CHARACTER_ISO_8859_6,                /* ISO-8859-6 */
+    CHARACTER_ISO_8859_7,                /* ISO-8859-7 */
+    CHARACTER_ISO_8859_8,                /* ISO-8859-8 */
+    CHARACTER_WIN1250,                   /* windows-1250 */
+    CHARACTER_WIN1253,                   /* windows-1253 */
+    CHARACTER_WIN1254,                   /* windows-1254 */
+    CHARACTER_WIN1255,                   /* windows-1255 */
+    CHARACTER_WIN1257,                   /* windows-1257 */
+    CHARACTER_KOI8U,                     /* KOI8-U */
+    /* CHARACTER_ENCODING_BE_LAST points to the above entry */
 
     /* followings are for client encoding only */
-    XK_CHARACTER_SJIS,                      /* Shift JIS (Windows-932) */
-    XK_CHARACTER_BIG5,                      /* Big5 (Windows-950) */
-    XK_CHARACTER_GBK,                       /* GBK (Windows-936) */
-    XK_CHARACTER_UHC,                       /* UHC (Windows-949) */
-    XK_CHARACTER_GB18030,                   /* GB18030 */
-    XK_CHARACTER_JOHAB,                     /* EUC for Korean JOHAB */
-    XK_CHARACTER_SHIFT_JIS_2004,            /* Shift-JIS-2004 */
-    _XK_CHARACTER_LAST_ENCODING_            /* mark only */
+    CHARACTER_SJIS,                      /* Shift JIS (Windows-932) */
+    CHARACTER_BIG5,                      /* Big5 (Windows-950) */
+    CHARACTER_GBK,                       /* GBK (Windows-936) */
+    CHARACTER_UHC,                       /* UHC (Windows-949) */
+    CHARACTER_GB18030,                   /* GB18030 */
+    CHARACTER_JOHAB,                     /* EUC for Korean JOHAB */
+    CHARACTER_SHIFT_JIS_2004,            /* Shift-JIS-2004 */
+    _CHARACTER_LAST_ENCODING_            /* mark only */
 
-} xk_character_enc;
+} character_enc;
 
-#define XK_CHARACTER_ENCODING_BE_LAST XK_CHARACTER_PG_KOI8U
+#define CHARACTER_ENCODING_BE_LAST CHARACTER_PG_KOI8U
 
 /*
  * Please use these tests before access to pg_encconv_tbl[]
  * or to other places...
  */
-#define XK_CHARACTER_VALID_BE_ENCODING(_enc) \
-        ((_enc) >= 0 && (_enc) <= XK_CHARACTER_ENCODING_BE_LAST)
+#define CHARACTER_VALID_BE_ENCODING(_enc) \
+        ((_enc) >= 0 && (_enc) <= CHARACTER_ENCODING_BE_LAST)
 
-#define XK_CHARACTER_ENCODING_IS_CLIENT_ONLY(_enc) \
-        ((_enc) > XK_CHARACTER_ENCODING_BE_LAST && (_enc) < _XK_CHARACTER_LAST_ENCODING_)
+#define CHARACTER_ENCODING_IS_CLIENT_ONLY(_enc) \
+        ((_enc) > CHARACTER_ENCODING_BE_LAST && (_enc) < _CHARACTER_LAST_ENCODING_)
 
-#define XK_CHARACTER_VALID_ENCODING(_enc) \
-        ((_enc) >= 0 && (_enc) < _XK_CHARACTER_LAST_ENCODING_)
+#define CHARACTER_VALID_ENCODING(_enc) \
+        ((_enc) >= 0 && (_enc) < _CHARACTER_LAST_ENCODING_)
 
 /* On FE are possible all encodings */
-#define XK_CHARACTER_VALID_FE_ENCODING(_enc)    XK_CHARACTER_VALID_ENCODING(_enc)
+#define CHARACTER_VALID_FE_ENCODING(_enc)    CHARACTER_VALID_ENCODING(_enc)
 
 /*
  * When converting strings between different encodings, we assume that space
@@ -303,37 +303,37 @@ typedef enum xk_character_enc
  * possibly other subsidiary data.  Be careful to check encoding number
  * before accessing a table entry!
  *
- * if (XK_CHARACTER_VALID_ENCODING(encoding))
- *        xk_character_enc2name_tbl[ encoding ];
+ * if (CHARACTER_VALID_ENCODING(encoding))
+ *        character_enc2name_tbl[ encoding ];
  */
-typedef struct xk_character_enc2name
+typedef struct character_enc2name
 {
     const char      *name;
-    xk_character_enc encoding;
+    character_enc encoding;
 
-} xk_character_enc2name;
+} character_enc2name;
 
-extern const xk_character_enc2name xk_character_enc2name_tbl[];
+extern const character_enc2name character_enc2name_tbl[];
 
 /*
  * Encoding names for gettext
  */
-typedef struct xk_character_enc2gettext
+typedef struct character_enc2gettext
 {
-    xk_character_enc encoding;
+    character_enc encoding;
     const char      *name;
-} xk_character_enc2gettext;
+} character_enc2gettext;
 
-extern const xk_character_enc2gettext xk_character_enc2gettext_tbl[];
+extern const character_enc2gettext character_enc2gettext_tbl[];
 
 /*
- * xk_character_wchar stuff
+ * character_wchar stuff
  */
 typedef int32_t (*mb2wchar_with_len_converter) (const unsigned char *from,
-                                                xk_character_wchar *to,
+                                                character_wchar *to,
                                                 int32_t len);
 
-typedef int32_t (*wchar2mb_with_len_converter) (const xk_character_wchar *from,
+typedef int32_t (*wchar2mb_with_len_converter) (const character_wchar *from,
                                                 unsigned char *to,
                                                 int32_t len);
 
@@ -355,9 +355,9 @@ typedef struct
     mbdisplaylen_converter dsplen;    /* get display width of a char */
     mbverifier    mbverify;        /* verify multibyte sequence */
     int32_t            maxmblen;        /* max bytes for a char in this encoding */
-} xk_character_wchar_tbl;
+} character_wchar_tbl;
 
-extern const xk_character_wchar_tbl xk_character_wchar_table[];
+extern const character_wchar_tbl character_wchar_table[];
 
 /*
  * Data structures for conversions between UTF-8 and other encodings
@@ -440,7 +440,7 @@ typedef struct
     uint8_t         b4_4_lower;        /* min/max allowed value for 4th input byte */
     uint8_t         b4_4_upper;
 
-} xk_character_mb_radix_tree;
+} character_mb_radix_tree;
 
 /*
  * UTF-8 to local code conversion map (for combined characters)
@@ -450,7 +450,7 @@ typedef struct
     uint32_t        utf1;            /* UTF-8 code 1 */
     uint32_t        utf2;            /* UTF-8 code 2 */
     uint32_t        code;            /* local code */
-} xk_character_utf_to_local_combined;
+} character_utf_to_local_combined;
 
 /*
  * local code to UTF-8 conversion map (for combined characters)
@@ -460,7 +460,7 @@ typedef struct
     uint32_t        code;            /* local code */
     uint32_t        utf1;            /* UTF-8 code 1 */
     uint32_t        utf2;            /* UTF-8 code 2 */
-} xk_character_local_to_utf_combined;
+} character_local_to_utf_combined;
 
 /*
  * callback function for algorithmic encoding conversions (in either direction)
@@ -479,33 +479,33 @@ typedef uint32_t (*utf_local_conversion_func) (uint32_t code);
     check_encoding_conversion_args((srcencoding), \
                                    (destencoding))
 
-/* src/thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.c */
-extern int32_t xk_character_mule_mblen(const unsigned char *mbstr);
+/* src/thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.c */
+extern int32_t character_mule_mblen(const unsigned char *mbstr);
 
-extern xk_character_wchar xk_character_utf8_to_unicode(const unsigned char *c);
+extern character_wchar character_utf8_to_unicode(const unsigned char *c);
 
-extern int32_t xk_character_utf_mblen(const unsigned char *s);
+extern int32_t character_utf_mblen(const unsigned char *s);
 
-extern unsigned char * xk_character_unicode_to_utf8(xk_character_wchar c,
+extern unsigned char * character_unicode_to_utf8(character_wchar c,
                                              unsigned char *utf8string);
 
-extern bool xk_character_utf8_islegal(const unsigned char *source, int32_t length);
+extern bool character_utf8_islegal(const unsigned char *source, int32_t length);
 
 extern void check_encoding_conversion_args(int32_t expected_src_encoding,
                                            int32_t expected_dest_encoding);
 
-extern int32_t xk_character_encoding_max_length(int32_t encoding);
+extern int32_t character_encoding_max_length(int32_t encoding);
 
-extern int32_t xk_character_encoding_mblen(int32_t encoding, const char *mbstr);
-extern int32_t xk_character_mic_mblen(const unsigned char *mbstr);
-extern int32_t xk_character_encoding_verifymb(int32_t encoding, const char *mbstr, int32_t len);
+extern int32_t character_encoding_mblen(int32_t encoding, const char *mbstr);
+extern int32_t character_mic_mblen(const unsigned char *mbstr);
+extern int32_t character_encoding_verifymb(int32_t encoding, const char *mbstr, int32_t len);
 
 
-/* src/thirdparty/encoding/convert_func/xk_pg_parser_thirdparty_encoding_convert.c */
+/* src/thirdparty/encoding/convert_func/pg_parser_thirdparty_encoding_convert.c */
 extern void local2local(const unsigned char *l, unsigned char *p, int32_t len,
                         int32_t src_encoding, int32_t dest_encoding, const unsigned char *tab);
-extern void xk_conv_ascii2mic(const unsigned char *l, unsigned char *p, int32_t len);
-extern void xk_conv_mic2ascii(const unsigned char *mic, unsigned char *p, int32_t len);
+extern void conv_ascii2mic(const unsigned char *l, unsigned char *p, int32_t len);
+extern void conv_mic2ascii(const unsigned char *mic, unsigned char *p, int32_t len);
 extern void latin2mic(const unsigned char *l, unsigned char *p, int32_t len,
                       int32_t lc, int32_t encoding);
 extern void mic2latin(const unsigned char *mic, unsigned char *p, int32_t len,
@@ -519,22 +519,22 @@ extern void mic2latin_with_table(const unsigned char *mic, unsigned char *p,
 
 void UtfToLocal(const unsigned char *utf, int32_t len,
                 unsigned char *iso,
-                const xk_character_mb_radix_tree *map,
-                const xk_character_utf_to_local_combined *cmap,
+                const character_mb_radix_tree *map,
+                const character_utf_to_local_combined *cmap,
                 int32_t cmapsize,
                 utf_local_conversion_func conv_func,
                 int32_t encoding);
 
 void LocalToUtf(const unsigned char *iso, int32_t len,
                 unsigned char *utf,
-                const xk_character_mb_radix_tree *map,
-                const xk_character_local_to_utf_combined *cmap,
+                const character_mb_radix_tree *map,
+                const character_local_to_utf_combined *cmap,
                 int32_t cmapsize,
                 utf_local_conversion_func conv_func,
                 int32_t encoding);
 
 
-/* src/thirdparty/encoding/convert_func/xk_pg_parser_thiedparty_encoding_convert_func_big5.c */
+/* src/thirdparty/encoding/convert_func/pg_parser_thiedparty_encoding_convert_func_big5.c */
 extern unsigned short BIG5toCNS(unsigned short big5, unsigned char *lc);
 extern unsigned short CNStoBIG5(unsigned short cns, unsigned char lc);
 

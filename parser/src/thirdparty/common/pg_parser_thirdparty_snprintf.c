@@ -1,8 +1,8 @@
 #include <math.h>
 
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "thirdparty/common/xk_pg_parser_thirdparty_snprintf.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "thirdparty/common/pg_parser_thirdparty_snprintf.h"
 
 #define Min(x, y) ((x) < (y) ? (x) : (y))
 
@@ -90,7 +90,7 @@ static void dopr_outch(int32_t c, PrintfTarget *target)
  * However, the target buffer must be nonempty (i.e. count > 0), and
  * the precision is silently bounded to a sane range.
  */
-int32_t xk_pg_parser_strfromd(char *str, size_t count, int32_t precision, double value)
+int32_t pg_parser_strfromd(char *str, size_t count, int32_t precision, double value)
 {
     PrintfTarget target;
     int32_t      signvalue = 0;
@@ -152,7 +152,7 @@ int32_t xk_pg_parser_strfromd(char *str, size_t count, int32_t precision, double
             if (vallen < 0)
             {
                 target.failed = true;
-                goto xk_pg_parser_thirdparty_snprintf_fail;
+                goto pg_parser_thirdparty_snprintf_fail;
             }
 
 #ifdef WIN32
@@ -173,7 +173,7 @@ int32_t xk_pg_parser_strfromd(char *str, size_t count, int32_t precision, double
 
     dostr(convert, vallen, &target);
 
-xk_pg_parser_thirdparty_snprintf_fail:
+pg_parser_thirdparty_snprintf_fail:
     *(target.bufptr) = '\0';
     return target.failed ? -1 : (target.bufptr - target.bufstart
                                  + target.nchars);

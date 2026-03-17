@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 /*
  * SJIS alternative code.
@@ -52,7 +52,7 @@ void euc_jp_to_sjis(unsigned char *src_str, unsigned char *dest_str, int32_t str
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_EUC_JP, XK_SJIS);
+    CHECK_ENCODING_CONVERSION_ARGS(EUC_JP, SJIS);
 
     euc_jp2sjis(src, dest, len);
 }
@@ -63,7 +63,7 @@ void sjis_to_euc_jp(unsigned char *src_str, unsigned char *dest_str, int32_t str
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_SJIS, XK_EUC_JP);
+    CHECK_ENCODING_CONVERSION_ARGS(SJIS, EUC_JP);
 
     sjis2euc_jp(src, dest, len);
 }
@@ -74,7 +74,7 @@ void euc_jp_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_EUC_JP, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(EUC_JP, MULE_INTERNAL);
 
     euc_jp2mic(src, dest, len);
 }
@@ -85,7 +85,7 @@ void mic_to_euc_jp(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_EUC_JP);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, EUC_JP);
 
     mic2euc_jp(src, dest, len);
 }
@@ -96,7 +96,7 @@ void sjis_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_le
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_SJIS, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(SJIS, MULE_INTERNAL);
 
     sjis2mic(src, dest, len);
 }
@@ -107,7 +107,7 @@ void mic_to_sjis(unsigned char *src_str, unsigned char *dest_str, int32_t str_le
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_SJIS);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, SJIS);
 
     mic2sjis(src, dest, len);
 }
@@ -142,7 +142,7 @@ sjis2mic(const unsigned char *sjis, unsigned char *p, int32_t len)
              */
             if (len < 2 || !ISSJISHEAD(c1) || !ISSJISTAIL(sjis[1]))
             {
-                /* report_invalid_encoding(XK_SJIS, (const char *) sjis, len); */
+                /* report_invalid_encoding(SJIS, (const char *) sjis, len); */
                 break;
             }
             c2 = sjis[1];
@@ -235,7 +235,7 @@ sjis2mic(const unsigned char *sjis, unsigned char *p, int32_t len)
         {                        /* should be ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_SJIS, (const char *) sjis, len); */
+                /* report_invalid_encoding(SJIS, (const char *) sjis, len); */
                 break;
             }
             *p++ = c1;
@@ -264,7 +264,7 @@ static void mic2sjis(const unsigned char *mic, unsigned char *p, int32_t len)
             /* ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_MULE_INTERNAL,
+                /* report_invalid_encoding(MULE_INTERNAL,
                                         (const char *) mic, len); */
                 break;
             }
@@ -273,10 +273,10 @@ static void mic2sjis(const unsigned char *mic, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = xk_character_encoding_verifymb(XK_MULE_INTERNAL, (const char *) mic, len);
+        l = character_encoding_verifymb(MULE_INTERNAL, (const char *) mic, len);
         if (l < 0)
         {
-            /* report_invalid_encoding(XK_MULE_INTERNAL,
+            /* report_invalid_encoding(MULE_INTERNAL,
                                     (const char *) mic, len); */
             break;
         }
@@ -336,7 +336,7 @@ static void mic2sjis(const unsigned char *mic, unsigned char *p, int32_t len)
         }
         else
         {
-            /* report_untranslatable_char(XK_MULE_INTERNAL, XK_SJIS,
+            /* report_untranslatable_char(MULE_INTERNAL, SJIS,
                                        (const char *) mic, len); */
             break;
         }
@@ -362,7 +362,7 @@ static void euc_jp2mic(const unsigned char *euc, unsigned char *p, int32_t len)
             /* ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_EUC_JP,
+                /* report_invalid_encoding(EUC_JP,
                                         (const char *) euc, len); */
                 break;
             }
@@ -371,10 +371,10 @@ static void euc_jp2mic(const unsigned char *euc, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = xk_character_encoding_verifymb(XK_EUC_JP, (const char *) euc, len);
+        l = character_encoding_verifymb(EUC_JP, (const char *) euc, len);
         if (l < 0)
         {
-            /* report_invalid_encoding(XK_EUC_JP,
+            /* report_invalid_encoding(EUC_JP,
                                     (const char *) euc, len); */
             break;
         }
@@ -417,7 +417,7 @@ static void mic2euc_jp(const unsigned char *mic, unsigned char *p, int32_t len)
             /* ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_MULE_INTERNAL,
+                /* report_invalid_encoding(MULE_INTERNAL,
                                         (const char *) mic, len); */
                 break;
             }
@@ -426,10 +426,10 @@ static void mic2euc_jp(const unsigned char *mic, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = xk_character_encoding_verifymb(XK_MULE_INTERNAL, (const char *) mic, len);
+        l = character_encoding_verifymb(MULE_INTERNAL, (const char *) mic, len);
         if (l < 0)
         {
-            /* report_invalid_encoding(XK_MULE_INTERNAL,
+            /* report_invalid_encoding(MULE_INTERNAL,
                                     (const char *) mic, len); */
             break;
         }
@@ -451,7 +451,7 @@ static void mic2euc_jp(const unsigned char *mic, unsigned char *p, int32_t len)
         }
         else
         {
-            /* report_untranslatable_char(XK_MULE_INTERNAL, XK_EUC_JP,
+            /* report_untranslatable_char(MULE_INTERNAL, EUC_JP,
                                        (const char *) mic, len); */
             break;
         }
@@ -479,7 +479,7 @@ static void euc_jp2sjis(const unsigned char *euc, unsigned char *p, int32_t len)
             /* ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_EUC_JP,
+                /* report_invalid_encoding(EUC_JP,
                                         (const char *) euc, len); */
                 break;
             }
@@ -488,10 +488,10 @@ static void euc_jp2sjis(const unsigned char *euc, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = xk_character_encoding_verifymb(XK_EUC_JP, (const char *) euc, len);
+        l = character_encoding_verifymb(EUC_JP, (const char *) euc, len);
         if (l < 0)
         {
-            /* report_invalid_encoding(XK_EUC_JP,
+            /* report_invalid_encoding(EUC_JP,
                                     (const char *) euc, len); */
             break;
         }
@@ -579,7 +579,7 @@ static void sjis2euc_jp(const unsigned char *sjis, unsigned char *p, int32_t len
             /* ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_SJIS,
+                /* report_invalid_encoding(SJIS,
                                         (const char *) sjis, len); */
                 break;
             }
@@ -588,10 +588,10 @@ static void sjis2euc_jp(const unsigned char *sjis, unsigned char *p, int32_t len
             len--;
             continue;
         }
-        l = xk_character_encoding_verifymb(XK_SJIS, (const char *) sjis, len);
+        l = character_encoding_verifymb(SJIS, (const char *) sjis, len);
         if (l < 0)
         {
-            /* report_invalid_encoding(XK_SJIS,
+            /* report_invalid_encoding(SJIS,
                                     (const char *) sjis, len); */
             break;
         }

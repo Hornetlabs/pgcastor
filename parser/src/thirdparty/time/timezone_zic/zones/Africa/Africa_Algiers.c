@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Africa_Algiers[] =
+char* PG_Africa_Algiers[] =
 {
     (char *)"Rule	Algeria	1916	only	-	Jun	14	23:00s	1:00	S",
     (char *)"Rule	Algeria	1916	1919	-	Oct	Sun>=1	23:00s	0	-",

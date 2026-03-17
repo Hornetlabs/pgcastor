@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Rangoon[] =
+char* PG_Asia_Rangoon[] =
 {
     (char *)"Zone	Asia/Rangoon	6:24:40 -	LMT	1880		# or Yangon",
     (char *)"			6:24:40	-	RMT	1920	   # Rangoon Mean Time?",

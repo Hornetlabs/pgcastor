@@ -2,8 +2,8 @@
 #include "utils/list/list_func.h"
 #include "utils/uuid/uuid.h"
 #include "utils/hash/hash_search.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "stmts/txnstmt.h"
 #include "storage/file_buffer.h"
 #include "storage/ff_detail.h"
@@ -38,7 +38,7 @@ bool fftrail_txn_serial(void* data, void* state)
 {
     ff_txndata*  txndata = NULL;
     txnstmt* rstmt = NULL;                      /* 需要写入 trail 文件的内容 */
-    xk_pg_parser_translog_tbcolbase* tbcolbase = NULL;
+    pg_parser_translog_tbcolbase* tbcolbase = NULL;
 
     txndata = (ff_txndata*)data;
     rstmt = (txnstmt*)txndata->data;
@@ -113,20 +113,20 @@ bool fftrail_txn_serial(void* data, void* state)
         return true;
     }
 
-    tbcolbase = (xk_pg_parser_translog_tbcolbase*)rstmt->stmt;
+    tbcolbase = (pg_parser_translog_tbcolbase*)rstmt->stmt;
 
     switch (tbcolbase->m_dmltype)
     {
-        case XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT:
+        case PG_PARSER_TRANSLOG_DMLTYPE_INSERT:
             fftrail_txninsert_serial(data, state);
             break;
-        case XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE:
+        case PG_PARSER_TRANSLOG_DMLTYPE_DELETE:
             fftrail_txndelete_serial(data, state);
             break;
-        case XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE:
+        case PG_PARSER_TRANSLOG_DMLTYPE_UPDATE:
             fftrail_txnupdate_serial(data, state);
             break;
-        case XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT:
+        case PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT:
             fftrail_txnmultiinsert_serial(data, state);
             break;
         default:

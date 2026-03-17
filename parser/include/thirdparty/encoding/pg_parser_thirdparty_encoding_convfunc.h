@@ -1,5 +1,5 @@
-#ifndef xk_pg_parser_thirdparty_encoding_CONVFUNC_H
-#define xk_pg_parser_thirdparty_encoding_CONVFUNC_H
+#ifndef pg_parser_thirdparty_encoding_CONVFUNC_H
+#define pg_parser_thirdparty_encoding_CONVFUNC_H
 /*
  * 字符集转换函数：
  *    src_str 需要转换的字符串；

@@ -3,8 +3,8 @@
 
 void decode_chkpt_init(decodingcontext* ctx, XLogRecPtr redolsn);
 
-void decode_chkpt(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase);
+void decode_chkpt(decodingcontext* ctx, pg_parser_translog_pre_base* pbase);
 
-void decode_recovery(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase);
+void decode_recovery(decodingcontext* ctx, pg_parser_translog_pre_base* pbase);
 
 #endif

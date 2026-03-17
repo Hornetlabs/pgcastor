@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Makassar[] =
+char* PG_Asia_Makassar[] =
 {
     (char *)"Zone Asia/Makassar	7:57:36 -	LMT	1920",
     (char *)"			7:57:36	-	MMT	1932 Nov    # Macassar MT",

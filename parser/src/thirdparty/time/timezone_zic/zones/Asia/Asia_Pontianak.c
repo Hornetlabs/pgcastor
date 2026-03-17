@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Pontianak[] =
+char* PG_Asia_Pontianak[] =
 {
     (char *)"Zone Asia/Pontianak	7:17:20	-	LMT	1908 May",
     (char *)"			7:17:20	-	PMT	1932 Nov    # Pontianak MT",

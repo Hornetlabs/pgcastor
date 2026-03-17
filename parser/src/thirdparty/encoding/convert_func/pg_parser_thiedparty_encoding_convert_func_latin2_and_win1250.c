@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 
 /* ----------
@@ -74,9 +74,9 @@ void latin2_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_LATIN2, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(LATIN2, MULE_INTERNAL);
 
-    latin2mic(src, dest, len, LC_ISO8859_2, XK_LATIN2);
+    latin2mic(src, dest, len, LC_ISO8859_2, LATIN2);
 }
 
 void mic_to_latin2(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -85,9 +85,9 @@ void mic_to_latin2(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_LATIN2);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, LATIN2);
 
-    mic2latin(src, dest, len, LC_ISO8859_2, XK_LATIN2);
+    mic2latin(src, dest, len, LC_ISO8859_2, LATIN2);
 }
 
 void win1250_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -96,9 +96,9 @@ void win1250_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_WIN1250, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(WIN1250, MULE_INTERNAL);
 
-    latin2mic_with_table(src, dest, len, LC_ISO8859_2, XK_WIN1250,
+    latin2mic_with_table(src, dest, len, LC_ISO8859_2, WIN1250,
                          win1250_2_iso88592);
 }
 
@@ -108,9 +108,9 @@ void mic_to_win1250(unsigned char *src_str, unsigned char *dest_str, int32_t str
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_WIN1250);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, WIN1250);
 
-    mic2latin_with_table(src, dest, len, LC_ISO8859_2, XK_WIN1250,
+    mic2latin_with_table(src, dest, len, LC_ISO8859_2, WIN1250,
                          iso88592_2_win1250);
 }
 
@@ -120,9 +120,9 @@ void latin2_to_win1250(unsigned char *src_str, unsigned char *dest_str, int32_t 
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_LATIN2, XK_WIN1250);
+    CHECK_ENCODING_CONVERSION_ARGS(LATIN2, WIN1250);
 
-    local2local(src, dest, len, XK_LATIN2, XK_WIN1250, iso88592_2_win1250);
+    local2local(src, dest, len, LATIN2, WIN1250, iso88592_2_win1250);
 }
 
 void win1250_to_latin2(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -131,7 +131,7 @@ void win1250_to_latin2(unsigned char *src_str, unsigned char *dest_str, int32_t 
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_WIN1250, XK_LATIN2);
+    CHECK_ENCODING_CONVERSION_ARGS(WIN1250, LATIN2);
 
-    local2local(src, dest, len, XK_WIN1250, XK_LATIN2, win1250_2_iso88592);
+    local2local(src, dest, len, WIN1250, LATIN2, win1250_2_iso88592);
 }

@@ -3,7 +3,7 @@
 
 static const uint16_t sjis_from_unicode_tree_table[22895];
 
-static const xk_character_mb_radix_tree sjis_from_unicode_tree =
+static const character_mb_radix_tree sjis_from_unicode_tree =
 {
   sjis_from_unicode_tree_table,
   NULL, /* 32-bit table not used */

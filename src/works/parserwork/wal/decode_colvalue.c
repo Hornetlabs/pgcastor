@@ -5,8 +5,8 @@
 #include "utils/string/stringinfo.h"
 #include "utils/hash/hash_search.h"
 #include "utils/hash/hash_utils.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
 #include "cache/cache_sysidcts.h"
@@ -17,51 +17,51 @@
 
 /* 按数据库类型 */
 static char *get_value_from_colvalue_postgres(int dbversion,
-                                                     xk_pg_parser_translog_tbcol_value *colvalue,
+                                                     pg_parser_translog_tbcol_value *colvalue,
                                                      int dtype,
                                                      int map_num);
 
 static char *set_value_from_colvalue_postgres(int dbversion,
                                                      char *new_value,
-                                                     xk_pg_parser_translog_tbcol_value *colvalue,
+                                                     pg_parser_translog_tbcol_value *colvalue,
                                                      int dtype,
                                                      int map_num);
 
 static char *free_value_from_colvalue_postgres(int dbversion,
-                                                      xk_pg_parser_translog_tbcol_value *colvalue,
+                                                      pg_parser_translog_tbcol_value *colvalue,
                                                       int dtype,
                                                       int map_num);
 
 /* 按数据库版本 */
 /* pg数据库 */
-static char *get_value_from_colvalue_pg12(xk_pg_parser_translog_tbcol_value *colvalue,
+static char *get_value_from_colvalue_pg12(pg_parser_translog_tbcol_value *colvalue,
                                                  int dtype,
                                                  int map_num);
-static char *set_value_from_colvalue_pg12(xk_pg_parser_translog_tbcol_value *colvalue,
+static char *set_value_from_colvalue_pg12(pg_parser_translog_tbcol_value *colvalue,
                                                  char *new_value,
                                                  int dtype,
                                                  int map_num);
-static char *free_value_from_colvalue_pg12(xk_pg_parser_translog_tbcol_value *colvalue,
+static char *free_value_from_colvalue_pg12(pg_parser_translog_tbcol_value *colvalue,
                                                   int dtype,
                                                   int map_num);
 
 /* 数据库类型/版本 分发部分 begin */
 typedef char* (*get_value_from_colvalue_dbtype_func)(int dbversion,
-                                                     xk_pg_parser_translog_tbcol_value *colvalue,
+                                                     pg_parser_translog_tbcol_value *colvalue,
                                                      int dtype,
                                                      int map_num);
 
-typedef char* (*get_value_from_colvalue_dbversion_func)(xk_pg_parser_translog_tbcol_value *colvalue,
+typedef char* (*get_value_from_colvalue_dbversion_func)(pg_parser_translog_tbcol_value *colvalue,
                                                         int dtype,
                                                         int map_num);
 
 typedef char* (*set_value_from_colvalue_dbtype_func)(int dbversion,
                                                      char *new_value,
-                                                     xk_pg_parser_translog_tbcol_value *colvalue,
+                                                     pg_parser_translog_tbcol_value *colvalue,
                                                      int dtype,
                                                      int map_num);
 
-typedef char* (*set_value_from_colvalue_dbversion_func)(xk_pg_parser_translog_tbcol_value *colvalue,
+typedef char* (*set_value_from_colvalue_dbversion_func)(pg_parser_translog_tbcol_value *colvalue,
                                                         char *new_value,
                                                         int dtype,
                                                         int map_num);
@@ -88,8 +88,8 @@ typedef struct DEAL_VALUE_FROM_COLVALUE_BYDBVERSION
 
 static deal_value_from_colvalue_bydbtype m_deal_value_from_colvalue_dbtype_distribute[] =
 {
-    {XK_DATABASE_TYPE_NOP,          NULL, NULL, NULL},
-    {XK_DATABASE_TYPE_POSTGRESQL,   get_value_from_colvalue_postgres,
+    {DATABASE_TYPE_NOP,          NULL, NULL, NULL},
+    {DATABASE_TYPE_POSTGRESQL,   get_value_from_colvalue_postgres,
                                     set_value_from_colvalue_postgres,
                                     free_value_from_colvalue_postgres}
 };
@@ -158,7 +158,7 @@ static const get_value_catalog_column_mapping m_pg_type_mapping_pg12[] =
 /* ----------pg_type 列映射 结束---------- */
 
 /* ----------get 开始---------- */
-static char *get_value_from_colvalue_pg12(xk_pg_parser_translog_tbcol_value *colvalue,
+static char *get_value_from_colvalue_pg12(pg_parser_translog_tbcol_value *colvalue,
                                                  int dtype,
                                                  int map_num)
 {
@@ -194,7 +194,7 @@ static char *get_value_from_colvalue_pg12(xk_pg_parser_translog_tbcol_value *col
 }
 
 static char *get_value_from_colvalue_postgres(int dbversion,
-                                                     xk_pg_parser_translog_tbcol_value *colvalue,
+                                                     pg_parser_translog_tbcol_value *colvalue,
                                                      int dtype,
                                                      int map_num)
 {
@@ -208,7 +208,7 @@ static char *get_value_from_colvalue_postgres(int dbversion,
                                                                        map_num);
 }
 
-static char *get_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+static char *get_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                             int dtype,
                                             int pnum,
                                             int dbtype,
@@ -228,7 +228,7 @@ static char *get_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue
 
 /* ----------set 开始---------- */
 
-static char *set_value_from_colvalue_pg12(xk_pg_parser_translog_tbcol_value *colvalue,
+static char *set_value_from_colvalue_pg12(pg_parser_translog_tbcol_value *colvalue,
                                                  char *new_value,
                                                  int dtype,
                                                  int map_num)
@@ -252,7 +252,7 @@ static char *set_value_from_colvalue_pg12(xk_pg_parser_translog_tbcol_value *col
 
 static char *set_value_from_colvalue_postgres(int dbversion,
                                                      char *new_value,
-                                                     xk_pg_parser_translog_tbcol_value *colvalue,
+                                                     pg_parser_translog_tbcol_value *colvalue,
                                                      int dtype,
                                                      int map_num)
 {
@@ -267,7 +267,7 @@ static char *set_value_from_colvalue_postgres(int dbversion,
                                                                        map_num);
 }
 
-static char *set_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+static char *set_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                             char *new_value,
                                             int dtype,
                                             int pnum,
@@ -288,7 +288,7 @@ static char *set_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue
 /* ----------set 结束---------- */
 
 /* ----------free 开始---------- */
-static char *free_value_from_colvalue_pg12(xk_pg_parser_translog_tbcol_value *colvalue,
+static char *free_value_from_colvalue_pg12(pg_parser_translog_tbcol_value *colvalue,
                                                  int dtype,
                                                  int map_num)
 {
@@ -310,7 +310,7 @@ static char *free_value_from_colvalue_pg12(xk_pg_parser_translog_tbcol_value *co
 }
 
 static char *free_value_from_colvalue_postgres(int dbversion,
-                                                     xk_pg_parser_translog_tbcol_value *colvalue,
+                                                     pg_parser_translog_tbcol_value *colvalue,
                                                      int dtype,
                                                      int map_num)
 {
@@ -324,7 +324,7 @@ static char *free_value_from_colvalue_postgres(int dbversion,
                                                                        map_num);
 }
 
-static char *free_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+static char *free_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                             int dtype,
                                             int pnum,
                                             int dbtype,
@@ -342,7 +342,7 @@ static char *free_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalu
 }
 /* ----------free 结束---------- */
 
-char *get_class_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+char *get_class_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                            int pnum,
                                            int dbtype,
                                            int dbversion)
@@ -350,7 +350,7 @@ char *get_class_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
     return get_value_from_colvalue(colvalue, CATALOG_TYPE_CLASS, pnum, dbtype, dbversion);
 }
 
-char *set_class_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+char *set_class_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                            char *new_value,
                                            int pnum,
                                            int dbtype,
@@ -359,7 +359,7 @@ char *set_class_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
     return set_value_from_colvalue(colvalue, new_value, CATALOG_TYPE_CLASS, pnum, dbtype, dbversion);
 }
 
-char *free_class_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+char *free_class_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                            int pnum,
                                            int dbtype,
                                            int dbversion)
@@ -367,7 +367,7 @@ char *free_class_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue
     return free_value_from_colvalue(colvalue, CATALOG_TYPE_CLASS, pnum, dbtype, dbversion);
 }
 
-char *get_attribute_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+char *get_attribute_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                                int pnum,
                                                int dbtype,
                                                int dbversion)
@@ -375,7 +375,7 @@ char *get_attribute_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colva
     return get_value_from_colvalue(colvalue, CATALOG_TYPE_ATTRIBUTE, pnum, dbtype, dbversion);
 }
 
-char *get_namespace_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+char *get_namespace_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                                int pnum,
                                                int dbtype,
                                                int dbversion)
@@ -383,7 +383,7 @@ char *get_namespace_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colva
     return get_value_from_colvalue(colvalue, CATALOG_TYPE_NAMESPACE, pnum, dbtype, dbversion);
 }
 
-char *get_type_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+char *get_type_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                           int pnum,
                                           int dbtype,
                                           int dbversion)
@@ -391,7 +391,7 @@ char *get_type_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
     return get_value_from_colvalue(colvalue, CATALOG_TYPE_TYPE, pnum, dbtype, dbversion);
 }
 
-char *get_index_value_from_colvalue(xk_pg_parser_translog_tbcol_value *colvalue,
+char *get_index_value_from_colvalue(pg_parser_translog_tbcol_value *colvalue,
                                           int pnum,
                                           int dbtype,
                                           int dbversion)

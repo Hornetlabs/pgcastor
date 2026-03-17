@@ -39,31 +39,31 @@ typedef struct CATALOGDATA
 typedef struct CLASS_VALUE
 {
     Oid                             oid;
-    xk_pg_sysdict_Form_pg_class    class;
+    pg_sysdict_Form_pg_class    class;
 } catalog_class_value;
 
 typedef struct TYPE_VALUE
 {
     Oid                             oid;
-    xk_pg_sysdict_Form_pg_type    type;
+    pg_sysdict_Form_pg_type    type;
 } catalog_type_value;
 
 typedef struct PROC_VALUE
 {
     Oid                             oid;
-    xk_pg_sysdict_Form_pg_proc    proc;
+    pg_sysdict_Form_pg_proc    proc;
 } catalog_proc_value;
 
 typedef struct NAMESPACE_VALUE
 {
     Oid                                 oid;
-    xk_pg_sysdict_Form_pg_namespace     namespace;
+    pg_sysdict_Form_pg_namespace     namespace;
 } catalog_namespace_value;
 
 typedef struct RANGE_VALUE
 {
     Oid                             rngtypid;
-    xk_pg_sysdict_Form_pg_range    range;
+    pg_sysdict_Form_pg_range    range;
 } catalog_range_value;
 
 typedef struct ATTRIBUTE_VALUE
@@ -81,31 +81,31 @@ typedef struct ENUM_VALUE
 typedef struct CONSTRAINT_VALUE
 {
     Oid                                    conrelid;
-    xk_pg_sysdict_Form_pg_constraint       constraint;
+    pg_sysdict_Form_pg_constraint       constraint;
 } catalog_constraint_value;
 
 typedef struct OPERATOR_VALUE
 {
     Oid                                oid;
-    xk_pg_sysdict_Form_pg_operator     operator;
+    pg_sysdict_Form_pg_operator     operator;
 } catalog_operator_value;
 
 typedef struct AUTHID_VALUE
 {
     Oid                              oid;
-    xk_pg_sysdict_Form_pg_authid     authid;
+    pg_sysdict_Form_pg_authid     authid;
 } catalog_authid_value;
 
 typedef struct DATABASE_VALUE
 {
     Oid                              oid;
-    xk_pg_sysdict_Form_pg_database   database;
+    pg_sysdict_Form_pg_database   database;
 } catalog_database_value;
 
 typedef struct INDEX_VALUE
 {
     Oid                              oid;
-    xk_pg_sysdict_Form_pg_index      index;
+    pg_sysdict_Form_pg_index      index;
 } catalog_index_value;
 
 typedef struct CATALOG_INDEX_HASH_ENTRY
@@ -117,7 +117,7 @@ typedef struct CATALOG_INDEX_HASH_ENTRY
 //database datname映射oid
 typedef struct DATNAME2OID_VALUE
 {
-    xk_pg_parser_NameData            datname;
+    pg_parser_NameData            datname;
     Oid                              oid;
 } catalog_datname2oid_value;
 

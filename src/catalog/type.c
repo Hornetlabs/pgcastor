@@ -6,8 +6,8 @@
 #include "utils/guc/guc.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/conn/conn.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -32,7 +32,7 @@ void type_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	bool found = false;
 	PGresult *res  = NULL;
 	catalog_type_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_type type = NULL;
+	pg_sysdict_Form_pg_type type = NULL;
 	const char *query = "SELECT rel.oid,rel.typname, rel.typlen,rel.typbyval, rel.typtype, rel.typdelim, rel.typelem, rel.typoutput::oid, rel.typrelid, rel.typalign, rel.typstorage FROM pg_type rel;";
 
 	rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -50,12 +50,12 @@ void type_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	// 打印行数据
 	for (i = 0; i < PQntuples(res); i++) 
 	{
-		type = (xk_pg_sysdict_Form_pg_type)rmalloc0(sizeof(xk_pg_parser_sysdict_pgtype));
+		type = (pg_sysdict_Form_pg_type)rmalloc0(sizeof(pg_parser_sysdict_pgtype));
 		if(NULL == type)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemset0(type, 0, '\0', sizeof(xk_pg_parser_sysdict_pgtype));
+		rmemset0(type, 0, '\0', sizeof(pg_parser_sysdict_pgtype));
 		j=0;
 		sscanf(PQgetvalue(res, i, j++), "%u", &type->oid);
 		strcpy(type->typname.data ,PQgetvalue(res, i, j++));
@@ -89,7 +89,7 @@ void typedata_write(List* type_list, uint64 *offset, sysdict_header_array* array
 	uint64 page_offset = 0;
 	ListCell*	cell = NULL;
 	char buffer[FILE_BLK_SIZE];
-	xk_pg_sysdict_Form_pg_type type;
+	pg_sysdict_Form_pg_type type;
 
 	array->type = CATALOG_TYPE_TYPE;
 	array->offset = *offset;
@@ -106,8 +106,8 @@ void typedata_write(List* type_list, uint64 *offset, sysdict_header_array* array
 
 	foreach(cell, type_list)
 	{
-		type = (xk_pg_sysdict_Form_pg_type) lfirst(cell);
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgtype) > FILE_BLK_SIZE)
+		type = (pg_sysdict_Form_pg_type) lfirst(cell);
+		if(page_offset + sizeof(pg_parser_sysdict_pgtype) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
@@ -119,8 +119,8 @@ void typedata_write(List* type_list, uint64 *offset, sysdict_header_array* array
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, type, sizeof(xk_pg_parser_sysdict_pgtype));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgtype);
+		rmemcpy1(buffer, page_offset, type, sizeof(pg_parser_sysdict_pgtype));
+		page_offset += sizeof(pg_parser_sysdict_pgtype);
 	}
 
 	if (page_offset > 0) {
@@ -155,7 +155,7 @@ HTAB* typecache_load(sysdict_header_array* array)
     bool found = false;
     uint64 fileoffset = 0;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_type type;
+    pg_sysdict_Form_pg_type type;
     catalog_type_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -182,15 +182,15 @@ HTAB* typecache_load(sysdict_header_array* array)
     {
         uint64 offset = 0;
 
-        while (offset + sizeof(xk_pg_parser_sysdict_pgtype) < FILE_BLK_SIZE)
+        while (offset + sizeof(pg_parser_sysdict_pgtype) < FILE_BLK_SIZE)
         {
-            type = (xk_pg_sysdict_Form_pg_type)rmalloc1(sizeof(xk_pg_parser_sysdict_pgtype));
+            type = (pg_sysdict_Form_pg_type)rmalloc1(sizeof(pg_parser_sysdict_pgtype));
             if(NULL == type)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(type, 0, '\0', sizeof(xk_pg_parser_sysdict_pgtype));
-            rmemcpy0(type, 0, buffer + offset, sizeof(xk_pg_parser_sysdict_pgtype));
+            rmemset0(type, 0, '\0', sizeof(pg_parser_sysdict_pgtype));
+            rmemcpy0(type, 0, buffer + offset, sizeof(pg_parser_sysdict_pgtype));
             entry = hash_search(typehtab, &type->oid, HASH_ENTER, &found);
             if(found)
             {
@@ -198,7 +198,7 @@ HTAB* typecache_load(sysdict_header_array* array)
             }
             entry->oid = type->oid;
             entry->type = type;
-            offset += sizeof(xk_pg_parser_sysdict_pgtype);
+            offset += sizeof(pg_parser_sysdict_pgtype);
             if (fileoffset + offset == array[CATALOG_TYPE_TYPE - 1].len)
             {
                 if(osal_file_close(fd))
@@ -224,10 +224,10 @@ catalogdata* type_colvalue2type(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_type_value* typevalue = NULL;
-    xk_pg_sysdict_Form_pg_type pgtype = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_type pgtype = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
     catalog_data = (catalogdata*)rmalloc0(sizeof(catalogdata));
@@ -246,12 +246,12 @@ catalogdata* type_colvalue2type(void* in_colvalue)
     catalog_data->catalog = typevalue;
     catalog_data->type = CATALOG_TYPE_TYPE;
 
-    pgtype = (xk_pg_sysdict_Form_pg_type)rmalloc1(sizeof(xk_pg_parser_sysdict_pgtype));
+    pgtype = (pg_sysdict_Form_pg_type)rmalloc1(sizeof(pg_parser_sysdict_pgtype));
     if(NULL == pgtype)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgtype, 0, '\0', sizeof(xk_pg_parser_sysdict_pgtype));
+    rmemset0(pgtype, 0, '\0', sizeof(pg_parser_sysdict_pgtype));
     typevalue->type = pgtype;
 
     /* oid 0 */
@@ -296,10 +296,10 @@ catalogdata* type_colvalue2type_pg14(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_type_value* typevalue = NULL;
-    xk_pg_sysdict_Form_pg_type pgtype = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_type pgtype = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
     catalog_data = (catalogdata*)rmalloc0(sizeof(catalogdata));
@@ -318,12 +318,12 @@ catalogdata* type_colvalue2type_pg14(void* in_colvalue)
     catalog_data->catalog = typevalue;
     catalog_data->type = CATALOG_TYPE_TYPE;
 
-    pgtype = (xk_pg_sysdict_Form_pg_type)rmalloc1(sizeof(xk_pg_parser_sysdict_pgtype));
+    pgtype = (pg_sysdict_Form_pg_type)rmalloc1(sizeof(pg_parser_sysdict_pgtype));
     if(NULL == pgtype)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgtype, 0, '\0', sizeof(xk_pg_parser_sysdict_pgtype));
+    rmemset0(pgtype, 0, '\0', sizeof(pg_parser_sysdict_pgtype));
     typevalue->type = pgtype;
 
     /* oid 1 */
@@ -390,12 +390,12 @@ void type_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         }
         catalogInHash->oid = newcatalog->oid;
 
-		catalogInHash->type = (xk_pg_sysdict_Form_pg_type)rmalloc1(sizeof(xk_pg_parser_sysdict_pgtype));
+		catalogInHash->type = (pg_sysdict_Form_pg_type)rmalloc1(sizeof(pg_parser_sysdict_pgtype));
 		if(NULL == catalogInHash->type)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-        rmemcpy0(catalogInHash->type, 0, newcatalog->type, sizeof(xk_pg_parser_sysdict_pgtype));
+        rmemcpy0(catalogInHash->type, 0, newcatalog->type, sizeof(pg_parser_sysdict_pgtype));
     }
     else if(CATALOG_OP_DELETE == catalogdata->op)
     {
@@ -420,12 +420,12 @@ void type_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
 
         rfree(catalogInHash->type);
 
-		catalogInHash->type = (xk_pg_sysdict_Form_pg_type)rmalloc1(sizeof(xk_pg_parser_sysdict_pgtype));
+		catalogInHash->type = (pg_sysdict_Form_pg_type)rmalloc1(sizeof(pg_parser_sysdict_pgtype));
 		if(NULL == catalogInHash->type)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-        rmemcpy0(catalogInHash->type, 0, newcatalog->type, sizeof(xk_pg_parser_sysdict_pgtype));
+        rmemcpy0(catalogInHash->type, 0, newcatalog->type, sizeof(pg_parser_sysdict_pgtype));
     }
     else
     {
@@ -440,7 +440,7 @@ void typecache_write(HTAB* typecache, uint64 *offset, sysdict_header_array* arra
 	HASH_SEQ_STATUS status;
 	char buffer[FILE_BLK_SIZE];
 	catalog_type_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_type type = NULL;
+	pg_sysdict_Form_pg_type type = NULL;
 
 	array[CATALOG_TYPE_TYPE - 1].type = CATALOG_TYPE_TYPE;
 	array[CATALOG_TYPE_TYPE - 1].offset = *offset;
@@ -460,7 +460,7 @@ void typecache_write(HTAB* typecache, uint64 *offset, sysdict_header_array* arra
 	{
 		type = entry->type;
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgtype) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgtype) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
@@ -472,8 +472,8 @@ void typecache_write(HTAB* typecache, uint64 *offset, sysdict_header_array* arra
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, type, sizeof(xk_pg_parser_sysdict_pgtype));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgtype);
+		rmemcpy1(buffer, page_offset, type, sizeof(pg_parser_sysdict_pgtype));
+		page_offset += sizeof(pg_parser_sysdict_pgtype);
 	}
 
 	if (page_offset > 0) {

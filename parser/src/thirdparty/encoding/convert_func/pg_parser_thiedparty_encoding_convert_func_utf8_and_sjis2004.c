@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 #include "./unicode_map/shift_jis_2004_to_utf8.map"
 #include "./unicode_map/utf8_to_shift_jis_2004.map"
 
@@ -33,13 +33,13 @@ void shift_jis_2004_to_utf8(unsigned char *src_str, unsigned char *dest_str, int
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_SHIFT_JIS_2004, XK_UTF8);
+    CHECK_ENCODING_CONVERSION_ARGS(SHIFT_JIS_2004, UTF8);
 
     LocalToUtf(src, len, dest,
                &shift_jis_2004_to_unicode_tree,
-               LUmapSHIFT_JIS_2004_combined, xk_conv_lengthof(LUmapSHIFT_JIS_2004_combined),
+               LUmapSHIFT_JIS_2004_combined, conv_lengthof(LUmapSHIFT_JIS_2004_combined),
                NULL,
-               XK_SHIFT_JIS_2004);
+               SHIFT_JIS_2004);
 }
 
 void utf8_to_shift_jis_2004(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -48,11 +48,11 @@ void utf8_to_shift_jis_2004(unsigned char *src_str, unsigned char *dest_str, int
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_UTF8, XK_SHIFT_JIS_2004);
+    CHECK_ENCODING_CONVERSION_ARGS(UTF8, SHIFT_JIS_2004);
 
     UtfToLocal(src, len, dest,
                &shift_jis_2004_from_unicode_tree,
-               ULmapSHIFT_JIS_2004_combined, xk_conv_lengthof(ULmapSHIFT_JIS_2004_combined),
+               ULmapSHIFT_JIS_2004_combined, conv_lengthof(ULmapSHIFT_JIS_2004_combined),
                NULL,
-               XK_SHIFT_JIS_2004);
+               SHIFT_JIS_2004);
 }

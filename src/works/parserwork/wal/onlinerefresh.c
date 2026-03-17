@@ -9,8 +9,8 @@
 #include "utils/uuid/uuid.h"
 #include "utils/regex/regex.h"
 #include "misc/misc_stat.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
 #include "cache/cache_sysidcts.h"
@@ -241,8 +241,8 @@ refresh_tables *onlinerefresh_data_load(HTAB* namespace, HTAB* class)
     refresh_table *online_refresh_table = NULL;
     catalog_class_value *class_value_entry = NULL;
     catalog_namespace_value *nsp_value_entry = NULL;
-    xk_pg_parser_sysdict_pgclass *temp_class = NULL;
-    xk_pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
+    pg_parser_sysdict_pgclass *temp_class = NULL;
+    pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
     filter_dataset2oidnode *scan_d2o_entry = NULL;
     HASH_SEQ_STATUS status_class;
     HASH_SEQ_STATUS status_d2o;

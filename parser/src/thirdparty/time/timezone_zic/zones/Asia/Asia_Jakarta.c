@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Jakarta[] =
+char* PG_Asia_Jakarta[] =
 {
     (char *)"Zone Asia/Jakarta	7:07:12 -	LMT	1867 Aug 10",
     (char *)"			7:07:12	-	BMT	1923 Dec 31 23:47:12 # Batavia",

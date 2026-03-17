@@ -1,6 +1,6 @@
-#ifndef XK_PG_PARSER_THIRDPARTY_PARSERNODE_H
-#define XK_PG_PARSER_THIRDPARTY_PARSERNODE_H
+#ifndef PG_PARSER_THIRDPARTY_PARSERNODE_H
+#define PG_PARSER_THIRDPARTY_PARSERNODE_H
 
-extern xk_pg_parser_nodetree *xk_pg_parser_get_expr(char *expr, xk_pg_parser_translog_convertinfo_with_zic *zicinfo);
+extern pg_parser_nodetree *pg_parser_get_expr(char *expr, pg_parser_translog_convertinfo_with_zic *zicinfo);
 
 #endif

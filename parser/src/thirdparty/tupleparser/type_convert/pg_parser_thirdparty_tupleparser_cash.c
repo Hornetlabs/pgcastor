@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_cash.c
+ * @file pg_parser_thirdparty_tupleparser_cash.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -9,10 +9,10 @@
  * 
  */
 #include <locale.h>
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "common/xk_pg_parser_translog.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgsfunc.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "common/pg_parser_translog.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgsfunc.h"
 
 #define PGFUNC_CASH_MCXT NULL
 
@@ -22,8 +22,8 @@ typedef int64_t Cash;
  * Function to convert cash to a dollars and cents representation, using
  * the lc_monetary locale's formatting.
  */
-xk_pg_parser_Datum cash_out(xk_pg_parser_Datum attr,
-                            xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum cash_out(pg_parser_Datum attr,
+                            pg_parser_extraTypoutInfo *info)
 {
     Cash        value = (Cash) attr;
     char       *result;
@@ -44,28 +44,28 @@ xk_pg_parser_Datum cash_out(xk_pg_parser_Datum attr,
                  *lconvert;
     char *save_lc_monetary;
     char *save_lc_numeric;
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_CASH_MCXT, (void **) &result, 32))
-        return (xk_pg_parser_Datum) 0;
+    if (!pg_parser_mcxt_malloc(PGFUNC_CASH_MCXT, (void **) &result, 32))
+        return (pg_parser_Datum) 0;
     rmemset1(&lconvert_tmp, 0, 0, sizeof(struct lconv));
     save_lc_monetary = setlocale(LC_MONETARY, NULL);
-    save_lc_monetary = xk_pg_parser_mcxt_strdup(save_lc_monetary);
+    save_lc_monetary = pg_parser_mcxt_strdup(save_lc_monetary);
     save_lc_numeric = setlocale(LC_NUMERIC, NULL);
-    save_lc_numeric = xk_pg_parser_mcxt_strdup(save_lc_numeric);
+    save_lc_numeric = pg_parser_mcxt_strdup(save_lc_numeric);
     setlocale(LC_NUMERIC, info->zicinfo->convertinfo->m_numeric);
     extlconv = localeconv();
-    lconvert_tmp.decimal_point = xk_pg_parser_mcxt_strdup(extlconv->decimal_point);
-    lconvert_tmp.thousands_sep = xk_pg_parser_mcxt_strdup(extlconv->thousands_sep);
-    lconvert_tmp.grouping = xk_pg_parser_mcxt_strdup(extlconv->grouping);
+    lconvert_tmp.decimal_point = pg_parser_mcxt_strdup(extlconv->decimal_point);
+    lconvert_tmp.thousands_sep = pg_parser_mcxt_strdup(extlconv->thousands_sep);
+    lconvert_tmp.grouping = pg_parser_mcxt_strdup(extlconv->grouping);
     setlocale(LC_MONETARY, info->zicinfo->convertinfo->m_monetary);
     extlconv = localeconv();
     /* Must copy data now in case setlocale() overwrites it */
-    lconvert_tmp.int_curr_symbol = xk_pg_parser_mcxt_strdup(extlconv->int_curr_symbol);
-    lconvert_tmp.currency_symbol = xk_pg_parser_mcxt_strdup(extlconv->currency_symbol);
-    lconvert_tmp.mon_decimal_point = xk_pg_parser_mcxt_strdup(extlconv->mon_decimal_point);
-    lconvert_tmp.mon_thousands_sep = xk_pg_parser_mcxt_strdup(extlconv->mon_thousands_sep);
-    lconvert_tmp.mon_grouping = xk_pg_parser_mcxt_strdup(extlconv->mon_grouping);
-    lconvert_tmp.positive_sign = xk_pg_parser_mcxt_strdup(extlconv->positive_sign);
-    lconvert_tmp.negative_sign = xk_pg_parser_mcxt_strdup(extlconv->negative_sign);
+    lconvert_tmp.int_curr_symbol = pg_parser_mcxt_strdup(extlconv->int_curr_symbol);
+    lconvert_tmp.currency_symbol = pg_parser_mcxt_strdup(extlconv->currency_symbol);
+    lconvert_tmp.mon_decimal_point = pg_parser_mcxt_strdup(extlconv->mon_decimal_point);
+    lconvert_tmp.mon_thousands_sep = pg_parser_mcxt_strdup(extlconv->mon_thousands_sep);
+    lconvert_tmp.mon_grouping = pg_parser_mcxt_strdup(extlconv->mon_grouping);
+    lconvert_tmp.positive_sign = pg_parser_mcxt_strdup(extlconv->positive_sign);
+    lconvert_tmp.negative_sign = pg_parser_mcxt_strdup(extlconv->negative_sign);
     /* Copy scalar fields as well */
     lconvert_tmp.int_frac_digits = extlconv->int_frac_digits;
     lconvert_tmp.frac_digits = extlconv->frac_digits;
@@ -77,8 +77,8 @@ xk_pg_parser_Datum cash_out(xk_pg_parser_Datum attr,
     lconvert_tmp.n_sign_posn = extlconv->n_sign_posn;
     setlocale(LC_MONETARY, save_lc_monetary);
     setlocale(LC_NUMERIC, save_lc_numeric);
-    xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, save_lc_monetary);
-    xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, save_lc_numeric);
+    pg_parser_mcxt_free(PGFUNC_CASH_MCXT, save_lc_monetary);
+    pg_parser_mcxt_free(PGFUNC_CASH_MCXT, save_lc_numeric);
     /* Get formatting information for monetary */
     lconvert = &lconvert_tmp;
 
@@ -261,25 +261,25 @@ xk_pg_parser_Datum cash_out(xk_pg_parser_Datum attr,
     }
 
     if (lconvert->decimal_point)
-        xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->decimal_point);
+        pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->decimal_point);
     if (lconvert->thousands_sep)
-        xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->thousands_sep);
+        pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->thousands_sep);
     if (lconvert->grouping)
-        xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->grouping);
+        pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->grouping);
     if (lconvert->int_curr_symbol)
-        xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->int_curr_symbol);
+        pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->int_curr_symbol);
     if (lconvert->currency_symbol)
-        xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->currency_symbol);
+        pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->currency_symbol);
     if (lconvert->mon_decimal_point)
-        xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->mon_decimal_point);
+        pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->mon_decimal_point);
     if (lconvert->mon_thousands_sep)
-        xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->mon_thousands_sep);
+        pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->mon_thousands_sep);
     if (lconvert->mon_grouping)
-        xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->mon_grouping);
+        pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->mon_grouping);
     if (lconvert->positive_sign)
-        xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->positive_sign);
+        pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->positive_sign);
     if (lconvert->negative_sign)
-        xk_pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->negative_sign);
+        pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->negative_sign);
     info->valuelen = strlen(result);
-    return (xk_pg_parser_Datum) result;
+    return (pg_parser_Datum) result;
 }

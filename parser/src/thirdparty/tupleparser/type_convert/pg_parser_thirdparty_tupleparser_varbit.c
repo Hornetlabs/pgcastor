@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_varbit.c
+ * @file pg_parser_thirdparty_tupleparser_varbit.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -8,13 +8,13 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "common/xk_pg_parser_translog.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgfunc.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgsfunc.h"
-#include "thirdparty/common/xk_pg_parser_thirdparty_builtins.h"
-#include "thirdparty/tupleparser/toast/xk_pg_parser_thirdparty_tupleparser_toast.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "common/pg_parser_translog.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgfunc.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgsfunc.h"
+#include "thirdparty/common/pg_parser_thirdparty_builtins.h"
+#include "thirdparty/tupleparser/toast/pg_parser_thirdparty_tupleparser_toast.h"
 
 #define PGFUNC_VARVBIT_MCXT NULL
 #define BITS_PER_BYTE 8
@@ -26,7 +26,7 @@
 #define IS_HIGHBIT_SET(ch)  ((unsigned char)(ch) & HIGHBIT)
 
 /*
- * Modeled on struct xk_pg_parser_varlena from postgres.h, but data type is bits8.
+ * Modeled on struct pg_parser_varlena from postgres.h, but data type is bits8.
  *
  * Caution: if bit_len is not a multiple of BITS_PER_BYTE, the low-order
  * bits of the last byte of bit_dat[] are unused and MUST be zeroes.
@@ -41,7 +41,7 @@ typedef struct
                                                  * first */
 } VarBit;
 
-xk_pg_parser_Datum bit_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum bit_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     /* same as varbit output */
     return varbit_out(attr, info);
@@ -54,11 +54,11 @@ xk_pg_parser_Datum bit_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo
  * XXX varbit_recv() and hex input to varbit_in() can load a value that this
  * cannot emit.  Consider using hex output for such values.
  */
-xk_pg_parser_Datum varbit_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum varbit_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     bool        is_toast = false;
     bool        need_free = false;
-    VarBit     *s = (VarBit *) xk_pg_parser_detoast_datum((struct xk_pg_parser_varlena *) attr,
+    VarBit     *s = (VarBit *) pg_parser_detoast_datum((struct pg_parser_varlena *) attr,
                                                           &is_toast,
                                                           &need_free,
                                                            info->zicinfo->dbtype,
@@ -73,12 +73,12 @@ xk_pg_parser_Datum varbit_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutI
     if (is_toast)
     {
         info->valueinfo = INFO_COL_IS_TOAST;
-        info->valuelen = sizeof(struct xk_pg_parser_varatt_external);
-        return (xk_pg_parser_Datum) s;
+        info->valuelen = sizeof(struct pg_parser_varatt_external);
+        return (pg_parser_Datum) s;
     }
     len = VARBITLEN(s);
-    if(!xk_pg_parser_mcxt_malloc(PGFUNC_VARVBIT_MCXT, (void**) &result, len + 1))
-        return (xk_pg_parser_Datum) 0;
+    if(!pg_parser_mcxt_malloc(PGFUNC_VARVBIT_MCXT, (void**) &result, len + 1))
+        return (pg_parser_Datum) 0;
     sp = VARBITS(s);
     r = result;
     for (i = 0; i <= len - BITS_PER_BYTE; i += BITS_PER_BYTE, sp++)
@@ -105,6 +105,6 @@ xk_pg_parser_Datum varbit_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutI
 
     info->valuelen = strlen(result);
     if (need_free)                                                                  
-        xk_pg_parser_mcxt_free(PGFUNC_VARVBIT_MCXT, s);
-    return (xk_pg_parser_Datum) result;
+        pg_parser_mcxt_free(PGFUNC_VARVBIT_MCXT, s);
+    return (pg_parser_Datum) result;
 }

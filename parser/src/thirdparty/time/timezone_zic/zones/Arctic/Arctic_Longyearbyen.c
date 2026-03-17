@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Arctic_Longyearbyen[] =
+char* PG_Arctic_Longyearbyen[] =
 {
     (char *)"Rule	Norway	1916	only	-	May	22	1:00	1:00	S",
     (char *)"Rule	Norway	1916	only	-	Sep	30	0:00	0	-",

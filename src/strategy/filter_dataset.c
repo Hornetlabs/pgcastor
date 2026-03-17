@@ -6,8 +6,8 @@
 #include "utils/hash/hash_search.h"
 #include "utils/string/stringinfo.h"
 #include "utils/regex/regex.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "catalog/catalog.h"
 #include "port/file/fd.h"
@@ -154,8 +154,8 @@ bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables,
     refresh_tables* rtables                  = NULL;
     catalog_class_value *classentry          = NULL;
     catalog_namespace_value *nspentry        = NULL;
-    xk_pg_parser_sysdict_pgclass *sysdictclass      = NULL;
-    xk_pg_parser_sysdict_pgnamespace *sysdictnsp    = NULL;
+    pg_parser_sysdict_pgclass *sysdictclass      = NULL;
+    pg_parser_sysdict_pgnamespace *sysdictnsp    = NULL;
     
     HASH_SEQ_STATUS status;
 
@@ -396,8 +396,8 @@ bool filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namespace, HT
     HASH_SEQ_STATUS status;
     catalog_class_value *class_value_entry = NULL;
     catalog_namespace_value *nsp_value_entry = NULL;
-    xk_pg_parser_sysdict_pgclass *temp_class = NULL;
-    xk_pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
+    pg_parser_sysdict_pgclass *temp_class = NULL;
+    pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
     char filepath_tmp[MAXPATH] = {'\0'};
     char filepath[MAXPATH] = {'\0'};
     struct stat statbuf;
@@ -525,8 +525,8 @@ HTAB *filter_dataset_load(HTAB* namespace, HTAB* class)
     HASH_SEQ_STATUS status_d2o;
     catalog_class_value *class_value_entry = NULL;
     catalog_namespace_value *nsp_value_entry = NULL;
-    xk_pg_parser_sysdict_pgclass *temp_class = NULL;
-    xk_pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
+    pg_parser_sysdict_pgclass *temp_class = NULL;
+    pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
     filter_dataset2oidnode *scan_d2o_entry = NULL;
     HTAB *dataset2oid_htab = NULL;
     HTAB *oid2dataset_htab = NULL;
@@ -728,8 +728,8 @@ HTAB *filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
     HTAB *oid2dataset_htab                      = NULL;
     catalog_class_value *class_entry     = NULL;
     catalog_namespace_value *nsp_entry   = NULL;
-    xk_pg_parser_sysdict_pgclass *temp_class    = NULL;
-    xk_pg_parser_sysdict_pgnamespace *temp_nsp  = NULL;
+    pg_parser_sysdict_pgclass *temp_class    = NULL;
+    pg_parser_sysdict_pgnamespace *temp_nsp  = NULL;
     filter_oid2datasetnode *o2d_entry    = NULL;
 
     /* 创建oid2dataset hash */
@@ -747,7 +747,7 @@ HTAB *filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
         return oid2dataset_htab;
     }
 
-    /* 遍历pg_namespace系统表, 根据schema获取xk_pg_parser_sysdict_pgnamespace */
+    /* 遍历pg_namespace系统表, 根据schema获取pg_parser_sysdict_pgnamespace */
     hash_seq_init(&status_nap, namespace);
     while (NULL != (nsp_entry = hash_seq_search(&status_nap)))
     {

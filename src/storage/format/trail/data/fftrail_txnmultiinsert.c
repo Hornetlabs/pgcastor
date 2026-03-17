@@ -1,8 +1,8 @@
 #include "app_incl.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "stmts/txnstmt.h"
 #include "storage/file_buffer.h"
 #include "storage/ff_detail.h"
@@ -31,14 +31,14 @@ bool fftrail_txnmultiinsert_serial(void* data, void* state)
     ff_txndata*  txndata = NULL;
     file_buffer* fbuffer = NULL;
     ffsmgr_state* ffstate = NULL;            /* state 数据信息 */
-    xk_pg_parser_translog_tbcol_nvalues* colnvalues = NULL;
-    xk_pg_parser_translog_tbcol_value col;
+    pg_parser_translog_tbcol_nvalues* colnvalues = NULL;
+    pg_parser_translog_tbcol_value col;
 
     txndata = (ff_txndata*)data;
     rstmt = (txnstmt*)txndata->data;
     ffstate = (ffsmgr_state*)state;
 
-    colnvalues = (xk_pg_parser_translog_tbcol_nvalues*)rstmt->stmt;
+    colnvalues = (pg_parser_translog_tbcol_nvalues*)rstmt->stmt;
 
 fftrail_txnmultiinsert_serial_retry:
     do
@@ -223,9 +223,9 @@ bool fftrail_txnmultiinsert_deserial(void** data, void* state)
     fftrail_privdata* privdata = NULL; 
     fftrail_table_deserialentry* tbdeserialentry = NULL;
     fftrail_database_deserialentry* dbdeserialentry = NULL;
-    xk_pg_parser_translog_tbcol_nvalues* colnvalues = NULL;
-    xk_pg_parser_translog_tbcol_value* col = NULL;
-    xk_pg_parser_translog_tbcolbase tbcolbase;
+    pg_parser_translog_tbcol_nvalues* colnvalues = NULL;
+    pg_parser_translog_tbcol_value* col = NULL;
+    pg_parser_translog_tbcolbase tbcolbase;
 
     /* 类型强转 */
     ffstate = (ffsmgr_state*)state;
@@ -251,12 +251,12 @@ bool fftrail_txnmultiinsert_deserial(void** data, void* state)
 
     *data = txndata;
     /* 申请multiinsert 空间 */
-    colnvalues = (xk_pg_parser_translog_tbcol_nvalues*)rmalloc0(sizeof(xk_pg_parser_translog_tbcol_nvalues));
+    colnvalues = (pg_parser_translog_tbcol_nvalues*)rmalloc0(sizeof(pg_parser_translog_tbcol_nvalues));
     if(NULL == colnvalues)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(colnvalues, 0, '\0', sizeof(xk_pg_parser_translog_tbcol_nvalues));
+    rmemset0(colnvalues, 0, '\0', sizeof(pg_parser_translog_tbcol_nvalues));
     rstmt->stmt = (void*)colnvalues;
     rstmt->type = TXNSTMT_TYPE_DML;
 
@@ -304,7 +304,7 @@ bool fftrail_txnmultiinsert_deserial(void** data, void* state)
     }
 
     rstmt->database = dbdeserialentry->oid;
-    tbcolbase.m_dmltype = XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT;
+    tbcolbase.m_dmltype = PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT;
 
     /* 模式 */
     tbcolbase.m_schemaname = (char*)rmalloc0(NAMEDATALEN);
@@ -325,8 +325,8 @@ bool fftrail_txnmultiinsert_deserial(void** data, void* state)
     rmemcpy0(tbcolbase.m_tbname, 0, tbdeserialentry->table, NAMEDATALEN);
 
     /* 申请rows空间 */
-    mlen = sizeof(xk_pg_parser_translog_tbcol_rows) * txndata->header.reccount;
-    colnvalues->m_rows = (xk_pg_parser_translog_tbcol_rows*)rmalloc0(mlen);
+    mlen = sizeof(pg_parser_translog_tbcol_rows) * txndata->header.reccount;
+    colnvalues->m_rows = (pg_parser_translog_tbcol_rows*)rmalloc0(mlen);
     if(NULL == colnvalues->m_rows)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
@@ -355,8 +355,8 @@ bool fftrail_txnmultiinsert_deserial(void** data, void* state)
     for (i = 0; i < colnvalues->m_rowCnt; i++)
     {
         /* 申请每行列信息空间 */
-        mlen = sizeof(xk_pg_parser_translog_tbcol_value) * tbdeserialentry->colcnt;
-        colnvalues->m_rows[i].m_new_values = (xk_pg_parser_translog_tbcol_value*)rmalloc0(mlen);
+        mlen = sizeof(pg_parser_translog_tbcol_value) * tbdeserialentry->colcnt;
+        colnvalues->m_rows[i].m_new_values = (pg_parser_translog_tbcol_value*)rmalloc0(mlen);
         if(NULL ==  colnvalues->m_rows[i].m_new_values)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));

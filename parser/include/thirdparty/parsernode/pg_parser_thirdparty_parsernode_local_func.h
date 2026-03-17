@@ -1,12 +1,12 @@
-#ifndef XK_PG_PARSER_THIRDPARTY_PARSERNODE_LOCAL_FUNC_H
-#define XK_PG_PARSER_THIRDPARTY_PARSERNODE_LOCAL_FUNC_H
+#ifndef PG_PARSER_THIRDPARTY_PARSERNODE_LOCAL_FUNC_H
+#define PG_PARSER_THIRDPARTY_PARSERNODE_LOCAL_FUNC_H
 typedef struct func_oid_with_name
 {
     uint32_t m_oid;
     uint16_t m_func_argnum;
     const char *m_func_name;
 }func_oid_with_name;
-const func_oid_with_name xk_pg_parser_local_func_builtins[] = {
+const func_oid_with_name pg_parser_local_func_builtins[] = {
   { 3, 1, "heap_tableam_handler" },
   { 31, 1, "byteaout" },
   { 33, 1, "charout" },
@@ -2815,6 +2815,6 @@ const func_oid_with_name xk_pg_parser_local_func_builtins[] = {
   { 6121, 1, "pg_relation_is_publishable" }
 };
 
-const int local_func_num = (sizeof(xk_pg_parser_local_func_builtins) / sizeof(func_oid_with_name));
+const int local_func_num = (sizeof(pg_parser_local_func_builtins) / sizeof(func_oid_with_name));
 
 #endif

@@ -2,8 +2,8 @@
 #include "utils/dlist/dlist.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/txn.h"
 #include "stmts/txnstmt.h"
 #include "stmts/txnstmt_burst.h"
@@ -35,7 +35,7 @@ static void txnstmt_burstrow_free(void* data)
         return;
     }
 
-    heap_free_trans_result((xk_pg_parser_translog_tbcolbase*)data);
+    heap_free_trans_result((pg_parser_translog_tbcolbase*)data);
     return;
 }
 

@@ -6,9 +6,9 @@
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "misc/misc_stat.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_errnodef.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_errnodef.h"
+#include "common/pg_parser_translog.h"
 #include "misc/misc_control.h"
 #include "snapshot/snapshot.h"
 #include "cache/txn.h"
@@ -31,7 +31,7 @@
 #include "works/parserwork/wal/decode_checkpoint.h"
 #include "works/parserwork/wal/decode_seq.h"
 
-typedef void (*rewind_ptr_prefunc)(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
+typedef void (*rewind_ptr_prefunc)(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase);
 
 typedef struct REWIND_PREMGR
 {
@@ -40,56 +40,56 @@ typedef struct REWIND_PREMGR
     rewind_ptr_prefunc      func;
 } rewind_ptr_premgr;
 
-static void rewind_ptr_find_checkpoint(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
+static void rewind_ptr_find_checkpoint(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase);
 
 static rewind_ptr_premgr m_rewind_ptrpremgr[] =
 {
-    { XK_PG_PARSER_TRANSLOG_INVALID,               "INVALID"        , NULL },
-    { XK_PG_PARSER_TRANSLOG_HEAP_INSERT,           "INSERT"         , NULL },
-    { XK_PG_PARSER_TRANSLOG_HEAP_UPDATE,           "UPDATE"         , NULL },
-    { XK_PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,       "HOT UPDATE"     , NULL },
-    { XK_PG_PARSER_TRANSLOG_HEAP_DELETE,           "DELETE"         , NULL },
-    { XK_PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,    "MULTI INSERT"   , NULL },
-    { XK_PG_PARSER_TRANSLOG_XACT_COMMIT,           "COMMIT"         , NULL },
-    { XK_PG_PARSER_TRANSLOG_XACT_ABORT,            "ABORT"          , NULL },
-    { XK_PG_PARSER_TRANSLOG_XLOG_SWITCH,           "SWITCH"         , NULL },
-    { XK_PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,       "ONLINE"         , rewind_ptr_find_checkpoint },
-    { XK_PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,     "SHUTDOWN"       , rewind_ptr_find_checkpoint },
-    { XK_PG_PARSER_TRANSLOG_FPW_TUPLE,             "FPW_TUPLE"      , NULL },
-    { XK_PG_PARSER_TRANSLOG_RELMAP,                "RELMAP"         , NULL },
-    { XK_PG_PARSER_TRANSLOG_RUNNING_XACTS,         "RUNNING_XACTS"  , NULL },
-    { XK_PG_PARSER_TRANSLOG_XLOG_RECOVERY,         "RECOVERY"       , NULL },
-    { XK_PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE,   "COMMIT_PREPARE" , NULL },
-    { XK_PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE,    "ABORT_PREPARE"  , NULL },
-    { XK_PG_PARSER_TRANSLOG_XACT_ASSIGNMENT,       "ASSIGNMENT"     , NULL },
-    { XK_PG_PARSER_TRANSLOG_XACT_PREPARE,          "PREPARE"        , NULL },
-    { XK_PG_PARSER_TRANSLOG_HEAP_TRUNCATE,         "TRUNCATE"       , NULL },
-    {XK_PG_PARSER_TRANSLOG_SEQ,                    "SEQUENCE"       , NULL }
+    { PG_PARSER_TRANSLOG_INVALID,               "INVALID"        , NULL },
+    { PG_PARSER_TRANSLOG_HEAP_INSERT,           "INSERT"         , NULL },
+    { PG_PARSER_TRANSLOG_HEAP_UPDATE,           "UPDATE"         , NULL },
+    { PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,       "HOT UPDATE"     , NULL },
+    { PG_PARSER_TRANSLOG_HEAP_DELETE,           "DELETE"         , NULL },
+    { PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,    "MULTI INSERT"   , NULL },
+    { PG_PARSER_TRANSLOG_XACT_COMMIT,           "COMMIT"         , NULL },
+    { PG_PARSER_TRANSLOG_XACT_ABORT,            "ABORT"          , NULL },
+    { PG_PARSER_TRANSLOG_XLOG_SWITCH,           "SWITCH"         , NULL },
+    { PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,       "ONLINE"         , rewind_ptr_find_checkpoint },
+    { PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,     "SHUTDOWN"       , rewind_ptr_find_checkpoint },
+    { PG_PARSER_TRANSLOG_FPW_TUPLE,             "FPW_TUPLE"      , NULL },
+    { PG_PARSER_TRANSLOG_RELMAP,                "RELMAP"         , NULL },
+    { PG_PARSER_TRANSLOG_RUNNING_XACTS,         "RUNNING_XACTS"  , NULL },
+    { PG_PARSER_TRANSLOG_XLOG_RECOVERY,         "RECOVERY"       , NULL },
+    { PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE,   "COMMIT_PREPARE" , NULL },
+    { PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE,    "ABORT_PREPARE"  , NULL },
+    { PG_PARSER_TRANSLOG_XACT_ASSIGNMENT,       "ASSIGNMENT"     , NULL },
+    { PG_PARSER_TRANSLOG_XACT_PREPARE,          "PREPARE"        , NULL },
+    { PG_PARSER_TRANSLOG_HEAP_TRUNCATE,         "TRUNCATE"       , NULL },
+    {PG_PARSER_TRANSLOG_SEQ,                    "SEQUENCE"       , NULL }
 };
 
 static rewind_ptr_premgr m_emitpremgr[] =
 {
-    { XK_PG_PARSER_TRANSLOG_INVALID,               "INVALID"        , NULL },
-    { XK_PG_PARSER_TRANSLOG_HEAP_INSERT,           "INSERT"         , decode_heap_emit },
-    { XK_PG_PARSER_TRANSLOG_HEAP_UPDATE,           "UPDATE"         , decode_heap_emit },
-    { XK_PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,       "HOT UPDATE"     , decode_heap_emit },
-    { XK_PG_PARSER_TRANSLOG_HEAP_DELETE,           "DELETE"         , decode_heap_emit },
-    { XK_PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,    "MULTI INSERT"   , decode_heap_emit },
-    { XK_PG_PARSER_TRANSLOG_XACT_COMMIT,           "COMMIT"         , decode_xact_commit_emit },
-    { XK_PG_PARSER_TRANSLOG_XACT_ABORT,            "ABORT"          , decode_xact_abort_emit },
-    { XK_PG_PARSER_TRANSLOG_XLOG_SWITCH,           "SWITCH"         , NULL },
-    { XK_PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,       "ONLINE"         , decode_chkpt },
-    { XK_PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,     "SHUTDOWN"       , decode_chkpt },
-    { XK_PG_PARSER_TRANSLOG_FPW_TUPLE,             "FPW_TUPLE"      , heap_fpw_tuples },
-    { XK_PG_PARSER_TRANSLOG_RELMAP,                "RELMAP"         , decode_relmap },
-    { XK_PG_PARSER_TRANSLOG_RUNNING_XACTS,         "RUNNING_XACTS"  , NULL },
-    { XK_PG_PARSER_TRANSLOG_XLOG_RECOVERY,         "RECOVERY"       , NULL },
-    { XK_PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE,   "COMMIT_PREPARE" , NULL },
-    { XK_PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE,    "ABORT_PREPARE"  , NULL },
-    { XK_PG_PARSER_TRANSLOG_XACT_ASSIGNMENT,       "ASSIGNMENT"     , NULL },
-    { XK_PG_PARSER_TRANSLOG_XACT_PREPARE,          "PREPARE"        , NULL },
-    { XK_PG_PARSER_TRANSLOG_HEAP_TRUNCATE,         "TRUNCATE"       , NULL },
-    {XK_PG_PARSER_TRANSLOG_SEQ,                    "SEQUENCE"       , NULL }
+    { PG_PARSER_TRANSLOG_INVALID,               "INVALID"        , NULL },
+    { PG_PARSER_TRANSLOG_HEAP_INSERT,           "INSERT"         , decode_heap_emit },
+    { PG_PARSER_TRANSLOG_HEAP_UPDATE,           "UPDATE"         , decode_heap_emit },
+    { PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,       "HOT UPDATE"     , decode_heap_emit },
+    { PG_PARSER_TRANSLOG_HEAP_DELETE,           "DELETE"         , decode_heap_emit },
+    { PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,    "MULTI INSERT"   , decode_heap_emit },
+    { PG_PARSER_TRANSLOG_XACT_COMMIT,           "COMMIT"         , decode_xact_commit_emit },
+    { PG_PARSER_TRANSLOG_XACT_ABORT,            "ABORT"          , decode_xact_abort_emit },
+    { PG_PARSER_TRANSLOG_XLOG_SWITCH,           "SWITCH"         , NULL },
+    { PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,       "ONLINE"         , decode_chkpt },
+    { PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,     "SHUTDOWN"       , decode_chkpt },
+    { PG_PARSER_TRANSLOG_FPW_TUPLE,             "FPW_TUPLE"      , heap_fpw_tuples },
+    { PG_PARSER_TRANSLOG_RELMAP,                "RELMAP"         , decode_relmap },
+    { PG_PARSER_TRANSLOG_RUNNING_XACTS,         "RUNNING_XACTS"  , NULL },
+    { PG_PARSER_TRANSLOG_XLOG_RECOVERY,         "RECOVERY"       , NULL },
+    { PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE,   "COMMIT_PREPARE" , NULL },
+    { PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE,    "ABORT_PREPARE"  , NULL },
+    { PG_PARSER_TRANSLOG_XACT_ASSIGNMENT,       "ASSIGNMENT"     , NULL },
+    { PG_PARSER_TRANSLOG_XACT_PREPARE,          "PREPARE"        , NULL },
+    { PG_PARSER_TRANSLOG_HEAP_TRUNCATE,         "TRUNCATE"       , NULL },
+    {PG_PARSER_TRANSLOG_SEQ,                    "SEQUENCE"       , NULL }
 };
 
 static int              m_precnt = (sizeof(m_rewind_ptrpremgr))/(sizeof(rewind_ptr_premgr));
@@ -97,9 +97,9 @@ static int              m_precnt = (sizeof(m_rewind_ptrpremgr))/(sizeof(rewind_p
 #define EpochFromFullTransactionId(x)   ((uint32) ((x) >> 32))
 #define XidFromFullTransactionId(x)     ((uint32) (x))
 
-static void rewind_ptr_find_checkpoint(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
+static void rewind_ptr_find_checkpoint(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase)
 {
-    xk_pg_parser_translog_pre_transchkp *ckp = (xk_pg_parser_translog_pre_transchkp *)pbase;
+    pg_parser_translog_pre_transchkp *ckp = (pg_parser_translog_pre_transchkp *)pbase;
     if (XidFromFullTransactionId(ckp->m_nextid) <= decodingctx->rewind_ptr->strategy.xmin)
     {
         decodingctx->rewind_ptr->redolsn = ckp->m_redo_lsn;
@@ -110,68 +110,68 @@ static void rewind_ptr_find_checkpoint(decodingcontext* decodingctx, xk_pg_parse
 bool rewind_fastrewind(decodingcontext *decodingctx)
 {
     int32 rippleerrno = 0;
-    xk_pg_parser_translog_pre_base* preparserresutl = NULL;
+    pg_parser_translog_pre_base* preparserresutl = NULL;
 
     decodingctx->walpre.m_record = decodingctx->decode_record->data;
 
     /* 调用预解析，根据预解析内容，分发处理 */
-    if(false == xk_pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
+    if(false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
     {
-        elog(RLOG_ERROR, "xk_pg_parser_trans_preTrans error, %08X, %s",
-                            rippleerrno, xk_pg_parser_errno_getErrInfo(rippleerrno));
+        elog(RLOG_ERROR, "pg_parser_trans_preTrans error, %08X, %s",
+                            rippleerrno, pg_parser_errno_getErrInfo(rippleerrno));
         return false;
     }
 
     /* 调用分发函数 */
     if(m_precnt <= preparserresutl->m_type)
     {
-        elog(RLOG_ERROR, "xk_pg_parser_trans_preTrans unknown type:%u", preparserresutl->m_type);
+        elog(RLOG_ERROR, "pg_parser_trans_preTrans unknown type:%u", preparserresutl->m_type);
         return false;
     }
 
     if(NULL == m_rewind_ptrpremgr[preparserresutl->m_type].func)
     {
         /* 释放无用的pre */
-        xk_pg_parser_trans_preTrans_free(preparserresutl);
+        pg_parser_trans_preTrans_free(preparserresutl);
         return true;
     }
 
     m_rewind_ptrpremgr[preparserresutl->m_type].func(decodingctx, preparserresutl);
-    xk_pg_parser_trans_preTrans_free(preparserresutl);
+    pg_parser_trans_preTrans_free(preparserresutl);
     return true;
 }
 
 bool rewind_fastrewind_emit(decodingcontext *decodingctx)
 {
     int32 rippleerrno = 0;
-    xk_pg_parser_translog_pre_base* preparserresutl = NULL;
+    pg_parser_translog_pre_base* preparserresutl = NULL;
 
     decodingctx->walpre.m_record = decodingctx->decode_record->data;
 
     /* 调用预解析，根据预解析内容，分发处理 */
-    if(false == xk_pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
+    if(false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
     {
-        elog(RLOG_ERROR, "xk_pg_parser_trans_preTrans error, %08X, %s",
-                            rippleerrno, xk_pg_parser_errno_getErrInfo(rippleerrno));
+        elog(RLOG_ERROR, "pg_parser_trans_preTrans error, %08X, %s",
+                            rippleerrno, pg_parser_errno_getErrInfo(rippleerrno));
         return false;
     }
 
     /* 调用分发函数 */
     if(m_precnt <= preparserresutl->m_type)
     {
-        elog(RLOG_ERROR, "xk_pg_parser_trans_preTrans unknown type:%u", preparserresutl->m_type);
+        elog(RLOG_ERROR, "pg_parser_trans_preTrans unknown type:%u", preparserresutl->m_type);
         return false;
     }
 
     if(NULL == m_emitpremgr[preparserresutl->m_type].func)
     {
         /* 释放无用的pre */
-        xk_pg_parser_trans_preTrans_free(preparserresutl);
+        pg_parser_trans_preTrans_free(preparserresutl);
         return true;
     }
 
     m_emitpremgr[preparserresutl->m_type].func(decodingctx, preparserresutl);
-    xk_pg_parser_trans_preTrans_free(preparserresutl);
+    pg_parser_trans_preTrans_free(preparserresutl);
     return true;
 }
 

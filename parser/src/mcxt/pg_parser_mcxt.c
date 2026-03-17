@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_mcxt.c
+ * @file pg_parser_mcxt.c
  * @author ByteSynch
  * @brief 内存申请、释放的封装函数的实现
  * @version 0.1
@@ -8,8 +8,8 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
 
 #define SIZE_ZERO 0
 /**
@@ -21,7 +21,7 @@
  * @retval          true           函数调用成功
  * @retval          false          函数调用失败
  */
-bool xk_pg_parser_mcxt_malloc(void *ref_mcxt, void **ref_pointer, int32_t in_size)
+bool pg_parser_mcxt_malloc(void *ref_mcxt, void **ref_pointer, int32_t in_size)
 {
     (void)ref_mcxt; /* keep complier quite */
 
@@ -48,7 +48,7 @@ bool xk_pg_parser_mcxt_malloc(void *ref_mcxt, void **ref_pointer, int32_t in_siz
  * @retval          true           函数调用成功
  * @retval          false          函数调用失败
  */
-bool xk_pg_parser_mcxt_realloc(void *ref_mcxt, void **ref_pointer, int32_t in_size)
+bool pg_parser_mcxt_realloc(void *ref_mcxt, void **ref_pointer, int32_t in_size)
 {
     (void)ref_mcxt; /* keep complier quite */
 
@@ -70,7 +70,7 @@ bool xk_pg_parser_mcxt_realloc(void *ref_mcxt, void **ref_pointer, int32_t in_si
  * @param[in]       ref_mcxt       内存池，当前没用
  * @param[in]       ref_pointer    内存地址的指针
  */
-void xk_pg_parser_mcxt_free(void *ref_mcxt, void *ref_pointer)
+void pg_parser_mcxt_free(void *ref_mcxt, void *ref_pointer)
 {
     (void)ref_mcxt; /* keep complier quite */
 
@@ -89,7 +89,7 @@ void xk_pg_parser_mcxt_free(void *ref_mcxt, void *ref_pointer)
  * @param[in] in 
  * @return char* 
  */
-char *xk_pg_parser_mcxt_strdup(const char *in)
+char *pg_parser_mcxt_strdup(const char *in)
 {
     char       *tmp;
     if (!in)
@@ -106,7 +106,7 @@ char *xk_pg_parser_mcxt_strdup(const char *in)
  * @param[in] in len 
  * @return char* 
  */
-char *xk_pg_parser_mcxt_strndup(const char *in, size_t len)
+char *pg_parser_mcxt_strndup(const char *in, size_t len)
 {
     char       *out;
 

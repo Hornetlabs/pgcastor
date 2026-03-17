@@ -10,14 +10,14 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 #define ENCODING_GROWTH_RATE 4
-#define XK_EUCTW_BIG5_MCXT NULL
+#define EUCTW_BIG5_MCXT NULL
 
 /* ----------
  * conv_proc(
@@ -42,11 +42,11 @@ void euc_tw_to_big5(unsigned char *src_str, unsigned char *dest_str, int32_t str
     int32_t        len = str_len;
     unsigned char *buf;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_EUC_TW, XK_BIG5);
-    xk_pg_parser_mcxt_malloc(XK_EUCTW_BIG5_MCXT, (void **) &buf, len * ENCODING_GROWTH_RATE + 1);
+    CHECK_ENCODING_CONVERSION_ARGS(EUC_TW, BIG5);
+    pg_parser_mcxt_malloc(EUCTW_BIG5_MCXT, (void **) &buf, len * ENCODING_GROWTH_RATE + 1);
     euc_tw2mic(src, buf, len);
     mic2big5(buf, dest, strlen((char *) buf));
-    xk_pg_parser_mcxt_free(XK_EUCTW_BIG5_MCXT, buf);
+    pg_parser_mcxt_free(EUCTW_BIG5_MCXT, buf);
 }
 
 void big5_to_euc_tw(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -56,12 +56,12 @@ void big5_to_euc_tw(unsigned char *src_str, unsigned char *dest_str, int32_t str
     int32_t        len = str_len;
     unsigned char *buf;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_BIG5, XK_EUC_TW);
+    CHECK_ENCODING_CONVERSION_ARGS(BIG5, EUC_TW);
 
-    xk_pg_parser_mcxt_malloc(XK_EUCTW_BIG5_MCXT, (void **) &buf, len * ENCODING_GROWTH_RATE + 1);
+    pg_parser_mcxt_malloc(EUCTW_BIG5_MCXT, (void **) &buf, len * ENCODING_GROWTH_RATE + 1);
     big52mic(src, buf, len);
     mic2euc_tw(buf, dest, strlen((char *) buf));
-    xk_pg_parser_mcxt_free(XK_EUCTW_BIG5_MCXT, buf);
+    pg_parser_mcxt_free(EUCTW_BIG5_MCXT, buf);
 }
 
 void euc_tw_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -70,7 +70,7 @@ void euc_tw_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t        len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_EUC_TW, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(EUC_TW, MULE_INTERNAL);
 
     euc_tw2mic(src, dest, len);
 }
@@ -81,7 +81,7 @@ void mic_to_euc_tw(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t        len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_EUC_TW);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, EUC_TW);
 
     mic2euc_tw(src, dest, len);
 }
@@ -92,7 +92,7 @@ void big5_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_le
     unsigned char *dest = dest_str;
     int32_t        len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_BIG5, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(BIG5, MULE_INTERNAL);
 
     big52mic(src, dest, len);
 }
@@ -103,7 +103,7 @@ void mic_to_big5(unsigned char *src_str, unsigned char *dest_str, int32_t str_le
     unsigned char *dest = dest_str;
     int32_t        len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_BIG5);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, BIG5);
 
     mic2big5(src, dest, len);
 }
@@ -121,10 +121,10 @@ static void euc_tw2mic(const unsigned char *euc, unsigned char *p, int32_t len)
         c1 = *euc;
         if (IS_HIGHBIT_SET(c1))
         {
-            l = xk_character_encoding_verifymb(XK_EUC_TW, (const char *) euc, len);
+            l = character_encoding_verifymb(EUC_TW, (const char *) euc, len);
             if (l < 0)
             {
-                /* report_invalid_encoding(XK_EUC_TW,
+                /* report_invalid_encoding(EUC_TW,
                                         (const char *) euc, len); */
                 break;
             }
@@ -157,7 +157,7 @@ static void euc_tw2mic(const unsigned char *euc, unsigned char *p, int32_t len)
         {                        /* should be ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_EUC_TW,
+                /* report_invalid_encoding(EUC_TW,
                                         (const char *) euc, len); */
                 break;
             }
@@ -185,7 +185,7 @@ static void mic2euc_tw(const unsigned char *mic, unsigned char *p, int32_t len)
             /* ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_MULE_INTERNAL,
+                /* report_invalid_encoding(MULE_INTERNAL,
                                         (const char *) mic, len); */
                 break;
             }
@@ -194,10 +194,10 @@ static void mic2euc_tw(const unsigned char *mic, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = xk_character_encoding_verifymb(XK_MULE_INTERNAL, (const char *) mic, len);
+        l = character_encoding_verifymb(MULE_INTERNAL, (const char *) mic, len);
         if (l < 0)
         {
-            /* report_invalid_encoding(XK_MULE_INTERNAL,
+            /* report_invalid_encoding(MULE_INTERNAL,
                                     (const char *) mic, len); */
             break;
         }
@@ -223,7 +223,7 @@ static void mic2euc_tw(const unsigned char *mic, unsigned char *p, int32_t len)
         }
         else
         {
-            /* report_untranslatable_char(XK_MULE_INTERNAL, XK_EUC_TW,
+            /* report_untranslatable_char(MULE_INTERNAL, EUC_TW,
                                        (const char *) mic, len); */
 
         }
@@ -252,7 +252,7 @@ static void big52mic(const unsigned char *big5, unsigned char *p, int32_t len)
             /* ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_BIG5,
+                /* report_invalid_encoding(BIG5,
                                         (const char *) big5, len); */
                 break;
             }
@@ -261,10 +261,10 @@ static void big52mic(const unsigned char *big5, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = xk_character_encoding_verifymb(XK_BIG5, (const char *) big5, len);
+        l = character_encoding_verifymb(BIG5, (const char *) big5, len);
         if (l < 0)
         {
-            /* report_invalid_encoding(XK_BIG5,
+            /* report_invalid_encoding(BIG5,
                                     (const char *) big5, len); */
             break;
         }
@@ -281,7 +281,7 @@ static void big52mic(const unsigned char *big5, unsigned char *p, int32_t len)
         }
         else
         {
-            /* report_untranslatable_char(XK_BIG5, XK_MULE_INTERNAL,
+            /* report_untranslatable_char(BIG5, MULE_INTERNAL,
                                        (const char *) big5, len); */
             break;
         }
@@ -309,7 +309,7 @@ static void mic2big5(const unsigned char *mic, unsigned char *p, int32_t len)
             /* ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_MULE_INTERNAL,
+                /* report_invalid_encoding(MULE_INTERNAL,
                                         (const char *) mic, len); */
                 break;
             }
@@ -318,10 +318,10 @@ static void mic2big5(const unsigned char *mic, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = xk_character_encoding_verifymb(XK_MULE_INTERNAL, (const char *) mic, len);
+        l = character_encoding_verifymb(MULE_INTERNAL, (const char *) mic, len);
         if (l < 0)
         {
-            /* report_invalid_encoding(XK_MULE_INTERNAL,
+            /* report_invalid_encoding(MULE_INTERNAL,
                                     (const char *) mic, len); */
             break;
         }
@@ -339,7 +339,7 @@ static void mic2big5(const unsigned char *mic, unsigned char *p, int32_t len)
             big5buf = CNStoBIG5(cnsBuf, c1);
             if (big5buf == 0)
             {
-                /* report_untranslatable_char(XK_MULE_INTERNAL, XK_BIG5,
+                /* report_untranslatable_char(MULE_INTERNAL, BIG5,
                                            (const char *) mic, len); */
                 break;
             }
@@ -348,7 +348,7 @@ static void mic2big5(const unsigned char *mic, unsigned char *p, int32_t len)
         }
         else
         {
-            /* report_untranslatable_char(XK_MULE_INTERNAL, XK_BIG5,
+            /* report_untranslatable_char(MULE_INTERNAL, BIG5,
                                        (const char *) mic, len); */
             break;
         }

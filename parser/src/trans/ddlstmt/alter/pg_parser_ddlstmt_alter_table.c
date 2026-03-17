@@ -1,165 +1,165 @@
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "common/xk_pg_parser_translog.h"
-#include "thirdparty/list/xk_pg_parser_thirdparty_list.h"
-#include "trans/ddlstmt/xk_pg_parser_trans_ddlstmt.h"
-#include "trans/ddlstmt/xk_pg_parser_trans_ddlstmt_getcolumninfo.h"
-#include "trans/ddlstmt/xk_pg_parser_trans_ddlstmt_transfunc.h"
-#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "common/pg_parser_translog.h"
+#include "thirdparty/list/pg_parser_thirdparty_list.h"
+#include "trans/ddlstmt/pg_parser_trans_ddlstmt.h"
+#include "trans/ddlstmt/pg_parser_trans_ddlstmt_getcolumninfo.h"
+#include "trans/ddlstmt/pg_parser_trans_ddlstmt_transfunc.h"
+#include "thirdparty/parsernode/pg_parser_thirdparty_parsernode.h"
 
-#define XK_DDL_ALTERTABLE_MCXT NULL
+#define DDL_ALTERTABLE_MCXT NULL
 
-static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_add_constraint(
-                                                xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                xk_pg_parser_ddlstate *ddlstate,
-                                                int32_t *xk_pg_parser_errno);
-static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_drop_constraint(
-                                                xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                xk_pg_parser_ddlstate *ddlstate,
-                                                int32_t *xk_pg_parser_errno);
-static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_add_column(
-                                                xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                xk_pg_parser_ddlstate *ddlstate,
-                                                int32_t *xk_pg_parser_errno);
-static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_set_log(
-                                                xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                xk_pg_parser_ddlstate *ddlstate,
-                                                int32_t *xk_pg_parser_errno);
+static pg_parser_translog_ddlstmt *pg_parser_ddl_assemble_alter_table_add_constraint(
+                                                pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                pg_parser_ddlstate *ddlstate,
+                                                int32_t *pg_parser_errno);
+static pg_parser_translog_ddlstmt *pg_parser_ddl_assemble_alter_table_drop_constraint(
+                                                pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                pg_parser_ddlstate *ddlstate,
+                                                int32_t *pg_parser_errno);
+static pg_parser_translog_ddlstmt *pg_parser_ddl_assemble_alter_table_add_column(
+                                                pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                pg_parser_ddlstate *ddlstate,
+                                                int32_t *pg_parser_errno);
+static pg_parser_translog_ddlstmt *pg_parser_ddl_assemble_alter_table_set_log(
+                                                pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                pg_parser_ddlstate *ddlstate,
+                                                int32_t *pg_parser_errno);
 
 
-xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_renameTable(xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                            xk_pg_parser_translog_systb2dll_record *current_record,
-                                                            xk_pg_parser_ddlstate *ddlstate,
-                                                            int32_t *xk_pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_renameTable(pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                            pg_parser_translog_systb2dll_record *current_record,
+                                                            pg_parser_ddlstate *ddlstate,
+                                                            int32_t *pg_parser_errno)
 {
-    xk_pg_parser_translog_ddlstmt *result = NULL;
-    xk_pg_parser_translog_ddlstmt_altertable *rename = NULL;
+    pg_parser_translog_ddlstmt *result = NULL;
+    pg_parser_translog_ddlstmt_altertable *rename = NULL;
 
-    XK_PG_PARSER_UNUSED(xk_pg_parser_ddl);
-    XK_PG_PARSER_UNUSED(current_record);
-    XK_PG_PARSER_UNUSED(xk_pg_parser_errno);
-    xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+    PG_PARSER_UNUSED(pg_parser_ddl);
+    PG_PARSER_UNUSED(current_record);
+    PG_PARSER_UNUSED(pg_parser_errno);
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                                    "DEBUG, DDL PARSER: capture aleter table rename table end \n");
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&result,
-                                  sizeof(xk_pg_parser_translog_ddlstmt)))
+                                  sizeof(pg_parser_translog_ddlstmt)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_0E;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_0E;
         return NULL;
     }
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&rename,
-                                  sizeof(xk_pg_parser_translog_ddlstmt_altertable)))
+                                  sizeof(pg_parser_translog_ddlstmt_altertable)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_0F;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_0F;
         return NULL;
     }
     rename->m_relid = ddlstate->m_reloid;
     rename->m_relname_new = ddlstate->m_relname_new;
     rename->m_relname = ddlstate->m_relname;
     rename->m_relnamespaceid = strtoul(ddlstate->m_nspname_oid_char, NULL, 10);
-    result->m_base.m_ddltype = XK_PG_PARSER_DDLTYPE_ALTER;
-    result->m_base.m_ddlinfo = XK_PG_PARSER_DDLINFO_ALTER_TABLE_RENAME;
+    result->m_base.m_ddltype = PG_PARSER_DDLTYPE_ALTER;
+    result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_ALTER_TABLE_RENAME;
     result->m_ddlstmt = (void*)rename;
     result->m_next = NULL;
 
-    xk_pg_parser_ddl_init_ddlstate(ddlstate);
+    pg_parser_ddl_init_ddlstate(ddlstate);
     return result;
 }
 
-xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_add_constraint(
-                                                            xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                            xk_pg_parser_translog_systb2dll_record *current_record,
-                                                            xk_pg_parser_ddlstate *ddlstate,
-                                                            int32_t *xk_pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_add_constraint(
+                                                            pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                            pg_parser_translog_systb2dll_record *current_record,
+                                                            pg_parser_ddlstate *ddlstate,
+                                                            int32_t *pg_parser_errno)
 {
-    xk_pg_parser_translog_ddlstmt *result = NULL;
+    pg_parser_translog_ddlstmt *result = NULL;
 
 
     if (IS_INSERT(current_record->m_record))
     {
-        if (xk_pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND, xk_pg_parser_ddl->m_dbtype, xk_pg_parser_ddl->m_dbversion))
+        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
         {
             char *temp_objid = NULL;
             char *temp_classid = NULL;
-            temp_objid = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("objid",
+            temp_objid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("objid",
                                                                 current_record->m_record->m_new_values,
                                                                 current_record->m_record->m_valueCnt,
                                                                 temp_objid);
-            temp_classid = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
                                                                   current_record->m_record->m_new_values,
                                                                   current_record->m_record->m_valueCnt,
                                                                   temp_classid);
             if (!strcmp(ddlstate->m_reloid_char, temp_objid)
                 && !strcmp(RelationRelationIdChar, temp_classid))
-                result = xk_pg_parser_ddl_assemble_alter_table_add_constraint(xk_pg_parser_ddl,
+                result = pg_parser_ddl_assemble_alter_table_add_constraint(pg_parser_ddl,
                                                                            ddlstate,
-                                                                           xk_pg_parser_errno);
+                                                                           pg_parser_errno);
         }
     }
     return result;
 }
 
-xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_add_constraint_foreign(
-                                                            xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                            xk_pg_parser_translog_systb2dll_record *current_record,
-                                                            xk_pg_parser_ddlstate *ddlstate,
-                                                            int32_t *xk_pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_add_constraint_foreign(
+                                                            pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                            pg_parser_translog_systb2dll_record *current_record,
+                                                            pg_parser_ddlstate *ddlstate,
+                                                            int32_t *pg_parser_errno)
 {
-    xk_pg_parser_translog_ddlstmt *result = NULL;
+    pg_parser_translog_ddlstmt *result = NULL;
 
 
     if (IS_INSERT(current_record->m_record))
     {
-        if (xk_pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND, xk_pg_parser_ddl->m_dbtype, xk_pg_parser_ddl->m_dbversion))
+        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
         {
             char *temp_objid = NULL;
             char *temp_classid = NULL;
-            temp_objid = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("objid",
+            temp_objid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("objid",
                                                                 current_record->m_record->m_new_values,
                                                                 current_record->m_record->m_valueCnt,
                                                                 temp_objid);
-            temp_classid = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
                                                                   current_record->m_record->m_new_values,
                                                                   current_record->m_record->m_valueCnt,
                                                                   temp_classid);
             if (!strcmp(ddlstate->m_reloid_char, temp_objid)
                 && !strcmp(ConstraintRelationIdChar, temp_classid))
-                result = xk_pg_parser_ddl_assemble_alter_table_add_constraint(xk_pg_parser_ddl,
+                result = pg_parser_ddl_assemble_alter_table_add_constraint(pg_parser_ddl,
                                                                            ddlstate,
-                                                                           xk_pg_parser_errno);
+                                                                           pg_parser_errno);
         }
     }
     return result;
 }
 
-xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_add_column(
-                                                            xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                            xk_pg_parser_translog_systb2dll_record *current_record,
-                                                            xk_pg_parser_ddlstate *ddlstate,
-                                                            int32_t *xk_pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_add_column(
+                                                            pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                            pg_parser_translog_systb2dll_record *current_record,
+                                                            pg_parser_ddlstate *ddlstate,
+                                                            int32_t *pg_parser_errno)
 {
-    xk_pg_parser_translog_ddlstmt *result = NULL;
+    pg_parser_translog_ddlstmt *result = NULL;
 
 
     if (IS_UPDATE(current_record->m_record)
-        && (xk_pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_CLASS, xk_pg_parser_ddl->m_dbtype, xk_pg_parser_ddl->m_dbversion)))
+        && (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_CLASS, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion)))
     {
-            bool change_attnum = xk_pg_parser_ddl_checkChangeColumn("relnatts",
+            bool change_attnum = pg_parser_ddl_checkChangeColumn("relnatts",
                                                          current_record->m_record->m_new_values,
                                                          current_record->m_record->m_old_values,
                                                          current_record->m_record->m_valueCnt,
-                                                         xk_pg_parser_errno);
+                                                         pg_parser_errno);
             if (change_attnum)
             {
-                if (!xk_pg_parser_ddl_get_pg_class_info(ddlstate, current_record->m_record, true))
+                if (!pg_parser_ddl_get_pg_class_info(ddlstate, current_record->m_record, true))
                 {
-                    *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDLSTMT_GET_CLASSINFO;
+                    *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_CLASSINFO;
                     return NULL;
                 }
-                result = xk_pg_parser_ddl_assemble_alter_table_add_column(xk_pg_parser_ddl,
+                result = pg_parser_ddl_assemble_alter_table_add_column(pg_parser_ddl,
                                                                            ddlstate,
-                                                                           xk_pg_parser_errno);
+                                                                           pg_parser_errno);
                 return result;
             }
     }
@@ -169,288 +169,288 @@ xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_add_column(
      * 因为向pg_attribute表中插入数据太过于常见, 许多DDL都有这种操作
      * 因此在遇到这种情况时, 将现在的record作为第一条record重新处理DDL
      */
-    xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, "WARNING: in xk_pg_parser_DDL_alter_table_add_column ddl jump out\n");
-    xk_pg_parser_ddl_init_ddlstate(ddlstate);
-    xk_pg_parser_ddl_firstTransDDL(xk_pg_parser_ddl, current_record, ddlstate, xk_pg_parser_errno);
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "WARNING: in pg_parser_DDL_alter_table_add_column ddl jump out\n");
+    pg_parser_ddl_init_ddlstate(ddlstate);
+    pg_parser_ddl_firstTransDDL(pg_parser_ddl, current_record, ddlstate, pg_parser_errno);
     return NULL;
 }
 
-xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_set_log(
-                                                            xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                            xk_pg_parser_translog_systb2dll_record *current_record,
-                                                            xk_pg_parser_ddlstate *ddlstate,
-                                                            int32_t *xk_pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_set_log(
+                                                            pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                            pg_parser_translog_systb2dll_record *current_record,
+                                                            pg_parser_ddlstate *ddlstate,
+                                                            int32_t *pg_parser_errno)
 {
-    xk_pg_parser_translog_ddlstmt *result = NULL;
+    pg_parser_translog_ddlstmt *result = NULL;
     if (IS_UPDATE(current_record->m_record)
-        && (xk_pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_CLASS, xk_pg_parser_ddl->m_dbtype, xk_pg_parser_ddl->m_dbversion)))
+        && (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_CLASS, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion)))
     {
         bool temp_check_relpersistence_change = false;
         bool temp_check_relfilenode_change = false;
 
-        temp_check_relpersistence_change = xk_pg_parser_ddl_checkChangeColumn("relpersistence",
+        temp_check_relpersistence_change = pg_parser_ddl_checkChangeColumn("relpersistence",
                                         current_record->m_record->m_new_values,
                                         current_record->m_record->m_old_values,
                                         current_record->m_record->m_valueCnt,
-                                        xk_pg_parser_errno);
-        temp_check_relfilenode_change = xk_pg_parser_ddl_checkChangeColumn("relfilenode",
+                                        pg_parser_errno);
+        temp_check_relfilenode_change = pg_parser_ddl_checkChangeColumn("relfilenode",
                                         current_record->m_record->m_new_values,
                                         current_record->m_record->m_old_values,
                                         current_record->m_record->m_valueCnt,
-                                        xk_pg_parser_errno);
+                                        pg_parser_errno);
         if (temp_check_relpersistence_change && temp_check_relfilenode_change)
         {
-            if (XK_PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_BEGIN == ddlstate->m_log_step)
+            if (PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_BEGIN == ddlstate->m_log_step)
             {
-                xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                     "DEBUG, DDL PARSER: in alter table set unlogged/logged, step get class info \n");
                 /* 设置是logged还是unlogged在获取pg_class时决定 */
-                if (!xk_pg_parser_ddl_get_pg_class_info(ddlstate, current_record->m_record, true))
+                if (!pg_parser_ddl_get_pg_class_info(ddlstate, current_record->m_record, true))
                 {
-                    *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDLSTMT_GET_CLASSINFO;
+                    *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_CLASSINFO;
                     return NULL;
                 }
-                ddlstate->m_log_step = XK_PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP;
+                ddlstate->m_log_step = PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP;
             }
-            else if (XK_PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP == ddlstate->m_log_step)
+            else if (PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP == ddlstate->m_log_step)
             {
                 /* 这里只需要获取pg_temp开头的内部临时表的oid */
                 char *temp_str = NULL;
-                xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                     "DEBUG, DDL PARSER: in alter table set unlogged/logged, step get temp class \n");
-                temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
+                temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
                                                                     current_record->m_record->m_new_values,
                                                                     current_record->m_record->m_valueCnt,
                                                                     temp_str);
                 ddlstate->m_reloid_temp = strtoul(temp_str, NULL, 10);
-                ddlstate->m_log_step = XK_PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_UPDATE_STEP;
+                ddlstate->m_log_step = PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_UPDATE_STEP;
             }
         }
     }
     if (IS_DELETE(current_record->m_record))
     {
-        if (xk_pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_CLASS, xk_pg_parser_ddl->m_dbtype, xk_pg_parser_ddl->m_dbversion))
+        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_CLASS, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
         {
-            if (XK_PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_UPDATE_STEP == ddlstate->m_log_step)
+            if (PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_UPDATE_STEP == ddlstate->m_log_step)
             {
-                char *temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
+                char *temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
                                                                     current_record->m_record->m_old_values,
                                                                     current_record->m_record->m_valueCnt,
                                                                     temp_str);
                 if (strtoul(temp_str, NULL, 10) == ddlstate->m_reloid_temp)
                 {
-                    xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+                    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                     "DEBUG, DDL PARSER: in alter table set unlogged/logged, step delete temp class \n");
-                    ddlstate->m_log_step = XK_PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_DELETE_STEP;
+                    ddlstate->m_log_step = PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_DELETE_STEP;
                 }
             }
         }
-        else if (xk_pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND, xk_pg_parser_ddl->m_dbtype, xk_pg_parser_ddl->m_dbversion))
+        else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
         {
-            char *temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("objid",
+            char *temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("objid",
                                                                     current_record->m_record->m_old_values,
                                                                     current_record->m_record->m_valueCnt,
                                                                     temp_str);
             if (strtoul(temp_str, NULL, 10) == ddlstate->m_reloid_temp)
             {
-                if (XK_PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_DELETE_STEP == ddlstate->m_log_step)
-                    result = xk_pg_parser_ddl_assemble_alter_table_set_log(xk_pg_parser_ddl,
+                if (PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_DELETE_STEP == ddlstate->m_log_step)
+                    result = pg_parser_ddl_assemble_alter_table_set_log(pg_parser_ddl,
                                                                 ddlstate,
-                                                                xk_pg_parser_errno);
+                                                                pg_parser_errno);
             }
         }
     }
     return result;
 }
 
-xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_drop_constraint(
-                                                            xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                            xk_pg_parser_translog_systb2dll_record *current_record,
-                                                            xk_pg_parser_ddlstate *ddlstate,
-                                                            int32_t *xk_pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_drop_constraint(
+                                                            pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                            pg_parser_translog_systb2dll_record *current_record,
+                                                            pg_parser_ddlstate *ddlstate,
+                                                            int32_t *pg_parser_errno)
 {
-    xk_pg_parser_translog_ddlstmt *result = NULL;
+    pg_parser_translog_ddlstmt *result = NULL;
 
     if (IS_DELETE(current_record->m_record))
     {
         /* primary key, unique捕获pg_constraint的记录 */
-        if (xk_pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_CONSTRAINT, xk_pg_parser_ddl->m_dbtype, xk_pg_parser_ddl->m_dbversion))
+        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_CONSTRAINT, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
         {
             char *temp_str = NULL;
-            xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                            "DEBUG, DDL PARSER: alter table drop constraint, get constraint info \n");
-            ddlstate->m_relname = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conname",
+            ddlstate->m_relname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conname",
                                                                     current_record->m_record->m_old_values,
                                                                     current_record->m_record->m_valueCnt,
                                                                     ddlstate->m_relname);
-            ddlstate->m_reloid_char = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conrelid",
+            ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conrelid",
                                                                     current_record->m_record->m_old_values,
                                                                     current_record->m_record->m_valueCnt,
                                                                     ddlstate->m_reloid_char);
-            temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conislocal",
+            temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conislocal",
                                                               current_record->m_record->m_old_values,
                                                               current_record->m_record->m_valueCnt,
                                                               temp_str);
             ddlstate->m_cons_is_local = temp_str[0] == 't' ? true : false;
             ddlstate->m_reloid= strtoul(ddlstate->m_reloid_char, NULL, 10);
-            ddlstate->m_nspname_oid_char = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("connamespace",
+            ddlstate->m_nspname_oid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("connamespace",
                                                                     current_record->m_record->m_old_values,
                                                                     current_record->m_record->m_valueCnt,
                                                                     ddlstate->m_nspname_oid_char);
         }
 
 
-        else if (xk_pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND, xk_pg_parser_ddl->m_dbtype, xk_pg_parser_ddl->m_dbversion))
+        else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
         {
-            char *temp_classid = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+            char *temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
                                                                     current_record->m_record->m_old_values,
                                                                     current_record->m_record->m_valueCnt,
                                                                     temp_classid);
             if (!strcmp(ConstraintRelationIdChar, temp_classid))
-                result = xk_pg_parser_ddl_assemble_alter_table_drop_constraint(xk_pg_parser_ddl,
+                result = pg_parser_ddl_assemble_alter_table_drop_constraint(pg_parser_ddl,
                                                                            ddlstate,
-                                                                           xk_pg_parser_errno);
+                                                                           pg_parser_errno);
         }
     }
     return result;
 }
 
-xk_pg_parser_translog_ddlstmt* xk_pg_parser_DDL_alter_table_namespace(xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                            xk_pg_parser_translog_systb2dll_record *current_record,
-                                                            xk_pg_parser_ddlstate *ddlstate,
-                                                            int32_t *xk_pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_namespace(pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                            pg_parser_translog_systb2dll_record *current_record,
+                                                            pg_parser_ddlstate *ddlstate,
+                                                            int32_t *pg_parser_errno)
 {
-    xk_pg_parser_translog_ddlstmt *result = NULL;
-    xk_pg_parser_translog_ddlstmt_altertable *new_namespace = NULL;
+    pg_parser_translog_ddlstmt *result = NULL;
+    pg_parser_translog_ddlstmt_altertable *new_namespace = NULL;
 
-    XK_PG_PARSER_UNUSED(xk_pg_parser_ddl);
-    XK_PG_PARSER_UNUSED(current_record);
-    XK_PG_PARSER_UNUSED(xk_pg_parser_errno);
-    xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+    PG_PARSER_UNUSED(pg_parser_ddl);
+    PG_PARSER_UNUSED(current_record);
+    PG_PARSER_UNUSED(pg_parser_errno);
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                                    "DEBUG, DDL PARSER: capture alter table alter namespace end \n");
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&result,
-                                  sizeof(xk_pg_parser_translog_ddlstmt)))
+                                  sizeof(pg_parser_translog_ddlstmt)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_11;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_11;
         return NULL;
     }
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&new_namespace,
-                                  sizeof(xk_pg_parser_translog_ddlstmt_altertable)))
+                                  sizeof(pg_parser_translog_ddlstmt_altertable)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_12;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_12;
         return NULL;
     }
     new_namespace->m_relid = ddlstate->m_reloid;
     new_namespace->m_relname = ddlstate->m_relname;
     new_namespace->m_relnamespaceid = strtoul(ddlstate->m_nspname_oid_char, NULL, 10);
     new_namespace->m_relnamespaceid_new = strtoul(ddlstate->m_nspoid_new, NULL, 10);
-    result->m_base.m_ddltype = XK_PG_PARSER_DDLTYPE_ALTER;
-    result->m_base.m_ddlinfo = XK_PG_PARSER_DDLINFO_ALTER_TABLE_NAMESPACE;
+    result->m_base.m_ddltype = PG_PARSER_DDLTYPE_ALTER;
+    result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_ALTER_TABLE_NAMESPACE;
     result->m_ddlstmt = (void*)new_namespace;
     result->m_next = NULL;
 
-    xk_pg_parser_ddl_init_ddlstate(ddlstate);
+    pg_parser_ddl_init_ddlstate(ddlstate);
     return result;
 }
 
-static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_add_constraint(
-                                                xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                xk_pg_parser_ddlstate *ddlstate,
-                                                int32_t *xk_pg_parser_errno)
+static pg_parser_translog_ddlstmt *pg_parser_ddl_assemble_alter_table_add_constraint(
+                                                pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                pg_parser_ddlstate *ddlstate,
+                                                int32_t *pg_parser_errno)
 {
         char   *temp_contype = false;
         char   *temp_str = NULL;
-        xk_pg_parser_translog_ddlstmt *result = NULL;
-        xk_pg_parser_translog_ddlstmt_tbconstraint *cons_return = NULL;
+        pg_parser_translog_ddlstmt *result = NULL;
+        pg_parser_translog_ddlstmt_tbconstraint *cons_return = NULL;
 
-        XK_PG_PARSER_UNUSED(xk_pg_parser_ddl);
-        XK_PG_PARSER_UNUSED(xk_pg_parser_errno);
+        PG_PARSER_UNUSED(pg_parser_ddl);
+        PG_PARSER_UNUSED(pg_parser_errno);
 
         //todo free
-        if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+        if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                      (void **)&result,
-                                      sizeof(xk_pg_parser_translog_ddlstmt)))
+                                      sizeof(pg_parser_translog_ddlstmt)))
         {
-            *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_13;
+            *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_13;
             return NULL;
         }
         //todo free
-        if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+        if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                      (void **)&cons_return,
-                                      sizeof(xk_pg_parser_translog_ddlstmt_tbconstraint)))
+                                      sizeof(pg_parser_translog_ddlstmt_tbconstraint)))
         {
-            *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_14;
+            *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_14;
             return NULL;
         }
         if (!ddlstate->m_constraint)
         {
-            *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDLSTMT_CHECKPARAM_ADD_CONSTRAINT;
-            xk_pg_parser_ddl_init_ddlstate(ddlstate);
+            *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_CHECKPARAM_ADD_CONSTRAINT;
+            pg_parser_ddl_init_ddlstate(ddlstate);
             return NULL;
         }
-        temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conrelid",
+        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conrelid",
                                                 ddlstate->m_constraint->m_new_values,
                                                 ddlstate->m_constraint->m_valueCnt,
                                                 temp_str);
         cons_return->m_relid = strtoul(temp_str, NULL, 10);
-        cons_return->m_consname = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conname",
+        cons_return->m_consname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conname",
                                                 ddlstate->m_constraint->m_new_values,
                                                 ddlstate->m_constraint->m_valueCnt,
                                                 cons_return->m_consname);
-        temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("connamespace",
+        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("connamespace",
                                                 ddlstate->m_constraint->m_new_values,
                                                 ddlstate->m_constraint->m_valueCnt,
                                                 temp_str);
         cons_return->m_consnspoid = strtoul(temp_str,NULL, 10);
 
-        temp_contype = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("contype",
+        temp_contype = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("contype",
                                                 ddlstate->m_constraint->m_new_values,
                                                 ddlstate->m_constraint->m_valueCnt,
                                                 temp_contype);
         if ('p' == temp_contype[0])
         {
-            xk_pg_parser_translog_ddlstmt_col *column = NULL;
-            xk_pg_parser_ListCell *cell = NULL;
-            xk_pg_parser_translog_tbcol_values *consatt = NULL;
-            xk_pg_parser_translog_ddlstmt_tbconstraint_key *pkey = NULL;
+            pg_parser_translog_ddlstmt_col *column = NULL;
+            pg_parser_ListCell *cell = NULL;
+            pg_parser_translog_tbcol_values *consatt = NULL;
+            pg_parser_translog_ddlstmt_tbconstraint_key *pkey = NULL;
             int32_t i = 0;
 
-            xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                            "DEBUG, DDL PARSER: alter table add constraint, constraint type is primary key \n");
-            if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+            if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                          (void **) &pkey,
-                                          sizeof(xk_pg_parser_translog_ddlstmt_tbconstraint_key)))
+                                          sizeof(pg_parser_translog_ddlstmt_tbconstraint_key)))
             {
-                *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_15;
+                *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_15;
                 return NULL;
             }
 
-            cons_return->m_type = XK_PG_PARSER_DDL_CONSTRAINT_PRIMARYKEY;
+            cons_return->m_type = PG_PARSER_DDL_CONSTRAINT_PRIMARYKEY;
             pkey->m_colcnt = ddlstate->m_attList->length;
 
-            xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                            "DEBUG, DDL PARSER: alter table add column end \n");
-            if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+            if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                          (void **) &column,
-                                          sizeof(xk_pg_parser_translog_ddlstmt_col)
+                                          sizeof(pg_parser_translog_ddlstmt_col)
                                                  * pkey->m_colcnt))
             {
-                *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_16;
+                *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_16;
                 return NULL;
             }
             /* 将存放于dlstate->m_ddlList中的列类型信息附加到返回值中 */
             i = 0;
-            xk_pg_parser_foreach(cell, ddlstate->m_attList)
+            pg_parser_foreach(cell, ddlstate->m_attList)
             {
-                consatt = (xk_pg_parser_translog_tbcol_values *)xk_pg_parser_lfirst(cell);
-                column[i].m_colname = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname",
+                consatt = (pg_parser_translog_tbcol_values *)pg_parser_lfirst(cell);
+                column[i].m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname",
                                                     consatt->m_new_values,
                                                     consatt->m_valueCnt,
                                                     column[i].m_colname);
 
-                temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid",
+                temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid",
                                                     consatt->m_new_values,
                                                     consatt->m_valueCnt,
                                                     temp_str);
@@ -469,35 +469,35 @@ static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_add_
             char  temp_str2num[7] = {'\0'};
             char *temp_conkey = NULL;
             char *temp_confkey = NULL;
-            xk_pg_parser_translog_ddlstmt_tbconstraint_fkey *fkey = NULL;
+            pg_parser_translog_ddlstmt_tbconstraint_fkey *fkey = NULL;
             char *temp_cursor1 = NULL;
             char *temp_cursor2 = NULL;
             char * temp_str = NULL;
-            xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                            "DEBUG, DDL PARSER: alter table add constraint, constraint type is foreign key \n");
-            temp_conkey = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conkey",
+            temp_conkey = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conkey",
                                               ddlstate->m_constraint->m_new_values,
                                               ddlstate->m_constraint->m_valueCnt,
                                               temp_conkey);
-            temp_confkey = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("confkey",
+            temp_confkey = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("confkey",
                                               ddlstate->m_constraint->m_new_values,
                                               ddlstate->m_constraint->m_valueCnt,
                                               temp_confkey);
 
-            if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+            if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                          (void **) &fkey,
-                                          sizeof(xk_pg_parser_translog_ddlstmt_tbconstraint_fkey)))
+                                          sizeof(pg_parser_translog_ddlstmt_tbconstraint_fkey)))
             {
-                *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_17;
+                *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_17;
                 return NULL;
             }
-            temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("confrelid",
+            temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("confrelid",
                                                     ddlstate->m_constraint->m_new_values,
                                                     ddlstate->m_constraint->m_valueCnt,
                                                     temp_str);
             fkey->m_consfkeyid = strtoul(temp_str, NULL, 10);
 
-            cons_return->m_type = XK_PG_PARSER_DDL_CONSTRAINT_FOREIGNKEY;
+            cons_return->m_type = PG_PARSER_DDL_CONSTRAINT_FOREIGNKEY;
             /* 由于没有明确的列数记录, 我们必须先遍历一遍获取列数 */
             temp_cursor1 = temp_conkey;
             while (*temp_cursor1)
@@ -512,14 +512,14 @@ static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_add_
             /* 初始化 */
             cnt = 0;
             temp_cursor1 = temp_conkey;
-            if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+            if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                          (void **) &fkey->m_concols_position,
                                           sizeof(int16_t) * fkey->m_colcnt)
-                || !xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+                || !pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                          (void **) &fkey->m_fkeycols_position,
                                           sizeof(int16_t) * fkey->m_colcnt))
             {
-                *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_18;
+                *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_18;
                 return NULL;
             }
             /* 获取concols */
@@ -564,44 +564,44 @@ static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_add_
         }
         else if ('u' == temp_contype[0])
         {
-            xk_pg_parser_translog_ddlstmt_col *column = NULL;
-            xk_pg_parser_ListCell *cell = NULL;
-            xk_pg_parser_translog_tbcol_values *consatt = NULL;
-            xk_pg_parser_translog_ddlstmt_tbconstraint_key *ukey = NULL;
+            pg_parser_translog_ddlstmt_col *column = NULL;
+            pg_parser_ListCell *cell = NULL;
+            pg_parser_translog_tbcol_values *consatt = NULL;
+            pg_parser_translog_ddlstmt_tbconstraint_key *ukey = NULL;
             int32_t i = 0;
 
-            xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                            "DEBUG, DDL PARSER: alter table add constraint, constraint type is unique key \n");
-            if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+            if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                          (void **) &ukey,
-                                          sizeof(xk_pg_parser_translog_ddlstmt_tbconstraint_key)))
+                                          sizeof(pg_parser_translog_ddlstmt_tbconstraint_key)))
             {
-                *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_19;
+                *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_19;
                 return NULL;
             }
 
-            cons_return->m_type = XK_PG_PARSER_DDL_CONSTRAINT_UNIQUE;
+            cons_return->m_type = PG_PARSER_DDL_CONSTRAINT_UNIQUE;
             ukey->m_colcnt = ddlstate->m_attList->length;
 
             //todo free
-            if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+            if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                          (void **) &column,
-                                          sizeof(xk_pg_parser_translog_ddlstmt_col)
+                                          sizeof(pg_parser_translog_ddlstmt_col)
                                                  * ukey->m_colcnt))
             {
-                *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1A;
+                *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1A;
                 return NULL;
             }
             i = 0;
             /* 将存放于dlstate->m_ddlList中的列类型信息附加到返回值中 */
-            xk_pg_parser_foreach(cell, ddlstate->m_attList)
+            pg_parser_foreach(cell, ddlstate->m_attList)
             {
-                consatt = (xk_pg_parser_translog_tbcol_values *)xk_pg_parser_lfirst(cell);
-                column[i].m_colname = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname",
+                consatt = (pg_parser_translog_tbcol_values *)pg_parser_lfirst(cell);
+                column[i].m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname",
                                                     consatt->m_new_values,
                                                     consatt->m_valueCnt,
                                                     column[i].m_colname);
-                temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid",
+                temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid",
                                                     consatt->m_new_values,
                                                     consatt->m_valueCnt,
                                                     temp_str);
@@ -613,65 +613,65 @@ static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_add_
         }
         else if ('c' == temp_contype[0])
         {
-            xk_pg_parser_translog_ddlstmt_tbconstraint_check *check = NULL;
+            pg_parser_translog_ddlstmt_tbconstraint_check *check = NULL;
             char *Node = NULL;
-            xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                            "DEBUG, DDL PARSER: alter table add constraint, constraint type is check \n");
-            if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+            if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                          (void **) &check,
-                                          sizeof(xk_pg_parser_translog_ddlstmt_tbconstraint_check)))
+                                          sizeof(pg_parser_translog_ddlstmt_tbconstraint_check)))
             {
-                *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1B;
+                *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1B;
                 return NULL;
             }
-            Node = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conbin",
+            Node = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("conbin",
                                                           ddlstate->m_constraint->m_new_values,
                                                           ddlstate->m_constraint->m_valueCnt,
                                                           Node);
-            check->m_check_node = xk_pg_parser_get_expr(Node, ddlstate->m_zicinfo);
-            cons_return->m_type = XK_PG_PARSER_DDL_CONSTRAINT_CHECK;
+            check->m_check_node = pg_parser_get_expr(Node, ddlstate->m_zicinfo);
+            cons_return->m_type = PG_PARSER_DDL_CONSTRAINT_CHECK;
             cons_return->m_constraint_stmt = (void*) check;
         }
         else
         {
             /* 其他约束, 不捕获，清理并退出 */
-            xk_pg_parser_ddl_init_ddlstate(ddlstate);
+            pg_parser_ddl_init_ddlstate(ddlstate);
             return NULL;
         }
 
-        result->m_base.m_ddltype = XK_PG_PARSER_DDLTYPE_ALTER;
-        result->m_base.m_ddlinfo = XK_PG_PARSER_DDLINFO_ALTER_TABLE_ADD_CONSTRAINT;
+        result->m_base.m_ddltype = PG_PARSER_DDLTYPE_ALTER;
+        result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_ALTER_TABLE_ADD_CONSTRAINT;
         result->m_ddlstmt = (void*) cons_return;
         result->m_next = NULL;
-        xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                            "DEBUG, DDL PARSER: alter table add constraint end \n");
-        xk_pg_parser_ddl_init_ddlstate(ddlstate);
+        pg_parser_ddl_init_ddlstate(ddlstate);
         return result;
 }
 
-static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_drop_constraint(
-                                                xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                xk_pg_parser_ddlstate *ddlstate,
-                                                int32_t *xk_pg_parser_errno)
+static pg_parser_translog_ddlstmt *pg_parser_ddl_assemble_alter_table_drop_constraint(
+                                                pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                pg_parser_ddlstate *ddlstate,
+                                                int32_t *pg_parser_errno)
 {
-    xk_pg_parser_translog_ddlstmt *result = NULL;
-    xk_pg_parser_translog_ddlstmt_drop_constraint *drop_constraint;
+    pg_parser_translog_ddlstmt *result = NULL;
+    pg_parser_translog_ddlstmt_drop_constraint *drop_constraint;
 
-    XK_PG_PARSER_UNUSED(xk_pg_parser_ddl);
-    XK_PG_PARSER_UNUSED(xk_pg_parser_errno);
+    PG_PARSER_UNUSED(pg_parser_ddl);
+    PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&result,
-                                  sizeof(xk_pg_parser_translog_ddlstmt)))
+                                  sizeof(pg_parser_translog_ddlstmt)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1C;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1C;
         return NULL;
     }
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&drop_constraint,
-                                  sizeof(xk_pg_parser_translog_ddlstmt_drop_constraint)))
+                                  sizeof(pg_parser_translog_ddlstmt_drop_constraint)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1D;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1D;
         return NULL;
     }
     drop_constraint->m_islocal = ddlstate->m_cons_is_local;
@@ -679,90 +679,90 @@ static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_drop
     drop_constraint->m_relid = ddlstate->m_reloid;
     drop_constraint->m_consname = ddlstate->m_relname;
 
-    result->m_base.m_ddltype = XK_PG_PARSER_DDLTYPE_ALTER;
-    result->m_base.m_ddlinfo = XK_PG_PARSER_DDLINFO_ALTER_TABLE_DROP_CONSTRAINT;
+    result->m_base.m_ddltype = PG_PARSER_DDLTYPE_ALTER;
+    result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_ALTER_TABLE_DROP_CONSTRAINT;
     result->m_ddlstmt =(void*) drop_constraint;
     result->m_next = NULL;
-    xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                            "DEBUG, DDL PARSER: alter table drop constraint end \n");
-    xk_pg_parser_ddl_init_ddlstate(ddlstate);
+    pg_parser_ddl_init_ddlstate(ddlstate);
     return result;
 }
 
-static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_add_column(
-                                                xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                xk_pg_parser_ddlstate *ddlstate,
-                                                int32_t *xk_pg_parser_errno)
+static pg_parser_translog_ddlstmt *pg_parser_ddl_assemble_alter_table_add_column(
+                                                pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                pg_parser_ddlstate *ddlstate,
+                                                int32_t *pg_parser_errno)
 {
-    xk_pg_parser_translog_ddlstmt *result = NULL;
-    xk_pg_parser_translog_ddlstmt_col *add_column = NULL;
-    xk_pg_parser_translog_ddlstmt_addcolumn *add_column_table = NULL;
-    xk_pg_parser_ListCell *cell = NULL;
-    xk_pg_parser_translog_tbcol_values *consatt = NULL;
+    pg_parser_translog_ddlstmt *result = NULL;
+    pg_parser_translog_ddlstmt_col *add_column = NULL;
+    pg_parser_translog_ddlstmt_addcolumn *add_column_table = NULL;
+    pg_parser_ListCell *cell = NULL;
+    pg_parser_translog_tbcol_values *consatt = NULL;
     int32_t typmod = -1;
     uint32_t typid = 0;
     char *temp_notnull = NULL;
     char * temp_str = NULL;
 
-    XK_PG_PARSER_UNUSED(xk_pg_parser_ddl);
-    XK_PG_PARSER_UNUSED(xk_pg_parser_errno);
+    PG_PARSER_UNUSED(pg_parser_ddl);
+    PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&result,
-                                  sizeof(xk_pg_parser_translog_ddlstmt)))
+                                  sizeof(pg_parser_translog_ddlstmt)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1E;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1E;
         return NULL;
     }
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&add_column_table,
-                                  sizeof(xk_pg_parser_translog_ddlstmt_addcolumn)))
+                                  sizeof(pg_parser_translog_ddlstmt_addcolumn)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1F;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1F;
         return NULL;
     }
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&add_column,
-                                  sizeof(xk_pg_parser_translog_ddlstmt_col)))
+                                  sizeof(pg_parser_translog_ddlstmt_col)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_20;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_20;
         return NULL;
     }
     add_column_table->m_relid = ddlstate->m_reloid;
     add_column_table->m_relname = ddlstate->m_relname;
     add_column_table->m_relnamespace = strtoul(ddlstate->m_nspname_oid_char, NULL, 10);
-    cell = xk_pg_parser_list_head(ddlstate->m_attList);
+    cell = pg_parser_list_head(ddlstate->m_attList);
     if (!cell)
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDLSTMT_CHECKPARAM_ADD_COLUMN1;
-        xk_pg_parser_ddl_init_ddlstate(ddlstate);
+        *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_CHECKPARAM_ADD_COLUMN1;
+        pg_parser_ddl_init_ddlstate(ddlstate);
         return NULL;
     }
-    consatt = (xk_pg_parser_translog_tbcol_values *)xk_pg_parser_lfirst(cell);
+    consatt = (pg_parser_translog_tbcol_values *)pg_parser_lfirst(cell);
     if (!consatt)
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDLSTMT_CHECKPARAM_ADD_COLUMN2;
-        xk_pg_parser_ddl_init_ddlstate(ddlstate);
+        *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_CHECKPARAM_ADD_COLUMN2;
+        pg_parser_ddl_init_ddlstate(ddlstate);
         return NULL;
     }
-    add_column->m_colname = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname",
+    add_column->m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname",
                                                     consatt->m_new_values,
                                                     consatt->m_valueCnt,
                                                     add_column->m_colname);
-    temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid",
+    temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid",
                                                     consatt->m_new_values,
                                                     consatt->m_valueCnt,
                                                     temp_str);
     add_column->m_coltypid = strtoul(temp_str, NULL, 10);
-    temp_notnull = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attnotnull",
+    temp_notnull = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attnotnull",
                                                     consatt->m_new_values,
                                                     consatt->m_valueCnt,
                                                     temp_notnull);
     if ('t' == temp_notnull[0])
-        add_column->m_flag = XK_PG_PARSER_DDL_COLUMN_NOTNULL;
+        add_column->m_flag = PG_PARSER_DDL_COLUMN_NOTNULL;
 
     add_column_table->m_addcolumn = add_column;
-    temp_str = XK_PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypmod",
+    temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypmod",
                                                       consatt->m_new_values,
                                                       consatt->m_valueCnt,
                                                       temp_str);
@@ -771,28 +771,28 @@ static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_add_
     if (0 <= typmod)
     {
         add_column->m_typemod = typmod;
-        if (XK_PG_SYSDICT_BPCHAROID == typid || XK_PG_SYSDICT_VARCHAROID == typid)
+        if (PG_SYSDICT_BPCHAROID == typid || PG_SYSDICT_VARCHAROID == typid)
         {
             typmod -= (int32_t) sizeof(int32_t);
             add_column->m_length = typmod;
             add_column->m_precision = -1;
             add_column->m_scale = -1;
         }
-        else if (XK_PG_SYSDICT_TIMEOID == typid || XK_PG_SYSDICT_TIMETZOID == typid
-            || XK_PG_SYSDICT_TIMESTAMPOID == typid || XK_PG_SYSDICT_TIMESTAMPTZOID == typid)
+        else if (PG_SYSDICT_TIMEOID == typid || PG_SYSDICT_TIMETZOID == typid
+            || PG_SYSDICT_TIMESTAMPOID == typid || PG_SYSDICT_TIMESTAMPTZOID == typid)
         {
             add_column->m_length = -1;
             add_column->m_precision = typmod;
             add_column->m_scale = -1;
         }
-        else if (XK_PG_SYSDICT_NUMERICOID == typid)
+        else if (PG_SYSDICT_NUMERICOID == typid)
         {
             typmod -= (int32_t) sizeof(int32_t);
             add_column->m_length = -1;
             add_column->m_precision = (typmod >> 16) & 0xffff;
             add_column->m_scale = typmod & 0xffff;
         }
-        else if (XK_PG_SYSDICT_BITOID == typid|| XK_PG_SYSDICT_VARBITOID == typid)
+        else if (PG_SYSDICT_BITOID == typid|| PG_SYSDICT_VARBITOID == typid)
         {
             add_column->m_length = typmod;
             add_column->m_precision = -1;
@@ -812,55 +812,55 @@ static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_add_
         add_column->m_precision = -1;
         add_column->m_scale = -1;
     }
-    result->m_base.m_ddltype = XK_PG_PARSER_DDLTYPE_ALTER;
-    result->m_base.m_ddlinfo = XK_PG_PARSER_DDLINFO_ALTER_TABLE_ADD_COLUMN;
+    result->m_base.m_ddltype = PG_PARSER_DDLTYPE_ALTER;
+    result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_ALTER_TABLE_ADD_COLUMN;
     result->m_ddlstmt =(void*) add_column_table;
     result->m_next = NULL;
-    xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                            "DEBUG, DDL PARSER: alter table add column end \n");
-    xk_pg_parser_ddl_init_ddlstate(ddlstate);
+    pg_parser_ddl_init_ddlstate(ddlstate);
     return result;
 }
 
-static xk_pg_parser_translog_ddlstmt *xk_pg_parser_ddl_assemble_alter_table_set_log(
-                                                xk_pg_parser_translog_systb2ddl *xk_pg_parser_ddl,
-                                                xk_pg_parser_ddlstate *ddlstate,
-                                                int32_t *xk_pg_parser_errno)
+static pg_parser_translog_ddlstmt *pg_parser_ddl_assemble_alter_table_set_log(
+                                                pg_parser_translog_systb2ddl *pg_parser_ddl,
+                                                pg_parser_ddlstate *ddlstate,
+                                                int32_t *pg_parser_errno)
 {
-    xk_pg_parser_translog_ddlstmt *result = NULL;
-    xk_pg_parser_translog_ddlstmt_setlog *set_log = NULL;
+    pg_parser_translog_ddlstmt *result = NULL;
+    pg_parser_translog_ddlstmt_setlog *set_log = NULL;
 
-    XK_PG_PARSER_UNUSED(xk_pg_parser_ddl);
+    PG_PARSER_UNUSED(pg_parser_ddl);
 
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&result,
-                                  sizeof(xk_pg_parser_translog_ddlstmt)))
+                                  sizeof(pg_parser_translog_ddlstmt)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1E;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1E;
         return NULL;
     }
-    if (!xk_pg_parser_mcxt_malloc(XK_DDL_ALTERTABLE_MCXT,
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                  (void **)&set_log,
-                                  sizeof(xk_pg_parser_translog_ddlstmt_setlog)))
+                                  sizeof(pg_parser_translog_ddlstmt_setlog)))
     {
-        *xk_pg_parser_errno = XK_ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1E;
+        *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_1E;
         return NULL;
     }
     set_log->m_relid = ddlstate->m_reloid;
     set_log->m_relname = ddlstate->m_relname;
     set_log->m_relnamespace = strtoul(ddlstate->m_nspname_oid_char, NULL, 10);
 
-    result->m_base.m_ddltype = XK_PG_PARSER_DDLTYPE_ALTER;
+    result->m_base.m_ddltype = PG_PARSER_DDLTYPE_ALTER;
     if (ddlstate->m_unlogged)
-        result->m_base.m_ddlinfo = XK_PG_PARSER_DDLINFO_ALTER_TABLE_SET_UNLOGGED;
+        result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_ALTER_TABLE_SET_UNLOGGED;
     else
-        result->m_base.m_ddlinfo = XK_PG_PARSER_DDLINFO_ALTER_TABLE_SET_LOGGED;
+        result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_ALTER_TABLE_SET_LOGGED;
 
     result->m_ddlstmt =(void*) set_log;
     result->m_next = NULL;
 
-    xk_pg_parser_log_errlog(xk_pg_parser_ddl->m_debugLevel, 
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
                     "DEBUG, DDL PARSER: in alter table set unlogged/logged end \n");
-    xk_pg_parser_ddl_init_ddlstate(ddlstate);
+    pg_parser_ddl_init_ddlstate(ddlstate);
     return result;
 }

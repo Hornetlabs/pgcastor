@@ -1,8 +1,8 @@
 #include "app_incl.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "stmts/txnstmt.h"
 #include "storage/file_buffer.h"
 #include "storage/ff_detail.h"
@@ -41,14 +41,14 @@ bool fftrail_txnupdate_serial(void* data, void* state)
     ff_txndata*  txndata = NULL;
     file_buffer* fbuffer = NULL;
     ffsmgr_state* ffstate = NULL;            /* state 数据信息 */
-    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
-    xk_pg_parser_translog_tbcol_value col;
+    pg_parser_translog_tbcol_values* colvalues = NULL;
+    pg_parser_translog_tbcol_value col;
 
     txndata = (ff_txndata*)data;
     rstmt = (txnstmt*)txndata->data;
     ffstate = (ffsmgr_state*)state;
 
-    colvalues = (xk_pg_parser_translog_tbcol_values*)rstmt->stmt;
+    colvalues = (pg_parser_translog_tbcol_values*)rstmt->stmt;
 
 fftrail_txnupdate_serial_retry:
     do
@@ -297,9 +297,9 @@ bool fftrail_txnupdate_deserial(void** data, void* state)
     fftrail_privdata* privdata = NULL; 
     fftrail_table_deserialentry* tbdeserialentry = NULL;
     fftrail_database_deserialentry* dbdeserialentry = NULL;
-    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
-    xk_pg_parser_translog_tbcol_value *col;
-    xk_pg_parser_translog_tbcolbase tbcolbase;
+    pg_parser_translog_tbcol_values* colvalues = NULL;
+    pg_parser_translog_tbcol_value *col;
+    pg_parser_translog_tbcolbase tbcolbase;
 
     /* 类型强转 */
     ffstate = (ffsmgr_state*)state;
@@ -324,12 +324,12 @@ bool fftrail_txnupdate_deserial(void** data, void* state)
     txndata->data = (void*)rstmt;
 
     /* 申请update data空间 */
-    colvalues = (xk_pg_parser_translog_tbcol_values*)rmalloc0(sizeof(xk_pg_parser_translog_tbcol_values));
+    colvalues = (pg_parser_translog_tbcol_values*)rmalloc0(sizeof(pg_parser_translog_tbcol_values));
     if(NULL == colvalues)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(colvalues, 0, '\0', sizeof(xk_pg_parser_translog_tbcol_values));
+    rmemset0(colvalues, 0, '\0', sizeof(pg_parser_translog_tbcol_values));
     rstmt->stmt = (void*)colvalues;
     rstmt->type = TXNSTMT_TYPE_DML;
 
@@ -382,7 +382,7 @@ bool fftrail_txnupdate_deserial(void** data, void* state)
     }
 
     rstmt->database = dbdeserialentry->oid;
-    tbcolbase.m_dmltype = XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE;
+    tbcolbase.m_dmltype = PG_PARSER_TRANSLOG_DMLTYPE_UPDATE;
 
     /* 模式名 */
     tbcolbase.m_schemaname = (char*)rmalloc0(NAMEDATALEN);
@@ -402,8 +402,8 @@ bool fftrail_txnupdate_deserial(void** data, void* state)
     rmemcpy0(tbcolbase.m_tbname, 0, tbdeserialentry->table, NAMEDATALEN);
 
     // 申请m_new_values空间
-    mlen = sizeof(xk_pg_parser_translog_tbcol_value) * tbdeserialentry->colcnt;
-    colvalues->m_new_values = (xk_pg_parser_translog_tbcol_value*)rmalloc0(mlen);
+    mlen = sizeof(pg_parser_translog_tbcol_value) * tbdeserialentry->colcnt;
+    colvalues->m_new_values = (pg_parser_translog_tbcol_value*)rmalloc0(mlen);
     if(NULL == colvalues->m_new_values)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
@@ -411,8 +411,8 @@ bool fftrail_txnupdate_deserial(void** data, void* state)
     rmemset0(colvalues->m_new_values, 0, '\0', mlen);
 
     /* 申请m_old_values空间 */ 
-    mlen = sizeof(xk_pg_parser_translog_tbcol_value) * tbdeserialentry->colcnt;
-    colvalues->m_old_values = (xk_pg_parser_translog_tbcol_value*)rmalloc0(mlen);
+    mlen = sizeof(pg_parser_translog_tbcol_value) * tbdeserialentry->colcnt;
+    colvalues->m_old_values = (pg_parser_translog_tbcol_value*)rmalloc0(mlen);
     if(NULL == colvalues->m_old_values)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));

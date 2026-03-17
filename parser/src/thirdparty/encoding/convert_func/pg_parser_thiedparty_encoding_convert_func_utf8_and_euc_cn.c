@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 #include "./unicode_map/euc_cn_to_utf8.map"
 #include "./unicode_map/utf8_to_euc_cn.map"
 
@@ -34,13 +34,13 @@ void euc_cn_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_EUC_CN, XK_UTF8);
+    CHECK_ENCODING_CONVERSION_ARGS(EUC_CN, UTF8);
 
     LocalToUtf(src, len, dest,
                &euc_cn_to_unicode_tree,
                NULL, 0,
                NULL,
-               XK_EUC_CN);
+               EUC_CN);
 }
 
 void utf8_to_euc_cn(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
@@ -49,11 +49,11 @@ void utf8_to_euc_cn(unsigned char *src_str, unsigned char *dest_str, int32_t str
     unsigned char *dest = dest_str;
     int32_t            len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_UTF8, XK_EUC_CN);
+    CHECK_ENCODING_CONVERSION_ARGS(UTF8, EUC_CN);
 
     UtfToLocal(src, len, dest,
                &euc_cn_from_unicode_tree,
                NULL, 0,
                NULL,
-               XK_EUC_CN);
+               EUC_CN);
 }

@@ -10,10 +10,10 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_convfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 
 /* ----------
@@ -36,7 +36,7 @@ void euc_cn_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t        len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_EUC_CN, XK_MULE_INTERNAL);
+    CHECK_ENCODING_CONVERSION_ARGS(EUC_CN, MULE_INTERNAL);
 
     euc_cn2mic(src, dest, len);
 }
@@ -47,7 +47,7 @@ void mic_to_euc_cn(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     unsigned char *dest = dest_str;
     int32_t        len = str_len;
 
-    CHECK_ENCODING_CONVERSION_ARGS(XK_MULE_INTERNAL, XK_EUC_CN);
+    CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, EUC_CN);
 
     mic2euc_cn(src, dest, len);
 }
@@ -66,7 +66,7 @@ static void euc_cn2mic(const unsigned char *euc, unsigned char *p, int32_t len)
         {
             if (len < 2 || !IS_HIGHBIT_SET(euc[1]))
             {
-                /* report_invalid_encoding(XK_EUC_CN, (const char *) euc, len); */
+                /* report_invalid_encoding(EUC_CN, (const char *) euc, len); */
                 break;
             }
             *p++ = LC_GB2312_80;
@@ -79,7 +79,7 @@ static void euc_cn2mic(const unsigned char *euc, unsigned char *p, int32_t len)
         {                        /* should be ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_EUC_CN, (const char *) euc, len); */
+                /* report_invalid_encoding(EUC_CN, (const char *) euc, len); */
                 break;
             }
             *p++ = c1;
@@ -104,13 +104,13 @@ static void mic2euc_cn(const unsigned char *mic, unsigned char *p, int32_t len)
         {
             if (c1 != LC_GB2312_80)
             {
-                /* report_untranslatable_char(XK_MULE_INTERNAL, XK_EUC_CN,
+                /* report_untranslatable_char(MULE_INTERNAL, EUC_CN,
                                            (const char *) mic, len); */
                 break;
             }
             if (len < 3 || !IS_HIGHBIT_SET(mic[1]) || !IS_HIGHBIT_SET(mic[2]))
             {
-                /* report_invalid_encoding(XK_MULE_INTERNAL,
+                /* report_invalid_encoding(MULE_INTERNAL,
                                         (const char *) mic, len); */
                 break;
             }
@@ -123,7 +123,7 @@ static void mic2euc_cn(const unsigned char *mic, unsigned char *p, int32_t len)
         {                        /* should be ASCII */
             if (c1 == 0)
             {
-                /* report_invalid_encoding(XK_MULE_INTERNAL,
+                /* report_invalid_encoding(MULE_INTERNAL,
                                         (const char *) mic, len); */
                 break;
             }

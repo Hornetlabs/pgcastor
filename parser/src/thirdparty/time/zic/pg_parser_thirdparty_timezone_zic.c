@@ -1,5 +1,5 @@
 /**
- * @file                xk_pg_parser_thirdparty_timezone_zic.c
+ * @file                pg_parser_thirdparty_timezone_zic.c
  * @author              bytesync
  * @brief               zic 函数的实现
  * @version             0.1
@@ -10,12 +10,12 @@
  */
 
 /* include */
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "mcxt/xk_pg_parser_mcxt.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_private.h"
-#include "thirdparty/time/timezone/xk_pg_parser_thirdparty_timezone_tzfile.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "mcxt/pg_parser_mcxt.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_private.h"
+#include "thirdparty/time/timezone/pg_parser_thirdparty_timezone_tzfile.h"
 
 #define ZIC_MCXT        NULL
 
@@ -26,23 +26,23 @@ typedef int32_t         lineno_t;
 /* define */
 
 #if __WORDSIZE == 64
-#define XK_TIME_INT64CONST(x)       ((int64_t)(x))
-#define XK_TIME_UINT64CONST(x)      ((uint64_t)(x))
+#define TIME_INT64CONST(x)       ((int64_t)(x))
+#define TIME_UINT64CONST(x)      ((uint64_t)(x))
 #else
-#define XK_TIME_INT64CONST(x)       ((int64)x##LL)
-#define XK_TIME_UINT64CONST(x)      ((uint64)x##ULL)
+#define TIME_INT64CONST(x)       ((int64)x##LL)
+#define TIME_UINT64CONST(x)      ((uint64)x##ULL)
 #endif
 
-#define XK_TIME_INT32_MAX           (0x7FFFFFFF)
+#define TIME_INT32_MAX           (0x7FFFFFFF)
 
-#define XK_TIME_INT32_MIN           (-0x7FFFFFFF - 1)
-#define XK_TIME_INT32_MAX           (0x7FFFFFFF)
+#define TIME_INT32_MIN           (-0x7FFFFFFF - 1)
+#define TIME_INT32_MAX           (0x7FFFFFFF)
 
-#define XK_TIME_INT64_MIN           (-XK_TIME_INT64CONST(0x7FFFFFFFFFFFFFFF) - 1)
-#define XK_TIME_INT64_MAX           XK_TIME_INT64CONST(0x7FFFFFFFFFFFFFFF)
+#define TIME_INT64_MIN           (-TIME_INT64CONST(0x7FFFFFFFFFFFFFFF) - 1)
+#define TIME_INT64_MAX           TIME_INT64CONST(0x7FFFFFFFFFFFFFFF)
 
-#define ZIC_MIN                     XK_TIME_INT64_MIN
-#define ZIC_MAX                     XK_TIME_INT64_MAX
+#define ZIC_MIN                     TIME_INT64_MIN
+#define ZIC_MAX                     TIME_INT64_MAX
 /*
  * Which fields are which on a Zone continuation line.
  */
@@ -130,13 +130,13 @@ typedef int32_t         lineno_t;
 #endif /* !defined ZIC_MAX_ABBR_LEN_WO_WARN */
 
 /* The minimum and maximum values representable in a TZif file.  */
-static zic_t const                  min_time = XK_TIME_MINVAL(zic_t, TIME_T_BITS_IN_FILE);
-static zic_t const                  max_time = XK_TIME_MAXVAL(zic_t, TIME_T_BITS_IN_FILE);
+static zic_t const                  min_time = TIME_MINVAL(zic_t, TIME_T_BITS_IN_FILE);
+static zic_t const                  max_time = TIME_MAXVAL(zic_t, TIME_T_BITS_IN_FILE);
 
 /* The minimum, and one less than the maximum, values specified by
    the -r option.  These default to MIN_TIME and MAX_TIME.  */
-static zic_t                        lo_time = XK_TIME_MINVAL(zic_t, TIME_T_BITS_IN_FILE);
-static zic_t                        hi_time = XK_TIME_MAXVAL(zic_t, TIME_T_BITS_IN_FILE);
+static zic_t                        lo_time = TIME_MINVAL(zic_t, TIME_T_BITS_IN_FILE);
+static zic_t                        hi_time = TIME_MAXVAL(zic_t, TIME_T_BITS_IN_FILE);
 
 /* enum, struct, union */
 typedef enum zic_percent_z_len_bound
@@ -235,15 +235,15 @@ struct zicinfo
     struct link*        links;
     ptrdiff_t           nlinks;
     ptrdiff_t           nlinks_alloc;
-    zic_t               utoffs[XK_TIME_TZ_MAX_TYPES];
-    char                isdsts[XK_TIME_TZ_MAX_TYPES];
-    unsigned char       desigidx[XK_TIME_TZ_MAX_TYPES];
-    bool                ttisstds[XK_TIME_TZ_MAX_TYPES];
-    bool                ttisuts[XK_TIME_TZ_MAX_TYPES];
-    char                chars[XK_TIME_TZ_MAX_CHARS];
-    zic_t               trans[XK_TIME_TZ_MAX_LEAPS];
-    zic_t               corr[XK_TIME_TZ_MAX_LEAPS];
-    char                roll[XK_TIME_TZ_MAX_LEAPS];
+    zic_t               utoffs[TIME_TZ_MAX_TYPES];
+    char                isdsts[TIME_TZ_MAX_TYPES];
+    unsigned char       desigidx[TIME_TZ_MAX_TYPES];
+    bool                ttisstds[TIME_TZ_MAX_TYPES];
+    bool                ttisuts[TIME_TZ_MAX_TYPES];
+    char                chars[TIME_TZ_MAX_CHARS];
+    zic_t               trans[TIME_TZ_MAX_LEAPS];
+    zic_t               corr[TIME_TZ_MAX_LEAPS];
+    char                roll[TIME_TZ_MAX_LEAPS];
     struct attype*      attypes;
     int32_t             bloat;
 };
@@ -259,42 +259,42 @@ struct timerange
 
 static struct lookup const lasts[] =
 {
-    {"last-Sunday",     XK_TIME_TM_SUNDAY},
-    {"last-Monday",     XK_TIME_TM_MONDAY},
-    {"last-Tuesday",    XK_TIME_TM_TUESDAY},
-    {"last-Wednesday",  XK_TIME_TM_WEDNESDAY},
-    {"last-Thursday",   XK_TIME_TM_THURSDAY},
-    {"last-Friday",     XK_TIME_TM_FRIDAY},
-    {"last-Saturday",   XK_TIME_TM_SATURDAY},
+    {"last-Sunday",     TIME_TM_SUNDAY},
+    {"last-Monday",     TIME_TM_MONDAY},
+    {"last-Tuesday",    TIME_TM_TUESDAY},
+    {"last-Wednesday",  TIME_TM_WEDNESDAY},
+    {"last-Thursday",   TIME_TM_THURSDAY},
+    {"last-Friday",     TIME_TM_FRIDAY},
+    {"last-Saturday",   TIME_TM_SATURDAY},
     {NULL,              0}
 };
 
 static struct lookup const wday_names[] =
 {
-    {"Sunday",          XK_TIME_TM_SUNDAY},
-    {"Monday",          XK_TIME_TM_MONDAY},
-    {"Tuesday",         XK_TIME_TM_TUESDAY},
-    {"Wednesday",       XK_TIME_TM_WEDNESDAY},
-    {"Thursday",        XK_TIME_TM_THURSDAY},
-    {"Friday",          XK_TIME_TM_FRIDAY},
-    {"Saturday",        XK_TIME_TM_SATURDAY},
+    {"Sunday",          TIME_TM_SUNDAY},
+    {"Monday",          TIME_TM_MONDAY},
+    {"Tuesday",         TIME_TM_TUESDAY},
+    {"Wednesday",       TIME_TM_WEDNESDAY},
+    {"Thursday",        TIME_TM_THURSDAY},
+    {"Friday",          TIME_TM_FRIDAY},
+    {"Saturday",        TIME_TM_SATURDAY},
     {NULL, 0}
 };
 
 static struct lookup const mon_names[] =
 {
-    {"January",         XK_TIME_TM_JANUARY},
-    {"February",        XK_TIME_TM_FEBRUARY},
-    {"March",           XK_TIME_TM_MARCH},
-    {"April",           XK_TIME_TM_APRIL},
-    {"May",             XK_TIME_TM_MAY},
-    {"June",            XK_TIME_TM_JUNE},
-    {"July",            XK_TIME_TM_JULY},
-    {"August",          XK_TIME_TM_AUGUST},
-    {"September",       XK_TIME_TM_SEPTEMBER},
-    {"October",         XK_TIME_TM_OCTOBER},
-    {"November",        XK_TIME_TM_NOVEMBER},
-    {"December",        XK_TIME_TM_DECEMBER},
+    {"January",         TIME_TM_JANUARY},
+    {"February",        TIME_TM_FEBRUARY},
+    {"March",           TIME_TM_MARCH},
+    {"April",           TIME_TM_APRIL},
+    {"May",             TIME_TM_MAY},
+    {"June",            TIME_TM_JUNE},
+    {"July",            TIME_TM_JULY},
+    {"August",          TIME_TM_AUGUST},
+    {"September",       TIME_TM_SEPTEMBER},
+    {"October",         TIME_TM_OCTOBER},
+    {"November",        TIME_TM_NOVEMBER},
+    {"December",        TIME_TM_DECEMBER},
     {NULL,              0}
 };
 
@@ -313,7 +313,7 @@ static struct lookup const end_years[] =
     {NULL,              0}
 };
 
-static const int32_t len_months[2][XK_TIME_MONSPERYEAR] =
+static const int32_t len_months[2][TIME_MONSPERYEAR] =
 {
     {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
     {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
@@ -321,7 +321,7 @@ static const int32_t len_months[2][XK_TIME_MONSPERYEAR] =
 
 static const int32_t len_years[2] =
 {
-    XK_TIME_DAYSPERNYEAR, XK_TIME_DAYSPERLYEAR
+    TIME_DAYSPERNYEAR, TIME_DAYSPERLYEAR
 };
 
 static struct lookup const zi_line_codes[] =
@@ -377,7 +377,7 @@ static void associate(struct zicinfo* local_zicinfo);
 static int32_t rcomp(const void* cp1, const void* cp2);
 static void eat(char const *name, lineno_t num, struct zicinfo* local_zicinfo);
 static void eats(char const *name, lineno_t num, char const *rname, lineno_t rnum, struct zicinfo* local_zicinfo);
-static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount, xk_pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo);
+static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount, pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo);
 static void* emalloc(size_t size);
 static void updateminmax(const zic_t x, struct zicinfo* local_zicinfo);
 static bool want_bloat(struct zicinfo* local_zicinfo);
@@ -387,14 +387,14 @@ static bool is_alpha(char a);
 static int32_t addtype(zic_t, char const *, bool, bool, bool, struct zicinfo *);
 static void newabbr(const char* string, struct zicinfo* local_zicinfo);
 static void addtt(zic_t starttime, int32_t type, struct zicinfo* local_zicinfo);
-static void writezone(const char* const string, char version, int32_t defaulttype, xk_pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo);
+static void writezone(const char* const string, char version, int32_t defaulttype, pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo);
 static int32_t atcomp(const void* avp, const void* bvp);
 static struct timerange limitrange(struct timerange r, zic_t lo, zic_t hi, zic_t const *ats, unsigned char const *types, struct zicinfo* local_zicinfo);
 static void convert(const int32_t val, char* const buf);
 static void convert64(const zic_t val, char* const buf);
-static void loop_append_char(int32_t loop, char* arr, xk_pg_parser_StringInfo local_tzdata);
-static void puttzcode(const int32_t val, xk_pg_parser_StringInfo local_tzdata);
-static void puttzcodepass(zic_t val, int32_t pass, xk_pg_parser_StringInfo local_tzdata);
+static void loop_append_char(int32_t loop, char* arr, pg_parser_StringInfo local_tzdata);
+static void puttzcode(const int32_t val, pg_parser_StringInfo local_tzdata);
+static void puttzcodepass(zic_t val, int32_t pass, pg_parser_StringInfo local_tzdata);
 static void free_data(struct zicinfo* local_zicinfo);
 static int32_t stringzone(char* result, struct zone const *zpfirst, ptrdiff_t zonecount);
 static int32_t rule_cmp(struct rule const *a, struct rule const *b);
@@ -413,7 +413,7 @@ static int32_t stringrule(char* result, struct rule* const rp, zic_t save, zic_t
         int32_t     month,
                     total;
 
-        if (rp->r_dayofmonth == 29 && rp->r_month == XK_TIME_TM_FEBRUARY)
+        if (rp->r_dayofmonth == 29 && rp->r_month == TIME_TM_FEBRUARY)
             return -1;
         total = 0;
         for (month = 0; month < rp->r_month; ++month)
@@ -432,12 +432,12 @@ static int32_t stringrule(char* result, struct rule* const rp, zic_t save, zic_t
 
         if (rp->r_dycode == DC_DOWGEQ)
         {
-            wdayoff = (rp->r_dayofmonth - 1) % XK_TIME_DAYSPERWEEK;
+            wdayoff = (rp->r_dayofmonth - 1) % TIME_DAYSPERWEEK;
             if (wdayoff)
                 compat = 2013;
             wday -= wdayoff;
-            tod += wdayoff * XK_TIME_SECSPERDAY;
-            week = 1 + (rp->r_dayofmonth - 1) / XK_TIME_DAYSPERWEEK;
+            tod += wdayoff * TIME_SECSPERDAY;
+            week = 1 + (rp->r_dayofmonth - 1) / TIME_DAYSPERWEEK;
         }
         else if (rp->r_dycode == DC_DOWLEQ)
         {
@@ -445,18 +445,18 @@ static int32_t stringrule(char* result, struct rule* const rp, zic_t save, zic_t
                 week = 5;
             else
             {
-                wdayoff = rp->r_dayofmonth % XK_TIME_DAYSPERWEEK;
+                wdayoff = rp->r_dayofmonth % TIME_DAYSPERWEEK;
                 if (wdayoff)
                     compat = 2013;
                 wday -= wdayoff;
-                tod += wdayoff * XK_TIME_SECSPERDAY;
-                week = rp->r_dayofmonth / XK_TIME_DAYSPERWEEK;
+                tod += wdayoff * TIME_SECSPERDAY;
+                week = rp->r_dayofmonth / TIME_DAYSPERWEEK;
             }
         }
         else
             return -1; /* "cannot happen" */
         if (wday < 0)
-            wday += XK_TIME_DAYSPERWEEK;
+            wday += TIME_DAYSPERWEEK;
         result += sprintf(result, "M%d.%d.%d",
                           rp->r_month + 1, week, wday);
     }
@@ -464,7 +464,7 @@ static int32_t stringrule(char* result, struct rule* const rp, zic_t save, zic_t
         tod += stdoff;
     if (rp->r_todisstd && !rp->r_isdst)
         tod += save;
-    if (tod != 2 * XK_TIME_SECSPERMIN * XK_TIME_MINSPERHOUR)
+    if (tod != 2 * TIME_SECSPERMIN * TIME_MINSPERHOUR)
     {
         *result++ = '/';
         if (!stringoffset(result, tod))
@@ -474,7 +474,7 @@ static int32_t stringrule(char* result, struct rule* const rp, zic_t save, zic_t
             if (compat < 2013)
                 compat = 2013;
         }
-        else if (XK_TIME_SECSPERDAY <= tod)
+        else if (TIME_SECSPERDAY <= tod)
         {
             if (compat < 1994)
                 compat = 1994;
@@ -496,12 +496,12 @@ static int32_t stringoffset(char* result, zic_t offset)
         offset = -offset;
         result[0] = '-';
     }
-    seconds = offset % XK_TIME_SECSPERMIN;
-    offset /= XK_TIME_SECSPERMIN;
-    minutes = offset % XK_TIME_MINSPERHOUR;
-    offset /= XK_TIME_MINSPERHOUR;
+    seconds = offset % TIME_SECSPERMIN;
+    offset /= TIME_SECSPERMIN;
+    minutes = offset % TIME_MINSPERHOUR;
+    offset /= TIME_MINSPERHOUR;
     hours = offset;
-    if (hours >= XK_TIME_HOURSPERDAY * XK_TIME_DAYSPERWEEK)
+    if (hours >= TIME_HOURSPERDAY * TIME_DAYSPERWEEK)
     {
         result[0] = '\0';
         return 0;
@@ -594,7 +594,7 @@ static int32_t stringzone(char* result, struct zone const *zpfirst, ptrdiff_t zo
         if (stdrp != NULL && stdrp->r_isdst)
         {
             /* Perpetual DST.  */
-            dstr.r_month = XK_TIME_TM_JANUARY;
+            dstr.r_month = TIME_TM_JANUARY;
             dstr.r_dycode = DC_DOM;
             dstr.r_dayofmonth = 1;
             dstr.r_tod = 0;
@@ -602,10 +602,10 @@ static int32_t stringzone(char* result, struct zone const *zpfirst, ptrdiff_t zo
             dstr.r_isdst = stdrp->r_isdst;
             dstr.r_save = stdrp->r_save;
             dstr.r_abbrvar = stdrp->r_abbrvar;
-            stdr.r_month = XK_TIME_TM_DECEMBER;
+            stdr.r_month = TIME_TM_DECEMBER;
             stdr.r_dycode = DC_DOM;
             stdr.r_dayofmonth = 31;
-            stdr.r_tod = XK_TIME_SECSPERDAY + stdrp->r_save;
+            stdr.r_tod = TIME_SECSPERDAY + stdrp->r_save;
             stdr.r_todisstd = stdr.r_todisut = false;
             stdr.r_isdst = false;
             stdr.r_save = 0;
@@ -628,7 +628,7 @@ static int32_t stringzone(char* result, struct zone const *zpfirst, ptrdiff_t zo
     if (dstrp == NULL)
         return compat;
     len += doabbr(result + len, zp, dstrp->r_abbrvar, dstrp->r_isdst, dstrp->r_save, true);
-    if (dstrp->r_save != XK_TIME_SECSPERMIN * XK_TIME_MINSPERHOUR)
+    if (dstrp->r_save != TIME_SECSPERMIN * TIME_MINSPERHOUR)
     {
         offsetlen = stringoffset(result + len, -(zp->z_stdoff + dstrp->r_save));
         if (!offsetlen)
@@ -673,36 +673,36 @@ static void free_data(struct zicinfo* local_zicinfo)
     for (i = 0; i < local_zicinfo->nrules; ++i)
     {
         struct rule* tmp = &local_zicinfo->rules[i];
-        xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->r_name);
-        xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->r_abbrvar);
+        pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->r_name);
+        pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->r_abbrvar);
     }
-    xk_pg_parser_mcxt_free(ZIC_MCXT, local_zicinfo->rules);
+    pg_parser_mcxt_free(ZIC_MCXT, local_zicinfo->rules);
 
     for (i = 0; i < local_zicinfo->nzones; ++i)
     {
         struct zone* tmp = &local_zicinfo->zones[i];
-        xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->z_rule);
-        xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->z_format);
-        xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->z_name);
+        pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->z_rule);
+        pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->z_format);
+        pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->z_name);
         tmp->z_rules = NULL;
     }
-    xk_pg_parser_mcxt_free(ZIC_MCXT, local_zicinfo->zones);
+    pg_parser_mcxt_free(ZIC_MCXT, local_zicinfo->zones);
 
     for (i = 0; i < local_zicinfo->nlinks; ++i)
     {
         struct link* tmp = &local_zicinfo->links[i];
-        xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->l_target);
-        xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->l_linkname);
+        pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->l_target);
+        pg_parser_mcxt_free(ZIC_MCXT, (void* )tmp->l_linkname);
     }
-    xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )local_zicinfo->links);
+    pg_parser_mcxt_free(ZIC_MCXT, (void* )local_zicinfo->links);
 
-    xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )local_zicinfo->attypes);
+    pg_parser_mcxt_free(ZIC_MCXT, (void* )local_zicinfo->attypes);
 
-    xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )local_zicinfo);
+    pg_parser_mcxt_free(ZIC_MCXT, (void* )local_zicinfo);
     local_zicinfo = NULL;
 }
 
-static void puttzcodepass(zic_t val, int32_t pass, xk_pg_parser_StringInfo local_tzdata)
+static void puttzcodepass(zic_t val, int32_t pass, pg_parser_StringInfo local_tzdata)
 {
     if (pass == 1)
         puttzcode(val, local_tzdata);
@@ -715,7 +715,7 @@ static void puttzcodepass(zic_t val, int32_t pass, xk_pg_parser_StringInfo local
     }
 }
 
-static void puttzcode(const int32_t val, xk_pg_parser_StringInfo local_tzdata)
+static void puttzcode(const int32_t val, pg_parser_StringInfo local_tzdata)
 {
     char        buf[4];
 
@@ -723,12 +723,12 @@ static void puttzcode(const int32_t val, xk_pg_parser_StringInfo local_tzdata)
     loop_append_char(sizeof buf, buf, local_tzdata);
 }
 
-static void loop_append_char(int32_t loop, char* arr, xk_pg_parser_StringInfo local_tzdata)
+static void loop_append_char(int32_t loop, char* arr, pg_parser_StringInfo local_tzdata)
 {
     int32_t i;
 
     for (i = 0; i < loop; ++i)
-        xk_pg_parser_appendStringInfoChar(local_tzdata, arr[i]);
+        pg_parser_appendStringInfoChar(local_tzdata, arr[i]);
 }
 
 static void convert(const int32_t val, char* const buf)
@@ -797,7 +797,7 @@ static void newabbr(const char* string, struct zicinfo* local_zicinfo)
 {
     int32_t         i;
 
-    if (strcmp(string, XK_TIME_GRANDPARENTED) != 0)
+    if (strcmp(string, TIME_GRANDPARENTED) != 0)
     {
         const char*         cp = NULL;
         const char*         mp = NULL;
@@ -814,7 +814,7 @@ static void newabbr(const char* string, struct zicinfo* local_zicinfo)
             fprintf(stderr, "%s (%s)", mp, string);
     }
     i = strlen(string) + 1;
-    if (local_zicinfo->charcnt + i > XK_TIME_TZ_MAX_CHARS)
+    if (local_zicinfo->charcnt + i > TIME_TZ_MAX_CHARS)
     {
         fprintf(stderr, "too many, or too long, time zone abbreviations");
         return;
@@ -853,7 +853,7 @@ static int32_t addtype(zic_t utoff, char const *abbr, bool isdst, bool ttisstd, 
     /*
      * There isn't one; add a new one, unless there are already too many.
      */
-    if (local_zicinfo->typecnt >= XK_TIME_TZ_MAX_TYPES)
+    if (local_zicinfo->typecnt >= TIME_TZ_MAX_TYPES)
     {
         fprintf(stderr, "too many local time types");
         return -1;
@@ -942,10 +942,10 @@ static char const *abbroffset(char* buf, zic_t offset)
         sign = '-';
     }
 
-    seconds = offset % XK_TIME_SECSPERMIN;
-    offset /= XK_TIME_SECSPERMIN;
-    minutes = offset % XK_TIME_MINSPERHOUR;
-    offset /= XK_TIME_MINSPERHOUR;
+    seconds = offset % TIME_SECSPERMIN;
+    offset /= TIME_SECSPERMIN;
+    minutes = offset % TIME_MINSPERHOUR;
+    offset /= TIME_MINSPERHOUR;
     if (100 <= offset)
     {
         fprintf(stderr, "\%\%z UT offset magnitude exceeds 99:59:59");
@@ -1032,7 +1032,7 @@ static void* emalloc(size_t size)
 {
     char* ptr = NULL;
 
-    xk_pg_parser_mcxt_malloc(ZIC_MCXT, (void* *)(&ptr), size);
+    pg_parser_mcxt_malloc(ZIC_MCXT, (void* *)(&ptr), size);
 
     return memcheck(ptr);
 }
@@ -1274,7 +1274,7 @@ static void inrule(char** fields, int32_t nfields, struct zicinfo* local_zicinfo
 
 static void* erealloc(void* ptr, size_t size)
 {
-    xk_pg_parser_mcxt_realloc(ZIC_MCXT, (void* *)&ptr, size);
+    pg_parser_mcxt_realloc(ZIC_MCXT, (void* *)&ptr, size);
     return (void* )ptr;
 }
 
@@ -1336,42 +1336,42 @@ static zic_t rpytime(const struct rule* rp, zic_t wantedy)
     if (wantedy == ZIC_MAX)
         return max_time;
     dayoff = 0;
-    m = XK_TIME_TM_JANUARY;
-    y = XK_TIME_EPOCH_YEAR;
+    m = TIME_TM_JANUARY;
+    y = TIME_EPOCH_YEAR;
     if (y < wantedy)
     {
         wantedy -= y;
-        dayoff = (wantedy / XK_TIME_YEARSPERREPEAT) * (XK_TIME_SECSPERREPEAT / XK_TIME_SECSPERDAY);
-        wantedy %= XK_TIME_YEARSPERREPEAT;
+        dayoff = (wantedy / TIME_YEARSPERREPEAT) * (TIME_SECSPERREPEAT / TIME_SECSPERDAY);
+        wantedy %= TIME_YEARSPERREPEAT;
         wantedy += y;
     }
     else if (wantedy < 0)
     {
-        dayoff = (wantedy / XK_TIME_YEARSPERREPEAT) * (XK_TIME_SECSPERREPEAT / XK_TIME_SECSPERDAY);
-        wantedy %= XK_TIME_YEARSPERREPEAT;
+        dayoff = (wantedy / TIME_YEARSPERREPEAT) * (TIME_SECSPERREPEAT / TIME_SECSPERDAY);
+        wantedy %= TIME_YEARSPERREPEAT;
     }
     while (wantedy != y)
     {
         if (wantedy > y)
         {
-            i = len_years[xk_time_isleap(y)];
+            i = len_years[time_isleap(y)];
             ++y;
         }
         else
         {
             --y;
-            i = -len_years[xk_time_isleap(y)];
+            i = -len_years[time_isleap(y)];
         }
         dayoff = oadd(dayoff, i);
     }
     while (m != rp->r_month)
     {
-        i = len_months[xk_time_isleap(y)][m];
+        i = len_months[time_isleap(y)][m];
         dayoff = oadd(dayoff, i);
         ++m;
     }
     i = rp->r_dayofmonth;
-    if (m == XK_TIME_TM_FEBRUARY && i == 29 && !xk_time_isleap(y))
+    if (m == TIME_TM_FEBRUARY && i == 29 && !time_isleap(y))
     {
         if (rp->r_dycode == DC_DOWLEQ)
             --i;
@@ -1387,25 +1387,25 @@ static zic_t rpytime(const struct rule* rp, zic_t wantedy)
     {
         zic_t wday;
 
-#define XK_TIME_LDAYSPERWEEK ((zic_t)XK_TIME_DAYSPERWEEK)
-        wday = XK_TIME_EPOCH_WDAY;
+#define TIME_LDAYSPERWEEK ((zic_t)TIME_DAYSPERWEEK)
+        wday = TIME_EPOCH_WDAY;
 
         /*
          * Don't trust mod of negative numbers.
          */
         if (dayoff >= 0)
-            wday = (wday + dayoff) % XK_TIME_LDAYSPERWEEK;
+            wday = (wday + dayoff) % TIME_LDAYSPERWEEK;
         else
         {
-            wday -= ((-dayoff) % XK_TIME_LDAYSPERWEEK);
+            wday -= ((-dayoff) % TIME_LDAYSPERWEEK);
             if (wday < 0)
-                wday += XK_TIME_LDAYSPERWEEK;
+                wday += TIME_LDAYSPERWEEK;
         }
         while (wday != rp->r_wday)
             if (rp->r_dycode == DC_DOWGEQ)
             {
                 dayoff = oadd(dayoff, 1);
-                if (++wday >= XK_TIME_LDAYSPERWEEK)
+                if (++wday >= TIME_LDAYSPERWEEK)
                     wday = 0;
                 ++i;
             }
@@ -1413,19 +1413,19 @@ static zic_t rpytime(const struct rule* rp, zic_t wantedy)
             {
                 dayoff = oadd(dayoff, -1);
                 if (--wday < 0)
-                    wday = XK_TIME_LDAYSPERWEEK - 1;
+                    wday = TIME_LDAYSPERWEEK - 1;
                 --i;
             }
-        if (i < 0 || i >= len_months[xk_time_isleap(y)][m])
+        if (i < 0 || i >= len_months[time_isleap(y)][m])
         {
             /* nothing to do */
         }
     }
-    if (dayoff < min_time / XK_TIME_SECSPERDAY)
+    if (dayoff < min_time / TIME_SECSPERDAY)
         return min_time;
-    if (dayoff > max_time / XK_TIME_SECSPERDAY)
+    if (dayoff > max_time / TIME_SECSPERDAY)
         return max_time;
-    t = (zic_t)dayoff * XK_TIME_SECSPERDAY;
+    t = (zic_t)dayoff * TIME_SECSPERDAY;
 
     return tadd(t, rp->r_tod);
 }
@@ -1604,7 +1604,7 @@ static void rulesub(struct rule* rp, const char* loyearp, const char* hiyearp, c
         }
     }
     rp->r_tod = gethms(dp, "invalid time of day");
-    xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )dp);
+    pg_parser_mcxt_free(ZIC_MCXT, (void* )dp);
 
     /*
      * Year work.
@@ -1700,13 +1700,13 @@ static void rulesub(struct rule* rp, const char* loyearp, const char* hiyearp, c
             if (*ep++ != '=')
             {
                 fprintf(stderr, "invalid day of month");
-                xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )dp);
+                pg_parser_mcxt_free(ZIC_MCXT, (void* )dp);
                 return;
             }
             if ((lp = byword(dp, wday_names)) == NULL)
             {
                 fprintf(stderr, "invalid weekday name");
-                xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )dp);
+                pg_parser_mcxt_free(ZIC_MCXT, (void* )dp);
                 return;
             }
             rp->r_wday = lp->l_value;
@@ -1716,11 +1716,11 @@ static void rulesub(struct rule* rp, const char* loyearp, const char* hiyearp, c
             (rp->r_dayofmonth > len_months[1][rp->r_month]))
         {
             fprintf(stderr, "invalid day of month");
-            xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )dp);
+            pg_parser_mcxt_free(ZIC_MCXT, (void* )dp);
             return;
         }
     }
-    xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )dp);
+    pg_parser_mcxt_free(ZIC_MCXT, (void* )dp);
 }
 
 static void time_overflow(void)
@@ -1789,16 +1789,16 @@ static zic_t gethms(char const *string, char const *errstring)
         return 0;
     }
     if (hh < 0 ||
-        mm < 0 || mm >= XK_TIME_MINSPERHOUR ||
-        ss < 0 || ss > XK_TIME_SECSPERMIN)
+        mm < 0 || mm >= TIME_MINSPERHOUR ||
+        ss < 0 || ss > TIME_SECSPERMIN)
     {
         fprintf(stderr, "%s", errstring);
 
         return 0;
     }
     /* Some compilers warn that this test is unsatisfiable for 32-bit ints */
-#if INT_MAX > XK_TIME_INT32_MAX
-    if (ZIC_MAX / XK_TIME_SECSPERHOUR < hh)
+#if INT_MAX > TIME_INT32_MAX
+    if (ZIC_MAX / TIME_SECSPERHOUR < hh)
     {
         fprintf(stderr, "time overflow");
         return 0;
@@ -1806,7 +1806,7 @@ static zic_t gethms(char const *string, char const *errstring)
 #endif
     ss += 5 + ((ss ^ 1) & (xr == '0')) <= tenths; /* Round to even.  */
 
-    return oadd(sign * (zic_t)hh * XK_TIME_SECSPERHOUR, sign * (mm * XK_TIME_SECSPERMIN + ss));
+    return oadd(sign * (zic_t)hh * TIME_SECSPERHOUR, sign * (mm * TIME_SECSPERMIN + ss));
 }
 
 static void* memcheck(void* ptr)
@@ -1819,7 +1819,7 @@ static void* memcheck(void* ptr)
 
 static char* ecpyalloc(char const *str)
 {
-    return (char* )memcheck(xk_pg_parser_mcxt_strdup(str));
+    return (char* )memcheck(pg_parser_mcxt_strdup(str));
 }
 
 static bool componentcheck(char const *name, char const *component, char const *component_end)
@@ -1994,7 +1994,7 @@ static bool is_space(char a)
 
 static void memory_exhausted(const char* msg)
 {
-    fprintf(stderr, "[xk_pg_parser_zic] Memory exhausted: %s\n", msg);
+    fprintf(stderr, "[pg_parser_zic] Memory exhausted: %s\n", msg);
 }
 
 static size_t size_product(size_t nitems, size_t itemsize)
@@ -2034,7 +2034,7 @@ static char** getfields(char* cp)
                         ++dp;
                     else
                     {
-                        fprintf(stderr, ("[xk_pg_parser_zic] Odd number of quotation marks"));
+                        fprintf(stderr, ("[pg_parser_zic] Odd number of quotation marks"));
                         return NULL;
                     }
         } while (*cp && *cp != '#' && !is_space(*cp));
@@ -2059,7 +2059,7 @@ static void infile(const char* name, struct zicinfo* local_zicinfo)
     char**                  tzdata = NULL;
     lineno_t                tzdataSize = 0;
 
-    tzdata = xk_pg_parser_get_tzdata_info(name, &tzdataSize);
+    tzdata = pg_parser_get_tzdata_info(name, &tzdataSize);
     if (NULL == tzdata)
         return;
 
@@ -2113,13 +2113,13 @@ static void infile(const char* name, struct zicinfo* local_zicinfo)
                         return;
                 }
         }
-        xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )fields);
+        pg_parser_mcxt_free(ZIC_MCXT, (void* )fields);
     }
     if (wantcont)
         fprintf(stderr, "expected continuation line not found");
 }
 
-static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount, xk_pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo)
+static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount, pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo)
 {
     const struct zone*          zp = NULL;
     struct rule*                rp = NULL;
@@ -2160,8 +2160,8 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount, xk_pg_parse
 
     envvar = (char* )emalloc(max_envvar_len + 1);
 
-    XK_TIME_INITIALIZE(untiltime);
-    XK_TIME_INITIALIZE(starttime);
+    TIME_INITIALIZE(untiltime);
+    TIME_INITIALIZE(starttime);
 
     /*
      * Now. . .finally. . .generate some useful data!
@@ -2177,7 +2177,7 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount, xk_pg_parse
      */
     startttisstd = false;
     startttisut = false;
-    local_zicinfo->min_year = local_zicinfo->max_year = XK_TIME_EPOCH_YEAR;
+    local_zicinfo->min_year = local_zicinfo->max_year = TIME_EPOCH_YEAR;
     if (local_zicinfo->leapseen)
     {
         updateminmax(local_zicinfo->leapminyear, local_zicinfo);
@@ -2222,7 +2222,7 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount, xk_pg_parse
          */
         enum
         {
-            years_of_observations = XK_TIME_YEARSPERREPEAT + 2
+            years_of_observations = TIME_YEARSPERREPEAT + 2
         };
 
         if (local_zicinfo->min_year >= ZIC_MIN + years_of_observations)
@@ -2323,7 +2323,7 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount, xk_pg_parse
                     zic_t offset;
 
 
-                    XK_TIME_INITIALIZE(ktime);
+                    TIME_INITIALIZE(ktime);
                     if (useuntil)
                     {
                         /*
@@ -2485,7 +2485,7 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount, xk_pg_parse
         struct rule xr;
         struct attype* lastat;
 
-        xr.r_month = XK_TIME_TM_JANUARY;
+        xr.r_month = TIME_TM_JANUARY;
         xr.r_dycode = DC_DOM;
         xr.r_dayofmonth = 1;
         xr.r_tod = 0;
@@ -2501,17 +2501,17 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount, xk_pg_parse
         }
     }
     writezone(envvar, version, defaulttype, local_tzdata, local_zicinfo);
-    xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )startbuf);
-    xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )ab);
-    xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )envvar);
+    pg_parser_mcxt_free(ZIC_MCXT, (void* )startbuf);
+    pg_parser_mcxt_free(ZIC_MCXT, (void* )ab);
+    pg_parser_mcxt_free(ZIC_MCXT, (void* )envvar);
 }
 
-static void writezone(const char* const string, char version, int32_t defaulttype, xk_pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo)
+static void writezone(const char* const string, char version, int32_t defaulttype, pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo)
 {
     ptrdiff_t               i,
                             j;
     int32_t                 pass;
-    struct xk_time_tzhead   tzh;
+    struct time_tzhead   tzh;
     zic_t                   one = 1;
     zic_t                   y2038_boundary = one << 31;
     ptrdiff_t               nats = local_zicinfo->timecnt + WORK_AROUND_QTBUG_53071;
@@ -2520,7 +2520,7 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
      * Allocate the ATS and TYPES arrays via a single malloc, as this is a bit
      * faster.
      */
-    zic_t*                  ats = (zic_t *)emalloc(XK_PG_PARSER_MAXALIGN(size_product(nats, sizeof *ats + 1)));
+    zic_t*                  ats = (zic_t *)emalloc(PG_PARSER_MAXALIGN(size_product(nats, sizeof *ats + 1)));
 
     void*                   typesptr = ats + nats;
     unsigned char*          types = (unsigned char* )typesptr;
@@ -2610,7 +2610,7 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
     rangeall.count = local_zicinfo->timecnt;
     rangeall.leapcount = local_zicinfo->leapcnt;
     range64 = limitrange(rangeall, lo_time, hi_time, ats, types, local_zicinfo);
-    range32 = limitrange(range64, XK_TIME_INT32_MIN, XK_TIME_INT32_MAX, ats, types, local_zicinfo);
+    range32 = limitrange(range64, TIME_INT32_MIN, TIME_INT32_MAX, ats, types, local_zicinfo);
 
     for (pass = 1; pass <= 2; ++pass)
     {
@@ -2626,15 +2626,15 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
                         hicut;
         zic_t           lo;
         int32_t         old0;
-        char            omittype[XK_TIME_TZ_MAX_TYPES];
-        int32_t         typemap[XK_TIME_TZ_MAX_TYPES];
+        char            omittype[TIME_TZ_MAX_TYPES];
+        int32_t         typemap[TIME_TZ_MAX_TYPES];
         int32_t         thistypecnt,
                         stdcnt,
                         utcnt;
-        char            thischars[XK_TIME_TZ_MAX_CHARS];
+        char            thischars[TIME_TZ_MAX_CHARS];
         int32_t         thischarcnt;
         bool            toomanytimes;
-        int32_t         indmap[XK_TIME_TZ_MAX_CHARS];
+        int32_t         indmap[TIME_TZ_MAX_CHARS];
 
         if (pass == 1)
         {
@@ -2649,15 +2649,15 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
              * value, unless -r specifies a low cutoff that excludes some
              * 32-bit timestamps.
              */
-            thisdefaulttype = (lo_time <= XK_TIME_INT32_MIN ? range64.defaulttype : range32.defaulttype);
+            thisdefaulttype = (lo_time <= TIME_INT32_MIN ? range64.defaulttype : range32.defaulttype);
 
             thistimei = range32.base;
             thistimecnt = range32.count;
             toomanytimes = thistimecnt >> 31 >> 1 != 0;
             thisleapi = range32.leapbase;
             thisleapcnt = range32.leapcount;
-            locut = XK_TIME_INT32_MIN < lo_time;
-            hicut = hi_time < XK_TIME_INT32_MAX;
+            locut = TIME_INT32_MIN < lo_time;
+            hicut = hi_time < TIME_INT32_MAX;
         }
         else
         {
@@ -2802,8 +2802,8 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
             thistypecnt = thischarcnt = 1;
             thistimelim = thistimei;
         }
-        rmemset1(&tzh, 0, 0, sizeof(struct xk_time_tzhead));
-        rmemcpy1(tzh.tzh_magic, 0, XK_TIME_TZ_MAGIC, sizeof tzh.tzh_magic);
+        rmemset1(&tzh, 0, 0, sizeof(struct time_tzhead));
+        rmemcpy1(tzh.tzh_magic, 0, TIME_TZ_MAGIC, sizeof tzh.tzh_magic);
         tzh.tzh_version[0] = version;
         convert(utcnt, tzh.tzh_ttisutcnt);
         convert(stdcnt, tzh.tzh_ttisstdcnt);
@@ -2824,9 +2824,9 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
         {
             /* Output a minimal data block with just one time type.  */
             puttzcode(0, local_tzdata);
-            xk_pg_parser_appendStringInfoChar(local_tzdata, 0);
-            xk_pg_parser_appendStringInfoChar(local_tzdata, 0);
-            xk_pg_parser_appendStringInfoChar(local_tzdata, 0);
+            pg_parser_appendStringInfoChar(local_tzdata, 0);
+            pg_parser_appendStringInfoChar(local_tzdata, 0);
+            pg_parser_appendStringInfoChar(local_tzdata, 0);
             continue;
         }
 
@@ -2834,7 +2834,7 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
          * Output a LO_TIME transition if needed; see limitrange. But do not
          * go below the minimum representable value for this pass.
          */
-        lo = pass == 1 && lo_time < XK_TIME_INT32_MIN ? XK_TIME_INT32_MIN : lo_time;
+        lo = pass == 1 && lo_time < TIME_INT32_MIN ? TIME_INT32_MIN : lo_time;
 
         if (locut)
             puttzcodepass(lo, pass, local_tzdata);
@@ -2848,14 +2848,14 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
             puttzcodepass(hi_time + 1, pass, local_tzdata);
         currenttype = 0;
         if (locut)
-            xk_pg_parser_appendStringInfoChar(local_tzdata, currenttype);
+            pg_parser_appendStringInfoChar(local_tzdata, currenttype);
         for (i = thistimei; i < thistimelim; ++i)
         {
             currenttype = typemap[types[i]];
-            xk_pg_parser_appendStringInfoChar(local_tzdata, currenttype);
+            pg_parser_appendStringInfoChar(local_tzdata, currenttype);
         }
         if (hicut)
-            xk_pg_parser_appendStringInfoChar(local_tzdata, currenttype);
+            pg_parser_appendStringInfoChar(local_tzdata, currenttype);
 
         for (i = old0; i < local_zicinfo->typecnt; i++)
         {
@@ -2866,8 +2866,8 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
             if (!omittype[h])
             {
                 puttzcode(local_zicinfo->utoffs[h], local_tzdata);
-                xk_pg_parser_appendStringInfoChar(local_tzdata, local_zicinfo->isdsts[h]);
-                xk_pg_parser_appendStringInfoChar(local_tzdata, indmap[local_zicinfo->desigidx[h]]);
+                pg_parser_appendStringInfoChar(local_tzdata, local_zicinfo->isdsts[h]);
+                pg_parser_appendStringInfoChar(local_tzdata, indmap[local_zicinfo->desigidx[h]]);
             }
         }
         if (thischarcnt != 0)
@@ -2906,14 +2906,14 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
         if (stdcnt != 0)
             for (i = old0; i < local_zicinfo->typecnt; i++)
                 if (!omittype[i])
-                    xk_pg_parser_appendStringInfoChar(local_tzdata, local_zicinfo->ttisstds[i]);
+                    pg_parser_appendStringInfoChar(local_tzdata, local_zicinfo->ttisstds[i]);
         if (utcnt != 0)
             for (i = old0; i < local_zicinfo->typecnt; i++)
                 if (!omittype[i])
-                    xk_pg_parser_appendStringInfoChar(local_tzdata, local_zicinfo->ttisuts[i]);
+                    pg_parser_appendStringInfoChar(local_tzdata, local_zicinfo->ttisuts[i]);
     }
-    xk_pg_parser_appendStringInfo(local_tzdata, "\n%s\n", string);
-    xk_pg_parser_mcxt_free(ZIC_MCXT, (void* )ats);
+    pg_parser_appendStringInfo(local_tzdata, "\n%s\n", string);
+    pg_parser_mcxt_free(ZIC_MCXT, (void* )ats);
 }
 
 #define swapcode(TYPE, parmi, parmj, n)             \
@@ -3071,7 +3071,7 @@ loop:SWAPINIT(a, es);
 }
 
 /* important function */
-void xk_pg_parser_zic_get_tzdata(const char* dbtz_name, xk_pg_parser_StringInfo local_tzdata)
+void pg_parser_zic_get_tzdata(const char* dbtz_name, pg_parser_StringInfo local_tzdata)
 {
     char*               input_tzdata = NULL;
     int32_t             i,
@@ -3082,9 +3082,9 @@ void xk_pg_parser_zic_get_tzdata(const char* dbtz_name, xk_pg_parser_StringInfo 
     struct link*        links = NULL;
     ptrdiff_t           nlinks;
 
-    if (!xk_pg_parser_mcxt_malloc(ZIC_MCXT, (void* *)(&local_zicinfo), sizeof(struct zicinfo)))
+    if (!pg_parser_mcxt_malloc(ZIC_MCXT, (void* *)(&local_zicinfo), sizeof(struct zicinfo)))
     {
-        fprintf(stderr, "can't malloc in xk_pg_parser_zic_get_tzdata");
+        fprintf(stderr, "can't malloc in pg_parser_zic_get_tzdata");
     }
     local_zicinfo->max_abbrvar_len = PERCENT_Z_LEN_BOUND;
     /* 转换 local_tzdata_info.h 中的数组。 */

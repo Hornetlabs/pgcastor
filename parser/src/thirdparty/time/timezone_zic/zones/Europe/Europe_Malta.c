@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Europe_Malta[] =
+char* PG_Europe_Malta[] =
 {
     (char *)"Rule	Italy	1916	only	-	Jun	 3	24:00	1:00	S",
     (char *)"Rule	Italy	1916	1917	-	Sep	30	24:00	0	-",

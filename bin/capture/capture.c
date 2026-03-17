@@ -9,8 +9,8 @@
 #include "port/file/fd.h"
 #include "utils/path/path.h"
 #include "utils/list/list_func.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "command/cmd.h"
 
 static void
@@ -133,7 +133,7 @@ int main(int argc, char **argv)
     if(strlen(dbtype) == strlen(DBTYPE_POSTGRES)
         && 0 == strcmp(dbtype, DBTYPE_POSTGRES))
     {
-        g_idbtype = XK_DATABASE_TYPE_POSTGRESQL;
+        g_idbtype = DATABASE_TYPE_POSTGRESQL;
         if(strlen(dbversion) == strlen(DBVERSION_POSTGRES_12)
             && 0 == strcmp(dbversion, DBVERSION_POSTGRES_12))
         {

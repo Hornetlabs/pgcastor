@@ -1,5 +1,5 @@
 /**
- * @file                xk_pg_parser_thirdparty_timezone_tz.h
+ * @file                pg_parser_thirdparty_timezone_tz.h
  * @author              bytesync
  * @brief               定义时区使用的数据类型
  * @version             0.1
@@ -9,16 +9,16 @@
  *
  */
 
-#ifndef XK_PG_PARSER_THIRDPARTY_TIMEZONE_TZ
-#define XK_PG_PARSER_THIRDPARTY_TIMEZONE_TZ
+#ifndef PG_PARSER_THIRDPARTY_TIMEZONE_TZ
+#define PG_PARSER_THIRDPARTY_TIMEZONE_TZ
 
-#include "thirdparty/time/time/xk_pg_parser_thirdparty_timezone_time.h"
-#include "thirdparty/time/timezone/xk_pg_parser_thirdparty_timezone_tzfile.h"
+#include "thirdparty/time/time/pg_parser_thirdparty_timezone_time.h"
+#include "thirdparty/time/timezone/pg_parser_thirdparty_timezone_tzfile.h"
 
-#define XK_TIME_SMALLEST(a, b)          (((a) < (b)) ? (a) : (b))
-#define XK_TIME_BIGGEST(a, b)           (((a) > (b)) ? (a) : (b))
+#define TIME_SMALLEST(a, b)          (((a) < (b)) ? (a) : (b))
+#define TIME_BIGGEST(a, b)           (((a) > (b)) ? (a) : (b))
 
-struct xk_time_ttinfo
+struct time_ttinfo
 {                                       /* time type information */
     int32_t             tt_utoff;       /* UT offset in seconds */
     bool                tt_isdst;       /* used to set tm_isdst */
@@ -27,13 +27,13 @@ struct xk_time_ttinfo
     bool                tt_ttisut;      /* transition is UT */
 };
 
-struct xk_time_lsinfo
+struct time_lsinfo
 {                                               /* leap second information */
-    xk_pg_parser_time_t      ls_trans;       /* transition time */
+    pg_parser_time_t      ls_trans;       /* transition time */
     int64_t                     ls_corr;        /* correction to apply */
 };
 
-struct xk_pg_parser_time_state
+struct pg_parser_time_state
 {
     int32_t                     leapcnt;
     int32_t                     timecnt;
@@ -41,12 +41,12 @@ struct xk_pg_parser_time_state
     int32_t                     charcnt;
     bool                        goback;
     bool                        goahead;
-    xk_pg_parser_time_t      ats[XK_TIME_TZ_MAX_TIMES];
-    unsigned char               types[XK_TIME_TZ_MAX_TIMES];
-    struct xk_time_ttinfo       ttis[XK_TIME_TZ_MAX_TYPES];
-    char                        chars[XK_TIME_BIGGEST(XK_TIME_BIGGEST(XK_TIME_TZ_MAX_CHARS + 1, 4),
-                                                                      (2 * (XK_TIME_TZ_STRLEN_MAX + 1)))];
-    struct xk_time_lsinfo       lsis[XK_TIME_TZ_MAX_LEAPS];
+    pg_parser_time_t      ats[TIME_TZ_MAX_TIMES];
+    unsigned char               types[TIME_TZ_MAX_TIMES];
+    struct time_ttinfo       ttis[TIME_TZ_MAX_TYPES];
+    char                        chars[TIME_BIGGEST(TIME_BIGGEST(TIME_TZ_MAX_CHARS + 1, 4),
+                                                                      (2 * (TIME_TZ_STRLEN_MAX + 1)))];
+    struct time_lsinfo       lsis[TIME_TZ_MAX_LEAPS];
 
     /*
      * The time type to use for early times or if no transitions. It is always
@@ -57,11 +57,11 @@ struct xk_pg_parser_time_state
 };
 
 
-struct xk_pg_parser_tz
+struct pg_parser_tz
 {
     /* TZname contains the canonically-cased name of the timezone */
-    char                                TZname[XK_TIME_TZ_STRLEN_MAX + 1];
-    struct xk_pg_parser_time_state   state;
+    char                                TZname[TIME_TZ_STRLEN_MAX + 1];
+    struct pg_parser_time_state   state;
 };
 
-#endif /* XK_PG_PARSER_THIRDPARTY_TIMEZONE_TZ */
+#endif /* PG_PARSER_THIRDPARTY_TIMEZONE_TZ */

@@ -11,7 +11,7 @@ typedef enum DECODINGCONTEXT_STAT
     DECODINGCONTEXT_RESUME
 } decodingcontext_stat;
 
-typedef xk_pg_parser_translog_pre decodewalpre;
+typedef pg_parser_translog_pre decodewalpre;
 
 typedef struct DECODINGCONTEXT_PRIVDATACALLBACK
 {

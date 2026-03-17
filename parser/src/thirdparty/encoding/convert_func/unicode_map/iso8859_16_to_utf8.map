@@ -3,7 +3,7 @@
 
 static const uint32_t iso8859_16_to_unicode_tree_table[256];
 
-static const xk_character_mb_radix_tree iso8859_16_to_unicode_tree =
+static const character_mb_radix_tree iso8859_16_to_unicode_tree =
 {
   NULL, /* 16-bit table not used */
   iso8859_16_to_unicode_tree_table,

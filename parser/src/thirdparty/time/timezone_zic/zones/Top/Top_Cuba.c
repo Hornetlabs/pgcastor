@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Cuba[] =
+char* PG_Cuba[] =
 {
     (char *)"Rule	Cuba	1928	only	-	Jun	10	0:00	1:00	D",
     (char *)"Rule	Cuba	1928	only	-	Oct	10	0:00	0	S",

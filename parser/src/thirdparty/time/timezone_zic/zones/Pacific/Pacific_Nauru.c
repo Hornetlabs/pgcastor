@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Pacific_Nauru[] =
+char* PG_Pacific_Nauru[] =
 {
     (char *)"Zone	Pacific/Nauru	11:07:40 -	LMT	1921 Jan 15 # Uaobe",
     (char *)"			11:30	-	NRT	1942 Aug 29",

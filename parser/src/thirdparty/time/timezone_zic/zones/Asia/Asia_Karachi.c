@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Karachi[] =
+char* PG_Asia_Karachi[] =
 {
     (char *)"Rule Pakistan	2002	only	-	Apr	Sun>=2	0:00	1:00	S",
     (char *)"Rule Pakistan	2002	only	-	Oct	Sun>=2	0:00	0	-",

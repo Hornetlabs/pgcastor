@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Beirut[] =
+char* PG_Asia_Beirut[] =
 {
     (char *)"Rule	Lebanon	1920	only	-	Mar	28	0:00	1:00	S",
     (char *)"Rule	Lebanon	1920	only	-	Oct	25	0:00	0	-",

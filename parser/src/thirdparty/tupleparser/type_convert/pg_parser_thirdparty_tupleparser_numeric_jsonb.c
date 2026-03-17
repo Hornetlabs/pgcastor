@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_numeric.c
+ * @file pg_parser_thirdparty_tupleparser_numeric.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -8,19 +8,19 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "common/xk_pg_parser_translog.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgsfunc.h"
-#include "thirdparty/tupleparser/toast/xk_pg_parser_thirdparty_tupleparser_toast.h"
-#include "thirdparty/stringinfo/xk_pg_parser_thirdparty_stringinfo.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_fmgr.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "common/pg_parser_translog.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgsfunc.h"
+#include "thirdparty/tupleparser/toast/pg_parser_thirdparty_tupleparser_toast.h"
+#include "thirdparty/stringinfo/pg_parser_thirdparty_stringinfo.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_fmgr.h"
 
 
 #define PGFUNC_NUMERIC_MCXT NULL
 #define PGFUNC_JSONB_MCXT NULL
 
-#define XK_PG_PARSER_NUMERIC_OUT_OID 1702
+#define PG_PARSER_NUMERIC_OUT_OID 1702
 
 typedef int16_t NumericDigit;
 
@@ -78,16 +78,16 @@ typedef struct NumericVar
 #define NUMERIC_IS_NAN(n)        (NUMERIC_FLAGBITS(n) == NUMERIC_NAN)
 #define NUMERIC_IS_SHORT(n)        (NUMERIC_FLAGBITS(n) == NUMERIC_SHORT)
 
-#define NUMERIC_HDRSZ    (XK_PG_PARSER_VARHDRSZ + sizeof(uint16_t) + sizeof(int16_t))
-#define NUMERIC_HDRSZ_SHORT (XK_PG_PARSER_VARHDRSZ + sizeof(uint16_t))
+#define NUMERIC_HDRSZ    (PG_PARSER_VARHDRSZ + sizeof(uint16_t) + sizeof(int16_t))
+#define NUMERIC_HDRSZ_SHORT (PG_PARSER_VARHDRSZ + sizeof(uint16_t))
 
 #define NUMERIC_HEADER_IS_SHORT(n) (((n)->choice.n_header & 0x8000) != 0)
 #define NUMERIC_HEADER_SIZE(n) \
-    (XK_PG_PARSER_VARHDRSZ + sizeof(uint16_t) + \
+    (PG_PARSER_VARHDRSZ + sizeof(uint16_t) + \
      (NUMERIC_HEADER_IS_SHORT(n) ? 0 : sizeof(int16_t)))
 
 #define NUMERIC_NDIGITS(num) \
-    ((XK_PG_PARSER_VARSIZE(num) - NUMERIC_HEADER_SIZE(num)) / sizeof(NumericDigit))
+    ((PG_PARSER_VARSIZE(num) - NUMERIC_HEADER_SIZE(num)) / sizeof(NumericDigit))
 
 #define NUMERIC_DSCALE_MASK                0x3FFF
 #define NUMERIC_SHORT_DSCALE_MASK          0x1F80
@@ -132,7 +132,7 @@ static void init_var_from_num(Numeric num, NumericVar *dest)
 /*
  * get_str_from_var() -
  *
- *    Convert a var to xk_pg_parser_text representation (guts of numeric_out).
+ *    Convert a var to pg_parser_text representation (guts of numeric_out).
  *    The var is displayed to the number of digits indicated by its dscale.
  *    Returns a palloc'd string.
  */
@@ -164,7 +164,7 @@ static char *get_str_from_var(const NumericVar *var)
     if (i <= 0)
         i = 1;
 
-    if(!xk_pg_parser_mcxt_malloc(PGFUNC_NUMERIC_MCXT,
+    if(!pg_parser_mcxt_malloc(PGFUNC_NUMERIC_MCXT,
                                 (void**) &str,
                                  i + dscale + DEC_DIGITS + 2))
         return NULL;
@@ -275,11 +275,11 @@ static char *get_str_from_var(const NumericVar *var)
  *
  *    Output function for numeric data type
  */
-xk_pg_parser_Datum numeric_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum numeric_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     bool          is_toast = false;
     bool          need_free = false;
-    Numeric       num = (Numeric) xk_pg_parser_detoast_datum((struct xk_pg_parser_varlena *) attr,
+    Numeric       num = (Numeric) pg_parser_detoast_datum((struct pg_parser_varlena *) attr,
                                                              &is_toast,
                                                              &need_free,
                                                              info->zicinfo->dbtype,
@@ -290,15 +290,15 @@ xk_pg_parser_Datum numeric_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypout
     if (is_toast)
     {
         info->valueinfo = INFO_COL_IS_TOAST;
-        info->valuelen = sizeof(struct xk_pg_parser_varatt_external);
-        return (xk_pg_parser_Datum) num;
+        info->valuelen = sizeof(struct pg_parser_varatt_external);
+        return (pg_parser_Datum) num;
     }
 
     /*
      * Handle NaN
      */
     if (NUMERIC_IS_NAN(num))
-        return (xk_pg_parser_Datum) xk_pg_parser_mcxt_strdup("NaN");
+        return (pg_parser_Datum) pg_parser_mcxt_strdup("NaN");
 
     /*
      * Get the number in the variable format.
@@ -308,8 +308,8 @@ xk_pg_parser_Datum numeric_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypout
     str = get_str_from_var(&x);
     info->valuelen = strlen(str);
     if (need_free)
-        xk_pg_parser_mcxt_free(PGFUNC_NUMERIC_MCXT, num);
-    return (xk_pg_parser_Datum) str;
+        pg_parser_mcxt_free(PGFUNC_NUMERIC_MCXT, num);
+    return (pg_parser_Datum) str;
 }
 
 /* -------------------------------- jsonb -------------------------------- */
@@ -328,10 +328,10 @@ typedef uint32_t JEntry;
 #define JsonContainerIsArray(jc)     (((jc)->header & JB_FARRAY) != 0)
 
 /* convenience macros for accessing the root container in a Jsonb datum */
-#define JB_ROOT_COUNT(jbp_)         (*(uint32 *)  XK_PG_PARSER_VARDATA(jbp_) & JB_CMASK)
-#define JB_ROOT_IS_SCALAR(jbp_)     ((*(uint32 *) XK_PG_PARSER_VARDATA(jbp_) & JB_FSCALAR) != 0)
-#define JB_ROOT_IS_OBJECT(jbp_)     ((*(uint32 *) XK_PG_PARSER_VARDATA(jbp_) & JB_FOBJECT) != 0)
-#define JB_ROOT_IS_ARRAY(jbp_)      ((*(uint32 *) XK_PG_PARSER_VARDATA(jbp_) & JB_FARRAY) != 0)
+#define JB_ROOT_COUNT(jbp_)         (*(uint32 *)  PG_PARSER_VARDATA(jbp_) & JB_CMASK)
+#define JB_ROOT_IS_SCALAR(jbp_)     ((*(uint32 *) PG_PARSER_VARDATA(jbp_) & JB_FSCALAR) != 0)
+#define JB_ROOT_IS_OBJECT(jbp_)     ((*(uint32 *) PG_PARSER_VARDATA(jbp_) & JB_FOBJECT) != 0)
+#define JB_ROOT_IS_ARRAY(jbp_)      ((*(uint32 *) PG_PARSER_VARDATA(jbp_) & JB_FARRAY) != 0)
 
 #define JENTRY_OFFLENMASK           0x0FFFFFFF
 #define JENTRY_TYPEMASK             0x70000000
@@ -511,7 +511,7 @@ static JsonbIterator *iteratorFromContainer(JsonbContainer *container, JsonbIter
 {
     JsonbIterator *it;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_JSONB_MCXT, (void **)&it, sizeof(JsonbIterator));
+    pg_parser_mcxt_malloc(PGFUNC_JSONB_MCXT, (void **)&it, sizeof(JsonbIterator));
     it->container = container;
     it->parent = parent;
     it->nElems = JsonContainerSize(container);
@@ -562,7 +562,7 @@ static JsonbIterator *freeAndGetParent(JsonbIterator *it)
 {
     JsonbIterator *v = it->parent;
 
-    xk_pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, it);
+    pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, it);
     return v;
 }
 
@@ -649,7 +649,7 @@ static void fillJsonbValue(JsonbContainer *container,
     else if (JBE_ISNUMERIC(entry))
     {
         result->type = jbvNumeric;
-        result->val.numeric = (Numeric) (base_addr + XK_PG_PARSER_INTALIGN(offset));
+        result->val.numeric = (Numeric) (base_addr + PG_PARSER_INTALIGN(offset));
     }
     else if (JBE_ISBOOL_TRUE(entry))
     {
@@ -665,9 +665,9 @@ static void fillJsonbValue(JsonbContainer *container,
     {
         result->type = jbvBinary;
         /* Remove alignment padding from data pointer and length */
-        result->val.binary.data = (JsonbContainer *) (base_addr + XK_PG_PARSER_INTALIGN(offset));
+        result->val.binary.data = (JsonbContainer *) (base_addr + PG_PARSER_INTALIGN(offset));
         result->val.binary.len = getJsonbLength(container, index) -
-            (XK_PG_PARSER_INTALIGN(offset) - offset);
+            (PG_PARSER_INTALIGN(offset) - offset);
     }
 }
 
@@ -845,100 +845,100 @@ recurse:
     return -1;
 }
 
-static void add_indent(xk_pg_parser_StringInfo out, bool indent, int32_t level)
+static void add_indent(pg_parser_StringInfo out, bool indent, int32_t level)
 {
     if (indent)
     {
         int32_t i;
 
-        xk_pg_parser_appendStringInfoCharMacro(out, '\n');
+        pg_parser_appendStringInfoCharMacro(out, '\n');
         for (i = 0; i < level; i++)
-            xk_pg_parser_appendBinaryStringInfo(out, "    ", 4);
+            pg_parser_appendBinaryStringInfo(out, "    ", 4);
     }
 }
 
 /*
  * Produce a JSON string literal, properly escaping characters in the text.
  */
-static void escape_json(xk_pg_parser_StringInfo buf, const char *str)
+static void escape_json(pg_parser_StringInfo buf, const char *str)
 {
     const char *p;
 
-    xk_pg_parser_appendStringInfoCharMacro(buf, '"');
+    pg_parser_appendStringInfoCharMacro(buf, '"');
     for (p = str; *p; p++)
     {
         switch (*p)
         {
             case '\b':
-                xk_pg_parser_appendStringInfoString(buf, "\\b");
+                pg_parser_appendStringInfoString(buf, "\\b");
                 break;
             case '\f':
-                xk_pg_parser_appendStringInfoString(buf, "\\f");
+                pg_parser_appendStringInfoString(buf, "\\f");
                 break;
             case '\n':
-                xk_pg_parser_appendStringInfoString(buf, "\\n");
+                pg_parser_appendStringInfoString(buf, "\\n");
                 break;
             case '\r':
-                xk_pg_parser_appendStringInfoString(buf, "\\r");
+                pg_parser_appendStringInfoString(buf, "\\r");
                 break;
             case '\t':
-                xk_pg_parser_appendStringInfoString(buf, "\\t");
+                pg_parser_appendStringInfoString(buf, "\\t");
                 break;
             case '"':
-                xk_pg_parser_appendStringInfoString(buf, "\\\"");
+                pg_parser_appendStringInfoString(buf, "\\\"");
                 break;
             case '\\':
-                xk_pg_parser_appendStringInfoString(buf, "\\\\");
+                pg_parser_appendStringInfoString(buf, "\\\\");
                 break;
             default:
                 if ((unsigned char) *p < ' ')
-                    xk_pg_parser_appendStringInfo(buf, "\\u%04x", (int32_t) *p);
+                    pg_parser_appendStringInfo(buf, "\\u%04x", (int32_t) *p);
                 else
-                    xk_pg_parser_appendStringInfoCharMacro(buf, *p);
+                    pg_parser_appendStringInfoCharMacro(buf, *p);
                 break;
         }
     }
-    xk_pg_parser_appendStringInfoCharMacro(buf, '"');
+    pg_parser_appendStringInfoCharMacro(buf, '"');
 }
 
-static void jsonb_put_escaped_value(xk_pg_parser_StringInfo out,
+static void jsonb_put_escaped_value(pg_parser_StringInfo out,
                                     JsonbValue *scalarVal,
-                                    xk_pg_parser_extraTypoutInfo *info)
+                                    pg_parser_extraTypoutInfo *info)
 {
     bool is_toast = false;
     char *temp_str = NULL;
     switch (scalarVal->type)
     {
         case jbvNull:
-            xk_pg_parser_appendBinaryStringInfo(out, "null", 4);
+            pg_parser_appendBinaryStringInfo(out, "null", 4);
             break;
         case jbvString:
-            temp_str = xk_pg_parser_mcxt_strndup(scalarVal->val.string.val, scalarVal->val.string.len);
+            temp_str = pg_parser_mcxt_strndup(scalarVal->val.string.val, scalarVal->val.string.len);
             escape_json(out, temp_str);
-            xk_pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, temp_str);
+            pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, temp_str);
             break;
         case jbvNumeric:
-            temp_str = (char*)numeric_out((xk_pg_parser_Datum) (scalarVal->val.numeric),
+            temp_str = (char*)numeric_out((pg_parser_Datum) (scalarVal->val.numeric),
                                         info);
             if (is_toast)
             {
-                xk_pg_parser_log_errlog(info->zicinfo->debuglevel, "WARNING: unsupport toast numeric!\n");
-                xk_pg_parser_appendStringInfoString(out, "UNSUPPORT TOAST NUMERIC");
+                pg_parser_log_errlog(info->zicinfo->debuglevel, "WARNING: unsupport toast numeric!\n");
+                pg_parser_appendStringInfoString(out, "UNSUPPORT TOAST NUMERIC");
             }
             else
             {
-                xk_pg_parser_appendStringInfoString(out, temp_str);
+                pg_parser_appendStringInfoString(out, temp_str);
             }
-            xk_pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, temp_str);
+            pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, temp_str);
             break;
         case jbvBool:
             if (scalarVal->val.boolean)
-                xk_pg_parser_appendBinaryStringInfo(out, "true", 4);
+                pg_parser_appendBinaryStringInfo(out, "true", 4);
             else
-                xk_pg_parser_appendBinaryStringInfo(out, "false", 5);
+                pg_parser_appendBinaryStringInfo(out, "false", 5);
             break;
         default:
-            xk_pg_parser_log_errlog(info->zicinfo->debuglevel, "WARNING: unknown jsonb type!\n");
+            pg_parser_log_errlog(info->zicinfo->debuglevel, "WARNING: unknown jsonb type!\n");
     }
 }
 
@@ -948,7 +948,7 @@ static void jsonb_put_escaped_value(xk_pg_parser_StringInfo out,
 static char *JsonbToCStringWorker(JsonbContainer *in,
                                   int32_t estimated_len,
                                   bool indent,
-                                  xk_pg_parser_extraTypoutInfo *info)
+                                  pg_parser_extraTypoutInfo *info)
 {
     bool        first = true;
     JsonbIterator *it;
@@ -968,10 +968,10 @@ static char *JsonbToCStringWorker(JsonbContainer *in,
     bool        raw_scalar = false;
     bool        last_was_key = false;
     char *result = NULL;
-    xk_pg_parser_StringInfo out = NULL;
-    out = xk_pg_parser_makeStringInfo();
+    pg_parser_StringInfo out = NULL;
+    out = pg_parser_makeStringInfo();
 
-    xk_pg_parser_enlargeStringInfo(out, (estimated_len >= 0) ? estimated_len : 64);
+    pg_parser_enlargeStringInfo(out, (estimated_len >= 0) ? estimated_len : 64);
 
     it = JsonbIteratorInit(in);
 
@@ -983,12 +983,12 @@ static char *JsonbToCStringWorker(JsonbContainer *in,
         {
             case WJB_BEGIN_ARRAY:
                 if (!first)
-                    xk_pg_parser_appendBinaryStringInfo(out, ", ", ispaces);
+                    pg_parser_appendBinaryStringInfo(out, ", ", ispaces);
 
                 if (!v.val.array.rawScalar)
                 {
                     add_indent(out, use_indent && !last_was_key, level);
-                    xk_pg_parser_appendStringInfoCharMacro(out, '[');
+                    pg_parser_appendStringInfoCharMacro(out, '[');
                 }
                 else
                     raw_scalar = true;
@@ -998,24 +998,24 @@ static char *JsonbToCStringWorker(JsonbContainer *in,
                 break;
             case WJB_BEGIN_OBJECT:
                 if (!first)
-                    xk_pg_parser_appendBinaryStringInfo(out, ", ", ispaces);
+                    pg_parser_appendBinaryStringInfo(out, ", ", ispaces);
 
                 add_indent(out, use_indent && !last_was_key, level);
-                xk_pg_parser_appendStringInfoCharMacro(out, '{');
+                pg_parser_appendStringInfoCharMacro(out, '{');
 
                 first = true;
                 level++;
                 break;
             case WJB_KEY:
                 if (!first)
-                    xk_pg_parser_appendBinaryStringInfo(out, ", ", ispaces);
+                    pg_parser_appendBinaryStringInfo(out, ", ", ispaces);
                 first = true;
 
                 add_indent(out, use_indent, level);
 
                 /* json rules guarantee this is a string */
                 jsonb_put_escaped_value(out, &v, info);
-                xk_pg_parser_appendBinaryStringInfo(out, ": ", 2);
+                pg_parser_appendBinaryStringInfo(out, ": ", 2);
 
                 type = JsonbIteratorNext(&it, &v, false);
                 if (type == WJB_VALUE)
@@ -1035,7 +1035,7 @@ static char *JsonbToCStringWorker(JsonbContainer *in,
                 break;
             case WJB_ELEM:
                 if (!first)
-                    xk_pg_parser_appendBinaryStringInfo(out, ", ", ispaces);
+                    pg_parser_appendBinaryStringInfo(out, ", ", ispaces);
                 first = false;
 
                 if (!raw_scalar)
@@ -1047,30 +1047,30 @@ static char *JsonbToCStringWorker(JsonbContainer *in,
                 if (!raw_scalar)
                 {
                     add_indent(out, use_indent, level);
-                    xk_pg_parser_appendStringInfoCharMacro(out, ']');
+                    pg_parser_appendStringInfoCharMacro(out, ']');
                 }
                 first = false;
                 break;
             case WJB_END_OBJECT:
                 level--;
                 add_indent(out, use_indent, level);
-                xk_pg_parser_appendStringInfoCharMacro(out, '}');
+                pg_parser_appendStringInfoCharMacro(out, '}');
                 first = false;
                 break;
             default:
-                xk_pg_parser_log_errlog(info->zicinfo->debuglevel, "ERROR: unknown jsonb iterator token type\n");
+                pg_parser_log_errlog(info->zicinfo->debuglevel, "ERROR: unknown jsonb iterator token type\n");
         }
         use_indent = indent;
         last_was_key = redo_switch;
     }
-    xk_pg_parser_mcxt_malloc(PGFUNC_JSONB_MCXT, (void**) &result, out->len + 1);
+    pg_parser_mcxt_malloc(PGFUNC_JSONB_MCXT, (void**) &result, out->len + 1);
     rmemcpy0(result, 0, out->data, out->len);
 
     if (out)
     {
         if (out->data)
-            xk_pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, out->data);
-        xk_pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, out);
+            pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, out->data);
+        pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, out);
     }
 
     return result;
@@ -1078,7 +1078,7 @@ static char *JsonbToCStringWorker(JsonbContainer *in,
 
 static char *JsonbToCString(JsonbContainer *in,
                             int32_t estimated_len,
-                            xk_pg_parser_extraTypoutInfo *info)
+                            pg_parser_extraTypoutInfo *info)
 {
     return JsonbToCStringWorker(in, estimated_len, false, info);
 }
@@ -1086,12 +1086,12 @@ static char *JsonbToCString(JsonbContainer *in,
 /*
  * jsonb type output function
  */
-xk_pg_parser_Datum jsonb_out(xk_pg_parser_Datum attr,
-                             xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum jsonb_out(pg_parser_Datum attr,
+                             pg_parser_extraTypoutInfo *info)
 {
     bool                 is_toast = false;
     bool                 need_free = false;
-    Jsonb  *jb = (Jsonb *) xk_pg_parser_detoast_datum((struct xk_pg_parser_varlena *) attr,
+    Jsonb  *jb = (Jsonb *) pg_parser_detoast_datum((struct pg_parser_varlena *) attr,
                                                       &is_toast,
                                                       &need_free,
                                                        info->zicinfo->dbtype,
@@ -1101,17 +1101,17 @@ xk_pg_parser_Datum jsonb_out(xk_pg_parser_Datum attr,
     if (is_toast)
     {
         info->valueinfo = INFO_COL_IS_TOAST;
-        info->valuelen = sizeof(struct xk_pg_parser_varatt_external);
-        return (xk_pg_parser_Datum) jb;
+        info->valuelen = sizeof(struct pg_parser_varatt_external);
+        return (pg_parser_Datum) jb;
     }
 
-    out = JsonbToCString(&jb->root, XK_PG_PARSER_VARSIZE(jb), info);
+    out = JsonbToCString(&jb->root, PG_PARSER_VARSIZE(jb), info);
 
     info->valuelen = strlen(out);
 
     if (need_free)
-        xk_pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, jb);
-    return (xk_pg_parser_Datum) out;
+        pg_parser_mcxt_free(PGFUNC_JSONB_MCXT, jb);
+    return (pg_parser_Datum) out;
 }
 
 

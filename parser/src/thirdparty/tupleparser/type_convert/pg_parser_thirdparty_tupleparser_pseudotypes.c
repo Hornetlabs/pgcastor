@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_pseudotypes.c
+ * @file pg_parser_thirdparty_tupleparser_pseudotypes.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -8,9 +8,9 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgfunc.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgfunc.h"
 
 #define PGFUNC_PSEUDOTYPES_MCXT NULL
 
@@ -20,11 +20,11 @@
  * We allow this mainly so that "SELECT some_output_function(...)" does
  * what the user will expect.
  */
-xk_pg_parser_Datum cstring_out(xk_pg_parser_Datum attr)
+pg_parser_Datum cstring_out(pg_parser_Datum attr)
 {
     char *str = (char *) attr;
 
-    return (xk_pg_parser_Datum) xk_pg_parser_mcxt_strdup(str);
+    return (pg_parser_Datum) pg_parser_mcxt_strdup(str);
 }
 
 /*
@@ -32,17 +32,17 @@ xk_pg_parser_Datum cstring_out(xk_pg_parser_Datum attr)
  *
  * We allow this so that "SELECT function_returning_void(...)" works.
  */
-xk_pg_parser_Datum void_out(xk_pg_parser_Datum attr)
+pg_parser_Datum void_out(pg_parser_Datum attr)
 {
-    XK_PG_PARSER_UNUSED(attr);
-    return (xk_pg_parser_Datum) xk_pg_parser_mcxt_strdup("");
+    PG_PARSER_UNUSED(attr);
+    return (pg_parser_Datum) pg_parser_mcxt_strdup("");
 }
 
 /*
  * shell_out        - output routine for "shell" types.
  */
-xk_pg_parser_Datum shell_out(xk_pg_parser_Datum attr)
+pg_parser_Datum shell_out(pg_parser_Datum attr)
 {
-    XK_PG_PARSER_UNUSED(attr);
-    return (xk_pg_parser_Datum) NULL;
+    PG_PARSER_UNUSED(attr);
+    return (pg_parser_Datum) NULL;
 }

@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Barbados[] =
+char* PG_America_Barbados[] =
 {
     (char *)"Rule	Barb	1977	only	-	Jun	12	2:00	1:00	D",
     (char *)"Rule	Barb	1977	1978	-	Oct	Sun>=1	2:00	0	S",

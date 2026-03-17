@@ -7,8 +7,8 @@
 #include "utils/hash/hash_utils.h"
 #include "utils/hash/hash_search.h"
 #include "misc/misc_control.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "catalog/control.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
@@ -124,8 +124,8 @@ static catalogdata* catalog_colvalued2catalog_postgres(int dbversion, void* in_c
 
 static colvalue2catalog_bydbtype m_colvalue2catalog_dbtype_distribute[] =
 {
-    {XK_DATABASE_TYPE_NOP, NULL, NULL},
-    {XK_DATABASE_TYPE_POSTGRESQL,   catalog_colvalued2catalog_postgres, catalog_colvalue_no_filter_conversion_postgres}
+    {DATABASE_TYPE_NOP, NULL, NULL},
+    {DATABASE_TYPE_POSTGRESQL,   catalog_colvalued2catalog_postgres, catalog_colvalue_no_filter_conversion_postgres}
 };
 
 static int m_colvalue2catalog_bydbtype_cnt = (sizeof(m_colvalue2catalog_dbtype_distribute))/(sizeof(colvalue2catalog_bydbtype));
@@ -135,8 +135,8 @@ static catalogdata* catalog_copy_class(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_class_value *classvalue_src = NULL;
     catalog_class_value *classvalue_dst = NULL;
-    xk_pg_parser_sysdict_pgclass *class_src = NULL;
-    xk_pg_parser_sysdict_pgclass *class_dst = NULL;
+    pg_parser_sysdict_pgclass *class_src = NULL;
+    pg_parser_sysdict_pgclass *class_dst = NULL;
 
     classvalue_src = (catalog_class_value*)catalog_src->catalog;
     class_src = classvalue_src->class;
@@ -158,15 +158,15 @@ static catalogdata* catalog_copy_class(catalogdata *catalog_src)
     rmemset0(classvalue_dst, 0, 0, sizeof(catalog_class_value));
 
     /* class表分配空间 */
-    class_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgclass));
+    class_dst = rmalloc0(sizeof(pg_parser_sysdict_pgclass));
     if (!class_dst)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(class_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgclass));
+    rmemset0(class_dst, 0, 0, sizeof(pg_parser_sysdict_pgclass));
 
     /* 没有指针, 直接拷贝 */
-    rmemcpy0(class_dst, 0, class_src, sizeof(xk_pg_parser_sysdict_pgclass));
+    rmemcpy0(class_dst, 0, class_src, sizeof(pg_parser_sysdict_pgclass));
 
     classvalue_dst->oid = classvalue_src->oid;
     classvalue_dst->class = class_dst;
@@ -183,8 +183,8 @@ static catalogdata* catalog_copy_attribute(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_attribute_value *attributevalue_src = NULL;
     catalog_attribute_value *attributevalue_dst = NULL;
-    xk_pg_parser_sysdict_pgattributes *attribute_src = NULL;
-    xk_pg_parser_sysdict_pgattributes *attribute_dst = NULL;
+    pg_parser_sysdict_pgattributes *attribute_src = NULL;
+    pg_parser_sysdict_pgattributes *attribute_dst = NULL;
     List *attribute_list_src = NULL;
     List *attribute_list_dst = NULL;
     ListCell *cell = NULL;
@@ -194,18 +194,18 @@ static catalogdata* catalog_copy_attribute(catalogdata *catalog_src)
 
     foreach(cell, attribute_list_src)
     {
-        attribute_src = (xk_pg_parser_sysdict_pgattributes *)lfirst(cell);
+        attribute_src = (pg_parser_sysdict_pgattributes *)lfirst(cell);
 
         /* attribute表分配空间 */
-        attribute_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgattributes));
+        attribute_dst = rmalloc0(sizeof(pg_parser_sysdict_pgattributes));
         if (!attribute_dst)
         {
             elog(RLOG_ERROR, "oom");
         }
-        rmemset0(attribute_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgattributes)); 
+        rmemset0(attribute_dst, 0, 0, sizeof(pg_parser_sysdict_pgattributes)); 
 
         /* 没有指针, 直接拷贝 */
-        rmemcpy0(attribute_dst, 0, attribute_src, sizeof(xk_pg_parser_sysdict_pgattributes));
+        rmemcpy0(attribute_dst, 0, attribute_src, sizeof(pg_parser_sysdict_pgattributes));
         attribute_list_dst = lappend(attribute_list_dst, (void *)attribute_dst);
     }
 
@@ -240,8 +240,8 @@ static catalogdata* catalog_copy_type(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_type_value *typevalue_src = NULL;
     catalog_type_value *typevalue_dst = NULL;
-    xk_pg_parser_sysdict_pgtype *type_src = NULL;
-    xk_pg_parser_sysdict_pgtype *type_dst = NULL;
+    pg_parser_sysdict_pgtype *type_src = NULL;
+    pg_parser_sysdict_pgtype *type_dst = NULL;
 
     typevalue_src = (catalog_type_value*)catalog_src->catalog;
     type_src = typevalue_src->type;
@@ -263,15 +263,15 @@ static catalogdata* catalog_copy_type(catalogdata *catalog_src)
     rmemset0(typevalue_dst, 0, 0, sizeof(catalog_type_value));
 
     /* type表分配空间 */
-    type_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgtype));
+    type_dst = rmalloc0(sizeof(pg_parser_sysdict_pgtype));
     if (!type_dst)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(type_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgtype));
+    rmemset0(type_dst, 0, 0, sizeof(pg_parser_sysdict_pgtype));
 
     /* 没有指针, 直接拷贝 */
-    rmemcpy0(type_dst, 0, type_src, sizeof(xk_pg_parser_sysdict_pgtype));
+    rmemcpy0(type_dst, 0, type_src, sizeof(pg_parser_sysdict_pgtype));
 
     typevalue_dst->oid = typevalue_src->oid;
     typevalue_dst->type = type_dst;
@@ -288,8 +288,8 @@ static catalogdata* catalog_copy_namespace(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_namespace_value *namespacevalue_src = NULL;
     catalog_namespace_value *namespacevalue_dst = NULL;
-    xk_pg_parser_sysdict_pgnamespace *namespace_src = NULL;
-    xk_pg_parser_sysdict_pgnamespace *namespace_dst = NULL;
+    pg_parser_sysdict_pgnamespace *namespace_src = NULL;
+    pg_parser_sysdict_pgnamespace *namespace_dst = NULL;
 
     namespacevalue_src = (catalog_namespace_value*)catalog_src->catalog;
     namespace_src = namespacevalue_src->namespace;
@@ -311,15 +311,15 @@ static catalogdata* catalog_copy_namespace(catalogdata *catalog_src)
     rmemset0(namespacevalue_dst, 0, 0, sizeof(catalog_namespace_value));
 
     /* namespace表分配空间 */
-    namespace_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgnamespace));
+    namespace_dst = rmalloc0(sizeof(pg_parser_sysdict_pgnamespace));
     if (!namespace_dst)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(namespace_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgnamespace));
+    rmemset0(namespace_dst, 0, 0, sizeof(pg_parser_sysdict_pgnamespace));
 
     /* 没有指针, 直接拷贝 */
-    rmemcpy0(namespace_dst, 0, namespace_src, sizeof(xk_pg_parser_sysdict_pgnamespace));
+    rmemcpy0(namespace_dst, 0, namespace_src, sizeof(pg_parser_sysdict_pgnamespace));
 
     namespacevalue_dst->oid = namespacevalue_src->oid;
     namespacevalue_dst->namespace = namespace_dst;
@@ -336,8 +336,8 @@ static catalogdata* catalog_copy_enum(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_enum_value *enumvalue_src = NULL;
     catalog_enum_value *enumvalue_dst = NULL;
-    xk_pg_parser_sysdict_pgenum *enum_src = NULL;
-    xk_pg_parser_sysdict_pgenum *enum_dst = NULL;
+    pg_parser_sysdict_pgenum *enum_src = NULL;
+    pg_parser_sysdict_pgenum *enum_dst = NULL;
     List *enum_list_src = NULL;
     List *enum_list_dst = NULL;
     ListCell *cell = NULL;
@@ -347,18 +347,18 @@ static catalogdata* catalog_copy_enum(catalogdata *catalog_src)
 
     foreach(cell, enum_list_src)
     {
-        enum_src = (xk_pg_parser_sysdict_pgenum *)lfirst(cell);
+        enum_src = (pg_parser_sysdict_pgenum *)lfirst(cell);
 
         /* enum表分配空间 */
-        enum_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgenum));
+        enum_dst = rmalloc0(sizeof(pg_parser_sysdict_pgenum));
         if (!enum_dst)
         {
             elog(RLOG_ERROR, "oom");
         }
-        rmemset0(enum_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgenum)); 
+        rmemset0(enum_dst, 0, 0, sizeof(pg_parser_sysdict_pgenum)); 
 
         /* 没有指针, 直接拷贝 */
-        rmemcpy0(enum_dst, 0, enum_src, sizeof(xk_pg_parser_sysdict_pgenum));
+        rmemcpy0(enum_dst, 0, enum_src, sizeof(pg_parser_sysdict_pgenum));
         enum_list_dst = lappend(enum_list_dst, (void *)enum_dst);
     }
 
@@ -393,8 +393,8 @@ static catalogdata* catalog_copy_range(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_range_value *rangevalue_src = NULL;
     catalog_range_value *rangevalue_dst = NULL;
-    xk_pg_parser_sysdict_pgrange *range_src = NULL;
-    xk_pg_parser_sysdict_pgrange *range_dst = NULL;
+    pg_parser_sysdict_pgrange *range_src = NULL;
+    pg_parser_sysdict_pgrange *range_dst = NULL;
 
     rangevalue_src = (catalog_range_value*)catalog_src->catalog;
     range_src = rangevalue_src->range;
@@ -416,15 +416,15 @@ static catalogdata* catalog_copy_range(catalogdata *catalog_src)
     rmemset0(rangevalue_dst, 0, 0, sizeof(catalog_range_value));
 
     /* range表分配空间 */
-    range_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgrange));
+    range_dst = rmalloc0(sizeof(pg_parser_sysdict_pgrange));
     if (!range_dst)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(range_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgrange));
+    rmemset0(range_dst, 0, 0, sizeof(pg_parser_sysdict_pgrange));
 
     /* 没有指针, 直接拷贝 */
-    rmemcpy0(range_dst, 0, range_src, sizeof(xk_pg_parser_sysdict_pgrange));
+    rmemcpy0(range_dst, 0, range_src, sizeof(pg_parser_sysdict_pgrange));
 
     rangevalue_dst->rngtypid = rangevalue_src->rngtypid;
     rangevalue_dst->range = range_dst;
@@ -441,8 +441,8 @@ static catalogdata* catalog_copy_proc(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_proc_value *procvalue_src = NULL;
     catalog_proc_value *procvalue_dst = NULL;
-    xk_pg_parser_sysdict_pgproc *proc_src = NULL;
-    xk_pg_parser_sysdict_pgproc *proc_dst = NULL;
+    pg_parser_sysdict_pgproc *proc_src = NULL;
+    pg_parser_sysdict_pgproc *proc_dst = NULL;
 
     procvalue_src = (catalog_proc_value*)catalog_src->catalog;
     proc_src = procvalue_src->proc;
@@ -464,15 +464,15 @@ static catalogdata* catalog_copy_proc(catalogdata *catalog_src)
     rmemset0(procvalue_dst, 0, 0, sizeof(catalog_proc_value));
 
     /* proc表分配空间 */
-    proc_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgproc));
+    proc_dst = rmalloc0(sizeof(pg_parser_sysdict_pgproc));
     if (!proc_dst)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(proc_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgproc));
+    rmemset0(proc_dst, 0, 0, sizeof(pg_parser_sysdict_pgproc));
 
     /* 没有指针, 直接拷贝 */
-    rmemcpy0(proc_dst, 0, proc_src, sizeof(xk_pg_parser_sysdict_pgproc));
+    rmemcpy0(proc_dst, 0, proc_src, sizeof(pg_parser_sysdict_pgproc));
 
     procvalue_dst->oid = procvalue_src->oid;
     procvalue_dst->proc = proc_dst;
@@ -489,8 +489,8 @@ static catalogdata* catalog_copy_constraint(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_constraint_value *constraintvalue_src = NULL;
     catalog_constraint_value *constraintvalue_dst = NULL;
-    xk_pg_parser_sysdict_pgconstraint *constraint_src = NULL;
-    xk_pg_parser_sysdict_pgconstraint *constraint_dst = NULL;
+    pg_parser_sysdict_pgconstraint *constraint_src = NULL;
+    pg_parser_sysdict_pgconstraint *constraint_dst = NULL;
 
     constraintvalue_src = (catalog_constraint_value*)catalog_src->catalog;
     constraint_src = constraintvalue_src->constraint;
@@ -512,15 +512,15 @@ static catalogdata* catalog_copy_constraint(catalogdata *catalog_src)
     rmemset0(constraintvalue_dst, 0, 0, sizeof(catalog_constraint_value));
 
     /* constraint表分配空间 */
-    constraint_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgconstraint));
+    constraint_dst = rmalloc0(sizeof(pg_parser_sysdict_pgconstraint));
     if (!constraint_dst)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(constraint_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgconstraint));
+    rmemset0(constraint_dst, 0, 0, sizeof(pg_parser_sysdict_pgconstraint));
 
     /* 没有指针, 直接拷贝 */
-    rmemcpy0(constraint_dst, 0, constraint_src, sizeof(xk_pg_parser_sysdict_pgconstraint));
+    rmemcpy0(constraint_dst, 0, constraint_src, sizeof(pg_parser_sysdict_pgconstraint));
 
     constraintvalue_dst->conrelid = constraintvalue_src->conrelid;
     constraintvalue_dst->constraint = constraint_dst;
@@ -549,8 +549,8 @@ static catalogdata* catalog_copy_authid(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_authid_value *authidvalue_src = NULL;
     catalog_authid_value *authidvalue_dst = NULL;
-    xk_pg_parser_sysdict_pgauthid *authid_src = NULL;
-    xk_pg_parser_sysdict_pgauthid *authid_dst = NULL;
+    pg_parser_sysdict_pgauthid *authid_src = NULL;
+    pg_parser_sysdict_pgauthid *authid_dst = NULL;
 
     authidvalue_src = (catalog_authid_value*)catalog_src->catalog;
     authid_src = authidvalue_src->authid;
@@ -572,15 +572,15 @@ static catalogdata* catalog_copy_authid(catalogdata *catalog_src)
     rmemset0(authidvalue_dst, 0, 0, sizeof(catalog_authid_value));
 
     /* authid表分配空间 */
-    authid_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgauthid));
+    authid_dst = rmalloc0(sizeof(pg_parser_sysdict_pgauthid));
     if (!authid_dst)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(authid_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgauthid));
+    rmemset0(authid_dst, 0, 0, sizeof(pg_parser_sysdict_pgauthid));
 
     /* 没有指针, 直接拷贝 */
-    rmemcpy0(authid_dst, 0, authid_src, sizeof(xk_pg_parser_sysdict_pgauthid));
+    rmemcpy0(authid_dst, 0, authid_src, sizeof(pg_parser_sysdict_pgauthid));
 
     authidvalue_dst->oid = authidvalue_src->oid;
     authidvalue_dst->authid = authid_dst;
@@ -597,8 +597,8 @@ static catalogdata* catalog_copy_database(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_database_value *databasevalue_src = NULL;
     catalog_database_value *databasevalue_dst = NULL;
-    xk_pg_parser_sysdict_pgdatabase *database_src = NULL;
-    xk_pg_parser_sysdict_pgdatabase *database_dst = NULL;
+    pg_parser_sysdict_pgdatabase *database_src = NULL;
+    pg_parser_sysdict_pgdatabase *database_dst = NULL;
 
     databasevalue_src = (catalog_database_value*)catalog_src->catalog;
     database_src = databasevalue_src->database;
@@ -620,15 +620,15 @@ static catalogdata* catalog_copy_database(catalogdata *catalog_src)
     rmemset0(databasevalue_dst, 0, 0, sizeof(catalog_database_value));
 
     /* database表分配空间 */
-    database_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgdatabase));
+    database_dst = rmalloc0(sizeof(pg_parser_sysdict_pgdatabase));
     if (!database_dst)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(database_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgdatabase));
+    rmemset0(database_dst, 0, 0, sizeof(pg_parser_sysdict_pgdatabase));
 
     /* 没有指针, 直接拷贝 */
-    rmemcpy0(database_dst, 0, database_src, sizeof(xk_pg_parser_sysdict_pgdatabase));
+    rmemcpy0(database_dst, 0, database_src, sizeof(pg_parser_sysdict_pgdatabase));
 
     databasevalue_dst->oid = databasevalue_src->oid;
     databasevalue_dst->database = database_dst;
@@ -693,8 +693,8 @@ static catalogdata* catalog_copy_index(catalogdata *catalog_src)
     catalogdata *result = NULL;
     catalog_index_value *indexvalue_src = NULL;
     catalog_index_value *indexvalue_dst = NULL;
-    xk_pg_parser_sysdict_pgindex *index_src = NULL;
-    xk_pg_parser_sysdict_pgindex *index_dst = NULL;
+    pg_parser_sysdict_pgindex *index_src = NULL;
+    pg_parser_sysdict_pgindex *index_dst = NULL;
 
     indexvalue_src = (catalog_index_value*)catalog_src->catalog;
     index_src = indexvalue_src->index;
@@ -716,15 +716,15 @@ static catalogdata* catalog_copy_index(catalogdata *catalog_src)
     rmemset0(indexvalue_dst, 0, 0, sizeof(catalog_index_value));
 
     /* index表分配空间 */
-    index_dst = rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
+    index_dst = rmalloc0(sizeof(pg_parser_sysdict_pgindex));
     if (!index_dst)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(index_dst, 0, 0, sizeof(xk_pg_parser_sysdict_pgindex));
+    rmemset0(index_dst, 0, 0, sizeof(pg_parser_sysdict_pgindex));
 
     /* 有指针, 拷贝加重新分配 */
-    rmemcpy0(index_dst, 0, index_src, sizeof(xk_pg_parser_sysdict_pgindex));
+    rmemcpy0(index_dst, 0, index_src, sizeof(pg_parser_sysdict_pgindex));
     index_dst->indkey = NULL;
 
     index_dst->indkey = rmalloc0(sizeof(uint32_t) * index_dst->indnatts);
@@ -791,11 +791,11 @@ static catalogdata* catalog_colvalue_no_filter_conversion_postgres(int dbversion
 static catalogdata* catalog_colvalue_no_filter_conversion_pg12(void* in_colvalues)
 {
     catalogdata* catalog_data = NULL;
-    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_parser_translog_tbcol_values* colvalues = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
 
     /* 根据不同的 oid，分发处理  */
-    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
+    colvalues = (pg_parser_translog_tbcol_values*)in_colvalues;
     colvalue = colvalues->m_new_values;
     switch (colvalues->m_relid)
     {
@@ -847,21 +847,21 @@ static catalogdata* catalog_colvalue_no_filter_conversion_pg12(void* in_colvalue
 catalogdata* catalog_colvalued2catalog_pg12(void* in_colvalues)
 {
     catalogdata* catalog_data = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
-    xk_pg_parser_translog_tbcol_values* colvalues = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_parser_translog_tbcol_values* colvalues = NULL;
 
     /* 根据不同的 oid，分发处理  */
-    colvalues = (xk_pg_parser_translog_tbcol_values*)in_colvalues;
-    if(XK_PG_PARSER_TRANSLOG_DMLTYPE_INVALID == colvalues->m_base.m_dmltype)
+    colvalues = (pg_parser_translog_tbcol_values*)in_colvalues;
+    if(PG_PARSER_TRANSLOG_DMLTYPE_INVALID == colvalues->m_base.m_dmltype)
     {
         return NULL;
     }
-    else if (XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == colvalues->m_base.m_dmltype
-            || XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == colvalues->m_base.m_dmltype)
+    else if (PG_PARSER_TRANSLOG_DMLTYPE_INSERT == colvalues->m_base.m_dmltype
+            || PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == colvalues->m_base.m_dmltype)
     {
         colvalue = colvalues->m_new_values;
     }
-    else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == colvalues->m_base.m_dmltype)
+    else if(PG_PARSER_TRANSLOG_DMLTYPE_DELETE == colvalues->m_base.m_dmltype)
     {
         colvalue = colvalues->m_old_values;
     }
@@ -947,8 +947,8 @@ static void *catalog_get_sysdict_from_sysdicthash(HTAB *sysdicthash, void*search
                 temp_attribute_list = temp_attribute_value->attrs;
                 foreach(attcell, temp_attribute_list)
                 {
-                    xk_pg_parser_sysdict_pgattributes *temp_attr =
-                        (xk_pg_parser_sysdict_pgattributes *) lfirst(attcell);
+                    pg_parser_sysdict_pgattributes *temp_attr =
+                        (pg_parser_sysdict_pgattributes *) lfirst(attcell);
                     if (temp_attr->attnum == att_search->attnum)
                     {
                         return (void *) temp_attr;
@@ -1138,8 +1138,8 @@ static void *catalog_get_sysdict_from_sysdicthis(List *sysdicthis, void *search_
                         /* 遍历attrs */
                         foreach(attcell, temp_attribute_value->attrs)
                         {
-                            xk_pg_parser_sysdict_pgattributes *temp_attr =
-                                (xk_pg_parser_sysdict_pgattributes *) lfirst(attcell);
+                            pg_parser_sysdict_pgattributes *temp_attr =
+                                (pg_parser_sysdict_pgattributes *) lfirst(attcell);
 
                             if (temp_attr->attnum == att_search->attnum)
                             {
@@ -1182,8 +1182,8 @@ static void *catalog_get_sysdict_from_sysdicthis(List *sysdicthis, void *search_
 
                     if (temp_enum_value->enumtypid == *(Oid *)search_variable)
                     {
-                        xk_pg_parser_sysdict_pgenum *temp_enum_dict = 
-                            (xk_pg_parser_sysdict_pgenum *) linitial(temp_enum_value->enums);
+                        pg_parser_sysdict_pgenum *temp_enum_dict = 
+                            (pg_parser_sysdict_pgenum *) linitial(temp_enum_value->enums);
                         sysdicthis_result = lappend(sysdicthis_result, temp_enum_dict);
                     }
                     break;
@@ -1463,17 +1463,17 @@ static void *catalog_get_sysdict_from_colvalue(List *sysdict, void *search_varia
             foreach(cell, sysdict)
             {
                 txn_sysdict *dict = (txn_sysdict *) lfirst(cell);
-                xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+                pg_parser_translog_tbcol_values *col = dict->colvalues;
 
-                if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
-                col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
+                if ((col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+                col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
                 {
                     if (!strcmp(col->m_base.m_schemaname, CATALOG_SYSDICT_SCHEMA)
                      && !strcmp(col->m_base.m_tbname, CATALOG_PG_CLASS))
                     {
                         if (dict->convert_colvalues)
                         {
-                            xk_pg_sysdict_Form_pg_class temp_class = NULL;
+                            pg_sysdict_Form_pg_class temp_class = NULL;
                             catalog_data = (catalogdata *) dict->convert_colvalues;
                             pgclass_v = (catalog_class_value*) catalog_data->catalog;
                             temp_class = (void *) pgclass_v->class;
@@ -1510,10 +1510,10 @@ static void *catalog_get_sysdict_from_colvalue(List *sysdict, void *search_varia
             foreach(cell, sysdict)
             {
                 txn_sysdict *dict = (txn_sysdict *) lfirst(cell);
-                xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+                pg_parser_translog_tbcol_values *col = dict->colvalues;
 
-                if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
-                col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
+                if ((col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+                col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
                 {
                     if (!strcmp(col->m_base.m_schemaname, CATALOG_SYSDICT_SCHEMA)
                      && !strcmp(col->m_base.m_tbname, CATALOG_PG_ATTRIBUTE))
@@ -1523,7 +1523,7 @@ static void *catalog_get_sysdict_from_colvalue(List *sysdict, void *search_varia
 
                         if (dict->convert_colvalues)
                         {
-                            xk_pg_sysdict_Form_pg_attribute temp_att = NULL;
+                            pg_sysdict_Form_pg_attribute temp_att = NULL;
                             catalog_data = (catalogdata *) dict->convert_colvalues;
                             pgattribute_v = (catalog_attribute_value*) catalog_data->catalog;
                             temp_att = linitial(pgattribute_v->attrs);
@@ -1571,17 +1571,17 @@ static void *catalog_get_sysdict_from_colvalue(List *sysdict, void *search_varia
             foreach(cell, sysdict)
             {
                 txn_sysdict *dict = (txn_sysdict *) lfirst(cell);
-                xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+                pg_parser_translog_tbcol_values *col = dict->colvalues;
 
-                if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
-                col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
+                if ((col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+                col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
                 {
                     if (!strcmp(col->m_base.m_schemaname, CATALOG_SYSDICT_SCHEMA)
                      && !strcmp(col->m_base.m_tbname, CATALOG_PG_NAMESPACE))
                     {
                         if (dict->convert_colvalues)
                         {
-                            xk_pg_sysdict_Form_pg_namespace temp_nsp = NULL;
+                            pg_sysdict_Form_pg_namespace temp_nsp = NULL;
                             catalog_data = (catalogdata *) dict->convert_colvalues;
                             pgnamespace_v = (catalog_namespace_value*) catalog_data->catalog;
                             temp_nsp = pgnamespace_v->namespace;
@@ -1619,17 +1619,17 @@ static void *catalog_get_sysdict_from_colvalue(List *sysdict, void *search_varia
             foreach(cell, sysdict)
             {
                 txn_sysdict *dict = (txn_sysdict *) lfirst(cell);
-                xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+                pg_parser_translog_tbcol_values *col = dict->colvalues;
 
-                if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
-                col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
+                if ((col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+                col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_UPDATE))
                 {
                     if (!strcmp(col->m_base.m_schemaname, CATALOG_SYSDICT_SCHEMA)
                      && !strcmp(col->m_base.m_tbname, CATALOG_PG_TYPE))
                     {
                         if (dict->convert_colvalues)
                         {
-                            xk_pg_sysdict_Form_pg_type temp_typ = NULL;
+                            pg_sysdict_Form_pg_type temp_typ = NULL;
                             catalog_data = (catalogdata *) dict->convert_colvalues;
                             pgtype_v = (catalog_type_value*) catalog_data->catalog;
                             temp_typ = pgtype_v->type;
@@ -1760,10 +1760,10 @@ static Oid catalog_get_oid_by_relfilenode_from_colvalues(uint32_t relfilenode,
     foreach(cell, list)
     {
         txn_sysdict *dict = (txn_sysdict *) lfirst(cell);
-        xk_pg_parser_translog_tbcol_values *col = dict->colvalues;
+        pg_parser_translog_tbcol_values *col = dict->colvalues;
 
-        if ((col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
-            col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE)
+        if ((col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_INSERT || 
+            col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_UPDATE)
          && !strcmp(col->m_base.m_schemaname, CATALOG_SYSDICT_SCHEMA)
          && !strcmp(col->m_base.m_tbname, CATALOG_PG_CLASS)
          && col->m_new_values)
@@ -1987,7 +1987,7 @@ bool catalog_sysdict_setfullmode(HTAB* hclass)
     PGconn *conn = NULL;
     PGresult *res = NULL;
     HASH_SEQ_STATUS status;
-    xk_pg_sysdict_Form_pg_class class;
+    pg_sysdict_Form_pg_class class;
     catalog_class_value *entry;
     char sql_exec[MAX_EXEC_SQL_LEN] = {'\0'};
 
@@ -2012,14 +2012,14 @@ bool catalog_sysdict_setfullmode(HTAB* hclass)
             continue;
         }
 
-        if(XK_PG_SYSDICT_REPLICA_IDENTITY_FULL == class->relreplident)
+        if(PG_SYSDICT_REPLICA_IDENTITY_FULL == class->relreplident)
         {
             /* 已开启 FULL 模式的表不做操作 */
             continue;
         }
 
-        if(XK_PG_SYSDICT_RELKIND_RELATION != class->relkind
-            && XK_PG_SYSDICT_RELKIND_PARTITIONED_TABLE != class->relkind)
+        if(PG_SYSDICT_RELKIND_RELATION != class->relkind
+            && PG_SYSDICT_RELKIND_PARTITIONED_TABLE != class->relkind)
         {
             /* 只对普通表和分区子表开启 FULL 模式 */
             continue;

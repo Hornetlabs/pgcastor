@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Europe_Kirov[] =
+char* PG_Europe_Kirov[] =
 {
     (char *)"Rule	Russia	1917	only	-	Dec	28	 0:00	0	MMT  # Moscow Mean Time",
     (char *)"Rule	Russia	1918	only	-	May	31	22:00	2:00	MDST # Moscow Double Summer Time",

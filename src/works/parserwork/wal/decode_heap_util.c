@@ -6,9 +6,9 @@
 #include "utils/hash/hash_utils.h"
 #include "utils/string/stringinfo.h"
 #include "misc/misc_stat.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_errnodef.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_errnodef.h"
+#include "common/pg_parser_translog.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
 #include "cache/cache_sysidcts.h"
@@ -52,8 +52,8 @@ static void get_all_sysdict(decodingcontext *decodingctx,
     int natts = 0;
     int i = 0;
     ListCell *cell = NULL;
-    xk_pg_parser_sysdict_pgattributes *att = NULL;
-    xk_pg_parser_sysdict_pgtype *typ = NULL;
+    pg_parser_sysdict_pgattributes *att = NULL;
+    pg_parser_sysdict_pgtype *typ = NULL;
     Oid att_typid = 0;
     bool have_type_cache = false;
     List *temp_class_list = NULL;
@@ -81,8 +81,8 @@ static void get_all_sysdict(decodingcontext *decodingctx,
     {
         elog(RLOG_ERROR, "can't find pg_class relation");
     }
-    natts = ((xk_pg_parser_sysdict_pgclass *) temp_dict)->relnatts;
-    nspid = ((xk_pg_parser_sysdict_pgclass *) temp_dict)->relnamespace;
+    natts = ((pg_parser_sysdict_pgclass *) temp_dict)->relnatts;
+    nspid = ((pg_parser_sysdict_pgclass *) temp_dict)->relnamespace;
     temp_class_list = lappend(temp_class_list, temp_dict);
 
     /* 查找pg_namespace */
@@ -110,7 +110,7 @@ static void get_all_sysdict(decodingcontext *decodingctx,
     /* 查找pg_type */
     foreach(cell, temp_attributes_list)
     {
-        att = (xk_pg_parser_sysdict_pgattributes*)lfirst(cell);
+        att = (pg_parser_sysdict_pgattributes*)lfirst(cell);
         if (att->attisdropped)
             continue;
         att_typid = att->atttypid;
@@ -143,7 +143,7 @@ static void get_all_sysdict(decodingcontext *decodingctx,
     /* 如果pg_type的typelem不为0, 需要将其加入到type链表中 */
     foreach(cell, temp_type_list)
     {
-        typ = (xk_pg_parser_sysdict_pgtype*)lfirst(cell);
+        typ = (pg_parser_sysdict_pgtype*)lfirst(cell);
         have_type_cache = false;
         if (!typ->typelem)
             continue;
@@ -177,11 +177,11 @@ static void get_all_sysdict(decodingcontext *decodingctx,
     /* 查找pg_proc, pg_enum, pg_range */
     foreach(cell, temp_type_list)
     {
-        typ = (xk_pg_parser_sysdict_pgtype*)lfirst(cell);
+        typ = (pg_parser_sysdict_pgtype*)lfirst(cell);
         if (typ->typtype == 'r')
         {
-            xk_pg_parser_sysdict_pgrange *temp_range = 
-                (xk_pg_parser_sysdict_pgrange *) catalog_get_range_sysdict(decodingctx->trans_cache->sysdicts->by_range,
+            pg_parser_sysdict_pgrange *temp_range = 
+                (pg_parser_sysdict_pgrange *) catalog_get_range_sysdict(decodingctx->trans_cache->sysdicts->by_range,
                                                                                   NULL,
                                                                                   temp_sysdicthis,
                                                                                   typ->oid);
@@ -311,7 +311,7 @@ static void get_all_sysdict(decodingcontext *decodingctx,
         typ = NULL;
         foreach(cell, temp_type_list)
         {
-            typ = (xk_pg_parser_sysdict_pgtype*)lfirst(cell);
+            typ = (pg_parser_sysdict_pgtype*)lfirst(cell);
             if (typ->typrelid != 0 && typ->typtype == 'c')
             {
                 /* 递归获取子类型系统表 */
@@ -335,13 +335,13 @@ static void get_all_sysdict(decodingcontext *decodingctx,
 
 }
 
-xk_pg_parser_sysdicts *heap_get_sysdict_by_oid(void *decodingctx_in,
+pg_parser_sysdicts *heap_get_sysdict_by_oid(void *decodingctx_in,
                                           txn *txn,
                                           Oid oid,
                                           bool search_his)
 {
     decodingcontext *decodingctx = (decodingcontext *)decodingctx_in;
-    xk_pg_parser_sysdicts *result = NULL;
+    pg_parser_sysdicts *result = NULL;
     List *class_list = NULL,
          *attributes_list = NULL,
          *namespace_list = NULL,
@@ -357,8 +357,8 @@ xk_pg_parser_sysdicts *heap_get_sysdict_by_oid(void *decodingctx_in,
     int i = 0,
         typ_cache_num = 0;
 
-    result = rmalloc0(sizeof(xk_pg_parser_sysdicts));
-    rmemset0(result, 0, 0, sizeof(xk_pg_parser_sysdicts));
+    result = rmalloc0(sizeof(pg_parser_sysdicts));
+    rmemset0(result, 0, 0, sizeof(pg_parser_sysdicts));
 
     get_all_sysdict(decodingctx,
                     txn,
@@ -378,104 +378,104 @@ xk_pg_parser_sysdicts *heap_get_sysdict_by_oid(void *decodingctx_in,
     if (class_list)
     {
         result->m_pg_class.m_count = class_list->length;
-        result->m_pg_class.m_pg_class = rmalloc0(sizeof(xk_pg_parser_sysdict_pgclass)
+        result->m_pg_class.m_pg_class = rmalloc0(sizeof(pg_parser_sysdict_pgclass)
                                                        * class_list->length);
-        rmemset0(result->m_pg_class.m_pg_class, 0, 0, sizeof(xk_pg_parser_sysdict_pgclass) * class_list->length);
+        rmemset0(result->m_pg_class.m_pg_class, 0, 0, sizeof(pg_parser_sysdict_pgclass) * class_list->length);
         cell = NULL;
         i = 0;
         foreach(cell, class_list)
             rmemcpy1(&result->m_pg_class.m_pg_class[i++], 0, lfirst(cell),
-                                                      sizeof(xk_pg_parser_sysdict_pgclass));
+                                                      sizeof(pg_parser_sysdict_pgclass));
         list_free(class_list);
     }
 
     if (attributes_list)
     {
         result->m_pg_attribute.m_count = attributes_list->length;
-        result->m_pg_attribute.m_pg_attributes = rmalloc0(sizeof(xk_pg_parser_sysdict_pgattributes)
+        result->m_pg_attribute.m_pg_attributes = rmalloc0(sizeof(pg_parser_sysdict_pgattributes)
                                                        * attributes_list->length);
-        rmemset0(result->m_pg_attribute.m_pg_attributes, 0, 0, sizeof(xk_pg_parser_sysdict_pgattributes)
+        rmemset0(result->m_pg_attribute.m_pg_attributes, 0, 0, sizeof(pg_parser_sysdict_pgattributes)
                                                        * attributes_list->length);
         cell = NULL;
         i = 0;
         foreach(cell, attributes_list)
             rmemcpy1(&result->m_pg_attribute.m_pg_attributes[i++], 0, lfirst(cell),
-                                                      sizeof(xk_pg_parser_sysdict_pgattributes));
+                                                      sizeof(pg_parser_sysdict_pgattributes));
         list_free(attributes_list);
     }
 
     if (namespace_list)
     {
         result->m_pg_namespace.m_count = namespace_list->length;
-        result->m_pg_namespace.m_pg_namespace = rmalloc0(sizeof(xk_pg_parser_sysdict_pgnamespace)
+        result->m_pg_namespace.m_pg_namespace = rmalloc0(sizeof(pg_parser_sysdict_pgnamespace)
                                                        * namespace_list->length);
-        rmemset0(result->m_pg_namespace.m_pg_namespace, 0, 0, sizeof(xk_pg_parser_sysdict_pgnamespace)
+        rmemset0(result->m_pg_namespace.m_pg_namespace, 0, 0, sizeof(pg_parser_sysdict_pgnamespace)
                                                        * namespace_list->length);
         cell = NULL;
         i = 0;
         foreach(cell, namespace_list)
             rmemcpy1(&result->m_pg_namespace.m_pg_namespace[i++], 0, lfirst(cell),
-                                                      sizeof(xk_pg_parser_sysdict_pgnamespace));
+                                                      sizeof(pg_parser_sysdict_pgnamespace));
         list_free(namespace_list);
     }
 
     if (type_list)
     {
         result->m_pg_type.m_count = type_list->length;
-        result->m_pg_type.m_pg_type = rmalloc0(sizeof(xk_pg_parser_sysdict_pgtype)
+        result->m_pg_type.m_pg_type = rmalloc0(sizeof(pg_parser_sysdict_pgtype)
                                                        * type_list->length);
-        rmemset0(result->m_pg_type.m_pg_type, 0, 0, sizeof(xk_pg_parser_sysdict_pgtype)
+        rmemset0(result->m_pg_type.m_pg_type, 0, 0, sizeof(pg_parser_sysdict_pgtype)
                                                        * type_list->length);
         cell = NULL;
         i = 0;
         foreach(cell, type_list)
             rmemcpy1(&result->m_pg_type.m_pg_type[i++], 0, lfirst(cell),
-                                                      sizeof(xk_pg_parser_sysdict_pgtype));
+                                                      sizeof(pg_parser_sysdict_pgtype));
         list_free(type_list);
     }
 
     if (range_list)
     {
         result->m_pg_range.m_count = range_list->length;
-        result->m_pg_range.m_pg_range = rmalloc0(sizeof(xk_pg_parser_sysdict_pgrange)
+        result->m_pg_range.m_pg_range = rmalloc0(sizeof(pg_parser_sysdict_pgrange)
                                                        * range_list->length);
-        rmemset0(result->m_pg_range.m_pg_range, 0, 0, sizeof(xk_pg_parser_sysdict_pgrange)
+        rmemset0(result->m_pg_range.m_pg_range, 0, 0, sizeof(pg_parser_sysdict_pgrange)
                                                        * range_list->length);
         cell = NULL;
         i = 0;
         foreach(cell, range_list)
             rmemcpy1(&result->m_pg_range.m_pg_range[i++], 0, lfirst(cell),
-                                                      sizeof(xk_pg_parser_sysdict_pgrange));
+                                                      sizeof(pg_parser_sysdict_pgrange));
         list_free(range_list);
     }
 
     if (enum_list)
     {
         result->m_pg_enum.m_count = enum_list->length;
-        result->m_pg_enum.m_pg_enum = rmalloc0(sizeof(xk_pg_parser_sysdict_pgenum)
+        result->m_pg_enum.m_pg_enum = rmalloc0(sizeof(pg_parser_sysdict_pgenum)
                                                        * enum_list->length);
-        rmemset0(result->m_pg_enum.m_pg_enum, 0, 0, sizeof(xk_pg_parser_sysdict_pgenum)
+        rmemset0(result->m_pg_enum.m_pg_enum, 0, 0, sizeof(pg_parser_sysdict_pgenum)
                                                        * enum_list->length);
         cell = NULL;
         i = 0;
         foreach(cell, enum_list)
             rmemcpy1(&result->m_pg_enum.m_pg_enum[i++], 0, lfirst(cell),
-                                                      sizeof(xk_pg_parser_sysdict_pgenum));
+                                                      sizeof(pg_parser_sysdict_pgenum));
         list_free(enum_list);
     }
 
     if (proc_list)
     {
         result->m_pg_proc.m_count = proc_list->length;
-        result->m_pg_proc.m_pg_proc = rmalloc0(sizeof(xk_pg_parser_sysdict_pgproc)
+        result->m_pg_proc.m_pg_proc = rmalloc0(sizeof(pg_parser_sysdict_pgproc)
                                                        * proc_list->length);
-        rmemset0(result->m_pg_proc.m_pg_proc, 0, 0, sizeof(xk_pg_parser_sysdict_pgproc)
+        rmemset0(result->m_pg_proc.m_pg_proc, 0, 0, sizeof(pg_parser_sysdict_pgproc)
                                                        * proc_list->length);
         cell = NULL;
         i = 0;
         foreach(cell, proc_list)
             rmemcpy1(&result->m_pg_proc.m_pg_proc[i++], 0, lfirst(cell),
-                                                      sizeof(xk_pg_parser_sysdict_pgproc));
+                                                      sizeof(pg_parser_sysdict_pgproc));
         list_free(proc_list);
     }
 
@@ -509,16 +509,16 @@ static HTAB *init_toast_hash(void)
 
 #define TOAST_COLUMN_NUM 3
 
-void heap_storage_external_data(txn *txn, xk_pg_parser_translog_tbcolbase *trans_return)
+void heap_storage_external_data(txn *txn, pg_parser_translog_tbcolbase *trans_return)
 {
     Oid     oid = 0;
     bool    find = false;
-    xk_pg_parser_translog_tbcol_values *tb_col = (xk_pg_parser_translog_tbcol_values *)trans_return;
-    xk_pg_parser_translog_tbcol_value *value = NULL;
+    pg_parser_translog_tbcol_values *tb_col = (pg_parser_translog_tbcol_values *)trans_return;
+    pg_parser_translog_tbcol_value *value = NULL;
     toast_cache_entry *toast_entry = NULL;
     chunk_data *chunk_data = NULL;
 
-    if (trans_return->m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE)
+    if (trans_return->m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_DELETE)
         return;
 
     chunk_data = rmalloc0(sizeof(chunk_data));
@@ -527,9 +527,9 @@ void heap_storage_external_data(txn *txn, xk_pg_parser_translog_tbcolbase *trans
     if (tb_col->m_valueCnt != TOAST_COLUMN_NUM)
         elog(RLOG_ERROR, "toast return trans have invalid vaule count");
 
-    if (tb_col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT)
+    if (tb_col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_INSERT)
         value = tb_col->m_new_values;
-    else if (tb_col->m_base.m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE)
+    else if (tb_col->m_base.m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_DELETE)
         value = tb_col->m_old_values;
     else
         elog(RLOG_ERROR, "toast return trans have invalid dml type");
@@ -556,34 +556,34 @@ void heap_storage_external_data(txn *txn, xk_pg_parser_translog_tbcolbase *trans
     toast_entry->chunk_list = lappend(toast_entry->chunk_list, (void *)chunk_data);
 }
 
-static void heap_free_node_tree(xk_pg_parser_nodetree *node)
+static void heap_free_node_tree(pg_parser_nodetree *node)
 {
-    xk_pg_parser_nodetree *next_node = NULL;
-    xk_pg_parser_nodetree *node_tree = node;
+    pg_parser_nodetree *next_node = NULL;
+    pg_parser_nodetree *node_tree = node;
     while (node_tree)
     {
         next_node = node_tree->m_next;
         switch (node_tree->m_node_type)
         {
-            case XK_PG_PARSER_NODETYPE_CONST:
+            case PG_PARSER_NODETYPE_CONST:
             {
-                xk_pg_parser_node_const *node_const = (xk_pg_parser_node_const *)node_tree->m_node;
+                pg_parser_node_const *node_const = (pg_parser_node_const *)node_tree->m_node;
                 if (node_const->m_char_value)
                     rfree(node_const->m_char_value);
                 rfree(node_tree->m_node);
                 break;
             }
-            case XK_PG_PARSER_NODETYPE_FUNC:
+            case PG_PARSER_NODETYPE_FUNC:
             {
-                xk_pg_parser_node_func *node_func = (xk_pg_parser_node_func *)node_tree->m_node;
+                pg_parser_node_func *node_func = (pg_parser_node_func *)node_tree->m_node;
                 if (node_func->m_funcname)
                     rfree(node_func->m_funcname);
                 rfree(node_tree->m_node);
                 break;
             }
-            case XK_PG_PARSER_NODETYPE_OP:
+            case PG_PARSER_NODETYPE_OP:
             {
-                xk_pg_parser_node_op *node_op = (xk_pg_parser_node_op *)node_tree->m_node;
+                pg_parser_node_op *node_op = (pg_parser_node_op *)node_tree->m_node;
                 if (node_op->m_opname)
                     rfree(node_op->m_opname);
                 rfree(node_tree->m_node);
@@ -598,7 +598,7 @@ static void heap_free_node_tree(xk_pg_parser_nodetree *node)
     }
 }
 
-static void heap_free_value(xk_pg_parser_translog_tbcol_value *value)
+static void heap_free_value(pg_parser_translog_tbcol_value *value)
 {
     if (value)
     {
@@ -607,8 +607,8 @@ static void heap_free_value(xk_pg_parser_translog_tbcol_value *value)
             if (value->m_info == INFO_COL_IS_CUSTOM
             || value->m_info == INFO_COL_IS_ARRAY)
             {
-                xk_pg_parser_translog_tbcol_valuetype_customer *custom = 
-                    (xk_pg_parser_translog_tbcol_valuetype_customer *) value->m_value;
+                pg_parser_translog_tbcol_valuetype_customer *custom = 
+                    (pg_parser_translog_tbcol_valuetype_customer *) value->m_value;
                 while (custom)
                 {
                     heap_free_value(custom->m_value);
@@ -618,7 +618,7 @@ static void heap_free_value(xk_pg_parser_translog_tbcol_value *value)
                 rfree(value->m_value);
             }
             else if (value->m_info == INFO_COL_IS_NODE)
-                heap_free_node_tree((xk_pg_parser_nodetree*)value->m_value);
+                heap_free_node_tree((pg_parser_nodetree*)value->m_value);
             else
                 rfree(value->m_value);
         }
@@ -628,7 +628,7 @@ static void heap_free_value(xk_pg_parser_translog_tbcol_value *value)
 
 }
 
-static void heap_free_toast(xk_pg_parser_translog_tbcol_value *toast_col)
+static void heap_free_toast(pg_parser_translog_tbcol_value *toast_col)
 {
     if (toast_col)
     {
@@ -640,7 +640,7 @@ static void heap_free_toast(xk_pg_parser_translog_tbcol_value *toast_col)
     }
 }
 
-void heap_free_trans_result(xk_pg_parser_translog_tbcolbase *trans_return)
+void heap_free_trans_result(pg_parser_translog_tbcolbase *trans_return)
 {
     if (trans_return)
     {
@@ -652,10 +652,10 @@ void heap_free_trans_result(xk_pg_parser_translog_tbcolbase *trans_return)
         if (trans_return->m_schemaname)
             rfree(trans_return->m_schemaname);
 
-        if (trans_return->m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
+        if (trans_return->m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
         {
             int j = 0;
-            xk_pg_parser_translog_tbcol_nvalues *trans = (xk_pg_parser_translog_tbcol_nvalues *)
+            pg_parser_translog_tbcol_nvalues *trans = (pg_parser_translog_tbcol_nvalues *)
                                                           trans_return;
             if (trans->m_rows)
             {
@@ -682,7 +682,7 @@ void heap_free_trans_result(xk_pg_parser_translog_tbcolbase *trans_return)
         }
         else
         {
-            xk_pg_parser_translog_tbcol_values *trans = (xk_pg_parser_translog_tbcol_values *)
+            pg_parser_translog_tbcol_values *trans = (pg_parser_translog_tbcol_values *)
                                                          trans_return;
             if (trans->m_valueCnt > 0)
             {
@@ -711,7 +711,7 @@ void heap_free_trans_result(xk_pg_parser_translog_tbcolbase *trans_return)
     }
 }
 
-void heap_free_trans_pre(xk_pg_parser_translog_translog2col *trans_data)
+void heap_free_trans_pre(pg_parser_translog_translog2col *trans_data)
 {
     if (trans_data)
     {
@@ -784,9 +784,9 @@ static bool check_high_version(int dbtype, char *dbversion)
     bool result = false;
     switch (dbtype)
     {
-        case XK_DATABASE_TYPE_POSTGRESQL:
+        case DATABASE_TYPE_POSTGRESQL:
         {
-            if (!strcmp(XK_DATABASE_PG1410, dbversion))
+            if (!strcmp(DATABASE_PG1410, dbversion))
             {
                 result = true;
             }
@@ -803,7 +803,7 @@ static bool check_high_version(int dbtype, char *dbversion)
 static char *heap_get_external_data(txn *txn,
                                     uint32_t chunkid,
                                     uint32_t *chunk_len,
-                                    xk_pg_parser_translog_tbcol_valuetype_external *ext,
+                                    pg_parser_translog_tbcol_valuetype_external *ext,
                                     int dbtype,
                                     char *dbversion)
 {
@@ -829,7 +829,7 @@ static char *heap_get_external_data(txn *txn,
     foreach(cell, toast_entry->chunk_list)
     {
         chunk_data *chunk = (chunk_data *)lfirst(cell);
-        len += XK_PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data);
+        len += PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data);
     }
     len += VARHDRSZ;
 
@@ -853,33 +853,33 @@ static char *heap_get_external_data(txn *txn,
             {
                 if ((((ext)->m_extsize & ((1U << 30) - 1)) < (ext)->m_rawsize - ((int32_t) sizeof(int32_t))))
                 {
-                    XK_PG_PARSER_SET_VARSIZE_COMPRESSED(result, len);
+                    PG_PARSER_SET_VARSIZE_COMPRESSED(result, len);
                 }
                 else
                 {
-                    XK_PG_PARSER_SET_VARSIZE(result, len);
+                    PG_PARSER_SET_VARSIZE(result, len);
                 }
             }
             else
             {
-                if (XK_PG_PARSER_VARATT_EXTERNAL_IS_COMPRESSED(ext))
-                    XK_PG_PARSER_SET_VARSIZE_COMPRESSED(result, len);
+                if (PG_PARSER_VARATT_EXTERNAL_IS_COMPRESSED(ext))
+                    PG_PARSER_SET_VARSIZE_COMPRESSED(result, len);
                 else
-                    XK_PG_PARSER_SET_VARSIZE(result, len);
+                    PG_PARSER_SET_VARSIZE(result, len);
             }
             point += VARHDRSZ;
-            rmemcpy1(point, 0, chunk->chunk_data + (XK_PG_PARSER_VARSIZE_ANY(chunk->chunk_data) 
-                   - XK_PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data)), 
-                   XK_PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data));
-            point += XK_PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data);
+            rmemcpy1(point, 0, chunk->chunk_data + (PG_PARSER_VARSIZE_ANY(chunk->chunk_data) 
+                   - PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data)), 
+                   PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data));
+            point += PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data);
         }
 
         else
         {
-            rmemcpy1(point, 0, chunk->chunk_data + (XK_PG_PARSER_VARSIZE_ANY(chunk->chunk_data) 
-                   - XK_PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data)), 
-                   XK_PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data));
-            point += XK_PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data);
+            rmemcpy1(point, 0, chunk->chunk_data + (PG_PARSER_VARSIZE_ANY(chunk->chunk_data) 
+                   - PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data)), 
+                   PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data));
+            point += PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data);
         }
         i++;
     }
@@ -900,15 +900,15 @@ static char *heap_get_external_data(txn *txn,
     return result;
 }
 
-static xk_pg_parser_translog_tbcol_value *heap_get_detoast_column(decodingcontext* decodingctx,
+static pg_parser_translog_tbcol_value *heap_get_detoast_column(decodingcontext* decodingctx,
                                                                   txn *txn,
-                                                                  xk_pg_parser_translog_tbcol_value *col)
+                                                                  pg_parser_translog_tbcol_value *col)
 {
     int ereno = 0;
-    xk_pg_parser_translog_tbcol_value *result = NULL;
-    xk_pg_parser_translog_convertinfo convert = {'\0'};
-    xk_pg_parser_translog_external xk_pg_parser_exdata = {'\0'};
-    xk_pg_parser_translog_tbcol_valuetype_external *ext = (xk_pg_parser_translog_tbcol_valuetype_external *)col->m_value;
+    pg_parser_translog_tbcol_value *result = NULL;
+    pg_parser_translog_convertinfo convert = {'\0'};
+    pg_parser_translog_external pg_parser_exdata = {'\0'};
+    pg_parser_translog_tbcol_valuetype_external *ext = (pg_parser_translog_tbcol_valuetype_external *)col->m_value;
 
     /* 入参准备 */
     convert.m_dbcharset = decodingctx->orgdbcharset;
@@ -917,38 +917,38 @@ static xk_pg_parser_translog_tbcol_value *heap_get_detoast_column(decodingcontex
     convert.m_monetary = decodingctx->monetary;
     convert.m_numeric = decodingctx->numeric;
 
-    xk_pg_parser_exdata.m_colName = col->m_colName;
-    xk_pg_parser_exdata.m_dbtype = decodingctx->walpre.m_dbtype;
-    xk_pg_parser_exdata.m_dbversion = decodingctx->walpre.m_dbversion;
-    xk_pg_parser_exdata.m_convertInfo = &convert;
-    xk_pg_parser_exdata.m_typeid = col->m_coltype;
+    pg_parser_exdata.m_colName = col->m_colName;
+    pg_parser_exdata.m_dbtype = decodingctx->walpre.m_dbtype;
+    pg_parser_exdata.m_dbversion = decodingctx->walpre.m_dbversion;
+    pg_parser_exdata.m_convertInfo = &convert;
+    pg_parser_exdata.m_typeid = col->m_coltype;
 
-    xk_pg_parser_exdata.m_typout = heap_get_output_name(decodingctx, xk_pg_parser_exdata.m_typeid);
-    xk_pg_parser_exdata.m_chunkdata = heap_get_external_data(txn,
+    pg_parser_exdata.m_typout = heap_get_output_name(decodingctx, pg_parser_exdata.m_typeid);
+    pg_parser_exdata.m_chunkdata = heap_get_external_data(txn,
                                                              ext->m_valueid,
-                                                             &xk_pg_parser_exdata.m_datalen,
+                                                             &pg_parser_exdata.m_datalen,
                                                              ext,
-                                                             xk_pg_parser_exdata.m_dbtype,
-                                                             xk_pg_parser_exdata.m_dbversion);
+                                                             pg_parser_exdata.m_dbtype,
+                                                             pg_parser_exdata.m_dbversion);
 
-    if (!xk_pg_parser_exdata.m_chunkdata)
+    if (!pg_parser_exdata.m_chunkdata)
         return NULL;
 
-    if (!xk_pg_parser_trans_external_trans(&xk_pg_parser_exdata, &result, &ereno))
+    if (!pg_parser_trans_external_trans(&pg_parser_exdata, &result, &ereno))
         elog(RLOG_ERROR, "failed detoast external , errcode: %x, msg: %s",
                           ereno,
-                          xk_pg_parser_errno_getErrInfo(ereno));
+                          pg_parser_errno_getErrInfo(ereno));
 
     /* 行外存储解析完成, 清理入参 */
-    rfree(xk_pg_parser_exdata.m_chunkdata);
-    rfree(xk_pg_parser_exdata.m_typout);
+    rfree(pg_parser_exdata.m_chunkdata);
+    rfree(pg_parser_exdata.m_typout);
 
     return result;
 }
 
 static void heap_assemble_insert(decodingcontext* decodingctx,
                                  txn *txn,
-                                 xk_pg_parser_translog_tbcol_values *tbcol_values)
+                                 pg_parser_translog_tbcol_values *tbcol_values)
 {
     StringInfo result_str = makeStringInfo();
     StringInfo column_name_str = makeStringInfo();
@@ -972,7 +972,7 @@ static void heap_assemble_insert(decodingcontext* decodingctx,
     /* 处理列 */
     for (column_index = 0; column_index < tbcol_values->m_valueCnt; column_index++)
     {
-        xk_pg_parser_translog_tbcol_value *col = &tbcol_values->m_new_values[column_index];
+        pg_parser_translog_tbcol_value *col = &tbcol_values->m_new_values[column_index];
         bool skip = false;
 
         /* 当列被drop或可能为空时, 不设置该列的值 */
@@ -995,7 +995,7 @@ static void heap_assemble_insert(decodingcontext* decodingctx,
             else if (col->m_info == INFO_COL_IS_TOAST)
             {
                 char *temp_str = NULL;
-                xk_pg_parser_translog_tbcol_value *toast_col = NULL;
+                pg_parser_translog_tbcol_value *toast_col = NULL;
 
                 toast_col = heap_get_detoast_column(decodingctx, txn, col);
 
@@ -1076,9 +1076,9 @@ static void heap_assemble_insert(decodingcontext* decodingctx,
 static bool check_have_pkey(decodingcontext* decodingctx, txn *txn, Oid oid)
 {
     HTAB *class_htab = decodingctx->trans_cache->sysdicts->by_class;
-    xk_pg_sysdict_Form_pg_class class = NULL;
+    pg_sysdict_Form_pg_class class = NULL;
 
-    class = (xk_pg_sysdict_Form_pg_class) catalog_get_class_sysdict(class_htab,
+    class = (pg_sysdict_Form_pg_class) catalog_get_class_sysdict(class_htab,
                                                                            NULL,
                                                                            txn->sysdictHis,
                                                                            oid);
@@ -1087,7 +1087,7 @@ static bool check_have_pkey(decodingcontext* decodingctx, txn *txn, Oid oid)
 
 static void heap_assemble_delete(decodingcontext* decodingctx,
                                  txn *txn,
-                                 xk_pg_parser_translog_tbcol_values *tbcol_values,
+                                 pg_parser_translog_tbcol_values *tbcol_values,
                                  Oid oid)
 {
     StringInfo result_str = makeStringInfo();
@@ -1111,7 +1111,7 @@ static void heap_assemble_delete(decodingcontext* decodingctx,
     /* 处理列 */
     for (column_index = 0; column_index < tbcol_values->m_valueCnt; column_index++)
     {
-        xk_pg_parser_translog_tbcol_value *col = &tbcol_values->m_old_values[column_index];
+        pg_parser_translog_tbcol_value *col = &tbcol_values->m_old_values[column_index];
         bool skip = false;
 
         /* 当列被drop或可能为空时, 不设置该列的值 */
@@ -1196,7 +1196,7 @@ static void heap_assemble_delete(decodingcontext* decodingctx,
 
 static void heap_assemble_update(decodingcontext* decodingctx,
                                  txn *txn,
-                                 xk_pg_parser_translog_tbcol_values *tbcol_values,
+                                 pg_parser_translog_tbcol_values *tbcol_values,
                                  Oid oid)
 {
     StringInfo result_str = makeStringInfo();
@@ -1222,8 +1222,8 @@ static void heap_assemble_update(decodingcontext* decodingctx,
     /* 处理列 */
     for (column_index = 0; column_index < tbcol_values->m_valueCnt; column_index++)
     {
-        xk_pg_parser_translog_tbcol_value *col_new = &tbcol_values->m_new_values[column_index];
-        xk_pg_parser_translog_tbcol_value *col_old = &tbcol_values->m_old_values[column_index];
+        pg_parser_translog_tbcol_value *col_new = &tbcol_values->m_new_values[column_index];
+        pg_parser_translog_tbcol_value *col_old = &tbcol_values->m_old_values[column_index];
 
         bool skip_new = false;
         bool skip_old = false;
@@ -1235,7 +1235,7 @@ static void heap_assemble_update(decodingcontext* decodingctx,
         if (col_new->m_info == INFO_COL_IS_TOAST)
         {
             char *temp_str = NULL;
-            xk_pg_parser_translog_tbcol_value *toast_col = NULL;
+            pg_parser_translog_tbcol_value *toast_col = NULL;
             toast_col = heap_get_detoast_column(decodingctx, txn, col_new);
 
             if (!toast_col)
@@ -1376,7 +1376,7 @@ static void heap_assemble_update(decodingcontext* decodingctx,
 
 static void heap_assemble_multi_insert(decodingcontext* decodingctx,
                                        txn *txn,
-                                       xk_pg_parser_translog_tbcol_nvalues *tbcol_nvalues)
+                                       pg_parser_translog_tbcol_nvalues *tbcol_nvalues)
 {
     StringInfo result_str = NULL;
     StringInfo column_name_str = NULL;
@@ -1407,7 +1407,7 @@ static void heap_assemble_multi_insert(decodingcontext* decodingctx,
         /* 处理列 */
         for (column_index = 0; column_index < tbcol_nvalues->m_valueCnt; column_index++)
         {
-            xk_pg_parser_translog_tbcol_value *col = &tbcol_nvalues->m_rows[row_index].m_new_values[column_index];
+            pg_parser_translog_tbcol_value *col = &tbcol_nvalues->m_rows[row_index].m_new_values[column_index];
             bool skip = false;
 
             /* 当列被drop或可能为空时, 不设置该列的值 */
@@ -1425,7 +1425,7 @@ static void heap_assemble_multi_insert(decodingcontext* decodingctx,
                 else if (col->m_info == INFO_COL_IS_TOAST)
                 {
                     char *temp_str = NULL;
-                    xk_pg_parser_translog_tbcol_value *toast_col = NULL;
+                    pg_parser_translog_tbcol_value *toast_col = NULL;
                     toast_col = heap_get_detoast_column(decodingctx, txn, col);
 
                     if (!toast_col)
@@ -1493,37 +1493,37 @@ static void heap_assemble_multi_insert(decodingcontext* decodingctx,
 
 void heap_parser2sql(void* decodingctx_in,
                      txn *txn,
-                     xk_pg_parser_translog_tbcolbase *trans_return,
+                     pg_parser_translog_tbcolbase *trans_return,
                      Oid oid)
 {
     decodingcontext* decodingctx = (decodingcontext*) decodingctx_in;
     switch (trans_return->m_dmltype)
     {
-        case XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT:
+        case PG_PARSER_TRANSLOG_DMLTYPE_INSERT:
         {
-            xk_pg_parser_translog_tbcol_values *insert = 
-                (xk_pg_parser_translog_tbcol_values *) trans_return;
+            pg_parser_translog_tbcol_values *insert = 
+                (pg_parser_translog_tbcol_values *) trans_return;
             heap_assemble_insert(decodingctx, txn, insert);
             break;
         }
-        case XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE:
+        case PG_PARSER_TRANSLOG_DMLTYPE_DELETE:
         {
-            xk_pg_parser_translog_tbcol_values *delete = 
-                (xk_pg_parser_translog_tbcol_values *) trans_return;
+            pg_parser_translog_tbcol_values *delete = 
+                (pg_parser_translog_tbcol_values *) trans_return;
             heap_assemble_delete(decodingctx, txn, delete, oid);
             break;
         }
-        case XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE:
+        case PG_PARSER_TRANSLOG_DMLTYPE_UPDATE:
         {
-            xk_pg_parser_translog_tbcol_values *update = 
-                (xk_pg_parser_translog_tbcol_values *) trans_return;
+            pg_parser_translog_tbcol_values *update = 
+                (pg_parser_translog_tbcol_values *) trans_return;
             heap_assemble_update(decodingctx, txn, update, oid);
             break;
         }
-        case XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT:
+        case PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT:
         {
-            xk_pg_parser_translog_tbcol_nvalues *minsert = 
-                (xk_pg_parser_translog_tbcol_nvalues *) trans_return;
+            pg_parser_translog_tbcol_nvalues *minsert = 
+                (pg_parser_translog_tbcol_nvalues *) trans_return;
             heap_assemble_multi_insert(decodingctx, txn, minsert);
             break;
         }
@@ -1571,7 +1571,7 @@ Oid get_real_oid_from_oidmap(HTAB *htab, Oid temp)
 
 void heap_parser_count_size(void* decodingctx_in,
                             txn *txn,
-                            xk_pg_parser_translog_tbcolbase *trans_return,
+                            pg_parser_translog_tbcolbase *trans_return,
                             Oid oid)
 {
     decodingcontext* decodingctx = (decodingcontext*)decodingctx_in;
@@ -1585,10 +1585,10 @@ void heap_parser_count_size(void* decodingctx_in,
     stmt->len = 0;
 
     /* multi instert 单独处理 */
-    if (trans_return->m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
+    if (trans_return->m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
     {
-        xk_pg_parser_translog_tbcol_nvalues *minsert =
-            (xk_pg_parser_translog_tbcol_nvalues*) trans_return;
+        pg_parser_translog_tbcol_nvalues *minsert =
+            (pg_parser_translog_tbcol_nvalues*) trans_return;
         int index_row = 0;
         int index_column = 0;
 
@@ -1596,12 +1596,12 @@ void heap_parser_count_size(void* decodingctx_in,
         {
             for (index_column = 0; index_column < minsert->m_valueCnt; index_column++)
             {
-                xk_pg_parser_translog_tbcol_value *column =
+                pg_parser_translog_tbcol_value *column =
                         &(minsert->m_rows[index_row].m_new_values[index_column]);
                 /* 只处理toast, 将toast的值解析出来 */
                 if (column->m_info == INFO_COL_IS_TOAST)
                 {
-                    xk_pg_parser_translog_tbcol_value *toast_col = NULL;
+                    pg_parser_translog_tbcol_value *toast_col = NULL;
                     deal_toast = true;
                     toast_col = heap_get_detoast_column(decodingctx, txn, column);
                     if (!toast_col)
@@ -1646,8 +1646,8 @@ void heap_parser_count_size(void* decodingctx_in,
     }
     else /* 其他DML语句 */
     {
-        xk_pg_parser_translog_tbcol_values * tbcolvalues=
-            (xk_pg_parser_translog_tbcol_values*) trans_return;
+        pg_parser_translog_tbcol_values * tbcolvalues=
+            (pg_parser_translog_tbcol_values*) trans_return;
 
         int index_column = 0;
         int index_key = 0;
@@ -1656,7 +1656,7 @@ void heap_parser_count_size(void* decodingctx_in,
         uint32_t index_key_num = 0;
         uint32_t* index_key_ptr = NULL;
 
-        if (XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == trans_return->m_dmltype)
+        if (PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == trans_return->m_dmltype)
         {
             ListCell* cell = NULL;
 
@@ -1688,8 +1688,8 @@ void heap_parser_count_size(void* decodingctx_in,
 
         for (index_column = 0; index_column < tbcolvalues->m_valueCnt; index_column++)
         {
-            xk_pg_parser_translog_tbcol_value *column_new = NULL;
-            xk_pg_parser_translog_tbcol_value *column_old = NULL;
+            pg_parser_translog_tbcol_value *column_new = NULL;
+            pg_parser_translog_tbcol_value *column_old = NULL;
 
             if (tbcolvalues->m_new_values)
             {
@@ -1698,7 +1698,7 @@ void heap_parser_count_size(void* decodingctx_in,
                 /* 只处理toast, 将toast的值解析出来 */
                 if (INFO_COL_IS_TOAST == column_new->m_info)
                 {
-                    xk_pg_parser_translog_tbcol_value *toast_col = NULL;
+                    pg_parser_translog_tbcol_value *toast_col = NULL;
                     deal_toast = true;
                     toast_col = heap_get_detoast_column(decodingctx, txn, column_new);
                     if (toast_col)
@@ -1756,7 +1756,7 @@ void heap_parser_count_size(void* decodingctx_in,
                 /* 只处理toast, 将toast的值解析出来 */
                 if (INFO_COL_IS_TOAST == column_old->m_info)
                 {
-                    xk_pg_parser_translog_tbcol_value *toast_col = NULL;
+                    pg_parser_translog_tbcol_value *toast_col = NULL;
                     deal_toast = true;
                     toast_col = heap_get_detoast_column(decodingctx, txn, column_old);
                     if (toast_col)
@@ -1850,32 +1850,32 @@ void heap_parser_count_size(void* decodingctx_in,
 }
 
 List *decode_heap_multi_insert_save_sysdict_as_insert(List *sysdict,
-                                                             xk_pg_parser_translog_tbcolbase *trans_return)
+                                                             pg_parser_translog_tbcolbase *trans_return)
 {
-    xk_pg_parser_translog_tbcol_nvalues *multi_values =
-        (xk_pg_parser_translog_tbcol_nvalues *)trans_return;
+    pg_parser_translog_tbcol_nvalues *multi_values =
+        (pg_parser_translog_tbcol_nvalues *)trans_return;
     int index_row = 0;
 
     /* 展开multi insert */
     for (index_row = 0; index_row < multi_values->m_rowCnt; index_row++)
     {
         txn_sysdict *dict = NULL;
-        xk_pg_parser_translog_tbcol_values *temp_colvalues = NULL;
+        pg_parser_translog_tbcol_values *temp_colvalues = NULL;
 
-        temp_colvalues = rmalloc0(sizeof(xk_pg_parser_translog_tbcol_values));
+        temp_colvalues = rmalloc0(sizeof(pg_parser_translog_tbcol_values));
         if (!temp_colvalues)
         {
             elog(RLOG_ERROR, "oom");
         }
-        rmemset0(temp_colvalues, 0, 0, sizeof(xk_pg_parser_translog_tbcol_values));
+        rmemset0(temp_colvalues, 0, 0, sizeof(pg_parser_translog_tbcol_values));
 
         /* 设置基础信息 */
-        temp_colvalues->m_base.m_dmltype = XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT;
+        temp_colvalues->m_base.m_dmltype = PG_PARSER_TRANSLOG_DMLTYPE_INSERT;
         temp_colvalues->m_base.m_originid = multi_values->m_base.m_originid;
         temp_colvalues->m_base.m_schemaname = rstrdup(multi_values->m_base.m_schemaname);
         temp_colvalues->m_base.m_tbname = rstrdup(multi_values->m_base.m_tbname);
         temp_colvalues->m_base.m_tabletype = multi_values->m_base.m_tabletype;
-        temp_colvalues->m_base.m_type = XK_PG_PARSER_TRANSLOG_RETURN_WITH_DATA;
+        temp_colvalues->m_base.m_type = PG_PARSER_TRANSLOG_RETURN_WITH_DATA;
 
         /* 设置列值相关信息 */
         temp_colvalues->m_relfilenode = multi_values->m_relfilenode;

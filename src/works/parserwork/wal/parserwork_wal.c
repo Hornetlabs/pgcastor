@@ -15,8 +15,8 @@
 #include "threads/threads.h"
 #include "misc/misc_stat.h"
 #include "misc/misc_control.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "net/netpacket/netpacket.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -168,7 +168,7 @@ decodingcontext* parserwork_walinitphase1(void)
     decodingctx->walpre.m_dbversion = guc_getConfigOption(CFG_KEY_DBVERION);
     decodingctx->walpre.m_debugLevel = 0;
     decodingctx->walpre.m_pagesize = g_blocksize;
-    decodingctx->walpre.m_walLevel = XK_PG_PARSER_WALLEVEL_LOGICAL;
+    decodingctx->walpre.m_walLevel = PG_PARSER_WALLEVEL_LOGICAL;
     decodingctx->walpre.m_record = NULL;
 
     /* 初始化链表结构 */

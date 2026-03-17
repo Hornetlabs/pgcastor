@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Africa_Windhoek[] =
+char* PG_Africa_Windhoek[] =
 {
     (char *)"Rule	Namibia	1994	only	-	Mar	21	0:00	-1:00	WAT",
     (char *)"Rule	Namibia	1994	2017	-	Sep	Sun>=1	2:00	0	CAT",

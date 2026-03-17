@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Japan[] =
+char* PG_Japan[] =
 {
     (char *)"Rule	Japan	1948	only	-	May	Sat>=1	24:00	1:00	D",
     (char *)"Rule	Japan	1948	1951	-	Sep	Sat>=8	25:00	0	S",

@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Belize[] =
+char* PG_America_Belize[] =
 {
     (char *)"Rule	Belize	1918	1942	-	Oct	Sun>=2	0:00	0:30	-0530",
     (char *)"Rule	Belize	1919	1943	-	Feb	Sun>=9	0:00	0	CST",

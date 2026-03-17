@@ -6,9 +6,9 @@
 #include "utils/hash/hash_search.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/string/stringinfo.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_errnodef.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_errnodef.h"
+#include "common/pg_parser_translog.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
 #include "cache/cache_sysidcts.h"
@@ -27,7 +27,7 @@
 #include "works/parserwork/wal/rewind.h"
 #include "works/parserwork/wal/parserwork_decode.h"
 #include "works/parserwork/wal/decode_seq.h"
-#include "common/xk_pg_parser_common_utils.h"
+#include "common/pg_parser_common_utils.h"
 
 /* 通过dboid判断是否需要捕获 */
 static bool heap_check_dboid(uint32_t dboid, uint32_t capture_dboid)
@@ -37,20 +37,20 @@ static bool heap_check_dboid(uint32_t dboid, uint32_t capture_dboid)
     return true;
 }
 
-void decode_seq(decodingcontext *ctx, xk_pg_parser_translog_pre_base *pbase)
+void decode_seq(decodingcontext *ctx, pg_parser_translog_pre_base *pbase)
 {
-    xk_pg_parser_translog_pre_seq *seq = NULL;
+    pg_parser_translog_pre_seq *seq = NULL;
     txn *txn = NULL;
     Oid seq_oid = InvalidOid;
-    xk_pg_sysdict_Form_pg_class class = NULL;
-    xk_pg_sysdict_Form_pg_namespace nsp = NULL;
+    pg_sysdict_Form_pg_class class = NULL;
+    pg_sysdict_Form_pg_namespace nsp = NULL;
     StringInfo alter_seq_restart_stmt = NULL;
     txnstmt *stmt =  NULL;
     txnstmt_ddl *dstmt = NULL;
     char *seq_name = NULL;
     char *seq_nspname = NULL;
 
-    seq = (xk_pg_parser_translog_pre_seq *) pbase;
+    seq = (pg_parser_translog_pre_seq *) pbase;
 
     if (!heap_check_dboid(seq->m_dboid, ctx->database))
     {
@@ -68,7 +68,7 @@ void decode_seq(decodingcontext *ctx, xk_pg_parser_translog_pre_base *pbase)
                                                     true);
 
     /* 从缓存中查找系统表记录 */
-    class = (xk_pg_sysdict_Form_pg_class) catalog_get_class_sysdict(ctx->trans_cache->sysdicts->by_class,
+    class = (pg_sysdict_Form_pg_class) catalog_get_class_sysdict(ctx->trans_cache->sysdicts->by_class,
                                                                            txn->sysdict,
                                                                            txn->sysdictHis,
                                                                            seq_oid);
@@ -78,7 +78,7 @@ void decode_seq(decodingcontext *ctx, xk_pg_parser_translog_pre_base *pbase)
     }
 
     /* 从缓存中查找系统表记录 */
-    nsp = (xk_pg_parser_sysdict_pgnamespace *) catalog_get_namespace_sysdict(ctx->trans_cache->sysdicts->by_namespace,
+    nsp = (pg_parser_sysdict_pgnamespace *) catalog_get_namespace_sysdict(ctx->trans_cache->sysdicts->by_namespace,
                                                                            txn->sysdict,
                                                                            txn->sysdictHis,
                                                                            class->relnamespace);
@@ -117,8 +117,8 @@ void decode_seq(decodingcontext *ctx, xk_pg_parser_translog_pre_base *pbase)
 
     txn->stmtsize += stmt->len;
     ctx->trans_cache->totalsize += stmt->len;
-    dstmt->type = XK_PG_PARSER_DDLTYPE_ALTER;
-    dstmt->subtype = XK_PG_PARSER_DDLTYPE_ALTER;
+    dstmt->type = PG_PARSER_DDLTYPE_ALTER;
+    dstmt->subtype = PG_PARSER_DDLTYPE_ALTER;
     dstmt->ddlstmt = rstrdup(alter_seq_restart_stmt->data);
     stmt->stmt = dstmt;
 

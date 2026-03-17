@@ -1,15 +1,15 @@
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "common/xk_pg_parser_translog.h"
-#include "sysdict/xk_pg_parser_sysdict_getinfo.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgfunc.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgsfunc.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_fmgr.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_conv.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "common/pg_parser_translog.h"
+#include "sysdict/pg_parser_sysdict_getinfo.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgfunc.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgsfunc.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_fmgr.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
 
 #define FMGR_MCXT NULL
 
-const xk_pg_parser_FmgrBuiltinNormal xk_pg_parser_fmgr_builtins_normal[] = {
+const pg_parser_FmgrBuiltinNormal pg_parser_fmgr_builtins_normal[] = {
     { "charout", charout },
     { "nameout", nameout },
     { "int2out", int2out },
@@ -48,10 +48,10 @@ const xk_pg_parser_FmgrBuiltinNormal xk_pg_parser_fmgr_builtins_normal[] = {
     { "regclassout", regclassout }
 };
 
-const int32_t xk_pg_parser_fmgr_nbuiltins_normal = (sizeof(xk_pg_parser_fmgr_builtins_normal)
-                                                   / sizeof(xk_pg_parser_FmgrBuiltinNormal));
+const int32_t pg_parser_fmgr_nbuiltins_normal = (sizeof(pg_parser_fmgr_builtins_normal)
+                                                   / sizeof(pg_parser_FmgrBuiltinNormal));
 
-const xk_pg_parser_FmgrBuiltinSpecial xk_pg_parser_fmgr_builtins_special[] = {
+const pg_parser_FmgrBuiltinSpecial pg_parser_fmgr_builtins_special[] = {
     { "byteaout", byteaout },
     { "record_out", record_out },
     { "pg_node_tree_out", pg_node_tree_out },
@@ -84,11 +84,11 @@ const xk_pg_parser_FmgrBuiltinSpecial xk_pg_parser_fmgr_builtins_special[] = {
     { "geometry_out", geometry_out },       /* postgis support */
     { "geography_out", geography_out }      /* postgis support */
 };
-const int32_t xk_pg_parser_fmgr_nbuiltins_special = (sizeof(xk_pg_parser_fmgr_builtins_special)
-                                                    / sizeof(xk_pg_parser_FmgrBuiltinSpecial));
+const int32_t pg_parser_fmgr_nbuiltins_special = (sizeof(pg_parser_fmgr_builtins_special)
+                                                    / sizeof(pg_parser_FmgrBuiltinSpecial));
 
-static const xk_pg_parser_FmgrBuiltinNormal *xk_pg_parser_getNormalOutputFuncByName(char *typoutput);
-static const xk_pg_parser_FmgrBuiltinSpecial *xk_pg_parser_getSpecialOutputFuncByName(char *typoutput);
+static const pg_parser_FmgrBuiltinNormal *pg_parser_getNormalOutputFuncByName(char *typoutput);
+static const pg_parser_FmgrBuiltinSpecial *pg_parser_getSpecialOutputFuncByName(char *typoutput);
 
 
 static char*typoutput_tolower(char *output)
@@ -103,24 +103,24 @@ static char*typoutput_tolower(char *output)
     return output;
 }
 
-bool xk_pg_parser_convert_attr_to_str_value(xk_pg_parser_Datum attr,
-                                            xk_pg_parser_sysdicts *sysdicts,
-                                            xk_pg_parser_translog_tbcol_value *colvalue,
-                                            xk_pg_parser_translog_convertinfo_with_zic *zicinfo)
+bool pg_parser_convert_attr_to_str_value(pg_parser_Datum attr,
+                                            pg_parser_sysdicts *sysdicts,
+                                            pg_parser_translog_tbcol_value *colvalue,
+                                            pg_parser_translog_convertinfo_with_zic *zicinfo)
 {
     char *typoutput = NULL;
     bool  is_special = false;
     uint32_t typid = colvalue->m_coltype;
-    xk_pg_parser_sysdict_TypeInfo typinfo;
-    const xk_pg_parser_FmgrBuiltinNormal *fmgr_normal = NULL;
-    const xk_pg_parser_FmgrBuiltinSpecial *fmgr_special = NULL;
+    pg_parser_sysdict_TypeInfo typinfo;
+    const pg_parser_FmgrBuiltinNormal *fmgr_normal = NULL;
+    const pg_parser_FmgrBuiltinSpecial *fmgr_special = NULL;
 
-    if (!xk_pg_parser_sysdict_getTypeInfo(typid, sysdicts, &typinfo))
+    if (!pg_parser_sysdict_getTypeInfo(typid, sysdicts, &typinfo))
         return false;
 
     typoutput = typinfo.typoutput_proname;
     typoutput = typoutput_tolower(typoutput);
-    xk_pg_parser_log_errlog(zicinfo->debuglevel,
+    pg_parser_log_errlog(zicinfo->debuglevel,
                            "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* 目前不支持对anyarray_out的支持 */
     if (!strcmp("anyarray_out", typoutput))
@@ -128,14 +128,14 @@ bool xk_pg_parser_convert_attr_to_str_value(xk_pg_parser_Datum attr,
         colvalue->m_info = INFO_COL_IS_NULL;
         return true;
     }
-    fmgr_normal = xk_pg_parser_getNormalOutputFuncByName(typoutput);
+    fmgr_normal = pg_parser_getNormalOutputFuncByName(typoutput);
     if (!fmgr_normal)
     {
         is_special = true;
-        fmgr_special = xk_pg_parser_getSpecialOutputFuncByName(typoutput);
+        fmgr_special = pg_parser_getSpecialOutputFuncByName(typoutput);
         if (!fmgr_special)
         {
-            colvalue->m_value = (void *)xk_pg_parser_mcxt_strdup(">UNSUPPORT TYPE<");
+            colvalue->m_value = (void *)pg_parser_mcxt_strdup(">UNSUPPORT TYPE<");
             colvalue->m_valueLen = strlen(colvalue->m_value);
             return true;
         }
@@ -153,7 +153,7 @@ bool xk_pg_parser_convert_attr_to_str_value(xk_pg_parser_Datum attr,
     else
     {
         /* 特殊函数需要额外的入参, 先准备参数 */
-        xk_pg_parser_extraTypoutInfo info = {'\0'};
+        pg_parser_extraTypoutInfo info = {'\0'};
         info.typrelid = typinfo.typrelid;
         info.sysdicts = sysdicts;
         info.valueinfo = colvalue->m_info;
@@ -165,7 +165,7 @@ bool xk_pg_parser_convert_attr_to_str_value(xk_pg_parser_Datum attr,
             if (!strcmp(typoutput, "pg_node_tree_out"))
             {
                 colvalue->m_info = INFO_NOTHING;
-                colvalue->m_value = (void *)xk_pg_parser_mcxt_strdup(">UNSUPPORT<");
+                colvalue->m_value = (void *)pg_parser_mcxt_strdup(">UNSUPPORT<");
                 colvalue->m_valueLen = strlen(colvalue->m_value);
                 return true;
             }
@@ -182,56 +182,56 @@ bool xk_pg_parser_convert_attr_to_str_value(xk_pg_parser_Datum attr,
     {
         char *temp_ptr = (char*)colvalue->m_value;
         bool needfree = false;
-        colvalue->m_value = xk_pg_parser_encoding_convert((char*)colvalue->m_value,
+        colvalue->m_value = pg_parser_encoding_convert((char*)colvalue->m_value,
                                                           &needfree,
                                                           zicinfo->convertinfo->m_tartgetcharset,
                                                           zicinfo->convertinfo->m_dbcharset);
         if (needfree)
-            xk_pg_parser_mcxt_free(FMGR_MCXT, temp_ptr);
+            pg_parser_mcxt_free(FMGR_MCXT, temp_ptr);
         if (!colvalue->m_value)
             return false;
     }
     if ((colvalue->m_info == INFO_NOTHING))
     {
-       xk_pg_parser_log_errlog(zicinfo->debuglevel,
+       pg_parser_log_errlog(zicinfo->debuglevel,
            "DEBUG: success get values[%s]\n", (char*)(colvalue->m_value));
     }
 
     return true;
 }
 
-char *xk_pg_parser_convert_attr_to_str_char(xk_pg_parser_Datum attr,
-                                            xk_pg_parser_sysdicts *sysdicts,
+char *pg_parser_convert_attr_to_str_char(pg_parser_Datum attr,
+                                            pg_parser_sysdicts *sysdicts,
                                             uint32_t typid,
                                             bool *istoast,
-                                            xk_pg_parser_translog_convertinfo_with_zic *zicinfo)
+                                            pg_parser_translog_convertinfo_with_zic *zicinfo)
 {
     char *typoutput = NULL;
     char *result = NULL;
     bool  is_special = false;
     uint8_t value_info = 0;
-    xk_pg_parser_sysdict_TypeInfo typinfo;
-    const xk_pg_parser_FmgrBuiltinNormal *fmgr_normal = NULL;
-    const xk_pg_parser_FmgrBuiltinSpecial *fmgr_special = NULL;
+    pg_parser_sysdict_TypeInfo typinfo;
+    const pg_parser_FmgrBuiltinNormal *fmgr_normal = NULL;
+    const pg_parser_FmgrBuiltinSpecial *fmgr_special = NULL;
 
-    if (!xk_pg_parser_sysdict_getTypeInfo(typid, sysdicts, &typinfo))
+    if (!pg_parser_sysdict_getTypeInfo(typid, sysdicts, &typinfo))
         return NULL;
 
     typoutput = typinfo.typoutput_proname;
     typoutput = typoutput_tolower(typoutput);
-    xk_pg_parser_log_errlog(zicinfo->debuglevel,
+    pg_parser_log_errlog(zicinfo->debuglevel,
                            "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* 目前不支持对anyarray_out的支持 */
-    fmgr_normal = xk_pg_parser_getNormalOutputFuncByName(typoutput);
+    fmgr_normal = pg_parser_getNormalOutputFuncByName(typoutput);
     if (!strcmp("anyarray_out", typoutput))
-        return xk_pg_parser_mcxt_strdup(">UNSUPPORT<");
+        return pg_parser_mcxt_strdup(">UNSUPPORT<");
 
     if (!fmgr_normal)
     {
         is_special = true;
-        fmgr_special = xk_pg_parser_getSpecialOutputFuncByName(typoutput);
+        fmgr_special = pg_parser_getSpecialOutputFuncByName(typoutput);
         if (!fmgr_special)
-            return xk_pg_parser_mcxt_strdup(">UNSUPPORT TYPE<");
+            return pg_parser_mcxt_strdup(">UNSUPPORT TYPE<");
     }
 
     if (!is_special)
@@ -244,7 +244,7 @@ char *xk_pg_parser_convert_attr_to_str_char(xk_pg_parser_Datum attr,
     else
     {
         /* 特殊函数需要额外的入参, 先准备参数 */
-        xk_pg_parser_extraTypoutInfo info = {'\0'};
+        pg_parser_extraTypoutInfo info = {'\0'};
         info.typrelid = typinfo.typrelid;
         info.sysdicts = sysdicts;
         info.valueinfo = 0;
@@ -262,29 +262,29 @@ char *xk_pg_parser_convert_attr_to_str_char(xk_pg_parser_Datum attr,
     {
         char *temp_ptr = result;
         bool needfree = false;
-        result = xk_pg_parser_encoding_convert(result,
+        result = pg_parser_encoding_convert(result,
                                                &needfree,
                                                zicinfo->convertinfo->m_tartgetcharset,
                                                zicinfo->convertinfo->m_dbcharset);
         if (needfree)
-            xk_pg_parser_mcxt_free(FMGR_MCXT, temp_ptr);
+            pg_parser_mcxt_free(FMGR_MCXT, temp_ptr);
         if (!result)
             return NULL;
     }
     return result;
 }
 
-bool xk_pg_parser_convert_attr_to_str_external_value(xk_pg_parser_Datum attr,
+bool pg_parser_convert_attr_to_str_external_value(pg_parser_Datum attr,
                                                      char *typoutput,
-                                                     xk_pg_parser_translog_tbcol_value *colvalue,
-                                                     xk_pg_parser_translog_convertinfo_with_zic *zicinfo)
+                                                     pg_parser_translog_tbcol_value *colvalue,
+                                                     pg_parser_translog_convertinfo_with_zic *zicinfo)
 {
     bool  is_special = false;
-    const xk_pg_parser_FmgrBuiltinNormal *fmgr_normal = NULL;
-    const xk_pg_parser_FmgrBuiltinSpecial *fmgr_special = NULL;
+    const pg_parser_FmgrBuiltinNormal *fmgr_normal = NULL;
+    const pg_parser_FmgrBuiltinSpecial *fmgr_special = NULL;
 
     typoutput = typoutput_tolower(typoutput);
-    xk_pg_parser_log_errlog(zicinfo->debuglevel,
+    pg_parser_log_errlog(zicinfo->debuglevel,
                            "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* 目前不支持对anyarray_out的支持 */
     if (!strcmp("anyarray_out", typoutput))
@@ -292,14 +292,14 @@ bool xk_pg_parser_convert_attr_to_str_external_value(xk_pg_parser_Datum attr,
         colvalue->m_info = INFO_COL_IS_NULL;
         return true;
     }
-    fmgr_normal = xk_pg_parser_getNormalOutputFuncByName(typoutput);
+    fmgr_normal = pg_parser_getNormalOutputFuncByName(typoutput);
     if (!fmgr_normal)
     {
         is_special = true;
-        fmgr_special = xk_pg_parser_getSpecialOutputFuncByName(typoutput);
+        fmgr_special = pg_parser_getSpecialOutputFuncByName(typoutput);
         if (!fmgr_special)
         {
-            colvalue->m_value = (void *)xk_pg_parser_mcxt_strdup(">UNSUPPORT TYPE<");
+            colvalue->m_value = (void *)pg_parser_mcxt_strdup(">UNSUPPORT TYPE<");
             colvalue->m_valueLen = strlen(colvalue->m_value);
             return true;
         }
@@ -316,7 +316,7 @@ bool xk_pg_parser_convert_attr_to_str_external_value(xk_pg_parser_Datum attr,
     else
     {
         /* 特殊函数需要额外的入参, 先准备参数 */
-        xk_pg_parser_extraTypoutInfo info = {'\0'};
+        pg_parser_extraTypoutInfo info = {'\0'};
         info.sysdicts = NULL;
         info.valueinfo = colvalue->m_info;
         info.zicinfo = zicinfo;
@@ -327,7 +327,7 @@ bool xk_pg_parser_convert_attr_to_str_external_value(xk_pg_parser_Datum attr,
             if (!strcmp(typoutput, "pg_node_tree_out"))
             {
                 colvalue->m_info = INFO_NOTHING;
-                colvalue->m_value = (void *)xk_pg_parser_mcxt_strdup(">UNSUPPORT<");
+                colvalue->m_value = (void *)pg_parser_mcxt_strdup(">UNSUPPORT<");
                 colvalue->m_valueLen = strlen(colvalue->m_value);
                 return true;
             }
@@ -344,69 +344,69 @@ bool xk_pg_parser_convert_attr_to_str_external_value(xk_pg_parser_Datum attr,
     {
         char *temp_ptr = (char*)colvalue->m_value;
         bool needfree = false;
-        colvalue->m_value = xk_pg_parser_encoding_convert((char*)colvalue->m_value,
+        colvalue->m_value = pg_parser_encoding_convert((char*)colvalue->m_value,
                                                           &needfree,
                                                           zicinfo->convertinfo->m_tartgetcharset,
                                                           zicinfo->convertinfo->m_dbcharset);
         if (needfree)
-            xk_pg_parser_mcxt_free(FMGR_MCXT, temp_ptr);
+            pg_parser_mcxt_free(FMGR_MCXT, temp_ptr);
         if (!colvalue->m_value)
             return false;
     }
     return true;
 }
 
-static const xk_pg_parser_FmgrBuiltinNormal *xk_pg_parser_getNormalOutputFuncByName(char *typoutput)
+static const pg_parser_FmgrBuiltinNormal *pg_parser_getNormalOutputFuncByName(char *typoutput)
 {
     int32_t i = 0;
-    for (i = 0; i < xk_pg_parser_fmgr_nbuiltins_normal; i++)
+    for (i = 0; i < pg_parser_fmgr_nbuiltins_normal; i++)
     {
-        if (!strcmp(typoutput, xk_pg_parser_fmgr_builtins_normal[i].funcName))
-            return &xk_pg_parser_fmgr_builtins_normal[i];
+        if (!strcmp(typoutput, pg_parser_fmgr_builtins_normal[i].funcName))
+            return &pg_parser_fmgr_builtins_normal[i];
     }
     return NULL;
 }
 
-static const xk_pg_parser_FmgrBuiltinSpecial *xk_pg_parser_getSpecialOutputFuncByName(char *typoutput)
+static const pg_parser_FmgrBuiltinSpecial *pg_parser_getSpecialOutputFuncByName(char *typoutput)
 {
     int32_t i = 0;
-    for (i = 0; i < xk_pg_parser_fmgr_nbuiltins_special; i++)
+    for (i = 0; i < pg_parser_fmgr_nbuiltins_special; i++)
     {
-        if (!strcmp(typoutput, xk_pg_parser_fmgr_builtins_special[i].funcName))
-            return &xk_pg_parser_fmgr_builtins_special[i];
+        if (!strcmp(typoutput, pg_parser_fmgr_builtins_special[i].funcName))
+            return &pg_parser_fmgr_builtins_special[i];
     }
     return NULL;
 }
 
-char *xk_pg_parser_convert_attr_to_str_by_typid_typoptput(xk_pg_parser_Datum attr,
+char *pg_parser_convert_attr_to_str_by_typid_typoptput(pg_parser_Datum attr,
                                                           uint32_t typid,
                                                           char *typoutput,
-                                                          xk_pg_parser_translog_convertinfo_with_zic *zicinfo)
+                                                          pg_parser_translog_convertinfo_with_zic *zicinfo)
 {
     char *result = NULL;
     bool  is_special = false;
     uint8_t value_info = 0;
-    const xk_pg_parser_FmgrBuiltinNormal *fmgr_normal = NULL;
-    const xk_pg_parser_FmgrBuiltinSpecial *fmgr_special = NULL;
+    const pg_parser_FmgrBuiltinNormal *fmgr_normal = NULL;
+    const pg_parser_FmgrBuiltinSpecial *fmgr_special = NULL;
 
     typoutput = typoutput_tolower(typoutput);
-    xk_pg_parser_log_errlog(zicinfo->debuglevel,
+    pg_parser_log_errlog(zicinfo->debuglevel,
                            "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* 目前不支持对anyarray_out的支持 */
     if (!strcmp("anyarray_out", typoutput))
-        xk_pg_parser_mcxt_strdup(">UNSUPPORT<");
+        pg_parser_mcxt_strdup(">UNSUPPORT<");
 
 
     if (!typoutput)
         return NULL;
 
-    fmgr_normal = xk_pg_parser_getNormalOutputFuncByName(typoutput);
+    fmgr_normal = pg_parser_getNormalOutputFuncByName(typoutput);
     if (!fmgr_normal)
     {
         is_special = true;
-        fmgr_special = xk_pg_parser_getSpecialOutputFuncByName(typoutput);
+        fmgr_special = pg_parser_getSpecialOutputFuncByName(typoutput);
         if (!fmgr_special)
-            return xk_pg_parser_mcxt_strdup(">UNSUPPORT TYPE<");
+            return pg_parser_mcxt_strdup(">UNSUPPORT TYPE<");
     }
 
     if (!is_special)
@@ -419,7 +419,7 @@ char *xk_pg_parser_convert_attr_to_str_by_typid_typoptput(xk_pg_parser_Datum att
     else
     {
         /* 特殊函数需要额外的入参, 先准备参数 */
-        xk_pg_parser_extraTypoutInfo info = {'\0'};
+        pg_parser_extraTypoutInfo info = {'\0'};
         info.typrelid = typid;
         info.sysdicts = NULL;
         info.valueinfo = 0;
@@ -437,12 +437,12 @@ char *xk_pg_parser_convert_attr_to_str_by_typid_typoptput(xk_pg_parser_Datum att
     {
         char *temp_ptr = result;
         bool needfree = false;
-        result = xk_pg_parser_encoding_convert(result,
+        result = pg_parser_encoding_convert(result,
                                                &needfree,
                                                zicinfo->convertinfo->m_tartgetcharset,
                                                zicinfo->convertinfo->m_dbcharset);
         if (needfree)
-            xk_pg_parser_mcxt_free(FMGR_MCXT, temp_ptr);
+            pg_parser_mcxt_free(FMGR_MCXT, temp_ptr);
         if (!result)
             return NULL;
     }

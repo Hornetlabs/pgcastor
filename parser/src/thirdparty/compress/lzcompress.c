@@ -1,17 +1,12 @@
 
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "thirdparty/compress/xk_pg_parser_thirdparty_lzcompress.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "thirdparty/compress/pg_parser_thirdparty_lzcompress.h"
 
-#define xk_pg_parser_thirdparty_Min(x, y)       ((x) < (y) ? (x) : (y))
+#define pg_parser_thirdparty_Min(x, y)       ((x) < (y) ? (x) : (y))
 
-#if XK_PG_VERSION_NUM >= 120000
-int32_t xk_pg_parser_lz_decompress(const char *source, int32_t slen, char *dest,
+int32_t pg_parser_lz_decompress(const char *source, int32_t slen, char *dest,
                 int32_t rawsize, bool check_complete)
-#else
-int32_t xk_pg_parser_lz_decompress(const char *source, int32_t slen, char *dest,
-                int32_t rawsize)
-#endif
 {
     const unsigned char *sp;
     const unsigned char *srcend;
@@ -59,7 +54,7 @@ int32_t xk_pg_parser_lz_decompress(const char *source, int32_t slen, char *dest,
                  * memcpy() here, because the copied areas could overlap
                  * extremely!
                  */
-                len = xk_pg_parser_thirdparty_Min(len, destend - dp);
+                len = pg_parser_thirdparty_Min(len, destend - dp);
                 while (len--)
                 {
                     *dp = dp[-off];
@@ -87,13 +82,8 @@ int32_t xk_pg_parser_lz_decompress(const char *source, int32_t slen, char *dest,
      * won't necessarily be at the end of the source or dest buffers when we
      * hit a stop, so we don't test them.
      */
-#if XK_PG_VERSION_NUM >= 120000
     if (check_complete && (dp != destend || sp != srcend))
         return -1;
-#else
-    if (dp != destend || sp != srcend)
-        return -1;
-#endif
 
     /*
      * That's it.
@@ -102,7 +92,7 @@ int32_t xk_pg_parser_lz_decompress(const char *source, int32_t slen, char *dest,
 }
 
 #define unlikely(x) __builtin_expect((x) != 0, 0)
-int32_t xk_pg_parser_pg14_pglz_decompress(const char *source,
+int32_t pg_parser_pg14_pglz_decompress(const char *source,
                                           int32_t slen,
                                           char *dest,
                                           int32_t rawsize,
@@ -159,7 +149,7 @@ int32_t xk_pg_parser_pg14_pglz_decompress(const char *source,
                 /*
                  * Don't emit more data than requested.
                  */
-                len = xk_pg_parser_thirdparty_Min(len, destend - dp);
+                len = pg_parser_thirdparty_Min(len, destend - dp);
                 /*
                  * Now we copy the bytes specified by the tag from OUTPUT to
                  * OUTPUT (copy len bytes from dp - off to dp).  The copied

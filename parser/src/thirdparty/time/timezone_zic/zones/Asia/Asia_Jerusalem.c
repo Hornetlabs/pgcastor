@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Asia_Jerusalem[] =
+char* PG_Asia_Jerusalem[] =
 {
     (char *)"Rule	Zion	1940	only	-	Jun	 1	0:00	1:00	D",
     (char *)"Rule	Zion	1942	1944	-	Nov	 1	0:00	0	S",

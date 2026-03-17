@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_postgis.c
+ * @file pg_parser_thirdparty_tupleparser_postgis.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -10,15 +10,15 @@
  */
 #include <math.h>
 #include <float.h>
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "common/xk_pg_parser_translog.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgfunc.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgsfunc.h"
-#include "thirdparty/common/xk_pg_parser_thirdparty_builtins.h"
-#include "thirdparty/tupleparser/toast/xk_pg_parser_thirdparty_tupleparser_toast.h"
-#include "common/xk_pg_parser_common_utils.h"
-#include "thirdparty/stringinfo/xk_pg_parser_thirdparty_stringinfo.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "common/pg_parser_translog.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgfunc.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgsfunc.h"
+#include "thirdparty/common/pg_parser_thirdparty_builtins.h"
+#include "thirdparty/tupleparser/toast/pg_parser_thirdparty_tupleparser_toast.h"
+#include "common/pg_parser_common_utils.h"
+#include "thirdparty/stringinfo/pg_parser_thirdparty_stringinfo.h"
 
 #define PGFUNC_POSTGIS_MCXT NULL
 
@@ -366,20 +366,20 @@ static const char DIGIT_TABLE[200] =
   '9','0','9','1','9','2','9','3','9','4','9','5','9','6','9','7','9','8','9','9'
 };
 
-xk_pg_parser_Datum spheroid_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum spheroid_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     SPHEROID *sphere = (SPHEROID *)attr;
     char *result;
     size_t sz = MAX_DIGS_DOUBLE + MAX_DIGS_DOUBLE + 20 + 9 + 2;
 
-    XK_PG_PARSER_UNUSED(info);
+    PG_PARSER_UNUSED(info);
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&result, sz);
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&result, sz);
 
     snprintf(result, sz, "SPHEROID(\"%s\",%.15g,%.15g)",
              sphere->name, sphere->a, 1.0 / sphere->f);
 
-    return (xk_pg_parser_Datum)result;
+    return (pg_parser_Datum)result;
 }
 
 #define OUT_MAX_DIGITS 17 + 8
@@ -1134,7 +1134,7 @@ static int32_t lwprint_double(double d, int32_t maxdd, char *buf)
     return length;
 }
 
-xk_pg_parser_Datum box3d_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum box3d_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     BOX3D *bbox = (BOX3D *)attr;
     static const int32_t precision = 15;
@@ -1142,16 +1142,16 @@ xk_pg_parser_Datum box3d_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
     int32_t i = 0;
     char *result;
 
-    XK_PG_PARSER_UNUSED(info);
+    PG_PARSER_UNUSED(info);
 
     if (bbox == NULL)
     {
-        xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&result, 5);
+        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&result, 5);
         strcat(result, "NULL");
-        return (xk_pg_parser_Datum) result;
+        return (pg_parser_Datum) result;
     }
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&result, size);
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&result, size);
     result[i++] = 'B';
     result[i++] = 'O';
     result[i++] = 'X';
@@ -1172,7 +1172,7 @@ xk_pg_parser_Datum box3d_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
     result[i++] = ')';
     result[i++] = '\0';
 
-    return (xk_pg_parser_Datum) result;
+    return (pg_parser_Datum) result;
 }
 
 typedef struct
@@ -1188,7 +1188,7 @@ typedef struct
     double mmax;
 } GBOX;
 
-xk_pg_parser_Datum box2d_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum box2d_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     char tmp[500] = {'B', 'O', 'X', '(', 0}; /* big enough */
     static const int32_t precision = 15;
@@ -1199,7 +1199,7 @@ xk_pg_parser_Datum box2d_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
     /* Avoid unaligned access to the gbox struct */
     GBOX box_aligned;
 
-    XK_PG_PARSER_UNUSED(info);
+    PG_PARSER_UNUSED(info);
 
     rmemcpy1(&box_aligned, 0, box, sizeof(GBOX));
 
@@ -1215,11 +1215,11 @@ xk_pg_parser_Datum box2d_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutIn
     tmp[size++] = ')';
     size += 1;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&result, size + 1); /* +1= null term */
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&result, size + 1); /* +1= null term */
     rmemcpy0(result, 0, tmp, size + 1);
     result[size] = '\0';
 
-    return (xk_pg_parser_Datum) result;
+    return (pg_parser_Datum) result;
 }
 
 typedef struct
@@ -1249,14 +1249,14 @@ static char* box2df_to_string(const BOX2DF *a)
     return rstrdup(tmp);
 }
 
-xk_pg_parser_Datum box2df_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum box2df_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     BOX2DF *box = (BOX2DF *)attr;
     char *result = box2df_to_string(box);
 
-    XK_PG_PARSER_UNUSED(info);
+    PG_PARSER_UNUSED(info);
 
-    return (xk_pg_parser_Datum) result;
+    return (pg_parser_Datum) result;
 }
 
 typedef struct
@@ -1265,7 +1265,7 @@ typedef struct
     float c[1];
 } GIDX;
 
-#define GIDX_NDIMS(gidx) ((XK_PG_PARSER_VARSIZE((gidx)) - XK_PG_PARSER_VARHDRSZ) / (2 * sizeof(float)))
+#define GIDX_NDIMS(gidx) ((PG_PARSER_VARSIZE((gidx)) - PG_PARSER_VARHDRSZ) / (2 * sizeof(float)))
 #define GIDX_GET_MIN(gidx, dimension) *( (gidx)->c + 2 * (dimension) )
 #define GIDX_GET_MAX(gidx, dimension) *( (gidx)->c + 2 * (dimension) + 1 )
 
@@ -1300,14 +1300,14 @@ static char* gidx_to_string(GIDX *a)
     return rstrdup(tmp);
 }
 
-xk_pg_parser_Datum gidx_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum gidx_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     GIDX *box = (GIDX *)attr;
     char *result = gidx_to_string(box);
 
-    XK_PG_PARSER_UNUSED(info);
+    PG_PARSER_UNUSED(info);
 
-    return (xk_pg_parser_Datum) result;
+    return (pg_parser_Datum) result;
 }
 
 struct rt_raster_serialized_t {
@@ -1428,16 +1428,16 @@ static void rt_band_destroy(rt_band band)
     {
         /* memory cache */
         if (band->data.offline.mem != NULL)
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, band->data.offline.mem);
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, band->data.offline.mem);
         /* offline file path */
         if (band->data.offline.path != NULL)
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, band->data.offline.path);
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, band->data.offline.path);
     }
     /* inline band and band owns the data */
     else if (band->data.mem != NULL && band->ownsdata)
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, band->data.mem);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, band->data.mem);
 
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, band);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, band);
 }
 
 
@@ -1594,9 +1594,9 @@ rt_raster_destroy(rt_raster raster)
         return;
 
     if (raster->bands)
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, raster->bands);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, raster->bands);
 
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, raster);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, raster);
 }
 
 static rt_raster rt_raster_deserialize(void *serialized, int header_only)
@@ -1615,7 +1615,7 @@ static rt_raster rt_raster_deserialize(void *serialized, int header_only)
      */
 
     /* Allocate memory for deserialized raster header */
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&rast, sizeof(struct rt_raster_t));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&rast, sizeof(struct rt_raster_t));
     if (!rast)
     {
         return NULL;
@@ -1633,7 +1633,7 @@ static rt_raster rt_raster_deserialize(void *serialized, int header_only)
     beg = (const uint8_t *)serialized;
 
     /* Allocate registry of raster bands */
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(rast->bands), sizeof(rt_band));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(rast->bands), sizeof(rt_band));
 
     if (rast->bands == NULL)
     {
@@ -1651,7 +1651,7 @@ static rt_raster rt_raster_deserialize(void *serialized, int header_only)
         uint8_t type = 0;
         int pixbytes = 0;
 
-        xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&band, sizeof(struct rt_band_t));
+        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&band, sizeof(struct rt_band_t));
         if (!band)
         {
             for (j = 0; j < i; j++)
@@ -1755,7 +1755,7 @@ static rt_raster rt_raster_deserialize(void *serialized, int header_only)
 
             /* Register path */
             pathlen = strlen((char *)ptr);
-            xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT,
+            pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT,
                                     (void **)&(band->data.offline.path),
                                      sizeof(char) * (pathlen + 1));
             if (band->data.offline.path == NULL)
@@ -1873,7 +1873,7 @@ rt_raster_to_wkb(rt_raster raster, int outasin, uint32_t *wkbsize)
 
     *wkbsize = rt_raster_wkb_size(raster, outasin);
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&wkb, *wkbsize);
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&wkb, *wkbsize);
     if (!wkb) {
         return NULL;
     }
@@ -1899,7 +1899,7 @@ rt_raster_to_wkb(rt_raster raster, int outasin, uint32_t *wkbsize)
 
         if (pixbytes < 1)
         {
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkb);
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkb);
             return NULL;
         }
 
@@ -1963,7 +1963,7 @@ rt_raster_to_wkb(rt_raster raster, int outasin, uint32_t *wkbsize)
                 break;
             }
             default:
-                xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkb);
+                pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkb);
                 return 0;
         }
 
@@ -1984,7 +1984,7 @@ rt_raster_to_wkb(rt_raster raster, int outasin, uint32_t *wkbsize)
 
             if (!band_result)
             {
-                xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkb);
+                pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkb);
                 return NULL;
             }
 
@@ -2012,11 +2012,11 @@ static char *rt_raster_to_hexwkb(rt_raster raster, int outasin, uint32_t *hexwkb
 
     *hexwkbsize = wkbsize * 2; /* hex is 2 times bytes */
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&hexwkb, (*hexwkbsize) + 1);
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&hexwkb, (*hexwkbsize) + 1);
 
     if (!hexwkb)
     {
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkb);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkb);
         return NULL;
     }
 
@@ -2030,7 +2030,7 @@ static char *rt_raster_to_hexwkb(rt_raster raster, int outasin, uint32_t *hexwkb
     }
     *optr = '\0'; /* Null-terminate */
 
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkb); /* we don't need this anymore */
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkb); /* we don't need this anymore */
     return hexwkb;
 }
 
@@ -2056,7 +2056,7 @@ static void free_raster(rt_raster raster)
     raster = NULL;
 }
 
-xk_pg_parser_Datum raster_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum raster_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     rt_pgraster *pgraster = NULL;
     rt_raster raster = NULL;
@@ -2065,9 +2065,9 @@ xk_pg_parser_Datum raster_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutI
     bool need_free = false;
     bool is_toast = false;
 
-    XK_PG_PARSER_UNUSED(info);
+    PG_PARSER_UNUSED(info);
 
-    pgraster = (rt_pgraster *)xk_pg_parser_detoast_datum((struct xk_pg_parser_varlena *)attr,
+    pgraster = (rt_pgraster *)pg_parser_detoast_datum((struct pg_parser_varlena *)attr,
                                                          &is_toast,
                                                          &need_free,
                                                           info->zicinfo->dbtype,
@@ -2075,16 +2075,16 @@ xk_pg_parser_Datum raster_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutI
     if (is_toast)
     {
         info->valueinfo = INFO_COL_IS_TOAST;
-        info->valuelen = sizeof(struct xk_pg_parser_varatt_external);
-        return (xk_pg_parser_Datum)pgraster;
+        info->valuelen = sizeof(struct pg_parser_varatt_external);
+        return (pg_parser_Datum)pgraster;
     }
 
     raster = rt_raster_deserialize(pgraster, false);
     if (!raster)
     {
         if (need_free)
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pgraster);
-        return (xk_pg_parser_Datum)0;
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pgraster);
+        return (pg_parser_Datum)0;
     }
 
     hexwkb = rt_raster_to_hexwkb(raster, false, &hexwkbsize);
@@ -2092,17 +2092,17 @@ xk_pg_parser_Datum raster_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutI
     {
         free_raster(raster);
         if (need_free)
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pgraster);
-        return (xk_pg_parser_Datum)0;
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pgraster);
+        return (pg_parser_Datum)0;
     }
 
     /* Free the raster objects used */
     free_raster(raster);
 
     if (need_free)
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pgraster);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pgraster);
 
-    return (xk_pg_parser_Datum)hexwkb;
+    return (pg_parser_Datum)hexwkb;
 }
 
 typedef struct
@@ -2370,7 +2370,7 @@ static POINTARRAY* ptarray_construct_reference_data(char hasz, char hasm, uint32
 {
     POINTARRAY *pa = NULL;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&pa, sizeof(POINTARRAY));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&pa, sizeof(POINTARRAY));
     pa->flags = lwflags(hasz, hasm, 0);
     FLAGS_SET_READONLY(pa->flags, 1); /* We don't own this memory, so we can't alter or free it. */
     pa->npoints = npoints;
@@ -2389,7 +2389,7 @@ static POINTARRAY*
 ptarray_construct_empty(char hasz, char hasm, uint32_t maxpoints)
 {
     POINTARRAY *pa = NULL;
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&pa, sizeof(POINTARRAY));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&pa, sizeof(POINTARRAY));
     pa->serialized_pointlist = NULL;
 
     /* Set our dimensionality info on the bitmap */
@@ -2401,7 +2401,7 @@ ptarray_construct_empty(char hasz, char hasm, uint32_t maxpoints)
 
     /* Allocate the coordinate array */
     if ( maxpoints > 0 )
-        xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(pa->serialized_pointlist),
+        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(pa->serialized_pointlist),
                                  maxpoints * ptarray_point_size(pa));
     else
         pa->serialized_pointlist = NULL;
@@ -2425,7 +2425,7 @@ lwpoint_from_gserialized2_buffer(uint8_t *data_ptr, lwflags_t lwflags, size_t *s
     LWPOINT *point;
     uint32_t npoints = 0;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&point, sizeof(LWPOINT));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&point, sizeof(LWPOINT));
     point->srid = srid;
     point->bbox = NULL;
     point->type = POINTTYPE;
@@ -2466,7 +2466,7 @@ lwline_from_gserialized2_buffer(uint8_t *data_ptr, lwflags_t lwflags, size_t *si
     LWLINE *line;
     uint32_t npoints = 0;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&line, sizeof(LWLINE));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&line, sizeof(LWLINE));
     line->srid = srid;
     line->bbox = NULL;
     line->type = LINETYPE;
@@ -2508,7 +2508,7 @@ lwcircstring_from_gserialized2_buffer(uint8_t *data_ptr, lwflags_t lwflags, size
     LWCIRCSTRING *circstring;
     uint32_t npoints = 0;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&circstring, sizeof(LWCIRCSTRING));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&circstring, sizeof(LWCIRCSTRING));
     circstring->srid = srid;
     circstring->bbox = NULL;
     circstring->type = CIRCSTRINGTYPE;
@@ -2553,7 +2553,7 @@ lwpoly_from_gserialized2_buffer(uint8_t *data_ptr, lwflags_t lwflags, size_t *si
     uint32_t nrings = 0;
     uint32_t i = 0;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&poly, sizeof(LWPOLY));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&poly, sizeof(LWPOLY));
     poly->srid = srid;
     poly->bbox = NULL;
     poly->type = POLYGONTYPE;
@@ -2567,7 +2567,7 @@ lwpoly_from_gserialized2_buffer(uint8_t *data_ptr, lwflags_t lwflags, size_t *si
     ordinate_ptr = data_ptr; /* Start the ordinate pointer. */
     if (nrings > 0)
     {
-        xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(poly->rings), sizeof(POINTARRAY*) * nrings);
+        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(poly->rings), sizeof(POINTARRAY*) * nrings);
         poly->maxrings = nrings;
         ordinate_ptr += nrings * 4; /* Move past all the npoints values. */
         if (nrings % 2) /* If there is padding, move past that too. */
@@ -2617,7 +2617,7 @@ lwtriangle_from_gserialized2_buffer(uint8_t *data_ptr, lwflags_t lwflags, size_t
     LWTRIANGLE *triangle;
     uint32_t npoints = 0;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&triangle, sizeof(LWTRIANGLE));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&triangle, sizeof(LWTRIANGLE));
     triangle->srid = srid; /* Default */
     triangle->bbox = NULL;
     triangle->type = TRIANGLETYPE;
@@ -2704,7 +2704,7 @@ lwcollection_from_gserialized2_buffer(uint8_t *data_ptr, lwflags_t lwflags, size
     type = gserialized2_get_uint32_t(data_ptr);
     data_ptr += 4; /* Skip past the type. */
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&collection, sizeof(LWCOLLECTION));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&collection, sizeof(LWCOLLECTION));
     collection->srid = srid;
     collection->bbox = NULL;
     collection->type = type;
@@ -2716,7 +2716,7 @@ lwcollection_from_gserialized2_buffer(uint8_t *data_ptr, lwflags_t lwflags, size
 
     if (ngeoms > 0)
     {
-        xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(collection->geoms), sizeof(LWGEOM*) * ngeoms);
+        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(collection->geoms), sizeof(LWGEOM*) * ngeoms);
         collection->maxgeoms = ngeoms;
     }
     else
@@ -2735,7 +2735,7 @@ lwcollection_from_gserialized2_buffer(uint8_t *data_ptr, lwflags_t lwflags, size
 
         if (!lwcollection_allows_subtype(type, subtype))
         {
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, collection);
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, collection);
             return NULL;
         }
         collection->geoms[i] = lwgeom_from_gserialized2_buffer(data_ptr, lwflags, &subsize, srid);
@@ -2847,7 +2847,7 @@ static int gserialized2_read_gbox_p(const GSERIALIZED *g, GBOX *gbox)
 static GBOX* gbox_copy(const GBOX *box)
 {
     GBOX *copy = NULL;
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&copy, sizeof(GBOX));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&copy, sizeof(GBOX));
     rmemcpy0(copy, 0, box, sizeof(GBOX));
     return copy;
 }
@@ -3491,7 +3491,7 @@ static int lwcollection_calculate_gbox_geodetic(const LWCOLLECTION *coll, GBOX *
         {
             /* Keep a copy of the sub-bounding box for later */
             if ( coll->geoms[i]->bbox )
-                xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, coll->geoms[i]->bbox);
+                pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, coll->geoms[i]->bbox);
             coll->geoms[i]->bbox = gbox_copy(&subbox);
             if ( first )
             {
@@ -4115,7 +4115,7 @@ static LWPOINT* lwpoint_from_gserialized1_buffer(uint8_t *data_ptr, lwflags_t lw
     LWPOINT *point;
     uint32_t npoints = 0;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&point, sizeof(LWPOINT));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&point, sizeof(LWPOINT));
     point->srid = SRID_UNKNOWN; /* Default */
     point->bbox = NULL;
     point->type = POINTTYPE;
@@ -4144,7 +4144,7 @@ static LWLINE* lwline_from_gserialized1_buffer(uint8_t *data_ptr, lwflags_t lwfl
     LWLINE *line;
     uint32_t npoints = 0;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&line, sizeof(LWLINE));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&line, sizeof(LWLINE));
     line->srid = SRID_UNKNOWN; /* Default */
     line->bbox = NULL;
     line->type = LINETYPE;
@@ -4174,7 +4174,7 @@ static LWCIRCSTRING* lwcircstring_from_gserialized1_buffer(uint8_t *data_ptr, lw
     LWCIRCSTRING *circstring;
     uint32_t npoints = 0;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&circstring, sizeof(LWCIRCSTRING));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&circstring, sizeof(LWCIRCSTRING));
     circstring->srid = SRID_UNKNOWN; /* Default */
     circstring->bbox = NULL;
     circstring->type = CIRCSTRINGTYPE;
@@ -4205,7 +4205,7 @@ static LWPOLY* lwpoly_from_gserialized1_buffer(uint8_t *data_ptr, lwflags_t lwfl
     uint32_t nrings = 0;
     uint32_t i = 0;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&poly, sizeof(LWPOLY));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&poly, sizeof(LWPOLY));
     poly->srid = SRID_UNKNOWN; /* Default */
     poly->bbox = NULL;
     poly->type = POLYGONTYPE;
@@ -4219,7 +4219,7 @@ static LWPOLY* lwpoly_from_gserialized1_buffer(uint8_t *data_ptr, lwflags_t lwfl
     ordinate_ptr = data_ptr; /* Start the ordinate pointer. */
     if ( nrings > 0)
     {
-        xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(poly->rings), sizeof(POINTARRAY*) * nrings);
+        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(poly->rings), sizeof(POINTARRAY*) * nrings);
         poly->maxrings = nrings;
         ordinate_ptr += nrings * 4; /* Move past all the npoints values. */
         if ( nrings % 2 ) /* If there is padding, move past that too. */
@@ -4259,7 +4259,7 @@ static LWTRIANGLE* lwtriangle_from_gserialized1_buffer(uint8_t *data_ptr, lwflag
 
     assert(data_ptr);
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&triangle, sizeof(LWTRIANGLE));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&triangle, sizeof(LWTRIANGLE));
     triangle->srid = SRID_UNKNOWN; /* Default */
     triangle->bbox = NULL;
     triangle->type = TRIANGLETYPE;
@@ -4297,7 +4297,7 @@ static LWCOLLECTION* lwcollection_from_gserialized1_buffer(uint8_t *data_ptr, lw
     type = gserialized1_get_uint32_t(data_ptr);
     data_ptr += 4; /* Skip past the type. */
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&collection, sizeof(LWCOLLECTION));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&collection, sizeof(LWCOLLECTION));
     collection->srid = SRID_UNKNOWN; /* Default */
     collection->bbox = NULL;
     collection->type = type;
@@ -4309,7 +4309,7 @@ static LWCOLLECTION* lwcollection_from_gserialized1_buffer(uint8_t *data_ptr, lw
 
     if ( ngeoms > 0 )
     {
-        xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(collection->geoms), sizeof(LWGEOM*) * ngeoms);
+        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(collection->geoms), sizeof(LWGEOM*) * ngeoms);
         collection->maxgeoms = ngeoms;
     }
     else
@@ -4328,7 +4328,7 @@ static LWCOLLECTION* lwcollection_from_gserialized1_buffer(uint8_t *data_ptr, lw
 
         if ( ! lwcollection_allows_subtype(type, subtype) )
         {
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, collection);
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, collection);
             return NULL;
         }
         collection->geoms[i] = lwgeom_from_gserialized1_buffer(data_ptr, lwflags, &subsize);
@@ -4785,7 +4785,7 @@ stringbuffer_t;
 static void
 stringbuffer_init_with_size(stringbuffer_t *s, size_t size)
 {
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(s->str_start), size);
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&(s->str_start), size);
     s->str_end = s->str_start;
     s->capacity = size;
     rmemset0(s->str_start, 0, 0, size);
@@ -4796,7 +4796,7 @@ stringbuffer_create_with_size(size_t size)
 {
     stringbuffer_t *s;
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&s, sizeof(stringbuffer_t));
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&s, sizeof(stringbuffer_t));
     stringbuffer_init_with_size(s, size);
     return s;
 }
@@ -4819,7 +4819,7 @@ stringbuffer_makeroom(stringbuffer_t *s, size_t size_to_add)
 
     if (capacity > s->capacity)
     {
-        xk_pg_parser_mcxt_realloc(PGFUNC_POSTGIS_MCXT, (void **)&(s->str_start), capacity);
+        pg_parser_mcxt_realloc(PGFUNC_POSTGIS_MCXT, (void **)&(s->str_start), capacity);
         s->capacity = capacity;
         s->str_end = s->str_start + current_size;
     }
@@ -4910,7 +4910,7 @@ stringbuffer_getstringcopy(stringbuffer_t *s)
 {
     size_t size = (s->str_end - s->str_start) + 1;
     char *str = NULL;
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&str, size);
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&str, size);
     rmemcpy0(str, 0, s->str_start, size);
     str[size - 1] = '\0';
     return str;
@@ -4919,7 +4919,7 @@ stringbuffer_getstringcopy(stringbuffer_t *s)
 static void
 stringbuffer_release(stringbuffer_t *s)
 {
-    if ( s->str_start ) xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT,s->str_start);
+    if ( s->str_start ) pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT,s->str_start);
 }
 
 static int
@@ -4932,7 +4932,7 @@ static void
 stringbuffer_destroy(stringbuffer_t *s)
 {
     stringbuffer_release(s);
-    if ( s ) xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, s);
+    if ( s ) pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, s);
 }
 
 #define WKT_NO_TYPE 0x08 /* Internal use only */
@@ -6144,7 +6144,7 @@ lwgeom_to_wkb_buffer(const LWGEOM *geom, uint8_t variant)
         b_size = 2 * b_size + 1;
     }
 
-    xk_pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&buffer, b_size);
+    pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void **)&buffer, b_size);
     written_size = lwgeom_to_wkb_write_buf(geom, variant, buffer);
 
     if (variant & WKB_HEX)
@@ -6156,8 +6156,8 @@ lwgeom_to_wkb_buffer(const LWGEOM *geom, uint8_t variant)
     if (written_size != (ptrdiff_t)b_size)
     {
         char *wkt = lwgeom_to_wkt(geom, WKT_EXTENDED, 15, NULL);
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkt);
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, buffer);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, wkt);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, buffer);
         return NULL;
     }
 
@@ -6176,8 +6176,8 @@ ptarray_free(POINTARRAY *pa)
     if (pa)
     {
         if (pa->serialized_pointlist && (!FLAGS_GET_READONLY(pa->flags)))
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pa->serialized_pointlist);
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pa);
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pa->serialized_pointlist);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pa);
     }
 }
 
@@ -6186,10 +6186,10 @@ static void lwpoint_free(LWPOINT *pt)
     if ( ! pt ) return;
 
     if ( pt->bbox )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pt->bbox);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pt->bbox);
     if ( pt->point )
         ptarray_free(pt->point);
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pt);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, pt);
 }
 
 static void lwline_free (LWLINE  *line)
@@ -6197,10 +6197,10 @@ static void lwline_free (LWLINE  *line)
     if ( ! line ) return;
 
     if ( line->bbox )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, line->bbox);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, line->bbox);
     if ( line->points )
         ptarray_free(line->points);
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, line);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, line);
 }
 
 static void lwpoly_free(LWPOLY* poly)
@@ -6209,16 +6209,16 @@ static void lwpoly_free(LWPOLY* poly)
 
     if (!poly) return;
 
-    if (poly->bbox) xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, poly->bbox);
+    if (poly->bbox) pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, poly->bbox);
 
     if ( poly->rings )
     {
         for (t = 0; t < poly->nrings; t++)
             if (poly->rings[t]) ptarray_free(poly->rings[t]);
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, poly->rings);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, poly->rings);
     }
 
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, poly);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, poly);
 }
 
 static void lwcircstring_free(LWCIRCSTRING *curve)
@@ -6226,10 +6226,10 @@ static void lwcircstring_free(LWCIRCSTRING *curve)
     if ( ! curve ) return;
 
     if ( curve->bbox )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, curve->bbox);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, curve->bbox);
     if ( curve->points )
         ptarray_free(curve->points);
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, curve);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, curve);
 }
 
 static void lwtriangle_free(LWTRIANGLE  *triangle)
@@ -6237,12 +6237,12 @@ static void lwtriangle_free(LWTRIANGLE  *triangle)
     if ( ! triangle ) return;
 
     if (triangle->bbox)
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, triangle->bbox);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, triangle->bbox);
 
     if (triangle->points)
         ptarray_free(triangle->points);
 
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, triangle);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, triangle);
 }
 
 static void lwmpoint_free(LWMPOINT *mpt)
@@ -6252,16 +6252,16 @@ static void lwmpoint_free(LWMPOINT *mpt)
     if ( ! mpt ) return;
 
     if ( mpt->bbox )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpt->bbox);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpt->bbox);
 
     for ( i = 0; i < mpt->ngeoms; i++ )
         if ( mpt->geoms && mpt->geoms[i] )
             lwpoint_free(mpt->geoms[i]);
 
     if ( mpt->geoms )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpt->geoms);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpt->geoms);
 
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpt);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpt);
 }
 
 static void lwmline_free(LWMLINE *mline)
@@ -6270,7 +6270,7 @@ static void lwmline_free(LWMLINE *mline)
         return;
 
     if (mline->bbox)
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mline->bbox);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mline->bbox);
 
     if (mline->geoms)
     {
@@ -6278,10 +6278,10 @@ static void lwmline_free(LWMLINE *mline)
         for (i = 0; i < mline->ngeoms; i++)
             if (mline->geoms[i])
                 lwline_free(mline->geoms[i]);
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mline->geoms);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mline->geoms);
     }
 
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mline);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mline);
 }
 
 static void lwmpoly_free(LWMPOLY *mpoly)
@@ -6289,16 +6289,16 @@ static void lwmpoly_free(LWMPOLY *mpoly)
     uint32_t i;
     if ( ! mpoly ) return;
     if ( mpoly->bbox )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpoly->bbox);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpoly->bbox);
 
     for ( i = 0; i < mpoly->ngeoms; i++ )
         if ( mpoly->geoms && mpoly->geoms[i] )
             lwpoly_free(mpoly->geoms[i]);
 
     if ( mpoly->geoms )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpoly->geoms);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpoly->geoms);
 
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpoly);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, mpoly);
 }
 
 static void lwpsurface_free(LWPSURFACE *psurf)
@@ -6306,16 +6306,16 @@ static void lwpsurface_free(LWPSURFACE *psurf)
     uint32_t i;
     if ( ! psurf ) return;
     if ( psurf->bbox )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, psurf->bbox);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, psurf->bbox);
 
     for ( i = 0; i < psurf->ngeoms; i++ )
         if ( psurf->geoms && psurf->geoms[i] )
             lwpoly_free(psurf->geoms[i]);
 
     if ( psurf->geoms )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, psurf->geoms);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, psurf->geoms);
 
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, psurf);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, psurf);
 }
 
 static void lwtin_free(LWTIN *tin)
@@ -6323,16 +6323,16 @@ static void lwtin_free(LWTIN *tin)
     uint32_t i;
     if ( ! tin ) return;
     if ( tin->bbox )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, tin->bbox);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, tin->bbox);
 
     for ( i = 0; i < tin->ngeoms; i++ )
         if ( tin->geoms && tin->geoms[i] )
             lwtriangle_free(tin->geoms[i]);
 
     if ( tin->geoms )
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, tin->geoms);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, tin->geoms);
 
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, tin);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, tin);
 }
 
 static void lwgeom_free(LWGEOM *lwgeom);
@@ -6344,7 +6344,7 @@ static void lwcollection_free(LWCOLLECTION *col)
 
     if ( col->bbox )
     {
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, col->bbox);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, col->bbox);
     }
     for ( i = 0; i < col->ngeoms; i++ )
     {
@@ -6353,9 +6353,9 @@ static void lwcollection_free(LWCOLLECTION *col)
     }
     if ( col->geoms )
     {
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, col->geoms);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, col->geoms);
     }
-    xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, col);
+    pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, col);
 }
 
 static void lwgeom_free(LWGEOM *lwgeom)
@@ -6409,7 +6409,7 @@ static void lwgeom_free(LWGEOM *lwgeom)
     return;
 }
 
-xk_pg_parser_Datum geometry_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum geometry_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
     GSERIALIZED *geom = NULL;
     LWGEOM *lwgeom = NULL;
@@ -6418,9 +6418,9 @@ xk_pg_parser_Datum geometry_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypou
     bool is_toast = false;
     bool need_free = false;
 
-    XK_PG_PARSER_UNUSED(info);
+    PG_PARSER_UNUSED(info);
 
-    geom = (GSERIALIZED *)xk_pg_parser_detoast_datum((struct xk_pg_parser_varlena *)attr,
+    geom = (GSERIALIZED *)pg_parser_detoast_datum((struct pg_parser_varlena *)attr,
                                                          &is_toast,
                                                          &need_free,
                                                           info->zicinfo->dbtype,
@@ -6428,8 +6428,8 @@ xk_pg_parser_Datum geometry_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypou
     if (is_toast)
     {
         info->valueinfo = INFO_COL_IS_TOAST;
-        info->valuelen = sizeof(struct xk_pg_parser_varatt_external);
-        return (xk_pg_parser_Datum)geom;
+        info->valuelen = sizeof(struct pg_parser_varatt_external);
+        return (pg_parser_Datum)geom;
     }
 
     lwgeom = lwgeom_from_gserialized(geom);
@@ -6437,26 +6437,26 @@ xk_pg_parser_Datum geometry_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypou
     if (!lwgeom)
     {
         if (need_free)
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, geom);
-        return (xk_pg_parser_Datum) 0;
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, geom);
+        return (pg_parser_Datum) 0;
     }
     else
     {
         result = lwgeom_to_hexwkb_buffer(lwgeom, WKB_EXTENDED);
 
         if (need_free)
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, geom);
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, geom);
 
         lwgeom_free(lwgeom);
 
         if (!result)
-            return (xk_pg_parser_Datum) 0;
+            return (pg_parser_Datum) 0;
 
-        return (xk_pg_parser_Datum) result;
+        return (pg_parser_Datum) result;
     }
 }
 
-xk_pg_parser_Datum geography_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum geography_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
 {
 
     GSERIALIZED *g = NULL;
@@ -6466,9 +6466,9 @@ xk_pg_parser_Datum geography_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypo
     bool need_free = false;
     char *result = NULL;
 
-    XK_PG_PARSER_UNUSED(info);
+    PG_PARSER_UNUSED(info);
 
-    g = (GSERIALIZED *)xk_pg_parser_detoast_datum((struct xk_pg_parser_varlena *)attr,
+    g = (GSERIALIZED *)pg_parser_detoast_datum((struct pg_parser_varlena *)attr,
                                                   &is_toast,
                                                   &need_free,
                                                    info->zicinfo->dbtype,
@@ -6478,19 +6478,19 @@ xk_pg_parser_Datum geography_out(xk_pg_parser_Datum attr, xk_pg_parser_extraTypo
     if (!lwgeom)
     {
         if (need_free)
-            xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, g);
-        return (xk_pg_parser_Datum) 0;
+            pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, g);
+        return (pg_parser_Datum) 0;
     }
     result = lwgeom_to_hexwkb_buffer(lwgeom, WKB_EXTENDED);
 
     lwgeom_free(lwgeom);
 
     if (need_free)
-        xk_pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, g);
+        pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, g);
 
     if (!result)
-        return (xk_pg_parser_Datum) 0;
-    return (xk_pg_parser_Datum) result;
+        return (pg_parser_Datum) 0;
+    return (pg_parser_Datum) result;
 }
 
 #define TYPMOD_GET_SRID(typmod) ((((typmod) & 0x0FFFFF00) - ((typmod) & 0x10000000)) >> 8)
@@ -6528,9 +6528,9 @@ lwtype_name(uint8_t type)
     return lwgeomTypeName[(int ) type];
 }
 
-char *xk_pg_parser_postgis_typmod_out(int32_t typmod)
+char *pg_parser_postgis_typmod_out(int32_t typmod)
 {
-    xk_pg_parser_StringInfoData si;
+    pg_parser_StringInfoData si;
     int32_t srid = TYPMOD_GET_SRID(typmod);
     int32_t type = TYPMOD_GET_TYPE(typmod);
     int32_t hasz = TYPMOD_GET_Z(typmod);
@@ -6541,26 +6541,26 @@ char *xk_pg_parser_postgis_typmod_out(int32_t typmod)
         return NULL;
 
     /* Opening bracket. */
-    xk_pg_parser_initStringInfo(&si);
-    xk_pg_parser_appendStringInfoChar(&si, '(');
+    pg_parser_initStringInfo(&si);
+    pg_parser_appendStringInfoChar(&si, '(');
 
     /* Has type? */
     if (type)
-        xk_pg_parser_appendStringInfo(&si, "%s", lwtype_name(type));
+        pg_parser_appendStringInfo(&si, "%s", lwtype_name(type));
     else if (srid || hasz || hasm)
-        xk_pg_parser_appendStringInfoString(&si, "Geometry");
+        pg_parser_appendStringInfoString(&si, "Geometry");
 
     /* Has Z? */
-    if (hasz) xk_pg_parser_appendStringInfoString(&si, "Z");
+    if (hasz) pg_parser_appendStringInfoString(&si, "Z");
 
     /* Has M? */
-    if (hasm) xk_pg_parser_appendStringInfoString(&si, "M");
+    if (hasm) pg_parser_appendStringInfoString(&si, "M");
 
     /* Has SRID? */
-    if (srid) xk_pg_parser_appendStringInfo(&si, ",%d", srid);
+    if (srid) pg_parser_appendStringInfo(&si, ",%d", srid);
 
     /* Closing bracket. */
-    xk_pg_parser_appendStringInfoChar(&si, ')');
+    pg_parser_appendStringInfoChar(&si, ')');
 
     return si.data;
 }

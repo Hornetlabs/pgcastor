@@ -10,9 +10,9 @@
 #include "utils/regex/regex.h"
 #include "threads/threads.h"
 #include "misc/misc_stat.h"
-#include "common/xk_pg_parser_errnodef.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_errnodef.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "catalog/control.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -129,7 +129,7 @@ static void decode_xact_appendsubtxn_obj(List** ptxnstmts, List** psysdicthis, t
  * 在 Commit 时, 将子事务中的内容 append 到主事务中
 */
 static void decode_xact_buildcommittxn(decodingcontext* ctx,
-                                                xk_pg_parser_translog_pre_trans* pretrans,
+                                                pg_parser_translog_pre_trans* pretrans,
                                                 txn* in_txn)
 {
     int index = 0;
@@ -248,16 +248,16 @@ static void check_online_refresh_decode_xids(decodingcontext* ctx, TransactionId
  *      savepoint   子事务 xid2，父事务  在逻辑上为 xid1,但是在 PG 中没有嵌套事务的逻辑，所以父事务为 xid
  * 
 */
-void onlinerefresh_decode_xact_commit(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
+void onlinerefresh_decode_xact_commit(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
     bool redo = false;
     ListCell* lc = NULL;
     txnstmt* stmt = NULL;
     txn* txn_ptr = NULL;
     txn* txn_copy_obj = NULL;
-    xk_pg_parser_translog_pre_trans* pretrans = NULL;
+    pg_parser_translog_pre_trans* pretrans = NULL;
 
-    pretrans = (xk_pg_parser_translog_pre_trans*)pbase;
+    pretrans = (pg_parser_translog_pre_trans*)pbase;
 
     /*
      * 根据事务号获取事务链表
@@ -374,7 +374,7 @@ void onlinerefresh_decode_xact_commit(decodingcontext* ctx, xk_pg_parser_translo
  *  当解析的 lsn < confirmlsn 时，此时释放资源即可
  *  当解析的 lsn > confirmlsn 时，那么需要将事务传递到 格式化 线程，用于向前推进 restartlsn
  */
-void onlinerefresh_decode_xact_abort(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
+void onlinerefresh_decode_xact_abort(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
     bool brestart = false;
     bool bconfirm = false;
@@ -383,11 +383,11 @@ void onlinerefresh_decode_xact_abort(decodingcontext* ctx, xk_pg_parser_translog
     txn* txn_ptr = NULL;
     txn* txn_copy_obj = NULL;
     xl_xact_parsed_abort* parsedabort = NULL;
-    xk_pg_parser_translog_pre_trans* pretrans = NULL;
+    pg_parser_translog_pre_trans* pretrans = NULL;
     txn* subtxn_obj = NULL;
     TransactionId subxid = 0;
 
-    pretrans = (xk_pg_parser_translog_pre_trans*)pbase;
+    pretrans = (pg_parser_translog_pre_trans*)pbase;
 
     /*
      * 根据事务号获取事务链表

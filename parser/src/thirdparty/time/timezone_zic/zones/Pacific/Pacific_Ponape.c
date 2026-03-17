@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Pacific_Ponape[] =
+char* PG_Pacific_Ponape[] =
 {
     (char *)"Zone Pacific/Pohnpei	-13:27:08 -	LMT	1844 Dec 31	# Kolonia",
     (char *)"			 10:32:52 -	LMT	1901",

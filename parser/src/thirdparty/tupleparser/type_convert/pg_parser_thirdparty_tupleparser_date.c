@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_date.c
+ * @file pg_parser_thirdparty_tupleparser_date.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -8,27 +8,27 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgfunc.h"
-#include "thirdparty/time/time/xk_pg_parser_thirdparty_timezone_time.h"
-#include "thirdparty/time/date/xk_pg_parser_thirdparty_timezone_date.h"
-#include "thirdparty/common/xk_pg_parser_thirdparty_builtins.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgfunc.h"
+#include "thirdparty/time/time/pg_parser_thirdparty_timezone_time.h"
+#include "thirdparty/time/date/pg_parser_thirdparty_timezone_date.h"
+#include "thirdparty/common/pg_parser_thirdparty_builtins.h"
 
 #define PGFUNC_DATE_MCXT NULL
 
-static void EncodeDateOnly(struct xk_pg_parser_tm *tm, int32_t style, char *str, int32_t DateOrder);
+static void EncodeDateOnly(struct pg_parser_tm *tm, int32_t style, char *str, int32_t DateOrder);
 static void EncodeSpecialDate(DateADT dt, char *str);
 static void j2date(int32_t jd, int32_t *year, int32_t *month, int32_t *day);
 
 /* date_out()
- * Given internal format date, convert to xk_pg_parser_text string.
+ * Given internal format date, convert to pg_parser_text string.
  */
-xk_pg_parser_Datum date_out(xk_pg_parser_Datum attr)
+pg_parser_Datum date_out(pg_parser_Datum attr)
 {
     DateADT date = (DateADT) attr;
     char       *result;
-    struct xk_pg_parser_tm tt,
+    struct pg_parser_tm tt,
                *tm = &tt;
     char        buf[MAXDATELEN + 1];
     int32_t     DateStyle = USE_ISO_DATES;
@@ -37,13 +37,13 @@ xk_pg_parser_Datum date_out(xk_pg_parser_Datum attr)
         EncodeSpecialDate(date, buf);
     else
     {
-        j2date(date + XK_PG_PARSER_EPOCH_JDATE,
+        j2date(date + PG_PARSER_EPOCH_JDATE,
                &(tm->tm_year), &(tm->tm_mon), &(tm->tm_mday));
         EncodeDateOnly(tm, DateStyle, buf, DateOrder);
     }
 
-    result = xk_pg_parser_mcxt_strdup(buf);
-    return (xk_pg_parser_Datum) result;
+    result = pg_parser_mcxt_strdup(buf);
+    return (pg_parser_Datum) result;
 }
 
 /*
@@ -88,47 +88,47 @@ static void j2date(int32_t jd, int32_t *year, int32_t *month, int32_t *day)
 /* EncodeDateOnly()
  * Encode date as local time.
  */
-static void EncodeDateOnly(struct xk_pg_parser_tm *tm, int32_t style, char *str, int32_t DateOrder)
+static void EncodeDateOnly(struct pg_parser_tm *tm, int32_t style, char *str, int32_t DateOrder)
 {
     switch (style)
     {
         case USE_ISO_DATES:
         case USE_XSD_DATES:
             /* compatible with ISO date formats */
-            str = xk_numutils_ltostr_zeropad(str,
+            str = numutils_ltostr_zeropad(str,
                                     (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             *str++ = '-';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_mon, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             *str++ = '-';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             break;
 
         case USE_SQL_DATES:
             /* compatible with Oracle/Ingres date formats */
             if (DateOrder == DATEORDER_DMY)
             {
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
                 *str++ = '/';
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mon, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             }
             else
             {
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mon, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
                 *str++ = '/';
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             }
             *str++ = '/';
-            str = xk_numutils_ltostr_zeropad(str,
+            str = numutils_ltostr_zeropad(str,
                                     (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             break;
 
         case USE_GERMAN_DATES:
             /* German-style date format */
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             *str++ = '.';
-            str = xk_numutils_ltostr_zeropad(str, tm->tm_mon, 2);
+            str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             *str++ = '.';
-            str = xk_numutils_ltostr_zeropad(str,
+            str = numutils_ltostr_zeropad(str,
                                     (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             break;
 
@@ -137,18 +137,18 @@ static void EncodeDateOnly(struct xk_pg_parser_tm *tm, int32_t style, char *str,
             /* traditional date-only style for Postgres */
             if (DateOrder == DATEORDER_DMY)
             {
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
                 *str++ = '-';
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mon, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             }
             else
             {
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mon, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
                 *str++ = '-';
-                str = xk_numutils_ltostr_zeropad(str, tm->tm_mday, 2);
+                str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             }
             *str++ = '-';
-            str = xk_numutils_ltostr_zeropad(str,
+            str = numutils_ltostr_zeropad(str,
                                     (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             break;
     }

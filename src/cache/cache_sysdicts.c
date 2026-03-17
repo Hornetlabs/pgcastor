@@ -15,8 +15,8 @@
 #include "loadrecords/loadpagefromfile.h"
 #include "loadrecords/loadrecords.h"
 #include "loadrecords/loadwalrecords.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -279,7 +279,7 @@ cache_sysdicts *cache_sysdicts_integrate_init(void)
 
     /* pg_datname2oid初始化 */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
-    hctl.keysize = sizeof(xk_pg_parser_NameData);
+    hctl.keysize = sizeof(pg_parser_NameData);
     hctl.entrysize = sizeof(catalog_datname2oid_value);
     sysdicts->by_datname2oid = hash_create("integrate_datname2oid",
                                       256,
@@ -560,7 +560,7 @@ void cache_sysdicts_clearsysdicthisbyclass(cache_sysdicts* sysdicts, ListCell* l
     bool found                                      = false;
     ListCell* cell                                  = NULL;
     catalogdata* catalog_data                 = NULL;
-    xk_pg_sysdict_Form_pg_class class               = NULL;
+    pg_sysdict_Form_pg_class class               = NULL;
     catalog_attribute_value* attrInHash      = NULL;
     catalog_index_value* index_value         = NULL;
     catalog_index_hash_entry* indexInHash    = NULL;
@@ -572,7 +572,7 @@ void cache_sysdicts_clearsysdicthisbyclass(cache_sysdicts* sysdicts, ListCell* l
         return;
     }
 
-    class = (xk_pg_sysdict_Form_pg_class)catalog_data->catalog;
+    class = (pg_sysdict_Form_pg_class)catalog_data->catalog;
 
     /* 清理attribute */
     attrInHash = hash_search(sysdicts->by_attribute, &class->oid, HASH_FIND, &found);
@@ -656,7 +656,7 @@ HTAB* cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data)
     HTAB* by_relfilenode = NULL;
     cache_sysdicts* sysdicts = NULL;
     catalog_class_value *entry = NULL;
-    xk_pg_sysdict_Form_pg_class class = NULL;
+    pg_sysdict_Form_pg_class class = NULL;
     relfilenode2oid* relfdentry = NULL;
 
     sysdicts = (cache_sysdicts*)data;
@@ -674,7 +674,7 @@ HTAB* cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data)
     {
         class = entry->class;
 
-        if(XK_PG_SYSDICT_RELKIND_PARTITIONED_TABLE == class->relkind)
+        if(PG_SYSDICT_RELKIND_PARTITIONED_TABLE == class->relkind)
         {
             continue;
         }

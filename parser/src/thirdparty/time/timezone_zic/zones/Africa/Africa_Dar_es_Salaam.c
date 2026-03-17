@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Africa_Dar_es_Salaam[] =
+char* PG_Africa_Dar_es_Salaam[] =
 {
     (char *)"Zone	Africa/Nairobi	2:27:16	-	LMT	1928 Jul",
     (char *)"			3:00	-	EAT	1930",

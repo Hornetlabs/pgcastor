@@ -6,8 +6,8 @@
 #include "utils/guc/guc.h"
 #include "utils/conn/conn.h"
 #include "utils/hash/hash_utils.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -90,7 +90,7 @@ void constraint_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     HASHCTL hash_ctl;
     bool found = false;
     PGresult *res = NULL;
-    xk_pg_sysdict_Form_pg_constraint constraint;
+    pg_sysdict_Form_pg_constraint constraint;
     catalog_constraint_value *entry = NULL;
     const char *query = "SELECT rel.oid , rel.conname, rel.connamespace, rel.contype, rel.conrelid, rel.conkey FROM pg_constraint rel where contype = 'p';";
 
@@ -109,12 +109,12 @@ void constraint_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     // 打印行数据
     for (i = 0; i < PQntuples(res); i++) 
     {
-        constraint = (xk_pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(xk_pg_parser_sysdict_pgconstraint));
+        constraint = (pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(pg_parser_sysdict_pgconstraint));
         if(NULL == constraint)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemset0(constraint, 0, '\0', sizeof(xk_pg_parser_sysdict_pgconstraint));
+        rmemset0(constraint, 0, '\0', sizeof(pg_parser_sysdict_pgconstraint));
         j=0;
         constraint->oid = strtoul(PQgetvalue(res, i, j++), NULL, 10);
         strcpy(constraint->conname.data ,PQgetvalue(res, i, j++));
@@ -143,11 +143,11 @@ void constraint_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 catalogdata* constraint_colvalue2constraint(void* in_colvalue)
 {
     catalogdata* catalogconstraint = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
-    xk_pg_sysdict_Form_pg_constraint pgconstraint = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_constraint pgconstraint = NULL;
     catalog_constraint_value* constraintvalue = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
     catalogconstraint = (catalogdata*)rmalloc0(sizeof(catalogdata));
@@ -166,12 +166,12 @@ catalogdata* constraint_colvalue2constraint(void* in_colvalue)
     catalogconstraint->catalog = constraintvalue;
     catalogconstraint->type = CATALOG_TYPE_CONSTRAINT;
 
-    pgconstraint = (xk_pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(xk_pg_parser_sysdict_pgconstraint));
+    pgconstraint = (pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(pg_parser_sysdict_pgconstraint));
     if(NULL == pgconstraint)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgconstraint, 0, '\0', sizeof(xk_pg_parser_sysdict_pgconstraint));
+    rmemset0(pgconstraint, 0, '\0', sizeof(pg_parser_sysdict_pgconstraint));
     constraintvalue->constraint = pgconstraint;
 
     /* oid  0*/
@@ -247,7 +247,7 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
             }
         }
         catalogInHash->conrelid = newcatalog->conrelid;
-        catalogInHash->constraint = (xk_pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(xk_pg_parser_sysdict_pgconstraint));
+        catalogInHash->constraint = (pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(pg_parser_sysdict_pgconstraint));
         if(NULL == catalogInHash->constraint)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
@@ -255,11 +255,11 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
 
         if (newcatalog->constraint->conkeycnt == 0)
         {
-            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint, sizeof(xk_pg_parser_sysdict_pgconstraint));
+            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint, sizeof(pg_parser_sysdict_pgconstraint));
         }
         else
         {
-            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint, offsetof(xk_pg_parser_sysdict_pgconstraint, conkey));
+            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint, offsetof(pg_parser_sysdict_pgconstraint, conkey));
             catalogInHash->constraint->conkey = (int16_t*)rmalloc0(newcatalog->constraint->conkeycnt * sizeof(int16_t));
             if(NULL == catalogInHash->constraint->conkey)
             {
@@ -304,7 +304,7 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
         }
         rfree(catalogInHash->constraint);
         
-        catalogInHash->constraint = (xk_pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(xk_pg_parser_sysdict_pgconstraint));
+        catalogInHash->constraint = (pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(pg_parser_sysdict_pgconstraint));
         if(NULL == catalogInHash->constraint)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
@@ -312,11 +312,11 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
 
         if (newcatalog->constraint->conkeycnt == 0)
         {
-            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint, sizeof(xk_pg_parser_sysdict_pgconstraint));
+            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint, sizeof(pg_parser_sysdict_pgconstraint));
         }
         else
         {
-            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint, offsetof(xk_pg_parser_sysdict_pgconstraint, conkey));
+            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint, offsetof(pg_parser_sysdict_pgconstraint, conkey));
             catalogInHash->constraint->conkey = (int16_t*)rmalloc0(newcatalog->constraint->conkeycnt * sizeof(int16_t));
             if(NULL == catalogInHash->constraint->conkey)
             {
@@ -371,7 +371,7 @@ void constraintdata_write(List* constraint_list, uint64 *offset, sysdict_header_
     size_t page_offset = PAGE_HEADER_SIZE;
     size_t constraint_size = 0;
     ListCell*    cell = NULL;
-    xk_pg_sysdict_Form_pg_constraint rippleconstraint = NULL;
+    pg_sysdict_Form_pg_constraint rippleconstraint = NULL;
 
     array->type = CATALOG_TYPE_CONSTRAINT;
     array->offset = *offset;
@@ -387,8 +387,8 @@ void constraintdata_write(List* constraint_list, uint64 *offset, sysdict_header_
     }
     foreach(cell, constraint_list)
     {
-        rippleconstraint = (xk_pg_sysdict_Form_pg_constraint) lfirst(cell);
-        constraint_size = offsetof(xk_pg_parser_sysdict_pgconstraint, conkey);
+        rippleconstraint = (pg_sysdict_Form_pg_constraint) lfirst(cell);
+        constraint_size = offsetof(pg_parser_sysdict_pgconstraint, conkey);
         constraint_size += rippleconstraint->conkeycnt * sizeof(int16_t);
 
         if(page_offset + constraint_size > FILE_BLK_SIZE)
@@ -404,8 +404,8 @@ void constraintdata_write(List* constraint_list, uint64 *offset, sysdict_header_
             *offset += FILE_BLK_SIZE;
             page_offset = PAGE_HEADER_SIZE;
         }
-        rmemcpy1(buffer, page_offset, rippleconstraint, offsetof(xk_pg_parser_sysdict_pgconstraint, conkey));
-        page_offset += offsetof(xk_pg_parser_sysdict_pgconstraint, conkey);
+        rmemcpy1(buffer, page_offset, rippleconstraint, offsetof(pg_parser_sysdict_pgconstraint, conkey));
+        page_offset += offsetof(pg_parser_sysdict_pgconstraint, conkey);
 
         if (rippleconstraint->conkeycnt > 0 && rippleconstraint->conkey != NULL)
         {
@@ -448,7 +448,7 @@ HTAB* constraintcache_load(sysdict_header_array* array)
     uint64 fileoffset = 0;
 
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_constraint rippleconstraint;
+    pg_sysdict_Form_pg_constraint rippleconstraint;
     catalog_constraint_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, 0, sizeof(hash_ctl));
@@ -478,16 +478,16 @@ HTAB* constraintcache_load(sysdict_header_array* array)
 
         while (offset < datasize)
         {
-            rippleconstraint = (xk_pg_parser_sysdict_pgconstraint*)rmalloc0(sizeof(xk_pg_parser_sysdict_pgconstraint));
+            rippleconstraint = (pg_parser_sysdict_pgconstraint*)rmalloc0(sizeof(pg_parser_sysdict_pgconstraint));
 
             if (rippleconstraint == NULL)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(rippleconstraint, 0, '\0', sizeof(xk_pg_parser_sysdict_pgconstraint));
+            rmemset0(rippleconstraint, 0, '\0', sizeof(pg_parser_sysdict_pgconstraint));
 
-            rmemcpy0(rippleconstraint, 0, buffer + offset, offsetof(xk_pg_parser_sysdict_pgconstraint, conkey));
-            offset += offsetof(xk_pg_parser_sysdict_pgconstraint, conkey);
+            rmemcpy0(rippleconstraint, 0, buffer + offset, offsetof(pg_parser_sysdict_pgconstraint, conkey));
+            offset += offsetof(pg_parser_sysdict_pgconstraint, conkey);
 
             if (rippleconstraint->conkeycnt > 0)
             {
@@ -537,7 +537,7 @@ void constraintcache_write(HTAB* constraintcache, uint64 *offset, sysdict_header
     HASH_SEQ_STATUS status;
     char buffer[FILE_BLK_SIZE];
     catalog_constraint_value *entry = NULL;
-    xk_pg_sysdict_Form_pg_constraint constraint = NULL;
+    pg_sysdict_Form_pg_constraint constraint = NULL;
 
     array[CATALOG_TYPE_CONSTRAINT - 1].type = CATALOG_TYPE_CONSTRAINT;
     array[CATALOG_TYPE_CONSTRAINT - 1].offset = *offset;
@@ -556,7 +556,7 @@ void constraintcache_write(HTAB* constraintcache, uint64 *offset, sysdict_header
     while ((entry = hash_seq_search(&status)) != NULL)
     {
         constraint = entry->constraint;
-        constraint_size = offsetof(xk_pg_parser_sysdict_pgconstraint, conkey);
+        constraint_size = offsetof(pg_parser_sysdict_pgconstraint, conkey);
         constraint_size += constraint->conkeycnt * sizeof(int16_t);
 
         if(page_offset + constraint_size > FILE_BLK_SIZE)
@@ -572,8 +572,8 @@ void constraintcache_write(HTAB* constraintcache, uint64 *offset, sysdict_header
             *offset += FILE_BLK_SIZE;
             page_offset = PAGE_HEADER_SIZE;
         }
-        rmemcpy1(buffer, page_offset, constraint, offsetof(xk_pg_parser_sysdict_pgconstraint, conkey));
-        page_offset += offsetof(xk_pg_parser_sysdict_pgconstraint, conkey);
+        rmemcpy1(buffer, page_offset, constraint, offsetof(pg_parser_sysdict_pgconstraint, conkey));
+        page_offset += offsetof(pg_parser_sysdict_pgconstraint, conkey);
 
         if (constraint->conkeycnt > 0 && constraint->conkey != NULL)
         {

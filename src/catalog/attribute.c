@@ -6,8 +6,8 @@
 #include "port/file/fd.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/conn/conn.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -22,7 +22,7 @@ void attributedata_write(List* attribute, uint64 *offset, sysdict_header_array* 
 	uint64 page_num = 0;
 	uint64 page_offset = 0;
 	ListCell*	cell = NULL;
-	xk_pg_sysdict_Form_pg_attribute attr_data = NULL;
+	pg_sysdict_Form_pg_attribute attr_data = NULL;
 
 	array->type = CATALOG_TYPE_ATTRIBUTE;
 	array->offset = *offset;
@@ -38,9 +38,9 @@ void attributedata_write(List* attribute, uint64 *offset, sysdict_header_array* 
 	}
 	foreach(cell, attribute)
 	{
-		attr_data = (xk_pg_sysdict_Form_pg_attribute) lfirst(cell);
+		attr_data = (pg_sysdict_Form_pg_attribute) lfirst(cell);
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgattributes) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgattributes) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
@@ -52,8 +52,8 @@ void attributedata_write(List* attribute, uint64 *offset, sysdict_header_array* 
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, attr_data, sizeof(xk_pg_parser_sysdict_pgattributes));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgattributes);
+		rmemcpy1(buffer, page_offset, attr_data, sizeof(pg_parser_sysdict_pgattributes));
+		page_offset += sizeof(pg_parser_sysdict_pgattributes);
 
 	}
 	if (page_offset > 0) {
@@ -87,7 +87,7 @@ HTAB* attributecache_load(sysdict_header_array* array)
 	bool found = false;
 	uint64 fileoffset = 0;
 	char buffer[FILE_BLK_SIZE];
-	xk_pg_sysdict_Form_pg_attribute attr;
+	pg_sysdict_Form_pg_attribute attr;
 	catalog_attribute_value *entry = NULL;
 
 	rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -113,15 +113,15 @@ HTAB* attributecache_load(sysdict_header_array* array)
 	{
 		uint64 offset = 0;
 
-		while (offset + sizeof(xk_pg_parser_sysdict_pgattributes) < FILE_BLK_SIZE)
+		while (offset + sizeof(pg_parser_sysdict_pgattributes) < FILE_BLK_SIZE)
 		{
-			attr = (xk_pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(xk_pg_parser_sysdict_pgattributes));
+			attr = (pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(pg_parser_sysdict_pgattributes));
 			if(NULL == attr)
 			{
 				elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 			}
-			rmemset0(attr, 0, '\0', sizeof(xk_pg_parser_sysdict_pgattributes));
-			rmemcpy0(attr, 0, buffer + offset, sizeof(xk_pg_parser_sysdict_pgattributes));
+			rmemset0(attr, 0, '\0', sizeof(pg_parser_sysdict_pgattributes));
+			rmemcpy0(attr, 0, buffer + offset, sizeof(pg_parser_sysdict_pgattributes));
 			entry = (catalog_attribute_value *)hash_search(attributehtab, &attr->attrelid, HASH_ENTER, &found);
 			if (!found)
 			{
@@ -129,7 +129,7 @@ HTAB* attributecache_load(sysdict_header_array* array)
 			}
 			entry->attrelid = attr->attrelid;
 			entry->attrs = lappend(entry->attrs, attr);
-			offset += sizeof(xk_pg_parser_sysdict_pgattributes);
+			offset += sizeof(pg_parser_sysdict_pgattributes);
 
 			if (fileoffset + offset == array[CATALOG_TYPE_ATTRIBUTE - 1].len)
 			{
@@ -155,10 +155,10 @@ catalogdata* class_colvalue2attribute(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_attribute_value* attrvalue = NULL;
-    xk_pg_sysdict_Form_pg_attribute pgattribute = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_attribute pgattribute = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
     catalog_data = (catalogdata*)rmalloc1(sizeof(catalogdata));
@@ -177,12 +177,12 @@ catalogdata* class_colvalue2attribute(void* in_colvalue)
     catalog_data->catalog = attrvalue;
     catalog_data->type = CATALOG_TYPE_ATTRIBUTE;
 
-    pgattribute = (xk_pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(xk_pg_parser_sysdict_pgattributes));
+    pgattribute = (pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(pg_parser_sysdict_pgattributes));
     if(NULL == pgattribute)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgattribute, 0, '\0', sizeof(xk_pg_parser_sysdict_pgattributes));
+    rmemset0(pgattribute, 0, '\0', sizeof(pg_parser_sysdict_pgattributes));
     attrvalue->attrs = lappend(attrvalue->attrs, pgattribute);
 
     /* attalign 11 */
@@ -256,10 +256,10 @@ catalogdata* class_colvalue2attribute_pg14(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_attribute_value* attrvalue = NULL;
-    xk_pg_sysdict_Form_pg_attribute pgattribute = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_attribute pgattribute = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
     catalog_data = (catalogdata*)rmalloc1(sizeof(catalogdata));
@@ -278,12 +278,12 @@ catalogdata* class_colvalue2attribute_pg14(void* in_colvalue)
     catalog_data->catalog = attrvalue;
     catalog_data->type = CATALOG_TYPE_ATTRIBUTE;
 
-    pgattribute = (xk_pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(xk_pg_parser_sysdict_pgattributes));
+    pgattribute = (pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(pg_parser_sysdict_pgattributes));
     if(NULL == pgattribute)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgattribute, 0, '\0', sizeof(xk_pg_parser_sysdict_pgattributes));
+    rmemset0(pgattribute, 0, '\0', sizeof(pg_parser_sysdict_pgattributes));
     attrvalue->attrs = lappend(attrvalue->attrs, pgattribute);
 
     /* attalign 10, different from pg12 */
@@ -361,10 +361,10 @@ void attribute_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
     List* newattrlist = NULL;
     catalog_attribute_value* newAttr = NULL;
     catalog_attribute_value* attrInHash = NULL;
-    xk_pg_sysdict_Form_pg_attribute pgattr = NULL;
-    xk_pg_sysdict_Form_pg_attribute pgattrInHash = NULL;
+    pg_sysdict_Form_pg_attribute pgattr = NULL;
+    pg_sysdict_Form_pg_attribute pgattrInHash = NULL;
 
-    xk_pg_sysdict_Form_pg_attribute dupattr = NULL;
+    pg_sysdict_Form_pg_attribute dupattr = NULL;
 
     if(NULL == catalogdata || NULL == catalogdata->catalog)
     {
@@ -373,7 +373,7 @@ void attribute_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
 
     /* 获取his中的 attribute 结构 */
     newAttr = (catalog_attribute_value*)(catalogdata->catalog);
-    pgattr = (xk_pg_sysdict_Form_pg_attribute)lfirst(list_head(newAttr->attrs));
+    pgattr = (pg_sysdict_Form_pg_attribute)lfirst(list_head(newAttr->attrs));
 
     if(CATALOG_OP_INSERT == catalogdata->op)
     {
@@ -393,24 +393,24 @@ void attribute_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
         /* 在链表中查看是否存在，不存在则添加，存在则覆盖 */
         foreach(lc, attrInHash->attrs)
         {
-            pgattrInHash = (xk_pg_sysdict_Form_pg_attribute)lfirst(lc);
+            pgattrInHash = (pg_sysdict_Form_pg_attribute)lfirst(lc);
             if(pgattrInHash->attnum != pgattr->attnum)
             {
                 continue;
             }
 
             /* 删除原来的，设置新的 */
-            rmemcpy0(pgattrInHash, 0, pgattr, sizeof(xk_pg_parser_sysdict_pgattributes));
+            rmemcpy0(pgattrInHash, 0, pgattr, sizeof(pg_parser_sysdict_pgattributes));
             return;
         }
 
         /* 重新分配空间 */
-        dupattr = (xk_pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(xk_pg_parser_sysdict_pgattributes));
+        dupattr = (pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(pg_parser_sysdict_pgattributes));
         if(NULL == dupattr)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemcpy0(dupattr, 0, pgattr, sizeof(xk_pg_parser_sysdict_pgattributes));
+        rmemcpy0(dupattr, 0, pgattr, sizeof(pg_parser_sysdict_pgattributes));
 
         attrInHash->attrs = lappend(attrInHash->attrs, dupattr);
     }
@@ -429,14 +429,14 @@ void attribute_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
         /* 遍历更新 */
         foreach(lc, attrInHash->attrs)
         {
-            pgattrInHash = (xk_pg_sysdict_Form_pg_attribute)lfirst(lc);
+            pgattrInHash = (pg_sysdict_Form_pg_attribute)lfirst(lc);
             if(pgattrInHash->attnum != pgattr->attnum)
             {
                 continue;
             }
 
             /* 删除原来的，设置新的 */
-            rmemcpy0(pgattrInHash, 0, pgattr, sizeof(xk_pg_parser_sysdict_pgattributes));
+            rmemcpy0(pgattrInHash, 0, pgattr, sizeof(pg_parser_sysdict_pgattributes));
             return;
         }
 
@@ -446,12 +446,12 @@ void attribute_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
                             pgattr->attname.data);
 
         /* 重新分配空间 */
-        dupattr = (xk_pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(xk_pg_parser_sysdict_pgattributes));
+        dupattr = (pg_sysdict_Form_pg_attribute)rmalloc1(sizeof(pg_parser_sysdict_pgattributes));
         if(NULL == dupattr)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemcpy0(dupattr, 0, pgattr, sizeof(xk_pg_parser_sysdict_pgattributes));
+        rmemcpy0(dupattr, 0, pgattr, sizeof(pg_parser_sysdict_pgattributes));
 
         attrInHash->attrs = lappend(attrInHash->attrs, dupattr);
     }
@@ -469,7 +469,7 @@ void attribute_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
 
         foreach(lc, attrInHash->attrs)
         {
-            pgattrInHash = (xk_pg_sysdict_Form_pg_attribute)lfirst(lc);
+            pgattrInHash = (pg_sysdict_Form_pg_attribute)lfirst(lc);
             if(pgattrInHash->attnum != pgattr->attnum)
             {
                 newattrlist = lappend(newattrlist, pgattrInHash);
@@ -504,7 +504,7 @@ void attributecache_write(HTAB* attributecache, uint64 *offset, sysdict_header_a
 	List* attribute = NULL;
 	char buffer[FILE_BLK_SIZE];
 	catalog_attribute_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_attribute attr_data = NULL;
+	pg_sysdict_Form_pg_attribute attr_data = NULL;
 
 	array[CATALOG_TYPE_ATTRIBUTE - 1].type = CATALOG_TYPE_ATTRIBUTE;
 	array[CATALOG_TYPE_ATTRIBUTE - 1].offset = *offset;
@@ -529,9 +529,9 @@ void attributecache_write(HTAB* attributecache, uint64 *offset, sysdict_header_a
 	}
 	foreach(cell, attribute)
 	{
-		attr_data = (xk_pg_sysdict_Form_pg_attribute) lfirst(cell);
+		attr_data = (pg_sysdict_Form_pg_attribute) lfirst(cell);
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgattributes) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgattributes) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
@@ -543,8 +543,8 @@ void attributecache_write(HTAB* attributecache, uint64 *offset, sysdict_header_a
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, attr_data, sizeof(xk_pg_parser_sysdict_pgattributes));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgattributes);
+		rmemcpy1(buffer, page_offset, attr_data, sizeof(pg_parser_sysdict_pgattributes));
+		page_offset += sizeof(pg_parser_sysdict_pgattributes);
 
 	}
 	if (page_offset > 0) {

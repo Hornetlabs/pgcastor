@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_tsvector.c
+ * @file pg_parser_thirdparty_tupleparser_tsvector.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -8,12 +8,12 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "common/xk_pg_parser_translog.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgsfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
-#include "thirdparty/tupleparser/toast/xk_pg_parser_thirdparty_tupleparser_toast.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "common/pg_parser_translog.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgsfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
+#include "thirdparty/tupleparser/toast/pg_parser_thirdparty_tupleparser_toast.h"
 
 #define PGFUNC_TSVECTOR_MCXT NULL
 
@@ -52,7 +52,7 @@ typedef struct
 #define STRPTR(x)    ( (char *) &(x)->entries[(x)->size] )
 
 #define _POSVECPTR(x, e) ((WordEntryPosVector *)(STRPTR(x) \
-                          + XK_PG_PARSER_SHORTALIGN((e)->pos + (e)->len)))
+                          + PG_PARSER_SHORTALIGN((e)->pos + (e)->len)))
 
 #define POSDATALEN(x,e) ( ( (e)->haspos ) ? (_POSVECPTR(x,e)->npos) : 0 )
 #define POSDATAPTR(x,e) (_POSVECPTR(x,e)->pos)
@@ -60,12 +60,12 @@ typedef struct
 #define WEP_GETPOS(x) ( (x) & 0x3fff )
 #define WEP_GETWEIGHT(x) ( (x) >> 14 )
 
-xk_pg_parser_Datum tsvectorout(xk_pg_parser_Datum attr,
-                               xk_pg_parser_extraTypoutInfo *info)
+pg_parser_Datum tsvectorout(pg_parser_Datum attr,
+                               pg_parser_extraTypoutInfo *info)
 {
     bool        is_toast = false;
     bool        need_free = false;
-    TSVector    out = (TSVector) xk_pg_parser_detoast_datum((struct xk_pg_parser_varlena *) attr,
+    TSVector    out = (TSVector) pg_parser_detoast_datum((struct pg_parser_varlena *) attr,
                                                             &is_toast,
                                                             &need_free,
                                                              info->zicinfo->dbtype,
@@ -82,19 +82,19 @@ xk_pg_parser_Datum tsvectorout(xk_pg_parser_Datum attr,
     if (is_toast)
     {
         info->valueinfo = INFO_COL_IS_TOAST;
-        info->valuelen = sizeof(struct xk_pg_parser_varatt_external);
-        return (xk_pg_parser_Datum) out;
+        info->valuelen = sizeof(struct pg_parser_varatt_external);
+        return (pg_parser_Datum) out;
     }
 
     lenbuf = out->size * 2 /* '' */ + out->size - 1 /* space */ + 2 /* \0 */ ;
     for (i = 0; i < out->size; i++)
     {
-        lenbuf += ptr[i].len * 2 * xk_character_encoding_max_length(XK_CHARACTER_UTF8) /* for escape */ ;
+        lenbuf += ptr[i].len * 2 * character_encoding_max_length(CHARACTER_UTF8) /* for escape */ ;
         if (ptr[i].haspos)
             lenbuf += 1 /* : */ + 7 /* int2 + , + weight */ * POSDATALEN(out, &(ptr[i]));
     }
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_TSVECTOR_MCXT, (void**) &outbuf, lenbuf))
-        return (xk_pg_parser_Datum) 0;
+    if (!pg_parser_mcxt_malloc(PGFUNC_TSVECTOR_MCXT, (void**) &outbuf, lenbuf))
+        return (pg_parser_Datum) 0;
 
     curout = outbuf;
     for (i = 0; i < out->size; i++)
@@ -105,7 +105,7 @@ xk_pg_parser_Datum tsvectorout(xk_pg_parser_Datum attr,
         *curout++ = '\'';
         while (curin - curbegin < ptr->len)
         {
-            int32_t len = xk_character_encoding_mblen(XK_CHARACTER_UTF8, curin);
+            int32_t len = character_encoding_mblen(CHARACTER_UTF8, curin);
 
             if (t_iseq(curin, '\''))
                 *curout++ = '\'';
@@ -154,6 +154,6 @@ xk_pg_parser_Datum tsvectorout(xk_pg_parser_Datum attr,
     *curout = '\0';
     info->valuelen = strlen(outbuf);
     if (need_free)
-        xk_pg_parser_mcxt_free(PGFUNC_TSVECTOR_MCXT, out);
-    return (xk_pg_parser_Datum) outbuf;
+        pg_parser_mcxt_free(PGFUNC_TSVECTOR_MCXT, out);
+    return (pg_parser_Datum) outbuf;
 }

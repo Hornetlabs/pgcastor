@@ -1,466 +1,466 @@
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "thirdparty/stringinfo/xk_pg_parser_thirdparty_stringinfo.h"
-#include "common/xk_pg_parser_translog.h"
-#include "sysdict/xk_pg_parser_sysdict_getinfo.h"
-#include "trans/transrec/xk_pg_parser_trans_transrec_itemptr.h"
-#include "trans/transrec/xk_pg_parser_trans_transrec_heaptuple.h"
-#include "thirdparty/list/xk_pg_parser_thirdparty_list.h"
-#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode_struct.h"
-#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode_util.h"
-#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode.h"
-#include "thirdparty/common/xk_pg_parser_thirdparty_builtins.h"
-#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode_value.h"
-#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode_type.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_fmgr.h"
-#include "thirdparty/parsernode/xk_pg_parser_thirdparty_parsernode_local_func.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "thirdparty/stringinfo/pg_parser_thirdparty_stringinfo.h"
+#include "common/pg_parser_translog.h"
+#include "sysdict/pg_parser_sysdict_getinfo.h"
+#include "trans/transrec/pg_parser_trans_transrec_itemptr.h"
+#include "trans/transrec/pg_parser_trans_transrec_heaptuple.h"
+#include "thirdparty/list/pg_parser_thirdparty_list.h"
+#include "thirdparty/parsernode/pg_parser_thirdparty_parsernode_struct.h"
+#include "thirdparty/parsernode/pg_parser_thirdparty_parsernode_util.h"
+#include "thirdparty/parsernode/pg_parser_thirdparty_parsernode.h"
+#include "thirdparty/common/pg_parser_thirdparty_builtins.h"
+#include "thirdparty/parsernode/pg_parser_thirdparty_parsernode_value.h"
+#include "thirdparty/parsernode/pg_parser_thirdparty_parsernode_type.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_fmgr.h"
+#include "thirdparty/parsernode/pg_parser_thirdparty_parsernode_local_func.h"
 
 
 #if 0
-static const char* xk_pg_parser_nodeTagName[] =
+static const char* pg_parser_nodeTagName[] =
 {
-    "T_xk_pg_parser_Invalid",
-    "T_xk_pg_parser_IndexInfo",
-    "T_xk_pg_parser_ExprContext",
-    "T_xk_pg_parser_ProjectionInfo",
-    "T_xk_pg_parser_JunkFilter",
-    "T_xk_pg_parser_OnConflictSetState",
-    "T_xk_pg_parser_ResultRelInfo",
-    "T_xk_pg_parser_EState",
-    "T_xk_pg_parser_TupleTableSlot",
-    "T_xk_pg_parser_Plan",
-    "T_xk_pg_parser_Result",
-    "T_xk_pg_parser_ProjectSet",
-    "T_xk_pg_parser_ModifyTable",
-    "T_xk_pg_parser_Append",
-    "T_xk_pg_parser_MergeAppend",
-    "T_xk_pg_parser_RecursiveUnion",
-    "T_xk_pg_parser_BitmapAnd",
-    "T_xk_pg_parser_BitmapOr",
-    "T_xk_pg_parser_Scan",
-    "T_xk_pg_parser_SeqScan",
-    "T_xk_pg_parser_SampleScan",
-    "T_xk_pg_parser_IndexScan",
-    "T_xk_pg_parser_IndexOnlyScan",
-    "T_xk_pg_parser_BitmapIndexScan",
-    "T_xk_pg_parser_BitmapHeapScan",
-    "T_xk_pg_parser_TidScan",
-    "T_xk_pg_parser_SubqueryScan",
-    "T_xk_pg_parser_FunctionScan",
-    "T_xk_pg_parser_ValuesScan",
-    "T_xk_pg_parser_TableFuncScan",
-    "T_xk_pg_parser_CteScan",
-    "T_xk_pg_parser_NamedTuplestoreScan",
-    "T_xk_pg_parser_WorkTableScan",
-    "T_xk_pg_parser_ForeignScan",
-    "T_xk_pg_parser_CustomScan",
-    "T_xk_pg_parser_Join",
-    "T_xk_pg_parser_NestLoop",
-    "T_xk_pg_parser_MergeJoin",
-    "T_xk_pg_parser_HashJoin",
-    "T_xk_pg_parser_Material",
-    "T_xk_pg_parser_Sort",
-    "T_xk_pg_parser_Group",
-    "T_xk_pg_parser_Agg",
-    "T_xk_pg_parser_WindowAgg",
-    "T_xk_pg_parser_Unique",
-    "T_xk_pg_parser_Gather",
-    "T_xk_pg_parser_GatherMerge",
-    "T_xk_pg_parser_Hash",
-    "T_xk_pg_parser_SetOp",
-    "T_xk_pg_parser_LockRows",
-    "T_xk_pg_parser_Limit",
-    "T_xk_pg_parser_NestLoopParam",
-    "T_xk_pg_parser_PlanRowMark",
-    "T_xk_pg_parser_PartitionPruneInfo",
-    "T_xk_pg_parser_PartitionedRelPruneInfo",
-    "T_xk_pg_parser_PartitionPruneStepOp",
-    "T_xk_pg_parser_PartitionPruneStepCombine",
-    "T_xk_pg_parser_PlanInvalItem",
-    "T_xk_pg_parser_PlanState",
-    "T_xk_pg_parser_ResultState",
-    "T_xk_pg_parser_ProjectSetState",
-    "T_xk_pg_parser_ModifyTableState",
-    "T_xk_pg_parser_AppendState",
-    "T_xk_pg_parser_MergeAppendState",
-    "T_xk_pg_parser_RecursiveUnionState",
-    "T_xk_pg_parser_BitmapAndState",
-    "T_xk_pg_parser_BitmapOrState",
-    "T_xk_pg_parser_ScanState",
-    "T_xk_pg_parser_SeqScanState",
-    "T_xk_pg_parser_SampleScanState",
-    "T_xk_pg_parser_IndexScanState",
-    "T_xk_pg_parser_IndexOnlyScanState",
-    "T_xk_pg_parser_BitmapIndexScanState",
-    "T_xk_pg_parser_BitmapHeapScanState",
-    "T_xk_pg_parser_TidScanState",
-    "T_xk_pg_parser_SubqueryScanState",
-    "T_xk_pg_parser_FunctionScanState",
-    "T_xk_pg_parser_TableFuncScanState",
-    "T_xk_pg_parser_ValuesScanState",
-    "T_xk_pg_parser_CteScanState",
-    "T_xk_pg_parser_NamedTuplestoreScanState",
-    "T_xk_pg_parser_WorkTableScanState",
-    "T_xk_pg_parser_ForeignScanState",
-    "T_xk_pg_parser_CustomScanState",
-    "T_xk_pg_parser_JoinState",
-    "T_xk_pg_parser_NestLoopState",
-    "T_xk_pg_parser_MergeJoinState",
-    "T_xk_pg_parser_HashJoinState",
-    "T_xk_pg_parser_MaterialState",
-    "T_xk_pg_parser_SortState",
-    "T_xk_pg_parser_GroupState",
-    "T_xk_pg_parser_AggState",
-    "T_xk_pg_parser_WindowAggState",
-    "T_xk_pg_parser_UniqueState",
-    "T_xk_pg_parser_GatherState",
-    "T_xk_pg_parser_GatherMergeState",
-    "T_xk_pg_parser_HashState",
-    "T_xk_pg_parser_SetOpState",
-    "T_xk_pg_parser_LockRowsState",
-    "T_xk_pg_parser_LimitState",
-    "T_xk_pg_parser_Alias",
-    "T_xk_pg_parser_RangeVar",
-    "T_xk_pg_parser_TableFunc",
-    "T_xk_pg_parser_Expr",
-    "T_xk_pg_parser_Var",
-    "T_xk_pg_parser_Const",
-    "T_xk_pg_parser_Param",
-    "T_xk_pg_parser_Aggref",
-    "T_xk_pg_parser_GroupingFunc",
-    "T_xk_pg_parser_WindowFunc",
-    "T_xk_pg_parser_SubscriptingRef",
-    "T_xk_pg_parser_FuncExpr",
-    "T_xk_pg_parser_NamedArgExpr",
-    "T_xk_pg_parser_OpExpr",
-    "T_xk_pg_parser_DistinctExpr",
-    "T_xk_pg_parser_NullIfExpr",
-    "T_xk_pg_parser_ScalarArrayOpExpr",
-    "T_xk_pg_parser_BoolExpr",
-    "T_xk_pg_parser_SubLink",
-    "T_xk_pg_parser_SubPlan",
-    "T_xk_pg_parser_AlternativeSubPlan",
-    "T_xk_pg_parser_FieldSelect",
-    "T_xk_pg_parser_FieldStore",
-    "T_xk_pg_parser_RelabelType",
-    "T_xk_pg_parser_CoerceViaIO",
-    "T_xk_pg_parser_ArrayCoerceExpr",
-    "T_xk_pg_parser_ConvertRowtypeExpr",
-    "T_xk_pg_parser_CollateExpr",
-    "T_xk_pg_parser_CaseExpr",
-    "T_xk_pg_parser_CaseWhen",
-    "T_xk_pg_parser_CaseTestExpr",
-    "T_xk_pg_parser_ArrayExpr",
-    "T_xk_pg_parser_RowExpr",
-    "T_xk_pg_parser_RowCompareExpr",
-    "T_xk_pg_parser_CoalesceExpr",
-    "T_xk_pg_parser_MinMaxExpr",
-    "T_xk_pg_parser_SQLValueFunction",
-    "T_xk_pg_parser_XmlExpr",
-    "T_xk_pg_parser_NullTest",
-    "T_xk_pg_parser_BooleanTest",
-    "T_xk_pg_parser_CoerceToDomain",
-    "T_xk_pg_parser_CoerceToDomainValue",
-    "T_xk_pg_parser_SetToDefault",
-    "T_xk_pg_parser_CurrentOfExpr",
-    "T_xk_pg_parser_NextValueExpr",
-    "T_xk_pg_parser_InferenceElem",
-    "T_xk_pg_parser_TargetEntry",
-    "T_xk_pg_parser_RangeTblRef",
-    "T_xk_pg_parser_JoinExpr",
-    "T_xk_pg_parser_FromExpr",
-    "T_xk_pg_parser_OnConflictExpr",
-    "T_xk_pg_parser_IntoClause",
-    "T_xk_pg_parser_ExprState",
-    "T_xk_pg_parser_AggrefExprState",
-    "T_xk_pg_parser_WindowFuncExprState",
-    "T_xk_pg_parser_SetExprState",
-    "T_xk_pg_parser_SubPlanState",
-    "T_xk_pg_parser_AlternativeSubPlanState",
-    "T_xk_pg_parser_DomainConstraintState",
-    "T_xk_pg_parser_PlannerInfo",
-    "T_xk_pg_parser_PlannerGlobal",
-    "T_xk_pg_parser_RelOptInfo",
-    "T_xk_pg_parser_IndexOptInfo",
-    "T_xk_pg_parser_ForeignKeyOptInfo",
-    "T_xk_pg_parser_ParamPathInfo",
-    "T_xk_pg_parser_Path",
-    "T_xk_pg_parser_IndexPath",
-    "T_xk_pg_parser_BitmapHeapPath",
-    "T_xk_pg_parser_BitmapAndPath",
-    "T_xk_pg_parser_BitmapOrPath",
-    "T_xk_pg_parser_TidPath",
-    "T_xk_pg_parser_SubqueryScanPath",
-    "T_xk_pg_parser_ForeignPath",
-    "T_xk_pg_parser_CustomPath",
-    "T_xk_pg_parser_NestPath",
-    "T_xk_pg_parser_MergePath",
-    "T_xk_pg_parser_HashPath",
-    "T_xk_pg_parser_AppendPath",
-    "T_xk_pg_parser_MergeAppendPath",
-    "T_xk_pg_parser_GroupResultPath",
-    "T_xk_pg_parser_MaterialPath",
-    "T_xk_pg_parser_UniquePath",
-    "T_xk_pg_parser_GatherPath",
-    "T_xk_pg_parser_GatherMergePath",
-    "T_xk_pg_parser_ProjectionPath",
-    "T_xk_pg_parser_ProjectSetPath",
-    "T_xk_pg_parser_SortPath",
-    "T_xk_pg_parser_GroupPath",
-    "T_xk_pg_parser_UpperUniquePath",
-    "T_xk_pg_parser_AggPath",
-    "T_xk_pg_parser_GroupingSetsPath",
-    "T_xk_pg_parser_MinMaxAggPath",
-    "T_xk_pg_parser_WindowAggPath",
-    "T_xk_pg_parser_SetOpPath",
-    "T_xk_pg_parser_RecursiveUnionPath",
-    "T_xk_pg_parser_LockRowsPath",
-    "T_xk_pg_parser_ModifyTablePath",
-    "T_xk_pg_parser_LimitPath",
-    "T_xk_pg_parser_EquivalenceClass",
-    "T_xk_pg_parser_EquivalenceMember",
-    "T_xk_pg_parser_PathKey",
-    "T_xk_pg_parser_PathTarget",
-    "T_xk_pg_parser_RestrictInfo",
-    "T_xk_pg_parser_IndexClause",
-    "T_xk_pg_parser_PlaceHolderVar",
-    "T_xk_pg_parser_SpecialJoinInfo",
-    "T_xk_pg_parser_AppendRelInfo",
-    "T_xk_pg_parser_PlaceHolderInfo",
-    "T_xk_pg_parser_MinMaxAggInfo",
-    "T_xk_pg_parser_PlannerParamItem",
-    "T_xk_pg_parser_RollupData",
-    "T_xk_pg_parser_GroupingSetData",
-    "T_xk_pg_parser_StatisticExtInfo",
-    "T_xk_pg_parser_MemoryContext",
-    "T_xk_pg_parser_AllocSetContext",
-    "T_xk_pg_parser_SlabContext",
-    "T_xk_pg_parser_GenerationContext",
-    "T_xk_pg_parser_Value",
-    "T_xk_pg_parser_Integer",
-    "T_xk_pg_parser_Float",
-    "T_xk_pg_parser_String",
-    "T_xk_pg_parser_BitString",
-    "T_xk_pg_parser_Null",
-    "T_xk_pg_parser_List",
-    "T_xk_pg_parser_IntList",
-    "T_xk_pg_parser_OidList",
-    "T_xk_pg_parser_ExtensibleNode",
-    "T_xk_pg_parser_RawStmt",
-    "T_xk_pg_parser_Query",
-    "T_xk_pg_parser_PlannedStmt",
-    "T_xk_pg_parser_InsertStmt",
-    "T_xk_pg_parser_DeleteStmt",
-    "T_xk_pg_parser_UpdateStmt",
-    "T_xk_pg_parser_SelectStmt",
-    "T_xk_pg_parser_AlterTableStmt",
-    "T_xk_pg_parser_AlterTableCmd",
-    "T_xk_pg_parser_AlterDomainStmt",
-    "T_xk_pg_parser_SetOperationStmt",
-    "T_xk_pg_parser_GrantStmt",
-    "T_xk_pg_parser_GrantRoleStmt",
-    "T_xk_pg_parser_AlterDefaultPrivilegesStmt",
-    "T_xk_pg_parser_ClosePortalStmt",
-    "T_xk_pg_parser_ClusterStmt",
-    "T_xk_pg_parser_CopyStmt",
-    "T_xk_pg_parser_CreateStmt",
-    "T_xk_pg_parser_DefineStmt",
-    "T_xk_pg_parser_DropStmt",
-    "T_xk_pg_parser_TruncateStmt",
-    "T_xk_pg_parser_CommentStmt",
-    "T_xk_pg_parser_FetchStmt",
-    "T_xk_pg_parser_IndexStmt",
-    "T_xk_pg_parser_CreateFunctionStmt",
-    "T_xk_pg_parser_AlterFunctionStmt",
-    "T_xk_pg_parser_DoStmt",
-    "T_xk_pg_parser_RenameStmt",
-    "T_xk_pg_parser_RuleStmt",
-    "T_xk_pg_parser_NotifyStmt",
-    "T_xk_pg_parser_ListenStmt",
-    "T_xk_pg_parser_UnlistenStmt",
-    "T_xk_pg_parser_TransactionStmt",
-    "T_xk_pg_parser_ViewStmt",
-    "T_xk_pg_parser_LoadStmt",
-    "T_xk_pg_parser_CreateDomainStmt",
-    "T_xk_pg_parser_CreatedbStmt",
-    "T_xk_pg_parser_DropdbStmt",
-    "T_xk_pg_parser_VacuumStmt",
-    "T_xk_pg_parser_ExplainStmt",
-    "T_xk_pg_parser_CreateTableAsStmt",
-    "T_xk_pg_parser_CreateSeqStmt",
-    "T_xk_pg_parser_AlterSeqStmt",
-    "T_xk_pg_parser_VariableSetStmt",
-    "T_xk_pg_parser_VariableShowStmt",
-    "T_xk_pg_parser_DiscardStmt",
-    "T_xk_pg_parser_CreateTrigStmt",
-    "T_xk_pg_parser_CreatePLangStmt",
-    "T_xk_pg_parser_CreateRoleStmt",
-    "T_xk_pg_parser_AlterRoleStmt",
-    "T_xk_pg_parser_DropRoleStmt",
-    "T_xk_pg_parser_LockStmt",
-    "T_xk_pg_parser_ConstraintsSetStmt",
-    "T_xk_pg_parser_ReindexStmt",
-    "T_xk_pg_parser_CheckPointStmt",
-    "T_xk_pg_parser_CreateSchemaStmt",
-    "T_xk_pg_parser_AlterDatabaseStmt",
-    "T_xk_pg_parser_AlterDatabaseSetStmt",
-    "T_xk_pg_parser_AlterRoleSetStmt",
-    "T_xk_pg_parser_CreateConversionStmt",
-    "T_xk_pg_parser_CreateCastStmt",
-    "T_xk_pg_parser_CreateOpClassStmt",
-    "T_xk_pg_parser_CreateOpFamilyStmt",
-    "T_xk_pg_parser_AlterOpFamilyStmt",
-    "T_xk_pg_parser_PrepareStmt",
-    "T_xk_pg_parser_ExecuteStmt",
-    "T_xk_pg_parser_DeallocateStmt",
-    "T_xk_pg_parser_DeclareCursorStmt",
-    "T_xk_pg_parser_CreateTableSpaceStmt",
-    "T_xk_pg_parser_DropTableSpaceStmt",
-    "T_xk_pg_parser_AlterObjectDependsStmt",
-    "T_xk_pg_parser_AlterObjectSchemaStmt",
-    "T_xk_pg_parser_AlterOwnerStmt",
-    "T_xk_pg_parser_AlterOperatorStmt",
-    "T_xk_pg_parser_DropOwnedStmt",
-    "T_xk_pg_parser_ReassignOwnedStmt",
-    "T_xk_pg_parser_CompositeTypeStmt",
-    "T_xk_pg_parser_CreateEnumStmt",
-    "T_xk_pg_parser_CreateRangeStmt",
-    "T_xk_pg_parser_AlterEnumStmt",
-    "T_xk_pg_parser_AlterTSDictionaryStmt",
-    "T_xk_pg_parser_AlterTSConfigurationStmt",
-    "T_xk_pg_parser_CreateFdwStmt",
-    "T_xk_pg_parser_AlterFdwStmt",
-    "T_xk_pg_parser_CreateForeignServerStmt",
-    "T_xk_pg_parser_AlterForeignServerStmt",
-    "T_xk_pg_parser_CreateUserMappingStmt",
-    "T_xk_pg_parser_AlterUserMappingStmt",
-    "T_xk_pg_parser_DropUserMappingStmt",
-    "T_xk_pg_parser_AlterTableSpaceOptionsStmt",
-    "T_xk_pg_parser_AlterTableMoveAllStmt",
-    "T_xk_pg_parser_SecLabelStmt",
-    "T_xk_pg_parser_CreateForeignTableStmt",
-    "T_xk_pg_parser_ImportForeignSchemaStmt",
-    "T_xk_pg_parser_CreateExtensionStmt",
-    "T_xk_pg_parser_AlterExtensionStmt",
-    "T_xk_pg_parser_AlterExtensionContentsStmt",
-    "T_xk_pg_parser_CreateEventTrigStmt",
-    "T_xk_pg_parser_AlterEventTrigStmt",
-    "T_xk_pg_parser_RefreshMatViewStmt",
-    "T_xk_pg_parser_ReplicaIdentityStmt",
-    "T_xk_pg_parser_AlterSystemStmt",
-    "T_xk_pg_parser_CreatePolicyStmt",
-    "T_xk_pg_parser_AlterPolicyStmt",
-    "T_xk_pg_parser_CreateTransformStmt",
-    "T_xk_pg_parser_CreateAmStmt",
-    "T_xk_pg_parser_CreatePublicationStmt",
-    "T_xk_pg_parser_AlterPublicationStmt",
-    "T_xk_pg_parser_CreateSubscriptionStmt",
-    "T_xk_pg_parser_AlterSubscriptionStmt",
-    "T_xk_pg_parser_DropSubscriptionStmt",
-    "T_xk_pg_parser_CreateStatsStmt",
-    "T_xk_pg_parser_AlterCollationStmt",
-    "T_xk_pg_parser_CallStmt",
-    "T_xk_pg_parser_A_Expr",
-    "T_xk_pg_parser_ColumnRef",
-    "T_xk_pg_parser_ParamRef",
-    "T_xk_pg_parser_A_Const",
-    "T_xk_pg_parser_FuncCall",
-    "T_xk_pg_parser_A_Star",
-    "T_xk_pg_parser_A_Indices",
-    "T_xk_pg_parser_A_Indirection",
-    "T_xk_pg_parser_A_ArrayExpr",
-    "T_xk_pg_parser_ResTarget",
-    "T_xk_pg_parser_MultiAssignRef",
-    "T_xk_pg_parser_TypeCast",
-    "T_xk_pg_parser_CollateClause",
-    "T_xk_pg_parser_SortBy",
-    "T_xk_pg_parser_WindowDef",
-    "T_xk_pg_parser_RangeSubselect",
-    "T_xk_pg_parser_RangeFunction",
-    "T_xk_pg_parser_RangeTableSample",
-    "T_xk_pg_parser_RangeTableFunc",
-    "T_xk_pg_parser_RangeTableFuncCol",
-    "T_xk_pg_parser_TypeName",
-    "T_xk_pg_parser_ColumnDef",
-    "T_xk_pg_parser_IndexElem",
-    "T_xk_pg_parser_Constraint",
-    "T_xk_pg_parser_DefElem",
-    "T_xk_pg_parser_RangeTblEntry",
-    "T_xk_pg_parser_RangeTblFunction",
-    "T_xk_pg_parser_TableSampleClause",
-    "T_xk_pg_parser_WithCheckOption",
-    "T_xk_pg_parser_SortGroupClause",
-    "T_xk_pg_parser_GroupingSet",
-    "T_xk_pg_parser_WindowClause",
-    "T_xk_pg_parser_ObjectWithArgs",
-    "T_xk_pg_parser_AccessPriv",
-    "T_xk_pg_parser_CreateOpClassItem",
-    "T_xk_pg_parser_TableLikeClause",
-    "T_xk_pg_parser_FunctionParameter",
-    "T_xk_pg_parser_LockingClause",
-    "T_xk_pg_parser_RowMarkClause",
-    "T_xk_pg_parser_XmlSerialize",
-    "T_xk_pg_parser_WithClause",
-    "T_xk_pg_parser_InferClause",
-    "T_xk_pg_parser_OnConflictClause",
-    "T_xk_pg_parser_CommonTableExpr",
-    "T_xk_pg_parser_RoleSpec",
-    "T_xk_pg_parser_TriggerTransition",
-    "T_xk_pg_parser_PartitionElem",
-    "T_xk_pg_parser_PartitionSpec",
-    "T_xk_pg_parser_PartitionBoundSpec",
-    "T_xk_pg_parser_PartitionRangeDatum",
-    "T_xk_pg_parser_PartitionCmd",
-    "T_xk_pg_parser_VacuumRelation",
-    "T_xk_pg_parser_IdentifySystemCmd",
-    "T_xk_pg_parser_BaseBackupCmd",
-    "T_xk_pg_parser_CreateReplicationSlotCmd",
-    "T_xk_pg_parser_DropReplicationSlotCmd",
-    "T_xk_pg_parser_StartReplicationCmd",
-    "T_xk_pg_parser_TimeLineHistoryCmd",
-    "T_xk_pg_parser_SQLCmd",
-    "T_xk_pg_parser_TriggerData",
-    "T_xk_pg_parser_EventTriggerData",
-    "T_xk_pg_parser_ReturnSetInfo",
-    "T_xk_pg_parser_WindowObjectData",
-    "T_xk_pg_parser_TIDBitmap",
-    "T_xk_pg_parser_InlineCodeBlock",
-    "T_xk_pg_parser_FdwRoutine",
-    "T_xk_pg_parser_IndexAmRoutine",
-    "T_xk_pg_parser_TableAmRoutine",
-    "T_xk_pg_parser_TsmRoutine",
-    "T_xk_pg_parser_ForeignKeyCacheInfo",
-    "T_xk_pg_parser_CallContext",
-    "T_xk_pg_parser_SupportRequestSimplify",
-    "T_xk_pg_parser_SupportRequestSelectivity",
-    "T_xk_pg_parser_SupportRequestCost",
-    "T_xk_pg_parser_SupportRequestRows",
-    "T_xk_pg_parser_SupportRequestIndexCondition"
+    "T_pg_parser_Invalid",
+    "T_pg_parser_IndexInfo",
+    "T_pg_parser_ExprContext",
+    "T_pg_parser_ProjectionInfo",
+    "T_pg_parser_JunkFilter",
+    "T_pg_parser_OnConflictSetState",
+    "T_pg_parser_ResultRelInfo",
+    "T_pg_parser_EState",
+    "T_pg_parser_TupleTableSlot",
+    "T_pg_parser_Plan",
+    "T_pg_parser_Result",
+    "T_pg_parser_ProjectSet",
+    "T_pg_parser_ModifyTable",
+    "T_pg_parser_Append",
+    "T_pg_parser_MergeAppend",
+    "T_pg_parser_RecursiveUnion",
+    "T_pg_parser_BitmapAnd",
+    "T_pg_parser_BitmapOr",
+    "T_pg_parser_Scan",
+    "T_pg_parser_SeqScan",
+    "T_pg_parser_SampleScan",
+    "T_pg_parser_IndexScan",
+    "T_pg_parser_IndexOnlyScan",
+    "T_pg_parser_BitmapIndexScan",
+    "T_pg_parser_BitmapHeapScan",
+    "T_pg_parser_TidScan",
+    "T_pg_parser_SubqueryScan",
+    "T_pg_parser_FunctionScan",
+    "T_pg_parser_ValuesScan",
+    "T_pg_parser_TableFuncScan",
+    "T_pg_parser_CteScan",
+    "T_pg_parser_NamedTuplestoreScan",
+    "T_pg_parser_WorkTableScan",
+    "T_pg_parser_ForeignScan",
+    "T_pg_parser_CustomScan",
+    "T_pg_parser_Join",
+    "T_pg_parser_NestLoop",
+    "T_pg_parser_MergeJoin",
+    "T_pg_parser_HashJoin",
+    "T_pg_parser_Material",
+    "T_pg_parser_Sort",
+    "T_pg_parser_Group",
+    "T_pg_parser_Agg",
+    "T_pg_parser_WindowAgg",
+    "T_pg_parser_Unique",
+    "T_pg_parser_Gather",
+    "T_pg_parser_GatherMerge",
+    "T_pg_parser_Hash",
+    "T_pg_parser_SetOp",
+    "T_pg_parser_LockRows",
+    "T_pg_parser_Limit",
+    "T_pg_parser_NestLoopParam",
+    "T_pg_parser_PlanRowMark",
+    "T_pg_parser_PartitionPruneInfo",
+    "T_pg_parser_PartitionedRelPruneInfo",
+    "T_pg_parser_PartitionPruneStepOp",
+    "T_pg_parser_PartitionPruneStepCombine",
+    "T_pg_parser_PlanInvalItem",
+    "T_pg_parser_PlanState",
+    "T_pg_parser_ResultState",
+    "T_pg_parser_ProjectSetState",
+    "T_pg_parser_ModifyTableState",
+    "T_pg_parser_AppendState",
+    "T_pg_parser_MergeAppendState",
+    "T_pg_parser_RecursiveUnionState",
+    "T_pg_parser_BitmapAndState",
+    "T_pg_parser_BitmapOrState",
+    "T_pg_parser_ScanState",
+    "T_pg_parser_SeqScanState",
+    "T_pg_parser_SampleScanState",
+    "T_pg_parser_IndexScanState",
+    "T_pg_parser_IndexOnlyScanState",
+    "T_pg_parser_BitmapIndexScanState",
+    "T_pg_parser_BitmapHeapScanState",
+    "T_pg_parser_TidScanState",
+    "T_pg_parser_SubqueryScanState",
+    "T_pg_parser_FunctionScanState",
+    "T_pg_parser_TableFuncScanState",
+    "T_pg_parser_ValuesScanState",
+    "T_pg_parser_CteScanState",
+    "T_pg_parser_NamedTuplestoreScanState",
+    "T_pg_parser_WorkTableScanState",
+    "T_pg_parser_ForeignScanState",
+    "T_pg_parser_CustomScanState",
+    "T_pg_parser_JoinState",
+    "T_pg_parser_NestLoopState",
+    "T_pg_parser_MergeJoinState",
+    "T_pg_parser_HashJoinState",
+    "T_pg_parser_MaterialState",
+    "T_pg_parser_SortState",
+    "T_pg_parser_GroupState",
+    "T_pg_parser_AggState",
+    "T_pg_parser_WindowAggState",
+    "T_pg_parser_UniqueState",
+    "T_pg_parser_GatherState",
+    "T_pg_parser_GatherMergeState",
+    "T_pg_parser_HashState",
+    "T_pg_parser_SetOpState",
+    "T_pg_parser_LockRowsState",
+    "T_pg_parser_LimitState",
+    "T_pg_parser_Alias",
+    "T_pg_parser_RangeVar",
+    "T_pg_parser_TableFunc",
+    "T_pg_parser_Expr",
+    "T_pg_parser_Var",
+    "T_pg_parser_Const",
+    "T_pg_parser_Param",
+    "T_pg_parser_Aggref",
+    "T_pg_parser_GroupingFunc",
+    "T_pg_parser_WindowFunc",
+    "T_pg_parser_SubscriptingRef",
+    "T_pg_parser_FuncExpr",
+    "T_pg_parser_NamedArgExpr",
+    "T_pg_parser_OpExpr",
+    "T_pg_parser_DistinctExpr",
+    "T_pg_parser_NullIfExpr",
+    "T_pg_parser_ScalarArrayOpExpr",
+    "T_pg_parser_BoolExpr",
+    "T_pg_parser_SubLink",
+    "T_pg_parser_SubPlan",
+    "T_pg_parser_AlternativeSubPlan",
+    "T_pg_parser_FieldSelect",
+    "T_pg_parser_FieldStore",
+    "T_pg_parser_RelabelType",
+    "T_pg_parser_CoerceViaIO",
+    "T_pg_parser_ArrayCoerceExpr",
+    "T_pg_parser_ConvertRowtypeExpr",
+    "T_pg_parser_CollateExpr",
+    "T_pg_parser_CaseExpr",
+    "T_pg_parser_CaseWhen",
+    "T_pg_parser_CaseTestExpr",
+    "T_pg_parser_ArrayExpr",
+    "T_pg_parser_RowExpr",
+    "T_pg_parser_RowCompareExpr",
+    "T_pg_parser_CoalesceExpr",
+    "T_pg_parser_MinMaxExpr",
+    "T_pg_parser_SQLValueFunction",
+    "T_pg_parser_XmlExpr",
+    "T_pg_parser_NullTest",
+    "T_pg_parser_BooleanTest",
+    "T_pg_parser_CoerceToDomain",
+    "T_pg_parser_CoerceToDomainValue",
+    "T_pg_parser_SetToDefault",
+    "T_pg_parser_CurrentOfExpr",
+    "T_pg_parser_NextValueExpr",
+    "T_pg_parser_InferenceElem",
+    "T_pg_parser_TargetEntry",
+    "T_pg_parser_RangeTblRef",
+    "T_pg_parser_JoinExpr",
+    "T_pg_parser_FromExpr",
+    "T_pg_parser_OnConflictExpr",
+    "T_pg_parser_IntoClause",
+    "T_pg_parser_ExprState",
+    "T_pg_parser_AggrefExprState",
+    "T_pg_parser_WindowFuncExprState",
+    "T_pg_parser_SetExprState",
+    "T_pg_parser_SubPlanState",
+    "T_pg_parser_AlternativeSubPlanState",
+    "T_pg_parser_DomainConstraintState",
+    "T_pg_parser_PlannerInfo",
+    "T_pg_parser_PlannerGlobal",
+    "T_pg_parser_RelOptInfo",
+    "T_pg_parser_IndexOptInfo",
+    "T_pg_parser_ForeignKeyOptInfo",
+    "T_pg_parser_ParamPathInfo",
+    "T_pg_parser_Path",
+    "T_pg_parser_IndexPath",
+    "T_pg_parser_BitmapHeapPath",
+    "T_pg_parser_BitmapAndPath",
+    "T_pg_parser_BitmapOrPath",
+    "T_pg_parser_TidPath",
+    "T_pg_parser_SubqueryScanPath",
+    "T_pg_parser_ForeignPath",
+    "T_pg_parser_CustomPath",
+    "T_pg_parser_NestPath",
+    "T_pg_parser_MergePath",
+    "T_pg_parser_HashPath",
+    "T_pg_parser_AppendPath",
+    "T_pg_parser_MergeAppendPath",
+    "T_pg_parser_GroupResultPath",
+    "T_pg_parser_MaterialPath",
+    "T_pg_parser_UniquePath",
+    "T_pg_parser_GatherPath",
+    "T_pg_parser_GatherMergePath",
+    "T_pg_parser_ProjectionPath",
+    "T_pg_parser_ProjectSetPath",
+    "T_pg_parser_SortPath",
+    "T_pg_parser_GroupPath",
+    "T_pg_parser_UpperUniquePath",
+    "T_pg_parser_AggPath",
+    "T_pg_parser_GroupingSetsPath",
+    "T_pg_parser_MinMaxAggPath",
+    "T_pg_parser_WindowAggPath",
+    "T_pg_parser_SetOpPath",
+    "T_pg_parser_RecursiveUnionPath",
+    "T_pg_parser_LockRowsPath",
+    "T_pg_parser_ModifyTablePath",
+    "T_pg_parser_LimitPath",
+    "T_pg_parser_EquivalenceClass",
+    "T_pg_parser_EquivalenceMember",
+    "T_pg_parser_PathKey",
+    "T_pg_parser_PathTarget",
+    "T_pg_parser_RestrictInfo",
+    "T_pg_parser_IndexClause",
+    "T_pg_parser_PlaceHolderVar",
+    "T_pg_parser_SpecialJoinInfo",
+    "T_pg_parser_AppendRelInfo",
+    "T_pg_parser_PlaceHolderInfo",
+    "T_pg_parser_MinMaxAggInfo",
+    "T_pg_parser_PlannerParamItem",
+    "T_pg_parser_RollupData",
+    "T_pg_parser_GroupingSetData",
+    "T_pg_parser_StatisticExtInfo",
+    "T_pg_parser_MemoryContext",
+    "T_pg_parser_AllocSetContext",
+    "T_pg_parser_SlabContext",
+    "T_pg_parser_GenerationContext",
+    "T_pg_parser_Value",
+    "T_pg_parser_Integer",
+    "T_pg_parser_Float",
+    "T_pg_parser_String",
+    "T_pg_parser_BitString",
+    "T_pg_parser_Null",
+    "T_pg_parser_List",
+    "T_pg_parser_IntList",
+    "T_pg_parser_OidList",
+    "T_pg_parser_ExtensibleNode",
+    "T_pg_parser_RawStmt",
+    "T_pg_parser_Query",
+    "T_pg_parser_PlannedStmt",
+    "T_pg_parser_InsertStmt",
+    "T_pg_parser_DeleteStmt",
+    "T_pg_parser_UpdateStmt",
+    "T_pg_parser_SelectStmt",
+    "T_pg_parser_AlterTableStmt",
+    "T_pg_parser_AlterTableCmd",
+    "T_pg_parser_AlterDomainStmt",
+    "T_pg_parser_SetOperationStmt",
+    "T_pg_parser_GrantStmt",
+    "T_pg_parser_GrantRoleStmt",
+    "T_pg_parser_AlterDefaultPrivilegesStmt",
+    "T_pg_parser_ClosePortalStmt",
+    "T_pg_parser_ClusterStmt",
+    "T_pg_parser_CopyStmt",
+    "T_pg_parser_CreateStmt",
+    "T_pg_parser_DefineStmt",
+    "T_pg_parser_DropStmt",
+    "T_pg_parser_TruncateStmt",
+    "T_pg_parser_CommentStmt",
+    "T_pg_parser_FetchStmt",
+    "T_pg_parser_IndexStmt",
+    "T_pg_parser_CreateFunctionStmt",
+    "T_pg_parser_AlterFunctionStmt",
+    "T_pg_parser_DoStmt",
+    "T_pg_parser_RenameStmt",
+    "T_pg_parser_RuleStmt",
+    "T_pg_parser_NotifyStmt",
+    "T_pg_parser_ListenStmt",
+    "T_pg_parser_UnlistenStmt",
+    "T_pg_parser_TransactionStmt",
+    "T_pg_parser_ViewStmt",
+    "T_pg_parser_LoadStmt",
+    "T_pg_parser_CreateDomainStmt",
+    "T_pg_parser_CreatedbStmt",
+    "T_pg_parser_DropdbStmt",
+    "T_pg_parser_VacuumStmt",
+    "T_pg_parser_ExplainStmt",
+    "T_pg_parser_CreateTableAsStmt",
+    "T_pg_parser_CreateSeqStmt",
+    "T_pg_parser_AlterSeqStmt",
+    "T_pg_parser_VariableSetStmt",
+    "T_pg_parser_VariableShowStmt",
+    "T_pg_parser_DiscardStmt",
+    "T_pg_parser_CreateTrigStmt",
+    "T_pg_parser_CreatePLangStmt",
+    "T_pg_parser_CreateRoleStmt",
+    "T_pg_parser_AlterRoleStmt",
+    "T_pg_parser_DropRoleStmt",
+    "T_pg_parser_LockStmt",
+    "T_pg_parser_ConstraintsSetStmt",
+    "T_pg_parser_ReindexStmt",
+    "T_pg_parser_CheckPointStmt",
+    "T_pg_parser_CreateSchemaStmt",
+    "T_pg_parser_AlterDatabaseStmt",
+    "T_pg_parser_AlterDatabaseSetStmt",
+    "T_pg_parser_AlterRoleSetStmt",
+    "T_pg_parser_CreateConversionStmt",
+    "T_pg_parser_CreateCastStmt",
+    "T_pg_parser_CreateOpClassStmt",
+    "T_pg_parser_CreateOpFamilyStmt",
+    "T_pg_parser_AlterOpFamilyStmt",
+    "T_pg_parser_PrepareStmt",
+    "T_pg_parser_ExecuteStmt",
+    "T_pg_parser_DeallocateStmt",
+    "T_pg_parser_DeclareCursorStmt",
+    "T_pg_parser_CreateTableSpaceStmt",
+    "T_pg_parser_DropTableSpaceStmt",
+    "T_pg_parser_AlterObjectDependsStmt",
+    "T_pg_parser_AlterObjectSchemaStmt",
+    "T_pg_parser_AlterOwnerStmt",
+    "T_pg_parser_AlterOperatorStmt",
+    "T_pg_parser_DropOwnedStmt",
+    "T_pg_parser_ReassignOwnedStmt",
+    "T_pg_parser_CompositeTypeStmt",
+    "T_pg_parser_CreateEnumStmt",
+    "T_pg_parser_CreateRangeStmt",
+    "T_pg_parser_AlterEnumStmt",
+    "T_pg_parser_AlterTSDictionaryStmt",
+    "T_pg_parser_AlterTSConfigurationStmt",
+    "T_pg_parser_CreateFdwStmt",
+    "T_pg_parser_AlterFdwStmt",
+    "T_pg_parser_CreateForeignServerStmt",
+    "T_pg_parser_AlterForeignServerStmt",
+    "T_pg_parser_CreateUserMappingStmt",
+    "T_pg_parser_AlterUserMappingStmt",
+    "T_pg_parser_DropUserMappingStmt",
+    "T_pg_parser_AlterTableSpaceOptionsStmt",
+    "T_pg_parser_AlterTableMoveAllStmt",
+    "T_pg_parser_SecLabelStmt",
+    "T_pg_parser_CreateForeignTableStmt",
+    "T_pg_parser_ImportForeignSchemaStmt",
+    "T_pg_parser_CreateExtensionStmt",
+    "T_pg_parser_AlterExtensionStmt",
+    "T_pg_parser_AlterExtensionContentsStmt",
+    "T_pg_parser_CreateEventTrigStmt",
+    "T_pg_parser_AlterEventTrigStmt",
+    "T_pg_parser_RefreshMatViewStmt",
+    "T_pg_parser_ReplicaIdentityStmt",
+    "T_pg_parser_AlterSystemStmt",
+    "T_pg_parser_CreatePolicyStmt",
+    "T_pg_parser_AlterPolicyStmt",
+    "T_pg_parser_CreateTransformStmt",
+    "T_pg_parser_CreateAmStmt",
+    "T_pg_parser_CreatePublicationStmt",
+    "T_pg_parser_AlterPublicationStmt",
+    "T_pg_parser_CreateSubscriptionStmt",
+    "T_pg_parser_AlterSubscriptionStmt",
+    "T_pg_parser_DropSubscriptionStmt",
+    "T_pg_parser_CreateStatsStmt",
+    "T_pg_parser_AlterCollationStmt",
+    "T_pg_parser_CallStmt",
+    "T_pg_parser_A_Expr",
+    "T_pg_parser_ColumnRef",
+    "T_pg_parser_ParamRef",
+    "T_pg_parser_A_Const",
+    "T_pg_parser_FuncCall",
+    "T_pg_parser_A_Star",
+    "T_pg_parser_A_Indices",
+    "T_pg_parser_A_Indirection",
+    "T_pg_parser_A_ArrayExpr",
+    "T_pg_parser_ResTarget",
+    "T_pg_parser_MultiAssignRef",
+    "T_pg_parser_TypeCast",
+    "T_pg_parser_CollateClause",
+    "T_pg_parser_SortBy",
+    "T_pg_parser_WindowDef",
+    "T_pg_parser_RangeSubselect",
+    "T_pg_parser_RangeFunction",
+    "T_pg_parser_RangeTableSample",
+    "T_pg_parser_RangeTableFunc",
+    "T_pg_parser_RangeTableFuncCol",
+    "T_pg_parser_TypeName",
+    "T_pg_parser_ColumnDef",
+    "T_pg_parser_IndexElem",
+    "T_pg_parser_Constraint",
+    "T_pg_parser_DefElem",
+    "T_pg_parser_RangeTblEntry",
+    "T_pg_parser_RangeTblFunction",
+    "T_pg_parser_TableSampleClause",
+    "T_pg_parser_WithCheckOption",
+    "T_pg_parser_SortGroupClause",
+    "T_pg_parser_GroupingSet",
+    "T_pg_parser_WindowClause",
+    "T_pg_parser_ObjectWithArgs",
+    "T_pg_parser_AccessPriv",
+    "T_pg_parser_CreateOpClassItem",
+    "T_pg_parser_TableLikeClause",
+    "T_pg_parser_FunctionParameter",
+    "T_pg_parser_LockingClause",
+    "T_pg_parser_RowMarkClause",
+    "T_pg_parser_XmlSerialize",
+    "T_pg_parser_WithClause",
+    "T_pg_parser_InferClause",
+    "T_pg_parser_OnConflictClause",
+    "T_pg_parser_CommonTableExpr",
+    "T_pg_parser_RoleSpec",
+    "T_pg_parser_TriggerTransition",
+    "T_pg_parser_PartitionElem",
+    "T_pg_parser_PartitionSpec",
+    "T_pg_parser_PartitionBoundSpec",
+    "T_pg_parser_PartitionRangeDatum",
+    "T_pg_parser_PartitionCmd",
+    "T_pg_parser_VacuumRelation",
+    "T_pg_parser_IdentifySystemCmd",
+    "T_pg_parser_BaseBackupCmd",
+    "T_pg_parser_CreateReplicationSlotCmd",
+    "T_pg_parser_DropReplicationSlotCmd",
+    "T_pg_parser_StartReplicationCmd",
+    "T_pg_parser_TimeLineHistoryCmd",
+    "T_pg_parser_SQLCmd",
+    "T_pg_parser_TriggerData",
+    "T_pg_parser_EventTriggerData",
+    "T_pg_parser_ReturnSetInfo",
+    "T_pg_parser_WindowObjectData",
+    "T_pg_parser_TIDBitmap",
+    "T_pg_parser_InlineCodeBlock",
+    "T_pg_parser_FdwRoutine",
+    "T_pg_parser_IndexAmRoutine",
+    "T_pg_parser_TableAmRoutine",
+    "T_pg_parser_TsmRoutine",
+    "T_pg_parser_ForeignKeyCacheInfo",
+    "T_pg_parser_CallContext",
+    "T_pg_parser_SupportRequestSimplify",
+    "T_pg_parser_SupportRequestSelectivity",
+    "T_pg_parser_SupportRequestCost",
+    "T_pg_parser_SupportRequestRows",
+    "T_pg_parser_SupportRequestIndexCondition"
 };
 #endif
-//#define xk_pg_parser_NodeTagName(nodeptr) (xk_pg_parser_nodeTagName[xk_pg_parser_NodeTagType(nodeptr)])
+//#define pg_parser_NodeTagName(nodeptr) (pg_parser_nodeTagName[pg_parser_NodeTagType(nodeptr)])
 
 static char *get_local_typoutput_by_oid(uint32_t oid);
 static char *get_local_funcname_by_oid(uint32_t oid, uint16_t *argnum);
 
-static xk_pg_parser_node_var *xk_pg_parser_make_nodetree_var(xk_pg_parser_Var *var);
-static xk_pg_parser_node_const *xk_pg_parser_make_nodetree_const(xk_pg_parser_Const *const,
-                                                                 xk_pg_parser_deparse_context *context);
-static xk_pg_parser_node_func *xk_pg_parser_make_nodetree_func(xk_pg_parser_FuncExpr *func,
-                                                                 xk_pg_parser_deparse_context *context);
+static pg_parser_node_var *pg_parser_make_nodetree_var(pg_parser_Var *var);
+static pg_parser_node_const *pg_parser_make_nodetree_const(pg_parser_Const *const,
+                                                                 pg_parser_deparse_context *context);
+static pg_parser_node_func *pg_parser_make_nodetree_func(pg_parser_FuncExpr *func,
+                                                                 pg_parser_deparse_context *context);
 
-static bool get_variable(xk_pg_parser_Var *var,
-                          xk_pg_parser_deparse_context *context);
-static bool get_const_expr(xk_pg_parser_Const *constval,
-                           xk_pg_parser_deparse_context *context);
-static bool get_func_expr(xk_pg_parser_FuncExpr * funcval,
-                          xk_pg_parser_deparse_context *context,
+static bool get_variable(pg_parser_Var *var,
+                          pg_parser_deparse_context *context);
+static bool get_const_expr(pg_parser_Const *constval,
+                           pg_parser_deparse_context *context);
+static bool get_func_expr(pg_parser_FuncExpr * funcval,
+                          pg_parser_deparse_context *context,
                           bool showimplicit);
 
-static bool get_rule_expr_paren(xk_pg_parser_Node *node,
-                                xk_pg_parser_deparse_context *context,
+static bool get_rule_expr_paren(pg_parser_Node *node,
+                                pg_parser_deparse_context *context,
                                 bool showimplicit,
-                                xk_pg_parser_Node *parentNode);
+                                pg_parser_Node *parentNode);
 static char *get_local_opname_by_oid(uint32_t oid)
 {
     switch (oid)
@@ -521,7 +521,7 @@ static char *get_local_opname_by_oid(uint32_t oid)
         case 2991:
         case 3887:
         case 3243:
-            return xk_pg_parser_mcxt_strdup(">");
+            return pg_parser_mcxt_strdup(">");
 
         case 37:
         case 58:
@@ -579,7 +579,7 @@ static char *get_local_opname_by_oid(uint32_t oid)
         case 2990:
         case 3884:
         case 3242:
-            return xk_pg_parser_mcxt_strdup("<");
+            return pg_parser_mcxt_strdup("<");
 
         case 15:
         case 91:
@@ -642,7 +642,7 @@ static char *get_local_opname_by_oid(uint32_t oid)
         case 2988:
         case 3882:
         case 3240:
-            return xk_pg_parser_mcxt_strdup("=");
+            return pg_parser_mcxt_strdup("=");
 
         case 36:
         case 85:
@@ -701,7 +701,7 @@ static char *get_local_opname_by_oid(uint32_t oid)
         case 2989:
         case 3883:
         case 3241:
-            return xk_pg_parser_mcxt_strdup("<>");
+            return pg_parser_mcxt_strdup("<>");
 
         case 550:
         case 551:
@@ -750,7 +750,7 @@ static char *get_local_opname_by_oid(uint32_t oid)
         case 2554:
         case 2555:
         case 3898:
-            return xk_pg_parser_mcxt_strdup("+");
+            return pg_parser_mcxt_strdup("+");
 
         case 484:
         case 554:
@@ -797,7 +797,7 @@ static char *get_local_opname_by_oid(uint32_t oid)
         case 3285:
         case 3398:
         case 3286:
-            return xk_pg_parser_mcxt_strdup("-");
+            return pg_parser_mcxt_strdup("-");
 
         case 514:
         case 526:
@@ -830,7 +830,7 @@ static char *get_local_opname_by_oid(uint32_t oid)
         case 1584:
         case 1760:
         case 3900:
-            return xk_pg_parser_mcxt_strdup("*");
+            return pg_parser_mcxt_strdup("*");
 
         case 527:
         case 528:
@@ -857,7 +857,7 @@ static char *get_local_opname_by_oid(uint32_t oid)
         case 1519:
         case 1585:
         case 1761:
-            return xk_pg_parser_mcxt_strdup("/");
+            return pg_parser_mcxt_strdup("/");
 
         default:
             return NULL;
@@ -1162,7 +1162,7 @@ static char *get_local_typoutput_by_oid(uint32_t oid)
         default :
             break;
     }
-    return xk_pg_parser_mcxt_strdup(result);
+    return pg_parser_mcxt_strdup(result);
 }
 
 static char *get_local_funcname_by_oid(uint32_t oid, uint16_t *argnum)
@@ -1170,35 +1170,35 @@ static char *get_local_funcname_by_oid(uint32_t oid, uint16_t *argnum)
     int32_t i = 0;
     for (i = 0; i < local_func_num; i++)
     {
-        if (oid == xk_pg_parser_local_func_builtins[i].m_oid)
+        if (oid == pg_parser_local_func_builtins[i].m_oid)
         {
-            *argnum = xk_pg_parser_local_func_builtins[i].m_func_argnum;
-            return xk_pg_parser_mcxt_strdup(xk_pg_parser_local_func_builtins[i].m_func_name);
+            *argnum = pg_parser_local_func_builtins[i].m_func_argnum;
+            return pg_parser_mcxt_strdup(pg_parser_local_func_builtins[i].m_func_name);
         }
     }
     return NULL;
 }
 
-static xk_pg_parser_node_var *xk_pg_parser_make_nodetree_var(xk_pg_parser_Var *var)
+static pg_parser_node_var *pg_parser_make_nodetree_var(pg_parser_Var *var)
 {
-    xk_pg_parser_node_var *varnode = NULL;
-    xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void**)&varnode, sizeof(xk_pg_parser_node_var));
+    pg_parser_node_var *varnode = NULL;
+    pg_parser_mcxt_malloc(NODE_MCXT, (void**)&varnode, sizeof(pg_parser_node_var));
     varnode->m_attno = var->varattno;
     return varnode;
 }
 
-static xk_pg_parser_node_const *xk_pg_parser_make_nodetree_const(xk_pg_parser_Const *const_value,
-                                                                 xk_pg_parser_deparse_context *context)
+static pg_parser_node_const *pg_parser_make_nodetree_const(pg_parser_Const *const_value,
+                                                                 pg_parser_deparse_context *context)
 {
-    xk_pg_parser_node_const *constnode = NULL;
+    pg_parser_node_const *constnode = NULL;
     char *typoutput = NULL;
 
-    xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void**)&constnode, sizeof(xk_pg_parser_node_const));
+    pg_parser_mcxt_malloc(NODE_MCXT, (void**)&constnode, sizeof(pg_parser_node_const));
     constnode->m_typid = const_value->consttype;
     /* 空值直接返回NULL */
     if (const_value->constisnull)
     {
-        constnode->m_char_value = xk_pg_parser_mcxt_strdup("NULL");
+        constnode->m_char_value = pg_parser_mcxt_strdup("NULL");
         return constnode;
     }
     /* 对非空值进行解析, 首先获取typout函数 */
@@ -1208,24 +1208,24 @@ static xk_pg_parser_node_const *xk_pg_parser_make_nodetree_const(xk_pg_parser_Co
     if (!typoutput)
         return NULL;
 
-    constnode->m_char_value = xk_pg_parser_convert_attr_to_str_by_typid_typoptput(const_value->constvalue,
+    constnode->m_char_value = pg_parser_convert_attr_to_str_by_typid_typoptput(const_value->constvalue,
                                                         const_value->consttype,
                                                         typoutput,
                                                         context->zicinfo);
-    xk_pg_parser_mcxt_free(XK_NODE_MCXT, typoutput);
+    pg_parser_mcxt_free(NODE_MCXT, typoutput);
     if (!constnode->m_char_value)
         return NULL;
     /* 暂时不进行其他的解析操作, 这里直接返回 */
     return constnode;
 }
 
-static xk_pg_parser_node_op *xk_pg_parser_make_nodetree_op(xk_pg_parser_OpExpr *op_value,
-                                                                 xk_pg_parser_deparse_context *context)
+static pg_parser_node_op *pg_parser_make_nodetree_op(pg_parser_OpExpr *op_value,
+                                                                 pg_parser_deparse_context *context)
 {
-    xk_pg_parser_node_op *opnode = NULL;
+    pg_parser_node_op *opnode = NULL;
 
-    XK_PG_PARSER_UNUSED(context);
-    xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void**)&opnode, sizeof(xk_pg_parser_node_op));
+    PG_PARSER_UNUSED(context);
+    pg_parser_mcxt_malloc(NODE_MCXT, (void**)&opnode, sizeof(pg_parser_node_op));
     opnode->m_opid = op_value->opno;
     /* 获取操作符名称 */
     opnode->m_opname = get_local_opname_by_oid(opnode->m_opid);
@@ -1233,17 +1233,17 @@ static xk_pg_parser_node_op *xk_pg_parser_make_nodetree_op(xk_pg_parser_OpExpr *
     return opnode;
 }
 
-static xk_pg_parser_nodetree *xk_pg_parser_append_nodetree_with_type(xk_pg_parser_nodetree *nodetree,
+static pg_parser_nodetree *pg_parser_append_nodetree_with_type(pg_parser_nodetree *nodetree,
                                                                      void * nodetree_node,
                                                                      uint8_t nodetree_type)
 {
-    xk_pg_parser_nodetree *head_ptr = nodetree;
-    xk_pg_parser_nodetree *result_ptr = NULL;
+    pg_parser_nodetree *head_ptr = nodetree;
+    pg_parser_nodetree *result_ptr = NULL;
     if (NULL == nodetree)
     {
-        xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void**)&result_ptr, sizeof(xk_pg_parser_nodetree));
-        if (XK_PG_PARSER_NODETYPE_CHAR == nodetree_type)
-            result_ptr->m_node = xk_pg_parser_mcxt_strdup((char*)nodetree_node);
+        pg_parser_mcxt_malloc(NODE_MCXT, (void**)&result_ptr, sizeof(pg_parser_nodetree));
+        if (PG_PARSER_NODETYPE_CHAR == nodetree_type)
+            result_ptr->m_node = pg_parser_mcxt_strdup((char*)nodetree_node);
         else
             result_ptr->m_node = nodetree_node;
         result_ptr->m_node_type = nodetree_type;
@@ -1252,12 +1252,12 @@ static xk_pg_parser_nodetree *xk_pg_parser_append_nodetree_with_type(xk_pg_parse
     }
     else
     {
-        xk_pg_parser_nodetree *temp_ptr = nodetree;
+        pg_parser_nodetree *temp_ptr = nodetree;
         while (temp_ptr->m_next)
             temp_ptr = temp_ptr->m_next;
-        xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void**)&result_ptr, sizeof(xk_pg_parser_nodetree));
-        if (XK_PG_PARSER_NODETYPE_CHAR == nodetree_type)
-            result_ptr->m_node = xk_pg_parser_mcxt_strdup((char*)nodetree_node);
+        pg_parser_mcxt_malloc(NODE_MCXT, (void**)&result_ptr, sizeof(pg_parser_nodetree));
+        if (PG_PARSER_NODETYPE_CHAR == nodetree_type)
+            result_ptr->m_node = pg_parser_mcxt_strdup((char*)nodetree_node);
         else
             result_ptr->m_node = nodetree_node;
         result_ptr->m_node_type = nodetree_type;
@@ -1272,46 +1272,46 @@ static xk_pg_parser_nodetree *xk_pg_parser_append_nodetree_with_type(xk_pg_parse
  * 因此在这里只是简单的获取列的排序号,
  * 后续的组装处理在DDL解析中完成, 最后由前端进行解析
  */
-static bool get_variable(xk_pg_parser_Var *var,
-                         xk_pg_parser_deparse_context *context)
+static bool get_variable(pg_parser_Var *var,
+                         pg_parser_deparse_context *context)
 {
-    xk_pg_parser_node_var *node_var = xk_pg_parser_make_nodetree_var(var);
-    context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+    pg_parser_node_var *node_var = pg_parser_make_nodetree_var(var);
+    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                               (void*)node_var,
-                                                               XK_PG_PARSER_NODETYPE_VAR);
+                                                               PG_PARSER_NODETYPE_VAR);
     if (var)
-        xk_pg_parser_mcxt_free(XK_NODE_MCXT, var);
+        pg_parser_mcxt_free(NODE_MCXT, var);
     return true;
 }
 
-static xk_pg_parser_node_func *xk_pg_parser_make_nodetree_func(xk_pg_parser_FuncExpr *func,
-                                                                 xk_pg_parser_deparse_context *context)
+static pg_parser_node_func *pg_parser_make_nodetree_func(pg_parser_FuncExpr *func,
+                                                                 pg_parser_deparse_context *context)
 {
-    xk_pg_parser_node_func *funcnode = NULL;
-    XK_PG_PARSER_UNUSED(context);
-    xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void**)&funcnode, sizeof(xk_pg_parser_node_func));
+    pg_parser_node_func *funcnode = NULL;
+    PG_PARSER_UNUSED(context);
+    pg_parser_mcxt_malloc(NODE_MCXT, (void**)&funcnode, sizeof(pg_parser_node_func));
     funcnode->m_funcname = get_local_funcname_by_oid(func->funcid, &(funcnode->m_argnum));
     funcnode->m_funcid = func->funcid;
     return funcnode;
 }
 
 /* 我们需要调用type output来转换const中存储的值, 转换可能会失败 */
-static bool get_const_expr(xk_pg_parser_Const *constval,
-                           xk_pg_parser_deparse_context *context)
+static bool get_const_expr(pg_parser_Const *constval,
+                           pg_parser_deparse_context *context)
 {
-    xk_pg_parser_node_const *node_cons = xk_pg_parser_make_nodetree_const(constval,
+    pg_parser_node_const *node_cons = pg_parser_make_nodetree_const(constval,
                                                                           context);
     if (!node_cons)
         return false;
-    context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                               (void*)node_cons,
-                                                               XK_PG_PARSER_NODETYPE_CONST);
+                                                               PG_PARSER_NODETYPE_CONST);
     if (constval)
     {
         if (constval->constneedfree)
-            xk_pg_parser_mcxt_free(XK_NODE_MCXT, xk_pg_parser_DatumGetPointer(constval->constvalue));
+            pg_parser_mcxt_free(NODE_MCXT, pg_parser_DatumGetPointer(constval->constvalue));
     }
-        xk_pg_parser_mcxt_free(XK_NODE_MCXT, constval);
+        pg_parser_mcxt_free(NODE_MCXT, constval);
     return true;
 }
 
@@ -1323,13 +1323,13 @@ static bool get_const_expr(xk_pg_parser_Const *constval,
 #define PRETTY_INDENT(context) ((context)->prettyFlags & PRETTYFLAG_INDENT)
 #define PRETTY_SCHEMA(context) ((context)->prettyFlags & PRETTYFLAG_SCHEMA)
 
-#define IsA(nodeptr,_type_) (xk_pg_parser_NodeTagType(nodeptr) == T_##_type_)
+#define IsA(nodeptr,_type_) (pg_parser_NodeTagType(nodeptr) == T_##_type_)
 
-static const char *get_simple_binary_op_name(xk_pg_parser_OpExpr *expr)
+static const char *get_simple_binary_op_name(pg_parser_OpExpr *expr)
 {
-    xk_pg_parser_List       *args = expr->args;
+    pg_parser_List       *args = expr->args;
 
-    if (xk_pg_parser_list_length(args) == 2)
+    if (pg_parser_list_length(args) == 2)
     {
         /* binary operator */
         const char *op;
@@ -1341,28 +1341,28 @@ static const char *get_simple_binary_op_name(xk_pg_parser_OpExpr *expr)
     return NULL;
 }
 
-static bool isSimpleNode(xk_pg_parser_Node *node,
-                         xk_pg_parser_Node *parentNode,
+static bool isSimpleNode(pg_parser_Node *node,
+                         pg_parser_Node *parentNode,
                          int32_t prettyFlags)
 {
     if (!node)
         return false;
 
-    switch (xk_pg_parser_NodeTagType(node))
+    switch (pg_parser_NodeTagType(node))
     {
-        case T_xk_pg_parser_Var:
-        case T_xk_pg_parser_Const:
+        case T_pg_parser_Var:
+        case T_pg_parser_Const:
             /* single words: always simple */
             return true;
 
-        case T_xk_pg_parser_FuncExpr:
+        case T_pg_parser_FuncExpr:
             /* function-like: name(..) or name[..] */
             return true;
 
-        case T_xk_pg_parser_OpExpr:
+        case T_pg_parser_OpExpr:
             {
                 /* depends on parent node type; needs further checking */
-                if (prettyFlags & PRETTYFLAG_PAREN && IsA(parentNode, xk_pg_parser_OpExpr))
+                if (prettyFlags & PRETTYFLAG_PAREN && IsA(parentNode, pg_parser_OpExpr))
                 {
                     const char *op;
                     const char *parentOp;
@@ -1371,7 +1371,7 @@ static bool isSimpleNode(xk_pg_parser_Node *node,
                     bool        is_lopriparent;
                     bool        is_hipriparent;
 
-                    op = get_simple_binary_op_name((xk_pg_parser_OpExpr *) node);
+                    op = get_simple_binary_op_name((pg_parser_OpExpr *) node);
                     if (!op)
                         return false;
 
@@ -1381,7 +1381,7 @@ static bool isSimpleNode(xk_pg_parser_Node *node,
                     if (!(is_lopriop || is_hipriop))
                         return false;
 
-                    parentOp = get_simple_binary_op_name((xk_pg_parser_OpExpr *) parentNode);
+                    parentOp = get_simple_binary_op_name((pg_parser_OpExpr *) parentNode);
                     if (!parentOp)
                         return false;
 
@@ -1400,7 +1400,7 @@ static bool isSimpleNode(xk_pg_parser_Node *node,
                      * Operators are same priority --- can skip parens only if
                      * we have (a - b) - c, not a - (b - c).
                      */
-                    if (node == (xk_pg_parser_Node *) xk_pg_parser_linitial(((xk_pg_parser_OpExpr *) parentNode)->args))
+                    if (node == (pg_parser_Node *) pg_parser_linitial(((pg_parser_OpExpr *) parentNode)->args))
                         return true;
 
                     return false;
@@ -1409,17 +1409,17 @@ static bool isSimpleNode(xk_pg_parser_Node *node,
             }
             /* FALLTHROUGH */
 
-        case T_xk_pg_parser_BoolExpr:
-            switch (xk_pg_parser_NodeTagType(parentNode))
+        case T_pg_parser_BoolExpr:
+            switch (pg_parser_NodeTagType(parentNode))
             {
-                case T_xk_pg_parser_BoolExpr:
+                case T_pg_parser_BoolExpr:
                     if (prettyFlags & PRETTYFLAG_PAREN)
                     {
-                        xk_pg_parser_BoolExprType type;
-                        xk_pg_parser_BoolExprType parentType;
+                        pg_parser_BoolExprType type;
+                        pg_parser_BoolExprType parentType;
 
-                        type = ((xk_pg_parser_BoolExpr *) node)->boolop;
-                        parentType = ((xk_pg_parser_BoolExpr *) parentNode)->boolop;
+                        type = ((pg_parser_BoolExpr *) node)->boolop;
+                        parentType = ((pg_parser_BoolExpr *) parentNode)->boolop;
                         switch (type)
                         {
                             case NOT_EXPR:
@@ -1434,10 +1434,10 @@ static bool isSimpleNode(xk_pg_parser_Node *node,
                         }
                     }
                     return false;
-                case T_xk_pg_parser_FuncExpr:
+                case T_pg_parser_FuncExpr:
                     {
                         /* special handling for casts */
-                        xk_pg_parser_CoercionForm type = ((xk_pg_parser_FuncExpr *) parentNode)->funcformat;
+                        pg_parser_CoercionForm type = ((pg_parser_FuncExpr *) parentNode)->funcformat;
 
                         if (type == COERCE_EXPLICIT_CAST ||
                             type == COERCE_IMPLICIT_CAST)
@@ -1455,10 +1455,10 @@ static bool isSimpleNode(xk_pg_parser_Node *node,
     return false;
 }
 
-static bool get_rule_expr_paren(xk_pg_parser_Node *node,
-                                xk_pg_parser_deparse_context *context,
+static bool get_rule_expr_paren(pg_parser_Node *node,
+                                pg_parser_deparse_context *context,
                                 bool showimplicit,
-                                xk_pg_parser_Node *parentNode)
+                                pg_parser_Node *parentNode)
 {
     bool        need_paren;
 
@@ -1466,21 +1466,21 @@ static bool get_rule_expr_paren(xk_pg_parser_Node *node,
         !isSimpleNode(node, parentNode, context->prettyFlags);
 
     if (need_paren)
-        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                   (void*) ("("),
-                                                   XK_PG_PARSER_NODETYPE_CHAR);
+                                                   PG_PARSER_NODETYPE_CHAR);
 
     if (!get_rule_expr(node, context, showimplicit))
         return false;
 
     if (need_paren)
-        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                   (void*) (")"),
-                                                   XK_PG_PARSER_NODETYPE_CHAR);
+                                                   PG_PARSER_NODETYPE_CHAR);
     return true;
 }
 
-static bool exprIsLengthCoercion(const xk_pg_parser_Node *expr, int32_t *coercedTypmod)
+static bool exprIsLengthCoercion(const pg_parser_Node *expr, int32_t *coercedTypmod)
 {
     if (coercedTypmod != NULL)
         *coercedTypmod = -1;    /* default result on failure */
@@ -1489,11 +1489,11 @@ static bool exprIsLengthCoercion(const xk_pg_parser_Node *expr, int32_t *coerced
      * Scalar-type length coercions are FuncExprs, array-type length coercions
      * are ArrayCoerceExprs
      */
-    if (expr && IsA(expr, xk_pg_parser_FuncExpr))
+    if (expr && IsA(expr, pg_parser_FuncExpr))
     {
-        const xk_pg_parser_FuncExpr *func = (const xk_pg_parser_FuncExpr *) expr;
+        const pg_parser_FuncExpr *func = (const pg_parser_FuncExpr *) expr;
         int            nargs;
-        xk_pg_parser_Const       *second_arg;
+        pg_parser_Const       *second_arg;
 
         /*
          * If it didn't come from a coercion context, reject.
@@ -1507,12 +1507,12 @@ static bool exprIsLengthCoercion(const xk_pg_parser_Node *expr, int32_t *coerced
          * second argument being an int4 constant, it can't have been created
          * from a length coercion (it must be a type coercion, instead).
          */
-        nargs = xk_pg_parser_list_length(func->args);
+        nargs = pg_parser_list_length(func->args);
         if (nargs < 2 || nargs > 3)
             return false;
 
-        second_arg = (xk_pg_parser_Const *) xk_pg_parser_lsecond(func->args);
-        if (!IsA(second_arg, xk_pg_parser_Const) ||
+        second_arg = (pg_parser_Const *) pg_parser_lsecond(func->args);
+        if (!IsA(second_arg, pg_parser_Const) ||
             second_arg->consttype != INT4OID ||
             second_arg->constisnull)
             return false;
@@ -1521,14 +1521,14 @@ static bool exprIsLengthCoercion(const xk_pg_parser_Node *expr, int32_t *coerced
          * OK, it is indeed a length-coercion function.
          */
         if (coercedTypmod != NULL)
-            *coercedTypmod = xk_pg_parser_DatumGetInt32(second_arg->constvalue);
+            *coercedTypmod = pg_parser_DatumGetInt32(second_arg->constvalue);
 
         return true;
     }
 
-    if (expr && IsA(expr, xk_pg_parser_ArrayCoerceExpr))
+    if (expr && IsA(expr, pg_parser_ArrayCoerceExpr))
     {
-        const xk_pg_parser_ArrayCoerceExpr *acoerce = (const xk_pg_parser_ArrayCoerceExpr *) expr;
+        const pg_parser_ArrayCoerceExpr *acoerce = (const pg_parser_ArrayCoerceExpr *) expr;
 
         /* It's not a length coercion unless there's a nondefault typmod */
         if (acoerce->resulttypmod < 0)
@@ -1546,13 +1546,13 @@ static bool exprIsLengthCoercion(const xk_pg_parser_Node *expr, int32_t *coerced
     return false;
 }
 
-static bool get_coercion_expr(xk_pg_parser_Node *arg,
-                              xk_pg_parser_deparse_context *context,
+static bool get_coercion_expr(pg_parser_Node *arg,
+                              pg_parser_deparse_context *context,
                               uint32_t resulttype,
                               int32_t resulttypmod,
-                              xk_pg_parser_Node *parentNode)
+                              pg_parser_Node *parentNode)
 {
-    XK_PG_PARSER_UNUSED(resulttypmod);
+    PG_PARSER_UNUSED(resulttypmod);
     /*
      * Since parse_coerce.c doesn't immediately collapse application of
      * length-coercion functions to constants, what we'll typically see in
@@ -1569,42 +1569,42 @@ static bool get_coercion_expr(xk_pg_parser_Node *arg,
      * marking will be above the coercion node, not below it.
      */
     if (!PRETTY_PAREN(context))
-        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                               (void*) ("("),
-                                               XK_PG_PARSER_NODETYPE_CHAR);
+                                               PG_PARSER_NODETYPE_CHAR);
     if (!get_rule_expr_paren(arg, context, false, parentNode))
         return false;
 
     if (!PRETTY_PAREN(context))
     {
-        xk_pg_parser_node_type *node_type = NULL;
-        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+        pg_parser_node_type *node_type = NULL;
+        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                               (void*) (")::"),
-                                               XK_PG_PARSER_NODETYPE_CHAR);
-        xk_pg_parser_mcxt_malloc(XK_NODE_MCXT, (void **)&node_type, sizeof(xk_pg_parser_node_type));
+                                               PG_PARSER_NODETYPE_CHAR);
+        pg_parser_mcxt_malloc(NODE_MCXT, (void **)&node_type, sizeof(pg_parser_node_type));
         node_type->m_typeid = resulttype;
-        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                               (void*) (node_type),
-                                               XK_PG_PARSER_NODETYPE_TYPE);
+                                               PG_PARSER_NODETYPE_TYPE);
     }
     return true;
 }
 
-static bool get_func_expr(xk_pg_parser_FuncExpr * funcval,
-                          xk_pg_parser_deparse_context *context,
+static bool get_func_expr(pg_parser_FuncExpr * funcval,
+                          pg_parser_deparse_context *context,
                           bool showimplicit)
 {
-    xk_pg_parser_node_func *node_func = NULL;
+    pg_parser_node_func *node_func = NULL;
     int nargs;
-    xk_pg_parser_ListCell   *l;
+    pg_parser_ListCell   *l;
     bool skip_brackets = false;
 
     if (funcval->funcformat == COERCE_IMPLICIT_CAST && !showimplicit)
     {
-        if (!get_rule_expr_paren((xk_pg_parser_Node *) xk_pg_parser_linitial(funcval->args),
+        if (!get_rule_expr_paren((pg_parser_Node *) pg_parser_linitial(funcval->args),
                                  context,
                                  false,
-                                (xk_pg_parser_Node *) funcval))
+                                (pg_parser_Node *) funcval))
         {
             return false;
         }
@@ -1613,8 +1613,8 @@ static bool get_func_expr(xk_pg_parser_FuncExpr * funcval,
             if (funcval)
             {
                 if (funcval->args)
-                    xk_pg_parser_list_free(funcval->args);
-                xk_pg_parser_mcxt_free(XK_NODE_MCXT, funcval);
+                    pg_parser_list_free(funcval->args);
+                pg_parser_mcxt_free(NODE_MCXT, funcval);
             }
             return true;
         }
@@ -1624,94 +1624,94 @@ static bool get_func_expr(xk_pg_parser_FuncExpr * funcval,
     if (funcval->funcformat == COERCE_EXPLICIT_CAST ||
         funcval->funcformat == COERCE_IMPLICIT_CAST)
     {
-        xk_pg_parser_Node       *arg = xk_pg_parser_linitial(funcval->args);
+        pg_parser_Node       *arg = pg_parser_linitial(funcval->args);
         uint32_t            rettype = funcval->funcresulttype;
         int32_t        coercedTypmod;
 
         /* Get the typmod if this is a length-coercion function */
-        (void) exprIsLengthCoercion((xk_pg_parser_Node *) funcval, &coercedTypmod);
+        (void) exprIsLengthCoercion((pg_parser_Node *) funcval, &coercedTypmod);
 
         if (!get_coercion_expr(arg, context,
                           rettype, coercedTypmod,
-                          (xk_pg_parser_Node *) funcval))
+                          (pg_parser_Node *) funcval))
             return false;
         else
         {
             if (funcval)
             {
                 if (funcval->args)
-                    xk_pg_parser_list_free(funcval->args);
-                xk_pg_parser_mcxt_free(XK_NODE_MCXT, funcval);
+                    pg_parser_list_free(funcval->args);
+                pg_parser_mcxt_free(NODE_MCXT, funcval);
             }
             return true;
         }
     }
-    node_func = xk_pg_parser_make_nodetree_func(funcval, context);
+    node_func = pg_parser_make_nodetree_func(funcval, context);
     if (!node_func)
     {
         return false;
     }
 
-    context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                               (void*)node_func,
-                                                               XK_PG_PARSER_NODETYPE_FUNC);
+                                                               PG_PARSER_NODETYPE_FUNC);
     if (!skip_brackets)
     {
-        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                 (void*) ("("),
-                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                PG_PARSER_NODETYPE_CHAR);
     }
 
     nargs = 0;
-    xk_pg_parser_foreach(l, funcval->args)
+    pg_parser_foreach(l, funcval->args)
     {
         if (nargs++ > 0)
-            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                   (void*) (", "),
-                                                   XK_PG_PARSER_NODETYPE_CHAR);
-        if (!get_rule_expr((xk_pg_parser_Node *) xk_pg_parser_lfirst(l), context, true))
+                                                   PG_PARSER_NODETYPE_CHAR);
+        if (!get_rule_expr((pg_parser_Node *) pg_parser_lfirst(l), context, true))
             return false;
     }
     /* v902改动 */
     if (!skip_brackets)
     {
-        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                   (void*) (")"),
-                                                   XK_PG_PARSER_NODETYPE_CHAR);
+                                                   PG_PARSER_NODETYPE_CHAR);
     }
     
     if (funcval)
     {
         if (funcval->args)
-            xk_pg_parser_list_free(funcval->args);
-        xk_pg_parser_mcxt_free(XK_NODE_MCXT, funcval);
+            pg_parser_list_free(funcval->args);
+        pg_parser_mcxt_free(NODE_MCXT, funcval);
     }
 
     return true;
 }
 
-static bool get_oper_expr(xk_pg_parser_OpExpr *expr, xk_pg_parser_deparse_context *context)
+static bool get_oper_expr(pg_parser_OpExpr *expr, pg_parser_deparse_context *context)
 {
-    xk_pg_parser_List       *args = expr->args;
-    xk_pg_parser_node_op *opnode = NULL;
+    pg_parser_List       *args = expr->args;
+    pg_parser_node_op *opnode = NULL;
 
     if (!PRETTY_PAREN(context))
-        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                   (void*) ("("),
-                                                   XK_PG_PARSER_NODETYPE_CHAR);
-    if (xk_pg_parser_list_length(args) == 2)
+                                                   PG_PARSER_NODETYPE_CHAR);
+    if (pg_parser_list_length(args) == 2)
     {
         /* binary operator */
-        xk_pg_parser_Node       *arg1 = (xk_pg_parser_Node *) xk_pg_parser_linitial(args);
-        xk_pg_parser_Node       *arg2 = (xk_pg_parser_Node *) xk_pg_parser_lsecond(args);
+        pg_parser_Node       *arg1 = (pg_parser_Node *) pg_parser_linitial(args);
+        pg_parser_Node       *arg2 = (pg_parser_Node *) pg_parser_lsecond(args);
 
-        if (!get_rule_expr_paren(arg1, context, true, (xk_pg_parser_Node *) expr))
+        if (!get_rule_expr_paren(arg1, context, true, (pg_parser_Node *) expr))
             return false;
-        opnode = xk_pg_parser_make_nodetree_op(expr, context);
-        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+        opnode = pg_parser_make_nodetree_op(expr, context);
+        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                               (void*)opnode,
-                                                               XK_PG_PARSER_NODETYPE_OP);
-        if (!get_rule_expr_paren(arg2, context, true, (xk_pg_parser_Node *) expr))
+                                                               PG_PARSER_NODETYPE_OP);
+        if (!get_rule_expr_paren(arg2, context, true, (pg_parser_Node *) expr))
             return false;
         
     }
@@ -1720,7 +1720,7 @@ static bool get_oper_expr(xk_pg_parser_OpExpr *expr, xk_pg_parser_deparse_contex
     else
     {
         /* unary operator --- but which side? */
-        xk_pg_parser_Node       *arg = (xk_pg_parser_Node *) xk_pg_parser_linitial(args);
+        pg_parser_Node       *arg = (pg_parser_Node *) pg_parser_linitial(args);
         HeapTuple    tp;
         Form_pg_operator optup;
 
@@ -1751,62 +1751,62 @@ static bool get_oper_expr(xk_pg_parser_OpExpr *expr, xk_pg_parser_deparse_contex
     }
 #endif
     if (!PRETTY_PAREN(context))
-        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                   (void*) (")"),
-                                                   XK_PG_PARSER_NODETYPE_CHAR);
+                                                   PG_PARSER_NODETYPE_CHAR);
     if (expr)
     {
         if (expr->args)
-            xk_pg_parser_list_free(expr->args);
-        xk_pg_parser_mcxt_free(XK_NODE_MCXT, expr);
+            pg_parser_list_free(expr->args);
+        pg_parser_mcxt_free(NODE_MCXT, expr);
     }
     return true;
 }
 
-static bool get_range_partbound_string(xk_pg_parser_List *bound_datums,
-                                        xk_pg_parser_deparse_context *context)
+static bool get_range_partbound_string(pg_parser_List *bound_datums,
+                                        pg_parser_deparse_context *context)
 {
-    xk_pg_parser_ListCell   *cell;
+    pg_parser_ListCell   *cell;
     bool sep = false;
 
-    context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) ("("),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
-    xk_pg_parser_foreach(cell, bound_datums)
+                                                        PG_PARSER_NODETYPE_CHAR);
+    pg_parser_foreach(cell, bound_datums)
     {
-        xk_pg_parser_PartitionRangeDatum *datum =
-        xk_pg_parser_castNode(xk_pg_parser_PartitionRangeDatum, xk_pg_parser_lfirst(cell));
+        pg_parser_PartitionRangeDatum *datum =
+        pg_parser_castNode(pg_parser_PartitionRangeDatum, pg_parser_lfirst(cell));
         if (sep)
-            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) (", "),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
+                                                        PG_PARSER_NODETYPE_CHAR);
         if (datum->kind == PARTITION_RANGE_DATUM_MINVALUE)
-            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) ("MINVALUE"),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
+                                                        PG_PARSER_NODETYPE_CHAR);
         else if (datum->kind == PARTITION_RANGE_DATUM_MAXVALUE)
-            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) ("MAXVALUE"),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
+                                                        PG_PARSER_NODETYPE_CHAR);
         else
         {
-            xk_pg_parser_Const *val = xk_pg_parser_castNode(xk_pg_parser_Const, datum->value);
+            pg_parser_Const *val = pg_parser_castNode(pg_parser_Const, datum->value);
 
             if (!get_const_expr(val, context))
                 return false;
         }
         if (datum)
-            xk_pg_parser_mcxt_free(XK_NODE_MCXT, datum);
+            pg_parser_mcxt_free(NODE_MCXT, datum);
         sep = true;
     }
-    context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) (")"),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
+                                                        PG_PARSER_NODETYPE_CHAR);
     return true;
 }
 
-bool get_rule_expr(xk_pg_parser_Node *node,
-                   xk_pg_parser_deparse_context *context,
+bool get_rule_expr(pg_parser_Node *node,
+                   pg_parser_deparse_context *context,
                    bool showimplicit)
 {
     if (node == NULL)
@@ -1814,100 +1814,100 @@ bool get_rule_expr(xk_pg_parser_Node *node,
 
     /* 忽略中断和深层嵌套检查, 根据node tag来进行分别处理 */
 
-    switch (xk_pg_parser_NodeTagType(node))
+    switch (pg_parser_NodeTagType(node))
     {
-        case T_xk_pg_parser_Var:
-            get_variable((xk_pg_parser_Var *) node, context);
+        case T_pg_parser_Var:
+            get_variable((pg_parser_Var *) node, context);
             break;
 
-        case T_xk_pg_parser_Const:
-            if(!get_const_expr((xk_pg_parser_Const *) node, context))
+        case T_pg_parser_Const:
+            if(!get_const_expr((pg_parser_Const *) node, context))
                 return false;
             break;
 
-        case T_xk_pg_parser_FuncExpr:
-            if (!get_func_expr((xk_pg_parser_FuncExpr *) node, context, showimplicit))
+        case T_pg_parser_FuncExpr:
+            if (!get_func_expr((pg_parser_FuncExpr *) node, context, showimplicit))
                 return false;
             break;
 
-        case T_xk_pg_parser_OpExpr:
-            if (!get_oper_expr((xk_pg_parser_OpExpr *) node, context))
+        case T_pg_parser_OpExpr:
+            if (!get_oper_expr((pg_parser_OpExpr *) node, context))
                 return false;
             break;
 
-        case T_xk_pg_parser_BoolExpr:
+        case T_pg_parser_BoolExpr:
             {
-                xk_pg_parser_BoolExpr   *expr = (xk_pg_parser_BoolExpr *) node;
-                xk_pg_parser_Node       *first_arg = xk_pg_parser_linitial(expr->args);
-                xk_pg_parser_ListCell   *arg = xk_pg_parser_lnext(xk_pg_parser_list_head(expr->args));
+                pg_parser_BoolExpr   *expr = (pg_parser_BoolExpr *) node;
+                pg_parser_Node       *first_arg = pg_parser_linitial(expr->args);
+                pg_parser_ListCell   *arg = pg_parser_lnext(pg_parser_list_head(expr->args));
 
                 switch (expr->boolop)
                 {
                     case AND_EXPR:
                         if (!PRETTY_PAREN(context))
-                            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                             (void*) ("("),
-                                                            XK_PG_PARSER_NODETYPE_CHAR);
+                                                            PG_PARSER_NODETYPE_CHAR);
                         if (!get_rule_expr_paren(first_arg, context, false, node))
                             return false;
                         while (arg)
                         {
-                            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                             (void*) ("AND"),
-                                                            XK_PG_PARSER_NODETYPE_CHAR);
-                            if (!get_rule_expr_paren((xk_pg_parser_Node *) xk_pg_parser_lfirst(arg),
+                                                            PG_PARSER_NODETYPE_CHAR);
+                            if (!get_rule_expr_paren((pg_parser_Node *) pg_parser_lfirst(arg),
                                                       context,
                                                       false,
                                                       node))
                                 return false;
-                            arg = xk_pg_parser_lnext(arg);
+                            arg = pg_parser_lnext(arg);
                         }
                         if (!PRETTY_PAREN(context))
-                            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                             (void*) (")"),
-                                                            XK_PG_PARSER_NODETYPE_CHAR);
+                                                            PG_PARSER_NODETYPE_CHAR);
                         break;
 
                     case OR_EXPR:
                         if (!PRETTY_PAREN(context))
-                            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                             (void*) ("("),
-                                                            XK_PG_PARSER_NODETYPE_CHAR);
+                                                            PG_PARSER_NODETYPE_CHAR);
                         if (!get_rule_expr_paren(first_arg, context,
                                             false, node))
                             return false;
                         while (arg)
                         {
-                            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                             (void*) ("OR"),
-                                                            XK_PG_PARSER_NODETYPE_CHAR);
-                            if (!get_rule_expr_paren((xk_pg_parser_Node *) xk_pg_parser_lfirst(arg),
+                                                            PG_PARSER_NODETYPE_CHAR);
+                            if (!get_rule_expr_paren((pg_parser_Node *) pg_parser_lfirst(arg),
                                                  context,
                                                  false,
                                                  node))
                                 return false;
-                            arg = xk_pg_parser_lnext(arg);
+                            arg = pg_parser_lnext(arg);
                         }
                         if (!PRETTY_PAREN(context))
-                            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                             (void*) (")"),
-                                                            XK_PG_PARSER_NODETYPE_CHAR);
+                                                            PG_PARSER_NODETYPE_CHAR);
                         break;
 
                     case NOT_EXPR:
                         if (!PRETTY_PAREN(context))
-                            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                             (void*) ("("),
-                                                            XK_PG_PARSER_NODETYPE_CHAR);
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                                                            PG_PARSER_NODETYPE_CHAR);
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                             (void*) ("NOT"),
-                                                            XK_PG_PARSER_NODETYPE_CHAR);
+                                                            PG_PARSER_NODETYPE_CHAR);
                         if (!get_rule_expr_paren(first_arg, context, false, node))
                             return false;
                         if (!PRETTY_PAREN(context))
-                            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                             (void*) (")"),
-                                                            XK_PG_PARSER_NODETYPE_CHAR);
+                                                            PG_PARSER_NODETYPE_CHAR);
                         break;
 
                     default:
@@ -1916,98 +1916,98 @@ bool get_rule_expr(xk_pg_parser_Node *node,
                         //     (int32_t) expr->boolop);
                 }
                 if (node)
-                    xk_pg_parser_mcxt_free(XK_NODE_MCXT, node);
+                    pg_parser_mcxt_free(NODE_MCXT, node);
                 break;
             }
-        case T_xk_pg_parser_List:
+        case T_pg_parser_List:
             {
                 bool sep = false;
-                xk_pg_parser_ListCell   *l;
+                pg_parser_ListCell   *l;
 
-                xk_pg_parser_foreach(l, (xk_pg_parser_List *) node)
+                pg_parser_foreach(l, (pg_parser_List *) node)
                 {
                     if (sep)
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) NULL,
-                                                                XK_PG_PARSER_NODETYPE_SEPARATOR);
-                    get_rule_expr((xk_pg_parser_Node *) xk_pg_parser_lfirst(l), context, showimplicit);
+                                                                PG_PARSER_NODETYPE_SEPARATOR);
+                    get_rule_expr((pg_parser_Node *) pg_parser_lfirst(l), context, showimplicit);
                     sep = true;
                 }
                 if (node)
-                    xk_pg_parser_list_free((xk_pg_parser_List *) node);
+                    pg_parser_list_free((pg_parser_List *) node);
                 break;
             }
-        case T_xk_pg_parser_PartitionBoundSpec:
+        case T_pg_parser_PartitionBoundSpec:
             {
-                xk_pg_parser_PartitionBoundSpec *spec = (xk_pg_parser_PartitionBoundSpec *) node;
-                xk_pg_parser_ListCell   *cell;
+                pg_parser_PartitionBoundSpec *spec = (pg_parser_PartitionBoundSpec *) node;
+                pg_parser_ListCell   *cell;
                 bool sep = false;
 
                 if (spec->is_default)
                 {
-                    context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("DEFAULT"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                     if (spec)
                     {
                         if (spec->listdatums)
-                            xk_pg_parser_list_free(spec->listdatums);
+                            pg_parser_list_free(spec->listdatums);
                         if (spec->lowerdatums)
-                            xk_pg_parser_list_free(spec->lowerdatums);
+                            pg_parser_list_free(spec->lowerdatums);
                         if (spec->upperdatums)
-                            xk_pg_parser_list_free(spec->upperdatums);
-                        xk_pg_parser_mcxt_free(XK_NODE_MCXT, spec);
+                            pg_parser_list_free(spec->upperdatums);
+                        pg_parser_mcxt_free(NODE_MCXT, spec);
                     }
                     break;
                 }
 
                 switch (spec->strategy)
                 {
-                    case XK_PG_PARSER_PARTITION_STRATEGY_HASH:
+                    case PG_PARSER_PARTITION_STRATEGY_HASH:
                     {
                         char temp_char[1024] = {'\0'}; 
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("FOR VALUES"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         sprintf(temp_char, " WITH (modulus %d, remainder %d)", spec->modulus, spec->remainder);
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) temp_char,
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     }
 
-                    case XK_PG_PARSER_PARTITION_STRATEGY_LIST:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                    case PG_PARSER_PARTITION_STRATEGY_LIST:
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("FOR VALUES IN ("),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
-                        xk_pg_parser_foreach(cell, spec->listdatums)
+                                                                PG_PARSER_NODETYPE_CHAR);
+                        pg_parser_foreach(cell, spec->listdatums)
                         {
-                            xk_pg_parser_Const *val = xk_pg_parser_castNode(xk_pg_parser_Const,
-                                                                            xk_pg_parser_lfirst(cell));
+                            pg_parser_Const *val = pg_parser_castNode(pg_parser_Const,
+                                                                            pg_parser_lfirst(cell));
 
                             if (sep)
-                                context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                                context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) (", "),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
+                                                        PG_PARSER_NODETYPE_CHAR);
                             get_const_expr(val, context);
                             sep = true;
                         }
 
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) (")"),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
+                                                        PG_PARSER_NODETYPE_CHAR);
                         break;
 
-                    case XK_PG_PARSER_PARTITION_STRATEGY_RANGE:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                    case PG_PARSER_PARTITION_STRATEGY_RANGE:
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) ("FOR VALUES FROM "),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
+                                                        PG_PARSER_NODETYPE_CHAR);
                         if (!get_range_partbound_string(spec->lowerdatums, context))
                             return false;
 
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) (" TO  "),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
+                                                        PG_PARSER_NODETYPE_CHAR);
                         if (!get_range_partbound_string(spec->upperdatums, context))
                             return false;
 
@@ -2021,33 +2021,33 @@ bool get_rule_expr(xk_pg_parser_Node *node,
                 if (spec)
                 {
                     if (spec->listdatums)
-                        xk_pg_parser_list_free(spec->listdatums);
+                        pg_parser_list_free(spec->listdatums);
                     if (spec->lowerdatums)
-                        xk_pg_parser_list_free(spec->lowerdatums);
+                        pg_parser_list_free(spec->lowerdatums);
                     if (spec->upperdatums)
-                        xk_pg_parser_list_free(spec->upperdatums);
-                    xk_pg_parser_mcxt_free(XK_NODE_MCXT, spec);
+                        pg_parser_list_free(spec->upperdatums);
+                    pg_parser_mcxt_free(NODE_MCXT, spec);
                 }
 
                 break;
             }
-            case T_xk_pg_parser_CoerceViaIO:
+            case T_pg_parser_CoerceViaIO:
             {
-                xk_pg_parser_CoerceViaIO *iocoerce = (xk_pg_parser_CoerceViaIO *) node;
-                xk_pg_parser_Node       *arg = (xk_pg_parser_Node *) iocoerce->arg;
+                pg_parser_CoerceViaIO *iocoerce = (pg_parser_CoerceViaIO *) node;
+                pg_parser_Node       *arg = (pg_parser_Node *) iocoerce->arg;
                 if (!get_coercion_expr(arg, context,
                                        iocoerce->resulttype,
                                        -1,
                                        node))
                     return false;
                 if (iocoerce)
-                    xk_pg_parser_mcxt_free(XK_NODE_MCXT, iocoerce);
+                    pg_parser_mcxt_free(NODE_MCXT, iocoerce);
             }
             break;
 
-        case T_xk_pg_parser_SQLValueFunction:
+        case T_pg_parser_SQLValueFunction:
         {
-                xk_pg_parser_SQLValueFunction *svf = (xk_pg_parser_SQLValueFunction *) node;
+                pg_parser_SQLValueFunction *svf = (pg_parser_SQLValueFunction *) node;
 
                 /*
                  * Note: this code knows that typmod for time, timestamp, and
@@ -2056,109 +2056,109 @@ bool get_rule_expr(xk_pg_parser_Node *node,
                 switch (svf->op)
                 {
                     case SVFOP_CURRENT_DATE:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("CURRENT_DATE"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     case SVFOP_CURRENT_TIME:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("CURRENT_TIME"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     case SVFOP_CURRENT_TIME_N:
                     {
                         char temp_str[128] = {'\0'};
                         sprintf(temp_str, "CURRENT_TIME(%d)", svf->typmod);
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) (temp_str),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     }
                     case SVFOP_CURRENT_TIMESTAMP:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("CURRENT_TIMESTAMP"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     case SVFOP_CURRENT_TIMESTAMP_N:
                     {
                         char temp_str[128] = {'\0'};
                         sprintf(temp_str, "CURRENT_TIMESTAMP(%d)", svf->typmod);
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) (temp_str),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     }
                     case SVFOP_LOCALTIME:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("LOCALTIME"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     case SVFOP_LOCALTIME_N:
                     {
                         char temp_str[128] = {'\0'};
                         sprintf(temp_str, "LOCALTIME(%d)", svf->typmod);
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) (temp_str),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     }
                     case SVFOP_LOCALTIMESTAMP:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("LOCALTIMESTAMP"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     case SVFOP_LOCALTIMESTAMP_N:
                     {
                         char temp_str[128] = {'\0'};
                         sprintf(temp_str, "LOCALTIMESTAMP(%d)", svf->typmod);
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) (temp_str),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     }
                     case SVFOP_CURRENT_ROLE:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("CURRENT_ROLE"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     case SVFOP_CURRENT_USER:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("CURRENT_USER"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     case SVFOP_USER:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("USER"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     case SVFOP_SESSION_USER:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("SESSION_USER"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     case SVFOP_CURRENT_CATALOG:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("CURRENT_CATALOG"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                     case SVFOP_CURRENT_SCHEMA:
-                        context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("CURRENT_SCHEMA"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                         break;
                 }
             }
             break;
-        case T_xk_pg_parser_NullTest:
+        case T_pg_parser_NullTest:
             {
-                xk_pg_parser_NullTest   *ntest = (xk_pg_parser_NullTest *) node;
+                pg_parser_NullTest   *ntest = (pg_parser_NullTest *) node;
                 if (!PRETTY_PAREN(context))
                 {
-                    context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) ("("),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                 }
-                get_rule_expr_paren((xk_pg_parser_Node *) ntest->arg, context, true, node);
+                get_rule_expr_paren((pg_parser_Node *) ntest->arg, context, true, node);
                 /*
                  * For scalar inputs, we prefer to print as IS [NOT] NULL,
                  * which is shorter and traditional.  If it's a rowtype input
@@ -2169,35 +2169,35 @@ bool get_rule_expr(xk_pg_parser_Node *node,
                     {
                         case IS_NULL:
                         {
-                            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) (" IS NULL"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                             break;
                         }
                         case IS_NOT_NULL:
                         {
-                            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                                 (void*) (" IS NOT NULL"),
-                                                                XK_PG_PARSER_NODETYPE_CHAR);
+                                                                PG_PARSER_NODETYPE_CHAR);
                             break;
                         }
                     }
                 if (!PRETTY_PAREN(context))
                 {
-                    context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) (")"),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
+                                                        PG_PARSER_NODETYPE_CHAR);
                 }
             }
             break;
         default:
             //printf("WARNING, unsupport node type: [%d]: %s\n",
-            //        (int32_t) xk_pg_parser_NodeTagType(node),
-            //        xk_pg_parser_NodeTagName(node));
-            context->nodetree = xk_pg_parser_append_nodetree_with_type(context->nodetree,
+            //        (int32_t) pg_parser_NodeTagType(node),
+            //        pg_parser_NodeTagName(node));
+            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
                                                         (void*) ("[UNSUPPORT NODE]"),
-                                                        XK_PG_PARSER_NODETYPE_CHAR);
-            xk_pg_parser_mcxt_free(XK_NODE_MCXT, node);
+                                                        PG_PARSER_NODETYPE_CHAR);
+            pg_parser_mcxt_free(NODE_MCXT, node);
             return true;
             break;
     }

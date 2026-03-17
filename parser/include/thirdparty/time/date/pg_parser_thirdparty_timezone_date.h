@@ -1,5 +1,5 @@
 /**
- * @file                xk_pg_parser_thirdparty_timezone_date.h
+ * @file                pg_parser_thirdparty_timezone_date.h
  * @author              ByteSynch
  * @brief               定义 Date 类型使用的数据结构以及
  * @version 0.1
@@ -9,12 +9,12 @@
  *
  */
 
-#ifndef XK_PG_PARSER_THIRDPARTY_TIMEZONE_DATE_H
-#define XK_PG_PARSER_THIRDPARTY_TIMEZONE_DATE_H
+#ifndef PG_PARSER_THIRDPARTY_TIMEZONE_DATE_H
+#define PG_PARSER_THIRDPARTY_TIMEZONE_DATE_H
 
 #define MAXDATELEN                      128
-#define XK_PG_PARSER_INT32_MIN       (-0x7FFFFFFF-1)
-#define XK_PG_PARSER_INT32_MAX       (0x7FFFFFFF)
+#define PG_PARSER_INT32_MIN       (-0x7FFFFFFF-1)
+#define PG_PARSER_INT32_MAX       (0x7FFFFFFF)
 
 #define MONTHS_PER_YEAR                 12
 #define EARLY                           "-infinity"
@@ -53,8 +53,8 @@ typedef struct
 /*
  * Infinity and minus infinity must be the max and min values of DateADT.
  */
-#define DATEVAL_NOBEGIN                 ((DateADT) XK_PG_PARSER_INT32_MIN)
-#define DATEVAL_NOEND                   ((DateADT) XK_PG_PARSER_INT32_MAX)
+#define DATEVAL_NOBEGIN                 ((DateADT) PG_PARSER_INT32_MIN)
+#define DATEVAL_NOEND                   ((DateADT) PG_PARSER_INT32_MAX)
 
 #define DATE_NOBEGIN(j)                 ((j) = DATEVAL_NOBEGIN)
 #define DATE_IS_NOBEGIN(j)              ((j) == DATEVAL_NOBEGIN)
@@ -62,6 +62,6 @@ typedef struct
 #define DATE_IS_NOEND(j)                ((j) == DATEVAL_NOEND)
 #define DATE_NOT_FINITE(j)              (DATE_IS_NOBEGIN(j) || DATE_IS_NOEND(j))
 
-#define XK_PG_PARSER_EPOCH_JDATE     2451545 /* == date2j(2000, 1, 1) */
+#define PG_PARSER_EPOCH_JDATE     2451545 /* == date2j(2000, 1, 1) */
 
-#endif /* XK_PG_PARSER_THIRDPARTY_TIMEZONE_DATE_H */
+#endif /* PG_PARSER_THIRDPARTY_TIMEZONE_DATE_H */

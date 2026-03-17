@@ -10,7 +10,7 @@ typedef struct RELFILENODE2OID
 
 typedef struct TXN_SYSDICT
 {
-    xk_pg_parser_translog_tbcol_values* colvalues;
+    pg_parser_translog_tbcol_values* colvalues;
     void *convert_colvalues;
 } txn_sysdict;
 

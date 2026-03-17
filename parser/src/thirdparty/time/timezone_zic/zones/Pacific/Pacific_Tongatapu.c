@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Pacific_Tongatapu[] =
+char* PG_Pacific_Tongatapu[] =
 {
     (char *)"Rule	Tonga	1999	only	-	Oct	 7	2:00s	1:00	-",
     (char *)"Rule	Tonga	2000	only	-	Mar	19	2:00s	0	-",

@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Montevideo[] =
+char* PG_America_Montevideo[] =
 {
     (char *)"Rule	Uruguay	1923	1925	-	Oct	 1	 0:00	0:30	-",
     (char *)"Rule	Uruguay	1924	1926	-	Apr	 1	 0:00	0	-",

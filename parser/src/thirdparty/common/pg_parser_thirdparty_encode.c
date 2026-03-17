@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_encode.c
+ * @file pg_parser_thirdparty_encode.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -9,9 +9,9 @@
  * 
  */
 #include <ctype.h>
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "thirdparty/common/xk_pg_parser_thirdparty_builtins.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "thirdparty/common/pg_parser_thirdparty_builtins.h"
 
 /* HEX */
 static const char hextbl[] = "0123456789abcdef";

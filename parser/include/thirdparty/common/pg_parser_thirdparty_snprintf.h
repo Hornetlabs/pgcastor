@@ -1,5 +1,5 @@
-#ifndef XK_PG_PARSER_THIRDPARTY_SNPRINTF_H
-#define XK_PG_PARSER_THIRDPARTY_SNPRINTF_H
+#ifndef PG_PARSER_THIRDPARTY_SNPRINTF_H
+#define PG_PARSER_THIRDPARTY_SNPRINTF_H
 
 typedef struct
 {
@@ -12,6 +12,6 @@ typedef struct
     bool        failed;            /* call is a failure; errno is set */
 } PrintfTarget;
 
-extern int32_t xk_pg_parser_strfromd(char *str, size_t count, int32_t precision, double value);
+extern int32_t pg_parser_strfromd(char *str, size_t count, int32_t precision, double value);
 
 #endif

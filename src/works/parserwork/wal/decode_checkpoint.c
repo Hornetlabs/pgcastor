@@ -7,9 +7,9 @@
 #include "utils/sinval/sinval.h"
 #include "port/thread/thread.h"
 #include "misc/misc_stat.h"
-#include "common/xk_pg_parser_errnodef.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_errnodef.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
 #include "cache/cache_sysidcts.h"
@@ -62,13 +62,13 @@ void decode_chkpt_init(decodingcontext* ctx, XLogRecPtr redolsn)
 }
 
 /* checkpoint 提交 */
-void decode_chkpt(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_chkpt(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
     txn *txn = NULL;
     checkpointnode* chkptnode = NULL;
-    xk_pg_parser_translog_pre_transchkp* prechkpt = NULL;
+    pg_parser_translog_pre_transchkp* prechkpt = NULL;
 
-    prechkpt = (xk_pg_parser_translog_pre_transchkp*)pbase;
+    prechkpt = (pg_parser_translog_pre_transchkp*)pbase;
 
     /* 将 redolsn 加入到链表中 */
     chkptnode = (checkpointnode*)rmalloc0(sizeof(checkpointnode));
@@ -130,10 +130,10 @@ void decode_chkpt(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
     }
 }
 
-void decode_recovery(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_recovery(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
     txn *txn = NULL;
-    xk_pg_parser_translog_pre_endrecovery* recovery = NULL;
+    pg_parser_translog_pre_endrecovery* recovery = NULL;
 
     if (recovery->m_this_timeline != recovery->m_prev_timeline)
     {

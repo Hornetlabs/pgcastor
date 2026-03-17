@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_North_Dakota_Beulah[] =
+char* PG_America_North_Dakota_Beulah[] =
 {
     (char *)"Rule	US	1918	1919	-	Mar	lastSun	2:00	1:00	D",
     (char *)"Rule	US	1918	1919	-	Oct	lastSun	2:00	0	S",

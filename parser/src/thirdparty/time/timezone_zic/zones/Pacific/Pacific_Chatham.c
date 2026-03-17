@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Pacific_Chatham[] =
+char* PG_Pacific_Chatham[] =
 {
     (char *)"Rule	Chatham	1974	only	-	Nov	Sun>=1	2:45s	1:00	-",
     (char *)"Rule	Chatham	1975	only	-	Feb	lastSun	2:45s	0	-",

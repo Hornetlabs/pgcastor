@@ -1,5 +1,5 @@
 /**
- * @file xk_pg_parser_thirdparty_tupleparser_tsquery.c
+ * @file pg_parser_thirdparty_tupleparser_tsquery.c
  * @author bytesync
  * @brief 
  * @version 0.1
@@ -8,10 +8,10 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#include "xk_pg_parser_os_incl.h"
-#include "xk_pg_parser_app_incl.h"
-#include "thirdparty/tupleparser/common/xk_pg_parser_thirdparty_tupleparser_pgfunc.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "pg_parser_app_incl.h"
+#include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgfunc.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 #define PGFUNC_TSQUERY_MCXT NULL
 #define QI_VAL 1
@@ -56,7 +56,7 @@ typedef struct
                                       * integers in the code. They would need to be
                                       * changed as well. */
 
-    /* pointer to xk_pg_parser_text value of operand, must correlate with WordEntry */
+    /* pointer to pg_parser_text value of operand, must correlate with WordEntry */
     uint32_t
                   length:12,
                   distance:20;
@@ -78,7 +78,7 @@ typedef struct
     int32_t     buflen;
 } INFIX;
 
-#define HDRSIZETQ    ( XK_PG_PARSER_VARHDRSZ + sizeof(int32_t) )
+#define HDRSIZETQ    ( PG_PARSER_VARHDRSZ + sizeof(int32_t) )
 /* Returns a pointer to the first QueryItem in a TSQuery */
 #define GETQUERY(x)  ((QueryItem*)( (char*)(x)+HDRSIZETQ ))
 
@@ -91,7 +91,7 @@ while( ( (inf)->cur - (inf)->buf ) + (addsize) + 1 >= (inf)->buflen ) \
 { \
     int32_t len = (inf)->cur - (inf)->buf; \
     (inf)->buflen *= 2; \
-    xk_pg_parser_mcxt_realloc(PGFUNC_TSQUERY_MCXT,\
+    pg_parser_mcxt_realloc(PGFUNC_TSQUERY_MCXT,\
                              (void**) &((inf)->buf),\
                              (inf)->buflen ); \
     (inf)->cur = (inf)->buf + len; \
@@ -101,7 +101,7 @@ while( ( (inf)->cur - (inf)->buf ) + (addsize) + 1 >= (inf)->buflen ) \
 
 /* The second argument of t_iseq() must be a plain ASCII character */
 #define t_iseq(x,c) (TOUCHAR(x) == (unsigned char) (c))
-#define COPYCHAR(d,s) rmemcpy1(d, 0, s, xk_character_encoding_mblen(XK_CHARACTER_UTF8, s))
+#define COPYCHAR(d,s) rmemcpy1(d, 0, s, character_encoding_mblen(CHARACTER_UTF8, s))
 
 /* FTS operator priorities, see ts_type.h */
 const int32_t tsearch_op_priority[OP_COUNT] =
@@ -118,26 +118,26 @@ const int32_t tsearch_op_priority[OP_COUNT] =
 
 static void infix(INFIX *in, int32_t parentPriority, bool rightPhraseOp);
 
-xk_pg_parser_Datum tsqueryout(xk_pg_parser_Datum attr)
+pg_parser_Datum tsqueryout(pg_parser_Datum attr)
 {
     TSQuery      query = (TSQuery) attr;
     INFIX        nrm;
 
     if (query->size == 0)
-        return (xk_pg_parser_Datum) 0;
+        return (pg_parser_Datum) 0;
 
     nrm.curpol = GETQUERY(query);
     nrm.buflen = 32;
-    if (!xk_pg_parser_mcxt_malloc(PGFUNC_TSQUERY_MCXT,
+    if (!pg_parser_mcxt_malloc(PGFUNC_TSQUERY_MCXT,
                                  (void **) &(nrm.buf),
                                   sizeof(char) * nrm.buflen))
-        return (xk_pg_parser_Datum) 0;
+        return (pg_parser_Datum) 0;
     nrm.cur = nrm.buf;
     *(nrm.cur) = '\0';
     nrm.op = GETOPERAND(query);
     infix(&nrm, -1 /* lowest priority */ , false);
 
-    return (xk_pg_parser_Datum) nrm.buf;
+    return (pg_parser_Datum) nrm.buf;
 }
 
 /*
@@ -153,7 +153,7 @@ static void infix(INFIX *in, int32_t parentPriority, bool rightPhraseOp)
         int32_t            clen;
 
         RESIZEBUF(in, curpol->length * 
-                 (xk_character_encoding_max_length(XK_CHARACTER_UTF8) + 1) + 2 + 6);
+                 (character_encoding_max_length(CHARACTER_UTF8) + 1) + 2 + 6);
 
         *(in->cur) = '\'';
         in->cur++;
@@ -171,7 +171,7 @@ static void infix(INFIX *in, int32_t parentPriority, bool rightPhraseOp)
             }
             COPYCHAR(in->cur, op);
 
-            clen = xk_character_encoding_mblen(XK_CHARACTER_UTF8, op);
+            clen = character_encoding_mblen(CHARACTER_UTF8, op);
             op += clen;
             in->cur += clen;
         }
@@ -256,7 +256,7 @@ static void infix(INFIX *in, int32_t parentPriority, bool rightPhraseOp)
         nrm.curpol = in->curpol;
         nrm.op = in->op;
         nrm.buflen = 16;
-        xk_pg_parser_mcxt_malloc(PGFUNC_TSQUERY_MCXT,
+        pg_parser_mcxt_malloc(PGFUNC_TSQUERY_MCXT,
                                      (void **) &(nrm.buf),
                                       sizeof(char) * nrm.buflen);
         nrm.cur = nrm.buf;
@@ -290,7 +290,7 @@ static void infix(INFIX *in, int32_t parentPriority, bool rightPhraseOp)
                 break;
         }
         in->cur = strchr(in->cur, '\0');
-        xk_pg_parser_mcxt_free(PGFUNC_TSQUERY_MCXT, nrm.buf);
+        pg_parser_mcxt_free(PGFUNC_TSQUERY_MCXT, nrm.buf);
 
         if (needParenthesis)
         {

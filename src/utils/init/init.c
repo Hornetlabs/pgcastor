@@ -8,8 +8,8 @@
 #include "utils/init/init.h"
 #include "misc/misc_control.h"
 #include "misc/misc_stat.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "catalog/catalog.h"
 

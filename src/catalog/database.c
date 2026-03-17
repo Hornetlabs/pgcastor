@@ -5,8 +5,8 @@
 #include "utils/hash/hash_search.h"
 #include "utils/conn/conn.h"
 #include "utils/hash/hash_utils.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -23,7 +23,7 @@ void database_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     HASHCTL oid_hash_ctl;
     bool found = false;
     PGresult *res = NULL;
-    xk_pg_sysdict_Form_pg_database database;
+    pg_sysdict_Form_pg_database database;
     catalog_database_value *entry = NULL;
     catalog_datname2oid_value *oid_entry = NULL;
     const char *query = "SELECT rel.oid, rel.datname, rel.datdba, rel.encoding, rel.datcollate, rel.datctype FROM pg_database rel;";
@@ -35,7 +35,7 @@ void database_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
                                         HASH_ELEM | HASH_BLOBS);
 
     rmemset1(&oid_hash_ctl, 0, '\0', sizeof(oid_hash_ctl));
-    oid_hash_ctl.keysize = sizeof(xk_pg_parser_NameData);
+    oid_hash_ctl.keysize = sizeof(pg_parser_NameData);
     oid_hash_ctl.entrysize = sizeof(catalog_datname2oid_value);
     sysdicts->by_datname2oid = hash_create("catalog_datname2oid_value", 2048, &oid_hash_ctl,
                                             HASH_ELEM | HASH_BLOBS);
@@ -49,12 +49,12 @@ void database_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     // 打印行数据
     for (i = 0; i < PQntuples(res); i++) 
     {
-        database = (xk_pg_sysdict_Form_pg_database)rmalloc0(sizeof(xk_pg_parser_sysdict_pgdatabase));
+        database = (pg_sysdict_Form_pg_database)rmalloc0(sizeof(pg_parser_sysdict_pgdatabase));
         if(NULL == database)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemset0(database, 0, '\0', sizeof(xk_pg_parser_sysdict_pgdatabase));
+        rmemset0(database, 0, '\0', sizeof(pg_parser_sysdict_pgdatabase));
         j=0;
         sscanf(PQgetvalue(res, i, j++), "%u", &database->oid);
         strcpy(database->datname.data ,PQgetvalue(res, i, j++));
@@ -92,7 +92,7 @@ void databasedata_write(List* database_list, uint64 *offset, sysdict_header_arra
     uint64 page_offset = 0;
     ListCell*	cell = NULL;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_database database = NULL;
+    pg_sysdict_Form_pg_database database = NULL;
 
     array->type = CATALOG_TYPE_DATABASE;
     array->offset = *offset;
@@ -109,9 +109,9 @@ void databasedata_write(List* database_list, uint64 *offset, sysdict_header_arra
 
     foreach(cell, database_list)
     {
-        database = (xk_pg_sysdict_Form_pg_database) lfirst(cell);
+        database = (pg_sysdict_Form_pg_database) lfirst(cell);
 
-        if(page_offset + sizeof(xk_pg_parser_sysdict_pgdatabase) > FILE_BLK_SIZE)
+        if(page_offset + sizeof(pg_parser_sysdict_pgdatabase) > FILE_BLK_SIZE)
         {
             if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
                 elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
@@ -123,8 +123,8 @@ void databasedata_write(List* database_list, uint64 *offset, sysdict_header_arra
             *offset += FILE_BLK_SIZE;
             page_offset = 0;
         }
-        rmemcpy1(buffer, page_offset, database, sizeof(xk_pg_parser_sysdict_pgdatabase));
-        page_offset += sizeof(xk_pg_parser_sysdict_pgdatabase);
+        rmemcpy1(buffer, page_offset, database, sizeof(pg_parser_sysdict_pgdatabase));
+        page_offset += sizeof(pg_parser_sysdict_pgdatabase);
     }
 
     if (page_offset > 0) {
@@ -160,7 +160,7 @@ HTAB* databasecache_load(sysdict_header_array* array)
     bool found = false;
     uint64 fileoffset = 0;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_database database;
+    pg_sysdict_Form_pg_database database;
     catalog_database_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -185,15 +185,15 @@ HTAB* databasecache_load(sysdict_header_array* array)
     {
         uint64 offset = 0;
 
-        while (offset + sizeof(xk_pg_parser_sysdict_pgdatabase) < FILE_BLK_SIZE)
+        while (offset + sizeof(pg_parser_sysdict_pgdatabase) < FILE_BLK_SIZE)
         {
-            database = (xk_pg_sysdict_Form_pg_database)rmalloc1(sizeof(xk_pg_parser_sysdict_pgdatabase));
+            database = (pg_sysdict_Form_pg_database)rmalloc1(sizeof(pg_parser_sysdict_pgdatabase));
             if(NULL == database)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(database, 0, '\0', sizeof(xk_pg_parser_sysdict_pgdatabase));
-            rmemcpy0(database, 0,buffer + offset, sizeof(xk_pg_parser_sysdict_pgdatabase));
+            rmemset0(database, 0, '\0', sizeof(pg_parser_sysdict_pgdatabase));
+            rmemcpy0(database, 0,buffer + offset, sizeof(pg_parser_sysdict_pgdatabase));
             entry = hash_search(databasehtab, &database->oid, HASH_ENTER, &found);
             if(found)
             {
@@ -201,7 +201,7 @@ HTAB* databasecache_load(sysdict_header_array* array)
             }
             entry->oid = database->oid;
             entry->database = database;
-            offset += sizeof(xk_pg_parser_sysdict_pgdatabase);
+            offset += sizeof(pg_parser_sysdict_pgdatabase);
             if (fileoffset + offset == array[CATALOG_TYPE_DATABASE - 1].len)
             {
                 if(osal_file_close(fd))
@@ -231,11 +231,11 @@ HTAB* datname2oid_cache_load(sysdict_header_array* array)
     bool found = false;
     uint64 fileoffset = 0;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_parser_sysdict_pgdatabase database;
+    pg_parser_sysdict_pgdatabase database;
     catalog_datname2oid_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
-    hash_ctl.keysize = sizeof(xk_pg_parser_NameData);
+    hash_ctl.keysize = sizeof(pg_parser_NameData);
     hash_ctl.entrysize = sizeof(catalog_datname2oid_value);
     databasehtab = hash_create("catalog_datname2oid_value", 2048, &hash_ctl,
                                     HASH_ELEM | HASH_BLOBS);
@@ -257,10 +257,10 @@ HTAB* datname2oid_cache_load(sysdict_header_array* array)
     {
         uint64 offset = 0;
 
-        while (offset + sizeof(xk_pg_parser_sysdict_pgdatabase) < FILE_BLK_SIZE)
+        while (offset + sizeof(pg_parser_sysdict_pgdatabase) < FILE_BLK_SIZE)
         {
-            rmemset1(&database, 0, '\0', sizeof(xk_pg_parser_sysdict_pgdatabase));
-            rmemcpy1(&database, 0, buffer + offset, sizeof(xk_pg_parser_sysdict_pgdatabase));
+            rmemset1(&database, 0, '\0', sizeof(pg_parser_sysdict_pgdatabase));
+            rmemcpy1(&database, 0, buffer + offset, sizeof(pg_parser_sysdict_pgdatabase));
             entry = (catalog_datname2oid_value *)hash_search(databasehtab, &database.datname, HASH_ENTER, &found);
             if(found)
             {
@@ -268,7 +268,7 @@ HTAB* datname2oid_cache_load(sysdict_header_array* array)
             }
             entry->oid = database.oid;
             rmemcpy1(entry->datname.data, 0, database.datname.data, sizeof(database.datname.data));
-            offset += sizeof(xk_pg_parser_sysdict_pgdatabase);
+            offset += sizeof(pg_parser_sysdict_pgdatabase);
             if (fileoffset + offset == array[CATALOG_TYPE_DATABASE - 1].len)
             {
                 if(osal_file_close(fd))
@@ -297,7 +297,7 @@ void databasecache_write(HTAB* databasecache, uint64 *offset, sysdict_header_arr
     HASH_SEQ_STATUS status;
     char buffer[FILE_BLK_SIZE];
     catalog_database_value *entry = NULL;
-    xk_pg_sysdict_Form_pg_database database = NULL;
+    pg_sysdict_Form_pg_database database = NULL;
 
     array[CATALOG_TYPE_DATABASE - 1].type = CATALOG_TYPE_DATABASE;
     array[CATALOG_TYPE_DATABASE - 1].offset = *offset;
@@ -315,7 +315,7 @@ void databasecache_write(HTAB* databasecache, uint64 *offset, sysdict_header_arr
     while ((entry = hash_seq_search(&status)) != NULL)
     {
         database = entry->database;
-        if(page_offset + sizeof(xk_pg_parser_sysdict_pgdatabase) > FILE_BLK_SIZE)
+        if(page_offset + sizeof(pg_parser_sysdict_pgdatabase) > FILE_BLK_SIZE)
         {
             if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
                 elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
@@ -327,8 +327,8 @@ void databasecache_write(HTAB* databasecache, uint64 *offset, sysdict_header_arr
             *offset += FILE_BLK_SIZE;
             page_offset = 0;
         }
-        rmemcpy1(buffer, page_offset, database, sizeof(xk_pg_parser_sysdict_pgdatabase));
-        page_offset += sizeof(xk_pg_parser_sysdict_pgdatabase);
+        rmemcpy1(buffer, page_offset, database, sizeof(pg_parser_sysdict_pgdatabase));
+        page_offset += sizeof(pg_parser_sysdict_pgdatabase);
     }
 
     if (page_offset > 0) {
@@ -360,10 +360,10 @@ catalogdata* database_colvalue2database(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_database_value* databasevalue = NULL;
-    xk_pg_sysdict_Form_pg_database pgdatabase = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_database pgdatabase = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
     catalog_data = (catalogdata*)rmalloc1(sizeof(catalogdata));
@@ -382,12 +382,12 @@ catalogdata* database_colvalue2database(void* in_colvalue)
     catalog_data->catalog = databasevalue;
     catalog_data->type = CATALOG_TYPE_DATABASE;
 
-    pgdatabase = (xk_pg_sysdict_Form_pg_database)rmalloc1(sizeof(xk_pg_parser_sysdict_pgdatabase));
+    pgdatabase = (pg_sysdict_Form_pg_database)rmalloc1(sizeof(pg_parser_sysdict_pgdatabase));
     if(NULL == pgdatabase)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgdatabase, 0, '\0', sizeof(xk_pg_parser_sysdict_pgdatabase));
+    rmemset0(pgdatabase, 0, '\0', sizeof(pg_parser_sysdict_pgdatabase));
     databasevalue->database = pgdatabase;
 
     /* oid 0 */
@@ -442,12 +442,12 @@ void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cata
             }
         }
         catalogInOid2Hash->oid = newcatalog->oid;
-        catalogInOid2Hash->database = (xk_pg_sysdict_Form_pg_database)rmalloc1(sizeof(xk_pg_parser_sysdict_pgdatabase));
+        catalogInOid2Hash->database = (pg_sysdict_Form_pg_database)rmalloc1(sizeof(pg_parser_sysdict_pgdatabase));
         if(NULL == catalogInOid2Hash->database)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemcpy0(catalogInOid2Hash->database, 0, newcatalog->database, sizeof(xk_pg_parser_sysdict_pgdatabase));
+        rmemcpy0(catalogInOid2Hash->database, 0, newcatalog->database, sizeof(pg_parser_sysdict_pgdatabase));
         //datname2oid
         catalogInDatname2Hash = hash_search(sysdicts->by_datname2oid, &newcatalog->database->datname, HASH_ENTER, &found);
         if(true == found)
@@ -484,12 +484,12 @@ void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cata
         }
         rfree(catalogInOid2Hash->database);
 
-        catalogInOid2Hash->database = (xk_pg_sysdict_Form_pg_database)rmalloc1(sizeof(xk_pg_parser_sysdict_pgdatabase));
+        catalogInOid2Hash->database = (pg_sysdict_Form_pg_database)rmalloc1(sizeof(pg_parser_sysdict_pgdatabase));
         if(NULL == catalogInOid2Hash->database)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemcpy0(catalogInOid2Hash->database, 0, newcatalog->database, sizeof(xk_pg_parser_sysdict_pgdatabase));
+        rmemcpy0(catalogInOid2Hash->database, 0, newcatalog->database, sizeof(pg_parser_sysdict_pgdatabase));
         //datname2database
         hash_seq_init(&status,sysdicts->by_datname2oid);
         while ((catalogInDatname2Hash = hash_seq_search(&status)) != NULL)

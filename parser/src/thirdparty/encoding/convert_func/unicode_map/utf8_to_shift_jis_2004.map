@@ -3,7 +3,7 @@
 
 static const uint16_t shift_jis_2004_from_unicode_tree_table[39196];
 
-static const xk_character_mb_radix_tree shift_jis_2004_from_unicode_tree =
+static const character_mb_radix_tree shift_jis_2004_from_unicode_tree =
 {
   shift_jis_2004_from_unicode_tree_table,
   NULL, /* 32-bit table not used */
@@ -7656,7 +7656,7 @@ static const uint16_t shift_jis_2004_from_unicode_tree_table[39196] =
 };
 
 /* Combined character map */
-static const xk_character_utf_to_local_combined ULmapSHIFT_JIS_2004_combined[ 25 ] = {
+static const character_utf_to_local_combined ULmapSHIFT_JIS_2004_combined[ 25 ] = {
   {0x0000c3a6, 0x0000cc80, 0x8663},	/* U+00E6+0300	 	[2000] */
   {0x0000c994, 0x0000cc80, 0x8667},	/* U+0254+0300	 	[2000] */
   {0x0000c994, 0x0000cc81, 0x8668},	/* U+0254+0301	 	[2000] */

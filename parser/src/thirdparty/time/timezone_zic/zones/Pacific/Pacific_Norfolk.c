@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Pacific_Norfolk[] =
+char* PG_Pacific_Norfolk[] =
 {
     (char *)"Rule	AN	1971	1985	-	Oct	lastSun	2:00s	1:00	D",
     (char *)"Rule	AN	1972	only	-	Feb	27	2:00s	0	S",

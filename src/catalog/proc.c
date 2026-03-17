@@ -6,8 +6,8 @@
 #include "utils/guc/guc.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/conn/conn.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -23,7 +23,7 @@ void proc_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	bool found = false;
 	PGresult *res  = NULL;
 	catalog_proc_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_proc proc = NULL;
+	pg_sysdict_Form_pg_proc proc = NULL;
 	const char *query = "SELECT rel.oid,rel.proname, rel.pronamespace,rel.pronargs, rel.proargtypes FROM pg_proc rel;";
 	
 	rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -42,12 +42,12 @@ void proc_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	// 打印行数据
 	for (i = 0; i < PQntuples(res); i++) 
 	{
-		proc = (xk_pg_sysdict_Form_pg_proc)rmalloc0(sizeof(xk_pg_parser_sysdict_pgproc));
+		proc = (pg_sysdict_Form_pg_proc)rmalloc0(sizeof(pg_parser_sysdict_pgproc));
 		if(NULL == proc)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemset0(proc, 0, '\0', sizeof(xk_pg_parser_sysdict_pgproc));
+		rmemset0(proc, 0, '\0', sizeof(pg_parser_sysdict_pgproc));
 		j=0;
 		sscanf(PQgetvalue(res, i, j++), "%u", &proc->oid);
 		strcpy(proc->proname.data ,PQgetvalue(res, i, j++));
@@ -73,7 +73,7 @@ void procdata_write(List* proc, uint64 *offset, sysdict_header_array* array)
 	uint64 page_offset = 0;
 	ListCell*	cell = NULL;
 	char buffer[FILE_BLK_SIZE];
-	xk_pg_sysdict_Form_pg_proc proc_data;
+	pg_sysdict_Form_pg_proc proc_data;
 
 	array->type = CATALOG_TYPE_PROC;
 	array->offset = *offset;
@@ -90,8 +90,8 @@ void procdata_write(List* proc, uint64 *offset, sysdict_header_array* array)
 
 	foreach(cell, proc)
 	{
-		proc_data = (xk_pg_sysdict_Form_pg_proc) lfirst(cell);
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgproc) > FILE_BLK_SIZE)
+		proc_data = (pg_sysdict_Form_pg_proc) lfirst(cell);
+		if(page_offset + sizeof(pg_parser_sysdict_pgproc) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
@@ -103,8 +103,8 @@ void procdata_write(List* proc, uint64 *offset, sysdict_header_array* array)
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, proc_data, sizeof(xk_pg_parser_sysdict_pgproc));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgproc);
+		rmemcpy1(buffer, page_offset, proc_data, sizeof(pg_parser_sysdict_pgproc));
+		page_offset += sizeof(pg_parser_sysdict_pgproc);
 	}
 
 	if (page_offset > 0) {
@@ -139,7 +139,7 @@ HTAB* proccache_load(sysdict_header_array* array)
     bool found = false;
     uint64 fileoffset = 0;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_proc proc;
+    pg_sysdict_Form_pg_proc proc;
     catalog_proc_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -166,15 +166,15 @@ HTAB* proccache_load(sysdict_header_array* array)
     {
         uint64 offset = 0;
 
-        while (offset + sizeof(xk_pg_parser_sysdict_pgproc) < FILE_BLK_SIZE)
+        while (offset + sizeof(pg_parser_sysdict_pgproc) < FILE_BLK_SIZE)
         {
-            proc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
+            proc = (pg_sysdict_Form_pg_proc)rmalloc1(sizeof(pg_parser_sysdict_pgproc));
             if(NULL == proc)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(proc, 0, '\0', sizeof(xk_pg_parser_sysdict_pgproc));
-            rmemcpy0(proc, 0, buffer + offset, sizeof(xk_pg_parser_sysdict_pgproc));
+            rmemset0(proc, 0, '\0', sizeof(pg_parser_sysdict_pgproc));
+            rmemcpy0(proc, 0, buffer + offset, sizeof(pg_parser_sysdict_pgproc));
             entry = hash_search(prochtab, &proc->oid, HASH_ENTER, &found);
             if(found)
             {
@@ -182,7 +182,7 @@ HTAB* proccache_load(sysdict_header_array* array)
             }
             entry->oid = proc->oid;
             entry->proc = proc;
-            offset += sizeof(xk_pg_parser_sysdict_pgproc);
+            offset += sizeof(pg_parser_sysdict_pgproc);
             if (fileoffset + offset == array[CATALOG_TYPE_PROC - 1].len)
             {
                 if(osal_file_close(fd))
@@ -208,10 +208,10 @@ catalogdata* proc_colvalue2proc(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_proc_value* procvalue = NULL;
-    xk_pg_sysdict_Form_pg_proc pgproc = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_proc pgproc = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
     catalog_data = (catalogdata*)rmalloc0(sizeof(catalogdata));
@@ -230,12 +230,12 @@ catalogdata* proc_colvalue2proc(void* in_colvalue)
     catalog_data->catalog = procvalue;
     catalog_data->type = CATALOG_TYPE_PROC;
 
-    pgproc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
+    pgproc = (pg_sysdict_Form_pg_proc)rmalloc1(sizeof(pg_parser_sysdict_pgproc));
     if(NULL == pgproc)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgproc, 0, '\0', sizeof(xk_pg_parser_sysdict_pgproc));
+    rmemset0(pgproc, 0, '\0', sizeof(pg_parser_sysdict_pgproc));
     procvalue->proc = pgproc;
 
     /* oid 0 */
@@ -283,12 +283,12 @@ void proc_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         }
         catalogInHash->oid = newcatalog->oid;
 
-		catalogInHash->proc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
+		catalogInHash->proc = (pg_sysdict_Form_pg_proc)rmalloc1(sizeof(pg_parser_sysdict_pgproc));
 		if(NULL == catalogInHash->proc)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemcpy0(catalogInHash->proc, 0, newcatalog->proc, sizeof(xk_pg_parser_sysdict_pgproc));
+		rmemcpy0(catalogInHash->proc, 0, newcatalog->proc, sizeof(pg_parser_sysdict_pgproc));
     }
     else if(CATALOG_OP_DELETE == catalogdata->op)
     {
@@ -313,12 +313,12 @@ void proc_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         }
         rfree(catalogInHash->proc);
 
-		catalogInHash->proc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
+		catalogInHash->proc = (pg_sysdict_Form_pg_proc)rmalloc1(sizeof(pg_parser_sysdict_pgproc));
 		if(NULL == catalogInHash->proc)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemcpy0(catalogInHash->proc, 0, newcatalog->proc, sizeof(xk_pg_parser_sysdict_pgproc));
+		rmemcpy0(catalogInHash->proc, 0, newcatalog->proc, sizeof(pg_parser_sysdict_pgproc));
     }
     else
     {
@@ -334,7 +334,7 @@ void proccache_write(HTAB* proccache, uint64 *offset, sysdict_header_array* arra
 	HASH_SEQ_STATUS status;
 	char buffer[FILE_BLK_SIZE];
 	catalog_proc_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_proc proc = NULL;
+	pg_sysdict_Form_pg_proc proc = NULL;
 
 	array[CATALOG_TYPE_PROC - 1].type = CATALOG_TYPE_PROC;
 	array[CATALOG_TYPE_PROC - 1].offset = *offset;
@@ -354,7 +354,7 @@ void proccache_write(HTAB* proccache, uint64 *offset, sysdict_header_array* arra
 	{
 		proc = entry->proc;
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgproc) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgproc) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
@@ -366,8 +366,8 @@ void proccache_write(HTAB* proccache, uint64 *offset, sysdict_header_array* arra
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, proc, sizeof(xk_pg_parser_sysdict_pgproc));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgproc);
+		rmemcpy1(buffer, page_offset, proc, sizeof(pg_parser_sysdict_pgproc));
+		page_offset += sizeof(pg_parser_sysdict_pgproc);
 	}
 
 	if (page_offset > 0) {

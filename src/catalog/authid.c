@@ -5,8 +5,8 @@
 #include "utils/hash/hash_search.h"
 #include "utils/conn/conn.h"
 #include "utils/hash/hash_utils.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -20,7 +20,7 @@ void authid_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     bool found = false;
     HASHCTL hash_ctl;
     PGresult *res = NULL;
-    xk_pg_sysdict_Form_pg_authid authid;
+    pg_sysdict_Form_pg_authid authid;
     catalog_authid_value *entry = NULL;
 
     const char *query = "SELECT rel.oid, rel.rolname, rel.rolsuper, rel.rolinherit, rel.rolcreaterole, rel.rolcreatedb, rel.rolcanlogin, rel.rolreplication, rel.rolbypassrls, rel.rolconnlimit FROM pg_authid rel;";
@@ -41,12 +41,12 @@ void authid_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     // 打印行数据
     for (i = 0; i < PQntuples(res); i++)
     {
-        authid = (xk_pg_sysdict_Form_pg_authid)rmalloc0(sizeof(xk_pg_parser_sysdict_pgauthid));
+        authid = (pg_sysdict_Form_pg_authid)rmalloc0(sizeof(pg_parser_sysdict_pgauthid));
         if(NULL == authid)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemset0(authid, 0, '\0', sizeof(xk_pg_parser_sysdict_pgauthid));
+        rmemset0(authid, 0, '\0', sizeof(pg_parser_sysdict_pgauthid));
         j=0;
         sscanf(PQgetvalue(res, i, j++), "%u", &authid->oid);
         strcpy(authid->rolname.data ,PQgetvalue(res, i, j++));
@@ -80,7 +80,7 @@ void authiddata_write(List* authid_list, uint64 *offset, sysdict_header_array* a
     uint64 page_offset = 0;
     ListCell*	cell = NULL;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_authid authid = NULL;
+    pg_sysdict_Form_pg_authid authid = NULL;
 
     array->type = CATALOG_TYPE_AUTHID;
     array->offset = *offset;
@@ -96,9 +96,9 @@ void authiddata_write(List* authid_list, uint64 *offset, sysdict_header_array* a
     }
     foreach(cell, authid_list)
     {
-        authid = (xk_pg_sysdict_Form_pg_authid) lfirst(cell);
+        authid = (pg_sysdict_Form_pg_authid) lfirst(cell);
 
-        if(page_offset + sizeof(xk_pg_parser_sysdict_pgauthid) > FILE_BLK_SIZE)
+        if(page_offset + sizeof(pg_parser_sysdict_pgauthid) > FILE_BLK_SIZE)
         {
             if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
                 elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
@@ -110,8 +110,8 @@ void authiddata_write(List* authid_list, uint64 *offset, sysdict_header_array* a
             *offset += FILE_BLK_SIZE;
             page_offset = 0;
         }
-        rmemcpy1(buffer, page_offset, authid, sizeof(xk_pg_parser_sysdict_pgauthid));
-        page_offset += sizeof(xk_pg_parser_sysdict_pgauthid);
+        rmemcpy1(buffer, page_offset, authid, sizeof(pg_parser_sysdict_pgauthid));
+        page_offset += sizeof(pg_parser_sysdict_pgauthid);
     }
     if (page_offset > 0) {
         if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
@@ -144,7 +144,7 @@ HTAB* authidcache_load(sysdict_header_array* array)
     bool found = false;
     uint64 fileoffset = 0;
     char buffer[FILE_BLK_SIZE];
-    xk_pg_sysdict_Form_pg_authid authid;
+    pg_sysdict_Form_pg_authid authid;
     catalog_authid_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -171,15 +171,15 @@ HTAB* authidcache_load(sysdict_header_array* array)
     {
         uint64 offset = 0;
 
-        while (offset + sizeof(xk_pg_parser_sysdict_pgauthid) < FILE_BLK_SIZE)
+        while (offset + sizeof(pg_parser_sysdict_pgauthid) < FILE_BLK_SIZE)
         {
-            authid = (xk_pg_sysdict_Form_pg_authid)rmalloc1(sizeof(xk_pg_parser_sysdict_pgauthid));
+            authid = (pg_sysdict_Form_pg_authid)rmalloc1(sizeof(pg_parser_sysdict_pgauthid));
             if(NULL == authid)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(authid, 0, '\0', sizeof(xk_pg_parser_sysdict_pgauthid));
-            rmemcpy0(authid, 0, buffer + offset, sizeof(xk_pg_parser_sysdict_pgauthid));
+            rmemset0(authid, 0, '\0', sizeof(pg_parser_sysdict_pgauthid));
+            rmemcpy0(authid, 0, buffer + offset, sizeof(pg_parser_sysdict_pgauthid));
             entry = hash_search(authidhtab, &authid->oid, HASH_ENTER, &found);
             if(found)
             {
@@ -187,7 +187,7 @@ HTAB* authidcache_load(sysdict_header_array* array)
             }
             entry->oid = authid->oid;
             entry->authid = authid;
-            offset += sizeof(xk_pg_parser_sysdict_pgauthid);
+            offset += sizeof(pg_parser_sysdict_pgauthid);
             if (fileoffset + offset == array[CATALOG_TYPE_AUTHID - 1].len)
             {
                 if(osal_file_close(fd))
@@ -215,7 +215,7 @@ void authidcache_write(HTAB* authidcache, uint64 *offset, sysdict_header_array* 
     HASH_SEQ_STATUS status;
     char buffer[FILE_BLK_SIZE];
     catalog_authid_value *entry = NULL;
-    xk_pg_sysdict_Form_pg_authid authid = NULL;
+    pg_sysdict_Form_pg_authid authid = NULL;
 
     array[CATALOG_TYPE_AUTHID - 1].type = CATALOG_TYPE_AUTHID;
     array[CATALOG_TYPE_AUTHID - 1].offset = *offset;
@@ -233,7 +233,7 @@ void authidcache_write(HTAB* authidcache, uint64 *offset, sysdict_header_array* 
     {
         authid = entry->authid;
 
-        if(page_offset + sizeof(xk_pg_parser_sysdict_pgauthid) > FILE_BLK_SIZE)
+        if(page_offset + sizeof(pg_parser_sysdict_pgauthid) > FILE_BLK_SIZE)
         {
             if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
                 elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
@@ -245,8 +245,8 @@ void authidcache_write(HTAB* authidcache, uint64 *offset, sysdict_header_array* 
             *offset += FILE_BLK_SIZE;
             page_offset = 0;
         }
-        rmemcpy1(buffer, page_offset, authid, sizeof(xk_pg_parser_sysdict_pgauthid));
-        page_offset += sizeof(xk_pg_parser_sysdict_pgauthid);
+        rmemcpy1(buffer, page_offset, authid, sizeof(pg_parser_sysdict_pgauthid));
+        page_offset += sizeof(pg_parser_sysdict_pgauthid);
     }
     if (page_offset > 0) {
         if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
@@ -273,10 +273,10 @@ catalogdata* authid_colvalue2authid(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_authid_value* authidvalue = NULL;
-    xk_pg_sysdict_Form_pg_authid pgauthid = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
+    pg_sysdict_Form_pg_authid pgauthid = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
 
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
     catalog_data = (catalogdata*)rmalloc1(sizeof(catalogdata));
@@ -295,12 +295,12 @@ catalogdata* authid_colvalue2authid(void* in_colvalue)
     catalog_data->catalog = authidvalue;
     catalog_data->type = CATALOG_TYPE_AUTHID;
 
-    pgauthid = (xk_pg_sysdict_Form_pg_authid)rmalloc1(sizeof(xk_pg_parser_sysdict_pgauthid));
+    pgauthid = (pg_sysdict_Form_pg_authid)rmalloc1(sizeof(pg_parser_sysdict_pgauthid));
     if(NULL == pgauthid)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgauthid, 0, '\0', sizeof(xk_pg_parser_sysdict_pgauthid));
+    rmemset0(pgauthid, 0, '\0', sizeof(pg_parser_sysdict_pgauthid));
     authidvalue->authid = pgauthid;
 
     /* oid 1 */
@@ -365,12 +365,12 @@ void authid_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalo
             }
         }
         catalogInHash->oid = newcatalog->oid;
-        catalogInHash->authid = (xk_pg_sysdict_Form_pg_authid)rmalloc1(sizeof(xk_pg_parser_sysdict_pgauthid));
+        catalogInHash->authid = (pg_sysdict_Form_pg_authid)rmalloc1(sizeof(pg_parser_sysdict_pgauthid));
         if(NULL == catalogInHash->authid)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemcpy0(catalogInHash->authid, 0, newcatalog->authid, sizeof(xk_pg_parser_sysdict_pgauthid));
+        rmemcpy0(catalogInHash->authid, 0, newcatalog->authid, sizeof(pg_parser_sysdict_pgauthid));
     }
     else if(CATALOG_OP_DELETE == catalogdata->op)
     {
@@ -395,12 +395,12 @@ void authid_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalo
         }
         rfree(catalogInHash->authid);
 
-        catalogInHash->authid = (xk_pg_sysdict_Form_pg_authid)rmalloc1(sizeof(xk_pg_parser_sysdict_pgauthid));
+        catalogInHash->authid = (pg_sysdict_Form_pg_authid)rmalloc1(sizeof(pg_parser_sysdict_pgauthid));
         if(NULL == catalogInHash->authid)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemcpy0(catalogInHash->authid, 0, newcatalog->authid, sizeof(xk_pg_parser_sysdict_pgauthid));
+        rmemcpy0(catalogInHash->authid, 0, newcatalog->authid, sizeof(pg_parser_sysdict_pgauthid));
     }
     else
     {

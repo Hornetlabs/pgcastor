@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Africa_Ceuta[] =
+char* PG_Africa_Ceuta[] =
 {
     (char *)"Rule	Spain	1918	only	-	Apr	15	23:00	1:00	S",
     (char *)"Rule	Spain	1918	1919	-	Oct	 6	24:00s	0	-",

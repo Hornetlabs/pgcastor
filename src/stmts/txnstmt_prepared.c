@@ -1,8 +1,8 @@
 #include "app_incl.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/txn.h"
 #include "stmts/txnstmt.h"
 #include "stmts/txnstmt_prepared.h"
@@ -65,7 +65,7 @@ void txnstmt_prepared_free(void* data)
 
     if (stmtprepared->row)
     {
-        heap_free_trans_result((xk_pg_parser_translog_tbcolbase*)stmtprepared->row);
+        heap_free_trans_result((pg_parser_translog_tbcolbase*)stmtprepared->row);
         
     }
     rfree(stmtprepared);

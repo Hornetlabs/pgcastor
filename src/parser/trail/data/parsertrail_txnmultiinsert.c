@@ -2,8 +2,8 @@
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
 #include "cache/cache_sysidcts.h"
@@ -26,7 +26,7 @@ static void parsertrail_txnmultiinsert2hash(parsertrail*  parsertrail,
     uint16 index                                        = 0;
     int i                                               = 0;
     txnstmt* rstmt                               = NULL;
-    xk_pg_parser_translog_tbcol_nvalues* colnvalues     = NULL;
+    pg_parser_translog_tbcol_nvalues* colnvalues     = NULL;
 
     rstmt = (txnstmt*)txndata->data;
 
@@ -65,7 +65,7 @@ static void parsertrail_txnmultiinsert2hash(parsertrail*  parsertrail,
         }
         elog(RLOG_DEBUG, "part of transaction:%lu", txndata->header.transid);
     }
-    colnvalues = (xk_pg_parser_translog_tbcol_nvalues*)rstmt->stmt;
+    colnvalues = (pg_parser_translog_tbcol_nvalues*)rstmt->stmt;
     parsertrail->lasttxn->stmts = lappend(parsertrail->lasttxn->stmts, rstmt);
     parsertrail->lasttxn->stmtsize += rstmt->len;
     parsertrail->transcache->totalsize += rstmt->len;

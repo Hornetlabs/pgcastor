@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Mideast_Riyadh87[] =
+char* PG_Mideast_Riyadh87[] =
 {
     (char *)"Rule	sol87	1987	only	-	Jan	1	12:03:20s -0:03:20 -",
     (char *)"Rule	sol87	1987	only	-	Jan	2	12:03:50s -0:03:50 -",

@@ -3,8 +3,8 @@
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
 #include "cache/cache_sysidcts.h"
@@ -31,7 +31,7 @@ static bool parsertrail_dbmetadata2hash(parsertrail* parsertrail,
     bool found = false;
     catalog_database_value *dbentry = NULL;
     catalog_datname2oid_value* dbnameentry = NULL;
-    xk_pg_parser_NameData dbname = {{'\0'}};
+    pg_parser_NameData dbname = {{'\0'}};
     HASHCTL hctl = { 0 };
     txn *cur_txn = parsertrail->lasttxn;
     bool add_txn = false;
@@ -60,13 +60,13 @@ static bool parsertrail_dbmetadata2hash(parsertrail* parsertrail,
     {
         /* 添加 */
         dbentry->oid = ffdbmd->oid;
-        dbentry->database = (xk_pg_sysdict_Form_pg_database)rmalloc1(sizeof(xk_pg_parser_sysdict_pgdatabase));
+        dbentry->database = (pg_sysdict_Form_pg_database)rmalloc1(sizeof(pg_parser_sysdict_pgdatabase));
         if(NULL == dbentry->database)
         {
             elog(RLOG_WARNING, "out of memory");
             return false;
         }
-        rmemset0(dbentry->database, 0, '\0', sizeof(xk_pg_parser_sysdict_pgdatabase));
+        rmemset0(dbentry->database, 0, '\0', sizeof(pg_parser_sysdict_pgdatabase));
         dbentry->database->oid = ffdbmd->oid;
         rmemcpy1(dbentry->database->datname.data, 0, ffdbmd->dbname, strlen(ffdbmd->dbname));
     }
@@ -79,7 +79,7 @@ static bool parsertrail_dbmetadata2hash(parsertrail* parsertrail,
     if(NULL == parsertrail->transcache->sysdicts->by_datname2oid)
     {
         rmemset1(&hctl, 0, 0, sizeof(hctl));
-        hctl.keysize = sizeof(xk_pg_parser_NameData);
+        hctl.keysize = sizeof(pg_parser_NameData);
         hctl.entrysize = sizeof(catalog_datname2oid_value);
         parsertrail->transcache->sysdicts->by_datname2oid = hash_create("decodehdbname2oid",
                                                         256,
@@ -120,8 +120,8 @@ static bool parsertrail_dbmetadata2hash(parsertrail* parsertrail,
         catalog_db->type = CATALOG_TYPE_DATABASE;
 
         /* db_value赋值 */
-        db_value->database = rmalloc0(sizeof(xk_pg_parser_sysdict_pgdatabase));
-        rmemset0(db_value->database, 0, 0, sizeof(xk_pg_parser_sysdict_pgdatabase));
+        db_value->database = rmalloc0(sizeof(pg_parser_sysdict_pgdatabase));
+        rmemset0(db_value->database, 0, 0, sizeof(pg_parser_sysdict_pgdatabase));
         db_value->oid = ffdbmd->oid;
 
         /* 

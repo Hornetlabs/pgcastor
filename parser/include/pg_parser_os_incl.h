@@ -1,8 +1,8 @@
 /*
  * 引用的操作系统文件
  * */
-#ifndef XK_PG_PARSER_OS_INCL_H
-#define XK_PG_PARSER_OS_INCL_H
+#ifndef PG_PARSER_OS_INCL_H
+#define PG_PARSER_OS_INCL_H
 
 #include <stdio.h>
 #include <stdint.h>

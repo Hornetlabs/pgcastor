@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Australia_Lord_Howe[] =
+char* PG_Australia_Lord_Howe[] =
 {
     (char *)"Rule	LH	1981	1984	-	Oct	lastSun	2:00	1:00	-",
     (char *)"Rule	LH	1982	1985	-	Mar	Sun>=1	2:00	0	-",

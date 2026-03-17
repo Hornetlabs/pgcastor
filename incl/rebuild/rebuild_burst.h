@@ -46,7 +46,7 @@ typedef struct REBUILD_BURSTROW
     uint8*                              missingmap;             /* missgin列 */
     uint8                               md5[16];
     struct REBUILD_BURSTROW*     relatedrow;             /* update拆分出的关联语句insert  ---> delete, delete ---> insert  */
-    void*                               row;                    /* 原始数据 xk_pg_praser_translog_tbcol_values */
+    void*                               row;                    /* 原始数据 pg_praser_translog_tbcol_values */
 }rebuild_burstrow;
 
 typedef struct REBUILD_BURSTTABLE

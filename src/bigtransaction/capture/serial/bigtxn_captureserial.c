@@ -6,8 +6,8 @@
 #include "utils/hash/hash_search.h"
 #include "threads/threads.h"
 #include "queue/queue.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "storage/file_buffer.h"
 #include "storage/ff_detail.h"
 #include "storage/smgr.h"
@@ -31,7 +31,7 @@
 static char* bigtxn_captureserial_getdbname(void* serial, Oid oid)
 {
     bigtxn_captureserial* cserial = NULL;
-    xk_pg_parser_sysdict_pgdatabase *database = NULL;
+    pg_parser_sysdict_pgdatabase *database = NULL;
 
     cserial = (bigtxn_captureserial*)serial;
 
@@ -118,7 +118,7 @@ static void* bigtxn_captureserial_getatrrs(void* serial, Oid oid)
      * 为了确保准确性, his优先级大于全局缓存, 返回值list用完后需要释放
      */
     bigtxn_captureserial* cserial = NULL;
-    xk_pg_parser_sysdict_pgclass *class = NULL;
+    pg_parser_sysdict_pgclass *class = NULL;
     int index_attrs = 0;
     int natts = 0;
     List *result = NULL;

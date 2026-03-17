@@ -7,10 +7,10 @@
 #include "utils/hash/hash_utils.h"
 #include "utils/string/stringinfo.h"
 #include "misc/misc_stat.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_errnodef.h"
-#include "common/xk_pg_parser_translog.h"
-#include "common/xk_pg_parser_common_utils.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_errnodef.h"
+#include "common/pg_parser_translog.h"
+#include "common/pg_parser_common_utils.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
 #include "cache/cache_sysidcts.h"
@@ -92,9 +92,9 @@ static bool ddl_check_in_dataset(Oid oid, decodingcontext *decodingctx, txn *txn
 
 static char *ddl_get_rolename_by_oid(HTAB *pg_authid, uint32_t oid)
 {
-    xk_pg_sysdict_Form_pg_authid authid = NULL;
+    pg_sysdict_Form_pg_authid authid = NULL;
     char *result = NULL;
-    authid = (xk_pg_sysdict_Form_pg_authid) catalog_get_authid_sysdict(pg_authid,
+    authid = (pg_sysdict_Form_pg_authid) catalog_get_authid_sysdict(pg_authid,
                                                                               NULL,
                                                                               NULL,
                                                                               oid);
@@ -111,12 +111,12 @@ static char *ddl_get_namespace_name_by_oid(decodingcontext *decodingctx,
                                            txn *txn)
 {
     HTAB *pgnsp_htab = decodingctx->trans_cache->sysdicts->by_namespace;
-    xk_pg_parser_sysdict_pgnamespace *nsp = NULL;
+    pg_parser_sysdict_pgnamespace *nsp = NULL;
     List *list_dict_his = txn->sysdictHis;
     List *list_dict = txn->sysdict;
 
     /* 从缓存中查找系统表记录 */
-    nsp = (xk_pg_parser_sysdict_pgnamespace *) catalog_get_namespace_sysdict(pgnsp_htab,
+    nsp = (pg_parser_sysdict_pgnamespace *) catalog_get_namespace_sysdict(pgnsp_htab,
                                                                                     list_dict,
                                                                                     list_dict_his,
                                                                                     nspoid);
@@ -132,11 +132,11 @@ static char *ddl_get_type_name_by_oid_in_sysdict(decodingcontext *decodingctx,
                                            txn *txn)
 {
     HTAB *pgtyp_htab = decodingctx->trans_cache->sysdicts->by_type;
-    xk_pg_parser_sysdict_pgtype *typ = NULL;
+    pg_parser_sysdict_pgtype *typ = NULL;
     List *list_dict_his = txn->sysdictHis;
     List *list_dict = txn->sysdict;
 
-    typ = (xk_pg_parser_sysdict_pgtype *) catalog_get_type_sysdict(pgtyp_htab,
+    typ = (pg_parser_sysdict_pgtype *) catalog_get_type_sysdict(pgtyp_htab,
                                                                           list_dict,
                                                                           list_dict_his,
                                                                           typeoid);
@@ -153,11 +153,11 @@ static char *ddl_get_relname_by_oid(decodingcontext *decodingctx,
                                     txn *txn)
 {
     HTAB *pgclass_htab = decodingctx->trans_cache->sysdicts->by_class;
-    xk_pg_parser_sysdict_pgclass *rel = NULL;
+    pg_parser_sysdict_pgclass *rel = NULL;
     List *list_dict_his = txn->sysdictHis;
     List *list_dict = txn->sysdict;
 
-    rel = (xk_pg_parser_sysdict_pgclass *) catalog_get_class_sysdict(pgclass_htab,
+    rel = (pg_parser_sysdict_pgclass *) catalog_get_class_sysdict(pgclass_htab,
                                                                             list_dict,
                                                                             list_dict_his,
                                                                             oid);
@@ -174,11 +174,11 @@ static uint32_t ddl_get_relnspoid_by_reloid(decodingcontext *decodingctx,
                                     txn *txn)
 {
     HTAB *pgclass_htab = decodingctx->trans_cache->sysdicts->by_class;
-    xk_pg_parser_sysdict_pgclass *rel = NULL;
+    pg_parser_sysdict_pgclass *rel = NULL;
     List *list_dict_his = txn->sysdictHis;
     List *list_dict = txn->sysdict;
 
-    rel = (xk_pg_parser_sysdict_pgclass *) catalog_get_class_sysdict(pgclass_htab,
+    rel = (pg_parser_sysdict_pgclass *) catalog_get_class_sysdict(pgclass_htab,
                                                                             list_dict,
                                                                             list_dict_his,
                                                                             oid);
@@ -196,11 +196,11 @@ static char *ddl_get_attname_by_attrelid_attnum(decodingcontext *decodingctx,
                                                 uint16_t attnum)
 {
     HTAB *pgatt_htab = decodingctx->trans_cache->sysdicts->by_attribute;
-    xk_pg_parser_sysdict_pgattributes *att = NULL;
+    pg_parser_sysdict_pgattributes *att = NULL;
     List *list_dict_his = txn->sysdictHis;
     List *list_dict = txn->sysdict;
 
-    att = (xk_pg_parser_sysdict_pgattributes *)catalog_get_attribute_sysdict(pgatt_htab,
+    att = (pg_parser_sysdict_pgattributes *)catalog_get_attribute_sysdict(pgatt_htab,
                                                                                     list_dict,
                                                                                     list_dict_his,
                                                                                     attrelid,
@@ -215,9 +215,9 @@ static char *ddl_get_attname_by_attrelid_attnum(decodingcontext *decodingctx,
 static char *ddl_get_typename_by_oid(decodingcontext *decodingctx, Oid typoid, txn *txn)
 {
     HTAB *pgtyp_htab = decodingctx->trans_cache->sysdicts->by_type;
-   xk_pg_parser_sysdict_pgtype *typ = NULL;
+   pg_parser_sysdict_pgtype *typ = NULL;
 
-    typ = (xk_pg_parser_sysdict_pgtype *)catalog_get_type_sysdict(pgtyp_htab,
+    typ = (pg_parser_sysdict_pgtype *)catalog_get_type_sysdict(pgtyp_htab,
                                                                          NULL,
                                                                          NULL,
                                                                          typoid);
@@ -231,9 +231,9 @@ static char *ddl_get_typename_by_oid(decodingcontext *decodingctx, Oid typoid, t
 static char *ddl_get_op_name_by_oid(decodingcontext *decodingctx, Oid oid)
 {
     HTAB *pgop_htab = decodingctx->trans_cache->sysdicts->by_operator;
-    xk_pg_parser_sysdict_pgoperator *op = NULL;
+    pg_parser_sysdict_pgoperator *op = NULL;
 
-    op = (xk_pg_parser_sysdict_pgoperator *)catalog_get_operator_sysdict(pgop_htab,
+    op = (pg_parser_sysdict_pgoperator *)catalog_get_operator_sysdict(pgop_htab,
                                                                                 NULL,
                                                                                 NULL,
                                                                                 oid);
@@ -247,9 +247,9 @@ static char *ddl_get_op_name_by_oid(decodingcontext *decodingctx, Oid oid)
 static char *ddl_get_funcname_by_oid(decodingcontext *decodingctx, Oid oid)
 {
     HTAB *pgproc_htab = decodingctx->trans_cache->sysdicts->by_proc;
-    xk_pg_parser_sysdict_pgproc *proc = NULL;
+    pg_parser_sysdict_pgproc *proc = NULL;
 
-    proc = (xk_pg_parser_sysdict_pgproc *)catalog_get_proc_sysdict(pgproc_htab,
+    proc = (pg_parser_sysdict_pgproc *)catalog_get_proc_sysdict(pgproc_htab,
                                                                               NULL,
                                                                               NULL,
                                                                               oid);
@@ -262,7 +262,7 @@ static char *ddl_get_funcname_by_oid(decodingcontext *decodingctx, Oid oid)
 
 static StringInfo ddl_parser_node(decodingcontext *decodingctx,
                                   txn *txn,
-                                  xk_pg_parser_nodetree *node,
+                                  pg_parser_nodetree *node,
                                   Oid relid,
                                   int local)
 {
@@ -273,7 +273,7 @@ static StringInfo ddl_parser_node(decodingcontext *decodingctx,
 
     while (node)
     {
-        if (node->m_node_type == XK_PG_PARSER_NODETYPE_SEPARATOR)
+        if (node->m_node_type == PG_PARSER_NODETYPE_SEPARATOR)
             current_local += 1;
         if (current_local == local)
             location = true;
@@ -287,21 +287,21 @@ static StringInfo ddl_parser_node(decodingcontext *decodingctx,
 
         switch (node->m_node_type)
         {
-            case XK_PG_PARSER_NODETYPE_VAR:
+            case PG_PARSER_NODETYPE_VAR:
             {
-                xk_pg_parser_node_var *node_var = (xk_pg_parser_node_var *)node->m_node;
+                pg_parser_node_var *node_var = (pg_parser_node_var *)node->m_node;
                 temp = ddl_get_attname_by_attrelid_attnum(decodingctx, txn, relid, node_var->m_attno);
                 appendStringInfo(result, "%s", temp);
                 temp = NULL;
                 break;
             }
-            case XK_PG_PARSER_NODETYPE_CONST:
+            case PG_PARSER_NODETYPE_CONST:
             {
-                xk_pg_parser_node_const *node_const = (xk_pg_parser_node_const *)node->m_node;
+                pg_parser_node_const *node_const = (pg_parser_node_const *)node->m_node;
                 if (node_const->m_char_value)
                 {
                     /* 这里是表名 */
-                    if (node_const->m_typid == XK_PG_SYSDICT_REGCLASSOID)
+                    if (node_const->m_typid == PG_SYSDICT_REGCLASSOID)
                     {
                         uint32_t nsp_oid = 0;
                         uint32_t oid = (uint32_t)atoi(node_const->m_char_value);
@@ -323,9 +323,9 @@ static StringInfo ddl_parser_node(decodingcontext *decodingctx,
                     elog(RLOG_ERROR, "can't convert node tree");
                 break;
             }
-            case XK_PG_PARSER_NODETYPE_FUNC:
+            case PG_PARSER_NODETYPE_FUNC:
             {
-                xk_pg_parser_node_func *node_func = (xk_pg_parser_node_func *)node->m_node;
+                pg_parser_node_func *node_func = (pg_parser_node_func *)node->m_node;
                 if (node_func->m_funcname)
                     appendStringInfo(result, "%s", node_func->m_funcname);
                 else
@@ -335,9 +335,9 @@ static StringInfo ddl_parser_node(decodingcontext *decodingctx,
                 }
                 break;
             }
-            case XK_PG_PARSER_NODETYPE_OP:
+            case PG_PARSER_NODETYPE_OP:
             {
-                xk_pg_parser_node_op *node_op = (xk_pg_parser_node_op *)node->m_node;
+                pg_parser_node_op *node_op = (pg_parser_node_op *)node->m_node;
                 if (node_op->m_opname)
                     appendStringInfo(result, "%s", node_op->m_opname);
                 else
@@ -346,19 +346,19 @@ static StringInfo ddl_parser_node(decodingcontext *decodingctx,
                 }
                 break;
             }
-            case XK_PG_PARSER_NODETYPE_CHAR:
+            case PG_PARSER_NODETYPE_CHAR:
             {
                 appendStringInfo(result, "%s", (char*)node->m_node);
                 break;
             }
-            case XK_PG_PARSER_NODETYPE_TYPE:
+            case PG_PARSER_NODETYPE_TYPE:
             {
-                xk_pg_parser_node_type * node_type = (xk_pg_parser_node_type *)node->m_node;
+                pg_parser_node_type * node_type = (pg_parser_node_type *)node->m_node;
                 char *typname = ddl_get_typename_by_oid(decodingctx, node_type->m_typeid, txn);
                 appendStringInfo(result, "%s", typname);
                 break;
             }
-            case XK_PG_PARSER_NODETYPE_SEPARATOR:
+            case PG_PARSER_NODETYPE_SEPARATOR:
                 break;
         }
         node = node->m_next;
@@ -381,11 +381,11 @@ static StringInfo ddl_parser_node(decodingcontext *decodingctx,
 
 
 /* CREATE STMT */
-static xk_pg_parser_translog_ddlstmt *prepare_create_table(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_create_table(decodingcontext *decodingctx,
                                  txn *txn,
-                                 xk_pg_parser_translog_ddlstmt *ddl_result)
+                                 pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_createtable *table = (xk_pg_parser_translog_ddlstmt_createtable *)
+    pg_parser_translog_ddlstmt_createtable *table = (pg_parser_translog_ddlstmt_createtable *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     char *nspname = NULL;
@@ -428,23 +428,23 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(decodingcontext *deco
     stmt->type = TXNSTMT_TYPE_DDL;
 
     appendStringInfo(result, "CREATE ");
-    if (table->m_logtype == XK_PG_PARSER_DDL_TABLE_LOG_TEMP)
+    if (table->m_logtype == PG_PARSER_DDL_TABLE_LOG_TEMP)
         appendStringInfo(result, "TEMP ");
-    else if (table->m_logtype == XK_PG_PARSER_DDL_TABLE_LOG_UNLOGGED)
+    else if (table->m_logtype == PG_PARSER_DDL_TABLE_LOG_UNLOGGED)
         appendStringInfo(result, "UNLOGGED ");
     else
     {
         /* do nothing */
     }
     appendStringInfo(result, "TABLE \"%s\".\"%s\" ", nspname, table->m_tabname);
-    if (table->m_tableflag == XK_PG_PARSER_DDL_TABLE_FLAG_EMPTY)
+    if (table->m_tableflag == PG_PARSER_DDL_TABLE_FLAG_EMPTY)
     {
         appendStringInfo(result, "()");
     }
     else
     {
-        if (table->m_tabletype == XK_PG_PARSER_DDL_TABLE_TYPE_NORMAL
-        || table->m_tabletype == XK_PG_PARSER_DDL_TABLE_TYPE_PARTITION)
+        if (table->m_tabletype == PG_PARSER_DDL_TABLE_TYPE_NORMAL
+        || table->m_tabletype == PG_PARSER_DDL_TABLE_TYPE_PARTITION)
         {
             appendStringInfo(result, "(");
             for (i = 0; i < table->m_colcnt; i ++)
@@ -463,14 +463,14 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(decodingcontext *deco
                 else if ((table->m_cols[i].m_typemod > 0)
                       && (CHECK_TYPE_IS_GEOGRAPHY(typname) || CHECK_TYPE_IS_GEOMETRY(typname)))
                 {
-                    char *typmod = xk_pg_parser_postgis_typmod_out(table->m_cols[i].m_typemod);
+                    char *typmod = pg_parser_postgis_typmod_out(table->m_cols[i].m_typemod);
                     appendStringInfo(result, "\"%s\" %s%s", table->m_cols[i].m_colname, typname, typmod);
                     rfree(typmod);
                 }
                 else
                     appendStringInfo(result, "\"%s\" %s", table->m_cols[i].m_colname, typname);
 
-                if (table->m_cols[i].m_flag & XK_PG_PARSER_DDL_COLUMN_NOTNULL)
+                if (table->m_cols[i].m_flag & PG_PARSER_DDL_COLUMN_NOTNULL)
                     appendStringInfo(result, " NOT NULL");
 
                 if (table->m_cols[i].m_default)
@@ -510,8 +510,8 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(decodingcontext *deco
         }
         appendStringInfo(result, ")");
     }
-    if (table->m_tabletype == XK_PG_PARSER_DDL_TABLE_TYPE_PARTITION_SUB
-     || table->m_tabletype == XK_PG_PARSER_DDL_TABLE_TYPE_PARTITION_BOTH)
+    if (table->m_tabletype == PG_PARSER_DDL_TABLE_TYPE_PARTITION_SUB
+     || table->m_tabletype == PG_PARSER_DDL_TABLE_TYPE_PARTITION_BOTH)
     {
         StringInfo node_str = NULL;
         Oid nsp_oid = InvalidOid;
@@ -530,16 +530,16 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(decodingcontext *deco
         appendStringInfo(result, node_str->data);
         deleteStringInfo(node_str);
     }
-    if (table->m_tabletype == XK_PG_PARSER_DDL_TABLE_TYPE_PARTITION
-     || table->m_tabletype == XK_PG_PARSER_DDL_TABLE_TYPE_PARTITION_BOTH)
+    if (table->m_tabletype == PG_PARSER_DDL_TABLE_TYPE_PARTITION
+     || table->m_tabletype == PG_PARSER_DDL_TABLE_TYPE_PARTITION_BOTH)
     {
         int count = 1;
         appendStringInfo(result, " PARTITION BY ");
-        if (table->m_partitionby->m_partition_type == XK_PG_PARSER_DDL_PARTITION_TABLE_HASH)
+        if (table->m_partitionby->m_partition_type == PG_PARSER_DDL_PARTITION_TABLE_HASH)
             appendStringInfo(result, "HASH ");
-        else if (table->m_partitionby->m_partition_type == XK_PG_PARSER_DDL_PARTITION_TABLE_RANGE)
+        else if (table->m_partitionby->m_partition_type == PG_PARSER_DDL_PARTITION_TABLE_RANGE)
             appendStringInfo(result, "RANGE ");
-        else if (table->m_partitionby->m_partition_type == XK_PG_PARSER_DDL_PARTITION_TABLE_LIST)
+        else if (table->m_partitionby->m_partition_type == PG_PARSER_DDL_PARTITION_TABLE_LIST)
             appendStringInfo(result, "LIST ");
         appendStringInfo(result, "(");
         for (i = 0; i < table->m_partitionby->m_column_num; i++)
@@ -603,8 +603,8 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(decodingcontext *deco
         //txn->stmtsize += 20;
         txn->stmtsize += stmt_owner->len;
         decodingctx->trans_cache->totalsize += stmt_owner->len;
-        temp_stmt->type = XK_PG_PARSER_DDLTYPE_ALTER;
-        temp_stmt->subtype = XK_PG_PARSER_DDLINFO_ALTER_TABLE_OWNER;
+        temp_stmt->type = PG_PARSER_DDLTYPE_ALTER;
+        temp_stmt->subtype = PG_PARSER_DDLINFO_ALTER_TABLE_OWNER;
         temp_stmt->ddlstmt = rstrdup(owner->data);
         stmt_owner->stmt = temp_stmt;
 
@@ -640,8 +640,8 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(decodingcontext *deco
         //txn->stmtsize += 20;
         txn->stmtsize += stmt_ident->len;
         decodingctx->trans_cache->totalsize += stmt_ident->len;
-        temp_stmt->type = XK_PG_PARSER_DDLTYPE_ALTER;
-        temp_stmt->subtype = XK_PG_PARSER_DDLINFO_ALTER_TABLE_REPLICA_IDENTIFITY;
+        temp_stmt->type = PG_PARSER_DDLTYPE_ALTER;
+        temp_stmt->subtype = PG_PARSER_DDLINFO_ALTER_TABLE_REPLICA_IDENTIFITY;
         temp_stmt->ddlstmt = rstrdup(ident->data);
         stmt_ident->stmt = temp_stmt;
 
@@ -651,11 +651,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(decodingcontext *deco
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_create_namespace(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_create_namespace(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_valuebase *schema = (xk_pg_parser_translog_ddlstmt_valuebase *)
+    pg_parser_translog_ddlstmt_valuebase *schema = (pg_parser_translog_ddlstmt_valuebase *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
     txnstmt *stmt = rmalloc0(sizeof(txnstmt));
@@ -706,8 +706,8 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_namespace(decodingcontext *
         //txn->stmtsize += 20;
         txn->stmtsize += stmt_owner->len;
     decodingctx->trans_cache->totalsize += stmt_owner->len;
-        temp_stmt->type = XK_PG_PARSER_DDLTYPE_ALTER;
-        temp_stmt->subtype = XK_PG_PARSER_DDLINFO_ALTER_TABLE_OWNER;
+        temp_stmt->type = PG_PARSER_DDLTYPE_ALTER;
+        temp_stmt->subtype = PG_PARSER_DDLINFO_ALTER_TABLE_OWNER;
         temp_stmt->ddlstmt = rstrdup(owner->data);
         stmt_owner->stmt = temp_stmt;
         deleteStringInfo(owner);
@@ -717,11 +717,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_namespace(decodingcontext *
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_create_index(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_create_index(decodingcontext *decodingctx,
                                  txn *txn,
-                                 xk_pg_parser_translog_ddlstmt *ddl_result)
+                                 pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_index *index = (xk_pg_parser_translog_ddlstmt_index *)
+    pg_parser_translog_ddlstmt_index *index = (pg_parser_translog_ddlstmt_index *)
                                                         ddl_result->m_ddlstmt;
     int i = 0;
     char *relname = NULL;
@@ -754,7 +754,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_index(decodingcontext *deco
         elog(RLOG_ERROR, "unknown index type oid: %u", index->m_indtype);
 
     appendStringInfo(result,  "CREATE");
-    if (index->m_option & XK_PG_PARSER_DDL_INDEX_UNIQUE)
+    if (index->m_option & PG_PARSER_DDL_INDEX_UNIQUE)
         appendStringInfo(result,  " UNIQUE");
 
     appendStringInfo(result,  " INDEX \"%s\" ON \"%s\".\"%s\" USING %s (", index->m_indname, temp_nsp_name, relname, indextype);
@@ -794,11 +794,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_index(decodingcontext *deco
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_create_sequence(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_create_sequence(decodingcontext *decodingctx,
                                     txn *txn,
-                                    xk_pg_parser_translog_ddlstmt *ddl_result)
+                                    pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_sequence *seq = (xk_pg_parser_translog_ddlstmt_sequence *)
+    pg_parser_translog_ddlstmt_sequence *seq = (pg_parser_translog_ddlstmt_sequence *)
                                                    ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
     txnstmt *stmt = rmalloc0(sizeof(txnstmt));
@@ -840,11 +840,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_sequence(decodingcontext *d
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_create_type(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_create_type(decodingcontext *decodingctx,
                                 txn *txn,
-                                xk_pg_parser_translog_ddlstmt *ddl_result)
+                                pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_type *typ = (xk_pg_parser_translog_ddlstmt_type *)
+    pg_parser_translog_ddlstmt_type *typ = (pg_parser_translog_ddlstmt_type *)
                                                ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
     txnstmt *stmt = rmalloc0(sizeof(txnstmt));
@@ -858,7 +858,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_type(decodingcontext *decod
     stmt->type = TXNSTMT_TYPE_DDL;
 
     nspname = ddl_get_namespace_name_by_oid(decodingctx, typ->m_typnspid, txn);
-    if (typ->m_typtype == XK_PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_DOMAIN)
+    if (typ->m_typtype == PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_DOMAIN)
     {
         typname = ddl_get_type_name_by_oid_in_sysdict(decodingctx, *((uint32_t *)typ->m_typptr), txn);
         appendStringInfo(result, "CREATE DOMAIN \"%s\".\"%s\" AS %s;", nspname, typ->m_type_name, typname);
@@ -866,14 +866,14 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_type(decodingcontext *decod
     else
     {
         appendStringInfo(result, "CREATE TYPE \"%s\".\"%s\"", nspname, typ->m_type_name);
-        if (typ->m_typtype == XK_PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_COMPOSITE)
+        if (typ->m_typtype == PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_COMPOSITE)
         {
-            xk_pg_parser_translog_ddlstmt_typcol *typcol = NULL;
+            pg_parser_translog_ddlstmt_typcol *typcol = NULL;
             appendStringInfo(result, " AS ");
             appendStringInfo(result, "(");
             for (i = 0; i < typ->m_typvalcnt; i++)
             {
-                typcol = (xk_pg_parser_translog_ddlstmt_typcol *)(typ->m_typptr);
+                typcol = (pg_parser_translog_ddlstmt_typcol *)(typ->m_typptr);
                 typname = ddl_get_type_name_by_oid_in_sysdict(decodingctx, typcol[i].m_coltypid, txn);
                 appendStringInfo(result, "%s %s", typcol[i].m_colname, typname);
                 if (i < typ->m_typvalcnt - 1)
@@ -881,23 +881,23 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_type(decodingcontext *decod
             }
             appendStringInfo(result, ")");
         }
-        else if(typ->m_typtype == XK_PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_RANGE)
+        else if(typ->m_typtype == PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_RANGE)
         {
-            xk_pg_parser_translog_ddlstmt_typrange *typcol = NULL;
-            typcol = (xk_pg_parser_translog_ddlstmt_typrange *)(typ->m_typptr);
+            pg_parser_translog_ddlstmt_typrange *typcol = NULL;
+            typcol = (pg_parser_translog_ddlstmt_typrange *)(typ->m_typptr);
             typname = ddl_get_type_name_by_oid_in_sysdict(decodingctx, typcol->m_subtype, txn);
             appendStringInfo(result, " AS ");
             appendStringInfo(result, "RANGE (");
             appendStringInfo(result, "SUBTYPE = %s)", typname);
         }
-        else if(typ->m_typtype == XK_PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_ENUM)
+        else if(typ->m_typtype == PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_ENUM)
         {
-            xk_pg_parser_translog_ddlstmt_valuebase *typcol = NULL;
+            pg_parser_translog_ddlstmt_valuebase *typcol = NULL;
             appendStringInfo(result, " AS ");
             appendStringInfo(result, "ENUM (");
             for (i = 0; i < typ->m_typvalcnt; i++)
             {
-                typcol = (xk_pg_parser_translog_ddlstmt_valuebase *)(typ->m_typptr);
+                typcol = (pg_parser_translog_ddlstmt_valuebase *)(typ->m_typptr);
                 appendStringInfo(result, "'%s'", typcol[i].m_value);
                 if (i < typ->m_typvalcnt - 1)
                     appendStringInfo(result, ", ");
@@ -947,8 +947,8 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_type(decodingcontext *decod
         //txn->stmtsize += 20;
         txn->stmtsize += stmt_owner->len;
     decodingctx->trans_cache->totalsize += stmt_owner->len;
-        temp_stmt->type = XK_PG_PARSER_DDLTYPE_ALTER;
-        temp_stmt->subtype = XK_PG_PARSER_DDLINFO_ALTER_TABLE_OWNER;
+        temp_stmt->type = PG_PARSER_DDLTYPE_ALTER;
+        temp_stmt->subtype = PG_PARSER_DDLINFO_ALTER_TABLE_OWNER;
         temp_stmt->ddlstmt = rstrdup(owner->data);
         stmt_owner->stmt = temp_stmt;
         deleteStringInfo(owner);
@@ -957,11 +957,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_type(decodingcontext *decod
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_drop_namespace(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_drop_namespace(decodingcontext *decodingctx,
                                    txn *txn,
-                                   xk_pg_parser_translog_ddlstmt *ddl_result)
+                                   pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_valuebase *schema = (xk_pg_parser_translog_ddlstmt_valuebase *)
+    pg_parser_translog_ddlstmt_valuebase *schema = (pg_parser_translog_ddlstmt_valuebase *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
     txnstmt *stmt = rmalloc0(sizeof(txnstmt));
@@ -990,11 +990,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_namespace(decodingcontext *de
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_drop_table(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_drop_table(decodingcontext *decodingctx,
                                txn *txn,
-                               xk_pg_parser_translog_ddlstmt *ddl_result)
+                               pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_drop_base *table = (xk_pg_parser_translog_ddlstmt_drop_base *)
+    pg_parser_translog_ddlstmt_drop_base *table = (pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1033,11 +1033,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_table(decodingcontext *decodi
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_drop_index(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_drop_index(decodingcontext *decodingctx,
                                txn *txn,
-                               xk_pg_parser_translog_ddlstmt *ddl_result)
+                               pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_drop_base *index = (xk_pg_parser_translog_ddlstmt_drop_base *)
+    pg_parser_translog_ddlstmt_drop_base *index = (pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1075,11 +1075,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_index(decodingcontext *decodi
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_drop_sequence(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_drop_sequence(decodingcontext *decodingctx,
                                   txn *txn,
-                                  xk_pg_parser_translog_ddlstmt *ddl_result)
+                                  pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_drop_base *seq = (xk_pg_parser_translog_ddlstmt_drop_base *)
+    pg_parser_translog_ddlstmt_drop_base *seq = (pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
     txnstmt *stmt = rmalloc0(sizeof(txnstmt));
@@ -1109,11 +1109,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_sequence(decodingcontext *dec
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_drop_type(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_drop_type(decodingcontext *decodingctx,
                               txn *txn,
-                              xk_pg_parser_translog_ddlstmt *ddl_result)
+                              pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_drop_base *typ = (xk_pg_parser_translog_ddlstmt_drop_base *)
+    pg_parser_translog_ddlstmt_drop_base *typ = (pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
     txnstmt *stmt = rmalloc0(sizeof(txnstmt));
@@ -1143,11 +1143,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_type(decodingcontext *decodin
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename_column(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_rename_column(decodingcontext *decodingctx,
                                               txn *txn,
-                                              xk_pg_parser_translog_ddlstmt *ddl_result)
+                                              pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_altercolumn *rename = (xk_pg_parser_translog_ddlstmt_altercolumn *)
+    pg_parser_translog_ddlstmt_altercolumn *rename = (pg_parser_translog_ddlstmt_altercolumn *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1192,11 +1192,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename_column(decoding
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_null_set(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_null_set(decodingcontext *decodingctx,
                                                       txn *txn,
-                                                      xk_pg_parser_translog_ddlstmt *ddl_result)
+                                                      pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_altercolumn *alter = (xk_pg_parser_translog_ddlstmt_altercolumn *)
+    pg_parser_translog_ddlstmt_altercolumn *alter = (pg_parser_translog_ddlstmt_altercolumn *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1245,11 +1245,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_null_set(
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_type(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_type(decodingcontext *decodingctx,
                                                   txn *txn,
-                                                  xk_pg_parser_translog_ddlstmt *ddl_result)
+                                                  pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_altercolumn *alter = (xk_pg_parser_translog_ddlstmt_altercolumn *)
+    pg_parser_translog_ddlstmt_altercolumn *alter = (pg_parser_translog_ddlstmt_altercolumn *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1289,7 +1289,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_type(deco
     else if ((alter->m_typemod > 0)
           && (CHECK_TYPE_IS_GEOGRAPHY(typname) || CHECK_TYPE_IS_GEOMETRY(typname)))
     {
-        char *typmod = xk_pg_parser_postgis_typmod_out(alter->m_typemod);
+        char *typmod = pg_parser_postgis_typmod_out(alter->m_typemod);
         appendStringInfo(result, "%s", typmod);
         rfree(typmod);
     }
@@ -1311,11 +1311,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_type(deco
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_default(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_default(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_default *alter = (xk_pg_parser_translog_ddlstmt_default *)
+    pg_parser_translog_ddlstmt_default *alter = (pg_parser_translog_ddlstmt_default *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1361,11 +1361,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_defa
     txn->stmts = lappend(txn->stmts, (void*)stmt);
     return (ddl_result);
 }
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_default(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_default(decodingcontext *decodingctx,
                                                      txn *txn,
-                                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_default *alter = (xk_pg_parser_translog_ddlstmt_default *)
+    pg_parser_translog_ddlstmt_default *alter = (pg_parser_translog_ddlstmt_default *)
                                                         ddl_result->m_ddlstmt;
     StringInfo node = NULL;
     StringInfo result = NULL;
@@ -1416,11 +1416,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_default(d
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_column(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_add_column(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_addcolumn *add = (xk_pg_parser_translog_ddlstmt_addcolumn *)
+    pg_parser_translog_ddlstmt_addcolumn *add = (pg_parser_translog_ddlstmt_addcolumn *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1458,27 +1458,27 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_column(decodingcon
     else if ((add->m_addcolumn->m_typemod > 0)
           && (CHECK_TYPE_IS_GEOGRAPHY(typname) || CHECK_TYPE_IS_GEOMETRY(typname)))
     {
-        char *typmod = xk_pg_parser_postgis_typmod_out(add->m_addcolumn->m_typemod);
+        char *typmod = pg_parser_postgis_typmod_out(add->m_addcolumn->m_typemod);
         appendStringInfo(result, "%s", typmod);
         rfree(typmod);
     }
     else
         appendStringInfo(result, " ");
 
-    if (add->m_addcolumn->m_flag & XK_PG_PARSER_DDL_COLUMN_NOTNULL)
+    if (add->m_addcolumn->m_flag & PG_PARSER_DDL_COLUMN_NOTNULL)
         appendStringInfo(result, "NOT NULL");
 
     if (ddl_result->m_next
-     && ddl_result->m_next->m_base.m_ddlinfo == XK_PG_PARSER_DDLINFO_ALTER_COLUMN_DEFAULT
-     && ddl_result->m_next->m_base.m_ddltype == XK_PG_PARSER_DDLTYPE_ALTER)
+     && ddl_result->m_next->m_base.m_ddlinfo == PG_PARSER_DDLINFO_ALTER_COLUMN_DEFAULT
+     && ddl_result->m_next->m_base.m_ddltype == PG_PARSER_DDLTYPE_ALTER)
     {
-        xk_pg_parser_translog_ddlstmt *next_ddl = NULL;
+        pg_parser_translog_ddlstmt *next_ddl = NULL;
         uint32_t nspoid = 0;
         char *relname = NULL;
-        xk_pg_parser_translog_ddlstmt_default *alter = NULL;
+        pg_parser_translog_ddlstmt_default *alter = NULL;
 
         next_ddl = ddl_result->m_next;
-        alter = (xk_pg_parser_translog_ddlstmt_default *) next_ddl->m_ddlstmt;
+        alter = (pg_parser_translog_ddlstmt_default *) next_ddl->m_ddlstmt;
         if (alter->m_att_default)
         {
             relname = ddl_get_relname_by_oid(decodingctx, alter->m_relid, txn);
@@ -1512,11 +1512,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_column(decodingcon
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_rename(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_altertable *table = (xk_pg_parser_translog_ddlstmt_altertable *)
+    pg_parser_translog_ddlstmt_altertable *table = (pg_parser_translog_ddlstmt_altertable *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1555,11 +1555,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename(decodingcontext
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_column(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_column(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_altercolumn *drop = (xk_pg_parser_translog_ddlstmt_altercolumn *)
+    pg_parser_translog_ddlstmt_altercolumn *drop = (pg_parser_translog_ddlstmt_altercolumn *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1604,11 +1604,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_colu
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_tbconstraint *table = (xk_pg_parser_translog_ddlstmt_tbconstraint *)
+    pg_parser_translog_ddlstmt_tbconstraint *table = (pg_parser_translog_ddlstmt_tbconstraint *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1634,10 +1634,10 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(decodin
     nspname = ddl_get_namespace_name_by_oid(decodingctx, table->m_consnspoid, txn);
 
     appendStringInfo(result, "ALTER TABLE \"%s\".\"%s\" ADD CONSTRAINT \"%s\" ", nspname, relname, table->m_consname);
-    if (table->m_type == XK_PG_PARSER_DDL_CONSTRAINT_PRIMARYKEY)
+    if (table->m_type == PG_PARSER_DDL_CONSTRAINT_PRIMARYKEY)
     {
-        xk_pg_parser_translog_ddlstmt_tbconstraint_key *pkey = 
-        (xk_pg_parser_translog_ddlstmt_tbconstraint_key *)table->m_constraint_stmt;
+        pg_parser_translog_ddlstmt_tbconstraint_key *pkey = 
+        (pg_parser_translog_ddlstmt_tbconstraint_key *)table->m_constraint_stmt;
 
         appendStringInfo(result, "PRIMARY KEY (");
         for (i = 0; i < pkey->m_colcnt; i++)
@@ -1648,10 +1648,10 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(decodin
         }
         appendStringInfo(result, ");");
     }
-    else if (table->m_type == XK_PG_PARSER_DDL_CONSTRAINT_UNIQUE)
+    else if (table->m_type == PG_PARSER_DDL_CONSTRAINT_UNIQUE)
     {
-        xk_pg_parser_translog_ddlstmt_tbconstraint_key *ukey = 
-        (xk_pg_parser_translog_ddlstmt_tbconstraint_key *)table->m_constraint_stmt;
+        pg_parser_translog_ddlstmt_tbconstraint_key *ukey = 
+        (pg_parser_translog_ddlstmt_tbconstraint_key *)table->m_constraint_stmt;
 
         appendStringInfo(result, "UNIQUE (");
         for (i = 0; i < ukey->m_colcnt; i++)
@@ -1662,10 +1662,10 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(decodin
         }
         appendStringInfo(result, ");");
     }
-    else if (table->m_type == XK_PG_PARSER_DDL_CONSTRAINT_FOREIGNKEY)
+    else if (table->m_type == PG_PARSER_DDL_CONSTRAINT_FOREIGNKEY)
     {
-        xk_pg_parser_translog_ddlstmt_tbconstraint_fkey *fkey = 
-        (xk_pg_parser_translog_ddlstmt_tbconstraint_fkey *)table->m_constraint_stmt;
+        pg_parser_translog_ddlstmt_tbconstraint_fkey *fkey = 
+        (pg_parser_translog_ddlstmt_tbconstraint_fkey *)table->m_constraint_stmt;
         uint32_t nspoid = 0;
 
         appendStringInfo(result, "FOREIGN KEY (");
@@ -1697,11 +1697,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(decodin
         }
         appendStringInfo(result, ");");
     }
-    else if (table->m_type == XK_PG_PARSER_DDL_CONSTRAINT_CHECK)
+    else if (table->m_type == PG_PARSER_DDL_CONSTRAINT_CHECK)
     {
         StringInfo node = NULL;
-        xk_pg_parser_translog_ddlstmt_tbconstraint_check *check = 
-        (xk_pg_parser_translog_ddlstmt_tbconstraint_check *)table->m_constraint_stmt;
+        pg_parser_translog_ddlstmt_tbconstraint_check *check = 
+        (pg_parser_translog_ddlstmt_tbconstraint_check *)table->m_constraint_stmt;
 
         appendStringInfo(result, "CHECK (");
         node = ddl_parser_node(decodingctx, txn, check->m_check_node, table->m_relid, 0);
@@ -1725,11 +1725,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(decodin
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_drop_constraint(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_drop_constraint(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_drop_constraint *cons = (xk_pg_parser_translog_ddlstmt_drop_constraint *)
+    pg_parser_translog_ddlstmt_drop_constraint *cons = (pg_parser_translog_ddlstmt_drop_constraint *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1775,11 +1775,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_drop_constraint(decodi
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_alter_schema(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_alter_schema(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_altertable *table = (xk_pg_parser_translog_ddlstmt_altertable *)
+    pg_parser_translog_ddlstmt_altertable *table = (pg_parser_translog_ddlstmt_altertable *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1822,11 +1822,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_alter_sch
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_logged(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_set_logged(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_setlog *setlog = (xk_pg_parser_translog_ddlstmt_setlog *)
+    pg_parser_translog_ddlstmt_setlog *setlog = (pg_parser_translog_ddlstmt_setlog *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1866,11 +1866,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_logged(decodingcon
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_unlogged(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_alter_table_set_unlogged(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_setlog *setlog = (xk_pg_parser_translog_ddlstmt_setlog *)
+    pg_parser_translog_ddlstmt_setlog *setlog = (pg_parser_translog_ddlstmt_setlog *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1909,11 +1909,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_unlogged(decodingc
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_truncate_table(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_truncate_table(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_drop_base *table = (xk_pg_parser_translog_ddlstmt_drop_base *)
+    pg_parser_translog_ddlstmt_drop_base *table = (pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -1957,11 +1957,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_truncate_table(decodingcontext *de
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_reindex(decodingcontext *decodingctx,
+static pg_parser_translog_ddlstmt *prepare_reindex(decodingcontext *decodingctx,
                                      txn *txn,
-                                     xk_pg_parser_translog_ddlstmt *ddl_result)
+                                     pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt_drop_base *index = (xk_pg_parser_translog_ddlstmt_drop_base *)
+    pg_parser_translog_ddlstmt_drop_base *index = (pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
     txnstmt *stmt = NULL;
@@ -2007,130 +2007,130 @@ static xk_pg_parser_translog_ddlstmt *prepare_reindex(decodingcontext *decodingc
 
 static void ddl_stmt2sql(decodingcontext *decodingctx,
                          txn *txn,
-                         xk_pg_parser_translog_ddlstmt *ddl_result)
+                         pg_parser_translog_ddlstmt *ddl_result)
 {
-    xk_pg_parser_translog_ddlstmt *current_ddl = ddl_result;
+    pg_parser_translog_ddlstmt *current_ddl = ddl_result;
 
     while (current_ddl)
     {
         elog(RLOG_DEBUG, "trans ddl, txn: %lu", txn->xid);
-        if (current_ddl->m_base.m_ddltype == XK_PG_PARSER_DDLTYPE_CREATE)
+        if (current_ddl->m_base.m_ddltype == PG_PARSER_DDLTYPE_CREATE)
         {
             switch (current_ddl->m_base.m_ddlinfo)
             {
-                case XK_PG_PARSER_DDLINFO_CREATE_TABLE:
+                case PG_PARSER_DDLINFO_CREATE_TABLE:
                     current_ddl = prepare_create_table(decodingctx, txn, current_ddl);
                     break;
 
-                 case XK_PG_PARSER_DDLINFO_CREATE_NAMESPACE:
+                 case PG_PARSER_DDLINFO_CREATE_NAMESPACE:
                     current_ddl = prepare_create_namespace(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_CREATE_INDEX:
+                case PG_PARSER_DDLINFO_CREATE_INDEX:
                     current_ddl = prepare_create_index(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_CREATE_SEQUENCE:
+                case PG_PARSER_DDLINFO_CREATE_SEQUENCE:
                     current_ddl = prepare_create_sequence(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_CREATE_TYPE:
+                case PG_PARSER_DDLINFO_CREATE_TYPE:
                     current_ddl = prepare_create_type(decodingctx, txn, current_ddl);
                     break;
             }
         }
-        else if (current_ddl->m_base.m_ddltype == XK_PG_PARSER_DDLTYPE_DROP)
+        else if (current_ddl->m_base.m_ddltype == PG_PARSER_DDLTYPE_DROP)
         {
             switch (current_ddl->m_base.m_ddlinfo)
             {
-                case XK_PG_PARSER_DDLINFO_DROP_NAMESPACE:
+                case PG_PARSER_DDLINFO_DROP_NAMESPACE:
                     current_ddl = prepare_drop_namespace(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_DROP_TABLE:
+                case PG_PARSER_DDLINFO_DROP_TABLE:
                     current_ddl = prepare_drop_table(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_DROP_INDEX:
+                case PG_PARSER_DDLINFO_DROP_INDEX:
                     current_ddl = prepare_drop_index(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_DROP_SEQUENCE:
+                case PG_PARSER_DDLINFO_DROP_SEQUENCE:
                     current_ddl = prepare_drop_sequence(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_DROP_TYPE:
+                case PG_PARSER_DDLINFO_DROP_TYPE:
                     current_ddl = prepare_drop_type(decodingctx, txn, current_ddl);
                     break;
             }
         }
-        else if (current_ddl->m_base.m_ddltype == XK_PG_PARSER_DDLTYPE_ALTER)
+        else if (current_ddl->m_base.m_ddltype == PG_PARSER_DDLTYPE_ALTER)
         {
             switch (current_ddl->m_base.m_ddlinfo)
             {
-                case XK_PG_PARSER_DDLINFO_ALTER_COLUMN_RENAME:
+                case PG_PARSER_DDLINFO_ALTER_COLUMN_RENAME:
                     current_ddl = prepare_alter_table_rename_column(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_COLUMN_NOTNULL:
-                case XK_PG_PARSER_DDLINFO_ALTER_COLUMN_NULL:
+                case PG_PARSER_DDLINFO_ALTER_COLUMN_NOTNULL:
+                case PG_PARSER_DDLINFO_ALTER_COLUMN_NULL:
                     current_ddl = prepare_alter_table_alter_column_null_set(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_COLUMN_TYPE:
+                case PG_PARSER_DDLINFO_ALTER_COLUMN_TYPE:
                     current_ddl = prepare_alter_table_alter_column_type(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_COLUMN_DEFAULT:
+                case PG_PARSER_DDLINFO_ALTER_COLUMN_DEFAULT:
                     current_ddl = prepare_alter_table_alter_column_default(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_COLUMN_DROP_DEFAULT:
+                case PG_PARSER_DDLINFO_ALTER_COLUMN_DROP_DEFAULT:
                     current_ddl = prepare_alter_table_alter_column_drop_default(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_TABLE_ADD_COLUMN:
+                case PG_PARSER_DDLINFO_ALTER_TABLE_ADD_COLUMN:
                     current_ddl = prepare_alter_table_add_column(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_TABLE_RENAME:
+                case PG_PARSER_DDLINFO_ALTER_TABLE_RENAME:
                     current_ddl = prepare_alter_table_rename(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_TABLE_DROP_COLUMN:
+                case PG_PARSER_DDLINFO_ALTER_TABLE_DROP_COLUMN:
                     current_ddl = prepare_alter_table_alter_column_drop_column(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_TABLE_ADD_CONSTRAINT:
+                case PG_PARSER_DDLINFO_ALTER_TABLE_ADD_CONSTRAINT:
                     current_ddl = prepare_alter_table_add_constraint(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_TABLE_DROP_CONSTRAINT:
+                case PG_PARSER_DDLINFO_ALTER_TABLE_DROP_CONSTRAINT:
                     current_ddl = prepare_alter_table_drop_constraint(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_TABLE_NAMESPACE:
+                case PG_PARSER_DDLINFO_ALTER_TABLE_NAMESPACE:
                     current_ddl = prepare_alter_table_alter_column_alter_schema(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_TABLE_SET_LOGGED:
+                case PG_PARSER_DDLINFO_ALTER_TABLE_SET_LOGGED:
                     current_ddl = prepare_alter_table_set_logged(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_ALTER_TABLE_SET_UNLOGGED:
+                case PG_PARSER_DDLINFO_ALTER_TABLE_SET_UNLOGGED:
                     current_ddl = prepare_alter_table_set_unlogged(decodingctx, txn, current_ddl);
                     break;
             }
         }
-        else if (current_ddl->m_base.m_ddltype == XK_PG_PARSER_DDLTYPE_SPECIAL)
+        else if (current_ddl->m_base.m_ddltype == PG_PARSER_DDLTYPE_SPECIAL)
         {
             switch (current_ddl->m_base.m_ddlinfo)
             {
-                case XK_PG_PARSER_DDLINFO_TRUNCATE:
+                case PG_PARSER_DDLINFO_TRUNCATE:
                     current_ddl = prepare_truncate_table(decodingctx, txn, current_ddl);
                     break;
 
-                case XK_PG_PARSER_DDLINFO_REINDEX:
+                case PG_PARSER_DDLINFO_REINDEX:
                     current_ddl = prepare_reindex(decodingctx, txn, current_ddl);
                     break;
             }
@@ -2143,11 +2143,11 @@ static void ddl_stmt2sql(decodingcontext *decodingctx,
 void dml2ddl(decodingcontext* decodingctx, txn *txn)
 {
 
-    xk_pg_parser_translog_systb2ddl *ddl_data = NULL;
-    xk_pg_parser_translog_convertinfo *convert_info = NULL;
-    xk_pg_parser_translog_ddlstmt *ddl_result = NULL;
-    xk_pg_parser_translog_systb2dll_record *ddl_record_head = NULL;
-    xk_pg_parser_translog_systb2dll_record *ddl_record_tail = NULL;
+    pg_parser_translog_systb2ddl *ddl_data = NULL;
+    pg_parser_translog_convertinfo *convert_info = NULL;
+    pg_parser_translog_ddlstmt *ddl_result = NULL;
+    pg_parser_translog_systb2dll_record *ddl_record_head = NULL;
+    pg_parser_translog_systb2dll_record *ddl_record_tail = NULL;
     ListCell *cell = NULL;
     int error_num = 0;
 
@@ -2157,11 +2157,11 @@ void dml2ddl(decodingcontext* decodingctx, txn *txn)
     if (!txn->sysdict)
         return;
 
-    convert_info = rmalloc0(sizeof(xk_pg_parser_translog_convertinfo));
-    rmemset0(convert_info, 0, 0, sizeof(xk_pg_parser_translog_convertinfo));
+    convert_info = rmalloc0(sizeof(pg_parser_translog_convertinfo));
+    rmemset0(convert_info, 0, 0, sizeof(pg_parser_translog_convertinfo));
 
-    ddl_data = rmalloc0(sizeof(xk_pg_parser_translog_systb2ddl));
-    rmemset0(ddl_data, 0, 0, sizeof(xk_pg_parser_translog_systb2ddl));
+    ddl_data = rmalloc0(sizeof(pg_parser_translog_systb2ddl));
+    rmemset0(ddl_data, 0, 0, sizeof(pg_parser_translog_systb2ddl));
 
     convert_info->m_dbcharset = decodingctx->orgdbcharset;
     convert_info->m_tartgetcharset = decodingctx->tgtdbcharset;
@@ -2176,11 +2176,11 @@ void dml2ddl(decodingcontext* decodingctx, txn *txn)
 
     foreach(cell, txn->sysdict)
     {
-        xk_pg_parser_translog_systb2dll_record *ddl_record_current = NULL;
+        pg_parser_translog_systb2dll_record *ddl_record_current = NULL;
         txn_sysdict *dict = lfirst(cell);
 
-        ddl_record_current = rmalloc0(sizeof(xk_pg_parser_translog_systb2dll_record));
-        rmemset0(ddl_record_current, 0, 0, sizeof(xk_pg_parser_translog_systb2dll_record));
+        ddl_record_current = rmalloc0(sizeof(pg_parser_translog_systb2dll_record));
+        rmemset0(ddl_record_current, 0, 0, sizeof(pg_parser_translog_systb2dll_record));
 
         ddl_record_current->m_record = dict->colvalues;
         if (!ddl_record_tail)
@@ -2193,12 +2193,12 @@ void dml2ddl(decodingcontext* decodingctx, txn *txn)
     }
     ddl_data->m_record = ddl_record_head;
 
-    if (!xk_pg_parser_trans_DDLtrans(ddl_data, &ddl_result, &error_num))
+    if (!pg_parser_trans_DDLtrans(ddl_data, &ddl_result, &error_num))
     {
-        elog(RLOG_ERROR, "error in trans ddl, errcode: %x msg: %s", error_num, xk_pg_parser_errno_getErrInfo(error_num));
+        elog(RLOG_ERROR, "error in trans ddl, errcode: %x msg: %s", error_num, pg_parser_errno_getErrInfo(error_num));
     }
     ddl_stmt2sql(decodingctx, txn, ddl_result);
-    xk_pg_parser_trans_ddl_free(ddl_data, ddl_result);
+    pg_parser_trans_ddl_free(ddl_data, ddl_result);
 }
 
 void heap_ddl_assemble_truncate(decodingcontext* decodingctx,
@@ -2229,8 +2229,8 @@ void heap_ddl_assemble_truncate(decodingcontext* decodingctx,
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
-    dstmt->type = XK_PG_PARSER_DDLTYPE_SPECIAL;
-    dstmt->subtype = XK_PG_PARSER_DDLINFO_TRUNCATE;
+    dstmt->type = PG_PARSER_DDLTYPE_SPECIAL;
+    dstmt->subtype = PG_PARSER_DDLINFO_TRUNCATE;
     dstmt->ddlstmt = rstrdup(truncate_stmt->data);
     stmt->stmt = dstmt;
     deleteStringInfo(truncate_stmt);

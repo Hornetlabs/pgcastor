@@ -6,8 +6,8 @@
 #include "utils/guc/guc.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/conn/conn.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "cache/cache_sysidcts.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -21,13 +21,13 @@ void enum_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	HASHCTL hash_ctl;
 	bool found = false;
 	PGresult *res = NULL;
-	xk_pg_sysdict_Form_pg_enum enum_obj;
+	pg_sysdict_Form_pg_enum enum_obj;
 	catalog_enum_value *entry = NULL;
 	const char *query = "SELECT rel.oid,rel.enumtypid, rel.enumlabel FROM pg_enum rel;";
 
 	rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
 	hash_ctl.keysize = sizeof(Oid);
-	hash_ctl.entrysize = sizeof(xk_pg_parser_sysdict_pgenum);
+	hash_ctl.entrysize = sizeof(pg_parser_sysdict_pgenum);
 	sysdicts->by_enum = hash_create("catalog_enum_value", 2048, &hash_ctl,
 									HASH_ELEM | HASH_BLOBS);
 
@@ -40,12 +40,12 @@ void enum_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 	// 打印行数据
 	for (i = 0; i < PQntuples(res); i++) 
 	{
-		enum_obj = (xk_pg_sysdict_Form_pg_enum)rmalloc0(sizeof(xk_pg_parser_sysdict_pgenum));
+		enum_obj = (pg_sysdict_Form_pg_enum)rmalloc0(sizeof(pg_parser_sysdict_pgenum));
 		if(NULL == enum_obj)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemset0(enum_obj, 0, '\0', sizeof(xk_pg_parser_sysdict_pgenum));
+		rmemset0(enum_obj, 0, '\0', sizeof(pg_parser_sysdict_pgenum));
 		j=0;
 		sscanf(PQgetvalue(res, i, j++), "%u", &enum_obj->oid);
 		sscanf(PQgetvalue(res, i, j++), "%u", &enum_obj->enumtypid);
@@ -72,7 +72,7 @@ void enumdata_write(List* enum_list, uint64 *offset, sysdict_header_array* array
 	uint64 page_offset = 0;
 	ListCell*	cell = NULL;
 	char buffer[FILE_BLK_SIZE];
-	xk_pg_sysdict_Form_pg_enum enum_data = NULL;
+	pg_sysdict_Form_pg_enum enum_data = NULL;
 	
 	array->type = CATALOG_TYPE_ENUM;
 	array->offset = *offset;
@@ -89,9 +89,9 @@ void enumdata_write(List* enum_list, uint64 *offset, sysdict_header_array* array
 
 	foreach(cell, enum_list)
 	{
-		enum_data = (xk_pg_sysdict_Form_pg_enum) lfirst(cell);
+		enum_data = (pg_sysdict_Form_pg_enum) lfirst(cell);
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgenum) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgenum) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
@@ -103,8 +103,8 @@ void enumdata_write(List* enum_list, uint64 *offset, sysdict_header_array* array
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, enum_data, sizeof(xk_pg_parser_sysdict_pgenum));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgenum);
+		rmemcpy1(buffer, page_offset, enum_data, sizeof(pg_parser_sysdict_pgenum));
+		page_offset += sizeof(pg_parser_sysdict_pgenum);
 	}
 
 	if (page_offset > 0) {
@@ -140,7 +140,7 @@ HTAB* enumcache_load(sysdict_header_array* array)
 	bool found = false;
 	uint64 fileoffset = 0;
 	char buffer[FILE_BLK_SIZE];
-	xk_pg_sysdict_Form_pg_enum rippleenum;
+	pg_sysdict_Form_pg_enum rippleenum;
 	catalog_enum_value *entry = NULL;
 
 	rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -166,15 +166,15 @@ HTAB* enumcache_load(sysdict_header_array* array)
 	{
 		uint64 offset = 0;
 
-		while (offset + sizeof(xk_pg_parser_sysdict_pgclass) < FILE_BLK_SIZE)
+		while (offset + sizeof(pg_parser_sysdict_pgclass) < FILE_BLK_SIZE)
 		{
-			rippleenum = (xk_pg_sysdict_Form_pg_enum)rmalloc1(sizeof(xk_pg_parser_sysdict_pgenum));
+			rippleenum = (pg_sysdict_Form_pg_enum)rmalloc1(sizeof(pg_parser_sysdict_pgenum));
 			if(NULL == rippleenum)
 			{
 				elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 			}
-			rmemset0(rippleenum, 0, '\0', sizeof(xk_pg_parser_sysdict_pgenum));
-			rmemcpy0(rippleenum, 0, buffer + offset, sizeof(xk_pg_parser_sysdict_pgenum));
+			rmemset0(rippleenum, 0, '\0', sizeof(pg_parser_sysdict_pgenum));
+			rmemcpy0(rippleenum, 0, buffer + offset, sizeof(pg_parser_sysdict_pgenum));
 			entry = (catalog_enum_value *)hash_search(enumhtab, &rippleenum->enumtypid, HASH_ENTER, &found);
 			if (!found)
 			{
@@ -182,7 +182,7 @@ HTAB* enumcache_load(sysdict_header_array* array)
 			}
 			entry->enumtypid = rippleenum->enumtypid;
 			entry->enums = lappend(entry->enums, rippleenum);
-			offset += sizeof(xk_pg_parser_sysdict_pgenum);
+			offset += sizeof(pg_parser_sysdict_pgenum);
 			if (fileoffset + offset == array[CATALOG_TYPE_ENUM - 1].len)
 			{
 				if(osal_file_close(fd))
@@ -208,9 +208,9 @@ catalogdata* enum_colvalue2enum(void* in_colvalue)
 {
     catalogdata* catalog_data = NULL;
     catalog_enum_value* enumvalue = NULL;
-    xk_pg_sysdict_Form_pg_enum pgenum = NULL;
-    xk_pg_parser_translog_tbcol_value* colvalue = NULL;
-    colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
+    pg_sysdict_Form_pg_enum pgenum = NULL;
+    pg_parser_translog_tbcol_value* colvalue = NULL;
+    colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
     /* 值转换 */
     catalog_data = (catalogdata*)rmalloc1(sizeof(catalogdata));
     if(NULL == catalog_data)
@@ -226,12 +226,12 @@ catalogdata* enum_colvalue2enum(void* in_colvalue)
     rmemset0(enumvalue, 0, '\0', sizeof(catalog_enum_value));
     catalog_data->catalog = enumvalue;
     catalog_data->type = CATALOG_TYPE_ENUM;
-    pgenum = (xk_pg_sysdict_Form_pg_enum)rmalloc1(sizeof(xk_pg_parser_sysdict_pgenum));
+    pgenum = (pg_sysdict_Form_pg_enum)rmalloc1(sizeof(pg_parser_sysdict_pgenum));
     if(NULL == pgenum)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(pgenum, 0, '\0', sizeof(xk_pg_parser_sysdict_pgenum));
+    rmemset0(pgenum, 0, '\0', sizeof(pg_parser_sysdict_pgenum));
     enumvalue->enums = lappend(enumvalue->enums, pgenum);
     /* enumlabel 3 */
     rmemcpy1(pgenum->enumlabel.data, 0, (char*)((colvalue + 3)->m_value), (colvalue + 3)->m_valueLen);
@@ -254,9 +254,9 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
     List* newenumlist = NULL;
     catalog_enum_value* newcatalog = NULL;
     catalog_enum_value* catalogInHash = NULL;
-    xk_pg_sysdict_Form_pg_enum pgenum = NULL;
-    xk_pg_sysdict_Form_pg_enum pgenumInHash = NULL;
-    xk_pg_sysdict_Form_pg_enum duppgenum = NULL;
+    pg_sysdict_Form_pg_enum pgenum = NULL;
+    pg_sysdict_Form_pg_enum pgenumInHash = NULL;
+    pg_sysdict_Form_pg_enum duppgenum = NULL;
 
     if(NULL == catalogdata || NULL == catalogdata->catalog)
     {
@@ -265,7 +265,7 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
 
     /* 获取his中的 attribute 结构 */
     newcatalog = (catalog_enum_value*)(catalogdata->catalog);
-    pgenum = (xk_pg_sysdict_Form_pg_enum)lfirst(list_head(newcatalog->enums));
+    pgenum = (pg_sysdict_Form_pg_enum)lfirst(list_head(newcatalog->enums));
 
 	elog(RLOG_DEBUG, "op:%d, %u, %s", catalogdata->op, pgenum->enumtypid, pgenum->enumlabel.data);
     if(CATALOG_OP_INSERT == catalogdata->op)
@@ -278,12 +278,12 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
             catalogInHash->enums = NIL;
         }
 
-        duppgenum = (xk_pg_sysdict_Form_pg_enum)rmalloc1(sizeof(xk_pg_parser_sysdict_pgenum));
+        duppgenum = (pg_sysdict_Form_pg_enum)rmalloc1(sizeof(pg_parser_sysdict_pgenum));
         if(NULL == duppgenum)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemcpy0(duppgenum, 0, pgenum, sizeof(xk_pg_parser_sysdict_pgenum));
+        rmemcpy0(duppgenum, 0, pgenum, sizeof(pg_parser_sysdict_pgenum));
 
         catalogInHash->enums = lappend(catalogInHash->enums, duppgenum);
     }
@@ -302,7 +302,7 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         /* 遍历更新 */
         foreach(lc, catalogInHash->enums)
         {
-            pgenumInHash = (xk_pg_sysdict_Form_pg_enum)lfirst(lc);
+            pgenumInHash = (pg_sysdict_Form_pg_enum)lfirst(lc);
             if(strlen(pgenumInHash->enumlabel.data) != strlen(pgenum->enumlabel.data)
                 || 0 != strcmp(pgenumInHash->enumlabel.data, pgenum->enumlabel.data))
             {
@@ -310,7 +310,7 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
             }
 
             /* 删除原来的，设置新的 */
-            rmemcpy0(pgenumInHash, 0, pgenum, sizeof(xk_pg_parser_sysdict_pgenum));
+            rmemcpy0(pgenumInHash, 0, pgenum, sizeof(pg_parser_sysdict_pgenum));
             return;
         }
 
@@ -319,12 +319,12 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
                             pgenum->enumtypid,
                             pgenum->enumlabel.data);
         
-        duppgenum = (xk_pg_sysdict_Form_pg_enum)rmalloc1(sizeof(xk_pg_parser_sysdict_pgenum));
+        duppgenum = (pg_sysdict_Form_pg_enum)rmalloc1(sizeof(pg_parser_sysdict_pgenum));
         if(NULL == duppgenum)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemcpy0(duppgenum, 0, pgenum, sizeof(xk_pg_parser_sysdict_pgenum));
+        rmemcpy0(duppgenum, 0, pgenum, sizeof(pg_parser_sysdict_pgenum));
 
         catalogInHash->enums = lappend(catalogInHash->enums, duppgenum);
     }
@@ -342,7 +342,7 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
 
         foreach(lc, catalogInHash->enums)
         {
-            pgenumInHash = (xk_pg_sysdict_Form_pg_enum)lfirst(lc);
+            pgenumInHash = (pg_sysdict_Form_pg_enum)lfirst(lc);
             if(strlen(pgenumInHash->enumlabel.data) != strlen(pgenum->enumlabel.data)
                 || 0 != strcmp(pgenumInHash->enumlabel.data, pgenum->enumlabel.data))
             {
@@ -375,7 +375,7 @@ void enumcache_write(HTAB* enumscache, uint64 *offset, sysdict_header_array* arr
 	ListCell*	cell = NULL;
 	HASH_SEQ_STATUS status;
 	char buffer[FILE_BLK_SIZE];
-	xk_pg_sysdict_Form_pg_enum rippleenum;
+	pg_sysdict_Form_pg_enum rippleenum;
 	catalog_enum_value *entry = NULL;
 
 	array[CATALOG_TYPE_ENUM - 1].type = CATALOG_TYPE_ENUM;
@@ -402,9 +402,9 @@ void enumcache_write(HTAB* enumscache, uint64 *offset, sysdict_header_array* arr
 
 	foreach(cell, enum_list)
 	{
-		rippleenum = (xk_pg_sysdict_Form_pg_enum) lfirst(cell);
+		rippleenum = (pg_sysdict_Form_pg_enum) lfirst(cell);
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgenum) > FILE_BLK_SIZE)
+		if(page_offset + sizeof(pg_parser_sysdict_pgenum) > FILE_BLK_SIZE)
 		{
 			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
 				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
@@ -416,8 +416,8 @@ void enumcache_write(HTAB* enumscache, uint64 *offset, sysdict_header_array* arr
 			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, rippleenum, sizeof(xk_pg_parser_sysdict_pgenum));
-		page_offset += sizeof(xk_pg_parser_sysdict_pgenum);
+		rmemcpy1(buffer, page_offset, rippleenum, sizeof(pg_parser_sysdict_pgenum));
+		page_offset += sizeof(pg_parser_sysdict_pgenum);
 	}
 
 	if (page_offset > 0) {

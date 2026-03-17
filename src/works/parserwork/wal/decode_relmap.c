@@ -7,9 +7,9 @@
 #include "utils/sinval/sinval.h"
 #include "misc/misc_stat.h"
 #include "misc/misc_control.h"
-#include "common/xk_pg_parser_errnodef.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_errnodef.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "catalog/control.h"
 #include "cache/txn.h"
 #include "cache/cache_txn.h"
@@ -33,7 +33,7 @@
 #include "works/parserwork/wal/decode_ddl.h"
 
 /* 解析 relmap 提交 */
-void decode_relmap(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_relmap(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
     /*
      * relmapfile 也是为元数据的一部分，所以应该放在 catalogdata 当中，那么在事务中的逻辑位置如下
@@ -47,9 +47,9 @@ void decode_relmap(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
     replmapfile* relmapfile = NULL;
     catalogdata* catalogdata = NULL;
     txnstmt_metadata *metadata = NULL;
-    xk_pg_parser_translog_pre_relmap* prerelmap = NULL;
+    pg_parser_translog_pre_relmap* prerelmap = NULL;
 
-    prerelmap = (xk_pg_parser_translog_pre_relmap*)pbase;
+    prerelmap = (pg_parser_translog_pre_relmap*)pbase;
 
     if(ctx->decode_record->start.wal.lsn < ctx->base.restartlsn
         || ctx->database != prerelmap->m_dboid)

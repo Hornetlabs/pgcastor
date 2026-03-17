@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_Pacific_Kosrae[] =
+char* PG_Pacific_Kosrae[] =
 {
     (char *)"Zone Pacific/Kosrae	-13:08:04 -	LMT	1844 Dec 31",
     (char *)"			 10:51:56 -	LMT	1901",

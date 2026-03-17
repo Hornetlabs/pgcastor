@@ -3,7 +3,7 @@
 
 static const uint32_t win866_to_unicode_tree_table[256];
 
-static const xk_character_mb_radix_tree win866_to_unicode_tree =
+static const character_mb_radix_tree win866_to_unicode_tree =
 {
   NULL, /* 16-bit table not used */
   win866_to_unicode_tree_table,

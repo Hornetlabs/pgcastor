@@ -11,8 +11,8 @@
  */
 
 /* can be used in either frontend or backend */
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/encoding/xk_pg_parser_thirdparty_encoding_wchar.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 typedef struct
 {

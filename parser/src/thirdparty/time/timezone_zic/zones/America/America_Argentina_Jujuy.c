@@ -1,7 +1,7 @@
-#include "xk_pg_parser_os_incl.h"
-#include "thirdparty/time/timezone_zic/xk_pg_parser_thirdparty_timezone_tzdata_info.h"
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* XK_PG_America_Argentina_Jujuy[] =
+char* PG_America_Argentina_Jujuy[] =
 {
     (char *)"Rule	Arg	1930	only	-	Dec	 1	0:00	1:00	-",
     (char *)"Rule	Arg	1931	only	-	Apr	 1	0:00	0	-",

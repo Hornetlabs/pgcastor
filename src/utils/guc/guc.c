@@ -1,8 +1,8 @@
 #include "app_incl.h"
 #include "utils/guc/guc_tables.h"
 #include "port/file/fd.h"
-#include "common/xk_pg_parser_define.h"
-#include "common/xk_pg_parser_translog.h"
+#include "common/pg_parser_define.h"
+#include "common/pg_parser_translog.h"
 #include "utils/list/list_func.h"
 
 /* 监听端口 */
@@ -10,7 +10,7 @@ int             g_walcachemaxsize   = 64;
 int             g_transmaxnum       = 128;
 int             g_blocksize         = 8192;                       /* 事务日志块大小 */
 int             g_walsegsize        = 16;                         /* 事务日志文件大小 */
-int             g_idbtype           = XK_DATABASE_TYPE_POSTGRESQL;
+int             g_idbtype           = DATABASE_TYPE_POSTGRESQL;
 int             g_idbversion        = 0;
 int             g_parserddl         = 1;
 int             g_loglevel          = RLOG_INFO;
