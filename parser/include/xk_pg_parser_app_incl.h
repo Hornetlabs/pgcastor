@@ -8,5 +8,5 @@
 #include "common/xk_pg_parser_define.h"
 #include "log/xk_pg_parser_log_errlog.h"
 #include "elog/elog.h"
-#include "utils/mem/ripple_mem.h"
+#include "utils/mem/mem.h"
 #endif

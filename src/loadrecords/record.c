@@ -1,23 +1,23 @@
-#include "ripple_app_incl.h"
-#include "loadrecords/ripple_record.h"
+#include "app_incl.h"
+#include "loadrecords/record.h"
 
 /* record 初始化 */
-ripple_record* ripple_record_init(void)
+record* record_init(void)
 {
-    ripple_record* rec = NULL;
+    record* rec = NULL;
 
-    rec = rmalloc0(sizeof(ripple_record));
+    rec = rmalloc0(sizeof(record));
     if(NULL == rec)
     {
         return NULL;
     }
-    rmemset0(rec, 0, '\0', sizeof(ripple_record));
-    rec->type = RIPPLE_RECORD_TYPE_NOP;
+    rmemset0(rec, 0, '\0', sizeof(record));
+    rec->type = RECORD_TYPE_NOP;
     return rec;
 }
 
 /* record 释放 */
-void ripple_record_free(ripple_record* rec)
+void record_free(record* rec)
 {
     if(NULL == rec)
     {
@@ -32,15 +32,15 @@ void ripple_record_free(ripple_record* rec)
 }
 
 /* record 释放 */
-void ripple_record_freevoid(void* args)
+void record_freevoid(void* args)
 {
-    ripple_record* rec = NULL;
+    record* rec = NULL;
     if(NULL == args)
     {
         return;
     }
 
-    rec = (ripple_record*)args;
+    rec = (record*)args;
 
     if(NULL != rec->data)
     {
@@ -49,21 +49,21 @@ void ripple_record_freevoid(void* args)
     rfree(rec);
 }
 
-ripple_recordcross* ripple_recordcross_init(void)
+recordcross* recordcross_init(void)
 {
-    ripple_recordcross* result = NULL;
+    recordcross* result = NULL;
 
-    result = rmalloc0(sizeof(ripple_recordcross));
+    result = rmalloc0(sizeof(recordcross));
     if (!result)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(result, 0, 0, sizeof(ripple_recordcross));
+    rmemset0(result, 0, 0, sizeof(recordcross));
 
     return result;
 }
 
-void ripple_recordcross_free(ripple_recordcross* rec_cross)
+void recordcross_free(recordcross* rec_cross)
 {
     if (!rec_cross)
     {
@@ -72,7 +72,7 @@ void ripple_recordcross_free(ripple_recordcross* rec_cross)
 
     if (rec_cross->record)
     {
-        ripple_record_free(rec_cross->record);
+        record_free(rec_cross->record);
     }
 
     rfree(rec_cross);

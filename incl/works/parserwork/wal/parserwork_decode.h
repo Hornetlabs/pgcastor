@@ -1,19 +1,19 @@
-#ifndef _RIPPLE_PARSERWORK_DECODE_H
-#define _RIPPLE_PARSERWORK_DECODE_H
+#ifndef _PARSERWORK_DECODE_H
+#define _PARSERWORK_DECODE_H
 
-typedef enum RIPPLE_DECODINGCONTEXT_STAT
+typedef enum DECODINGCONTEXT_STAT
 {
-    RIPPLE_DECODINGCONTEXT_INIT             = 0x00,
-    RIPPLE_DECODINGCONTEXT_REWIND           ,
-    RIPPLE_DECODINGCONTEXT_RUNNING          ,
-    RIPPLE_DECODINGCONTEXT_SET_PAUSE        ,
-    RIPPLE_DECODINGCONTEXT_PAUSE            ,
-    RIPPLE_DECODINGCONTEXT_RESUME
-} ripple_decodingcontext_stat;
+    DECODINGCONTEXT_INIT             = 0x00,
+    DECODINGCONTEXT_REWIND           ,
+    DECODINGCONTEXT_RUNNING          ,
+    DECODINGCONTEXT_SET_PAUSE        ,
+    DECODINGCONTEXT_PAUSE            ,
+    DECODINGCONTEXT_RESUME
+} decodingcontext_stat;
 
-typedef xk_pg_parser_translog_pre ripple_decodewalpre;
+typedef xk_pg_parser_translog_pre decodewalpre;
 
-typedef struct RIPPLE_DECODINGCONTEXT_PRIVDATACALLBACK
+typedef struct DECODINGCONTEXT_PRIVDATACALLBACK
 {
     /* 设置splitwork的拆分的起点和终点 */
     void (*setloadlsn)(void* privdata, XLogRecPtr startlsn, XLogRecPtr endlsn);
@@ -30,17 +30,17 @@ typedef struct RIPPLE_DECODINGCONTEXT_PRIVDATACALLBACK
     /* 设置capturestate时间戳 */
     void (*setmetricparsetimestamp)(void* privdata, TimestampTz parsetimestamp);
 
-} ripple_decodingctx_privdatacallback;
+} decodingctx_privdatacallback;
 
-typedef struct RIPPLE_DECODINGCONTEXT
+typedef struct DECODINGCONTEXT
 {
     /* 用于标识是否需要过滤大事务, true过滤, false不过滤 */
     bool                                filterbigtrans;
 
     /* 状态值, rewind, normal */
     int32                               stat;
-    ripple_capturebase                  base;
-    ripple_decodewalpre                 walpre;
+    capturebase                  base;
+    decodewalpre                 walpre;
 
     /* 解析的数据库标识 */
     Oid                                 database;
@@ -54,40 +54,40 @@ typedef struct RIPPLE_DECODINGCONTEXT
     char*                               numeric;
     char*                               orgdbcharset;
     char*                               tgtdbcharset;
-    ripple_rewind*                      rewind;
-    ripple_txn*                         refreshtxn;
+    rewind_info*                      rewind_ptr;
+    txn*                         refreshtxn;
     dlist*                              onlinerefresh;
-    ripple_transcache*                  transcache;
+    transcache*                  trans_cache;
 
     /* 解析的 record 来源 */
-    ripple_record*                      decode_record;
-    ripple_queue*                       recordqueue;
+    record*                      decode_record;
+    queue*                       recordqueue;
 
     /* 保存完整事务的缓存 */
-    ripple_cache_txn*                   parser2txns;
+    cache_txn*                   parser2txns;
 
     /* 大事务缓存 */
-    ripple_cache_txn*                   parser2bigtxns;
+    cache_txn*                   parser2bigtxns;
 
     /* 上层结构 */
-    void*                               privdata;                   /* 内容为: ripple_increment_capture*/
-    ripple_decodingctx_privdatacallback callback;
-} ripple_decodingcontext;
+    void*                               privdata;                   /* 内容为: increment_capture*/
+    decodingctx_privdatacallback callback;
+} decodingcontext;
 
 /* 是否要兑换ddl true兑换 */
-static inline bool ripple_decodingcontext_isddlfilter(bool filter, bool redo)
+static inline bool decodingcontext_isddlfilter(bool filter, bool redo)
 {
     return (false == filter && false == redo);
 }
 
 /* 是否过滤stmt true过滤 */
-static inline bool ripple_decodingcontext_isstmtsfilter(bool filter, bool redo)
+static inline bool decodingcontext_isstmtsfilter(bool filter, bool redo)
 {
     return (true == redo || true == filter);
 }
 
-void ripple_parserwork_waldecode(ripple_decodingcontext* decodingctx);
+void parserwork_waldecode(decodingcontext* decodingctx);
 
-void ripple_decode_getparserlsn(XLogRecPtr* plsn);
+void decode_getparserlsn(XLogRecPtr* plsn);
 
 #endif

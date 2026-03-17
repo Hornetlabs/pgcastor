@@ -1,63 +1,63 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "port/file/fd.h"
-#include "port/net/ripple_net.h"
-#include "port/thread/ripple_thread.h"
+#include "port/net/net.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
-#include "utils/conn/ripple_conn.h"
+#include "utils/conn/conn.h"
 #include "utils/dttime/dttime.h"
 #include "utils/dttime/dttimestamp.h"
-#include "command/ripple_cmd.h"
-#include "queue/ripple_queue.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netpool.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "xmanager/ripple_xmanager_metricnode.h"
-#include "xmanager/ripple_xmanager_metriccapturenode.h"
-#include "xmanager/ripple_xmanager_metricintegratenode.h"
-#include "xmanager/ripple_xmanager_metric.h"
-#include "xmanager/ripple_xmanager_metricprogressnode.h"
+#include "command/cmd.h"
+#include "queue/queue.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netpool.h"
+#include "xmanager/xmanager_msg.h"
+#include "xmanager/xmanager_metricnode.h"
+#include "xmanager/xmanager_metriccapturenode.h"
+#include "xmanager/xmanager_metricintegratenode.h"
+#include "xmanager/xmanager_metric.h"
+#include "xmanager/xmanager_metricprogressnode.h"
 /* 初始化 node 节点 */
-ripple_xmanager_metricnode* ripple_xmanager_metricprogressnode_init(void)
+xmanager_metricnode* xmanager_metricprogressnode_init(void)
 {
-    ripple_xmanager_metricprogressnode* xprogressmetricnode = NULL;
+    xmanager_metricprogressnode* xprogressmetricnode = NULL;
 
-    xprogressmetricnode = rmalloc0(sizeof(ripple_xmanager_metricprogressnode));
+    xprogressmetricnode = rmalloc0(sizeof(xmanager_metricprogressnode));
     if (NULL == xprogressmetricnode)
     {
         elog(RLOG_WARNING, "xmanager metric progress node init out of memory");
         return NULL;
     }
-    rmemset0(xprogressmetricnode, 0, '\0', sizeof(ripple_xmanager_metricprogressnode));
+    rmemset0(xprogressmetricnode, 0, '\0', sizeof(xmanager_metricprogressnode));
 
-    ripple_xmanager_metricnode_reset(&xprogressmetricnode->base);
-    xprogressmetricnode->base.type = RIPPLE_XMANAGER_METRICNODETYPE_PROCESS;
+    xmanager_metricnode_reset(&xprogressmetricnode->base);
+    xprogressmetricnode->base.type = XMANAGER_METRICNODETYPE_PROCESS;
     xprogressmetricnode->progressjop = NULL;
-    return (ripple_xmanager_metricnode*)xprogressmetricnode;
+    return (xmanager_metricnode*)xprogressmetricnode;
 }
 
 /* 清理 metric progress 节点内存 */
-void ripple_xmanager_metricprogressnode_destroy(ripple_xmanager_metricnode* metricnode)
+void xmanager_metricprogressnode_destroy(xmanager_metricnode* metricnode)
 {
-    ripple_xmanager_metricprogressnode* xprogressmetricnode = NULL;
+    xmanager_metricprogressnode* xprogressmetricnode = NULL;
     if (NULL == metricnode)
     {
         return;
     }
 
-    xprogressmetricnode = (ripple_xmanager_metricprogressnode*)metricnode;
+    xprogressmetricnode = (xmanager_metricprogressnode*)metricnode;
 
-    dlist_free(xprogressmetricnode->progressjop, ripple_xmanager_metricnode_destroyvoid);
+    dlist_free(xprogressmetricnode->progressjop, xmanager_metricnode_destroyvoid);
     
     rfree(metricnode);
 }
 
 /* 将 progress node 节点序列化 */
-bool ripple_xmanager_metricprogressnode_serial(ripple_xmanager_metricnode* metricnode,
+bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
                                                uint8** blk,
                                                int* blksize,
                                                int* blkstart)
@@ -69,15 +69,15 @@ bool ripple_xmanager_metricprogressnode_serial(ripple_xmanager_metricnode* metri
     int jobcnt                                              = 0;
     uint8* uptr                                             = NULL;
     dlistnode* dlnode                                       = NULL;
-    ripple_xmanager_metricnode* xmetricnode                 = NULL;
-    ripple_xmanager_metricprogressnode* xmetricprogressnode = NULL;
+    xmanager_metricnode* xmetricnode                 = NULL;
+    xmanager_metricprogressnode* xmetricprogressnode = NULL;
 
     if (NULL == metricnode)
     {
         return true;
     }
 
-    xmetricprogressnode = (ripple_xmanager_metricprogressnode*)metricnode;
+    xmetricprogressnode = (xmanager_metricprogressnode*)metricnode;
 
     /* node 节点的总长度 */
     len = 4;
@@ -88,7 +88,7 @@ bool ripple_xmanager_metricprogressnode_serial(ripple_xmanager_metricnode* metri
      *  2、progressnode 长度
      */
     /* metricnode 长度 */
-    len += ripple_xmanager_metricnode_serialsize(metricnode);
+    len += xmanager_metricnode_serialsize(metricnode);
 
     /* todo progress node 私有长度 */
 
@@ -97,7 +97,7 @@ bool ripple_xmanager_metricprogressnode_serial(ripple_xmanager_metricnode* metri
 
     for(dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        xmetricnode = (ripple_xmanager_metricnode*)dlnode->value;
+        xmetricnode = (xmanager_metricnode*)dlnode->value;
 
         /* jobtype */
         len += 4;
@@ -159,7 +159,7 @@ bool ripple_xmanager_metricprogressnode_serial(ripple_xmanager_metricnode* metri
     uptr = *blk;
 
     /* 通用内容格式化 */
-    ripple_xmanager_metricnode_serial(&xmetricprogressnode->base, uptr, blkstart);
+    xmanager_metricnode_serial(&xmetricprogressnode->base, uptr, blkstart);
 
     /* 将 progress node 节点的内容序列化 */
     uptr += *blkstart;
@@ -173,7 +173,7 @@ bool ripple_xmanager_metricprogressnode_serial(ripple_xmanager_metricnode* metri
 
     for(dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        xmetricnode = (ripple_xmanager_metricnode*)dlnode->value;
+        xmetricnode = (xmanager_metricnode*)dlnode->value;
 
         /* jobtype */
         ivalue = xmetricnode->type;
@@ -225,7 +225,7 @@ bool ripple_xmanager_metricprogressnode_serial(ripple_xmanager_metricnode* metri
 }
 
 /* 反序列化为 progress node 节点 */
-ripple_xmanager_metricnode* ripple_xmanager_metricprogressnode_deserial(uint8* blk, int* blkstart)
+xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkstart)
 {
     int ivalue                                              = 0;
     int jobcnt                                              = 0;
@@ -233,10 +233,10 @@ ripple_xmanager_metricnode* ripple_xmanager_metricprogressnode_deserial(uint8* b
     int idx_jobcnt                                          = 0;
     char* jobname                                           = NULL;
     uint8* uptr                                             = NULL;
-    ripple_xmanager_metricnode* metricnode                  = NULL;
-    ripple_xmanager_metricprogressnode* xmetricprogressnode = NULL;
+    xmanager_metricnode* metricnode                  = NULL;
+    xmanager_metricprogressnode* xmetricprogressnode = NULL;
 
-    xmetricprogressnode = (ripple_xmanager_metricprogressnode*)ripple_xmanager_metricprogressnode_init();
+    xmetricprogressnode = (xmanager_metricprogressnode*)xmanager_metricprogressnode_init();
     if (NULL == xmetricprogressnode)
     {
         elog(RLOG_WARNING, "xmanager metric progress deserial error, out of memory");
@@ -244,10 +244,10 @@ ripple_xmanager_metricnode* ripple_xmanager_metricprogressnode_deserial(uint8* b
     }
 
     /* 获取基础信息 */
-    if (false == ripple_xmanager_metricnode_deserial(&xmetricprogressnode->base, blk, blkstart))
+    if (false == xmanager_metricnode_deserial(&xmetricprogressnode->base, blk, blkstart))
     {
         elog(RLOG_WARNING, "xmanager metric progress deserial error");
-        ripple_xmanager_metricnode_destroy(&xmetricprogressnode->base);
+        xmanager_metricnode_destroy(&xmetricprogressnode->base);
         return NULL;
     }
     uptr = blk;
@@ -281,7 +281,7 @@ ripple_xmanager_metricnode* ripple_xmanager_metricprogressnode_deserial(uint8* b
         if (NULL == jobname)
         {
             elog(RLOG_WARNING, "xmanager metric progress deserial error, jobname out of memory");
-            ripple_xmanager_metricnode_destroy(&xmetricprogressnode->base);
+            xmanager_metricnode_destroy(&xmetricprogressnode->base);
             return NULL;
         }
         rmemset0(jobname, 0, '\0', ivalue + 1);
@@ -290,11 +290,11 @@ ripple_xmanager_metricnode* ripple_xmanager_metricprogressnode_deserial(uint8* b
         uptr += ivalue;
         *blkstart += ivalue;
 
-        metricnode = ripple_xmanager_metricnode_init(jobtype);
+        metricnode = xmanager_metricnode_init(jobtype);
         if (NULL == metricnode)
         {
             elog(RLOG_WARNING, "xmanager metric progress deserial error, out of memory");
-            ripple_xmanager_metricnode_destroy(&xmetricprogressnode->base);
+            xmanager_metricnode_destroy(&xmetricprogressnode->base);
             return NULL;
         }
         metricnode->name = jobname;
@@ -316,7 +316,7 @@ ripple_xmanager_metricnode* ripple_xmanager_metricprogressnode_deserial(uint8* b
         if (NULL == metricnode->conf)
         {
             elog(RLOG_WARNING, "xmanager metric progress deserial error, jobname out of memory");
-            ripple_xmanager_metricnode_destroy(&xmetricprogressnode->base);
+            xmanager_metricnode_destroy(&xmetricprogressnode->base);
             return NULL;
         }
         rmemset0(metricnode->conf, 0, '\0', ivalue + 1);
@@ -328,16 +328,16 @@ ripple_xmanager_metricnode* ripple_xmanager_metricprogressnode_deserial(uint8* b
         metricnode = NULL;
     }
 
-    return (ripple_xmanager_metricnode*)xmetricprogressnode;
+    return (xmanager_metricnode*)xmetricprogressnode;
 }
 
 /* 从配置文件中获取key--valve */
-static bool ripple_xmanager_metricprogressnode_getdatafromcfgfile(const char *config_file, char* key, char* data)
+static bool xmanager_metricprogressnode_getdatafromcfgfile(const char *config_file, char* key, char* data)
 {
     FILE *fp = NULL;
     char fline[1024];
 
-    fp = FileFOpen(config_file, "rb");
+    fp = osal_file_fopen(config_file, "rb");
     if (!fp)
     {
         elog(RLOG_WARNING, "could not open configuration file:%s %s", config_file, strerror(errno));
@@ -346,7 +346,7 @@ static bool ripple_xmanager_metricprogressnode_getdatafromcfgfile(const char *co
 
     /* 读取一行数据 */
     rmemset1(fline, 0, '\0', sizeof(fline));
-    while (FileFGets(fp, sizeof(fline), fline) != NULL)
+    while (osal_file_fgets(fp, sizeof(fline), fline) != NULL)
     {
         bool quota = false;
         char* uptr = fline;
@@ -499,8 +499,8 @@ static bool ripple_xmanager_metricprogressnode_getdatafromcfgfile(const char *co
 }
 
 /* progress capture info 组装 */
-static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_metric* xmetric,
-                                                               ripple_xmanager_metricnode* xmetricnode,
+static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric,
+                                                               xmanager_metricnode* xmetricnode,
                                                                dlist* job)
 {
     bool find                                               = false;
@@ -516,14 +516,14 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
     uint8* uptr                                             = NULL;
     PGconn *conn                                            = NULL;
     PGresult *res                                           = NULL;
-    ripple_netpacket* npacket                               = NULL;
+    netpacket* npacket                               = NULL;
     char conninfo[512]                                      = {'\0'};
     char sql_exec[1024]                                     = {'\0'};
 
     rmemset1(conninfo, 0, 0, 512);
-    ripple_xmanager_metricprogressnode_getdatafromcfgfile(xmetricnode->conf, RIPPLE_CFG_KEY_URL, conninfo);
+    xmanager_metricprogressnode_getdatafromcfgfile(xmetricnode->conf, CFG_KEY_URL, conninfo);
 
-    conn = ripple_conn_get(conninfo);
+    conn = conn_get(conninfo);
     if (NULL == conn)
     {
         return NULL;
@@ -531,7 +531,7 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
 
     rmemset1(sql_exec, 0, '\0', 1024);
     sprintf(sql_exec,"SELECT pg_current_wal_lsn();" );
-    res = ripple_conn_exec(conn, sql_exec);
+    res = conn_exec(conn, sql_exec);
     if (NULL == res)
     {
         return NULL;
@@ -559,7 +559,7 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
     sprintf(sql_exec, "SELECT (EXTRACT(EPOCH\n"
                       "FROM (CURRENT_TIMESTAMP - TIMESTAMPTZ '2000-01-01 00:00:00+00') ) * 1000000 )::int8\n"
                       "AS pg_ts_usec;" );
-    res = ripple_conn_exec(conn, sql_exec);
+    res = conn_exec(conn, sql_exec);
     if (NULL == res)
     {
         return NULL;
@@ -627,18 +627,18 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
     msglen += (rowlen * (rowcnt - 1));
 
     /* 申请空间 */
-    npacket = ripple_netpacket_init();
+    npacket = netpacket_init();
     if (NULL == npacket)
     {
         elog(RLOG_WARNING, "xmanager metric assemble info msg out of memory");
         return NULL;
     }
     msglen += 1;
-    npacket->data = ripple_netpacket_data_init(msglen);
+    npacket->data = netpacket_data_init(msglen);
     if (NULL == npacket->data)
     {
         elog(RLOG_WARNING, "xmanager metric assemble info msg data, out of memory");
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return NULL;
     }
     msglen -= 1;
@@ -655,7 +655,7 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
     npacket->used += 4;
 
     /* 类型 */
-    ivalue = RIPPLE_XMANAGER_MSG_STARTCMD;
+    ivalue = XMANAGER_MSG_STARTCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -750,7 +750,7 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
     if (false == find)
     {
         elog(RLOG_WARNING, "xmanager metric assemble progress msg no valid found");
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return NULL;
     }
 
@@ -763,14 +763,14 @@ static void* ripple_xmanager_metricmsg_assembleprogresscapture(ripple_xmanager_m
 }
 
 /* progress info 组装 */
-void* ripple_xmanager_metricmsg_assembleprogress(ripple_xmanager_metric* xmetric, ripple_xmanager_metricnode* pxmetricnode)
+void* xmanager_metricmsg_assembleprogress(xmanager_metric* xmetric, xmanager_metricnode* pxmetricnode)
 {
     dlistnode* dlnode                                       = NULL;
-    ripple_xmanager_metricnode* pmetricnode                 = NULL;
-    ripple_xmanager_metricprogressnode* xmetricprogressnode = NULL;
-    ripple_xmanager_metricnode tmpmetricnode                = {0};
+    xmanager_metricnode* pmetricnode                 = NULL;
+    xmanager_metricprogressnode* xmetricprogressnode = NULL;
+    xmanager_metricnode tmpmetricnode                = {0};
 
-    xmetricprogressnode = (ripple_xmanager_metricprogressnode*) pxmetricnode;
+    xmetricprogressnode = (xmanager_metricprogressnode*) pxmetricnode;
 
     if (true == dlist_isnull(xmetricprogressnode->progressjop))
     {
@@ -780,8 +780,8 @@ void* ripple_xmanager_metricmsg_assembleprogress(ripple_xmanager_metric* xmetric
 
     for (dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        pmetricnode = (ripple_xmanager_metricnode*)dlnode->value;
-        if (RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
+        pmetricnode = (xmanager_metricnode*)dlnode->value;
+        if (XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
         {
             break;
         }
@@ -798,7 +798,7 @@ void* ripple_xmanager_metricmsg_assembleprogress(ripple_xmanager_metric* xmetric
     tmpmetricnode.type = pmetricnode->type;
 
     /* 获取 metricnode */
-    pmetricnode = dlist_get(xmetric->metricnodes, &tmpmetricnode, ripple_xmanager_metricnode_cmp);
+    pmetricnode = dlist_get(xmetric->metricnodes, &tmpmetricnode, xmanager_metricnode_cmp);
     if (NULL == pmetricnode)
     {
         elog(RLOG_WARNING, "not find valid progress job %s in metricnodes ", pmetricnode->name);
@@ -806,15 +806,15 @@ void* ripple_xmanager_metricmsg_assembleprogress(ripple_xmanager_metric* xmetric
     }
 
     /* 检验是否在运行中，没有运行不打印信息 */
-    if (RIPPLE_XMANAGER_METRICNODESTAT_ONLINE > pmetricnode->stat)
+    if (XMANAGER_METRICNODESTAT_ONLINE > pmetricnode->stat)
     {
         elog(RLOG_WARNING, "progress job %s not start", pmetricnode->name);
         return NULL;
     }
 
-    if (RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
+    if (XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
     {
-        return ripple_xmanager_metricmsg_assembleprogresscapture(xmetric, pmetricnode, xmetricprogressnode->progressjop);
+        return xmanager_metricmsg_assembleprogresscapture(xmetric, pmetricnode, xmetricprogressnode->progressjop);
     }
     else
     {

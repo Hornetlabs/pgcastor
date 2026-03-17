@@ -1,76 +1,76 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/hash/hash_search.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
-#include "utils/uuid/ripple_uuid.h"
-#include "utils/regex/ripple_regex.h"
-#include "port/thread/ripple_thread.h"
-#include "misc/ripple_misc_control.h"
-#include "misc/ripple_misc_stat.h"
+#include "utils/uuid/uuid.h"
+#include "utils/regex/regex.h"
+#include "port/thread/thread.h"
+#include "misc/misc_control.h"
+#include "misc/misc_stat.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "storage/ripple_file_buffer.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_ffsmgr.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "catalog/ripple_catalog.h"
-#include "catalog/ripple_attribute.h"
-#include "catalog/ripple_class.h"
-#include "catalog/ripple_database.h"
-#include "catalog/ripple_type.h"
-#include "catalog/ripple_namespace.h"
-#include "catalog/ripple_constraint.h"
-#include "catalog/ripple_proc.h"
-#include "catalog/ripple_index.h"
-#include "stmts/ripple_txnstmt.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_transcache.h"
-#include "cache/ripple_fpwcache.h"
-#include "cache/ripple_toastcache.h"
+#include "storage/file_buffer.h"
+#include "storage/ff_detail.h"
+#include "storage/ffsmgr.h"
+#include "cache/cache_sysidcts.h"
+#include "catalog/catalog.h"
+#include "catalog/attribute.h"
+#include "catalog/class.h"
+#include "catalog/database.h"
+#include "catalog/type.h"
+#include "catalog/namespace.h"
+#include "catalog/constraint.h"
+#include "catalog/proc.h"
+#include "catalog/index.h"
+#include "stmts/txnstmt.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/transcache.h"
+#include "cache/fpwcache.h"
+#include "cache/toastcache.h"
 #include "utils/mpage/mpage.h"
-#include "queue/ripple_queue.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadwalrecords.h"
-#include "snapshot/ripple_snapshot.h"
-#include "works/parserwork/wal/ripple_rewind.h"
-#include "works/parserwork/wal/ripple_parserwork_decode.h"
-#include "works/parserwork/wal/ripple_decode_heap_util.h"
+#include "queue/queue.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadwalrecords.h"
+#include "snapshot/snapshot.h"
+#include "works/parserwork/wal/rewind.h"
+#include "works/parserwork/wal/parserwork_decode.h"
+#include "works/parserwork/wal/decode_heap_util.h"
 #include "utils/guc/guc.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "stmts/ripple_txnstmt_refresh.h"
-#include "stmts/ripple_txnstmt_onlinerefresh.h"
-#include "works/parserwork/wal/ripple_onlinerefresh.h"
-#include "strategy/ripple_filter_dataset.h"
+#include "refresh/refresh_tables.h"
+#include "stmts/txnstmt_refresh.h"
+#include "stmts/txnstmt_onlinerefresh.h"
+#include "works/parserwork/wal/onlinerefresh.h"
+#include "strategy/filter_dataset.h"
 /*
  * 事务是正在处理中的缓存。
  * 处理中的缓存设置为一个 hash 表，方便快速查找
  *  处理中的缓存在 ENTER/REMOVE/FIND 时都不需要加锁
 */
 
-static void ripple_transcache_dlist_append(ripple_decodingcontext* ctx, ripple_txn* txn)
+static void transcache_dlist_append(decodingcontext* ctx, txn* txn)
 {
     if(NULL == txn)
     {
         return;
     }
 
-    if(NULL == ctx->transcache->transdlist->head)
+    if(NULL == ctx->trans_cache->transdlist->head)
     {
-        ctx->transcache->transdlist->head = txn;
-        ctx->transcache->transdlist->tail = txn;
+        ctx->trans_cache->transdlist->head = txn;
+        ctx->trans_cache->transdlist->tail = txn;
     }
     else
     {
-        ctx->transcache->transdlist->tail->next = txn;
-        txn->prev = ctx->transcache->transdlist->tail;
-        ctx->transcache->transdlist->tail = txn;
+        ctx->trans_cache->transdlist->tail->next = txn;
+        txn->prev = ctx->trans_cache->transdlist->tail;
+        ctx->trans_cache->transdlist->tail = txn;
     }
 }
 
@@ -89,15 +89,15 @@ static void ripple_transcache_dlist_append(ripple_decodingcontext* ctx, ripple_t
  *                      true        需要更新
  *                      false       不需要更新
 */
-void ripple_transcache_dlist_remove(void* in_ctx,
-                                    ripple_txn* txn,
+void transcache_dlist_remove(void* in_ctx,
+                                    txn* txn,
                                     bool* brestart,
                                     XLogRecPtr* restartlsn,
                                     bool* bconfirm,
                                     XLogRecPtr* confirmlsn,
                                     bool bset)
 {
-    ripple_decodingcontext* ctx = NULL;
+    decodingcontext* ctx = NULL;
     if(NULL == txn)
     {
         return;
@@ -105,7 +105,7 @@ void ripple_transcache_dlist_remove(void* in_ctx,
 
     *brestart = false;
     *bconfirm = false;
-    ctx = (ripple_decodingcontext*)in_ctx;
+    ctx = (decodingcontext*)in_ctx;
 
     if(NULL == txn->prev)
     {
@@ -135,12 +135,12 @@ void ripple_transcache_dlist_remove(void* in_ctx,
                 }
             }
 
-            ctx->transcache->transdlist->head = NULL;
-            ctx->transcache->transdlist->tail = NULL;
+            ctx->trans_cache->transdlist->head = NULL;
+            ctx->trans_cache->transdlist->tail = NULL;
         }
         else
         {
-            ctx->transcache->transdlist->head = txn->next;
+            ctx->trans_cache->transdlist->head = txn->next;
             txn->next->prev = NULL;
         }
     }
@@ -148,7 +148,7 @@ void ripple_transcache_dlist_remove(void* in_ctx,
     {
         if(NULL == txn->next)
         {
-            ctx->transcache->transdlist->tail = txn->prev;
+            ctx->trans_cache->transdlist->tail = txn->prev;
             txn->prev->next = NULL;
         }
         else
@@ -172,12 +172,12 @@ void ripple_transcache_dlist_remove(void* in_ctx,
     txn->next = NULL;
 }
 
-ripple_txn *ripple_transcache_getTXNByXid(void* in_ctx, uint64_t xid)
+txn *transcache_getTXNByXid(void* in_ctx, uint64_t xid)
 {
     bool find = false;
     HTAB *tx_htab =  NULL;
-    ripple_decodingcontext* ctx = NULL;
-    ripple_txn *txn_entry = NULL;
+    decodingcontext* ctx = NULL;
+    txn *txn_entry = NULL;
 
     /* 无效事务，那么不需要放入到 hash 中维护 */
     if(InvalidFullTransactionId == xid)
@@ -185,10 +185,10 @@ ripple_txn *ripple_transcache_getTXNByXid(void* in_ctx, uint64_t xid)
         return NULL;
     }
 
-    ctx = (ripple_decodingcontext*)in_ctx;
-    tx_htab = ctx->transcache->by_txns;
+    ctx = (decodingcontext*)in_ctx;
+    tx_htab = ctx->trans_cache->by_txns;
 
-    txn_entry = (ripple_txn *) hash_search(tx_htab, &xid, HASH_ENTER, &find);
+    txn_entry = (txn *) hash_search(tx_htab, &xid, HASH_ENTER, &find);
     if (!find)
     {
         /* 第一次捕获该事务 */
@@ -196,10 +196,10 @@ ripple_txn *ripple_transcache_getTXNByXid(void* in_ctx, uint64_t xid)
         {
             /* onlinerefresh节点不为空 */
             dlistnode *dlnode = ctx->onlinerefresh->head;
-            ripple_onlinerefresh *olnode = NULL;
+            onlinerefresh *olnode = NULL;
             for (; dlnode; dlnode = dlnode->next)
             {
-                olnode = (ripple_onlinerefresh *)dlnode->value;
+                olnode = (onlinerefresh *)dlnode->value;
                 if (!olnode->increment)
                 {
                     /* 不需要增量时跳过 */
@@ -213,9 +213,9 @@ ripple_txn *ripple_transcache_getTXNByXid(void* in_ctx, uint64_t xid)
                 }
                 if (xid > olnode->txid)
                 {
-                    if (olnode->state != RIPPLE_ONLINEREFRESH_STATE_FULLSNAPSHOT)
+                    if (olnode->state != ONLINEREFRESH_STATE_FULLSNAPSHOT)
                     {
-                        ripple_onlinerefresh_state_setfullsnapshot(olnode);
+                        onlinerefresh_state_setfullsnapshot(olnode);
                     }
                     continue;
                 }
@@ -224,35 +224,35 @@ ripple_txn *ripple_transcache_getTXNByXid(void* in_ctx, uint64_t xid)
                     /* 存在xmin = xmax的情况, 因此首先排除xid = xmin */
                     if (xid != olnode->snapshot->xmin && xid >= olnode->snapshot->xmax)
                     {
-                        ripple_onlinerefresh_xids_append(olnode, xid);
+                        onlinerefresh_xids_append(olnode, xid);
                     }
                 }
             }
         }
         /* 初始化 */
-        ripple_txn_initset(txn_entry, xid, ctx->decode_record->start.wal.lsn);
-        RIPPLE_TXN_SET_TRANS_INHASH(txn_entry->flag);
+        txn_initset(txn_entry, xid, ctx->decode_record->start.wal.lsn);
+        TXN_SET_TRANS_INHASH(txn_entry->flag);
 
         /* 将事务加入到双向链表中 */
-        ripple_transcache_dlist_append(ctx, txn_entry);
+        transcache_dlist_append(ctx, txn_entry);
     }
 
     return txn_entry;
 }
 
-ripple_txn *ripple_transcache_getTXNByXidFind(ripple_transcache* transcache, uint64_t xid)
+txn *transcache_getTXNByXidFind(transcache* transcache, uint64_t xid)
 {
-    ripple_txn *txn_entry = NULL;
-    txn_entry = (ripple_txn *) hash_search(transcache->by_txns, &xid, HASH_FIND, NULL);
+    txn *txn_entry = NULL;
+    txn_entry = (txn *) hash_search(transcache->by_txns, &xid, HASH_FIND, NULL);
     return txn_entry;
 }
 
 /* 删除 */
 /* 改入参 */
-void ripple_transcache_removeTXNByXid(ripple_transcache * in_transcache, uint64_t xid)
+void transcache_removeTXNByXid(transcache * in_transcache, uint64_t xid)
 {
     bool find = false;
-    ripple_txn *txn_entry = NULL;
+    txn *txn_entry = NULL;
 
     txn_entry = hash_search(in_transcache->by_txns, &xid, HASH_REMOVE, &find);
     if(false == find)
@@ -265,21 +265,21 @@ void ripple_transcache_removeTXNByXid(ripple_transcache * in_transcache, uint64_
                                 (uint32)(txn_entry->restart.wal.lsn >> 32), (uint32)(txn_entry->restart.wal.lsn),
                                 (uint32)(txn_entry->confirm.wal.lsn >> 32), (uint32)(txn_entry->confirm.wal.lsn),
                                 (uint32)(txn_entry->redo.wal.lsn >> 32), (uint32)(txn_entry->redo.wal.lsn));
-        rmemset1(txn_entry, 0, '\0', sizeof(ripple_txn));
+        rmemset1(txn_entry, 0, '\0', sizeof(txn));
     }
     //elog(RLOG_INFO, "remove txn, found:%d, xid:%lu", find, xid);
     return;
 }
 
 /* 将事务中的 sysdict 转换后的结果放入到 sysdicthis 中 */
-void ripple_transcache_sysdict2his(ripple_txn* txn)
+void transcache_sysdict2his(txn* txn)
 {
     ListCell* lc = NULL;
-    ripple_txn_sysdict* sysdict = NULL;
-    ripple_catalogdata* catalogdata = NULL;
-    ripple_txnstmt *stmt = NULL;
+    txn_sysdict* sysdict = NULL;
+    catalogdata* catalogdata = NULL;
+    txnstmt *stmt = NULL;
     bool first_foreach = true;
-    ripple_txnstmt_metadata *metadata = NULL;
+    txnstmt_metadata *metadata = NULL;
 
     if(NULL == txn
         || NULL == txn->sysdict)
@@ -288,18 +288,18 @@ void ripple_transcache_sysdict2his(ripple_txn* txn)
     }
 
     /* 添加stmt, 作为系统表段标识 */
-    stmt = rmalloc1(sizeof(ripple_txnstmt));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    metadata = rmalloc1(sizeof(ripple_txnstmt_metadata));
-    rmemset0(metadata, 0, 0, sizeof(ripple_txnstmt_metadata));
+    stmt = rmalloc1(sizeof(txnstmt));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    metadata = rmalloc1(sizeof(txnstmt_metadata));
+    rmemset0(metadata, 0, 0, sizeof(txnstmt_metadata));
 
-    stmt->type = RIPPLE_TXNSTMT_TYPE_METADATA;
+    stmt->type = TXNSTMT_TYPE_METADATA;
 
     foreach(lc, txn->sysdict)
     {
-        sysdict = (ripple_txn_sysdict*)lfirst(lc);
+        sysdict = (txn_sysdict*)lfirst(lc);
 
-        catalogdata = ripple_catalog_colvalued2catalog(g_idbtype, g_idbversion, sysdict->colvalues);
+        catalogdata = catalog_colvalued2catalog(g_idbtype, g_idbversion, sysdict->colvalues);
         if(NULL == catalogdata)
         {
             continue;
@@ -332,9 +332,9 @@ void ripple_transcache_sysdict2his(ripple_txn* txn)
 }
 
 /* 更新解析节点lsn信息* */
-bool ripple_transcache_refreshlsn(void* in_ctx, ripple_txn* txn)
+bool transcache_refreshlsn(void* in_ctx, txn* txn)
 {
-    ripple_decodingcontext* ctx = NULL;
+    decodingcontext* ctx = NULL;
 
     if (NULL == txn || NULL == in_ctx)
     {
@@ -342,9 +342,9 @@ bool ripple_transcache_refreshlsn(void* in_ctx, ripple_txn* txn)
         return false;
     }
 
-    ctx = (ripple_decodingcontext*)in_ctx;
+    ctx = (decodingcontext*)in_ctx;
     
-    if (RIPPLE_TXN_CHECK_TRANS_INHASH(txn->flag))
+    if (TXN_CHECK_TRANS_INHASH(txn->flag))
     {
         if(NULL == txn->prev)
         {
@@ -370,7 +370,7 @@ bool ripple_transcache_refreshlsn(void* in_ctx, ripple_txn* txn)
     }
     else
     {
-        if (NULL == ctx->transcache->transdlist->head)
+        if (NULL == ctx->trans_cache->transdlist->head)
         {
             ctx->base.restartlsn = txn->end.wal.lsn;
         }
@@ -383,7 +383,7 @@ bool ripple_transcache_refreshlsn(void* in_ctx, ripple_txn* txn)
         ctx->base.confirmedlsn = txn->end.wal.lsn;
     }
     
-    ripple_fpwcache_calcredolsnbyrestartlsn(ctx->transcache, ctx->base.restartlsn, &(ctx->base.redolsn));
+    fpwcache_calcredolsnbyrestartlsn(ctx->trans_cache, ctx->base.restartlsn, &(ctx->base.redolsn));
 
     txn->restart.wal.lsn = ctx->base.restartlsn;
     txn->confirm.wal.lsn = ctx->base.confirmedlsn;
@@ -397,9 +397,9 @@ bool ripple_transcache_refreshlsn(void* in_ctx, ripple_txn* txn)
 }
 
 /* 在decodingcontext删除txn */
-bool ripple_transcache_deletetxn(void* in_ctx, ripple_txn* txn)
+bool transcache_deletetxn(void* in_ctx, txn* txn)
 {
-    ripple_decodingcontext* ctx = NULL;
+    decodingcontext* ctx = NULL;
 
     if (NULL == txn || NULL == in_ctx)
     {
@@ -407,19 +407,19 @@ bool ripple_transcache_deletetxn(void* in_ctx, ripple_txn* txn)
         return false;
     }
 
-    ctx = (ripple_decodingcontext*)in_ctx;
+    ctx = (decodingcontext*)in_ctx;
 
-    /* 将事务在ctx->transcache->transdlist删除 */
+    /* 将事务在ctx->trans_cache->transdlist删除 */
     if(NULL == txn->prev)
     {
         if(NULL == txn->next)
         {
-            ctx->transcache->transdlist->head = NULL;
-            ctx->transcache->transdlist->tail = NULL;
+            ctx->trans_cache->transdlist->head = NULL;
+            ctx->trans_cache->transdlist->tail = NULL;
         }
         else
         {
-            ctx->transcache->transdlist->head = txn->next;
+            ctx->trans_cache->transdlist->head = txn->next;
             txn->next->prev = NULL;
         }
     }
@@ -427,7 +427,7 @@ bool ripple_transcache_deletetxn(void* in_ctx, ripple_txn* txn)
     {
         if(NULL == txn->next)
         {
-            ctx->transcache->transdlist->tail = txn->prev;
+            ctx->trans_cache->transdlist->tail = txn->prev;
             txn->prev->next = NULL;
         }
         else
@@ -440,12 +440,12 @@ bool ripple_transcache_deletetxn(void* in_ctx, ripple_txn* txn)
     txn->next = NULL;
 
     /* 将事务在哈希中删除 */
-    ripple_transcache_removeTXNByXid(ctx->transcache, txn->xid);
+    transcache_removeTXNByXid(ctx->trans_cache, txn->xid);
 
     return true;
 }
 
-void ripple_transcache_sysdict_free(ripple_txn* txn)
+void transcache_sysdict_free(txn* txn)
 {
     ListCell *cell = NULL;
     List *sysdict_List = txn->sysdict;
@@ -455,10 +455,10 @@ void ripple_transcache_sysdict_free(ripple_txn* txn)
 
     foreach(cell, sysdict_List)
     {
-        ripple_txn_sysdict *dict = (ripple_txn_sysdict *) lfirst(cell);
+        txn_sysdict *dict = (txn_sysdict *) lfirst(cell);
         if (dict->convert_colvalues)
         {
-            ripple_cache_sysdicts_catalogdatafreevoid(dict->convert_colvalues);
+            cache_sysdicts_catalogdatafreevoid(dict->convert_colvalues);
         }
         heap_free_trans_result((xk_pg_parser_translog_tbcolbase *)dict->colvalues);
         rfree(dict);
@@ -468,12 +468,12 @@ void ripple_transcache_sysdict_free(ripple_txn* txn)
 }
 
 /* transcache 删除 */
-void ripple_transcache_free(ripple_transcache* transcache)
+void transcache_free(transcache* transcache)
 {
     HASH_SEQ_STATUS status;
     ListCell* lc = NULL;
-    ripple_txn* txn = NULL;
-    ripple_checkpointnode* chkptnode = NULL;
+    txn* txn = NULL;
+    checkpointnode* chkptnode = NULL;
     if(NULL == transcache)
     {
         return;
@@ -486,7 +486,7 @@ void ripple_transcache_free(ripple_transcache* transcache)
         {
             transcache->transdlist->head = txn->next;
 
-            ripple_txn_free(txn);
+            txn_free(txn);
         }
         rfree(transcache->transdlist);
     }
@@ -508,13 +508,13 @@ void ripple_transcache_free(ripple_transcache* transcache)
 
         if(NULL != transcache->sysdicts->by_class)
         {
-            ripple_catalog_class_value *catalogclassentry;
+            catalog_class_value *catalogclassentry;
             hash_seq_init(&status,transcache->sysdicts->by_class);
             while (NULL != (catalogclassentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogclassentry->ripple_class)
+                if(NULL != catalogclassentry->class)
                 {
-                    rfree(catalogclassentry->ripple_class);
+                    rfree(catalogclassentry->class);
                 }
             }
 
@@ -524,7 +524,7 @@ void ripple_transcache_free(ripple_transcache* transcache)
         /* attributes 表删除 */
         if(NULL != transcache->sysdicts->by_attribute)
         {
-            ripple_catalog_attribute_value* catalogattrentry = NULL;
+            catalog_attribute_value* catalogattrentry = NULL;
             hash_seq_init(&status,transcache->sysdicts->by_attribute);
             while(NULL != (catalogattrentry = hash_seq_search(&status)))
             {
@@ -544,13 +544,13 @@ void ripple_transcache_free(ripple_transcache* transcache)
         /* type 表删除 */
         if(NULL != transcache->sysdicts->by_type)
         {
-            ripple_catalog_type_value* catalogtypeentry = NULL;
+            catalog_type_value* catalogtypeentry = NULL;
             hash_seq_init(&status,transcache->sysdicts->by_type);
             while(NULL != (catalogtypeentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogtypeentry->ripple_type)
+                if(NULL != catalogtypeentry->type)
                 {
-                    rfree(catalogtypeentry->ripple_type);
+                    rfree(catalogtypeentry->type);
                 }
             }
 
@@ -560,13 +560,13 @@ void ripple_transcache_free(ripple_transcache* transcache)
         /* proc 表删除 */
         if(NULL != transcache->sysdicts->by_proc)
         {
-            ripple_catalog_proc_value* catalogprocentry = NULL;
+            catalog_proc_value* catalogprocentry = NULL;
             hash_seq_init(&status,transcache->sysdicts->by_proc);
             while(NULL != (catalogprocentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogprocentry->ripple_proc)
+                if(NULL != catalogprocentry->proc)
                 {
-                    rfree(catalogprocentry->ripple_proc);
+                    rfree(catalogprocentry->proc);
                 }
             }
 
@@ -583,13 +583,13 @@ void ripple_transcache_free(ripple_transcache* transcache)
         /* namespace 表删除 */
         if(NULL != transcache->sysdicts->by_namespace)
         {
-            ripple_catalog_namespace_value* catalognamespaceentry = NULL;
+            catalog_namespace_value* catalognamespaceentry = NULL;
             hash_seq_init(&status,transcache->sysdicts->by_namespace);
             while(NULL != (catalognamespaceentry = hash_seq_search(&status)))
             {
-                if(NULL != catalognamespaceentry->ripple_namespace)
+                if(NULL != catalognamespaceentry->namespace)
                 {
-                    rfree(catalognamespaceentry->ripple_namespace);
+                    rfree(catalognamespaceentry->namespace);
                 }
             }
             hash_destroy(transcache->sysdicts->by_namespace);
@@ -598,13 +598,13 @@ void ripple_transcache_free(ripple_transcache* transcache)
         /* range 表删除 */
         if(NULL != transcache->sysdicts->by_range)
         {
-            ripple_catalog_range_value* catalograngeentry = NULL;
+            catalog_range_value* catalograngeentry = NULL;
             hash_seq_init(&status,transcache->sysdicts->by_range);
             while(NULL != (catalograngeentry = hash_seq_search(&status)))
             {
-                if(NULL != catalograngeentry->ripple_range)
+                if(NULL != catalograngeentry->range)
                 {
-                    rfree(catalograngeentry->ripple_range);
+                    rfree(catalograngeentry->range);
                 }
             }
             hash_destroy(transcache->sysdicts->by_range);
@@ -613,7 +613,7 @@ void ripple_transcache_free(ripple_transcache* transcache)
         /* enum 表删除 */
         if(NULL != transcache->sysdicts->by_enum)
         {
-            ripple_catalog_enum_value* catalogenumentry = NULL;
+            catalog_enum_value* catalogenumentry = NULL;
             hash_seq_init(&status,transcache->sysdicts->by_enum);
             while(NULL != (catalogenumentry = hash_seq_search(&status)))
             {
@@ -633,13 +633,13 @@ void ripple_transcache_free(ripple_transcache* transcache)
         /* operator 表删除 */
         if(NULL != transcache->sysdicts->by_operator)
         {
-            ripple_catalog_operator_value* catalogoperatorentry = NULL;
+            catalog_operator_value* catalogoperatorentry = NULL;
             hash_seq_init(&status,transcache->sysdicts->by_operator);
             while(NULL != (catalogoperatorentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogoperatorentry->ripple_operator)
+                if(NULL != catalogoperatorentry->operator)
                 {
-                    rfree(catalogoperatorentry->ripple_operator);
+                    rfree(catalogoperatorentry->operator);
                 }
             }
 
@@ -649,13 +649,13 @@ void ripple_transcache_free(ripple_transcache* transcache)
         /* by_authid */
         if(NULL != transcache->sysdicts->by_authid)
         {
-            ripple_catalog_authid_value* catalogauthidentry = NULL;
+            catalog_authid_value* catalogauthidentry = NULL;
             hash_seq_init(&status,transcache->sysdicts->by_authid);
             while(NULL != (catalogauthidentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogauthidentry->ripple_authid)
+                if(NULL != catalogauthidentry->authid)
                 {
-                    rfree(catalogauthidentry->ripple_authid);
+                    rfree(catalogauthidentry->authid);
                 }
             }
 
@@ -664,7 +664,7 @@ void ripple_transcache_free(ripple_transcache* transcache)
 
         if(NULL != transcache->sysdicts->by_constraint)
         {
-            ripple_catalog_constraint_value *catalogconentry;
+            catalog_constraint_value *catalogconentry;
             hash_seq_init(&status,transcache->sysdicts->by_constraint);
             while (NULL != (catalogconentry = hash_seq_search(&status)))
             {
@@ -684,13 +684,13 @@ void ripple_transcache_free(ripple_transcache* transcache)
         /*by_database*/
         if(NULL != transcache->sysdicts->by_database)
         {
-            ripple_catalog_database_value* catalogdatabaseentry = NULL;
+            catalog_database_value* catalogdatabaseentry = NULL;
             hash_seq_init(&status,transcache->sysdicts->by_database);
             while(NULL != (catalogdatabaseentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogdatabaseentry->ripple_database)
+                if(NULL != catalogdatabaseentry->database)
                 {
-                    rfree(catalogdatabaseentry->ripple_database);
+                    rfree(catalogdatabaseentry->database);
                 }
             }
 
@@ -707,27 +707,27 @@ void ripple_transcache_free(ripple_transcache* transcache)
         /* by_index */
         if(NULL != transcache->sysdicts->by_index)
         {
-            ripple_catalog_index_value* index = NULL;
-            ripple_catalog_index_hash_entry* catalogindexentry = NULL;
+            catalog_index_value* index = NULL;
+            catalog_index_hash_entry* catalogindexentry = NULL;
             hash_seq_init(&status, transcache->sysdicts->by_index);
             while(NULL != (catalogindexentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogindexentry->ripple_index_list)
+                if(NULL != catalogindexentry->index_list)
                 {
-                    foreach(lc, catalogindexentry->ripple_index_list)
+                    foreach(lc, catalogindexentry->index_list)
                     {
-                        index = (ripple_catalog_index_value*)lfirst(lc);
-                        if (index->ripple_index)
+                        index = (catalog_index_value*)lfirst(lc);
+                        if (index->index)
                         {
-                            if (index->ripple_index->indkey)
+                            if (index->index->indkey)
                             {
-                                rfree(index->ripple_index->indkey);
+                                rfree(index->index->indkey);
                             }
-                            rfree(index->ripple_index);
+                            rfree(index->index);
                         }
                         rfree(index);
                     }
-                    list_free(catalogindexentry->ripple_index_list);
+                    list_free(catalogindexentry->index_list);
                 }
             }
             hash_destroy(transcache->sysdicts->by_index);
@@ -739,17 +739,17 @@ void ripple_transcache_free(ripple_transcache* transcache)
 
     if (NULL != transcache->addtablepattern)
     {
-        ripple_filter_dataset_listpairsfree(transcache->addtablepattern);
+        filter_dataset_listpairsfree(transcache->addtablepattern);
     }
 
     if (NULL != transcache->tableexcludes)
     {
-        ripple_filter_dataset_listpairsfree(transcache->tableexcludes);
+        filter_dataset_listpairsfree(transcache->tableexcludes);
     }
 
     if (NULL != transcache->tableincludes)
     {
-        ripple_filter_dataset_listpairsfree(transcache->tableincludes);
+        filter_dataset_listpairsfree(transcache->tableincludes);
     }
 
     /* fpw 缓存清理 */
@@ -801,59 +801,59 @@ void ripple_transcache_free(ripple_transcache* transcache)
 }
 
 /* 获取数据库的标识 */
-Oid ripple_transcache_getdboid(void* in_transcache)
+Oid transcache_getdboid(void* in_transcache)
 {
-    ripple_transcache* transcache = NULL;
+    transcache* trans_cache = NULL;
 
-    transcache = (ripple_transcache*)in_transcache;
-    return ripple_database_getdbid(transcache->sysdicts->by_database);
+    trans_cache = (transcache*)in_transcache;
+    return database_getdbid(trans_cache->sysdicts->by_database);
 }
 
 /* 获取数据库的名称 */
-char* ripple_transcache_getdbname(Oid dbid, void* in_transcache)
+char* transcache_getdbname(Oid dbid, void* in_transcache)
 {
-    ripple_transcache* transcache = NULL;
-    transcache = (ripple_transcache*)in_transcache;
-    return ripple_database_getdbname(dbid, transcache->sysdicts->by_database);
+    transcache* trans_cache = NULL;
+    trans_cache = (transcache*)in_transcache;
+    return database_getdbname(dbid, trans_cache->sysdicts->by_database);
 }
 
 /* 获取namespace数据 */
-void* ripple_transcache_getnamespace(Oid oid, void* in_transcache)
+void* transcache_getnamespace(Oid oid, void* in_transcache)
 {
-    ripple_transcache* transcache = NULL;
-    transcache = (ripple_transcache*)in_transcache;
-    return ripple_namespace_getbyoid(oid, transcache->sysdicts->by_namespace);
+    transcache* trans_cache = NULL;
+    trans_cache = (transcache*)in_transcache;
+    return namespace_getbyoid(oid, trans_cache->sysdicts->by_namespace);
 }
 
 /* 获取class数据 */
-void* ripple_transcache_getclass(Oid oid, void* in_transcache)
+void* transcache_getclass(Oid oid, void* in_transcache)
 {
-    ripple_transcache* transcache = NULL;
-    transcache = (ripple_transcache*)in_transcache;
-    return ripple_class_getbyoid(oid, transcache->sysdicts->by_class);
+    transcache* trans_cache = NULL;
+    trans_cache = (transcache*)in_transcache;
+    return class_getbyoid(oid, trans_cache->sysdicts->by_class);
 }
 
 /* 获取attribute数据 */
-void* ripple_transcache_getattributes(Oid oid, void* in_transcache)
+void* transcache_getattributes(Oid oid, void* in_transcache)
 {
-    ripple_transcache* transcache = NULL;
-    transcache = (ripple_transcache*)in_transcache;
-    return ripple_attribute_getbyoid(oid, transcache->sysdicts->by_attribute);
+    transcache* trans_cache = NULL;
+    trans_cache = (transcache*)in_transcache;
+    return attribute_getbyoid(oid, trans_cache->sysdicts->by_attribute);
 }
 
 /* 获取index链表 */
-void* ripple_transcache_getindex(Oid oid, void* in_transcache)
+void* transcache_getindex(Oid oid, void* in_transcache)
 {
-    ripple_transcache* transcache = NULL;
-    transcache = (ripple_transcache*)in_transcache;
-    return ripple_index_getbyoid(oid, transcache->sysdicts->by_index);
+    transcache* trans_cache = NULL;
+    trans_cache = (transcache*)in_transcache;
+    return index_getbyoid(oid, trans_cache->sysdicts->by_index);
 }
 
 /* 获取type数据 */
-void* ripple_transcache_gettype(Oid oid, void* in_transcache)
+void* transcache_gettype(Oid oid, void* in_transcache)
 {
-    ripple_transcache* transcache = NULL;
-    transcache = (ripple_transcache*)in_transcache;
-    return ripple_type_getbyoid(oid, transcache->sysdicts->by_type);
+    transcache* trans_cache = NULL;
+    trans_cache = (transcache*)in_transcache;
+    return type_getbyoid(oid, trans_cache->sysdicts->by_type);
 }
 

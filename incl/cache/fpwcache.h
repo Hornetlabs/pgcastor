@@ -1,5 +1,5 @@
-#ifndef RIPPLE_FPWCACHE_H
-#define RIPPLE_FPWCACHE_H
+#ifndef FPWCACHE_H
+#define FPWCACHE_H
 
 typedef struct REORDERBUFFERFPWKEY
 {
@@ -26,12 +26,12 @@ typedef struct ReorderBufferFPWNode
 }ReorderBufferFPWNode;
 
 
-extern HTAB *ripple_fpwcache_init(ripple_transcache *transcache);
-extern void ripple_fpwcache_add(ripple_transcache *transcache,
+extern HTAB *fpwcache_init(transcache *transcache);
+extern void fpwcache_add(transcache *transcache,
                                 ReorderBufferFPWKey *key,
                                 ReorderBufferFPWEntry *entry);
 
-extern void ripple_fpwcache_calcredolsnbyrestartlsn(ripple_transcache *transcache,
+extern void fpwcache_calcredolsnbyrestartlsn(transcache *transcache,
                                             XLogRecPtr restartlsn,
                                             XLogRecPtr* redolsn);
 

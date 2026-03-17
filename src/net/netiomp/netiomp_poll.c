@@ -1,10 +1,10 @@
-#include "ripple_app_incl.h"
-#include "port/net/ripple_net.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
+#include "app_incl.h"
+#include "port/net/net.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
 
 /* 重置 */
-void ripple_netiomp_pollreset(ripple_netiompbase* base)
+void netiomp_pollreset(netiompbase* base)
 {
     if(NULL == base)
     {
@@ -17,19 +17,19 @@ void ripple_netiomp_pollreset(ripple_netiompbase* base)
 }
 
 /* 创建函数 */
-bool ripple_netiomp_pollcreate(ripple_netiompbase** refbase)
+bool netiomp_pollcreate(netiompbase** refbase)
 {
-    ripple_netiompbase* base = NULL;
+    netiompbase* base = NULL;
 
-    base = (ripple_netiompbase*)rmalloc1(sizeof(ripple_netiompbase));
+    base = (netiompbase*)rmalloc1(sizeof(netiompbase));
     if(NULL == base)
     {
         return false;
     }
-    rmemset0(base, 0, '\0', sizeof(ripple_netiompbase));
+    rmemset0(base, 0, '\0', sizeof(netiompbase));
 
     base->num = 0;
-    base->max = RIPPLE_MAXFD;
+    base->max = MAXFD;
     base->events = (struct pollfd*)rmalloc0(sizeof(struct pollfd)* base->max);
     if (NULL == base->events)
     {
@@ -50,7 +50,7 @@ bool ripple_netiomp_pollcreate(ripple_netiompbase** refbase)
  *  -1          错误
  *  > 0         位置信息
  */
-int ripple_netiomp_polladd(ripple_netiompbase* base, int fd, uint16 flag)
+int netiomp_polladd(netiompbase* base, int fd, uint16 flag)
 {
     int pos = 0;
     int nnum = 0;
@@ -78,30 +78,30 @@ int ripple_netiomp_polladd(ripple_netiompbase* base, int fd, uint16 flag)
 }
 
 /* 删除描述符，在此模型中无用 */
-int ripple_netiomp_polldel(ripple_netiompbase* base, int fd)
+int netiomp_polldel(netiompbase* base, int fd)
 {
     return 0;
 }
 
 /* 修改描述符, 在此模型中无用 */
-int ripple_netiomp_pollmodify(ripple_netiompbase* base, int fd)
+int netiomp_pollmodify(netiompbase* base, int fd)
 {
     return 0;
 }
 
 /* 监听事件 */
-int ripple_netiomp_poll(ripple_netiompbase* base)
+int netiomp_poll(netiompbase* base)
 {
-    return ripple_poll(base->events, base->num, base->timeout);
+    return poll(base->events, base->num, base->timeout);
 }
 
 /* 获取触发事件的类型 */
-int ripple_netiomp_getevent(ripple_netiompbase* base, int pos)
+int netiomp_getevent(netiompbase* base, int pos)
 {
     return base->events[pos].revents;
 }
 
-void ripple_netiomp_free(ripple_netiompbase* base)
+void netiomp_free(netiompbase* base)
 {
     if (NULL == base)
     {

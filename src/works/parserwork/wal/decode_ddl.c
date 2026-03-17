@@ -1,4 +1,4 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
@@ -6,68 +6,68 @@
 #include "utils/hash/hash_search.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/string/stringinfo.h"
-#include "misc/ripple_misc_stat.h"
+#include "misc/misc_stat.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_errnodef.h"
 #include "common/xk_pg_parser_translog.h"
 #include "common/xk_pg_parser_common_utils.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
 #include "utils/mpage/mpage.h"
-#include "queue/ripple_queue.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadwalrecords.h"
-#include "catalog/ripple_catalog.h"
-#include "stmts/ripple_txnstmt.h"
-#include "snapshot/ripple_snapshot.h"
-#include "works/parserwork/wal/ripple_rewind.h"
-#include "works/parserwork/wal/ripple_parserwork_decode.h"
-#include "works/parserwork/wal/ripple_decode_ddl.h"
-#include "works/parserwork/wal/ripple_decode_colvalue.h"
-#include "utils/regex/ripple_regex.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "refresh/ripple_refresh_table_sharding.h"
-#include "strategy/ripple_filter_dataset.h"
+#include "queue/queue.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadwalrecords.h"
+#include "catalog/catalog.h"
+#include "stmts/txnstmt.h"
+#include "snapshot/snapshot.h"
+#include "works/parserwork/wal/rewind.h"
+#include "works/parserwork/wal/parserwork_decode.h"
+#include "works/parserwork/wal/decode_ddl.h"
+#include "works/parserwork/wal/decode_colvalue.h"
+#include "utils/regex/regex.h"
+#include "refresh/refresh_tables.h"
+#include "refresh/refresh_table_sharding.h"
+#include "strategy/filter_dataset.h"
 
-#define RIPPLE_INDEX_HEAP_TYPID                   (uint32_t) 2
-#define RIPPLE_INDEX_BTREE_TYPID                  (uint32_t) 403
-#define RIPPLE_INDEX_HASH_TYPID                   (uint32_t) 405
-#define RIPPLE_INDEX_GIST_TYPID                   (uint32_t) 783
-#define RIPPLE_INDEX_GIN_TYPID                    (uint32_t) 2742
-#define RIPPLE_INDEX_SPGIST_TYPID                 (uint32_t) 4000
-#define RIPPLE_INDEX_BRIN_TYPID                   (uint32_t) 3580
+#define INDEX_HEAP_TYPID                   (uint32_t) 2
+#define INDEX_BTREE_TYPID                  (uint32_t) 403
+#define INDEX_HASH_TYPID                   (uint32_t) 405
+#define INDEX_GIST_TYPID                   (uint32_t) 783
+#define INDEX_GIN_TYPID                    (uint32_t) 2742
+#define INDEX_SPGIST_TYPID                 (uint32_t) 4000
+#define INDEX_BRIN_TYPID                   (uint32_t) 3580
 
-#define RIPPLE_UNUSED(x) (void) (x)
+#define UNUSED(x) (void) (x)
 
 static char *ddl_get_index_typname_by_oid(Oid oid)
 {
     switch (oid)
     {
-    case RIPPLE_INDEX_HEAP_TYPID:
+    case INDEX_HEAP_TYPID:
         return rstrdup("HEAP");
         break;
-    case RIPPLE_INDEX_BTREE_TYPID:
+    case INDEX_BTREE_TYPID:
         return rstrdup("BTREE");
         break;
-    case RIPPLE_INDEX_HASH_TYPID:
+    case INDEX_HASH_TYPID:
         return rstrdup("HASH");
         break;
-    case RIPPLE_INDEX_GIST_TYPID:
+    case INDEX_GIST_TYPID:
         return rstrdup("GIST");
         break;
-    case RIPPLE_INDEX_GIN_TYPID:
+    case INDEX_GIN_TYPID:
         return rstrdup("GIN");
         break;
-    case RIPPLE_INDEX_SPGIST_TYPID:
+    case INDEX_SPGIST_TYPID:
         return rstrdup("SPGIST");
         break;
-    case RIPPLE_INDEX_BRIN_TYPID:
+    case INDEX_BRIN_TYPID:
         return rstrdup("BRIN");
         break;
     default:
@@ -76,12 +76,12 @@ static char *ddl_get_index_typname_by_oid(Oid oid)
     }
 }
 
-static bool ddl_check_in_dataset(Oid oid, ripple_decodingcontext *decodingctx, ripple_txn *txn)
+static bool ddl_check_in_dataset(Oid oid, decodingcontext *decodingctx, txn *txn)
 {
     if (oid != InvalidOid)
     {
-        if (ripple_filter_dataset_ddl(txn->hsyncdataset, oid)
-         || ripple_filter_dataset_ddl(decodingctx->transcache->hsyncdataset, oid))
+        if (filter_dataset_ddl(txn->hsyncdataset, oid)
+         || filter_dataset_ddl(decodingctx->trans_cache->hsyncdataset, oid))
         {
             /* 再数据集名单中 */
             return true;
@@ -94,7 +94,7 @@ static char *ddl_get_rolename_by_oid(HTAB *pg_authid, uint32_t oid)
 {
     xk_pg_sysdict_Form_pg_authid authid = NULL;
     char *result = NULL;
-    authid = (xk_pg_sysdict_Form_pg_authid) ripple_catalog_get_authid_sysdict(pg_authid,
+    authid = (xk_pg_sysdict_Form_pg_authid) catalog_get_authid_sysdict(pg_authid,
                                                                               NULL,
                                                                               NULL,
                                                                               oid);
@@ -106,17 +106,17 @@ static char *ddl_get_rolename_by_oid(HTAB *pg_authid, uint32_t oid)
 }
 
 /* ddl语句可能需要查找事务内缓存 */
-static char *ddl_get_namespace_name_by_oid(ripple_decodingcontext *decodingctx,
+static char *ddl_get_namespace_name_by_oid(decodingcontext *decodingctx,
                                            Oid nspoid,
-                                           ripple_txn *txn)
+                                           txn *txn)
 {
-    HTAB *pgnsp_htab = decodingctx->transcache->sysdicts->by_namespace;
+    HTAB *pgnsp_htab = decodingctx->trans_cache->sysdicts->by_namespace;
     xk_pg_parser_sysdict_pgnamespace *nsp = NULL;
     List *list_dict_his = txn->sysdictHis;
     List *list_dict = txn->sysdict;
 
     /* 从缓存中查找系统表记录 */
-    nsp = (xk_pg_parser_sysdict_pgnamespace *) ripple_catalog_get_namespace_sysdict(pgnsp_htab,
+    nsp = (xk_pg_parser_sysdict_pgnamespace *) catalog_get_namespace_sysdict(pgnsp_htab,
                                                                                     list_dict,
                                                                                     list_dict_his,
                                                                                     nspoid);
@@ -127,16 +127,16 @@ static char *ddl_get_namespace_name_by_oid(ripple_decodingcontext *decodingctx,
     return nsp->nspname.data;
 }
 
-static char *ddl_get_type_name_by_oid_in_sysdict(ripple_decodingcontext *decodingctx,
+static char *ddl_get_type_name_by_oid_in_sysdict(decodingcontext *decodingctx,
                                            Oid typeoid,
-                                           ripple_txn *txn)
+                                           txn *txn)
 {
-    HTAB *pgtyp_htab = decodingctx->transcache->sysdicts->by_type;
+    HTAB *pgtyp_htab = decodingctx->trans_cache->sysdicts->by_type;
     xk_pg_parser_sysdict_pgtype *typ = NULL;
     List *list_dict_his = txn->sysdictHis;
     List *list_dict = txn->sysdict;
 
-    typ = (xk_pg_parser_sysdict_pgtype *) ripple_catalog_get_type_sysdict(pgtyp_htab,
+    typ = (xk_pg_parser_sysdict_pgtype *) catalog_get_type_sysdict(pgtyp_htab,
                                                                           list_dict,
                                                                           list_dict_his,
                                                                           typeoid);
@@ -148,16 +148,16 @@ static char *ddl_get_type_name_by_oid_in_sysdict(ripple_decodingcontext *decodin
     return typ->typname.data;
 }
 
-static char *ddl_get_relname_by_oid(ripple_decodingcontext *decodingctx,
+static char *ddl_get_relname_by_oid(decodingcontext *decodingctx,
                                     Oid oid,
-                                    ripple_txn *txn)
+                                    txn *txn)
 {
-    HTAB *pgclass_htab = decodingctx->transcache->sysdicts->by_class;
+    HTAB *pgclass_htab = decodingctx->trans_cache->sysdicts->by_class;
     xk_pg_parser_sysdict_pgclass *rel = NULL;
     List *list_dict_his = txn->sysdictHis;
     List *list_dict = txn->sysdict;
 
-    rel = (xk_pg_parser_sysdict_pgclass *) ripple_catalog_get_class_sysdict(pgclass_htab,
+    rel = (xk_pg_parser_sysdict_pgclass *) catalog_get_class_sysdict(pgclass_htab,
                                                                             list_dict,
                                                                             list_dict_his,
                                                                             oid);
@@ -169,16 +169,16 @@ static char *ddl_get_relname_by_oid(ripple_decodingcontext *decodingctx,
     return rel->relname.data;
 }
 
-static uint32_t ddl_get_relnspoid_by_reloid(ripple_decodingcontext *decodingctx,
+static uint32_t ddl_get_relnspoid_by_reloid(decodingcontext *decodingctx,
                                     Oid oid,
-                                    ripple_txn *txn)
+                                    txn *txn)
 {
-    HTAB *pgclass_htab = decodingctx->transcache->sysdicts->by_class;
+    HTAB *pgclass_htab = decodingctx->trans_cache->sysdicts->by_class;
     xk_pg_parser_sysdict_pgclass *rel = NULL;
     List *list_dict_his = txn->sysdictHis;
     List *list_dict = txn->sysdict;
 
-    rel = (xk_pg_parser_sysdict_pgclass *) ripple_catalog_get_class_sysdict(pgclass_htab,
+    rel = (xk_pg_parser_sysdict_pgclass *) catalog_get_class_sysdict(pgclass_htab,
                                                                             list_dict,
                                                                             list_dict_his,
                                                                             oid);
@@ -190,17 +190,17 @@ static uint32_t ddl_get_relnspoid_by_reloid(ripple_decodingcontext *decodingctx,
     return rel->relnamespace;
 }
 
-static char *ddl_get_attname_by_attrelid_attnum(ripple_decodingcontext *decodingctx,
-                                                ripple_txn *txn,
+static char *ddl_get_attname_by_attrelid_attnum(decodingcontext *decodingctx,
+                                                txn *txn,
                                                 Oid attrelid,
                                                 uint16_t attnum)
 {
-    HTAB *pgatt_htab = decodingctx->transcache->sysdicts->by_attribute;
+    HTAB *pgatt_htab = decodingctx->trans_cache->sysdicts->by_attribute;
     xk_pg_parser_sysdict_pgattributes *att = NULL;
     List *list_dict_his = txn->sysdictHis;
     List *list_dict = txn->sysdict;
 
-    att = (xk_pg_parser_sysdict_pgattributes *)ripple_catalog_get_attribute_sysdict(pgatt_htab,
+    att = (xk_pg_parser_sysdict_pgattributes *)catalog_get_attribute_sysdict(pgatt_htab,
                                                                                     list_dict,
                                                                                     list_dict_his,
                                                                                     attrelid,
@@ -212,12 +212,12 @@ static char *ddl_get_attname_by_attrelid_attnum(ripple_decodingcontext *decoding
     return att->attname.data;
 }
 
-static char *ddl_get_typename_by_oid(ripple_decodingcontext *decodingctx, Oid typoid, ripple_txn *txn)
+static char *ddl_get_typename_by_oid(decodingcontext *decodingctx, Oid typoid, txn *txn)
 {
-    HTAB *pgtyp_htab = decodingctx->transcache->sysdicts->by_type;
+    HTAB *pgtyp_htab = decodingctx->trans_cache->sysdicts->by_type;
    xk_pg_parser_sysdict_pgtype *typ = NULL;
 
-    typ = (xk_pg_parser_sysdict_pgtype *)ripple_catalog_get_type_sysdict(pgtyp_htab,
+    typ = (xk_pg_parser_sysdict_pgtype *)catalog_get_type_sysdict(pgtyp_htab,
                                                                          NULL,
                                                                          NULL,
                                                                          typoid);
@@ -228,12 +228,12 @@ static char *ddl_get_typename_by_oid(ripple_decodingcontext *decodingctx, Oid ty
     return typ->typname.data;
 }
 
-static char *ddl_get_op_name_by_oid(ripple_decodingcontext *decodingctx, Oid oid)
+static char *ddl_get_op_name_by_oid(decodingcontext *decodingctx, Oid oid)
 {
-    HTAB *pgop_htab = decodingctx->transcache->sysdicts->by_operator;
+    HTAB *pgop_htab = decodingctx->trans_cache->sysdicts->by_operator;
     xk_pg_parser_sysdict_pgoperator *op = NULL;
 
-    op = (xk_pg_parser_sysdict_pgoperator *)ripple_catalog_get_operator_sysdict(pgop_htab,
+    op = (xk_pg_parser_sysdict_pgoperator *)catalog_get_operator_sysdict(pgop_htab,
                                                                                 NULL,
                                                                                 NULL,
                                                                                 oid);
@@ -244,12 +244,12 @@ static char *ddl_get_op_name_by_oid(ripple_decodingcontext *decodingctx, Oid oid
     return op->oprname.data;
 }
 
-static char *ddl_get_funcname_by_oid(ripple_decodingcontext *decodingctx, Oid oid)
+static char *ddl_get_funcname_by_oid(decodingcontext *decodingctx, Oid oid)
 {
-    HTAB *pgproc_htab = decodingctx->transcache->sysdicts->by_proc;
+    HTAB *pgproc_htab = decodingctx->trans_cache->sysdicts->by_proc;
     xk_pg_parser_sysdict_pgproc *proc = NULL;
 
-    proc = (xk_pg_parser_sysdict_pgproc *)ripple_catalog_get_proc_sysdict(pgproc_htab,
+    proc = (xk_pg_parser_sysdict_pgproc *)catalog_get_proc_sysdict(pgproc_htab,
                                                                               NULL,
                                                                               NULL,
                                                                               oid);
@@ -260,8 +260,8 @@ static char *ddl_get_funcname_by_oid(ripple_decodingcontext *decodingctx, Oid oi
     return proc->proname.data;
 }
 
-static StringInfo ddl_parser_node(ripple_decodingcontext *decodingctx,
-                                  ripple_txn *txn,
+static StringInfo ddl_parser_node(decodingcontext *decodingctx,
+                                  txn *txn,
                                   xk_pg_parser_nodetree *node,
                                   Oid relid,
                                   int local)
@@ -381,8 +381,8 @@ static StringInfo ddl_parser_node(ripple_decodingcontext *decodingctx,
 
 
 /* CREATE STMT */
-static xk_pg_parser_translog_ddlstmt *prepare_create_table(ripple_decodingcontext *decodingctx,
-                                 ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_create_table(decodingcontext *decodingctx,
+                                 txn *txn,
                                  xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_createtable *table = (xk_pg_parser_translog_ddlstmt_createtable *)
@@ -392,28 +392,28 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(ripple_decodingcontex
     int i = 0;
     bool identity = false;
 
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
 
     nspname = ddl_get_namespace_name_by_oid(decodingctx, table->m_nspoid, txn);
 
     /* 过滤 */
     /* CREATE_TABLE ADD FILTER */
-    if (ripple_filter_dataset_matchforcreate(decodingctx->transcache->addtablepattern, nspname, table->m_tabname))
+    if (filter_dataset_matchforcreate(decodingctx->trans_cache->addtablepattern, nspname, table->m_tabname))
     {
         if (!txn->hsyncdataset)
         {
             HASHCTL hctl = {'\0'};
             HTAB *temp_filter = NULL;
             hctl.keysize = sizeof(Oid);
-            hctl.entrysize = sizeof(ripple_filter_oid2datasetnode);
+            hctl.entrysize = sizeof(filter_oid2datasetnode);
             temp_filter = hash_create("txn_filter_d2o_htab",
                                     128,
                                     &hctl,
                                     HASH_ELEM | HASH_BLOBS);
             txn->hsyncdataset = temp_filter;
         }
-        ripple_filter_dataset_add(txn->hsyncdataset, table->m_relid, nspname, table->m_tabname);
+        filter_dataset_add(txn->hsyncdataset, table->m_relid, nspname, table->m_tabname);
     }
     else
     {
@@ -421,11 +421,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(ripple_decodingcontex
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     appendStringInfo(result, "CREATE ");
     if (table->m_logtype == XK_PG_PARSER_DDL_TABLE_LOG_TEMP)
@@ -567,7 +567,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(ripple_decodingcontex
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -578,23 +578,23 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(ripple_decodingcontex
     txn->stmts = lappend(txn->stmts, (void*)stmt);
     if (table->m_owner)
     {
-        ripple_txnstmt *stmt_owner = NULL;
+        txnstmt *stmt_owner = NULL;
         StringInfo owner = NULL;
-        ripple_txnstmt_ddl *temp_stmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
-        char *rolename = ddl_get_rolename_by_oid(decodingctx->transcache->sysdicts->by_authid,
+        txnstmt_ddl *temp_stmt = rmalloc0(sizeof(txnstmt_ddl));
+        char *rolename = ddl_get_rolename_by_oid(decodingctx->trans_cache->sysdicts->by_authid,
                                                  table->m_owner);
-        rmemset0(temp_stmt, 0, 0, sizeof(ripple_txnstmt_ddl));
+        rmemset0(temp_stmt, 0, 0, sizeof(txnstmt_ddl));
         if (!rolename)
         {
             elog(RLOG_WARNING, "can't find owner by oid %u", table->m_owner);
             return (ddl_result);
         }
 
-        stmt_owner = rmalloc0(sizeof(ripple_txnstmt));
+        stmt_owner = rmalloc0(sizeof(txnstmt));
         owner = makeStringInfo();
 
-        rmemset0(stmt_owner, 0, 0, sizeof(ripple_txnstmt));
-        stmt_owner->type = RIPPLE_TXNSTMT_TYPE_DDL;
+        rmemset0(stmt_owner, 0, 0, sizeof(txnstmt));
+        stmt_owner->type = TXNSTMT_TYPE_DDL;
 
         appendStringInfo(owner, "ALTER TABLE \"%s\".\"%s\" OWNER TO \"%s\";", nspname,
                                                                       table->m_tabname,
@@ -602,7 +602,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(ripple_decodingcontex
         stmt_owner->len = strlen(owner->data);
         //txn->stmtsize += 20;
         txn->stmtsize += stmt_owner->len;
-        decodingctx->transcache->totalsize += stmt_owner->len;
+        decodingctx->trans_cache->totalsize += stmt_owner->len;
         temp_stmt->type = XK_PG_PARSER_DDLTYPE_ALTER;
         temp_stmt->subtype = XK_PG_PARSER_DDLINFO_ALTER_TABLE_OWNER;
         temp_stmt->ddlstmt = rstrdup(owner->data);
@@ -612,34 +612,34 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(ripple_decodingcontex
         txn->stmts = lappend(txn->stmts, (void*)stmt_owner);
     }
 
-    identity = guc_getConfigOptionInt(RIPPLE_CFG_KEY_ENABLE_REPLICA_IDENTITY) ? true : false;
+    identity = guc_getConfigOptionInt(CFG_KEY_ENABLE_REPLICA_IDENTITY) ? true : false;
     if (identity)
     {
-        ripple_txnstmt *stmt_ident = NULL;
+        txnstmt *stmt_ident = NULL;
         StringInfo ident = NULL;
-        ripple_txnstmt_ddl *temp_stmt = NULL;
+        txnstmt_ddl *temp_stmt = NULL;
 
-        temp_stmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+        temp_stmt = rmalloc0(sizeof(txnstmt_ddl));
         if (!temp_stmt)
         {
             elog(RLOG_ERROR, "oom");
         }
 
-        rmemset0(temp_stmt, 0, 0, sizeof(ripple_txnstmt_ddl));
+        rmemset0(temp_stmt, 0, 0, sizeof(txnstmt_ddl));
 
-        stmt_ident = rmalloc0(sizeof(ripple_txnstmt));
+        stmt_ident = rmalloc0(sizeof(txnstmt));
 
         ident = makeStringInfo();
 
-        rmemset0(stmt_ident, 0, 0, sizeof(ripple_txnstmt));
-        stmt_ident->type = RIPPLE_TXNSTMT_TYPE_DDL;
+        rmemset0(stmt_ident, 0, 0, sizeof(txnstmt));
+        stmt_ident->type = TXNSTMT_TYPE_DDL;
 
         appendStringInfo(ident, "ALTER TABLE \"%s\".\"%s\" REPLICA IDENTITY FULL;", nspname,
                                                                                     table->m_tabname);
         stmt_ident->len = ident->len;
         //txn->stmtsize += 20;
         txn->stmtsize += stmt_ident->len;
-        decodingctx->transcache->totalsize += stmt_ident->len;
+        decodingctx->trans_cache->totalsize += stmt_ident->len;
         temp_stmt->type = XK_PG_PARSER_DDLTYPE_ALTER;
         temp_stmt->subtype = XK_PG_PARSER_DDLINFO_ALTER_TABLE_REPLICA_IDENTIFITY;
         temp_stmt->ddlstmt = rstrdup(ident->data);
@@ -651,26 +651,26 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_table(ripple_decodingcontex
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_create_namespace(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_create_namespace(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_valuebase *schema = (xk_pg_parser_translog_ddlstmt_valuebase *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
-    ripple_txnstmt *stmt = rmalloc0(sizeof(ripple_txnstmt));
-    ripple_txnstmt_ddl *dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    RIPPLE_UNUSED(decodingctx);
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    txnstmt *stmt = rmalloc0(sizeof(txnstmt));
+    txnstmt_ddl *dstmt = rmalloc0(sizeof(txnstmt_ddl));
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    UNUSED(decodingctx);
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     appendStringInfo(result, "CREATE SCHEMA \"%s\";", schema->m_value);
 
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -681,31 +681,31 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_namespace(ripple_decodingco
 
     if (schema->m_owner)
     {
-        ripple_txnstmt *stmt_owner = NULL;
-        ripple_txnstmt_ddl *temp_stmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+        txnstmt *stmt_owner = NULL;
+        txnstmt_ddl *temp_stmt = rmalloc0(sizeof(txnstmt_ddl));
         StringInfo owner = NULL;
-        char *rolename = ddl_get_rolename_by_oid(decodingctx->transcache->sysdicts->by_authid,
+        char *rolename = ddl_get_rolename_by_oid(decodingctx->trans_cache->sysdicts->by_authid,
                                                  schema->m_owner);
 
-        rmemset0(temp_stmt, 0, 0, sizeof(ripple_txnstmt_ddl));
+        rmemset0(temp_stmt, 0, 0, sizeof(txnstmt_ddl));
         if (!rolename)
         {
             elog(RLOG_WARNING, "can't find owner by oid %u", schema->m_owner);
             return (ddl_result);
         }
 
-        stmt_owner = rmalloc0(sizeof(ripple_txnstmt));
+        stmt_owner = rmalloc0(sizeof(txnstmt));
         owner = makeStringInfo();
 
-        rmemset0(stmt_owner, 0, 0, sizeof(ripple_txnstmt));
-        stmt_owner->type = RIPPLE_TXNSTMT_TYPE_DDL;
+        rmemset0(stmt_owner, 0, 0, sizeof(txnstmt));
+        stmt_owner->type = TXNSTMT_TYPE_DDL;
 
         appendStringInfo(owner, "ALTER SCHEMA \"%s\" OWNER TO \"%s\";", schema->m_value,
                                                                         rolename);
         stmt_owner->len = strlen(owner->data);
         //txn->stmtsize += 20;
         txn->stmtsize += stmt_owner->len;
-    decodingctx->transcache->totalsize += stmt_owner->len;
+    decodingctx->trans_cache->totalsize += stmt_owner->len;
         temp_stmt->type = XK_PG_PARSER_DDLTYPE_ALTER;
         temp_stmt->subtype = XK_PG_PARSER_DDLINFO_ALTER_TABLE_OWNER;
         temp_stmt->ddlstmt = rstrdup(owner->data);
@@ -717,8 +717,8 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_namespace(ripple_decodingco
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_create_index(ripple_decodingcontext *decodingctx,
-                                 ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_create_index(decodingcontext *decodingctx,
+                                 txn *txn,
                                  xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_index *index = (xk_pg_parser_translog_ddlstmt_index *)
@@ -730,8 +730,8 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_index(ripple_decodingcontex
     int count = 1;
     Oid nsp_oid = InvalidOid;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
 
     if (false == ddl_check_in_dataset(index->m_relid, decodingctx, txn))
     {
@@ -739,11 +739,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_index(ripple_decodingcontex
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     relname = ddl_get_relname_by_oid(decodingctx, index->m_relid, txn);
     nsp_oid = ddl_get_relnspoid_by_reloid(decodingctx, index->m_relid, txn);
@@ -781,7 +781,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_index(ripple_decodingcontex
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -794,21 +794,21 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_index(ripple_decodingcontex
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_create_sequence(ripple_decodingcontext *decodingctx,
-                                    ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_create_sequence(decodingcontext *decodingctx,
+                                    txn *txn,
                                     xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_sequence *seq = (xk_pg_parser_translog_ddlstmt_sequence *)
                                                    ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
-    ripple_txnstmt *stmt = rmalloc0(sizeof(ripple_txnstmt));
-    ripple_txnstmt_ddl *dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    txnstmt *stmt = rmalloc0(sizeof(txnstmt));
+    txnstmt_ddl *dstmt = rmalloc0(sizeof(txnstmt_ddl));
     char *typname = NULL;
     char *temp_nsp_name = NULL;
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     typname = ddl_get_typename_by_oid(decodingctx, seq->m_seqtypid, txn);
     temp_nsp_name = ddl_get_namespace_name_by_oid(decodingctx, seq->m_seqnspid, txn);
@@ -828,7 +828,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_sequence(ripple_decodingcon
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -840,22 +840,22 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_sequence(ripple_decodingcon
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_create_type(ripple_decodingcontext *decodingctx,
-                                ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_create_type(decodingcontext *decodingctx,
+                                txn *txn,
                                 xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_type *typ = (xk_pg_parser_translog_ddlstmt_type *)
                                                ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
-    ripple_txnstmt *stmt = rmalloc0(sizeof(ripple_txnstmt));
-    ripple_txnstmt_ddl *dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    txnstmt *stmt = rmalloc0(sizeof(txnstmt));
+    txnstmt_ddl *dstmt = rmalloc0(sizeof(txnstmt_ddl));
     char *nspname = NULL;
     char *typname = NULL;
     int i = 0;
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     nspname = ddl_get_namespace_name_by_oid(decodingctx, typ->m_typnspid, txn);
     if (typ->m_typtype == XK_PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_DOMAIN)
@@ -910,7 +910,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_type(ripple_decodingcontext
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -921,24 +921,24 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_type(ripple_decodingcontext
     txn->stmts = lappend(txn->stmts, (void*)stmt);
     if (typ->m_owner)
     {
-        ripple_txnstmt *stmt_owner = NULL;
-        ripple_txnstmt_ddl *temp_stmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+        txnstmt *stmt_owner = NULL;
+        txnstmt_ddl *temp_stmt = rmalloc0(sizeof(txnstmt_ddl));
         StringInfo owner = NULL;
-        char *rolename = ddl_get_rolename_by_oid(decodingctx->transcache->sysdicts->by_authid,
+        char *rolename = ddl_get_rolename_by_oid(decodingctx->trans_cache->sysdicts->by_authid,
                                                  typ->m_owner);
 
-        rmemset0(temp_stmt, 0, 0, sizeof(ripple_txnstmt_ddl));
+        rmemset0(temp_stmt, 0, 0, sizeof(txnstmt_ddl));
         if (!rolename)
         {
             elog(RLOG_WARNING, "can't find owner by oid %u", typ->m_owner);
             return (ddl_result);
         }
 
-        stmt_owner = rmalloc0(sizeof(ripple_txnstmt));
+        stmt_owner = rmalloc0(sizeof(txnstmt));
         owner = makeStringInfo();
 
-        rmemset0(stmt_owner, 0, 0, sizeof(ripple_txnstmt));
-        stmt_owner->type = RIPPLE_TXNSTMT_TYPE_DDL;
+        rmemset0(stmt_owner, 0, 0, sizeof(txnstmt));
+        stmt_owner->type = TXNSTMT_TYPE_DDL;
 
         appendStringInfo(owner, "ALTER TYPE \"%s\".\"%s\" OWNER TO \"%s\";", nspname,
                                                                       typ->m_type_name,
@@ -946,7 +946,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_type(ripple_decodingcontext
         stmt_owner->len = strlen(owner->data);
         //txn->stmtsize += 20;
         txn->stmtsize += stmt_owner->len;
-    decodingctx->transcache->totalsize += stmt_owner->len;
+    decodingctx->trans_cache->totalsize += stmt_owner->len;
         temp_stmt->type = XK_PG_PARSER_DDLTYPE_ALTER;
         temp_stmt->subtype = XK_PG_PARSER_DDLINFO_ALTER_TABLE_OWNER;
         temp_stmt->ddlstmt = rstrdup(owner->data);
@@ -957,28 +957,28 @@ static xk_pg_parser_translog_ddlstmt *prepare_create_type(ripple_decodingcontext
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_drop_namespace(ripple_decodingcontext *decodingctx,
-                                   ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_drop_namespace(decodingcontext *decodingctx,
+                                   txn *txn,
                                    xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_valuebase *schema = (xk_pg_parser_translog_ddlstmt_valuebase *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
-    ripple_txnstmt *stmt = rmalloc0(sizeof(ripple_txnstmt));
-    ripple_txnstmt_ddl *dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    txnstmt *stmt = rmalloc0(sizeof(txnstmt));
+    txnstmt_ddl *dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    RIPPLE_UNUSED(decodingctx);
+    UNUSED(decodingctx);
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     appendStringInfo(result, "DROP SCHEMA \"%s\";", schema->m_value);
 
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -990,15 +990,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_namespace(ripple_decodingcont
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_drop_table(ripple_decodingcontext *decodingctx,
-                               ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_drop_table(decodingcontext *decodingctx,
+                               txn *txn,
                                xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_drop_base *table = (xk_pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *nspname = NULL;
 
     if (false == ddl_check_in_dataset(table->m_relid, decodingctx, txn))
@@ -1007,12 +1007,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_table(ripple_decodingcontext 
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     nspname = ddl_get_namespace_name_by_oid(decodingctx, table->m_namespace_oid, txn);
 
@@ -1021,7 +1021,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_table(ripple_decodingcontext 
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1033,15 +1033,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_table(ripple_decodingcontext 
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_drop_index(ripple_decodingcontext *decodingctx,
-                               ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_drop_index(decodingcontext *decodingctx,
+                               txn *txn,
                                xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_drop_base *index = (xk_pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *nspname = NULL;
 
     if (false == ddl_check_in_dataset(index->m_relid, decodingctx, txn))
@@ -1050,11 +1050,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_index(ripple_decodingcontext 
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     nspname = ddl_get_namespace_name_by_oid(decodingctx, index->m_namespace_oid, txn);
 
@@ -1063,7 +1063,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_index(ripple_decodingcontext 
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1075,20 +1075,20 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_index(ripple_decodingcontext 
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_drop_sequence(ripple_decodingcontext *decodingctx,
-                                  ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_drop_sequence(decodingcontext *decodingctx,
+                                  txn *txn,
                                   xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_drop_base *seq = (xk_pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
-    ripple_txnstmt *stmt = rmalloc0(sizeof(ripple_txnstmt));
-    ripple_txnstmt_ddl *dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    txnstmt *stmt = rmalloc0(sizeof(txnstmt));
+    txnstmt_ddl *dstmt = rmalloc0(sizeof(txnstmt_ddl));
     char *nspname = NULL;
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     nspname = ddl_get_namespace_name_by_oid(decodingctx, seq->m_namespace_oid, txn);
 
@@ -1097,7 +1097,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_sequence(ripple_decodingconte
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1109,20 +1109,20 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_sequence(ripple_decodingconte
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_drop_type(ripple_decodingcontext *decodingctx,
-                              ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_drop_type(decodingcontext *decodingctx,
+                              txn *txn,
                               xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_drop_base *typ = (xk_pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = makeStringInfo();
-    ripple_txnstmt *stmt = rmalloc0(sizeof(ripple_txnstmt));
-    ripple_txnstmt_ddl *dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    txnstmt *stmt = rmalloc0(sizeof(txnstmt));
+    txnstmt_ddl *dstmt = rmalloc0(sizeof(txnstmt_ddl));
     char *nspname = NULL;
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     nspname = ddl_get_namespace_name_by_oid(decodingctx, typ->m_namespace_oid, txn);
 
@@ -1131,7 +1131,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_type(ripple_decodingcontext *
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1143,15 +1143,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_drop_type(ripple_decodingcontext *
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename_column(ripple_decodingcontext *decodingctx,
-                                              ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename_column(decodingcontext *decodingctx,
+                                              txn *txn,
                                               xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_altercolumn *rename = (xk_pg_parser_translog_ddlstmt_altercolumn *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *relname = NULL;
     char *nspname = NULL;
     uint32_t nspoid = 0;
@@ -1162,12 +1162,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename_column(ripple_d
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     relname = ddl_get_relname_by_oid(decodingctx, rename->m_relid, txn);
     nspoid = ddl_get_relnspoid_by_reloid(decodingctx, rename->m_relid, txn);
@@ -1180,7 +1180,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename_column(ripple_d
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1192,15 +1192,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename_column(ripple_d
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_null_set(ripple_decodingcontext *decodingctx,
-                                                      ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_null_set(decodingcontext *decodingctx,
+                                                      txn *txn,
                                                       xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_altercolumn *alter = (xk_pg_parser_translog_ddlstmt_altercolumn *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *relname = NULL;
     char *nspname = NULL;
     uint32_t nspoid = 0;
@@ -1211,12 +1211,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_null_set(
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
 
     relname = ddl_get_relname_by_oid(decodingctx, alter->m_relid, txn);
@@ -1233,7 +1233,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_null_set(
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1245,15 +1245,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_null_set(
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_type(ripple_decodingcontext *decodingctx,
-                                                  ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_type(decodingcontext *decodingctx,
+                                                  txn *txn,
                                                   xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_altercolumn *alter = (xk_pg_parser_translog_ddlstmt_altercolumn *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *relname = NULL;
     char *nspname = NULL;
     char *typname = NULL;
@@ -1265,12 +1265,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_type(ripp
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     relname = ddl_get_relname_by_oid(decodingctx, alter->m_relid, txn);
     nspoid = ddl_get_relnspoid_by_reloid(decodingctx, alter->m_relid, txn);
@@ -1299,7 +1299,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_type(ripp
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1311,15 +1311,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_type(ripp
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_default(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_default(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_default *alter = (xk_pg_parser_translog_ddlstmt_default *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     uint32_t nspoid = 0;
     char *relname = NULL;
     char *nspname = NULL;
@@ -1330,12 +1330,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_defa
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
 
     relname = ddl_get_relname_by_oid(decodingctx, alter->m_relid, txn);
@@ -1350,7 +1350,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_defa
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1361,16 +1361,16 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_defa
     txn->stmts = lappend(txn->stmts, (void*)stmt);
     return (ddl_result);
 }
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_default(ripple_decodingcontext *decodingctx,
-                                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_default(decodingcontext *decodingctx,
+                                                     txn *txn,
                                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_default *alter = (xk_pg_parser_translog_ddlstmt_default *)
                                                         ddl_result->m_ddlstmt;
     StringInfo node = NULL;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *relname = NULL;
     char *nspname = NULL;
     uint32_t nspoid = 0;
@@ -1381,12 +1381,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_default(r
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     relname = ddl_get_relname_by_oid(decodingctx, alter->m_relid, txn);
     nspoid = ddl_get_relnspoid_by_reloid(decodingctx, alter->m_relid, txn);
@@ -1403,7 +1403,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_default(r
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1416,15 +1416,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_default(r
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_column(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_column(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_addcolumn *add = (xk_pg_parser_translog_ddlstmt_addcolumn *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *nspname = NULL;
     char *typname = NULL;
 
@@ -1434,12 +1434,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_column(ripple_deco
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     nspname = ddl_get_namespace_name_by_oid(decodingctx, add->m_relnamespace, txn);
     typname = ddl_get_typename_by_oid(decodingctx, add->m_addcolumn->m_coltypid, txn);
@@ -1500,7 +1500,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_column(ripple_deco
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1512,15 +1512,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_column(ripple_deco
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_altertable *table = (xk_pg_parser_translog_ddlstmt_altertable *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *nspname = NULL;
 
     if (false == ddl_check_in_dataset(table->m_relid, decodingctx, txn))
@@ -1529,12 +1529,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename(ripple_decoding
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     nspname = ddl_get_namespace_name_by_oid(decodingctx, table->m_relnamespaceid, txn);
 
@@ -1543,7 +1543,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename(ripple_decoding
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1555,15 +1555,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_rename(ripple_decoding
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_column(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_column(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_altercolumn *drop = (xk_pg_parser_translog_ddlstmt_altercolumn *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *relname = NULL;
     char *nspname = NULL;
     uint32_t nspoid = 0;
@@ -1574,12 +1574,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_colu
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     relname = ddl_get_relname_by_oid(decodingctx, drop->m_relid, txn);
     nspoid = ddl_get_relnspoid_by_reloid(decodingctx, drop->m_relid, txn);
@@ -1592,7 +1592,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_colu
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1604,15 +1604,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_drop_colu
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_tbconstraint *table = (xk_pg_parser_translog_ddlstmt_tbconstraint *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *relname = NULL;
     char *nspname = NULL;
     int i = 0;
@@ -1623,12 +1623,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(ripple_
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     relname = ddl_get_relname_by_oid(decodingctx, table->m_relid, txn);
     nspname = ddl_get_namespace_name_by_oid(decodingctx, table->m_consnspoid, txn);
@@ -1713,7 +1713,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(ripple_
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1725,15 +1725,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_add_constraint(ripple_
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_drop_constraint(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_drop_constraint(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_drop_constraint *cons = (xk_pg_parser_translog_ddlstmt_drop_constraint *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *nspname = NULL;
     char *relname = NULL;
 
@@ -1749,11 +1749,11 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_drop_constraint(ripple
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     nspname = ddl_get_namespace_name_by_oid(decodingctx, cons->m_namespace_oid, txn);
     relname = ddl_get_relname_by_oid(decodingctx, cons->m_relid, txn);
@@ -1763,7 +1763,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_drop_constraint(ripple
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1775,15 +1775,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_drop_constraint(ripple
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_alter_schema(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_alter_schema(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_altertable *table = (xk_pg_parser_translog_ddlstmt_altertable *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *nspname_old = NULL;
     char *nspname_new = NULL;
 
@@ -1793,12 +1793,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_alter_sch
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
 
     nspname_old = ddl_get_namespace_name_by_oid(decodingctx, table->m_relnamespaceid, txn);
     nspname_new = ddl_get_namespace_name_by_oid(decodingctx, table->m_relnamespaceid_new, txn);
@@ -1810,7 +1810,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_alter_sch
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1822,15 +1822,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_alter_column_alter_sch
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_logged(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_logged(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_setlog *setlog = (xk_pg_parser_translog_ddlstmt_setlog *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *nspname = NULL;
 
 
@@ -1840,12 +1840,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_logged(ripple_deco
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
     nspname = ddl_get_namespace_name_by_oid(decodingctx, setlog->m_relnamespace, txn);
 
     appendStringInfo(result, "ALTER TABLE \"%s\".\"%s\" SET LOGGED;", nspname,
@@ -1854,7 +1854,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_logged(ripple_deco
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1866,15 +1866,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_logged(ripple_deco
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_unlogged(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_unlogged(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_setlog *setlog = (xk_pg_parser_translog_ddlstmt_setlog *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *nspname = NULL;
 
     if (false == ddl_check_in_dataset(setlog->m_relid, decodingctx, txn))
@@ -1883,12 +1883,12 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_unlogged(ripple_de
     }
 
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
 
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
     nspname = ddl_get_namespace_name_by_oid(decodingctx, setlog->m_relnamespace, txn);
 
     appendStringInfo(result, "ALTER TABLE \"%s\".\"%s\" SET UNLOGGED;", nspname,
@@ -1897,7 +1897,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_unlogged(ripple_de
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1909,15 +1909,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_alter_table_set_unlogged(ripple_de
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_truncate_table(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_truncate_table(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_drop_base *table = (xk_pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *nspname = NULL;
 
     if (false == ddl_check_in_dataset(table->m_relid, decodingctx, txn))
@@ -1930,13 +1930,13 @@ static xk_pg_parser_translog_ddlstmt *prepare_truncate_table(ripple_decodingcont
         return ddl_result;
     }
 
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
+    stmt = rmalloc0(sizeof(txnstmt));
 
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
     nspname = ddl_get_namespace_name_by_oid(decodingctx, table->m_namespace_oid, txn);
 
     appendStringInfo(result, "TRUNCATE TABLE \"%s\".\"%s\";", nspname,
@@ -1945,7 +1945,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_truncate_table(ripple_decodingcont
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -1957,15 +1957,15 @@ static xk_pg_parser_translog_ddlstmt *prepare_truncate_table(ripple_decodingcont
     return (ddl_result);
 }
 
-static xk_pg_parser_translog_ddlstmt *prepare_reindex(ripple_decodingcontext *decodingctx,
-                                     ripple_txn *txn,
+static xk_pg_parser_translog_ddlstmt *prepare_reindex(decodingcontext *decodingctx,
+                                     txn *txn,
                                      xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt_drop_base *index = (xk_pg_parser_translog_ddlstmt_drop_base *)
                                                         ddl_result->m_ddlstmt;
     StringInfo result = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *nspname = NULL;
 
     if (false == ddl_check_in_dataset(index->m_relid, decodingctx, txn))
@@ -1978,13 +1978,13 @@ static xk_pg_parser_translog_ddlstmt *prepare_reindex(ripple_decodingcontext *de
         return ddl_result;
     }
 
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
     result = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
+    stmt = rmalloc0(sizeof(txnstmt));
 
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
     nspname = ddl_get_namespace_name_by_oid(decodingctx, index->m_namespace_oid, txn);
 
     appendStringInfo(result, "REINDEX INDEX \"%s\".\"%s\";", nspname,
@@ -1993,7 +1993,7 @@ static xk_pg_parser_translog_ddlstmt *prepare_reindex(ripple_decodingcontext *de
     stmt->len = strlen(result->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
     dstmt->subtype = ddl_result->m_base.m_ddlinfo;
     dstmt->ddlstmt = rstrdup(result->data);
@@ -2005,8 +2005,8 @@ static xk_pg_parser_translog_ddlstmt *prepare_reindex(ripple_decodingcontext *de
     return (ddl_result);
 }
 
-static void ddl_stmt2sql(ripple_decodingcontext *decodingctx,
-                         ripple_txn *txn,
+static void ddl_stmt2sql(decodingcontext *decodingctx,
+                         txn *txn,
                          xk_pg_parser_translog_ddlstmt *ddl_result)
 {
     xk_pg_parser_translog_ddlstmt *current_ddl = ddl_result;
@@ -2140,7 +2140,7 @@ static void ddl_stmt2sql(ripple_decodingcontext *decodingctx,
 }
 
 
-void ripple_dml2ddl(ripple_decodingcontext* decodingctx, ripple_txn *txn)
+void dml2ddl(decodingcontext* decodingctx, txn *txn)
 {
 
     xk_pg_parser_translog_systb2ddl *ddl_data = NULL;
@@ -2177,7 +2177,7 @@ void ripple_dml2ddl(ripple_decodingcontext* decodingctx, ripple_txn *txn)
     foreach(cell, txn->sysdict)
     {
         xk_pg_parser_translog_systb2dll_record *ddl_record_current = NULL;
-        ripple_txn_sysdict *dict = lfirst(cell);
+        txn_sysdict *dict = lfirst(cell);
 
         ddl_record_current = rmalloc0(sizeof(xk_pg_parser_translog_systb2dll_record));
         rmemset0(ddl_record_current, 0, 0, sizeof(xk_pg_parser_translog_systb2dll_record));
@@ -2201,13 +2201,13 @@ void ripple_dml2ddl(ripple_decodingcontext* decodingctx, ripple_txn *txn)
     xk_pg_parser_trans_ddl_free(ddl_data, ddl_result);
 }
 
-void heap_ddl_assemble_truncate(ripple_decodingcontext* decodingctx,
-                                ripple_txn *txn,
+void heap_ddl_assemble_truncate(decodingcontext* decodingctx,
+                                txn *txn,
                                 uint32_t oid)
 {
     StringInfo truncate_stmt = NULL;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_ddl *dstmt = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_ddl *dstmt = NULL;
     char *relname = NULL;
 
     if (false == ddl_check_in_dataset(oid, decodingctx, txn))
@@ -2216,11 +2216,11 @@ void heap_ddl_assemble_truncate(ripple_decodingcontext* decodingctx,
     }
 
     truncate_stmt = makeStringInfo();
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    dstmt = rmalloc0(sizeof(ripple_txnstmt_ddl));
-    rmemset0(stmt, 0, '\0', sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DDL;
-    rmemset0(dstmt, 0, 0, sizeof(ripple_txnstmt_ddl));
+    stmt = rmalloc0(sizeof(txnstmt));
+    dstmt = rmalloc0(sizeof(txnstmt_ddl));
+    rmemset0(stmt, 0, '\0', sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DDL;
+    rmemset0(dstmt, 0, 0, sizeof(txnstmt_ddl));
     appendStringInfo(truncate_stmt, "TRUNCATE ");
     relname = ddl_get_relname_by_oid(decodingctx, oid, txn);
     appendStringInfo(truncate_stmt, "%s;", relname);
@@ -2228,7 +2228,7 @@ void heap_ddl_assemble_truncate(ripple_decodingcontext* decodingctx,
     stmt->len = strlen(truncate_stmt->data);
     //txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = XK_PG_PARSER_DDLTYPE_SPECIAL;
     dstmt->subtype = XK_PG_PARSER_DDLINFO_TRUNCATE;
     dstmt->ddlstmt = rstrdup(truncate_stmt->data);

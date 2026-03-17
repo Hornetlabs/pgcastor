@@ -1,6 +1,6 @@
 %{
     /* 头文件 */
-    #include "ripple_c.h"
+    #include "app_c.h"
     #include "xscsci_scansup.h"
     #include "xscsci_gram.h"
 

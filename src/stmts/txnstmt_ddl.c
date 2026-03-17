@@ -1,18 +1,18 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/list/list_func.h"
-#include "stmts/ripple_txnstmt.h"
-#include "stmts/ripple_txnstmt_ddl.h"
+#include "stmts/txnstmt.h"
+#include "stmts/txnstmt_ddl.h"
 
-void ripple_txnstmt_ddlfree(void* data)
+void txnstmt_ddlfree(void* data)
 {
-    ripple_txnstmt_ddl* txnstmtddl = NULL;
+    txnstmt_ddl* txnstmtddl = NULL;
 
     if(NULL == data)
     {
         return;
     }
 
-    txnstmtddl = (ripple_txnstmt_ddl*)data;
+    txnstmtddl = (txnstmt_ddl*)data;
 
     if(NULL != txnstmtddl->ddlstmt)
     {

@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_XMANAGER_METRICMSGREMOVE_H_
-#define _RIPPLE_XMANAGER_METRICMSGREMOVE_H_
+#ifndef _XMANAGER_METRICMSGREMOVE_H_
+#define _XMANAGER_METRICMSGREMOVE_H_
 
 /*
  * 处理 remove 命令
@@ -9,9 +9,9 @@
  *  4、删除conf文件
  *  5、返回成功消息
 */
-extern bool ripple_xmanager_metricmsg_parseremove(ripple_xmanager_metric* xmetric,
-                                                  ripple_netpoolentry* npoolentry,
-                                                  ripple_netpacket* npacket);
+extern bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
+                                                  netpoolentry* npoolentry,
+                                                  netpacket* npacket);
 
 
 #endif

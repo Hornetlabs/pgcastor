@@ -1,154 +1,154 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/dlist/dlist.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
-#include "utils/uuid/ripple_uuid.h"
-#include "stmts/ripple_txnstmt.h"
-#include "stmts/ripple_txnstmt_ddl.h"
-#include "stmts/ripple_txnstmt_dml.h"
-#include "stmts/ripple_txnstmt_metadata.h"
-#include "stmts/ripple_txnstmt_shiftfile.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "stmts/ripple_txnstmt_refresh.h"
-#include "stmts/ripple_txnstmt_onlinerefresh.h"
-#include "stmts/ripple_txnstmt_onlinerefresh_dataset.h"
-#include "stmts/ripple_txnstmt_prepared.h"
-#include "stmts/ripple_txnstmt_updatesynctable.h"
-#include "stmts/ripple_txnstmt_reset.h"
-#include "stmts/ripple_txnstmt_abandon.h"
-#include "stmts/ripple_txnstmt_bigtxnend.h"
-#include "stmts/ripple_txnstmt_bigtxnbegin.h"
-#include "stmts/ripple_txnstmt_updaterewind.h"
-#include "stmts/ripple_txnstmt_commit.h"
-#include "stmts/ripple_txnstmt_burst.h"
+#include "utils/uuid/uuid.h"
+#include "stmts/txnstmt.h"
+#include "stmts/txnstmt_ddl.h"
+#include "stmts/txnstmt_dml.h"
+#include "stmts/txnstmt_metadata.h"
+#include "stmts/txnstmt_shiftfile.h"
+#include "refresh/refresh_tables.h"
+#include "stmts/txnstmt_refresh.h"
+#include "stmts/txnstmt_onlinerefresh.h"
+#include "stmts/txnstmt_onlinerefresh_dataset.h"
+#include "stmts/txnstmt_prepared.h"
+#include "stmts/txnstmt_updatesynctable.h"
+#include "stmts/txnstmt_reset.h"
+#include "stmts/txnstmt_abandon.h"
+#include "stmts/txnstmt_bigtxnend.h"
+#include "stmts/txnstmt_bigtxnbegin.h"
+#include "stmts/txnstmt_updaterewind.h"
+#include "stmts/txnstmt_commit.h"
+#include "stmts/txnstmt_burst.h"
 
 
-static void ripple_txnstmt_simpleclean(void* data);
+static void txnstmt_simpleclean(void* data);
 typedef void (*txnstmtfuncfree)(void* data);
 
-typedef struct RIPPLE_TXNSTMTOPS
+typedef struct TXNSTMTOPS
 {
-    ripple_txnstmt_type             type;
+    txnstmt_type             type;
     char*                           desc;
     txnstmtfuncfree                 free;
-} ripple_txnstmtops;
+} txnstmtops;
 
-static ripple_txnstmtops m_txnstmtsops[] =
+static txnstmtops m_txnstmtsops[] =
 {
     {
-        RIPPLE_TXNSTMT_TYPE_NOP,
+        TXNSTMT_TYPE_NOP,
         "NOP",
         NULL
     },
     {
-        RIPPLE_TXNSTMT_TYPE_DML,
+        TXNSTMT_TYPE_DML,
         "DML STMT",
-        ripple_txnstmt_dmlfree
+        txnstmt_dmlfree
     },
     {
-        RIPPLE_TXNSTMT_TYPE_DDL,
+        TXNSTMT_TYPE_DDL,
         "DDL STMT",
-        ripple_txnstmt_ddlfree
+        txnstmt_ddlfree
     },
     {
-        RIPPLE_TXNSTMT_TYPE_METADATA,
+        TXNSTMT_TYPE_METADATA,
         "METADATA STMT",
-        ripple_txnstmt_metadatafree
+        txnstmt_metadatafree
     },
     {
-        RIPPLE_TXNSTMT_TYPE_SHIFTFILE,
+        TXNSTMT_TYPE_SHIFTFILE,
         "SHIFTFILE STMT",
-        ripple_txnstmt_shiftfilefree
+        txnstmt_shiftfilefree
     },
     {
-        RIPPLE_TXNSTMT_TYPE_REFRESH,
+        TXNSTMT_TYPE_REFRESH,
         "REFRESH STMT",
-        ripple_txnstmt_refreshfree
+        txnstmt_refreshfree
     },
     {
-        RIPPLE_TXNSTMT_TYPE_ONLINEREFRESH_BEGIN,
+        TXNSTMT_TYPE_ONLINEREFRESH_BEGIN,
         "ONLINEREFRESH BEGIN STMT",
-        ripple_txnstmt_onlinerefresh_begin_free
+        txnstmt_onlinerefresh_begin_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_ONLINEREFRESH_END,
+        TXNSTMT_TYPE_ONLINEREFRESH_END,
         "ONLINEREFRESH END STMT",
-        ripple_txnstmt_onlinerefresh_end_free
+        txnstmt_onlinerefresh_end_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_ONLINEREFRESH_INCREMENT_END,
+        TXNSTMT_TYPE_ONLINEREFRESH_INCREMENT_END,
         "ONLINEREFRESH INCREMENT END STMT",
-        ripple_txnstmt_onlinerefresh_increment_end_free
+        txnstmt_onlinerefresh_increment_end_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_ONLINEREFRESH_DATASET,
+        TXNSTMT_TYPE_ONLINEREFRESH_DATASET,
         "ONLINEREFRESH DATASET STMT",
-        ripple_txnstmt_onlinerefresh_dataset_free
+        txnstmt_onlinerefresh_dataset_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_UPDATESYNCTABLE,
+        TXNSTMT_TYPE_UPDATESYNCTABLE,
         "UPDATE SYNCTABLE STMT",
-        ripple_txnstmt_updatesynctable_free
+        txnstmt_updatesynctable_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_PREPARED,
+        TXNSTMT_TYPE_PREPARED,
         "PREPARED STMT",
-        ripple_txnstmt_prepared_free
+        txnstmt_prepared_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_BURST,
+        TXNSTMT_TYPE_BURST,
         "PREPARED STMT",
-        ripple_txnstmt_burst_free
+        txnstmt_burst_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_BIGTXN_BEGIN,
+        TXNSTMT_TYPE_BIGTXN_BEGIN,
         "BIGTXN BEGIN STMT",
-        ripple_txnstmt_bigtxnbegin_free
+        txnstmt_bigtxnbegin_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_BIGTXN_END,
+        TXNSTMT_TYPE_BIGTXN_END,
         "BIGTXN END STMT",
-        ripple_txnstmt_bigtxnend_free
+        txnstmt_bigtxnend_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_ABANDON,
+        TXNSTMT_TYPE_ABANDON,
         "ABANDON STMT",
-        ripple_txnstmt_abandon_free
+        txnstmt_abandon_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_RESET,
+        TXNSTMT_TYPE_RESET,
         "RESET STMT",
-        ripple_txnstmt_reset_free
+        txnstmt_reset_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_UPDATEREWIND,
+        TXNSTMT_TYPE_UPDATEREWIND,
         "UPDATEREWIND STMT",
-        ripple_txnstmt_updaterewind_free
+        txnstmt_updaterewind_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_SYSDICTHIS,
+        TXNSTMT_TYPE_SYSDICTHIS,
         "UPDATEREWIND STMT",
-        ripple_txnstmt_simpleclean
+        txnstmt_simpleclean
     },
     {
-        RIPPLE_TXNSTMT_TYPE_ONLINEREFRESHABANDON,
+        TXNSTMT_TYPE_ONLINEREFRESHABANDON,
         "ONLINEREFRESHABANDON STMT",
-        ripple_txnstmt_simpleclean
+        txnstmt_simpleclean
     },
     {
-        RIPPLE_TXNSTMT_TYPE_COMMIT,
+        TXNSTMT_TYPE_COMMIT,
         "OCOMMIT STMT",
-        ripple_txnstmt_commit_free
+        txnstmt_commit_free
     },
     {
-        RIPPLE_TXNSTMT_TYPE_MAX,
+        TXNSTMT_TYPE_MAX,
         "MAX STMT",
         NULL
     }
 };
 
 /* 简单清理 */
-static void ripple_txnstmt_simpleclean(void* data)
+static void txnstmt_simpleclean(void* data)
 {
     if (data)
     {
@@ -157,43 +157,43 @@ static void ripple_txnstmt_simpleclean(void* data)
 }
 
 /* 初始化 */
-ripple_txnstmt* ripple_txnstmt_init(void)
+txnstmt* txnstmt_init(void)
 {
-    ripple_txnstmt* txnstmt = NULL;
+    txnstmt* txn_stmt = NULL;
 
-    txnstmt = (ripple_txnstmt*)rmalloc1(sizeof(ripple_txnstmt));
-    if(NULL == txnstmt)
+    txn_stmt = (txnstmt*)rmalloc1(sizeof(txnstmt));
+    if(NULL == txn_stmt)
     {
         elog(RLOG_WARNING,"txnstmt init oom %s", strerror(errno));
         return NULL;
     }
-    rmemset0(txnstmt, 0, '\0', sizeof(ripple_txnstmt));
-    txnstmt->database = InvalidOid;
-    txnstmt->stmt = NULL;
-    txnstmt->type = RIPPLE_TXNSTMT_TYPE_NOP;
-    return txnstmt;
+    rmemset0(txn_stmt, 0, '\0', sizeof(txnstmt));
+    txn_stmt->database = InvalidOid;
+    txn_stmt->stmt = NULL;
+    txn_stmt->type = TXNSTMT_TYPE_NOP;
+    return txn_stmt;
 }
 
-void ripple_txnstmt_free(ripple_txnstmt* txnstmt)
+void txnstmt_free(txnstmt* txn_stmt)
 {
     /*
      * 根据 txnstmt 释放内存
      */
-    if(NULL == txnstmt)
+    if(NULL == txn_stmt)
     {
         return;
     }
 
-    if(txnstmt->type >= RIPPLE_TXNSTMT_TYPE_MAX)
+    if(txn_stmt->type >= TXNSTMT_TYPE_MAX)
     {
-        elog(RLOG_WARNING, "unknown type:%d", txnstmt->type);
+        elog(RLOG_WARNING, "unknown type:%d", txn_stmt->type);
     }
 
-    if(NULL == m_txnstmtsops[txnstmt->type].free)
+    if(NULL == m_txnstmtsops[txn_stmt->type].free)
     {
-        elog(RLOG_ERROR, "txnstmt free unsupport %s free", m_txnstmtsops[txnstmt->type].desc);
+        elog(RLOG_ERROR, "txnstmt free unsupport %s free", m_txnstmtsops[txn_stmt->type].desc);
     }
-    m_txnstmtsops[txnstmt->type].free(txnstmt->stmt);
+    m_txnstmtsops[txn_stmt->type].free(txn_stmt->stmt);
 
-    rfree(txnstmt);
+    rfree(txn_stmt);
 }

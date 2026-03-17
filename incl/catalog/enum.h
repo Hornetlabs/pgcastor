@@ -1,21 +1,21 @@
-#ifndef _RIPPLE_ENUM_H
-#define _RIPPLE_ENUM_H
+#ifndef _ENUM_H
+#define _ENUM_H
 
 
-void ripple_enum_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts);
+void enum_getfromdb(PGconn *conn, cache_sysdicts* sysdicts);
 
-void ripple_enumdata_write(List* ripple_enum, uint64 *offset, ripple_sysdict_header_array* array);
+void enumdata_write(List* enum_list, uint64 *offset, sysdict_header_array* array);
 
-HTAB* ripple_enumcache_load(ripple_sysdict_header_array* array);
+HTAB* enumcache_load(sysdict_header_array* array);
 
-void ripple_enumcache_write(HTAB* enumscache, uint64 *offset, ripple_sysdict_header_array* array);
+void enumcache_write(HTAB* enumscache, uint64 *offset, sysdict_header_array* array);
 
 /* colvalue2enum */
-ripple_catalogdata* ripple_enum_colvalue2enum(void* in_colvalue);
+catalogdata* enum_colvalue2enum(void* in_colvalue);
 
 /* catalogdata2transcache */
-void ripple_enum_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);
+void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata);
 
-void ripple_enum_catalogdatafree(ripple_catalogdata* catalogdata);
+void enum_catalogdatafree(catalogdata* catalogdata);
 
 #endif

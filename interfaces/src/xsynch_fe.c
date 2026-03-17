@@ -7,8 +7,8 @@
 #include <memory.h>
 #include <errno.h>
 
-#include "ripple_c.h"
-#include "ripple_config.h"
+#include "app_c.h"
+#include "config.h"
 #include "xsynch_exbufferdata.h"
 #include "xsynch_fe.h"
 #include "xsynch_int.h"
@@ -296,8 +296,8 @@ xsynchconn* XSynchSetParam(char* connstr)
 {
     /*
      * 1、解析 connstr, 并写入到 xsynchconn 结构中
-     * 2、查看 port 是否为有效值, 非有效值, 那么设置 port 为 ripple_config.h 中的 RMANAGER_PORT
-     * 3、查看 host 是否为有效值, 非有效值, 那么设置 host 为 ripple_config.h 中的 RMANAGER_UNIXDOMAINPREFIX 与 port 的拼接
+     * 2、查看 port 是否为有效值, 非有效值, 那么设置 port 为 config.h 中的 RMANAGER_PORT
+     * 3、查看 host 是否为有效值, 非有效值, 那么设置 host 为 config.h 中的 RMANAGER_UNIXDOMAINPREFIX 与 port 的拼接
      * 4、执行链接
      * 5、检测是否连接上
      * 6、tcpkeepalive 设置等

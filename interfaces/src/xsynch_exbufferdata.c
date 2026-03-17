@@ -7,7 +7,7 @@
 #include <memory.h>
 #include <errno.h>
 
-#include "ripple_c.h"
+#include "app_c.h"
 #include "xsynch_exbufferdata.h"
 
 /* 初始化内容 */

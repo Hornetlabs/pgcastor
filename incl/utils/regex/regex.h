@@ -1,19 +1,19 @@
-#ifndef _RIPPLE_REGEX_H
-#define _RIPPLE_REGEX_H
+#ifndef _REGEX_H
+#define _REGEX_H
 
-#define RIPPLE_POSIX_REG_EXTENDED   000001
-#define RIPPLE_POSIX_REG_NOSUB      000020
+#define POSIX_REG_EXTENDED   000001
+#define POSIX_REG_NOSUB      000020
 
 
-typedef struct RIPPLE_REGEX
+typedef struct REGEX
 {
     bool    blike;
     char*   tokenbefore;
     char*   tokenafter;
-} ripple_regex;
+} regex;
 
-extern bool ripple_cmp_regexbase(ripple_regex* regex, char* name);
-extern void ripple_make_regexbase(ripple_regex* regex, char* rule);
-extern void ripple_free_regexbase(ripple_regex* regex);
+extern bool cmp_regexbase(regex* regex, char* name);
+extern void make_regexbase(regex* regex, char* rule);
+extern void free_regexbase(regex* regex);
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_XMANAGER_METRICMSGCONFFILE_H_
-#define _RIPPLE_XMANAGER_METRICMSGCONFFILE_H_
+#ifndef _XMANAGER_METRICMSGCONFFILE_H_
+#define _XMANAGER_METRICMSGCONFFILE_H_
 
 /*
  * 处理 conffile 命令
@@ -7,8 +7,8 @@
  *  2、校验 job 是否已经存在
  *  3、覆盖conf文件
 */
-bool ripple_xmanager_metricmsg_parseconffile(ripple_xmanager_metric* xmetric,
-                                             ripple_netpoolentry* npoolentry,
-                                             ripple_netpacket* npacket);
+bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric,
+                                             netpoolentry* npoolentry,
+                                             netpacket* npacket);
 
 #endif

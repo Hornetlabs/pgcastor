@@ -1,231 +1,231 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/guc/guc.h"
 #include "port/file/fd.h"
 #include "utils/hash/hash_search.h"
-#include "misc/ripple_misc_control.h"
-#include "misc/ripple_misc_stat.h"
+#include "misc/misc_control.h"
+#include "misc/misc_stat.h"
 #include "utils/mpage/mpage.h"
-#include "queue/ripple_queue.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadwalrecords.h"
+#include "queue/queue.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadwalrecords.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_transcache.h"
-#include "storage/ripple_file_buffer.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_ffsmgr.h"
-#include "catalog/ripple_catalog.h"
-#include "catalog/ripple_class.h"
-#include "catalog/ripple_attribute.h"
-#include "catalog/ripple_enum.h"
-#include "catalog/ripple_namespace.h"
-#include "catalog/ripple_range.h"
-#include "catalog/ripple_type.h"
-#include "catalog/ripple_proc.h"
-#include "catalog/ripple_constraint.h"
-#include "catalog/ripple_operator.h"
-#include "catalog/ripple_authid.h"
-#include "catalog/ripple_database.h"
-#include "catalog/ripple_index.h"
-#include "catalog/ripple_relmapfile.h"
-#include "snapshot/ripple_snapshot.h"
-#include "works/parserwork/wal/ripple_rewind.h"
-#include "works/parserwork/wal/ripple_parserwork_decode.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/transcache.h"
+#include "storage/file_buffer.h"
+#include "storage/ff_detail.h"
+#include "storage/ffsmgr.h"
+#include "catalog/catalog.h"
+#include "catalog/class.h"
+#include "catalog/attribute.h"
+#include "catalog/enum.h"
+#include "catalog/namespace.h"
+#include "catalog/range.h"
+#include "catalog/type.h"
+#include "catalog/proc.h"
+#include "catalog/constraint.h"
+#include "catalog/operator.h"
+#include "catalog/authid.h"
+#include "catalog/database.h"
+#include "catalog/index.h"
+#include "catalog/relmapfile.h"
+#include "snapshot/snapshot.h"
+#include "works/parserwork/wal/rewind.h"
+#include "works/parserwork/wal/parserwork_decode.h"
 
-#define RIPPLE_CATALOG_TYPE_NUM RIPPLE_CATALOG_TYPE_RELMAPFILE - 1
+#define CATALOG_TYPE_NUM CATALOG_TYPE_RELMAPFILE - 1
 
-typedef void (*sysdict2cachefunc)(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);
-typedef void (*sysdicthisfree)(ripple_catalogdata* catalogdata);
-typedef void (*sysdicthiscopy)(ripple_catalogdata* src, ripple_catalogdata* dst);
+typedef void (*sysdict2cachefunc)(cache_sysdicts* sysdicts, catalogdata* catalogdata);
+typedef void (*sysdicthisfree)(catalogdata* catalogdata);
+typedef void (*sysdicthiscopy)(catalogdata* src, catalogdata* dst);
 
-typedef struct RIPPLE_SYSDICT2CACHENODE
+typedef struct SYSDICT2CACHENODE
 {
     int                 type;
     sysdict2cachefunc   func;
     sysdicthisfree      freefunc;
     sysdicthiscopy      copyfunc;
-} ripple_sysdict2cachenode;
+} sysdict2cachenode;
 
-static ripple_sysdict2cachenode m_sysdict2cache[] =
+static sysdict2cachenode m_sysdict2cache[] =
 {
     {
-        RIPPLE_CATALOG_TYPE_NOP,
+        CATALOG_TYPE_NOP,
         NULL,
         NULL,
         NULL
     },
     { 
-        RIPPLE_CATALOG_TYPE_CLASS,
-        ripple_class_catalogdata2transcache,
-        ripple_class_catalogdatafree,
+        CATALOG_TYPE_CLASS,
+        class_catalogdata2transcache,
+        class_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_ATTRIBUTE,
-        ripple_attribute_catalogdata2transcache,
-        ripple_attribute_catalogdatafree,
+        CATALOG_TYPE_ATTRIBUTE,
+        attribute_catalogdata2transcache,
+        attribute_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_TYPE,
-        ripple_type_catalogdata2transcache,
-        ripple_type_catalogdatafree,
+        CATALOG_TYPE_TYPE,
+        type_catalogdata2transcache,
+        type_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_NAMESPACE,
-        ripple_namespace_catalogdata2transcache,
-        ripple_namespace_catalogdatafree,
+        CATALOG_TYPE_NAMESPACE,
+        namespace_catalogdata2transcache,
+        namespace_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_TABLESPACE,
+        CATALOG_TYPE_TABLESPACE,
         NULL,
         NULL,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_ENUM,
-        ripple_enum_catalogdata2transcache,
-        ripple_enum_catalogdatafree,
+        CATALOG_TYPE_ENUM,
+        enum_catalogdata2transcache,
+        enum_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_RANGE,
-         ripple_range_catalogdata2transcache,
-         ripple_range_catalogdatafree,
+        CATALOG_TYPE_RANGE,
+         range_catalogdata2transcache,
+         range_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_PROC,
-        ripple_proc_catalogdata2transcache,
-        ripple_proc_catalogdatafree,
+        CATALOG_TYPE_PROC,
+        proc_catalogdata2transcache,
+        proc_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_CONSTRAINT,
-        ripple_constraint_catalogdata2transcache,
-        ripple_constraint_catalogdatafree,
+        CATALOG_TYPE_CONSTRAINT,
+        constraint_catalogdata2transcache,
+        constraint_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_OPERATOR,
+        CATALOG_TYPE_OPERATOR,
         NULL,
         NULL,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_AUTHID,
-        ripple_authid_catalogdata2transcache,
-        ripple_authid_catalogdatafree,
+        CATALOG_TYPE_AUTHID,
+        authid_catalogdata2transcache,
+        authid_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_DATABASE,
-        ripple_database_catalogdata2transcache,
-        ripple_database_catalogdatafree,
+        CATALOG_TYPE_DATABASE,
+        database_catalogdata2transcache,
+        database_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_INDEX,
-        ripple_index_catalogdata2transcache,
-        ripple_index_catalogdatafree,
+        CATALOG_TYPE_INDEX,
+        index_catalogdata2transcache,
+        index_catalogdatafree,
         NULL
     },
     {
-        RIPPLE_CATALOG_TYPE_RELMAPFILE,
-        ripple_relmapfile_catalogdata2transcache,
-        ripple_relmapfile_catalogdatafree,
+        CATALOG_TYPE_RELMAPFILE,
+        relmapfile_catalogdata2transcache,
+        relmapfile_catalogdatafree,
         NULL
     }
 };
 
-static int m_sysdict2cachecnt = (sizeof(m_sysdict2cache))/(sizeof(ripple_sysdict2cachenode));
+static int m_sysdict2cachecnt = (sizeof(m_sysdict2cache))/(sizeof(sysdict2cachenode));
 
 /* 加载系统表信息 */
-void ripple_cache_sysdictsload(void** ref_sysdicts)
+void cache_sysdictsload(void** ref_sysdicts)
 {
     int r = 0;
     int fd = -1;
-    char buffer[RIPPLE_FILE_BLK_SIZE];
-    ripple_cache_sysdicts* sysdicts = NULL;
-    ripple_sysdict_header_array* array = NULL;
+    char buffer[FILE_BLK_SIZE];
+    cache_sysdicts* sysdicts = NULL;
+    sysdict_header_array* array = NULL;
 
-    array = (ripple_sysdict_header_array*)rmalloc0((RIPPLE_CATALOG_TYPE_NUM) * sizeof(ripple_sysdict_header_array));
+    array = (sysdict_header_array*)rmalloc0((CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
     if (NULL == array)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(array, 0, '\0', (RIPPLE_CATALOG_TYPE_NUM) * sizeof(ripple_sysdict_header_array));
+    rmemset0(array, 0, '\0', (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
 
-    rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
+    rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
 
-    sysdicts = (ripple_cache_sysdicts*)*ref_sysdicts;
+    sysdicts = (cache_sysdicts*)*ref_sysdicts;
     if(NULL == sysdicts)
     {
-        sysdicts = (ripple_cache_sysdicts*)rmalloc1(sizeof(ripple_cache_sysdicts));
+        sysdicts = (cache_sysdicts*)rmalloc1(sizeof(cache_sysdicts));
         if(NULL == sysdicts)
         {
             elog(RLOG_ERROR, "out of memeory");
         }
-        rmemset0(sysdicts, 0, '\0', sizeof(ripple_cache_sysdicts));
+        rmemset0(sysdicts, 0, '\0', sizeof(cache_sysdicts));
         *ref_sysdicts = sysdicts;
     }
 
     /*
     * Read data...
     */
-    fd = BasicOpenFile(RIPPLE_SYSDICTS_FILE,
-                        O_RDWR | RIPPLE_BINARY);
+    fd = osal_basic_open_file(SYSDICTS_FILE,
+                        O_RDWR | BINARY);
     if (fd < 0)
     {
-        elog(RLOG_ERROR, "could not open file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not open file %s", SYSDICTS_FILE);
     }
-    if ((r = FileRead(fd, buffer, RIPPLE_FILE_BLK_SIZE)) > 0) 
+    if ((r = osal_file_read(fd, buffer, FILE_BLK_SIZE)) > 0) 
     {
-        rmemcpy0(array, 0, buffer + sizeof(ripple_sysdict_header), (RIPPLE_CATALOG_TYPE_NUM) * sizeof(ripple_sysdict_header_array));
+        rmemcpy0(array, 0, buffer + sizeof(sysdict_header), (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
         
     }
 
-    if(FileClose(fd))
+    if(osal_file_close(fd))
     {
-        elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
     }
 
-    sysdicts->by_class = ripple_classcache_load(array);
+    sysdicts->by_class = classcache_load(array);
 
-    sysdicts->by_attribute = ripple_attributecache_load(array);
+    sysdicts->by_attribute = attributecache_load(array);
 
-    sysdicts->by_enum = ripple_enumcache_load(array);
+    sysdicts->by_enum = enumcache_load(array);
 
-    sysdicts->by_namespace = ripple_namespacecache_load(array);
+    sysdicts->by_namespace = namespacecache_load(array);
 
-    sysdicts->by_proc = ripple_proccache_load(array);
+    sysdicts->by_proc = proccache_load(array);
 
-    sysdicts->by_range = ripple_rangecache_load(array);
+    sysdicts->by_range = rangecache_load(array);
 
-    sysdicts->by_type = ripple_typecache_load(array);
+    sysdicts->by_type = typecache_load(array);
 
-    sysdicts->by_operator = ripple_operatorcache_load(array);
+    sysdicts->by_operator = operatorcache_load(array);
 
-    sysdicts->by_authid = ripple_authidcache_load(array);
+    sysdicts->by_authid = authidcache_load(array);
 
-    sysdicts->by_database = ripple_databasecache_load(array);
-    sysdicts->by_datname2oid = ripple_datname2oid_cache_load(array);
+    sysdicts->by_database = databasecache_load(array);
+    sysdicts->by_datname2oid = datname2oid_cache_load(array);
 
-    sysdicts->by_constraint = ripple_constraintcache_load(array);
+    sysdicts->by_constraint = constraintcache_load(array);
 
-    sysdicts->by_index = ripple_indexcache_load(array);
+    sysdicts->by_index = indexcache_load(array);
 
     rfree(array);
     array = NULL;
@@ -235,25 +235,25 @@ void ripple_cache_sysdictsload(void** ref_sysdicts)
 }
 
 /* 初始化integrate端系统字典 */
-ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
+cache_sysdicts *cache_sysdicts_integrate_init(void)
 {
-    ripple_cache_sysdicts* sysdicts = NULL;
+    cache_sysdicts* sysdicts = NULL;
     HASHCTL hctl = {'\0'};
 
     if(NULL == sysdicts)
     {
-        sysdicts = (ripple_cache_sysdicts*)rmalloc0(sizeof(ripple_cache_sysdicts));
+        sysdicts = (cache_sysdicts*)rmalloc0(sizeof(cache_sysdicts));
         if(NULL == sysdicts)
         {
             elog(RLOG_ERROR, "out of memeory");
         }
-        rmemset0(sysdicts, 0, '\0', sizeof(ripple_cache_sysdicts));
+        rmemset0(sysdicts, 0, '\0', sizeof(cache_sysdicts));
     }
 
     /* pg_class初始化 */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
-    hctl.entrysize = sizeof(ripple_catalog_class_value);
+    hctl.entrysize = sizeof(catalog_class_value);
     sysdicts->by_class = hash_create("integrate_class",
                                       1024,
                                      &hctl,
@@ -262,7 +262,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     /* pg_attribute初始化 */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
-    hctl.entrysize = sizeof(ripple_catalog_attribute_value);
+    hctl.entrysize = sizeof(catalog_attribute_value);
     sysdicts->by_attribute = hash_create("integrate_attr",
                                       2048,
                                      &hctl,
@@ -271,7 +271,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     /* pg_database初始化 */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
-    hctl.entrysize = sizeof(ripple_catalog_database_value);
+    hctl.entrysize = sizeof(catalog_database_value);
     sysdicts->by_database = hash_create("integrate_database",
                                       256,
                                      &hctl,
@@ -280,7 +280,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     /* pg_datname2oid初始化 */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(xk_pg_parser_NameData);
-    hctl.entrysize = sizeof(ripple_catalog_datname2oid_value);
+    hctl.entrysize = sizeof(catalog_datname2oid_value);
     sysdicts->by_datname2oid = hash_create("integrate_datname2oid",
                                       256,
                                      &hctl,
@@ -289,7 +289,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     /* pg_index初始化 */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
-    hctl.entrysize = sizeof(ripple_catalog_index_hash_entry);
+    hctl.entrysize = sizeof(catalog_index_hash_entry);
     sysdicts->by_index = hash_create("integrate_index",
                                       1024,
                                      &hctl,
@@ -298,7 +298,7 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
     /* pg_type初始化 */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
-    hctl.entrysize = sizeof(ripple_catalog_type_value);
+    hctl.entrysize = sizeof(catalog_type_value);
     sysdicts->by_type = hash_create("integrate_type",
                                       1024,
                                      &hctl,
@@ -308,13 +308,13 @@ ripple_cache_sysdicts *ripple_cache_sysdicts_integrate_init(void)
 }
 
 /* 清理系统字典 */
-void ripple_cache_sysdicts_free(void* args)
+void cache_sysdicts_free(void* args)
 {
     HASH_SEQ_STATUS status;
     ListCell* lc                    = NULL;
-    ripple_cache_sysdicts* sysdicts = NULL;
+    cache_sysdicts* sysdicts = NULL;
 
-    sysdicts = (ripple_cache_sysdicts*)args;
+    sysdicts = (cache_sysdicts*)args;
 
     if(NULL == sysdicts)
     {
@@ -329,13 +329,13 @@ void ripple_cache_sysdicts_free(void* args)
 
     if(NULL != sysdicts->by_class)
     {
-        ripple_catalog_class_value *catalogclassentry;
+        catalog_class_value *catalogclassentry;
         hash_seq_init(&status,sysdicts->by_class);
         while (NULL != (catalogclassentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogclassentry->ripple_class)
+            if(NULL != catalogclassentry->class)
             {
-                rfree(catalogclassentry->ripple_class);
+                rfree(catalogclassentry->class);
             }
         }
 
@@ -345,7 +345,7 @@ void ripple_cache_sysdicts_free(void* args)
     /* attributes 表删除 */
     if(NULL != sysdicts->by_attribute)
     {
-        ripple_catalog_attribute_value* catalogattrentry = NULL;
+        catalog_attribute_value* catalogattrentry = NULL;
         hash_seq_init(&status,sysdicts->by_attribute);
         while(NULL != (catalogattrentry = hash_seq_search(&status)))
         {
@@ -364,13 +364,13 @@ void ripple_cache_sysdicts_free(void* args)
     /* type 表删除 */
     if(NULL != sysdicts->by_type)
     {
-        ripple_catalog_type_value* catalogtypeentry = NULL;
+        catalog_type_value* catalogtypeentry = NULL;
         hash_seq_init(&status,sysdicts->by_type);
         while(NULL != (catalogtypeentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogtypeentry->ripple_type)
+            if(NULL != catalogtypeentry->type)
             {
-                rfree(catalogtypeentry->ripple_type);
+                rfree(catalogtypeentry->type);
             }
         }
 
@@ -380,13 +380,13 @@ void ripple_cache_sysdicts_free(void* args)
     /* proc 表删除 */
     if(NULL != sysdicts->by_proc)
     {
-        ripple_catalog_proc_value* catalogprocentry = NULL;
+        catalog_proc_value* catalogprocentry = NULL;
         hash_seq_init(&status,sysdicts->by_proc);
         while(NULL != (catalogprocentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogprocentry->ripple_proc)
+            if(NULL != catalogprocentry->proc)
             {
-                rfree(catalogprocentry->ripple_proc);
+                rfree(catalogprocentry->proc);
             }
         }
 
@@ -403,13 +403,13 @@ void ripple_cache_sysdicts_free(void* args)
     /* namespace 表删除 */
     if(NULL != sysdicts->by_namespace)
     {
-        ripple_catalog_namespace_value* catalognamespaceentry = NULL;
+        catalog_namespace_value* catalognamespaceentry = NULL;
         hash_seq_init(&status,sysdicts->by_namespace);
         while(NULL != (catalognamespaceentry = hash_seq_search(&status)))
         {
-            if(NULL != catalognamespaceentry->ripple_namespace)
+            if(NULL != catalognamespaceentry->namespace)
             {
-                rfree(catalognamespaceentry->ripple_namespace);
+                rfree(catalognamespaceentry->namespace);
             }
         }
         hash_destroy(sysdicts->by_namespace);
@@ -418,13 +418,13 @@ void ripple_cache_sysdicts_free(void* args)
     /* range 表删除 */
     if(NULL != sysdicts->by_range)
     {
-        ripple_catalog_range_value* catalograngeentry = NULL;
+        catalog_range_value* catalograngeentry = NULL;
         hash_seq_init(&status,sysdicts->by_range);
         while(NULL != (catalograngeentry = hash_seq_search(&status)))
         {
-            if(NULL != catalograngeentry->ripple_range)
+            if(NULL != catalograngeentry->range)
             {
-                rfree(catalograngeentry->ripple_range);
+                rfree(catalograngeentry->range);
             }
         }
         hash_destroy(sysdicts->by_range);
@@ -433,7 +433,7 @@ void ripple_cache_sysdicts_free(void* args)
     /* enum 表删除 */
     if(NULL != sysdicts->by_enum)
     {
-        ripple_catalog_enum_value* catalogenumentry = NULL;
+        catalog_enum_value* catalogenumentry = NULL;
         hash_seq_init(&status,sysdicts->by_enum);
         while(NULL != (catalogenumentry = hash_seq_search(&status)))
         {
@@ -452,13 +452,13 @@ void ripple_cache_sysdicts_free(void* args)
     /* operator 表删除 */
     if(NULL != sysdicts->by_operator)
     {
-        ripple_catalog_operator_value* catalogoperatorentry = NULL;
+        catalog_operator_value* catalogoperatorentry = NULL;
         hash_seq_init(&status,sysdicts->by_operator);
         while(NULL != (catalogoperatorentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogoperatorentry->ripple_operator)
+            if(NULL != catalogoperatorentry->operator)
             {
-                rfree(catalogoperatorentry->ripple_operator);
+                rfree(catalogoperatorentry->operator);
             }
         }
         hash_destroy(sysdicts->by_operator);
@@ -467,13 +467,13 @@ void ripple_cache_sysdicts_free(void* args)
     /* by_authid */
     if(NULL != sysdicts->by_authid)
     {
-        ripple_catalog_authid_value* catalogauthidentry = NULL;
+        catalog_authid_value* catalogauthidentry = NULL;
         hash_seq_init(&status,sysdicts->by_authid);
         while(NULL != (catalogauthidentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogauthidentry->ripple_authid)
+            if(NULL != catalogauthidentry->authid)
             {
-                rfree(catalogauthidentry->ripple_authid);
+                rfree(catalogauthidentry->authid);
             }
         }
         hash_destroy(sysdicts->by_authid);
@@ -481,7 +481,7 @@ void ripple_cache_sysdicts_free(void* args)
 
     if(NULL != sysdicts->by_constraint)
     {
-        ripple_catalog_constraint_value *catalogconentry;
+        catalog_constraint_value *catalogconentry;
         hash_seq_init(&status,sysdicts->by_constraint);
         while (NULL != (catalogconentry = hash_seq_search(&status)))
         {
@@ -500,13 +500,13 @@ void ripple_cache_sysdicts_free(void* args)
     /*by_database*/
     if(NULL != sysdicts->by_database)
     {
-        ripple_catalog_database_value* catalogdatabaseentry = NULL;
+        catalog_database_value* catalogdatabaseentry = NULL;
         hash_seq_init(&status,sysdicts->by_database);
         while(NULL != (catalogdatabaseentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogdatabaseentry->ripple_database)
+            if(NULL != catalogdatabaseentry->database)
             {
-                rfree(catalogdatabaseentry->ripple_database);
+                rfree(catalogdatabaseentry->database);
             }
         }
         hash_destroy(sysdicts->by_database);
@@ -522,27 +522,27 @@ void ripple_cache_sysdicts_free(void* args)
     /* by_index */
     if(NULL != sysdicts->by_index)
     {
-        ripple_catalog_index_value* index = NULL;
-        ripple_catalog_index_hash_entry* catalogindexentry = NULL;
+        catalog_index_value* index = NULL;
+        catalog_index_hash_entry* catalogindexentry = NULL;
         hash_seq_init(&status,sysdicts->by_index);
         while(NULL != (catalogindexentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogindexentry->ripple_index_list)
+            if(NULL != catalogindexentry->index_list)
             {
-                foreach(lc, catalogindexentry->ripple_index_list)
+                foreach(lc, catalogindexentry->index_list)
                 {
-                    index = (ripple_catalog_index_value*)lfirst(lc);
-                    if (index->ripple_index)
+                    index = (catalog_index_value*)lfirst(lc);
+                    if (index->index)
                     {
-                        if (index->ripple_index->indkey)
+                        if (index->index->indkey)
                         {
-                            rfree(index->ripple_index->indkey);
+                            rfree(index->index->indkey);
                         }
-                        rfree(index->ripple_index);
+                        rfree(index->index);
                     }
                     rfree(index);
                 }
-                list_free(catalogindexentry->ripple_index_list);
+                list_free(catalogindexentry->index_list);
             }
         }
         hash_destroy(sysdicts->by_index);
@@ -555,24 +555,24 @@ void ripple_cache_sysdicts_free(void* args)
  * 根据class清理系统表中相关数据
  * 入参：sysdicts字典表， lc metadata数据
 */
-void ripple_cache_sysdicts_clearsysdicthisbyclass(ripple_cache_sysdicts* sysdicts, ListCell* lc)
+void cache_sysdicts_clearsysdicthisbyclass(cache_sysdicts* sysdicts, ListCell* lc)
 {
     bool found                                      = false;
     ListCell* cell                                  = NULL;
-    ripple_catalogdata* catalogdata                 = NULL;
+    catalogdata* catalog_data                 = NULL;
     xk_pg_sysdict_Form_pg_class class               = NULL;
-    ripple_catalog_attribute_value* attrInHash      = NULL;
-    ripple_catalog_index_value* index_value         = NULL;
-    ripple_catalog_index_hash_entry* indexInHash    = NULL;
+    catalog_attribute_value* attrInHash      = NULL;
+    catalog_index_value* index_value         = NULL;
+    catalog_index_hash_entry* indexInHash    = NULL;
 
-    catalogdata = (ripple_catalogdata*)lfirst(lc);
+    catalog_data = (catalogdata*)lfirst(lc);
 
-    if (RIPPLE_CATALOG_TYPE_CLASS != catalogdata->type)
+    if (CATALOG_TYPE_CLASS != catalog_data->type)
     {
         return;
     }
 
-    class = (xk_pg_sysdict_Form_pg_class)catalogdata->catalog;
+    class = (xk_pg_sysdict_Form_pg_class)catalog_data->catalog;
 
     /* 清理attribute */
     attrInHash = hash_search(sysdicts->by_attribute, &class->oid, HASH_FIND, &found);
@@ -590,22 +590,22 @@ void ripple_cache_sysdicts_clearsysdicthisbyclass(ripple_cache_sysdicts* sysdict
     indexInHash = hash_search(sysdicts->by_index, &class->oid, HASH_FIND, &found);
     if(true == found)
     {
-        if(NULL != indexInHash->ripple_index_list)
+        if(NULL != indexInHash->index_list)
         {
-            foreach(cell, indexInHash->ripple_index_list)
+            foreach(cell, indexInHash->index_list)
             {
-                index_value = (ripple_catalog_index_value*)lfirst(cell);
-                if (index_value->ripple_index)
+                index_value = (catalog_index_value*)lfirst(cell);
+                if (index_value->index)
                 {
-                    if (index_value->ripple_index->indkey)
+                    if (index_value->index->indkey)
                     {
-                        rfree(index_value->ripple_index->indkey);
+                        rfree(index_value->index->indkey);
                     }
-                    rfree(index_value->ripple_index);
+                    rfree(index_value->index);
                 }
                 rfree(index_value);
             }
-            list_free(indexInHash->ripple_index_list);
+            list_free(indexInHash->index_list);
         }
         hash_search(sysdicts->by_index, &indexInHash->oid, HASH_REMOVE, NULL);
     }
@@ -616,55 +616,55 @@ void ripple_cache_sysdicts_clearsysdicthisbyclass(ripple_cache_sysdicts* sysdict
 /*
  * 单个系统表应用
 */
-void ripple_cache_sysdicts_txnsysdicthisitem2cache(ripple_cache_sysdicts* sysdicts, ListCell* lc)
+void cache_sysdicts_txnsysdicthisitem2cache(cache_sysdicts* sysdicts, ListCell* lc)
 {
-    ripple_catalogdata* catalogdata = NULL;
+    catalogdata* catalog_data = NULL;
 
-    catalogdata = (ripple_catalogdata*)lfirst(lc);
+    catalog_data = (catalogdata*)lfirst(lc);
 
     /* 根据不同的数据类型处理 */
-    if((m_sysdict2cachecnt - 1) < catalogdata->type)
+    if((m_sysdict2cachecnt - 1) < catalog_data->type)
     {
-        elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d", catalogdata->type);
+        elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d", catalog_data->type);
     }
 
-    if(NULL == m_sysdict2cache[catalogdata->type].func)
+    if(NULL == m_sysdict2cache[catalog_data->type].func)
     {
-        elog(RLOG_ERROR, "logical error, please check catalog type:%d", catalogdata->type);
+        elog(RLOG_ERROR, "logical error, please check catalog type:%d", catalog_data->type);
     }
 
-    m_sysdict2cache[catalogdata->type].func(sysdicts, catalogdata);
+    m_sysdict2cache[catalog_data->type].func(sysdicts, catalog_data);
 }
 
 /* 在事务提交, 将历史的字典表应用到缓存中 */
-void ripple_cache_sysdicts_txnsysdicthis2cache(ripple_cache_sysdicts* sysdicts, List* sysdicthis)
+void cache_sysdicts_txnsysdicthis2cache(cache_sysdicts* sysdicts, List* sysdicthis)
 {
     ListCell* lc = NULL;
     foreach(lc, sysdicthis)
     {
-        ripple_cache_sysdicts_txnsysdicthisitem2cache(sysdicts, lc);
+        cache_sysdicts_txnsysdicthisitem2cache(sysdicts, lc);
     }
 }
 
 /* 按照 relfilenode 的结构构建hash表,用于在解析的过程中快速查找relfilenode到表oid */
-HTAB* ripple_cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data)
+HTAB* cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data)
 {
     bool found = false;
     HASHCTL hctl;
     HASH_SEQ_STATUS status;
-    RelFileNode ripple_relfilenode;
+    RelFileNode relfilenode;
     HTAB* by_relfilenode = NULL;
-    ripple_cache_sysdicts* sysdicts = NULL;
-    ripple_catalog_class_value *entry = NULL;
+    cache_sysdicts* sysdicts = NULL;
+    catalog_class_value *entry = NULL;
     xk_pg_sysdict_Form_pg_class class = NULL;
-    ripple_relfilenode2oid* relfdentry = NULL;
+    relfilenode2oid* relfdentry = NULL;
 
-    sysdicts = (ripple_cache_sysdicts*)data;
+    sysdicts = (cache_sysdicts*)data;
 
     /* 创建 hash */
     rmemset1(&hctl, 0, '\0', sizeof(hctl));
     hctl.keysize = sizeof(RelFileNode);
-    hctl.entrysize = sizeof(ripple_relfilenode2oid);
+    hctl.entrysize = sizeof(relfilenode2oid);
     by_relfilenode = hash_create("xsynch_relfilenode2oid", 2048, &hctl,
                                              HASH_ELEM | HASH_BLOBS);
 
@@ -672,7 +672,7 @@ HTAB* ripple_cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data)
     hash_seq_init(&status, sysdicts->by_class);
     while ((entry = hash_seq_search(&status)) != NULL)
     {
-        class = entry->ripple_class;
+        class = entry->class;
 
         if(XK_PG_SYSDICT_RELKIND_PARTITIONED_TABLE == class->relkind)
         {
@@ -681,170 +681,170 @@ HTAB* ripple_cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data)
 
         if(0 == class->reltablespace)
         {
-            ripple_relfilenode.spcNode = RIPPLE_PG_DFAULT_TABLESPACE;
+            relfilenode.spcNode = PG_DFAULT_TABLESPACE;
         }
         else
         {
-            ripple_relfilenode.spcNode = class->reltablespace;
+            relfilenode.spcNode = class->reltablespace;
         }
 
-        ripple_relfilenode.dbNode = dbid;
-        ripple_relfilenode.relNode = class->relfilenode;
-        relfdentry = hash_search(by_relfilenode, &ripple_relfilenode, HASH_ENTER, &found);
+        relfilenode.dbNode = dbid;
+        relfilenode.relNode = class->relfilenode;
+        relfdentry = hash_search(by_relfilenode, &relfilenode, HASH_ENTER, &found);
         if(found)
         {
             elog(RLOG_ERROR, "relfilenode:%u already exist in by_relfilenode", relfdentry->oid);
         }
-        relfdentry->relfilenode = ripple_relfilenode;
+        relfdentry->relfilenode = relfilenode;
         relfdentry->oid = class->oid;
     }
     return by_relfilenode;
 }
 
 /* 在事务提交或回滚时，将历史的字典表结构释放 */
-void ripple_cache_sysdicts_txnsysdicthisfree(List* sysdicthis)
+void cache_sysdicts_txnsysdicthisfree(List* sysdicthis)
 {
     ListCell* lc = NULL;
-    ripple_catalogdata* catalogdata = NULL;
+    catalogdata* catalog_data = NULL;
 
     foreach(lc, sysdicthis)
     {
-        catalogdata = (ripple_catalogdata*)lfirst(lc);
+        catalog_data = (catalogdata*)lfirst(lc);
 
-        if(NULL == catalogdata)
+        if(NULL == catalog_data)
         {
             continue;
         }
 
         /* 根据不同的数据类型处理 */
-        if((m_sysdict2cachecnt - 1) < catalogdata->type)
+        if((m_sysdict2cachecnt - 1) < catalog_data->type)
         {
-            elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d", catalogdata->type);
+            elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d", catalog_data->type);
         }
 
-        if(NULL == m_sysdict2cache[catalogdata->type].freefunc)
+        if(NULL == m_sysdict2cache[catalog_data->type].freefunc)
         {
-            elog(RLOG_ERROR, "logical error, please check catalog type:%d", catalogdata->type);
+            elog(RLOG_ERROR, "logical error, please check catalog type:%d", catalog_data->type);
         }
 
-        m_sysdict2cache[catalogdata->type].freefunc(catalogdata);
+        m_sysdict2cache[catalog_data->type].freefunc(catalog_data);
     }
 }
 
 /* 将 sysdict 字典表结构释放 */
-void ripple_cache_sysdicts_catalogdatafreevoid(void* args)
+void cache_sysdicts_catalogdatafreevoid(void* args)
 {
-    ripple_catalogdata* catalogdata = NULL;
+    catalogdata* catalog_data = NULL;
 
     if(NULL == args)
     {
         return;
     }
-    catalogdata = (ripple_catalogdata*)args;
+    catalog_data = (catalogdata*)args;
 
-    if(NULL == catalogdata)
+    if(NULL == catalog_data)
     {
         return;
     }
 
     /* 根据不同的数据类型处理 */
-    if((m_sysdict2cachecnt - 1) < catalogdata->type)
+    if((m_sysdict2cachecnt - 1) < catalog_data->type)
     {
-        elog(RLOG_WARNING, "sysdicthis 2 transcache logical error, unknown type:%d", catalogdata->type);
+        elog(RLOG_WARNING, "sysdicthis 2 transcache logical error, unknown type:%d", catalog_data->type);
         return;
     }
 
-    if(NULL == m_sysdict2cache[catalogdata->type].func)
+    if(NULL == m_sysdict2cache[catalog_data->type].func)
     {
-        elog(RLOG_WARNING, "logical error, please check catalog type:%d", catalogdata->type);
+        elog(RLOG_WARNING, "logical error, please check catalog type:%d", catalog_data->type);
         return;
     }
 
-    m_sysdict2cache[catalogdata->type].freefunc(catalogdata);
+    m_sysdict2cache[catalog_data->type].freefunc(catalog_data);
 }
 
 /* 将修改后的字典表缓存信息落盘 传入redlsn*/
-void ripple_sysdictscache_write(ripple_cache_sysdicts* sysdicts, XLogRecPtr redolsn)
+void sysdictscache_write(cache_sysdicts* sysdicts, XLogRecPtr redolsn)
 {
     int	 fd;
     uint64 offset = 0;
-    char buffer[RIPPLE_FILE_BLK_SIZE];
-    ripple_sysdict_header* header = NULL;
-    ripple_sysdict_header_array* array = NULL;
+    char buffer[FILE_BLK_SIZE];
+    sysdict_header* header = NULL;
+    sysdict_header_array* array = NULL;
 
-    array = (ripple_sysdict_header_array*)rmalloc0((RIPPLE_CATALOG_TYPE_NUM) * sizeof(ripple_sysdict_header_array));
+    array = (sysdict_header_array*)rmalloc0((CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
     if (NULL == array)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(array, 0, 0, (RIPPLE_CATALOG_TYPE_NUM) * sizeof(ripple_sysdict_header_array));
+    rmemset0(array, 0, 0, (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
 
-    header = (ripple_sysdict_header*)rmalloc0(sizeof(ripple_sysdict_header));
+    header = (sysdict_header*)rmalloc0(sizeof(sysdict_header));
     if (NULL == header)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(header, 0, 0, sizeof(ripple_sysdict_header));
-    offset = RIPPLE_FILE_BLK_SIZE;
+    rmemset0(header, 0, 0, sizeof(sysdict_header));
+    offset = FILE_BLK_SIZE;
 
-    header->magic = RIPPLE_SYSDICT_MAGIC;
-    header->compatibility = guc_getConfigOptionInt(RIPPLE_CFG_KEY_COMPATIBILITY);
+    header->magic = SYSDICT_MAGIC;
+    header->compatibility = guc_getConfigOptionInt(CFG_KEY_COMPATIBILITY);
     header->checkpointlsn = redolsn;
-    rmemcpy1(buffer, 0, header, sizeof(ripple_sysdict_header));
+    rmemcpy1(buffer, 0, header, sizeof(sysdict_header));
 
-    ripple_classcache_write(sysdicts->by_class, &offset, array);
+    classcache_write(sysdicts->by_class, &offset, array);
 
-    ripple_attributecache_write(sysdicts->by_attribute, &offset, array);
+    attributecache_write(sysdicts->by_attribute, &offset, array);
 
-    ripple_typecache_write(sysdicts->by_type, &offset, array);
+    typecache_write(sysdicts->by_type, &offset, array);
 
-    ripple_namespacecache_write(sysdicts->by_namespace, &offset, array);
+    namespacecache_write(sysdicts->by_namespace, &offset, array);
 
-    ripple_enumcache_write(sysdicts->by_enum, &offset, array);
+    enumcache_write(sysdicts->by_enum, &offset, array);
 
-    ripple_rangecache_write(sysdicts->by_range, &offset, array);
+    rangecache_write(sysdicts->by_range, &offset, array);
 
-    ripple_proccache_write(sysdicts->by_proc, &offset, array);
+    proccache_write(sysdicts->by_proc, &offset, array);
 
-    ripple_operatorcache_write(sysdicts->by_operator, &offset, array);
+    operatorcache_write(sysdicts->by_operator, &offset, array);
 
-    ripple_authidcache_write(sysdicts->by_authid, &offset, array);
+    authidcache_write(sysdicts->by_authid, &offset, array);
 
-    ripple_databasecache_write(sysdicts->by_database, &offset, array);
+    databasecache_write(sysdicts->by_database, &offset, array);
 
-    ripple_constraintcache_write(sysdicts->by_constraint, &offset, array);
+    constraintcache_write(sysdicts->by_constraint, &offset, array);
 
-    ripple_indexcache_write(sysdicts->by_index, &offset, array);
+    indexcache_write(sysdicts->by_index, &offset, array);
 
-    rmemcpy1(buffer, sizeof(ripple_sysdict_header), array, (RIPPLE_CATALOG_TYPE_NUM) * sizeof(ripple_sysdict_header_array));
+    rmemcpy1(buffer, sizeof(sysdict_header), array, (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
 
-    fd = BasicOpenFile(RIPPLE_SYSDICTS_TMP_FILE,
-                        O_RDWR | O_CREAT | RIPPLE_BINARY);
+    fd = osal_basic_open_file(SYSDICTS_TMP_FILE,
+                        O_RDWR | O_CREAT | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_ERROR, "could not create file %s", RIPPLE_SYSDICTS_TMP_FILE);
+        elog(RLOG_ERROR, "could not create file %s", SYSDICTS_TMP_FILE);
     }
 
-    if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, 0) != RIPPLE_FILE_BLK_SIZE) {
-        elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_TMP_FILE);
-        FileClose(fd);
+    if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, 0) != FILE_BLK_SIZE) {
+        elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
+        osal_file_close(fd);
         return;
     }
 
-    if(0 != FileSync(fd))
+    if(0 != osal_file_sync(fd))
     {
-        elog(RLOG_ERROR, "could not fsync file %s", RIPPLE_SYSDICTS_TMP_FILE);
+        elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_TMP_FILE);
     }
 
-    if(FileClose(fd))
+    if(osal_file_close(fd))
     {
-        elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_TMP_FILE);
+        elog(RLOG_ERROR, "could not close file %s", SYSDICTS_TMP_FILE);
     }
 
-    if (durable_rename(RIPPLE_SYSDICTS_TMP_FILE, RIPPLE_SYSDICTS_FILE, RLOG_DEBUG) != 0) 
+    if (osal_durable_rename(SYSDICTS_TMP_FILE, SYSDICTS_FILE, RLOG_DEBUG) != 0) 
 	{
-		elog(RLOG_WARNING, "Error renaming file %s", RIPPLE_SYSDICTS_TMP_FILE);
+		elog(RLOG_WARNING, "Error renaming file %s", SYSDICTS_TMP_FILE);
 	}
 
     rfree(array);

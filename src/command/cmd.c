@@ -1,14 +1,14 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/list/list_func.h"
 #include "utils/guc/guc.h"
 #include "utils/dlist/dlist.h"
-#include "queue/ripple_queue.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netclient.h"
-#include "command/ripple_cmd.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "xmanager/ripple_xmanager_metricnode.h"
+#include "queue/queue.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netclient.h"
+#include "command/cmd.h"
+#include "xmanager/xmanager_msg.h"
+#include "xmanager/xmanager_metricnode.h"
 
 typedef bool (*cmdfunc)(void *extra_config);
 
@@ -22,9 +22,9 @@ typedef enum PROC2CMDFLAG
 
 typedef struct PROC2CMD
 {
-    ripple_optype               type;
+    optype               type;
     proc2cmdflag                flag;
-    ripple_xmanager_msg         msgtype;
+    xmanager_msg         msgtype;
     char*                       desc;
     cmdfunc                     func;
     char*                       errmsg;
@@ -33,64 +33,64 @@ typedef struct PROC2CMD
 static proc2cmd     m_typ2cmd[]=
 {
     {
-        RIPPLE_OPTYPE_NOP,
+        OPTYPE_NOP,
         PROC2CMDFLAG_NOP,
-        RIPPLE_XMANAGER_MSG_NOP,
+        XMANAGER_MSG_NOP,
         "NOP",
         NULL,
         "op nop unsupport"
     },
     {
-        RIPPLE_OPTYPE_INIT,
+        OPTYPE_INIT,
         PROC2CMDFLAG_XMANAGER,
-        RIPPLE_XMANAGER_MSG_INITCMD,
+        XMANAGER_MSG_INITCMD,
         "init",
-        ripple_cmd_init,
+        cmd_init,
         "init error"
     },
     {
-        RIPPLE_OPTYPE_START,
+        OPTYPE_START,
         PROC2CMDFLAG_XMANAGER,
-        RIPPLE_XMANAGER_MSG_STARTCMD,
+        XMANAGER_MSG_STARTCMD,
         "start",
-        ripple_cmd_start,
+        cmd_start,
         "start error"
     },
     {
-        RIPPLE_OPTYPE_STOP,
+        OPTYPE_STOP,
         PROC2CMDFLAG_XMANAGER,
-        RIPPLE_XMANAGER_MSG_STOPCMD,
+        XMANAGER_MSG_STOPCMD,
         "stop",
-        ripple_cmd_stop,
+        cmd_stop,
         "stop error"
     },
     {
-        RIPPLE_OPTYPE_STATUS,
+        OPTYPE_STATUS,
         PROC2CMDFLAG_NOP,
-        RIPPLE_XMANAGER_MSG_NOP,
+        XMANAGER_MSG_NOP,
         "status",
-        ripple_cmd_status,
+        cmd_status,
         "status error"
     },
     {
-        RIPPLE_OPTYPE_RELOAD,
+        OPTYPE_RELOAD,
         PROC2CMDFLAG_NOP,
-        RIPPLE_XMANAGER_MSG_RELOADCMD,
+        XMANAGER_MSG_RELOADCMD,
         "reload",
-        ripple_cmd_reload,
+        cmd_reload,
         "reload error"
     },
     {
-        RIPPLE_OPTYPE_ONLINEREFRESH,
+        OPTYPE_ONLINEREFRESH,
         PROC2CMDFLAG_XMANAGER,
-        RIPPLE_XMANAGER_MSG_CAPTUREREFRESH,
+        XMANAGER_MSG_CAPTUREREFRESH,
         "onlinerefresh",
-        ripple_cmd_onlinerefresh,
+        cmd_onlinerefresh,
         "onlinerefresh error"
     }
 };
 
-bool ripple_cmd(ripple_optype type, void *extra_config)
+bool cmd(optype type, void *extra_config)
 {
     bool bret                               = false;
     int8 flag                               = 0;
@@ -98,7 +98,7 @@ bool ripple_cmd(ripple_optype type, void *extra_config)
     int ivalue                              = 0;
     int msglen                              = 0;
     int valuelen                            = 0;
-    ripple_xmanager_metricnodetype nodetype = RIPPLE_XMANAGER_METRICNODETYPE_NOP;
+    xmanager_metricnodetype nodetype = XMANAGER_METRICNODETYPE_NOP;
     uint8* uptr                             = NULL;
     char* datadir                           = NULL;
     char* traildir                          = NULL;
@@ -113,13 +113,13 @@ bool ripple_cmd(ripple_optype type, void *extra_config)
         return false;
     }
 
-    ripple_log_initerrorstack();
+    log_initerrorstack();
 
     /* 执行 */
     bret = m_typ2cmd[type].func(extra_config);
     if(false == bret)
     {
-        errormsg = ripple_log_geterrormsg();
+        errormsg = log_geterrormsg();
         if (NULL == errormsg)
         {
             errormsg = m_typ2cmd[type].errmsg;
@@ -133,30 +133,30 @@ bool ripple_cmd(ripple_optype type, void *extra_config)
 
     switch (g_proctype)
     {
-        case RIPPLE_PROC_TYPE_CAPTURE:
+        case PROC_TYPE_CAPTURE:
             /* code */
-            nodetype = RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE;
+            nodetype = XMANAGER_METRICNODETYPE_CAPTURE;
             break;
-        case RIPPLE_PROC_TYPE_INTEGRATE:
-            nodetype = RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE;
+        case PROC_TYPE_INTEGRATE:
+            nodetype = XMANAGER_METRICNODETYPE_INTEGRATE;
             break;
-        case RIPPLE_PROC_TYPE_PGRECEIVEWAL:
-            nodetype = RIPPLE_XMANAGER_METRICNODETYPE_PGRECEIVELOG;
+        case PROC_TYPE_PGRECEIVEWAL:
+            nodetype = XMANAGER_METRICNODETYPE_PGRECEIVELOG;
             break;
         default:
             break;
     }
 
-    if (RIPPLE_XMANAGER_METRICNODETYPE_NOP == nodetype)
+    if (XMANAGER_METRICNODETYPE_NOP == nodetype)
     {
-        goto ripple_cmd_done;
+        goto cmd_done;
     }
 
     if (PROC2CMDFLAG_XMANAGER != m_typ2cmd[type].flag)
     {
-        goto ripple_cmd_done;
+        goto cmd_done;
     }
-    jobname = guc_getConfigOption(RIPPLE_CFG_KEY_JOBNAME);
+    jobname = guc_getConfigOption(CFG_KEY_JOBNAME);
 
     /* 
      * 构建identity反馈消息
@@ -222,7 +222,7 @@ bool ripple_cmd(ripple_optype type, void *extra_config)
     if (NULL == netdata)
     {
         bret = false;
-        goto ripple_cmd_done;
+        goto cmd_done;
     }
     rmemset0(netdata, 0, '\0', msglen);
     uptr = netdata;
@@ -237,7 +237,7 @@ bool ripple_cmd(ripple_optype type, void *extra_config)
     uptr += 4;
 
     /* 注册消息 */
-    ivalue = RIPPLE_XMANAGER_MSG_IDENTITYCMD;
+    ivalue = XMANAGER_MSG_IDENTITYCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -279,7 +279,7 @@ bool ripple_cmd(ripple_optype type, void *extra_config)
         uptr += 4;
 
         /* 错误码 */
-        ivalue = RIPPLE_ERROR_MSGCOMMAND;
+        ivalue = ERROR_MSGCOMMAND;
         ivalue = r_hton32(ivalue);
         rmemcpy1(uptr, 0, &ivalue, 4);
         uptr += 4;
@@ -322,7 +322,7 @@ bool ripple_cmd(ripple_optype type, void *extra_config)
         uptr += valuelen;
     }
 
-    port = guc_getConfigOptionInt(RIPPLE_CFG_KEY_XMANAGER_PORT);
+    port = guc_getConfigOptionInt(CFG_KEY_XMANAGER_PORT);
     if (0 == port)
     {
         sprintf(svrport, "%s", RMANAGER_PORT);
@@ -332,9 +332,9 @@ bool ripple_cmd(ripple_optype type, void *extra_config)
         sprintf(svrport, "%d", port);
     }
 
-    bret = ripple_netclient_senddata(RIPPLE_NETCLIENT_PROTOCOLTYPE_UNIXDOMAIN, NULL, svrport, netdata, msglen);
+    bret = netclient_senddata(NETCLIENT_PROTOCOLTYPE_UNIXDOMAIN, NULL, svrport, netdata, msglen);
 
-ripple_cmd_done:
+cmd_done:
     if (NULL != netdata)
     {
         rfree(netdata);
@@ -343,12 +343,12 @@ ripple_cmd_done:
     return bret;
 }
 
-char* ripple_cmd_getdesc(ripple_optype type)
+char* cmd_getdesc(optype type)
 {
     return m_typ2cmd[type].desc;
 }
 
-void ripple_cmd_printmsg(const char *msg)
+void cmd_printmsg(const char *msg)
 {
     fputs(msg, stdout);
     fflush(stdout);

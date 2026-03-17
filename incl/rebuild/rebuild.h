@@ -1,22 +1,22 @@
-#ifndef _RIPPLE_REBUILD_H
-#define _RIPPLE_REBUILD_H
+#ifndef _REBUILD_H
+#define _REBUILD_H
 
-typedef struct RIPPLE_REBUILD
+typedef struct REBUILD
 {
     uint64                  prepareno;                  /* 预解析语句编号，生成名字 */
     HTAB*                   hatatb2prepare;             /* 预解析语句的结构 */
-    ripple_cache_sysdicts*  sysdicts;                   /* 系统字典 */
-}ripple_rebuild;
+    cache_sysdicts*  sysdicts;                   /* 系统字典 */
+}rebuild;
 
 /* 初始化rebuild内容 */
-void ripple_rebuild_reset(ripple_rebuild* rebuild);
+void rebuild_reset(rebuild* rebuild);
 
 /* 对 txn 的内容重组 */
-bool ripple_rebuild_prepared(ripple_rebuild* rebuild, ripple_txn* txn);
+bool rebuild_prepared(rebuild* rebuild, txn* txn);
 
 /* 对 txn 的内容重组为burst */
-bool ripple_rebuild_txnburst(ripple_rebuild* rebuild, ripple_txn* txn);
+bool rebuild_txnburst(rebuild* rebuild, txn* txn);
 
-void ripple_rebuild_destroy(ripple_rebuild* rebuild);
+void rebuild_destroy(rebuild* rebuild);
 
 #endif

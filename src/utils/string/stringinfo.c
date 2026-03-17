@@ -12,7 +12,7 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/string/stringinfo.h"
 #include "utils/string/psprintf.h"
 

@@ -1,7 +1,7 @@
-#ifndef _RIPPLE_INCREMENT_INTEGRATEREBUILD_H
-#define _RIPPLE_INCREMENT_INTEGRATEREBUILD_H
+#ifndef _INCREMENT_INTEGRATEREBUILD_H
+#define _INCREMENT_INTEGRATEREBUILD_H
 
-typedef struct RIPPLE_INCREMENT_INTEGRATEREBUILD_CALLBACK
+typedef struct INCREMENT_INTEGRATEREBUILD_CALLBACK
 {
     /* refresh 是否完成，启动refresh检测是否有refresh在运行 */
     bool (*isrefreshdown)(void* privdata);
@@ -30,46 +30,46 @@ typedef struct RIPPLE_INCREMENT_INTEGRATEREBUILD_CALLBACK
     /* integratestate添加bigtxn节点 */
     void (*addbigtxn)(void* privdata, void* bigtxn);
 
-} ripple_increment_integraterebuild_callback;
+} increment_integraterebuild_callback;
 
-typedef enum RIPPLE_INCREMENT_INTEGRATEREBUILD_STAT
+typedef enum INCREMENT_INTEGRATEREBUILD_STAT
 {
-    RIPPLE_INCREMENT_INTEGRATEREBUILD_STAT_NOP          = 0x00,
-    RIPPLE_INCREMENT_INTEGRATEREBUILD_STAT_READY        ,               /* sync设置rebuild */
-    RIPPLE_INCREMENT_INTEGRATEREBUILD_STAT_WORK         ,
-    RIPPLE_INCREMENT_INTEGRATEREBUILD_STAT_WAITTERM                     /* 接受到term或其他线程异常退出 */
-}ripple_increment_integraterebuild_stat;
+    INCREMENT_INTEGRATEREBUILD_STAT_NOP          = 0x00,
+    INCREMENT_INTEGRATEREBUILD_STAT_READY        ,               /* sync设置rebuild */
+    INCREMENT_INTEGRATEREBUILD_STAT_WORK         ,
+    INCREMENT_INTEGRATEREBUILD_STAT_WAITTERM                     /* 接受到term或其他线程异常退出 */
+}increment_integraterebuild_stat;
 
-typedef struct RIPPLE_INCREMENT_INTEGRATEREBUILD
+typedef struct INCREMENT_INTEGRATEREBUILD
 {
-    ripple_rebuild                                          rebuild;
+    rebuild                                          rebuild;
     bool                                                    mergetxn;
     bool                                                    burst;                              /* burst 模式 */
-    ripple_increment_integraterebuild_stat                  stat;
+    increment_integraterebuild_stat                  stat;
     int                                                     txbundlesize;                       /* 合并事务的阈值 */
     XLogRecPtr                                              filterlsn;                          /* 小于等于此 Isn 不需要处理 */
-    ripple_onlinerefresh_integratedataset*                  onlinerefreshdataset;
+    onlinerefresh_integratedataset*                  onlinerefreshdataset;
     HTAB*                                                   honlinerefreshfilterdataset;
-    char                                                    padding[RIPPLE_CACHELINE_SIZE];
-    ripple_cache_txn*                                       parser2rebuild;
-    char                                                    padding1[RIPPLE_CACHELINE_SIZE];
-    ripple_cache_txn*                                       rebuild2sync;
-    char                                                    padding2[RIPPLE_CACHELINE_SIZE];
-    ripple_bigtxn_persist*                                  txnpersist;
-    char                                                    padding3[RIPPLE_CACHELINE_SIZE];
-    ripple_onlinerefresh_persist*                           olpersist;
-    char                                                    padding4[RIPPLE_CACHELINE_SIZE];
+    char                                                    padding[CACHELINE_SIZE];
+    cache_txn*                                       parser2rebuild;
+    char                                                    padding1[CACHELINE_SIZE];
+    cache_txn*                                       rebuild2sync;
+    char                                                    padding2[CACHELINE_SIZE];
+    bigtxn_persist*                                  txnpersist;
+    char                                                    padding3[CACHELINE_SIZE];
+    onlinerefresh_persist*                           olpersist;
+    char                                                    padding4[CACHELINE_SIZE];
     void*                                                   privdata;
-    char                                                    padding5[RIPPLE_CACHELINE_SIZE];
-    ripple_increment_integraterebuild_callback              callback;
-} ripple_increment_integraterebuild;
+    char                                                    padding5[CACHELINE_SIZE];
+    increment_integraterebuild_callback              callback;
+} increment_integraterebuild;
 
 /* 初始化 */
-ripple_increment_integraterebuild* ripple_increment_integraterebuild_init(void);
+increment_integraterebuild* increment_integraterebuild_init(void);
 
 /* 工作 */
-void* ripple_increment_integraterebuild_main(void* args);
+void* increment_integraterebuild_main(void* args);
 
-void ripple_increment_integraterebuild_free(ripple_increment_integraterebuild* rebuild);
+void increment_integraterebuild_free(increment_integraterebuild* rebuild);
 
 #endif

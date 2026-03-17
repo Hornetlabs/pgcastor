@@ -1,7 +1,7 @@
-#ifndef _RIPPLE_CMD_STARTXMANAGER_H_
-#define _RIPPLE_CMD_STARTXMANAGER_H_
+#ifndef _CMD_STARTXMANAGER_H_
+#define _CMD_STARTXMANAGER_H_
 
 /* xmanager 启动 */
-extern bool ripple_cmd_startxmanager(void);
+extern bool cmd_startxmanager(void);
 
 #endif

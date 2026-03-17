@@ -1,17 +1,17 @@
-#ifndef _RIPPLE_XMANAGER_METRICXSCSCINODE_H_
-#define _RIPPLE_XMANAGER_METRICXSCSCINODE_H_
+#ifndef _XMANAGER_METRICXSCSCINODE_H_
+#define _XMANAGER_METRICXSCSCINODE_H_
 
-typedef struct RIPPLE_XMANAGER_METRICXSCSCINODE
+typedef struct XMANAGER_METRICXSCSCINODE
 {
-    ripple_xmanager_metricnode              base;
+    xmanager_metricnode              base;
     uint64                                  number;
-    ripple_xmanager_metricasyncmsgs*        asyncmsgs;
-} ripple_xmanager_metricxscscinode;
+    xmanager_metricasyncmsgs*        asyncmsgs;
+} xmanager_metricxscscinode;
 
-extern void ripple_xmanager_metricxscscinode_destroy(ripple_xmanager_metricnode* metricnode);
+extern void xmanager_metricxscscinode_destroy(xmanager_metricnode* metricnode);
 
-extern ripple_xmanager_metricnode* ripple_xmanager_metricxscscinode_init(void);
+extern xmanager_metricnode* xmanager_metricxscscinode_init(void);
 
-extern int ripple_xmanager_metricxscscinode_cmp(void* s1, void* s2);
+extern int xmanager_metricxscscinode_cmp(void* s1, void* s2);
 
 #endif

@@ -1,54 +1,54 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/dlist/dlist.h"
 #include "utils/string/stringinfo.h"
-#include "queue/ripple_queue.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netpool.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "xmanager/ripple_xmanager_metricnode.h"
-#include "xmanager/ripple_xmanager_metriccapturenode.h"
-#include "xmanager/ripple_xmanager_metricintegratenode.h"
-#include "xmanager/ripple_xmanager_metric.h"
-#include "xmanager/ripple_xmanager_metricmsglist.h"
-#include "xmanager/ripple_xmanager_metricmsg.h"
-#include "xmanager/ripple_xmanager_metricprogressnode.h"
+#include "queue/queue.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netpool.h"
+#include "xmanager/xmanager_msg.h"
+#include "xmanager/xmanager_metricnode.h"
+#include "xmanager/xmanager_metriccapturenode.h"
+#include "xmanager/xmanager_metricintegratenode.h"
+#include "xmanager/xmanager_metric.h"
+#include "xmanager/xmanager_metricmsglist.h"
+#include "xmanager/xmanager_metricmsg.h"
+#include "xmanager/xmanager_metricprogressnode.h"
 
-typedef struct RIPPLE_XMANAGER_METRICNODESTAT_NAME
+typedef struct XMANAGER_METRICNODESTAT_NAME
 {
-    ripple_xmanager_metricnodestat      stat;      /* 状态 */
+    xmanager_metricnodestat      stat;      /* 状态 */
     char                                *name;      /* 状态名称 */
-} ripple_xmanager_metricnodestat_name;
+} xmanager_metricnodestat_name;
 
-static ripple_xmanager_metricnodestat_name ripple_metricnodestat_name[] =
+static xmanager_metricnodestat_name metricnodestat_name[] =
 {
-    { RIPPLE_XMANAGER_METRICNODESTAT_NOP,       "NOP" },
-    { RIPPLE_XMANAGER_METRICNODESTAT_INIT,      "INIT" },
-    { RIPPLE_XMANAGER_METRICNODESTAT_ONLINE,    "ONLINE" },
-    { RIPPLE_XMANAGER_METRICNODESTAT_OFFLINE,   "OFFLIN" },
-    { RIPPLE_XMANAGER_METRICNODESTAT_MAX,       "MAX" },
+    { XMANAGER_METRICNODESTAT_NOP,       "NOP" },
+    { XMANAGER_METRICNODESTAT_INIT,      "INIT" },
+    { XMANAGER_METRICNODESTAT_ONLINE,    "ONLINE" },
+    { XMANAGER_METRICNODESTAT_OFFLINE,   "OFFLIN" },
+    { XMANAGER_METRICNODESTAT_MAX,       "MAX" },
 };
 
 
-typedef struct RIPPLE_XMANAGER_METRICNODETYPE_NAME
+typedef struct XMANAGER_METRICNODETYPE_NAME
 {
-    ripple_xmanager_metricnodetype      stat;      /* 状态 */
+    xmanager_metricnodetype      stat;      /* 状态 */
     char                                *name;      /* 状态名称 */
-} ripple_xmanager_metricnodetype_name;
+} xmanager_metricnodetype_name;
 
-static ripple_xmanager_metricnodestat_name ripple_metricnodetype_name[] =
+static xmanager_metricnodestat_name metricnodetype_name[] =
 {
-    { RIPPLE_XMANAGER_METRICNODETYPE_NOP,           "NOP" },
-    { RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE,       "CAPTURE" },
-    { RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE,     "INTEGRATE" },
-    { RIPPLE_XMANAGER_METRICNODETYPE_PGRECEIVELOG,  "PGRECEIVELOG" },
-    { RIPPLE_XMANAGER_METRICNODETYPE_PROCESS,       "PROGRESS" }
+    { XMANAGER_METRICNODETYPE_NOP,           "NOP" },
+    { XMANAGER_METRICNODETYPE_CAPTURE,       "CAPTURE" },
+    { XMANAGER_METRICNODETYPE_INTEGRATE,     "INTEGRATE" },
+    { XMANAGER_METRICNODETYPE_PGRECEIVELOG,  "PGRECEIVELOG" },
+    { XMANAGER_METRICNODETYPE_PROCESS,       "PROGRESS" }
 };
 
 /* list 命令处理 */
-static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetric,
-                                                   ripple_netpoolentry* npoolentry)
+static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
+                                                   netpoolentry* npoolentry)
 {
     uint8 u8value                                           = 0;
     uint16 u16value                                         = 0;
@@ -64,8 +64,8 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
     dlistnode* opdlnode                                     = NULL;
     dlistnode* dlnode                                       = NULL;
     StringInfo option                                       = NULL;
-    ripple_netpacket* npacket                               = NULL;
-    ripple_xmanager_metricnode* pxmetricnode                = NULL;
+    netpacket* npacket                               = NULL;
+    xmanager_metricnode* pxmetricnode                = NULL;
 
     /* 4 总长度 + 4 crc32 + 4 msgtype + 1 成功/失败 + 4 rowcnt */
     msglen =( 4 + 4 + 4 + 1 + 4);
@@ -76,16 +76,16 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
     /* 计算option长度，和node个数 */
     for (dlnode = xmetric->metricnodes->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        pxmetricnode = (ripple_xmanager_metricnode*)dlnode->value;
-        if (RIPPLE_XMANAGER_METRICNODETYPE_PROCESS < pxmetricnode->type)
+        pxmetricnode = (xmanager_metricnode*)dlnode->value;
+        if (XMANAGER_METRICNODETYPE_PROCESS < pxmetricnode->type)
         {
             continue;
         }
 
-        if(RIPPLE_XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
+        if(XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
         {
-            ripple_xmanager_metricprogressnode* xmetricprogressnode = NULL;
-            xmetricprogressnode = (ripple_xmanager_metricprogressnode*)pxmetricnode;
+            xmanager_metricprogressnode* xmetricprogressnode = NULL;
+            xmetricprogressnode = (xmanager_metricprogressnode*)pxmetricnode;
             if (false == dlist_isnull(xmetricprogressnode->progressjop))
             {
                 /* 类型 16 + jobname 128 */
@@ -139,18 +139,18 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
     msglen += (rowlen * nodecnt);
 
     /* 申请空间 */
-    npacket = ripple_netpacket_init();
+    npacket = netpacket_init();
     if (NULL == npacket)
     {
         elog(RLOG_WARNING, "xmanager metric assemble info list msg out of memory");
         return false;
     }
     msglen += 1;
-    npacket->data = ripple_netpacket_data_init(msglen);
+    npacket->data = netpacket_data_init(msglen);
     if (NULL == npacket->data)
     {
         elog(RLOG_WARNING, "xmanager metric assemble info list msg data, out of memory");
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return false;
     }
     msglen -= 1;
@@ -167,7 +167,7 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
     npacket->used += 4;
 
     /* 类型 */
-    ivalue = RIPPLE_XMANAGER_MSG_LISTCMD;
+    ivalue = XMANAGER_MSG_LISTCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -263,8 +263,8 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
 
     for (dlnode = xmetric->metricnodes->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        pxmetricnode = (ripple_xmanager_metricnode*)dlnode->value;
-        if (RIPPLE_XMANAGER_METRICNODETYPE_PROCESS < pxmetricnode->type)
+        pxmetricnode = (xmanager_metricnode*)dlnode->value;
+        if (XMANAGER_METRICNODETYPE_PROCESS < pxmetricnode->type)
         {
             continue;
         }
@@ -297,13 +297,13 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
         {
             elog(RLOG_WARNING, "xmanager metric assemble info list nullmap, out of memory");
             deleteStringInfo(option);
-            ripple_netpacket_destroy(npacket);
+            netpacket_destroy(npacket);
             return false;
         }
         rmemset0(nullmap, 0, 0, u16value);
 
         /* type len */
-        valuelen = strlen(ripple_metricnodetype_name[pxmetricnode->type].name);
+        valuelen = strlen(metricnodetype_name[pxmetricnode->type].name);
         ivalue = valuelen;
         ivalue = r_hton32(ivalue);
         rmemcpy1(uptr, 0, &ivalue, 4);
@@ -312,7 +312,7 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
         npacket->used += 4;
 
         /* type */
-        rmemcpy1(uptr, 0, ripple_metricnodetype_name[pxmetricnode->type].name, valuelen);
+        rmemcpy1(uptr, 0, metricnodetype_name[pxmetricnode->type].name, valuelen);
         uptr += valuelen;
         rowlen += valuelen;
         npacket->used += valuelen;
@@ -333,7 +333,7 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
         npacket->used += valuelen;
 
         /* state len */
-        valuelen = strlen(ripple_metricnodestat_name[pxmetricnode->stat].name);
+        valuelen = strlen(metricnodestat_name[pxmetricnode->stat].name);
         ivalue = valuelen;
         ivalue = r_hton32(ivalue);
         rmemcpy1(uptr, 0, &ivalue, 4);
@@ -342,27 +342,27 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
         npacket->used += 4;
 
         /* state */
-        rmemcpy1(uptr, 0, ripple_metricnodestat_name[pxmetricnode->stat].name, valuelen);
+        rmemcpy1(uptr, 0, metricnodestat_name[pxmetricnode->stat].name, valuelen);
         uptr += valuelen;
         rowlen += valuelen;
         npacket->used += valuelen;
 
-        if(RIPPLE_XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
+        if(XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
         {
-            ripple_xmanager_metricnode* metricnode                  = NULL;
-            ripple_xmanager_metricprogressnode* xmetricprogressnode = NULL;
+            xmanager_metricnode* metricnode                  = NULL;
+            xmanager_metricprogressnode* xmetricprogressnode = NULL;
 
-            xmetricprogressnode = (ripple_xmanager_metricprogressnode*)pxmetricnode;
+            xmetricprogressnode = (xmanager_metricprogressnode*)pxmetricnode;
 
             opdlnode = xmetricprogressnode->progressjop ? xmetricprogressnode->progressjop->head : NULL;
             while (opdlnode != NULL)
             {
-                metricnode = (ripple_xmanager_metricnode*)opdlnode->value;
-                if (RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE == metricnode->type)
+                metricnode = (xmanager_metricnode*)opdlnode->value;
+                if (XMANAGER_METRICNODETYPE_CAPTURE == metricnode->type)
                 {
                     appendStringInfo(option, "capture %s", metricnode->name);
                 }
-                else if (RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE == metricnode->type)
+                else if (XMANAGER_METRICNODETYPE_INTEGRATE == metricnode->type)
                 {
                     appendStringInfo(option, "integrate %s", metricnode->name);
                 }
@@ -440,10 +440,10 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
     deleteStringInfo(option);
 
     /* 将 netpacket 挂载到待发送队列中 */
-    if (false == ripple_queue_put(npoolentry->wpackets, (void*)npacket))
+    if (false == queue_put(npoolentry->wpackets, (void*)npacket))
     {
         elog(RLOG_WARNING, "xmanager metric assemble edit msg add message to queue error");
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return false;
     }
 
@@ -454,9 +454,9 @@ static bool ripple_xmanager_metricmsg_assemblelist(ripple_xmanager_metric* xmetr
  * 处理 list 命令
  *  1、返回metricnode信息
 */
-bool ripple_xmanager_metricmsg_parselist(ripple_xmanager_metric* xmetric,
-                                         ripple_netpoolentry* npoolentry,
-                                         ripple_netpacket* npacket)
+bool xmanager_metricmsg_parselist(xmanager_metric* xmetric,
+                                         netpoolentry* npoolentry,
+                                         netpacket* npacket)
 {
     /* 错误码 */
     int errcode                                         = 0;
@@ -477,27 +477,27 @@ bool ripple_xmanager_metricmsg_parselist(ripple_xmanager_metric* xmetric,
 
     if (true == dlist_isnull(xmetric->metricnodes))
     {
-        errcode = RIPPLE_ERROR_NOENT;
+        errcode = ERROR_NOENT;
         snprintf(errormsg, 2048, "ERROR: metricnodes is null.");
-        goto ripple_xmanager_metricmsg_parselist_error;
+        goto xmanager_metricmsg_parselist_error;
     }
 
     /* 组装返回信息 */
-    if(false == ripple_xmanager_metricmsg_assemblelist(xmetric, npoolentry))
+    if(false == xmanager_metricmsg_assemblelist(xmetric, npoolentry))
     {
-        errcode = RIPPLE_ERROR_OOM;
+        errcode = ERROR_OOM;
         snprintf(errormsg, 2048, "ERROR: does not assemble list result.");
-        goto ripple_xmanager_metricmsg_parselist_error;
+        goto xmanager_metricmsg_parselist_error;
     }
 
     return true;
 
-ripple_xmanager_metricmsg_parselist_error:
+xmanager_metricmsg_parselist_error:
 
     elog(RLOG_WARNING, errormsg);
-    return ripple_xmanager_metricmsg_assembleerrormsg(xmetric,
+    return xmanager_metricmsg_assembleerrormsg(xmetric,
                                                       npoolentry->wpackets,
-                                                      RIPPLE_XMANAGER_MSG_LISTCMD,
+                                                      XMANAGER_MSG_LISTCMD,
                                                       errcode,
                                                       errormsg);
 }

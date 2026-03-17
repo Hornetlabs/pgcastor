@@ -1,4 +1,4 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "port/file/fd.h"
 #include "utils/list/list_func.h"
@@ -6,119 +6,119 @@
 #include "utils/hash/hash_search.h"
 #include "utils/guc/guc.h"
 #include "utils/mpage/mpage.h"
-#include "utils/uuid/ripple_uuid.h"
-#include "utils/daemon/ripple_process.h"
-#include "utils/init/ripple_databaserecv.h"
-#include "misc/ripple_misc_lockfiles.h"
-#include "signal/ripple_signal.h"
-#include "queue/ripple_queue.h"
+#include "utils/uuid/uuid.h"
+#include "utils/daemon/process.h"
+#include "utils/init/databaserecv.h"
+#include "misc/misc_lockfiles.h"
+#include "signal/app_signal.h"
+#include "queue/queue.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadtrailrecords.h"
-#include "task/ripple_task_slot.h"
-#include "storage/ripple_file_buffer.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_ffsmgr.h"
-#include "threads/ripple_threads.h"
-#include "parser/trail/ripple_parsertrail.h"
-#include "rebuild/ripple_rebuild.h"
-#include "sync/ripple_sync.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "refresh/ripple_refresh_table_sharding.h"
-#include "refresh/ripple_refresh_table_syncstats.h"
-#include "onlinerefresh/ripple_onlinerefresh_persist.h"
-#include "onlinerefresh/integrate/ripple_onlinerefresh_integrate.h"
-#include "onlinerefresh/integrate/dataset/ripple_onlinerefresh_integratedataset.h"
-#include "metric/integrate/ripple_metric_integrate.h"
-#include "bigtransaction/persist/ripple_bigtxn_persist.h"
-#include "bigtransaction/integrate/ripple_bigtxn_integratemanager.h"
-#include "increment/integrate/parser/ripple_increment_integrateparsertrail.h"
-#include "increment/integrate/split/ripple_increment_integratesplittrail.h"
-#include "increment/integrate/sync/ripple_increment_integratesync.h"
-#include "increment/integrate/rebuild/ripple_increment_integraterebuild.h"
-#include "increment/integrate/ripple_increment_integrate.h"
-#include "command/ripple_cmd_startintegrate.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadtrailrecords.h"
+#include "task/task_slot.h"
+#include "storage/file_buffer.h"
+#include "storage/ff_detail.h"
+#include "storage/ffsmgr.h"
+#include "threads/threads.h"
+#include "parser/trail/parsertrail.h"
+#include "rebuild/rebuild.h"
+#include "sync/sync.h"
+#include "refresh/refresh_tables.h"
+#include "refresh/refresh_table_sharding.h"
+#include "refresh/refresh_table_syncstats.h"
+#include "onlinerefresh/onlinerefresh_persist.h"
+#include "onlinerefresh/integrate/onlinerefresh_integrate.h"
+#include "onlinerefresh/integrate/dataset/onlinerefresh_integratedataset.h"
+#include "metric/integrate/metric_integrate.h"
+#include "bigtransaction/persist/bigtxn_persist.h"
+#include "bigtransaction/integrate/bigtxn_integratemanager.h"
+#include "increment/integrate/parser/increment_integrateparsertrail.h"
+#include "increment/integrate/split/increment_integratesplittrail.h"
+#include "increment/integrate/sync/increment_integratesync.h"
+#include "increment/integrate/rebuild/increment_integraterebuild.h"
+#include "increment/integrate/increment_integrate.h"
+#include "command/cmd_startintegrate.h"
 
 /* 启动常驻线程 */
-static bool ripple_cmd_startintegratethreads(ripple_increment_integrate* incintegrate)
+static bool cmd_startintegratethreads(increment_integrate* incintegrate)
 {
-    ripple_thrnode* thrnode                 = NULL;
+    thrnode* thrnode                 = NULL;
 
     /*-------------------------------启动常驻工作线程 begin---------------------------------*/
     /* 启动的顺序为退出的逆序, 即先启动的后退出 */
     /* 启动应用线程 */
-    if(false == ripple_threads_addpersistthread(incintegrate->threads,
+    if(false == threads_addpersistthread(incintegrate->threads,
                                                 &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INC_INTEGRATE_SYNC,
+                                                THRNODE_IDENTITY_INC_INTEGRATE_SYNC,
                                                 incintegrate->persistno,
                                                 (void*)incintegrate->syncworkstate,
                                                 NULL,
                                                 NULL,
-                                                ripple_increment_integratesync_main))
+                                                increment_integratesync_main))
     {
         elog(RLOG_WARNING, "add integrate increment bigtxn sync persist to threads error");
         return false;
     }
 
     /* 启动重组线程 */
-    if(false == ripple_threads_addpersistthread(incintegrate->threads,
+    if(false == threads_addpersistthread(incintegrate->threads,
                                                 &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INC_INTEGRATE_REBUILD,
+                                                THRNODE_IDENTITY_INC_INTEGRATE_REBUILD,
                                                 incintegrate->persistno,
                                                 (void*)incintegrate->rebuild,
                                                 NULL,
                                                 NULL,
-                                                ripple_increment_integraterebuild_main))
+                                                increment_integraterebuild_main))
     {
         elog(RLOG_WARNING, "add integrate increment rebuild persist to threads error");
         return false;
     }
 
     /* 启动解析器线程 */
-    if(false == ripple_threads_addpersistthread(incintegrate->threads,
+    if(false == threads_addpersistthread(incintegrate->threads,
                                                 &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INC_INTEGRATE_PARSER,
+                                                THRNODE_IDENTITY_INC_INTEGRATE_PARSER,
                                                 incintegrate->persistno,
                                                 (void*)incintegrate->decodingctx,
                                                 NULL,
                                                 NULL,
-                                                ripple_increment_integrateparsertrail_main))
+                                                increment_integrateparsertrail_main))
     {
         elog(RLOG_WARNING, "add integrate increment parser persist to threads error");
         return false;
     }
 
     /* 启动spli trail线程 */
-    if(false == ripple_threads_addpersistthread(incintegrate->threads,
+    if(false == threads_addpersistthread(incintegrate->threads,
                                                 &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INC_INTEGRATE_LOADRECORDS,
+                                                THRNODE_IDENTITY_INC_INTEGRATE_LOADRECORDS,
                                                 incintegrate->persistno,
                                                 (void*)incintegrate->splittrailctx,
                                                 NULL,
                                                 NULL,
-                                                ripple_increment_integratesplitrail_main))
+                                                increment_integratesplitrail_main))
     {
         elog(RLOG_WARNING, "add integrate increment splittrail persist to threads error");
         return false;
     }
 
     /* 启动 状态 线程 */
-    if(false == ripple_threads_addpersistthread(incintegrate->threads,
+    if(false == threads_addpersistthread(incintegrate->threads,
                                                 &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INTEGRATE_METRIC,
+                                                THRNODE_IDENTITY_INTEGRATE_METRIC,
                                                 incintegrate->persistno,
                                                 (void*)incintegrate->integratestate,
                                                 NULL,
                                                 NULL,
-                                                ripple_metric_integrate_main))
+                                                metric_integrate_main))
     {
         elog(RLOG_WARNING, "add integrate increment metric persist to threads error");
         return false;
@@ -129,7 +129,7 @@ static bool ripple_cmd_startintegratethreads(ripple_increment_integrate* incinte
 }
 
 /* integrate 启动 */
-bool ripple_cmd_startintegrate(void)
+bool cmd_startintegrate(void)
 {
     /*
      * 1、切换工作目录
@@ -140,92 +140,92 @@ bool ripple_cmd_startintegrate(void)
     int gctime                                  = 0;
     int forcefree                               = 0;
     char* wdata                                 = NULL;
-    ripple_increment_integrate* incintegrate    = NULL;
+    increment_integrate* incintegrate    = NULL;
 
     /* 获取工作目录 */
     wdata = guc_getdata();
 
     /* 检测 data 目录是否存在 */
-    if(false == DirExist(wdata))
+    if(false == osal_dir_exist(wdata))
     {
         elog(RLOG_WARNING, "work data not exist:%s", wdata);
         bret = false;
-        goto ripple_cmd_startintegrate_done;
+        goto cmd_startintegrate_done;
     }
 
     /* 切换工作目录 */
     chdir(wdata);
 
     /* 设置为后台运行 */
-    ripple_makedaemon();
+    makedaemon();
 
     /* 获取主线程号 */
     g_mainthrid = pthread_self();
 
     /* 在 wdata 查看锁文件是否存在,不存在则创建,存在则检测进程是否启动 */
-    ripple_misc_lockfiles_create(RIPPLE_LOCK_FILE);
+    misc_lockfiles_create(LOCK_FILE);
 
     /* log 初始化 */
-    ripple_log_init();
+    log_init();
 
     /* 获取内存回收时间 */
-    gctime = guc_getConfigOptionInt(RIPPLE_CFG_KEY_GCTIME);
+    gctime = guc_getConfigOptionInt(CFG_KEY_GCTIME);
 
     /* incintegrate */
-    incintegrate = ripple_increment_integrate_init();
+    incintegrate = increment_integrate_init();
 
     /* 设置信号处理函数 */
-    ripple_signal_init();
+    signal_init();
 
     /* 创建同步表 */
-    if(false == ripple_databaserecv_integrate_dbinit())
+    if(false == databaserecv_integrate_dbinit())
     {
         bret = false;
-        goto ripple_cmd_startintegrate_done;
+        goto cmd_startintegrate_done;
     }
 
-    if (false == ripple_increment_integrate_refreshload(incintegrate))
+    if (false == increment_integrate_refreshload(incintegrate))
     {
         elog(RLOG_WARNING, "read refresh file error");
         bret = false;
-        goto ripple_cmd_startintegrate_done;
+        goto cmd_startintegrate_done;
     }
 
     /* 加载onlinerefresh状态文件 生成 onlinerefresh节点 */
-    if (false == ripple_increment_integrate_onlinerefreshload(incintegrate))
+    if (false == increment_integrate_onlinerefreshload(incintegrate))
     {
         elog(RLOG_WARNING, "load onlinerefresh error");
         bret = false;
-        goto ripple_cmd_startintegrate_done;
+        goto cmd_startintegrate_done;
     }
 
     /*
      * 添加主常驻线程
      */
-    if(false == ripple_threads_addpersist(incintegrate->threads, &incintegrate->persistno, "INTEGRATE INCREMENT"))
+    if(false == threads_addpersist(incintegrate->threads, &incintegrate->persistno, "INTEGRATE INCREMENT"))
     {
         elog(RLOG_WARNING, "add integrate increment persist to threads error");
         bret = false;
-        goto ripple_cmd_startintegrate_done;
+        goto cmd_startintegrate_done;
     }
 
     /* 启动常驻工作线程 */
-    if(false == ripple_cmd_startintegratethreads(incintegrate))
+    if(false == cmd_startintegratethreads(incintegrate))
     {
         bret = false;
         elog(RLOG_WARNING, "start integrate increment persist job threads error");
-        goto ripple_cmd_startintegrate_done;
+        goto cmd_startintegrate_done;
     }
 
     /* 解除信号屏蔽 */
-    ripple_singal_setmask();
+    singal_setmask();
 
     elog(RLOG_INFO, "xsynch integrate start, pid:%d", getpid());
 
-    ripple_log_destroyerrorstack();
+    log_destroyerrorstack();
 
     /* 关闭标准输入/输出/错误 */
-    ripple_closestd();
+    closestd();
 
     while(1)
     {
@@ -233,7 +233,7 @@ bool ripple_cmd_startintegrate(void)
         if(true == g_gotsigterm)
         {
             /* 捕获到 sigterm 信号, 设置线程退出 */
-            ripple_threads_exit(incintegrate->threads);
+            threads_exit(incintegrate->threads);
             break;
         }
 
@@ -243,14 +243,14 @@ bool ripple_cmd_startintegrate(void)
          *  2、回收完成的 refresh 节点
          */
         /* 启动 refresh 节点 */
-        if(false == ripple_increment_integrate_startrefresh(incintegrate))
+        if(false == increment_integrate_startrefresh(incintegrate))
         {
             elog(RLOG_WARNING, "start refresh error");
             break;
         }
 
         /* 尝试回收 refresh 节点 */
-        if(false == ripple_increment_integrate_tryjoinonrefresh(incintegrate))
+        if(false == increment_integrate_tryjoinonrefresh(incintegrate))
         {
             elog(RLOG_WARNING, "try join on refresh error");
             break;
@@ -262,14 +262,14 @@ bool ripple_cmd_startintegrate(void)
          *  2、回收完成的 onlinerefresh 节点
          */
         /* 启动 onlinerefesh 节点 */
-        if(false == ripple_increment_integrate_startonlinerefresh(incintegrate))
+        if(false == increment_integrate_startonlinerefresh(incintegrate))
         {
             elog(RLOG_WARNING, "start onlinerefresh error");
             break;
         }
 
         /* 尝试回收 onlinerefresh 节点 */
-        if(false == ripple_increment_integrate_tryjoinononlinerefresh(incintegrate))
+        if(false == increment_integrate_tryjoinononlinerefresh(incintegrate))
         {
             elog(RLOG_WARNING, "try join on onlinerefresh error");
             break;
@@ -281,29 +281,29 @@ bool ripple_cmd_startintegrate(void)
          *  2、回收完成的 bigtxn 节点
          */
         /* 启动 bigtxn 节点 */
-        if(false == ripple_increment_integrate_startbigtxn(incintegrate))
+        if(false == increment_integrate_startbigtxn(incintegrate))
         {
             elog(RLOG_WARNING, "start bigtxn error");
             break;
         }
 
         /* 尝试回收 bigtxn 节点 */
-        if(false == ripple_increment_integrate_tryjoinonbigtxn(incintegrate))
+        if(false == increment_integrate_tryjoinonbigtxn(incintegrate))
         {
             elog(RLOG_WARNING, "try join on bigtxn error");
             break;
         }
 
         /* 启动线程 */
-        ripple_threads_startthread(incintegrate->threads);
+        threads_startthread(incintegrate->threads);
 
         /* 尝试捕获异常线程 */
-        ripple_threads_tryjoin(incintegrate->threads);
+        threads_tryjoin(incintegrate->threads);
 
         /* 回收 FREE 节点 */
-        ripple_threads_thrnoderecycle(incintegrate->threads);
+        threads_thrnoderecycle(incintegrate->threads);
 
-        if(false == ripple_threads_hasthrnode(incintegrate->threads))
+        if(false == threads_hasthrnode(incintegrate->threads))
         {
             /* 所有的线程退出, 主线程退出 */
             break;
@@ -328,27 +328,27 @@ bool ripple_cmd_startintegrate(void)
     }
 
     /* 所有的线程都退出了, 那么主线程也退出 */
-ripple_cmd_startintegrate_done:
+cmd_startintegrate_done:
 
     /* 落盘refresh信息 */
     if (NULL != incintegrate)
     {
-        ripple_increment_integrate_refreshflush(incintegrate);
+        increment_integrate_refreshflush(incintegrate);
 
         /* 落盘onlinerefresh信息 */
         if (NULL != incintegrate->rebuild)
         {
-            ripple_onlinerefresh_persist_write(incintegrate->rebuild->olpersist);
+            onlinerefresh_persist_write(incintegrate->rebuild->olpersist);
         }
 
         /* incintegrate 资源回收*/
-        ripple_increment_integrate_destroy(incintegrate);
+        increment_integrate_destroy(incintegrate);
     }
 
     /* 锁文件释放 */
-    ripple_misc_lockfiles_unlink(0, NULL);
+    misc_lockfiles_unlink(0, NULL);
 
     /* 泄露内存打印 */
-    ripple_mem_print(RIPPLE_MEMPRINT_ALL);
+    mem_print(MEMPRINT_ALL);
     return bret;
 }

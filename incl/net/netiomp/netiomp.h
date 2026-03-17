@@ -1,52 +1,52 @@
-#ifndef _RIPPLE_NETIOMP_H
-#define _RIPPLE_NETIOMP_H
+#ifndef _NETIOMP_H
+#define _NETIOMP_H
 
 
-typedef enum RIPPLE_NETIOMP_TYPE
+typedef enum NETIOMP_TYPE
 {
-    RIPPLE_NETIOMP_TYPE_NOP         = 0x00,
-    RIPPLE_NETIOMP_TYPE_SELECT      = 0x01,
-    RIPPLE_NETIOMP_TYPE_POLL        = 0x02,
-    RIPPLE_NETIOMP_TYPE_EPOLL       = 0x03
-} ripple_netiomp_type;
+    NETIOMP_TYPE_NOP         = 0x00,
+    NETIOMP_TYPE_SELECT      = 0x01,
+    NETIOMP_TYPE_POLL        = 0x02,
+    NETIOMP_TYPE_EPOLL       = 0x03
+} netiomp_type;
 
-#define RIPPLE_MAXFD                    8
+#define MAXFD                    8
 
-typedef struct RIPPLE_NETIOMPBASE
+typedef struct NETIOMPBASE
 {
     int                 num;
     int                 max;
     int                 timeout;
     struct pollfd*      events;
-} ripple_netiompbase;
+} netiompbase;
 
 /* 重置 */
-typedef void (*rnetiompreset)(ripple_netiompbase* base);
+typedef void (*rnetiompreset)(netiompbase* base);
 
 /* 创建 */
-typedef bool (*rnetiompcreate)(ripple_netiompbase** base);
+typedef bool (*rnetiompcreate)(netiompbase** base);
 
 /* 增加描述符和事件类型 */
-typedef int (*rnetiompadd)(ripple_netiompbase* base, int fd, uint16 flag);
+typedef int (*rnetiompadd)(netiompbase* base, int fd, uint16 flag);
 
 /* 删除描述符 */
-typedef int (*rnetiompdel)(ripple_netiompbase* base, int fd);
+typedef int (*rnetiompdel)(netiompbase* base, int fd);
 
 /* 修改描述符 */
-typedef int (*rnetiompmodify)(ripple_netiompbase* base, int fd);
+typedef int (*rnetiompmodify)(netiompbase* base, int fd);
 
 /* 事件监听 */
-typedef int (*rnetiomp)(ripple_netiompbase* base);
+typedef int (*rnetiomp)(netiompbase* base);
 
 /* 获取事件 */
-typedef int (*rnetiompgetevent)(ripple_netiompbase* base, int pos);
+typedef int (*rnetiompgetevent)(netiompbase* base, int pos);
 
 /* 内存回收 */
-typedef void (*rnetiompfree)(ripple_netiompbase* base);
+typedef void (*rnetiompfree)(netiompbase* base);
 
-typedef struct RIPPLE_NETIOMPOPS
+typedef struct NETIOMPOPS
 {
-    ripple_netiomp_type         type;
+    netiomp_type         type;
     rnetiompreset               reset;
     rnetiompcreate              create;
     rnetiompadd                 add;
@@ -55,8 +55,8 @@ typedef struct RIPPLE_NETIOMPOPS
     rnetiomp                    iomp;
     rnetiompgetevent            getevent;
     rnetiompfree                free;
-} ripple_netiompops;
+} netiompops;
 
-ripple_netiompops* ripple_netiomp_init(int type);
+netiompops* netiomp_init(int type);
 
 #endif

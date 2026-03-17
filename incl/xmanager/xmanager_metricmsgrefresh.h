@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_XMANAGER_METRICMSGREFRESH_H_
-#define _RIPPLE_XMANAGER_METRICMSGREFRESH_H_
+#ifndef _XMANAGER_METRICMSGREFRESH_H_
+#define _XMANAGER_METRICMSGREFRESH_H_
 
 
 /*
@@ -8,15 +8,15 @@
  *  2、将 refresh 消息转发到 capture
  *  3、创建异步消息挂载到 xscsci 节点上
 */
-bool ripple_xmanager_metricmsg_parserefresh(ripple_xmanager_metric* xmetric,
-                                            ripple_netpoolentry* npoolentry,
-                                            ripple_netpacket* npacket);
+bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric,
+                                            netpoolentry* npoolentry,
+                                            netpacket* npacket);
 
 /*
  * 组装 refresh 返回消息
 */
-bool ripple_xmanager_metricmsg_assemblerefresh(ripple_xmanager_metric* xmetric,
-                                               ripple_netpoolentry* npoolentry,
+bool xmanager_metricmsg_assemblerefresh(xmanager_metric* xmetric,
+                                               netpoolentry* npoolentry,
                                                dlist* dlmsgs);
 
 

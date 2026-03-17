@@ -1,4 +1,4 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/dlist/dlist.h"
 #include "utils/rbtree/rbtree.h"
@@ -7,22 +7,22 @@
 #include "utils/string/stringinfo.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "catalog/ripple_catalog.h"
-#include "catalog/ripple_index.h"
-#include "stmts/ripple_txnstmt.h"
-#include "stmts/ripple_txnstmt_prepared.h"
-#include "rebuild/ripple_rebuild_burst.h"
-#include "rebuild/ripple_rebuild.h"
-#include "rebuild/ripple_rebuild_preparestmt.h"
-#include "works/parserwork/wal/ripple_decode_heap_util.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "catalog/catalog.h"
+#include "catalog/index.h"
+#include "stmts/txnstmt.h"
+#include "stmts/txnstmt_prepared.h"
+#include "rebuild/rebuild_burst.h"
+#include "rebuild/rebuild.h"
+#include "rebuild/rebuild_preparestmt.h"
+#include "works/parserwork/wal/decode_heap_util.h"
 
 /* multiinsert拆分为多条insert */
-static bool ripple_rebuild_prepared_multiinsert2insert(xk_pg_parser_translog_tbcol_nvalues* nvalues,
+static bool rebuild_prepared_multiinsert2insert(xk_pg_parser_translog_tbcol_nvalues* nvalues,
                                                        xk_pg_parser_translog_tbcol_value* column,
-                                                       ripple_txnstmt_prepared* stmtprepared)
+                                                       txnstmt_prepared* stmtprepared)
 {
     xk_pg_parser_translog_tbcol_values* row = NULL;
 
@@ -56,16 +56,16 @@ static bool ripple_rebuild_prepared_multiinsert2insert(xk_pg_parser_translog_tbc
     return true;
 }
 
-static char* ripple_rebuild_makehatb(ripple_rebuild* rebuild,
-                                     ripple_txnstmt_prepared* stmtprepared,
+static char* rebuild_makehatb(rebuild* rebuild,
+                                     txnstmt_prepared* stmtprepared,
                                      Oid relid)
 {
     bool found = false;
     tableoptype table_optype = {'\0'};
-    ripple_rebuild_preparestmt tmp_stmt = {'\0'};
+    rebuild_preparestmt tmp_stmt = {'\0'};
     rbtreenode* treenode = NULL;
-    ripple_rebuild_preparestmt* pstmt = NULL;
-    ripple_tableop2preparestmt *hash_entry = NULL;
+    rebuild_preparestmt* pstmt = NULL;
+    tableop2preparestmt *hash_entry = NULL;
 
     table_optype.optype = stmtprepared->optype;
     table_optype.relid = relid;
@@ -78,7 +78,7 @@ static char* ripple_rebuild_makehatb(ripple_rebuild* rebuild,
     {
         hash_entry->tableop.optype = table_optype.optype;
         hash_entry->tableop.relid = table_optype.relid;
-        hash_entry->rbtree = rbtree_init(ripple_rebuild_preparestmt_cmp, ripple_rebuild_preparestmt_free, ripple_rebuild_preparestmt_debug);
+        hash_entry->rbtree = rbtree_init(rebuild_preparestmt_cmp, rebuild_preparestmt_free, rebuild_preparestmt_debug);
         if(NULL == hash_entry->rbtree)
         {
             elog(RLOG_WARNING, "rebuild makehatb rbtree out of memory");
@@ -87,14 +87,14 @@ static char* ripple_rebuild_makehatb(ripple_rebuild* rebuild,
     }
 
     /* 添加新的节点 */
-    pstmt = ripple_rebuild_preparestmt_init();
+    pstmt = rebuild_preparestmt_init();
     if(NULL == pstmt)
     {
         elog(RLOG_WARNING, "ripple rebuild preparestmt out of memory");
         return NULL;
     }
     pstmt->number = stmtprepared->number;
-    snprintf(pstmt->stmtname, RIPPLE_NAMEDATALEN, "query_%lu", rebuild->prepareno);
+    snprintf(pstmt->stmtname, NAMEDATALEN, "query_%lu", rebuild->prepareno);
     pstmt->preparesql = rstrdup(stmtprepared->preparedsql);
     rbtree_insert(hash_entry->rbtree, pstmt);
     (rebuild->prepareno)++;
@@ -109,21 +109,21 @@ static char* ripple_rebuild_makehatb(ripple_rebuild* rebuild,
         return NULL;
     }
 
-    pstmt = (ripple_rebuild_preparestmt*)treenode->data;
+    pstmt = (rebuild_preparestmt*)treenode->data;
     
     return pstmt->stmtname;
 }
 
-static char* ripple_rebuild_get_stmtname(ripple_rebuild* rebuild, 
-                                         ripple_txnstmt_prepared* stmtprepared,
+static char* rebuild_get_stmtname(rebuild* rebuild, 
+                                         txnstmt_prepared* stmtprepared,
                                          Oid relid)
 {
     bool found = false;
     tableoptype table_optype = {'\0'};
-    ripple_rebuild_preparestmt tmp_stmt = {'\0'};
+    rebuild_preparestmt tmp_stmt = {'\0'};
     rbtreenode* treenode = NULL;
-    ripple_rebuild_preparestmt* pstmt = NULL;
-    ripple_tableop2preparestmt *hash_entry = NULL;
+    rebuild_preparestmt* pstmt = NULL;
+    tableop2preparestmt *hash_entry = NULL;
 
     table_optype.optype = stmtprepared->optype;
     table_optype.relid = relid;
@@ -137,7 +137,7 @@ static char* ripple_rebuild_get_stmtname(ripple_rebuild* rebuild,
         /* 返回值执行语句 */
         if (NULL != treenode)
         {
-            pstmt = (ripple_rebuild_preparestmt*)treenode->data;
+            pstmt = (rebuild_preparestmt*)treenode->data;
             stmtprepared->number = pstmt->number;
             return pstmt->stmtname;
         }
@@ -146,12 +146,12 @@ static char* ripple_rebuild_get_stmtname(ripple_rebuild* rebuild,
 }
 
 /* 表中是否含有主键或唯一约束 */
-static bool ripple_rebuild_hasconskey(HTAB* hindex, Oid tboid)
+static bool rebuild_hasconskey(HTAB* hindex, Oid tboid)
 {
     List* lindex                                = NULL;
 
     /* 获取index */
-    lindex = (List*)ripple_index_getbyoid(tboid, hindex);
+    lindex = (List*)index_getbyoid(tboid, hindex);
 
     /* 不含有唯一索引退出 */
     if (NULL == lindex || NULL == lindex->head)
@@ -163,23 +163,23 @@ static bool ripple_rebuild_hasconskey(HTAB* hindex, Oid tboid)
 }
 
 /* 初始化syncstate->hatables2prepare哈希表 */
-static HTAB* ripple_rebuild_hatables2prepare_init(void)
+static HTAB* rebuild_hatables2prepare_init(void)
 {
     HASHCTL        hash_ctl;
     HTAB* stmthtab;
 
     rmemset1(&hash_ctl, 0, 0, sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(tableoptype);
-    hash_ctl.entrysize = sizeof(ripple_tableop2preparestmt);
+    hash_ctl.entrysize = sizeof(tableop2preparestmt);
     stmthtab = hash_create("rebuild_hatables2prepare", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
     return stmthtab;
 }
 
 /* 释放syncstate->hatables2prepare哈希表 */
-static void ripple_rebuild_hatables2prepare_free(ripple_rebuild* rebuild)
+static void rebuild_hatables2prepare_free(rebuild* rebuild)
 {
     HASH_SEQ_STATUS status;
-    ripple_tableop2preparestmt* entry;
+    tableop2preparestmt* entry;
 
     if (NULL == rebuild->hatatb2prepare)
     {
@@ -199,7 +199,7 @@ static void ripple_rebuild_hatables2prepare_free(ripple_rebuild* rebuild)
 }
 
 /* 初始化 */
-void ripple_rebuild_reset(ripple_rebuild* rebuild)
+void rebuild_reset(rebuild* rebuild)
 {
     if (NULL == rebuild)
     {
@@ -208,23 +208,23 @@ void ripple_rebuild_reset(ripple_rebuild* rebuild)
     rebuild->prepareno = 1;
     if(NULL != rebuild->hatatb2prepare)
     {
-        ripple_rebuild_hatables2prepare_free(rebuild);
+        rebuild_hatables2prepare_free(rebuild);
     }
 
     if (NULL != rebuild->sysdicts)
     {
-        ripple_cache_sysdicts_free(rebuild->sysdicts);
+        cache_sysdicts_free(rebuild->sysdicts);
         rebuild->sysdicts = NULL;
     }
 
-    rebuild->sysdicts = ripple_cache_sysdicts_integrate_init();
+    rebuild->sysdicts = cache_sysdicts_integrate_init();
 
-    rebuild->hatatb2prepare = ripple_rebuild_hatables2prepare_init();
+    rebuild->hatatb2prepare = rebuild_hatables2prepare_init();
 
     return ;
 }
 
-static ripple_txnstmt* ripple_rebuild_initpreparestmt(ripple_rebuild* rebuild,
+static txnstmt* rebuild_initpreparestmt(rebuild* rebuild,
                                                       Oid relid,
                                                       uint8 op,
                                                       uint32 colcnt,
@@ -233,23 +233,23 @@ static ripple_txnstmt* ripple_rebuild_initpreparestmt(ripple_rebuild* rebuild,
 {
     uint32 len = 0;
     char* stmtname = NULL;
-    ripple_txnstmt* stmt = NULL;
-    ripple_txnstmt_prepared* stmtprepared = NULL;
+    txnstmt* stmt = NULL;
+    txnstmt_prepared* stmtprepared = NULL;
 
-    /* 初始化 ripple_txnstmt */
-    stmt = ripple_txnstmt_init();
+    /* 初始化 txnstmt */
+    stmt = txnstmt_init();
     if(NULL == stmt)
     {
         return NULL;
     }
     stmt->stmt = NULL;
-    stmt->type = RIPPLE_TXNSTMT_TYPE_PREPARED;
+    stmt->type = TXNSTMT_TYPE_PREPARED;
 
     /* 初始化 prepared 结构体 */
-    stmtprepared = ripple_txnstmt_prepared_init();
+    stmtprepared = txnstmt_prepared_init();
     if(NULL == stmtprepared)
     {
-        ripple_txnstmt_free(stmt);
+        txnstmt_free(stmt);
         return NULL;
     }
     stmt->stmt = (void*)stmtprepared;
@@ -259,7 +259,7 @@ static ripple_txnstmt* ripple_rebuild_initpreparestmt(ripple_rebuild* rebuild,
     stmtprepared->values = rmalloc0(sizeof(char*) * colcnt);
     if(NULL == stmtprepared->values)
     {
-        ripple_txnstmt_free(stmt);
+        txnstmt_free(stmt);
         elog(RLOG_WARNING,"stmtprepared->values malloc error %s", strerror(errno));
         return NULL;
     }
@@ -267,7 +267,7 @@ static ripple_txnstmt* ripple_rebuild_initpreparestmt(ripple_rebuild* rebuild,
     stmtprepared->preparedsql = rmalloc0(preparedstmtlen + 1);
     if(NULL == stmtprepared->preparedsql)
     {
-        ripple_txnstmt_free(stmt);
+        txnstmt_free(stmt);
         elog(RLOG_WARNING,"stmtprepared->preparedsql malloc error %s", strerror(errno));
         return NULL;
     }
@@ -275,14 +275,14 @@ static ripple_txnstmt* ripple_rebuild_initpreparestmt(ripple_rebuild* rebuild,
     rmemcpy0(stmtprepared->preparedsql, 0, preparedstmt, preparedstmtlen);
     stmtprepared->preparedsql[preparedstmtlen] = '\0';
 
-    stmtname = ripple_rebuild_get_stmtname(rebuild, stmtprepared, relid);
+    stmtname = rebuild_get_stmtname(rebuild, stmtprepared, relid);
 
     if (NULL == stmtname)
     {
-        stmtname = ripple_rebuild_makehatb(rebuild, stmtprepared, relid);
+        stmtname = rebuild_makehatb(rebuild, stmtprepared, relid);
         if (NULL == stmtname)
         {
-            ripple_txnstmt_free(stmt);
+            txnstmt_free(stmt);
             return NULL;
         }
     }
@@ -292,7 +292,7 @@ static ripple_txnstmt* ripple_rebuild_initpreparestmt(ripple_rebuild* rebuild,
     stmtprepared->preparedname = rmalloc0(len + 1);
     if(NULL == stmtprepared->preparedname)
     {
-        ripple_txnstmt_free(stmt);
+        txnstmt_free(stmt);
         elog(RLOG_WARNING,"stmtprepared->preparedname malloc error %s", strerror(errno));
         return NULL;
     }
@@ -303,16 +303,16 @@ static ripple_txnstmt* ripple_rebuild_initpreparestmt(ripple_rebuild* rebuild,
 }
 
 /* multiinsert */
-static bool ripple_rebuild_prepared_multiinsert(ripple_rebuild* rebuild,
-                                                ripple_txnstmt* stmt,
+static bool rebuild_prepared_multiinsert(rebuild* rebuild,
+                                                txnstmt* stmt,
                                                 List** lststmt)
 {
     bool                                    has_valid_column = false;
     uint16_t                                index = 0;
     uint16_t                                index_rowcnt = 0;
     uint32                                  colcnts = 0;
-    ripple_txnstmt*                         nstmt = NULL;
-    ripple_txnstmt_prepared*                stmtprepared = NULL;
+    txnstmt*                         nstmt = NULL;
+    txnstmt_prepared*                stmtprepared = NULL;
     xk_pg_parser_translog_tbcol_value*      column = NULL;
     xk_pg_parser_translog_tbcol_nvalues*    nvalues = NULL;
     StringInfo                              preparestmtname;
@@ -389,8 +389,8 @@ static bool ripple_rebuild_prepared_multiinsert(ripple_rebuild* rebuild,
     /* 遍历每一行，并将每行的数据组装为 prepared 语句 */
     for (index_rowcnt = 0; index_rowcnt < nvalues->m_rowCnt; index_rowcnt++)
     {
-        /* 初始化 ripple_txnstmt */
-        nstmt = ripple_rebuild_initpreparestmt(rebuild,
+        /* 初始化 txnstmt */
+        nstmt = rebuild_initpreparestmt(rebuild,
                                                 nvalues->m_relid,
                                                 XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
                                                 colcnts,
@@ -406,14 +406,14 @@ static bool ripple_rebuild_prepared_multiinsert(ripple_rebuild* rebuild,
         nstmt->extra0 = stmt->extra0;
         nstmt->len = stmt->len;
         nstmt->start = stmt->start;
-        nstmt->type = RIPPLE_TXNSTMT_TYPE_PREPARED;
-        stmtprepared = (ripple_txnstmt_prepared*)nstmt->stmt;
+        nstmt->type = TXNSTMT_TYPE_PREPARED;
+        stmtprepared = (txnstmt_prepared*)nstmt->stmt;
 
-        if(false == ripple_rebuild_prepared_multiinsert2insert(nvalues, 
+        if(false == rebuild_prepared_multiinsert2insert(nvalues, 
                                                                nvalues->m_rows[index_rowcnt].m_new_values,
                                                                stmtprepared))
         {
-            ripple_txnstmt_free(nstmt);
+            txnstmt_free(nstmt);
             deleteStringInfo(preparestmtname);
             return false;
         }
@@ -446,16 +446,16 @@ static bool ripple_rebuild_prepared_multiinsert(ripple_rebuild* rebuild,
 }
 
 /* insert */
-static bool ripple_rebuild_prepared_insert(ripple_rebuild* rebuild,
-                                           ripple_txnstmt* stmt,
+static bool rebuild_prepared_insert(rebuild* rebuild,
+                                           txnstmt* stmt,
                                            List** lststmt)
 {
     int                                     index = 0;
     int                                     colcnt = 0;
     bool                                    has_valid_column = false;
     StringInfo                              preparedstmt = NULL;
-    ripple_txnstmt*                         nstmt = NULL;
-    ripple_txnstmt_prepared*                stmtprepared = NULL;
+    txnstmt*                         nstmt = NULL;
+    txnstmt_prepared*                stmtprepared = NULL;
     xk_pg_parser_translog_tbcol_values*     row = NULL;
     xk_pg_parser_translog_tbcol_value*      colvalue = NULL;
 
@@ -521,7 +521,7 @@ static bool ripple_rebuild_prepared_insert(ripple_rebuild* rebuild,
     }
     appendStringInfo(preparedstmt, " );");
 
-    nstmt = ripple_rebuild_initpreparestmt(rebuild,
+    nstmt = rebuild_initpreparestmt(rebuild,
                                            row->m_relid,
                                            XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
                                            colcnt,
@@ -537,8 +537,8 @@ static bool ripple_rebuild_prepared_insert(ripple_rebuild* rebuild,
     nstmt->extra0 = stmt->extra0;
     nstmt->len = stmt->len;
     nstmt->start = stmt->start;
-    nstmt->type = RIPPLE_TXNSTMT_TYPE_PREPARED;
-    stmtprepared = (ripple_txnstmt_prepared*)nstmt->stmt;
+    nstmt->type = TXNSTMT_TYPE_PREPARED;
+    stmtprepared = (txnstmt_prepared*)nstmt->stmt;
     stmtprepared->row = row;
     stmt->stmt = NULL;
 
@@ -569,7 +569,7 @@ static bool ripple_rebuild_prepared_insert(ripple_rebuild* rebuild,
 }
 
 /* 拼接bind参数函数 */
-static int ripple_rebuild_appendbindparam(StringInfoData *stmt,
+static int rebuild_appendbindparam(StringInfoData *stmt,
                                           xk_pg_parser_translog_tbcol_value *values,
                                           int count,
                                           int nParams,
@@ -602,15 +602,15 @@ static int ripple_rebuild_appendbindparam(StringInfoData *stmt,
 }
 
 /* delete */
-static bool ripple_rebuild_prepared_delete(ripple_rebuild* rebuild,
-                                           ripple_txnstmt* stmt,
+static bool rebuild_prepared_delete(rebuild* rebuild,
+                                           txnstmt* stmt,
                                            List** lststmt)
 {
     int                                     index = 0;
     int                                     colcnt = 0;
     StringInfo                              preparedstmt = NULL;
-    ripple_txnstmt*                         nstmt = NULL;
-    ripple_txnstmt_prepared*                stmtprepared = NULL;
+    txnstmt*                         nstmt = NULL;
+    txnstmt_prepared*                stmtprepared = NULL;
     xk_pg_parser_translog_tbcol_values*     row = NULL;
     xk_pg_parser_translog_tbcol_value*      colvalue = NULL;
 
@@ -626,7 +626,7 @@ static bool ripple_rebuild_prepared_delete(ripple_rebuild* rebuild,
 
     /* 没有主键或唯一约束 */
     if(false == row->m_haspkey
-       && false ==  ripple_rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
+       && false ==  rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
         appendStringInfo(preparedstmt,
                             "CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
@@ -634,19 +634,19 @@ static bool ripple_rebuild_prepared_delete(ripple_rebuild* rebuild,
                             row->m_base.m_tbname);
     }
 
-    colcnt = ripple_rebuild_appendbindparam(preparedstmt,
+    colcnt = rebuild_appendbindparam(preparedstmt,
                                             row->m_old_values,
                                             row->m_valueCnt,
                                             0,
                                             false);
 
     if (false == row->m_haspkey
-        && false ==  ripple_rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
+        && false ==  rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
         appendStringInfo(preparedstmt, " LIMIT 1)");
     }
 
-    nstmt = ripple_rebuild_initpreparestmt(rebuild,
+    nstmt = rebuild_initpreparestmt(rebuild,
                                            row->m_relid,
                                            XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE,
                                            colcnt,
@@ -662,8 +662,8 @@ static bool ripple_rebuild_prepared_delete(ripple_rebuild* rebuild,
     nstmt->extra0 = stmt->extra0;
     nstmt->len = stmt->len;
     nstmt->start = stmt->start;
-    nstmt->type = RIPPLE_TXNSTMT_TYPE_PREPARED;
-    stmtprepared = (ripple_txnstmt_prepared*)nstmt->stmt;
+    nstmt->type = TXNSTMT_TYPE_PREPARED;
+    stmtprepared = (txnstmt_prepared*)nstmt->stmt;
     stmtprepared->row = row;
     stmt->stmt = NULL;
 
@@ -694,15 +694,15 @@ static bool ripple_rebuild_prepared_delete(ripple_rebuild* rebuild,
 }
 
 /* update */
-static bool ripple_rebuild_prepared_update(ripple_rebuild* rebuild,
-                                           ripple_txnstmt* stmt,
+static bool rebuild_prepared_update(rebuild* rebuild,
+                                           txnstmt* stmt,
                                            List** lststmt)
 {
     int                                     index = 0;
     int                                     colcnt = 0;
     StringInfo                              preparedstmt = NULL;
-    ripple_txnstmt*                         nstmt = NULL;
-    ripple_txnstmt_prepared*                stmtprepared = NULL;
+    txnstmt*                         nstmt = NULL;
+    txnstmt_prepared*                stmtprepared = NULL;
     xk_pg_parser_translog_tbcol_values*     row = NULL;
     xk_pg_parser_translog_tbcol_value*      colvalue = NULL;
 
@@ -717,16 +717,16 @@ static bool ripple_rebuild_prepared_update(ripple_rebuild* rebuild,
                         row->m_base.m_tbname);
 
     /* 新值 */
-    colcnt = ripple_rebuild_appendbindparam(preparedstmt,
+    colcnt = rebuild_appendbindparam(preparedstmt,
                                             row->m_new_values,
                                             row->m_valueCnt,
                                             0,
                                             true);
     
-    if (row->m_haspkey || true == ripple_rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
+    if (row->m_haspkey || true == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
         appendStringInfo(preparedstmt," WHERE ");
-        colcnt = ripple_rebuild_appendbindparam(preparedstmt,
+        colcnt = rebuild_appendbindparam(preparedstmt,
                                                 row->m_old_values,
                                                 row->m_valueCnt,
                                                 colcnt,
@@ -738,7 +738,7 @@ static bool ripple_rebuild_prepared_update(ripple_rebuild* rebuild,
                             " WHERE CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
                             row->m_base.m_schemaname,
                             row->m_base.m_tbname);
-        colcnt = ripple_rebuild_appendbindparam(preparedstmt,
+        colcnt = rebuild_appendbindparam(preparedstmt,
                                                 row->m_old_values,
                                                 row->m_valueCnt,
                                                 colcnt,
@@ -746,7 +746,7 @@ static bool ripple_rebuild_prepared_update(ripple_rebuild* rebuild,
         appendStringInfo(preparedstmt, " LIMIT 1)");
     }
 
-    nstmt = ripple_rebuild_initpreparestmt(rebuild,
+    nstmt = rebuild_initpreparestmt(rebuild,
                                            row->m_relid,
                                            XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE,
                                            colcnt,
@@ -762,8 +762,8 @@ static bool ripple_rebuild_prepared_update(ripple_rebuild* rebuild,
     nstmt->extra0 = stmt->extra0;
     nstmt->len = stmt->len;
     nstmt->start = stmt->start;
-    nstmt->type = RIPPLE_TXNSTMT_TYPE_PREPARED;
-    stmtprepared = (ripple_txnstmt_prepared*)nstmt->stmt;
+    nstmt->type = TXNSTMT_TYPE_PREPARED;
+    stmtprepared = (txnstmt_prepared*)nstmt->stmt;
     stmtprepared->row = row;
     stmt->stmt = NULL;
 
@@ -813,15 +813,15 @@ static bool ripple_rebuild_prepared_update(ripple_rebuild* rebuild,
 }
 
 /* 对 txn 的内容重组 */
-bool ripple_rebuild_prepared(ripple_rebuild* rebuild, ripple_txn* txn)
+bool rebuild_prepared(rebuild* rebuild, txn* txn)
 {
     bool complete                               = false;
     ListCell* lc                                = NULL;
     List* lststmt                               = NULL;
     ListCell* metadatalc                        = NULL;
-    ripple_txnstmt* stmtnode                    = NULL;
-    ripple_catalogdata *catalogdata             = NULL;
-    ripple_txnstmt_metadata* metadatastmt       = NULL;
+    txnstmt* stmtnode                    = NULL;
+    catalogdata *catalog_data             = NULL;
+    txnstmt_metadata* metadatastmt       = NULL;
     xk_pg_parser_translog_tbcolbase* tbcolbase  = NULL;
 
     if(NULL == txn->stmts)
@@ -834,61 +834,61 @@ bool ripple_rebuild_prepared(ripple_rebuild* rebuild, ripple_txn* txn)
     txn->stmts = NULL;
     foreach(lc, lststmt)
     {
-        stmtnode = (ripple_txnstmt*)lfirst(lc);
+        stmtnode = (txnstmt*)lfirst(lc);
 
-        if (stmtnode->type == RIPPLE_TXNSTMT_TYPE_DML)
+        if (stmtnode->type == TXNSTMT_TYPE_DML)
         {
             tbcolbase = (xk_pg_parser_translog_tbcolbase *)stmtnode->stmt;
             if(XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
             {
-                if(false == ripple_rebuild_prepared_multiinsert(rebuild, stmtnode, &txn->stmts))
+                if(false == rebuild_prepared_multiinsert(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
             else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == tbcolbase->m_dmltype)
             {
-                if(false == ripple_rebuild_prepared_insert(rebuild, stmtnode, &txn->stmts))
+                if(false == rebuild_prepared_insert(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
             else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == tbcolbase->m_dmltype)
             {
-                if(false == ripple_rebuild_prepared_delete(rebuild, stmtnode, &txn->stmts))
+                if(false == rebuild_prepared_delete(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
             else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == tbcolbase->m_dmltype)
             {
-                if(false == ripple_rebuild_prepared_update(rebuild, stmtnode, &txn->stmts))
+                if(false == rebuild_prepared_update(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
 
             /* stmtnode 释放 */
-            ripple_txnstmt_free(stmtnode);
+            txnstmt_free(stmtnode);
         }
-        else if(stmtnode->type == RIPPLE_TXNSTMT_TYPE_DDL)
+        else if(stmtnode->type == TXNSTMT_TYPE_DDL)
         {
             txn->stmts = lappend(txn->stmts, stmtnode);
         }
-        else if(stmtnode->type == RIPPLE_TXNSTMT_TYPE_METADATA)
+        else if(stmtnode->type == TXNSTMT_TYPE_METADATA)
         {
             /* 应用系统表用于主键或唯一约束判断 */
-            metadatastmt = (ripple_txnstmt_metadata*)stmtnode->stmt;
+            metadatastmt = (txnstmt_metadata*)stmtnode->stmt;
 
             complete = false;
             metadatalc = metadatastmt->begin;
             while(1)
             {
-                catalogdata = (ripple_catalogdata*)lfirst(metadatalc);
-                ripple_cache_sysdicts_txnsysdicthisitem2cache(rebuild->sysdicts, metadatalc);
-                if (RIPPLE_CATALOG_TYPE_CLASS == catalogdata->type)
+                catalog_data = (catalogdata*)lfirst(metadatalc);
+                cache_sysdicts_txnsysdicthisitem2cache(rebuild->sysdicts, metadatalc);
+                if (CATALOG_TYPE_CLASS == catalog_data->type)
                 {
-                    ripple_cache_sysdicts_clearsysdicthisbyclass(rebuild->sysdicts, metadatalc);
+                    cache_sysdicts_clearsysdicthisbyclass(rebuild->sysdicts, metadatalc);
                 }
 
                 /* 只有一个 */
@@ -905,12 +905,12 @@ bool ripple_rebuild_prepared(ripple_rebuild* rebuild, ripple_txn* txn)
                 }
             }
             /* integrate不需要，会导致大事务退出 */
-            ripple_txnstmt_free(stmtnode);
+            txnstmt_free(stmtnode);
         }
-        else if(stmtnode->type == RIPPLE_TXNSTMT_TYPE_SHIFTFILE)
+        else if(stmtnode->type == TXNSTMT_TYPE_SHIFTFILE)
         {
             /* integrate不需要，会导致大事务退出 */
-            ripple_txnstmt_free(stmtnode);
+            txnstmt_free(stmtnode);
         }
         else
         {
@@ -924,40 +924,40 @@ bool ripple_rebuild_prepared(ripple_rebuild* rebuild, ripple_txn* txn)
 }
 
 /* 对 txn 的内容重组 */
-bool ripple_rebuild_txnburst(ripple_rebuild* rebuild, ripple_txn* txn)
+bool rebuild_txnburst(rebuild* rebuild, txn* txn)
 {
-    ripple_rebuild_burst* burst = NULL;  
+    rebuild_burst* burst = NULL;  
     if(NULL == txn->stmts)
     {
         return true;
     }
 
-    burst = ripple_rebuild_burst_init();
+    burst = rebuild_burst_init();
     if (NULL == burst)
     {
         return false;
     }
     
     /* 事务重组为burstnode */
-    if(false == ripple_rebuild_burst_txn2bursts(burst, rebuild->sysdicts, txn))
+    if(false == rebuild_burst_txn2bursts(burst, rebuild->sysdicts, txn))
     {
         return false;
     }
 
     /* burstnode合并为sql语句 */
-    if (false == ripple_rebuild_burst_bursts2stmt(burst, rebuild->sysdicts, txn))
+    if (false == rebuild_burst_bursts2stmt(burst, rebuild->sysdicts, txn))
     {
         return false;
     }
 
-    ripple_rebuild_burst_free(burst);
+    rebuild_burst_free(burst);
     burst = NULL;
 
     return true;
 }
 
 /* 内存清理 */
-void ripple_rebuild_destroy(ripple_rebuild* rebuild)
+void rebuild_destroy(rebuild* rebuild)
 {
     if (NULL == rebuild)
     {
@@ -966,12 +966,12 @@ void ripple_rebuild_destroy(ripple_rebuild* rebuild)
 
     if (rebuild->hatatb2prepare)
     {
-       ripple_rebuild_hatables2prepare_free(rebuild);
+       rebuild_hatables2prepare_free(rebuild);
     }
 
     if (rebuild->sysdicts)
     {
-        ripple_cache_sysdicts_free(rebuild->sysdicts);
+        cache_sysdicts_free(rebuild->sysdicts);
         rebuild->sysdicts = NULL;
     }
     

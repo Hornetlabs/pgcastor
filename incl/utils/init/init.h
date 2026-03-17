@@ -1,6 +1,6 @@
-#ifndef _RIPPLE_INIT_H
-#define _RIPPLE_INIT_H
+#ifndef _INIT_H
+#define _INIT_H
 
-bool ripple_init(void);
+bool init(void);
 
 #endif

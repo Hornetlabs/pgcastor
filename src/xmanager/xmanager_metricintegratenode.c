@@ -1,10 +1,10 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/dlist/dlist.h"
 #include "utils/dttime/dttimestamp.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "xmanager/ripple_xmanager_metricnode.h"
-#include "xmanager/ripple_xmanager_metricintegratenode.h"
+#include "net/netpacket/netpacket.h"
+#include "xmanager/xmanager_msg.h"
+#include "xmanager/xmanager_metricnode.h"
+#include "xmanager/xmanager_metricintegratenode.h"
 
 /*
  * metricintegrate  列头长度
@@ -22,31 +22,31 @@
 
 
 /* 初始化 */
-ripple_xmanager_metricnode* ripple_xmanager_metricintegratenode_init(void)
+xmanager_metricnode* xmanager_metricintegratenode_init(void)
 {
-    ripple_xmanager_metricintegratenode* xintegratemetricnode = NULL;
+    xmanager_metricintegratenode* xintegratemetricnode = NULL;
 
-    xintegratemetricnode = rmalloc0(sizeof(ripple_xmanager_metricintegratenode));
+    xintegratemetricnode = rmalloc0(sizeof(xmanager_metricintegratenode));
     if (NULL == xintegratemetricnode)
     {
         elog(RLOG_WARNING, "xmanager metric integrate node init out of memory");
         return NULL;
     }
-    rmemset0(xintegratemetricnode, 0, '\0', sizeof(ripple_xmanager_metricintegratenode));
+    rmemset0(xintegratemetricnode, 0, '\0', sizeof(xmanager_metricintegratenode));
 
-    ripple_xmanager_metricnode_reset(&xintegratemetricnode->base);
-    xintegratemetricnode->base.type = RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE;
-    return (ripple_xmanager_metricnode*)xintegratemetricnode;
+    xmanager_metricnode_reset(&xintegratemetricnode->base);
+    xintegratemetricnode->base.type = XMANAGER_METRICNODETYPE_INTEGRATE;
+    return (xmanager_metricnode*)xintegratemetricnode;
 }
 
 /* 资源清理 */
-void ripple_xmanager_metricintegratenode_destroy(ripple_xmanager_metricnode* metricnode)
+void xmanager_metricintegratenode_destroy(xmanager_metricnode* metricnode)
 {
     rfree(metricnode);
 }
 
 /* 将 integrate node 节点序列化 */
-bool ripple_xmanager_metricintegratenode_serial(ripple_xmanager_metricnode* metricnode,
+bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode,
                                                 uint8** blk,
                                                 int* blksize,
                                                 int* blkstart)
@@ -58,14 +58,14 @@ bool ripple_xmanager_metricintegratenode_serial(ripple_xmanager_metricnode* metr
     int64 i64value                                              = 0;
     uint64 uvalue                                               = 0;
     uint8* uptr                                                 = NULL;
-    ripple_xmanager_metricintegratenode* xmetricintegratenode   = NULL;
+    xmanager_metricintegratenode* xmetricintegratenode   = NULL;
 
     if (NULL == metricnode)
     {
         return true;
     }
 
-    xmetricintegratenode = (ripple_xmanager_metricintegratenode*)metricnode;
+    xmetricintegratenode = (xmanager_metricintegratenode*)metricnode;
 
     /* node 节点的总长度 */
     len = 4;
@@ -76,7 +76,7 @@ bool ripple_xmanager_metricintegratenode_serial(ripple_xmanager_metricnode* metr
      *  2、integratenode 长度
      */
     /* metricnode 长度 */
-    len += ripple_xmanager_metricnode_serialsize(metricnode);
+    len += xmanager_metricnode_serialsize(metricnode);
 
     /* integrate node 私有长度 */
     len += (8 +                 /*loadlsn */
@@ -123,7 +123,7 @@ bool ripple_xmanager_metricintegratenode_serial(ripple_xmanager_metricnode* metr
     uptr = *blk;
 
     /* 通用内容格式化 */
-    ripple_xmanager_metricnode_serial(&xmetricintegratenode->base, uptr, blkstart);
+    xmanager_metricnode_serial(&xmetricintegratenode->base, uptr, blkstart);
 
     /* 将 integrate node 节点的内容序列化 */
     uptr += *blkstart;
@@ -188,13 +188,13 @@ bool ripple_xmanager_metricintegratenode_serial(ripple_xmanager_metricnode* metr
 }
 
 /* 反序列化为 integrate node 节点 */
-ripple_xmanager_metricnode* ripple_xmanager_metricintegratenode_deserial(uint8* blk, int* blkstart)
+xmanager_metricnode* xmanager_metricintegratenode_deserial(uint8* blk, int* blkstart)
 {
     int64 i64value                                              = 0;
     uint64 u64value                                             = 0;
     uint8* uptr                                                 = NULL;
-    ripple_xmanager_metricintegratenode* xmetricintegratenode   = NULL;
-    xmetricintegratenode = (ripple_xmanager_metricintegratenode*)ripple_xmanager_metricintegratenode_init();
+    xmanager_metricintegratenode* xmetricintegratenode   = NULL;
+    xmetricintegratenode = (xmanager_metricintegratenode*)xmanager_metricintegratenode_init();
     if (NULL == xmetricintegratenode)
     {
         elog(RLOG_WARNING, "xmanager metric integrate deserial error, out of memory");
@@ -202,10 +202,10 @@ ripple_xmanager_metricnode* ripple_xmanager_metricintegratenode_deserial(uint8* 
     }
 
     /* 获取基础信息 */
-    if (false == ripple_xmanager_metricnode_deserial(&xmetricintegratenode->base, blk, blkstart))
+    if (false == xmanager_metricnode_deserial(&xmetricintegratenode->base, blk, blkstart))
     {
         elog(RLOG_WARNING, "xmanager metric integrate deserial error");
-        ripple_xmanager_metricnode_destroy(&xmetricintegratenode->base);
+        xmanager_metricnode_destroy(&xmetricintegratenode->base);
         return NULL;
     }
     uptr = blk;
@@ -259,11 +259,11 @@ ripple_xmanager_metricnode* ripple_xmanager_metricintegratenode_deserial(uint8* 
     uptr += 8;
     *blkstart += 8;
 
-    return (ripple_xmanager_metricnode*)xmetricintegratenode;
+    return (xmanager_metricnode*)xmetricintegratenode;
 }
 
 /* integrate info 组装 */
-void* ripple_xmanager_metricmsg_assembleintegrate(ripple_xmanager_metricnode* pxmetricnode)
+void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
 {
     uint8 u8value                                               = 0;
     uint16 u16value                                             = 0;
@@ -274,28 +274,28 @@ void* ripple_xmanager_metricmsg_assembleintegrate(ripple_xmanager_metricnode* px
     uint8* nullmap                                              = NULL;
     uint8* rowuptr                                              = NULL;
     uint8* uptr                                                 = NULL;
-    ripple_netpacket* npacket                                   = NULL;
-    ripple_xmanager_metricintegratenode* xmetricintegratenode   = NULL;
+    netpacket* npacket                                   = NULL;
+    xmanager_metricintegratenode* xmetricintegratenode   = NULL;
     char state[32]                                              = {'\0'};
     char values[REFRESH_METRICINTEGRATE_INFOCNT][32]            = {{0}};
     int32 valuelen[REFRESH_METRICINTEGRATE_INFOCNT]             = {0};
 
-    xmetricintegratenode = (ripple_xmanager_metricintegratenode*) pxmetricnode;
+    xmetricintegratenode = (xmanager_metricintegratenode*) pxmetricnode;
 
     rmemset1(state, 0, 0, 32);
-    if (RIPPLE_XMANAGER_METRICNODESTAT_NOP == pxmetricnode->stat)
+    if (XMANAGER_METRICNODESTAT_NOP == pxmetricnode->stat)
     {
         snprintf(state, 32, "%s", "NOP");
     }
-    else if (RIPPLE_XMANAGER_METRICNODESTAT_INIT == pxmetricnode->stat)
+    else if (XMANAGER_METRICNODESTAT_INIT == pxmetricnode->stat)
     {
         snprintf(state, 32, "%s", "INIT");
     }
-    else if (RIPPLE_XMANAGER_METRICNODESTAT_ONLINE == pxmetricnode->stat)
+    else if (XMANAGER_METRICNODESTAT_ONLINE == pxmetricnode->stat)
     {
         snprintf(state, 32, "%s", "ONLINE");
     }
-    else if (RIPPLE_XMANAGER_METRICNODESTAT_OFFLINE == pxmetricnode->stat)
+    else if (XMANAGER_METRICNODESTAT_OFFLINE == pxmetricnode->stat)
     {
         snprintf(state, 32, "%s", "OFFLINE");
     }
@@ -369,18 +369,18 @@ void* ripple_xmanager_metricmsg_assembleintegrate(ripple_xmanager_metricnode* px
     msglen += strlen(state);
 
     /* 申请空间 */
-    npacket = ripple_netpacket_init();
+    npacket = netpacket_init();
     if (NULL == npacket)
     {
         elog(RLOG_WARNING, "xmanager metric assemble info integrate msg out of memory");
         return NULL;
     }
     msglen += 1;
-    npacket->data = ripple_netpacket_data_init(msglen);
+    npacket->data = netpacket_data_init(msglen);
     if (NULL == npacket->data)
     {
         elog(RLOG_WARNING, "xmanager metric assemble info integrate msg data, out of memory");
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return NULL;
     }
     msglen -= 1;
@@ -399,7 +399,7 @@ void* ripple_xmanager_metricmsg_assembleintegrate(ripple_xmanager_metricnode* px
     uptr += 4;
 
     /* 类型 */
-    ivalue = RIPPLE_XMANAGER_MSG_STARTCMD;
+    ivalue = XMANAGER_MSG_STARTCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -567,7 +567,7 @@ void* ripple_xmanager_metricmsg_assembleintegrate(ripple_xmanager_metricnode* px
     if (NULL == nullmap)
     {
         elog(RLOG_WARNING, "xmanager metric assemble info integrate nullmap, out of memory");
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return NULL;
     }
     rmemset0(nullmap, 0, 0, u16value);

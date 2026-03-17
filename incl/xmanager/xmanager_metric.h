@@ -1,29 +1,29 @@
-#ifndef _RIPPLE_XMANAGER_METRIC_H_
-#define _RIPPLE_XMANAGER_METRIC_H_
+#ifndef _XMANAGER_METRIC_H_
+#define _XMANAGER_METRIC_H_
 
-typedef struct RIPPLE_XMANAGER_METRIC
+typedef struct XMANAGER_METRIC
 {
     /* 配置文件总目录 */
     char*                           xsynchpath;
     char*                           configpath;
-    ripple_netpool*                 npool;
+    netpool*                 npool;
     dlist*                          metricnodes;
     dlist*                          fd2metricnodes;
-    char                            padding[RIPPLE_CACHELINE_SIZE];
-    ripple_queue*                   metricqueue;
-    char                            padding1[RIPPLE_CACHELINE_SIZE];
+    char                            padding[CACHELINE_SIZE];
+    queue*                   metricqueue;
+    char                            padding1[CACHELINE_SIZE];
     void*                           privdata;
     void                            (*privdatadestroy)(void* args);
-    char                            padding2[RIPPLE_CACHELINE_SIZE];
-} ripple_xmanager_metric;
+    char                            padding2[CACHELINE_SIZE];
+} xmanager_metric;
 
-extern ripple_xmanager_metric* ripple_xmanager_metric_init(void);
+extern xmanager_metric* xmanager_metric_init(void);
 
 /* 设置 configpath */
-extern bool ripple_xmanager_metric_setxsynchpath(ripple_xmanager_metric* xmetric, char* xsynchpath);
+extern bool xmanager_metric_setxsynchpath(xmanager_metric* xmetric, char* xsynchpath);
 
-extern void* ripple_xmanager_metric_main(void *args);
+extern void* xmanager_metric_main(void *args);
 
-extern void ripple_xmanager_metric_destroy(ripple_xmanager_metric* xmetric);
+extern void xmanager_metric_destroy(xmanager_metric* xmetric);
 
 #endif

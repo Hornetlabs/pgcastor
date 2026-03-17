@@ -1,26 +1,26 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "port/file/fd.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
 #include "utils/guc/guc.h"
-#include "utils/conn/ripple_conn.h"
+#include "utils/conn/conn.h"
 #include "utils/hash/hash_utils.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_transcache.h"
-#include "catalog/ripple_catalog.h"
-#include "catalog/ripple_constraint.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/transcache.h"
+#include "catalog/catalog.h"
+#include "catalog/constraint.h"
 
-static int ripple_compare_int16(const void *a, const void *b)
+static int compare_int16(const void *a, const void *b)
 {
     return (*(int16_t *)a - *(int16_t *)b);
 }
 
-static void ripple_constraint_splitconkey(const char *input, int16_t **conkey, int16_t *conkeycnt)
+static void constraint_splitconkey(const char *input, int16_t **conkey, int16_t *conkeycnt)
 {
     int count;
     int index = 0;
@@ -77,30 +77,30 @@ static void ripple_constraint_splitconkey(const char *input, int16_t **conkey, i
 
     *conkeycnt = count;
 
-    qsort(*conkey, count, sizeof(int16_t), ripple_compare_int16);
+    qsort(*conkey, count, sizeof(int16_t), compare_int16);
 
     rfree(content);
 
     return;
 }
 
-void ripple_constraint_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
+void constraint_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 {
     int i, j;
     HASHCTL hash_ctl;
     bool found = false;
     PGresult *res = NULL;
-    xk_pg_sysdict_Form_pg_constraint ripple_constraint;
-    ripple_catalog_constraint_value *entry = NULL;
+    xk_pg_sysdict_Form_pg_constraint constraint;
+    catalog_constraint_value *entry = NULL;
     const char *query = "SELECT rel.oid , rel.conname, rel.connamespace, rel.contype, rel.conrelid, rel.conkey FROM pg_constraint rel where contype = 'p';";
 
     rmemset1(&hash_ctl, 0, 0, sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(Oid);
-    hash_ctl.entrysize = sizeof(ripple_catalog_constraint_value);
-    sysdicts->by_constraint = hash_create("ripple_catalog_sysdict_constraint", 2048, &hash_ctl,
+    hash_ctl.entrysize = sizeof(catalog_constraint_value);
+    sysdicts->by_constraint = hash_create("catalog_sysdict_constraint", 2048, &hash_ctl,
                                             HASH_ELEM | HASH_BLOBS);
 
-    res = ripple_conn_exec(conn, query);
+    res = conn_exec(conn, query);
     if (NULL == res)
     {
         elog(RLOG_ERROR, "pg_constraint query failed");
@@ -109,28 +109,28 @@ void ripple_constraint_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
     // 打印行数据
     for (i = 0; i < PQntuples(res); i++) 
     {
-        ripple_constraint = (xk_pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(xk_pg_parser_sysdict_pgconstraint));
-        if(NULL == ripple_constraint)
+        constraint = (xk_pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(xk_pg_parser_sysdict_pgconstraint));
+        if(NULL == constraint)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemset0(ripple_constraint, 0, '\0', sizeof(xk_pg_parser_sysdict_pgconstraint));
+        rmemset0(constraint, 0, '\0', sizeof(xk_pg_parser_sysdict_pgconstraint));
         j=0;
-        ripple_constraint->oid = strtoul(PQgetvalue(res, i, j++), NULL, 10);
-        strcpy(ripple_constraint->conname.data ,PQgetvalue(res, i, j++));
-        sscanf(PQgetvalue(res, i, j++), "%u", &ripple_constraint->connamespace);
-        sscanf(PQgetvalue(res, i, j++), "%c", &ripple_constraint->contype);
-        sscanf(PQgetvalue(res, i, j++), "%u", &ripple_constraint->conrelid);
-        ripple_constraint_splitconkey(PQgetvalue(res, i, j++), &ripple_constraint->conkey, &ripple_constraint->conkeycnt);
+        constraint->oid = strtoul(PQgetvalue(res, i, j++), NULL, 10);
+        strcpy(constraint->conname.data ,PQgetvalue(res, i, j++));
+        sscanf(PQgetvalue(res, i, j++), "%u", &constraint->connamespace);
+        sscanf(PQgetvalue(res, i, j++), "%c", &constraint->contype);
+        sscanf(PQgetvalue(res, i, j++), "%u", &constraint->conrelid);
+        constraint_splitconkey(PQgetvalue(res, i, j++), &constraint->conkey, &constraint->conkeycnt);
 
-        entry = (ripple_catalog_constraint_value *)hash_search(sysdicts->by_constraint, &ripple_constraint->conrelid, HASH_ENTER, &found);
+        entry = (catalog_constraint_value *)hash_search(sysdicts->by_constraint, &constraint->conrelid, HASH_ENTER, &found);
         if (false)
         {
             elog(RLOG_ERROR, "authid_oid:%u already exist in by_constraint", entry->constraint->conrelid);
         }
         
-        entry->conrelid = ripple_constraint->conrelid;
-        entry->constraint = ripple_constraint;
+        entry->conrelid = constraint->conrelid;
+        entry->constraint = constraint;
     }
 
     PQclear(res);
@@ -140,31 +140,31 @@ void ripple_constraint_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
 
 
 /* colvalue2constraint */
-ripple_catalogdata* ripple_constraint_colvalue2constraint(void* in_colvalue)
+catalogdata* constraint_colvalue2constraint(void* in_colvalue)
 {
-    ripple_catalogdata* catalogconstraint = NULL;
+    catalogdata* catalogconstraint = NULL;
     xk_pg_parser_translog_tbcol_value* colvalue = NULL;
     xk_pg_sysdict_Form_pg_constraint pgconstraint = NULL;
-    ripple_catalog_constraint_value* constraintvalue = NULL;
+    catalog_constraint_value* constraintvalue = NULL;
 
     colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
-    catalogconstraint = (ripple_catalogdata*)rmalloc0(sizeof(ripple_catalogdata));
+    catalogconstraint = (catalogdata*)rmalloc0(sizeof(catalogdata));
     if(NULL == catalogconstraint)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(catalogconstraint, 0, '\0', sizeof(ripple_catalogdata));
+    rmemset0(catalogconstraint, 0, '\0', sizeof(catalogdata));
 
-    constraintvalue = (ripple_catalog_constraint_value*)rmalloc0(sizeof(ripple_catalog_constraint_value));
+    constraintvalue = (catalog_constraint_value*)rmalloc0(sizeof(catalog_constraint_value));
     if(NULL == constraintvalue)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(constraintvalue, 0, '\0', sizeof(ripple_catalog_constraint_value));
+    rmemset0(constraintvalue, 0, '\0', sizeof(catalog_constraint_value));
     catalogconstraint->catalog = constraintvalue;
-    catalogconstraint->type = RIPPLE_CATALOG_TYPE_CONSTRAINT;
+    catalogconstraint->type = CATALOG_TYPE_CONSTRAINT;
 
     pgconstraint = (xk_pg_sysdict_Form_pg_constraint)rmalloc0(sizeof(xk_pg_parser_sysdict_pgconstraint));
     if(NULL == pgconstraint)
@@ -182,7 +182,7 @@ ripple_catalogdata* ripple_constraint_colvalue2constraint(void* in_colvalue)
     */
     sscanf((char*)((colvalue + 7)->m_value), "%u", &pgconstraint->conrelid);
     /* 拆分conkey */
-    ripple_constraint_splitconkey((char*)((colvalue + 18)->m_value), &pgconstraint->conkey, &pgconstraint->conkeycnt);
+    constraint_splitconkey((char*)((colvalue + 18)->m_value), &pgconstraint->conkey, &pgconstraint->conkeycnt);
 
     constraintvalue->conrelid = pgconstraint->conrelid;
 
@@ -199,19 +199,19 @@ ripple_catalogdata* ripple_constraint_colvalue2constraint(void* in_colvalue)
 }
 
 /* catalogdata2transcache */
-void ripple_constraint_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata)
+void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata)
 {
     bool found = false;
-    ripple_catalog_class_value* classInHash = NULL;
-    ripple_catalog_constraint_value* newcatalog = NULL;
-    ripple_catalog_constraint_value* catalogInHash = NULL;
+    catalog_class_value* classInHash = NULL;
+    catalog_constraint_value* newcatalog = NULL;
+    catalog_constraint_value* catalogInHash = NULL;
 
     if(NULL == catalogdata || NULL == catalogdata->catalog)
     {
         return;
     }
 
-    newcatalog = (ripple_catalog_constraint_value*)catalogdata->catalog;
+    newcatalog = (catalog_constraint_value*)catalogdata->catalog;
 
     if('p' != newcatalog->constraint->contype)
     {
@@ -227,9 +227,9 @@ void ripple_constraint_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, r
         return;
     }
 
-    if(RIPPLE_CATALOG_OP_INSERT == catalogdata->op)
+    if(CATALOG_OP_INSERT == catalogdata->op)
     {
-        classInHash->ripple_class->relhaspk = true;
+        classInHash->class->relhaspk = true;
         catalogInHash = hash_search(sysdicts->by_constraint, &newcatalog->conrelid, HASH_ENTER, &found);
         if(true == found)
         {
@@ -270,10 +270,10 @@ void ripple_constraint_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, r
 
         }
     }
-    else if(RIPPLE_CATALOG_OP_DELETE == catalogdata->op)
+    else if(CATALOG_OP_DELETE == catalogdata->op)
     {
-        elog(RLOG_DEBUG, "RIPPLE_CATALOG_OP_DELETE == catalogdata->op %s", newcatalog->constraint->conname.data);
-        classInHash->ripple_class->relhaspk = false;
+        elog(RLOG_DEBUG, "CATALOG_OP_DELETE == catalogdata->op %s", newcatalog->constraint->conname.data);
+        classInHash->class->relhaspk = false;
         catalogInHash = hash_search(sysdicts->by_constraint, &newcatalog->conrelid, HASH_REMOVE, &found);
         if(NULL != catalogInHash)
         {
@@ -287,7 +287,7 @@ void ripple_constraint_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, r
             }
         }
     }
-    else if(RIPPLE_CATALOG_OP_UPDATE == catalogdata->op)
+    else if(CATALOG_OP_UPDATE == catalogdata->op)
     {
         // elog(RLOG_ERROR, "unknown op:%d", catalogdata->op);
         catalogInHash = hash_search(sysdicts->by_constraint, &newcatalog->conrelid, HASH_FIND, &found);
@@ -334,9 +334,9 @@ void ripple_constraint_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, r
 }
 
 
-void ripple_constraint_catalogdatafree(ripple_catalogdata* catalogdata)
+void constraint_catalogdatafree(catalogdata* catalogdata)
 {
-    ripple_catalog_constraint_value* catalog = NULL;
+    catalog_constraint_value* catalog = NULL;
     if(NULL == catalogdata)
     {
         return;
@@ -349,7 +349,7 @@ void ripple_constraint_catalogdatafree(ripple_catalogdata* catalogdata)
     }
 
     /* catalog 内存释放 */
-    catalog = (ripple_catalog_constraint_value*)catalogdata->catalog;
+    catalog = (catalog_constraint_value*)catalogdata->catalog;
     if(NULL != catalog->constraint)
     {
         if (0 != catalog->constraint->conkeycnt)
@@ -362,28 +362,28 @@ void ripple_constraint_catalogdatafree(ripple_catalogdata* catalogdata)
     rfree(catalogdata);
 }
 
-void ripple_constraintdata_write(List* constraint_list, uint64 *offset, ripple_sysdict_header_array* array)
+void constraintdata_write(List* constraint_list, uint64 *offset, sysdict_header_array* array)
 {
     int     fd;
 
     uint64 page_num = 0;
-    char buffer[RIPPLE_FILE_BLK_SIZE];
-    size_t page_offset = RIPPLE_PAGE_HEADER_SIZE;
+    char buffer[FILE_BLK_SIZE];
+    size_t page_offset = PAGE_HEADER_SIZE;
     size_t constraint_size = 0;
     ListCell*    cell = NULL;
     xk_pg_sysdict_Form_pg_constraint rippleconstraint = NULL;
 
-    array->type = RIPPLE_CATALOG_TYPE_CONSTRAINT;
+    array->type = CATALOG_TYPE_CONSTRAINT;
     array->offset = *offset;
     page_num = *offset;
     
-    rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
-    fd = BasicOpenFile(RIPPLE_SYSDICTS_FILE,
-                        O_RDWR | O_CREAT | RIPPLE_BINARY);
+    rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
+    fd = osal_basic_open_file(SYSDICTS_FILE,
+                        O_RDWR | O_CREAT | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_ERROR, "could not create file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not create file %s", SYSDICTS_FILE);
     }
     foreach(cell, constraint_list)
     {
@@ -391,18 +391,18 @@ void ripple_constraintdata_write(List* constraint_list, uint64 *offset, ripple_s
         constraint_size = offsetof(xk_pg_parser_sysdict_pgconstraint, conkey);
         constraint_size += rippleconstraint->conkeycnt * sizeof(int16_t);
 
-        if(page_offset + constraint_size > RIPPLE_FILE_BLK_SIZE)
+        if(page_offset + constraint_size > FILE_BLK_SIZE)
         {
-            rmemcpy1(buffer, 0, &page_offset, RIPPLE_PAGE_HEADER_SIZE);
-            if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-                elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_FILE);
-                FileClose(fd);
+            rmemcpy1(buffer, 0, &page_offset, PAGE_HEADER_SIZE);
+            if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+                elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
+                osal_file_close(fd);
                 return;
             }
-            rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
+            rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
             page_num = *offset + page_offset;
-            *offset += RIPPLE_FILE_BLK_SIZE;
-            page_offset = RIPPLE_PAGE_HEADER_SIZE;
+            *offset += FILE_BLK_SIZE;
+            page_offset = PAGE_HEADER_SIZE;
         }
         rmemcpy1(buffer, page_offset, rippleconstraint, offsetof(xk_pg_parser_sysdict_pgconstraint, conkey));
         page_offset += offsetof(xk_pg_parser_sysdict_pgconstraint, conkey);
@@ -413,30 +413,30 @@ void ripple_constraintdata_write(List* constraint_list, uint64 *offset, ripple_s
             page_offset += (rippleconstraint->conkeycnt * sizeof(int16_t));
         }
     }
-    if (page_offset > RIPPLE_PAGE_HEADER_SIZE) 
+    if (page_offset > PAGE_HEADER_SIZE) 
     {
-        rmemcpy1(buffer, 0, &page_offset, RIPPLE_PAGE_HEADER_SIZE);
-         if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-            elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_FILE);
-            FileClose(fd);
+        rmemcpy1(buffer, 0, &page_offset, PAGE_HEADER_SIZE);
+         if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+            elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
+            osal_file_close(fd);
             return;
         }
         page_num = page_offset + *offset;
-        *offset += RIPPLE_FILE_BLK_SIZE;
+        *offset += FILE_BLK_SIZE;
     }
-    if(0 != FileSync(fd))
+    if(0 != osal_file_sync(fd))
     {
-        elog(RLOG_ERROR, "could not fsync file %s", RIPPLE_CONSTRAINT_FILE);
+        elog(RLOG_ERROR, "could not fsync file %s", CONSTRAINT_FILE);
     }
-    if(FileClose(fd))
+    if(osal_file_close(fd))
     {
-        elog(RLOG_ERROR, "could not close file %s", RIPPLE_CONSTRAINT_FILE);
+        elog(RLOG_ERROR, "could not close file %s", CONSTRAINT_FILE);
     }
 
     array->len = page_num;
 }
 
-HTAB* ripple_constraintcache_load(ripple_sysdict_header_array* array)
+HTAB* constraintcache_load(sysdict_header_array* array)
 {
     int r = 0;
     int fd = -1;
@@ -447,34 +447,34 @@ HTAB* ripple_constraintcache_load(ripple_sysdict_header_array* array)
     uint64 offset = 0;
     uint64 fileoffset = 0;
 
-    char buffer[RIPPLE_FILE_BLK_SIZE];
+    char buffer[FILE_BLK_SIZE];
     xk_pg_sysdict_Form_pg_constraint rippleconstraint;
-    ripple_catalog_constraint_value *entry = NULL;
+    catalog_constraint_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, 0, sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(uint32_t);
-    hash_ctl.entrysize = sizeof(ripple_catalog_constraint_value);
-    constrainthtab = hash_create("ripple_catalog_constraint_value", 2048, &hash_ctl,
+    hash_ctl.entrysize = sizeof(catalog_constraint_value);
+    constrainthtab = hash_create("catalog_constraint_value", 2048, &hash_ctl,
                                  HASH_ELEM | HASH_BLOBS);
 
-	if (array[RIPPLE_CATALOG_TYPE_CONSTRAINT - 1].len == array[RIPPLE_CATALOG_TYPE_CONSTRAINT - 1].offset)
+	if (array[CATALOG_TYPE_CONSTRAINT - 1].len == array[CATALOG_TYPE_CONSTRAINT - 1].offset)
 	{
 		return constrainthtab;
 	}
 
-    fd = BasicOpenFile(RIPPLE_SYSDICTS_FILE,
-                        O_RDWR | RIPPLE_BINARY);
+    fd = osal_basic_open_file(SYSDICTS_FILE,
+                        O_RDWR | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_ERROR, "could not open file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not open file %s", SYSDICTS_FILE);
     }
 
-    fileoffset = array[RIPPLE_CATALOG_TYPE_CONSTRAINT - 1].offset;
-    while ((r = FilePRead(fd, buffer, RIPPLE_FILE_BLK_SIZE, fileoffset)) > 0) 
+    fileoffset = array[CATALOG_TYPE_CONSTRAINT - 1].offset;
+    while ((r = osal_file_pread(fd, buffer, FILE_BLK_SIZE, fileoffset)) > 0) 
     {
-        rmemcpy1(&datasize, 0, buffer, RIPPLE_PAGE_HEADER_SIZE);
-        offset = RIPPLE_PAGE_HEADER_SIZE;
+        rmemcpy1(&datasize, 0, buffer, PAGE_HEADER_SIZE);
+        offset = PAGE_HEADER_SIZE;
 
         while (offset < datasize)
         {
@@ -505,51 +505,51 @@ HTAB* ripple_constraintcache_load(ripple_sysdict_header_array* array)
                 rippleconstraint->conkey = NULL;
             }
 
-            entry = (ripple_catalog_constraint_value *)hash_search(constrainthtab, &rippleconstraint->conrelid, HASH_ENTER, &found);
+            entry = (catalog_constraint_value *)hash_search(constrainthtab, &rippleconstraint->conrelid, HASH_ENTER, &found);
             entry->conrelid = rippleconstraint->conrelid;
             entry->constraint = rippleconstraint;
 
-            if (fileoffset + offset == array[RIPPLE_CATALOG_TYPE_CONSTRAINT - 1].len)
+            if (fileoffset + offset == array[CATALOG_TYPE_CONSTRAINT - 1].len)
             {
-                if(FileClose(fd))
+                if(osal_file_close(fd))
                 {
-                    elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_FILE);
+                    elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
                 }
                 return constrainthtab;
             }
         }
-        fileoffset += RIPPLE_FILE_BLK_SIZE;
+        fileoffset += FILE_BLK_SIZE;
     }
 
-    if(FileClose(fd))
+    if(osal_file_close(fd))
     {
-        elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
     }
     return constrainthtab;
 }
 
-void ripple_constraintcache_write(HTAB* constraintcache, uint64 *offset, ripple_sysdict_header_array* array)
+void constraintcache_write(HTAB* constraintcache, uint64 *offset, sysdict_header_array* array)
 {
     int     fd;
     int page_num = 0;
     uint64 constraint_size = 0;
-    size_t page_offset = RIPPLE_PAGE_HEADER_SIZE;
+    size_t page_offset = PAGE_HEADER_SIZE;
     HASH_SEQ_STATUS status;
-    char buffer[RIPPLE_FILE_BLK_SIZE];
-    ripple_catalog_constraint_value *entry = NULL;
+    char buffer[FILE_BLK_SIZE];
+    catalog_constraint_value *entry = NULL;
     xk_pg_sysdict_Form_pg_constraint constraint = NULL;
 
-    array[RIPPLE_CATALOG_TYPE_CONSTRAINT - 1].type = RIPPLE_CATALOG_TYPE_CONSTRAINT;
-    array[RIPPLE_CATALOG_TYPE_CONSTRAINT - 1].offset = *offset;
+    array[CATALOG_TYPE_CONSTRAINT - 1].type = CATALOG_TYPE_CONSTRAINT;
+    array[CATALOG_TYPE_CONSTRAINT - 1].offset = *offset;
     page_num = *offset;
 
-    rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
-    fd = BasicOpenFile(RIPPLE_SYSDICTS_TMP_FILE,
-                        O_RDWR | O_CREAT | RIPPLE_BINARY);
+    rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
+    fd = osal_basic_open_file(SYSDICTS_TMP_FILE,
+                        O_RDWR | O_CREAT | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_ERROR, "could not create file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not create file %s", SYSDICTS_FILE);
     }
 
     hash_seq_init(&status, constraintcache);
@@ -559,18 +559,18 @@ void ripple_constraintcache_write(HTAB* constraintcache, uint64 *offset, ripple_
         constraint_size = offsetof(xk_pg_parser_sysdict_pgconstraint, conkey);
         constraint_size += constraint->conkeycnt * sizeof(int16_t);
 
-        if(page_offset + constraint_size > RIPPLE_FILE_BLK_SIZE)
+        if(page_offset + constraint_size > FILE_BLK_SIZE)
         {
-            rmemcpy1(buffer, 0, &page_offset, RIPPLE_PAGE_HEADER_SIZE);
-            if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-                elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_FILE);
-                FileClose(fd);
+            rmemcpy1(buffer, 0, &page_offset, PAGE_HEADER_SIZE);
+            if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+                elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
+                osal_file_close(fd);
                 return;
             }
-            rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
+            rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
             page_num = *offset + page_offset;
-            *offset += RIPPLE_FILE_BLK_SIZE;
-            page_offset = RIPPLE_PAGE_HEADER_SIZE;
+            *offset += FILE_BLK_SIZE;
+            page_offset = PAGE_HEADER_SIZE;
         }
         rmemcpy1(buffer, page_offset, constraint, offsetof(xk_pg_parser_sysdict_pgconstraint, conkey));
         page_offset += offsetof(xk_pg_parser_sysdict_pgconstraint, conkey);
@@ -581,26 +581,26 @@ void ripple_constraintcache_write(HTAB* constraintcache, uint64 *offset, ripple_
             page_offset += constraint->conkeycnt * sizeof(int16_t);
         }
     }
-    if (page_offset > RIPPLE_PAGE_HEADER_SIZE) 
+    if (page_offset > PAGE_HEADER_SIZE) 
     {
-        rmemcpy1(buffer, 0, &page_offset, RIPPLE_PAGE_HEADER_SIZE);
-        if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-            elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_TMP_FILE);
-            FileClose(fd);
+        rmemcpy1(buffer, 0, &page_offset, PAGE_HEADER_SIZE);
+        if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+            elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
+            osal_file_close(fd);
             return;
         }
         page_num = page_offset + *offset;
-        *offset += RIPPLE_FILE_BLK_SIZE;
+        *offset += FILE_BLK_SIZE;
     }
-    if(0 != FileSync(fd))
+    if(0 != osal_file_sync(fd))
     {
-        elog(RLOG_ERROR, "could not fsync file %s", RIPPLE_SYSDICTS_TMP_FILE);
+        elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_TMP_FILE);
     }
 
-    if(FileClose(fd))
+    if(osal_file_close(fd))
     {
-        elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_TMP_FILE);
+        elog(RLOG_ERROR, "could not close file %s", SYSDICTS_TMP_FILE);
     }
 
-    array[RIPPLE_CATALOG_TYPE_CONSTRAINT - 1].len = page_num;
+    array[CATALOG_TYPE_CONSTRAINT - 1].len = page_num;
 }

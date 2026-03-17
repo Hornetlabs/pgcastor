@@ -1,7 +1,7 @@
 #include "xk_pg_parser_os_incl.h"
 #include "xk_pg_parser_app_incl.h"
 
-#include "utils/algorithm/md5/ripple_md5.h"
+#include "utils/algorithm/md5/md5.h"
 
 #define SHIFT(X, s) (((X) << (s)) | ((X) >> (32 - (s))))
 

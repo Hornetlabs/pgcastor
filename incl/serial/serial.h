@@ -1,22 +1,22 @@
-#ifndef _RIPPLE_SERIAL_H
-#define _RIPPLE_SERIAL_H
+#ifndef _SERIAL_H
+#define _SERIAL_H
 
 /* 将事务落盘线程结构体 */
-typedef struct RIPPLE_SERIALSTATE
+typedef struct SERIALSTATE
 {
     Oid                                 database;                       /* 数据库oid */
-    ripple_ffsmgr_state*                ffsmgrstate;
-    ripple_file_buffers*                txn2filebuffer;
-} ripple_serialstate;
+    ffsmgr_state*                ffsmgrstate;
+    file_buffers*                txn2filebuffer;
+} serialstate;
 
-void ripple_serialstate_init(ripple_serialstate* serialstate);
+void serialstate_init(serialstate* serialstate);
 
-ripple_file_buffers* ripple_serialstate_getfilebuffer(void* privdata);
+file_buffers* serialstate_getfilebuffer(void* privdata);
 
-void ripple_serialstate_fbuffer_set(ripple_serialstate* serialstate, uint64 fileid, uint64 fileoffset, FullTransactionId xid);
+void serialstate_fbuffer_set(serialstate* serialstate, uint64 fileid, uint64 fileoffset, FullTransactionId xid);
 
-void ripple_serialstate_ffsmgr_set(ripple_serialstate* serialstate, int serialtype);
+void serialstate_ffsmgr_set(serialstate* serialstate, int serialtype);
 
-void ripple_serialstate_destroy(ripple_serialstate* serialstate);
+void serialstate_destroy(serialstate* serialstate);
 
 #endif

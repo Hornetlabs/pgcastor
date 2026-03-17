@@ -1,167 +1,167 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "port/file/fd.h"
-#include "port/thread/ripple_thread.h"
+#include "port/thread/thread.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
 #include "utils/guc/guc.h"
-#include "utils/uuid/ripple_uuid.h"
-#include "utils/conn/ripple_conn.h"
-#include "utils/init/ripple_datainit.h"
-#include "utils/daemon/ripple_process.h"
-#include "utils/regex/ripple_regex.h"
-#include "utils/init/ripple_databaserecv.h"
-#include "misc/ripple_misc_stat.h"
-#include "misc/ripple_misc_lockfiles.h"
-#include "misc/ripple_misc_control.h"
-#include "signal/ripple_signal.h"
-#include "storage/ripple_file_buffer.h"
+#include "utils/uuid/uuid.h"
+#include "utils/conn/conn.h"
+#include "utils/init/datainit.h"
+#include "utils/daemon/process.h"
+#include "utils/regex/regex.h"
+#include "utils/init/databaserecv.h"
+#include "misc/misc_stat.h"
+#include "misc/misc_lockfiles.h"
+#include "misc/misc_control.h"
+#include "signal/app_signal.h"
+#include "storage/file_buffer.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
 #include "utils/mpage/mpage.h"
-#include "queue/ripple_queue.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadwalrecords.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
-#include "catalog/ripple_catalog.h"
-#include "queue/ripple_queue.h"
-#include "task/ripple_task_slot.h"
-#include "snapshot/ripple_snapshot.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_ffsmgr.h"
-#include "serial/ripple_serial.h"
-#include "threads/ripple_threads.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "refresh/capture/ripple_refresh_capture.h"
-#include "metric/capture/ripple_metric_capture.h"
-#include "increment/capture/flush/ripple_increment_captureflush.h"
-#include "bigtransaction/persist/ripple_bigtxn_persist.h"
-#include "bigtransaction/ripple_bigtxn.h"
-#include "bigtransaction/capture/flush/ripple_bigtxn_captureflush.h"
-#include "bigtransaction/capture/serial/ripple_bigtxn_captureserial.h"
-#include "onlinerefresh/capture/ripple_onlinerefresh_capture.h"
-#include "increment/capture/serial/ripple_increment_captureserial.h"
-#include "strategy/ripple_filter_dataset.h"
-#include "works/splitwork/wal/ripple_wal_define.h"
-#include "works/splitwork/wal/ripple_splitwork_wal.h"
-#include "works/parserwork/wal/ripple_rewind.h"
-#include "works/parserwork/wal/ripple_parserwork_decode.h"
-#include "works/parserwork/wal/ripple_onlinerefresh.h"
-#include "stmts/ripple_txnstmt_onlinerefresh.h"
-#include "works/parserwork/wal/ripple_parserwork_wal.h"
-#include "increment/capture/ripple_increment_capture.h"
-#include "command/ripple_cmd_startcapture.h"
+#include "queue/queue.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadwalrecords.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
+#include "catalog/catalog.h"
+#include "queue/queue.h"
+#include "task/task_slot.h"
+#include "snapshot/snapshot.h"
+#include "storage/ff_detail.h"
+#include "storage/ffsmgr.h"
+#include "serial/serial.h"
+#include "threads/threads.h"
+#include "xmanager/xmanager_msg.h"
+#include "net/netpacket/netpacket.h"
+#include "refresh/refresh_tables.h"
+#include "refresh/capture/refresh_capture.h"
+#include "metric/capture/metric_capture.h"
+#include "increment/capture/flush/increment_captureflush.h"
+#include "bigtransaction/persist/bigtxn_persist.h"
+#include "bigtransaction/bigtxn.h"
+#include "bigtransaction/capture/flush/bigtxn_captureflush.h"
+#include "bigtransaction/capture/serial/bigtxn_captureserial.h"
+#include "onlinerefresh/capture/onlinerefresh_capture.h"
+#include "increment/capture/serial/increment_captureserial.h"
+#include "strategy/filter_dataset.h"
+#include "works/splitwork/wal/wal_define.h"
+#include "works/splitwork/wal/splitwork_wal.h"
+#include "works/parserwork/wal/rewind.h"
+#include "works/parserwork/wal/parserwork_decode.h"
+#include "works/parserwork/wal/onlinerefresh.h"
+#include "stmts/txnstmt_onlinerefresh.h"
+#include "works/parserwork/wal/parserwork_wal.h"
+#include "increment/capture/increment_capture.h"
+#include "command/cmd_startcapture.h"
 
 /* 启动常驻线程 */
-static bool ripple_cmd_startcapturethreads(ripple_increment_capture* inccapture)
+static bool cmd_startcapturethreads(increment_capture* inccapture)
 {
-    ripple_thrnode* thrnode                 = NULL;
+    thrnode* thr_node                 = NULL;
 
     /*-------------------------------启动常驻工作线程 begin---------------------------------*/
     /* 启动的顺序为退出的逆序, 即先启动的后退出 */
     /* 启动落盘线程 */
-    if(false == ripple_threads_addpersistthread(inccapture->threads,
-                                                &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INC_CAPTURE_BIGTXNFLUSH,
+    if(false == threads_addpersistthread(inccapture->threads,
+                                                &thr_node,
+                                                THRNODE_IDENTITY_INC_CAPTURE_BIGTXNFLUSH,
                                                 inccapture->persistno,
                                                 (void*)inccapture->bigtxnwritestate,
                                                 NULL,
                                                 NULL,
-                                                ripple_bigtxn_captureflush_main))
+                                                bigtxn_captureflush_main))
     {
         elog(RLOG_WARNING, "add capture increment bigtxn flush persist to threads error");
         return false;
     }
 
     /* 启动大事务序列化线程 */
-    if(false == ripple_threads_addpersistthread(inccapture->threads,
-                                                &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INC_CAPTURE_BIGTXNSERIAL,
+    if(false == threads_addpersistthread(inccapture->threads,
+                                                &thr_node,
+                                                THRNODE_IDENTITY_INC_CAPTURE_BIGTXNSERIAL,
                                                 inccapture->persistno,
                                                 (void*)inccapture->bigtxnserialstate,
                                                 NULL,
                                                 NULL,
-                                                ripple_bigtxn_captureserial_main))
+                                                bigtxn_captureserial_main))
     {
         elog(RLOG_WARNING, "add capture increment bigtxn serial persist to threads error");
         return false;
     }
 
     /* 启动增量落盘线程 */
-    if(false == ripple_threads_addpersistthread(inccapture->threads,
-                                                &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INC_CAPTURE_FLUSH,
+    if(false == threads_addpersistthread(inccapture->threads,
+                                                &thr_node,
+                                                THRNODE_IDENTITY_INC_CAPTURE_FLUSH,
                                                 inccapture->persistno,
                                                 (void*)inccapture->writestate,
                                                 NULL,
                                                 NULL,
-                                                ripple_increment_captureflush_main))
+                                                increment_captureflush_main))
     {
         elog(RLOG_WARNING, "add capture increment flush persist to threads error");
         return false;
     }
 
     /* 启动增量序列化线程 */
-    if(false == ripple_threads_addpersistthread(inccapture->threads,
-                                                &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INC_CAPTURE_SERIAL,
+    if(false == threads_addpersistthread(inccapture->threads,
+                                                &thr_node,
+                                                THRNODE_IDENTITY_INC_CAPTURE_SERIAL,
                                                 inccapture->persistno,
                                                 (void*)inccapture->serialstate,
                                                 NULL,
                                                 NULL,
-                                                ripple_increment_captureserial_main))
+                                                increment_captureserial_main))
     {
         elog(RLOG_WARNING, "add capture increment serial persist to threads error");
         return false;
     }
 
     /* 启动解析器线程 */
-    if(false == ripple_threads_addpersistthread(inccapture->threads,
-                                                &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INC_CAPTURE_PARSER,
+    if(false == threads_addpersistthread(inccapture->threads,
+                                                &thr_node,
+                                                THRNODE_IDENTITY_INC_CAPTURE_PARSER,
                                                 inccapture->persistno,
                                                 (void*)inccapture->decodingctx,
                                                 NULL,
                                                 NULL,
-                                                ripple_parserwork_wal_main))
+                                                parserwork_wal_main))
     {
         elog(RLOG_WARNING, "add capture increment parser persist to threads error");
         return false;
     }
 
     /* 启动 walwork 线程 */
-    if(false == ripple_threads_addpersistthread(inccapture->threads,
-                                                &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_INC_CAPTURE_LOADRECORD,
+    if(false == threads_addpersistthread(inccapture->threads,
+                                                &thr_node,
+                                                THRNODE_IDENTITY_INC_CAPTURE_LOADRECORD,
                                                 inccapture->persistno,
                                                 (void*)inccapture->splitwalctx,
                                                 NULL,
                                                 NULL,
-                                                ripple_splitwork_wal_main))
+                                                splitwork_wal_main))
     {
         elog(RLOG_WARNING, "add capture increment splitwal persist to threads error");
         return false;
     }
 
     /* 启动指标线程 */
-    if(false == ripple_threads_addpersistthread(inccapture->threads,
-                                                &thrnode,
-                                                RIPPLE_THRNODE_IDENTITY_CAPTURE_METRIC,
+    if(false == threads_addpersistthread(inccapture->threads,
+                                                &thr_node,
+                                                THRNODE_IDENTITY_CAPTURE_METRIC,
                                                 inccapture->persistno,
                                                 (void*)inccapture->metric,
                                                 NULL,
                                                 NULL,
-                                                ripple_metric_capture_main))
+                                                metric_capture_main))
     {
         elog(RLOG_WARNING, "add capture increment metric persist to threads error");
         return false;
@@ -172,20 +172,20 @@ static bool ripple_cmd_startcapturethreads(ripple_increment_capture* inccapture)
 }
 
 /* 将指定的 onlinrefresh 节点在 olrefreshing 节点中删除 */
-static void ripple_cmd_startcapture_removeonlinerefresh(void* pinccapture, void* polrefresh)
+static void cmd_startcapture_removeonlinerefresh(void* pinccapture, void* polrefresh)
 {
-    ripple_increment_capture* inccapture                    = NULL;
+    increment_capture* inccapture                    = NULL;
 
-    inccapture = (ripple_increment_capture*)pinccapture;
+    inccapture = (increment_capture*)pinccapture;
 
-    ripple_thread_lock(&inccapture->olrefreshlock);
-    dlist_deletebyvalue(inccapture->olrefreshing, polrefresh, ripple_onlinerefresh_capture_cmp, NULL);
-    ripple_thread_unlock(&inccapture->olrefreshlock);
+    osal_thread_lock(&inccapture->olrefreshlock);
+    dlist_deletebyvalue(inccapture->olrefreshing, polrefresh, onlinerefresh_capture_cmp, NULL);
+    osal_thread_unlock(&inccapture->olrefreshlock);
 }
 
 /* 构建 onlinerefresh 返回包到 xmanager */
-static void ripple_cmd_startcaputre_assembleolrefreshpacket(ripple_increment_capture* inccapture,
-                                                            ripple_refresh_tables* rtables,
+static void cmd_startcaputre_assembleolrefreshpacket(increment_capture* inccapture,
+                                                            refresh_tables* rtables,
                                                             bool result,
                                                             int errcode,
                                                             char* msg)
@@ -199,8 +199,8 @@ static void ripple_cmd_startcaputre_assembleolrefreshpacket(ripple_increment_cap
     int msglen                      = 0;
     int resultlen                   = 0;
     uint8* uptr                     = NULL;
-    ripple_netpacket* npacket       = NULL;
-    ripple_refresh_table* rtable    = NULL;
+    netpacket* npacket       = NULL;
+    refresh_table* rtable    = NULL;
 
     /* 总长度 + crc32 + 类型 + 标识 + 错误长度 + 错误码 */
     msglen = (4 + 4 + 4 + 1 + 4 + 4);
@@ -231,17 +231,17 @@ static void ripple_cmd_startcaputre_assembleolrefreshpacket(ripple_increment_cap
 
     msglen += resultlen;
 
-    npacket = ripple_netpacket_init();
+    npacket = netpacket_init();
     if (NULL == npacket)
     {
         return;
     }
 
     npacket->used = msglen;
-    npacket->data = ripple_netpacket_data_init(msglen);
+    npacket->data = netpacket_data_init(msglen);
     if (NULL == npacket->data)
     {
-        goto ripple_cmd_startcaputre_assembleolrefreshpacket_error;
+        goto cmd_startcaputre_assembleolrefreshpacket_error;
     }
 
     uptr = npacket->data;
@@ -256,7 +256,7 @@ static void ripple_cmd_startcaputre_assembleolrefreshpacket(ripple_increment_cap
     uptr += 4;
 
     /* 类型 */
-    ivalue = RIPPLE_XMANAGER_MSG_CAPTUREREFRESH;
+    ivalue = XMANAGER_MSG_CAPTUREREFRESH;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -326,16 +326,16 @@ static void ripple_cmd_startcaputre_assembleolrefreshpacket(ripple_increment_cap
     uptr += ivalue;
 
     /* 挂载到待发送队列中 */
-    ripple_metric_capture_addpackets(inccapture->metric, npacket);
+    metric_capture_addpackets(inccapture->metric, npacket);
     return;
-ripple_cmd_startcaputre_assembleolrefreshpacket_error:
+cmd_startcaputre_assembleolrefreshpacket_error:
 
-    ripple_netpacket_destroy(npacket);
+    netpacket_destroy(npacket);
     return;
 }
 
 /* 启动 onlinerefresh 节点 */
-static bool ripple_cmd_startcapture_startonlinerefresh(ripple_increment_capture* inccapture)
+static bool cmd_startcapture_startonlinerefresh(increment_capture* inccapture)
 {
     bool bmatch                                     = true;
     bool increment                                  = true;
@@ -346,52 +346,52 @@ static bool ripple_cmd_startcapture_startonlinerefresh(ripple_increment_capture*
     HTAB* hclass                                    = NULL;
     HTAB* hsyncdataset                              = NULL;
     dlistnode *dnode                                = NULL;
-    ripple_uuid_t *uuid                             = NULL;
-    ripple_txn *olbegin_txn                         = NULL;
-    ripple_snapshot *olsnapshot                     = NULL;
-    ripple_refresh_table* rtable                    = NULL;
-    ripple_refresh_tables *rtables                  = NULL;
-    ripple_onlinerefresh *olinerefresh              = NULL;
-    ripple_txnstmt_onlinerefresh *olrtxnstmt        = NULL;
-    ripple_onlinerefresh_capture *olcapture         = NULL;
-    ripple_capturebase temp_base                    = { '\0' };
+    uuid_t *uuid                             = NULL;
+    txn *olbegin_txn                         = NULL;
+    snapshot *olsnapshot                     = NULL;
+    refresh_table* rtable                    = NULL;
+    refresh_tables *rtables                  = NULL;
+    onlinerefresh *olinerefresh              = NULL;
+    txnstmt_onlinerefresh *olrtxnstmt        = NULL;
+    onlinerefresh_capture *olcapture         = NULL;
+    capturebase temp_base                    = { '\0' };
     char errmsg[1024]                               = { 0 };
 
     /* 检查onlinerefresh表是否重复 */
-    ripple_thread_lock(&inccapture->olrefreshlock);
+    osal_thread_lock(&inccapture->olrefreshlock);
     /* 查看是否需要发起 onlinerefresh */
 
     if (true == dlist_isnull(inccapture->olrefreshtables))
     {
-        ripple_thread_unlock(&inccapture->olrefreshlock);
+        osal_thread_unlock(&inccapture->olrefreshlock);
         return true;
     }
 
     /* 暂停parser */
-    ripple_parserwork_stat_setpause(inccapture->decodingctx);
+    parserwork_stat_setpause(inccapture->decodingctx);
 
-    hnamespace = inccapture->decodingctx->transcache->sysdicts->by_namespace;
-    hclass = inccapture->decodingctx->transcache->sysdicts->by_class;
-    hsyncdataset = inccapture->decodingctx->transcache->hsyncdataset;
+    hnamespace = inccapture->decodingctx->trans_cache->sysdicts->by_namespace;
+    hclass = inccapture->decodingctx->trans_cache->sysdicts->by_class;
+    hsyncdataset = inccapture->decodingctx->trans_cache->hsyncdataset;
     for (dnode = inccapture->olrefreshtables->head; NULL != dnode;)
     {
         inccapture->olrefreshtables->head = dnode->next;
         inccapture->olrefreshtables->length--;
-        rtables = (ripple_refresh_tables*)dnode->value;
+        rtables = (refresh_tables*)dnode->value;
 
         /* 填充 refreshtables 中的 oid */
-        if (false == ripple_onlinerefresh_rebuildrefreshtables(rtables,
+        if (false == onlinerefresh_rebuildrefreshtables(rtables,
                                                                hnamespace,
                                                                hclass,
                                                                &bmatch))
         {
-            ripple_parserwork_stat_setresume(inccapture->decodingctx);
+            parserwork_stat_setresume(inccapture->decodingctx);
 
             /* 构建 onlinerefresh 失败信息 */
-            ripple_thread_unlock(&inccapture->olrefreshlock);
+            osal_thread_unlock(&inccapture->olrefreshlock);
             snprintf(errmsg, 1024, "ERROR: can not rebuild refresh tables.");
-            ripple_cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, RIPPLE_ERROR_NOENT, errmsg);
-            ripple_refresh_freetables(rtables);
+            cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_NOENT, errmsg);
+            refresh_freetables(rtables);
             return true;
         }
 
@@ -405,10 +405,10 @@ static bool ripple_cmd_startcapture_startonlinerefresh(ripple_increment_capture*
         /* TODO 构建 onlinerefresh 成功信息 */
         snprintf(errmsg, 1024, "No table match refresh!!!");
         elog(RLOG_WARNING, errmsg);
-        ripple_parserwork_stat_setresume(inccapture->decodingctx);
-        ripple_thread_unlock(&inccapture->olrefreshlock);
-        ripple_cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, true, RIPPLE_ERROR_SUCCESS, errmsg);
-        ripple_refresh_freetables(rtables);
+        parserwork_stat_setresume(inccapture->decodingctx);
+        osal_thread_unlock(&inccapture->olrefreshlock);
+        cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, true, ERROR_SUCCESS, errmsg);
+        refresh_freetables(rtables);
         return true;
     }
 
@@ -418,54 +418,54 @@ static bool ripple_cmd_startcapture_startonlinerefresh(ripple_increment_capture*
         dnode = inccapture->olrefreshing->head;
         while (dnode)
         {
-            ripple_onlinerefresh_capture *olcapture = (ripple_onlinerefresh_capture *)dnode->value;
-            if(false == ripple_refresh_tables_hasrepeat(olcapture->tables, rtables, &rtable))
+            onlinerefresh_capture *olcapture = (onlinerefresh_capture *)dnode->value;
+            if(false == refresh_tables_hasrepeat(olcapture->tables, rtables, &rtable))
             {
                 dnode = dnode->next;
                 continue;
             }
             snprintf(errmsg, 1024, "ERROR: %s.%s refreshing.", rtable->schema, rtable->table);
             elog(RLOG_WARNING, "%s, repeat table when do online refresh", errmsg);
-            ripple_thread_unlock(&inccapture->olrefreshlock);
-            ripple_parserwork_stat_setresume(inccapture->decodingctx);
-            ripple_cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, RIPPLE_ERROR_MSGEXIST, errmsg);
-            ripple_refresh_freetables(rtables);
+            osal_thread_unlock(&inccapture->olrefreshlock);
+            parserwork_stat_setresume(inccapture->decodingctx);
+            cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_MSGEXIST, errmsg);
+            refresh_freetables(rtables);
             return true;
         }
     }
-    ripple_thread_unlock(&inccapture->olrefreshlock);
+    osal_thread_unlock(&inccapture->olrefreshlock);
 
     /* 生成新增表链表 */
-    ntables = ripple_onlinerefresh_get_newtable(hsyncdataset, rtables);
+    ntables = onlinerefresh_get_newtable(hsyncdataset, rtables);
     if (ntables)
     {
         /* 加入到待同步集合中 */
-        ripple_filter_dataset_updatedatasets_onlinerefresh(hsyncdataset, ntables);
+        filter_dataset_updatedatasets_onlinerefresh(hsyncdataset, ntables);
     }
 
     /* 
      * 使用可重复读连接数据库并获取快照
      */
     /* 连接数据库 */
-    snapconn = ripple_conn_get(guc_getConfigOption("url"));
+    snapconn = conn_get(guc_getConfigOption("url"));
     if(NULL == snapconn)
     {
         snprintf(errmsg, 1024, "ERROR: connect database error.");
         elog(RLOG_WARNING, errmsg);
-        ripple_parserwork_stat_setresume(inccapture->decodingctx);
-        ripple_cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, RIPPLE_ERROR_DISCONN, errmsg);
-        ripple_refresh_freetables(rtables);
+        parserwork_stat_setresume(inccapture->decodingctx);
+        cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_DISCONN, errmsg);
+        refresh_freetables(rtables);
         return false;
     }
 
     /* 设置连接为可重复读 */
-    ripple_conn_settxnisolationlevel(snapconn, RIPPLE_TXNISOLVL_REPEATABLE_READ);
+    conn_settxnisolationlevel(snapconn, TXNISOLVL_REPEATABLE_READ);
 
     /* 获取快照 */
-    olsnapshot = ripple_snapshot_buildfromdb(snapconn);
+    olsnapshot = snapshot_buildfromdb(snapconn);
 
     /* 获取当前事务号, 用于过滤事务 */
-    olxid = ripple_databaserecv_transactionid_get(snapconn);
+    olxid = databaserecv_transactionid_get(snapconn);
     /* 判断txid和xmax */
     if (increment)
     {
@@ -480,99 +480,99 @@ static bool ripple_cmd_startcapture_startonlinerefresh(ripple_increment_capture*
     elog(RLOG_DEBUG, "online refresh: %s increment data", increment ? "need do" : "needn't do");
 
     /* 生成事务 */
-    olrtxnstmt = ripple_txnstmt_onlinerefresh_init();
+    olrtxnstmt = txnstmt_onlinerefresh_init();
 
     /* 设置增量标志 */
-    ripple_txnstmt_onlinerefresh_set_increment(olrtxnstmt, increment);
+    txnstmt_onlinerefresh_set_increment(olrtxnstmt, increment);
 
     /* 设置txid */
-    ripple_txnstmt_onlinerefresh_set_txid(olrtxnstmt, olxid);
+    txnstmt_onlinerefresh_set_txid(olrtxnstmt, olxid);
 
     /* 设置uuid */
-    uuid = ripple_random_uuid();
-    ripple_txnstmt_onlinerefresh_set_no(olrtxnstmt, uuid);
+    uuid = random_uuid();
+    txnstmt_onlinerefresh_set_no(olrtxnstmt, uuid);
 
     /* 设置tables */
-    ripple_txnstmt_onlinerefresh_set_refreshtables(olrtxnstmt, rtables);
+    txnstmt_onlinerefresh_set_refreshtables(olrtxnstmt, rtables);
 
     /* 生成onlinerefresh节点并设置值 */
-    olinerefresh = ripple_onlinerefresh_init();
-    ripple_onlinerefresh_state_setsearchmax(olinerefresh);
-    ripple_onlinerefresh_no_set(olinerefresh, ripple_uuid_copy(uuid));
-    ripple_onlinerefresh_txid_set(olinerefresh, olxid);
-    ripple_onlinerefresh_snapshot_set(olinerefresh, olsnapshot);
-    ripple_onlinerefresh_increment_set(olinerefresh, increment);
-    ripple_onlinerefresh_newtables_set(olinerefresh, ntables);
+    olinerefresh = onlinerefresh_init();
+    onlinerefresh_state_setsearchmax(olinerefresh);
+    onlinerefresh_no_set(olinerefresh, uuid_copy(uuid));
+    onlinerefresh_txid_set(olinerefresh, olxid);
+    onlinerefresh_snapshot_set(olinerefresh, olsnapshot);
+    onlinerefresh_increment_set(olinerefresh, increment);
+    onlinerefresh_newtables_set(olinerefresh, ntables);
 
     /* 只需要做存量的时候xmin不需要添加 */
     if (increment)
     {
         /* 将xmin加入到xids中 */
-        ripple_onlinerefresh_xids_append(olinerefresh, olsnapshot->xmin);
+        onlinerefresh_xids_append(olinerefresh, olsnapshot->xmin);
 
         /* 将snapshot中的xiplist添加到xids中 */
-        ripple_onlinerefresh_add_xids_from_snapshot(olinerefresh, olsnapshot);
+        onlinerefresh_add_xids_from_snapshot(olinerefresh, olsnapshot);
     }
 
-    ripple_transcache_make_xids_from_txn(inccapture->decodingctx, olinerefresh);
+    transcache_make_xids_from_txn(inccapture->decodingctx, olinerefresh);
     /* 构建begin txn */
-    olbegin_txn = ripple_parserwork_build_onlinerefresh_begin_txn(olrtxnstmt, inccapture->decodingctx->parselsn);
+    olbegin_txn = parserwork_build_onlinerefresh_begin_txn(olrtxnstmt, inccapture->decodingctx->parselsn);
 
     /* 将 onlinerefresh 事务和节点放入增量解析中 */
-    ripple_parserwork_decodingctx_addonlinerefresh(inccapture->decodingctx, olinerefresh, olbegin_txn);
+    parserwork_decodingctx_addonlinerefresh(inccapture->decodingctx, olinerefresh, olbegin_txn);
 
     /*-------------------onlinerefresh capture 管理线程 begin--------------------------*/
     /* 初始化onlinerefresh capture管理线程 */
-    olcapture = ripple_onlinerefresh_capture_init(increment);
+    olcapture = onlinerefresh_capture_init(increment);
     if(NULL == olcapture)
     {
         snprintf(errmsg, 1024, "ERROR: add onlinerefresh error, capture out of memory.");
         elog(RLOG_WARNING, errmsg);
-        ripple_cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, RIPPLE_ERROR_OOM, errmsg);
-        ripple_parserwork_stat_setresume(inccapture->decodingctx);
+        cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_OOM, errmsg);
+        parserwork_stat_setresume(inccapture->decodingctx);
         return false;
     }
 
     /* 设置onlinerefresh capture管理线程 */
-    ripple_onlinerefresh_capture_increment_set(olcapture, increment);
-    ripple_misc_stat_loaddecode((void*)&temp_base);
-    ripple_onlinerefresh_capture_redo_set(olcapture, temp_base.redolsn);
-    ripple_onlinerefresh_capture_conninfo_set(olcapture, guc_getConfigOption("url"));
-    ripple_onlinerefresh_capture_snapshot_set(olcapture, ripple_snapshot_copy(olsnapshot));
-    ripple_onlinerefresh_capture_snap_conn_set(olcapture, snapconn);
-    ripple_onlinerefresh_capture_no_set(olcapture, ripple_uuid_copy(uuid));
-    ripple_onlinerefresh_capture_tables_set(olcapture, ripple_refresh_tables_copy(rtables));
-    ripple_onlinerefresh_capture_txid_set(olcapture, (FullTransactionId) olxid);
+    onlinerefresh_capture_increment_set(olcapture, increment);
+    misc_stat_loaddecode((void*)&temp_base);
+    onlinerefresh_capture_redo_set(olcapture, temp_base.redolsn);
+    onlinerefresh_capture_conninfo_set(olcapture, guc_getConfigOption("url"));
+    onlinerefresh_capture_snapshot_set(olcapture, snapshot_copy(olsnapshot));
+    onlinerefresh_capture_snap_conn_set(olcapture, snapconn);
+    onlinerefresh_capture_no_set(olcapture, uuid_copy(uuid));
+    onlinerefresh_capture_tables_set(olcapture, refresh_tables_copy(rtables));
+    onlinerefresh_capture_txid_set(olcapture, (FullTransactionId) olxid);
 
     /* 只需要做存量的时候xmin不需要添加 */
     if (increment)
     {
         /* 加入最小的事务 */
-        ripple_onlinerefresh_capture_xids_append(olcapture, olsnapshot->xmin);
+        onlinerefresh_capture_xids_append(olcapture, olsnapshot->xmin);
 
         /* 加入快照中 xlist 事务 */
-        ripple_onlinerefresh_capture_add_xids_from_snapshot(olcapture, olsnapshot);
+        onlinerefresh_capture_add_xids_from_snapshot(olcapture, olsnapshot);
     }
 
     olcapture->privdata = inccapture;
-    olcapture->removeolrefresh = ripple_cmd_startcapture_removeonlinerefresh;
-    ripple_thread_lock(&inccapture->olrefreshlock);
+    olcapture->removeolrefresh = cmd_startcapture_removeonlinerefresh;
+    osal_thread_lock(&inccapture->olrefreshlock);
     inccapture->olrefreshing = dlist_put(inccapture->olrefreshing, olcapture);
-    ripple_thread_unlock(&inccapture->olrefreshlock);
+    osal_thread_unlock(&inccapture->olrefreshlock);
 
     /* 注册启动onlinerefresh capture管理线程 */
-    if(false == ripple_threads_addsubmanger(inccapture->threads,
-                                            RIPPLE_THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_MGR,
+    if(false == threads_addsubmanger(inccapture->threads,
+                                            THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_MGR,
                                             inccapture->persistno,
                                             &olcapture->thrsmgr,
                                             (void*)olcapture,
-                                            ripple_onlinerefresh_capture_destroy,
+                                            onlinerefresh_capture_destroy,
                                             NULL,
-                                            ripple_onlinerefresh_capture_main))
+                                            onlinerefresh_capture_main))
     {
         snprintf(errmsg, 1024, "ERROR: start onlinerefresh work threads error.");
         elog(RLOG_WARNING, errmsg);
-        ripple_cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, RIPPLE_ERROR_STARTTHREAD, errmsg);
+        cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_STARTTHREAD, errmsg);
 
         /* 
          * 1、在 increment capture 中移除 onlinerefresh 
@@ -580,25 +580,25 @@ static bool ripple_cmd_startcapture_startonlinerefresh(ripple_increment_capture*
          */
         dlist_deletebyvalue(inccapture->olrefreshing,
                             olcapture,
-                            ripple_onlinerefresh_capture_cmp,
-                            ripple_onlinerefresh_capture_destroy);
+                            onlinerefresh_capture_cmp,
+                            onlinerefresh_capture_destroy);
 
         /* 删除 onlinerefresh */
-        ripple_parserwork_decodingctx_removeonlinerefresh(inccapture->decodingctx, olinerefresh);
-        ripple_parserwork_stat_setresume(inccapture->decodingctx);
+        parserwork_decodingctx_removeonlinerefresh(inccapture->decodingctx, olinerefresh);
+        parserwork_stat_setresume(inccapture->decodingctx);
         return false;
     }
 
     /*-------------------onlinerefresh capture 管理线程   end--------------------------*/
     /* 恢复parser */
     snprintf(errmsg, 1024, "success.");
-    ripple_cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, true, RIPPLE_ERROR_SUCCESS, errmsg);
-    ripple_parserwork_stat_setresume(inccapture->decodingctx);
+    cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, true, ERROR_SUCCESS, errmsg);
+    parserwork_stat_setresume(inccapture->decodingctx);
     return true;
 }
 
 /* capture 启动 */
-bool ripple_cmd_startcapture(void)
+bool cmd_startcapture(void)
 {
     /*
      * 1、切换工作目录
@@ -617,78 +617,78 @@ bool ripple_cmd_startcapture(void)
     XLogRecPtr startlsn                     = InvalidXLogRecPtr;
     char* wdata                             = NULL;
     char* parserddl                         = NULL;
-    ripple_snapshot* snapshot               = NULL;
-    ripple_decodingcontext* decodingctx     = NULL;
-    ripple_refresh_capture *rcapture      = NULL;
-    ripple_refresh_tables* refreshtables    = NULL;
-    ripple_refresh_tables* mgr_tables       = NULL;
-    ripple_increment_capture* inccapture    = NULL;
+    snapshot* snapshot               = NULL;
+    decodingcontext* decodingctx     = NULL;
+    refresh_capture *rcapture      = NULL;
+    refresh_tables* refreshtables    = NULL;
+    refresh_tables* mgr_tables       = NULL;
+    increment_capture* inccapture    = NULL;
 
     /* 获取工作目录 */
     wdata = guc_getdata();
 
     /* 检测 data 目录是否存在 */
-    if(false == DirExist(wdata))
+    if(false == osal_dir_exist(wdata))
     {
         elog(RLOG_WARNING, "work data not exist:%s", wdata);
         bret = false;
-        goto ripple_cmd_startcapture_done;
+        goto cmd_startcapture_done;
     }
 
     /* 切换工作目录 */
     chdir(wdata);
 
     /* 设置为后台运行 */
-    ripple_makedaemon();
+    makedaemon();
 
     /* 获取主线程号 */
     g_mainthrid = pthread_self();
 
     /* 在 wdata 查看锁文件是否存在,不存在则创建,存在则检测进程是否启动 */
-    ripple_misc_lockfiles_create(RIPPLE_LOCK_FILE);
+    misc_lockfiles_create(LOCK_FILE);
 
     /* log 初始化 */
-    ripple_log_init();
+    log_init();
 
     /* 获取内存回收时间 */
-    gctime = guc_getConfigOptionInt(RIPPLE_CFG_KEY_GCTIME);
+    gctime = guc_getConfigOptionInt(CFG_KEY_GCTIME);
 
     /* inccapture 初始化*/
-    inccapture = ripple_increment_capture_init();
+    inccapture = increment_capture_init();
 
     /* 加载 ControlData */
-    ripple_misc_controldata_load();
+    misc_controldata_load();
 
-    g_xsynchstat = ripple_misc_controldata_stat_get();
+    g_xsynchstat = misc_controldata_stat_get();
 
     /* 临时文件删除 */
-    ripple_datainit_clear(RIPPLE_CATALOG_DIR);
+    datainit_clear(CATALOG_DIR);
 
     /* 
      * 启动工作线程
      */
     /* 设置信号处理函数 */
-    ripple_signal_init();
+    signal_init();
 
-    refreshstragety = guc_getConfigOptionInt(RIPPLE_CFG_KEY_REFRESHSTRAGETY);
+    refreshstragety = guc_getConfigOptionInt(CFG_KEY_REFRESHSTRAGETY);
 
     /* parser 线程初始化 */
     decodingctx = inccapture->decodingctx;
 
-    if(RIPPLE_XSYNCHSTAT_REWIND == g_xsynchstat)
+    if(XSYNCHSTAT_REWIND == g_xsynchstat)
     {
         /* 设置stat */
-        ripple_parserwork_stat_setrewind(decodingctx);
+        parserwork_stat_setrewind(decodingctx);
 
         /* 加载数据库信息 */
-        if(!ripple_parserwork_wal_initfromdb(decodingctx))
+        if(!parserwork_wal_initfromdb(decodingctx))
         {
             bret = false;
-            goto ripple_cmd_startcapture_done;
+            goto cmd_startcapture_done;
         }
 
         /* 获取到基础数据后, 先落盘 */
-        ripple_misc_stat_decodewrite(&(inccapture->decodingctx->base), &inccapture->writestate->basefd);
+        misc_stat_decodewrite(&(inccapture->decodingctx->base), &inccapture->writestate->basefd);
 
         /* 临时设置拆分线程 timeline*/
         inccapture->splitwalctx->loadrecords->timeline = decodingctx->base.curtlid;
@@ -700,94 +700,94 @@ bool ripple_cmd_startcapture(void)
          *      新开连接, 对数据字典开启 FULL 模式
          *  3、获取快照
          */
-        decodingctx->rewind->conn = ripple_conn_get(guc_getConfigOption("url"));
-        if(NULL == decodingctx->rewind->conn)
+        decodingctx->rewind_ptr->conn = conn_get(guc_getConfigOption("url"));
+        if(NULL == decodingctx->rewind_ptr->conn)
         {
             elog(RLOG_WARNING, "capture can't conn database:%s", guc_getConfigOption("url"));
             bret = false;
-            goto ripple_cmd_startcapture_done;
+            goto cmd_startcapture_done;
         }
 
         /* 开启事务, 并设置事务的级别为可重复读 */
-        ripple_conn_settxnisolationlevel(decodingctx->rewind->conn, RIPPLE_TXNISOLVL_REPEATABLE_READ);
+        conn_settxnisolationlevel(decodingctx->rewind_ptr->conn, TXNISOLVL_REPEATABLE_READ);
 
         /* 加载字典表 初始化同步数据集*/
-        ripple_catalog_sysdict_getfromdb(decodingctx->rewind->conn, decodingctx->transcache->sysdicts);
+        catalog_sysdict_getfromdb(decodingctx->rewind_ptr->conn, decodingctx->trans_cache->sysdicts);
 
         /*新开连接设置full用完关闭*/
-        if(false == ripple_catalog_sysdict_setfullmode(decodingctx->transcache->sysdicts->by_class))
+        if(false == catalog_sysdict_setfullmode(decodingctx->trans_cache->sysdicts->by_class))
         {
             elog(RLOG_WARNING, "capture set table replica identity full error");
             bret = false;
-            goto ripple_cmd_startcapture_done;
+            goto cmd_startcapture_done;
         }
 
         /* 持久化系统字典, 下次启动时使用 */
-        ripple_sysdictscache_write(decodingctx->transcache->sysdicts, decodingctx->base.redolsn);
+        sysdictscache_write(decodingctx->trans_cache->sysdicts, decodingctx->base.redolsn);
 
         /* 生成同步数据集, 将同步数据集落盘 */
-        ripple_filter_dataset_init(decodingctx->transcache->tableincludes,
-                                decodingctx->transcache->tableexcludes,
-                                decodingctx->transcache->sysdicts->by_namespace, 
-                                decodingctx->transcache->sysdicts->by_class);
+        filter_dataset_init(decodingctx->trans_cache->tableincludes,
+                                decodingctx->trans_cache->tableexcludes,
+                                decodingctx->trans_cache->sysdicts->by_namespace, 
+                                decodingctx->trans_cache->sysdicts->by_class);
 
-        decodingctx->transcache->hsyncdataset = ripple_filter_dataset_load(decodingctx->transcache->sysdicts->by_namespace,
-                                                                            decodingctx->transcache->sysdicts->by_class);
+        decodingctx->trans_cache->hsyncdataset = filter_dataset_load(decodingctx->trans_cache->sysdicts->by_namespace,
+                                                                            decodingctx->trans_cache->sysdicts->by_class);
 
-        decodingctx->transcache->htxnfilterdataset = ripple_filter_dataset_txnfilterload(decodingctx->transcache->sysdicts->by_namespace,
-                                                                                         decodingctx->transcache->sysdicts->by_class);
+        decodingctx->trans_cache->htxnfilterdataset = filter_dataset_txnfilterload(decodingctx->trans_cache->sysdicts->by_namespace,
+                                                                                         decodingctx->trans_cache->sysdicts->by_class);
 
-        decodingctx->transcache->sysdicts->by_relfilenode = ripple_cache_sysdicts_buildrelfilenode2oid(decodingctx->database,
-                                                                                        (void*)decodingctx->transcache->sysdicts);
-        snapshot = ripple_snapshot_buildfromdb(decodingctx->rewind->conn);
+        decodingctx->trans_cache->sysdicts->by_relfilenode = cache_sysdicts_buildrelfilenode2oid(decodingctx->database,
+                                                                                        (void*)decodingctx->trans_cache->sysdicts);
+        snapshot = snapshot_buildfromdb(decodingctx->rewind_ptr->conn);
 
-        decodingctx->rewind->currentlsn = ripple_databaserecv_currentlsn_get(decodingctx->rewind->conn);
-        decodingctx->rewind->currentxid = ripple_databaserecv_transactionid_get(decodingctx->rewind->conn);
+        decodingctx->rewind_ptr->currentlsn = databaserecv_currentlsn_get(decodingctx->rewind_ptr->conn);
+        decodingctx->rewind_ptr->currentxid = databaserecv_transactionid_get(decodingctx->rewind_ptr->conn);
         
         if (refreshstragety)
         {
-            refreshtables = ripple_filter_dataset_buildrefreshtables(decodingctx->transcache->hsyncdataset);
-            mgr_tables = ripple_refresh_tables_copy(refreshtables);
-            ripple_parserwork_buildrefreshtransaction(decodingctx, refreshtables);
+            refreshtables = filter_dataset_buildrefreshtables(decodingctx->trans_cache->hsyncdataset);
+            mgr_tables = refresh_tables_copy(refreshtables);
+            parserwork_buildrefreshtransaction(decodingctx, refreshtables);
 
             /* 初始化refresh mgr线程的相关结构 */
-            rcapture = ripple_refresh_capture_init();
+            rcapture = refresh_capture_init();
             if(NULL == rcapture)
             {
                 bret = false;
                 elog(RLOG_WARNING, "init refresh error");
-                goto ripple_cmd_startcapture_done;
+                goto cmd_startcapture_done;
             }
-            ripple_refresh_capture_setsnapshotname(rcapture, snapshot->name);
+            refresh_capture_setsnapshotname(rcapture, snapshot->name);
 
             /* todo, tables生成后的接入 */
-            ripple_refresh_capture_setrefreshtables(mgr_tables, rcapture);
-            ripple_refresh_capture_setconn(decodingctx->rewind->conn, rcapture);
-            decodingctx->rewind->conn = NULL;
+            refresh_capture_setrefreshtables(mgr_tables, rcapture);
+            refresh_capture_setconn(decodingctx->rewind_ptr->conn, rcapture);
+            decodingctx->rewind_ptr->conn = NULL;
         }
         else
         {
-            ripple_conn_close(decodingctx->rewind->conn);
-            decodingctx->rewind->conn = NULL;
+            conn_close(decodingctx->rewind_ptr->conn);
+            decodingctx->rewind_ptr->conn = NULL;
         }
 
         /*设置快照到rewind中*/
-        ripple_rewind_strategy_setfastrewind(snapshot, decodingctx);
+        rewind_strategy_setfastrewind(snapshot, decodingctx);
 
-        startlsn = GetXlogSegmentBegin(decodingctx->rewind->redolsn, (g_walsegsize * 1048576));
+        startlsn = GetXlogSegmentBegin(decodingctx->rewind_ptr->redolsn, (g_walsegsize * 1048576));
 
-        endlsn = decodingctx->rewind->currentlsn;
+        endlsn = decodingctx->rewind_ptr->currentlsn;
 
         /* 清理snapshot不清理snapshot->xids */
-        ripple_snapshot_free(snapshot);
+        snapshot_free(snapshot);
     }
     else
     {
         /* 设置stat */
-        ripple_parserwork_stat_setrunning(decodingctx);
+        parserwork_stat_setrunning(decodingctx);
 
         /* 加载decodingctx信息*/
-        ripple_parserwork_walinitphase2(decodingctx);
+        parserwork_walinitphase2(decodingctx);
 
         /* 设置拆分线程 timeline*/
         inccapture->splitwalctx->loadrecords->timeline = decodingctx->base.curtlid;
@@ -801,7 +801,7 @@ bool ripple_cmd_startcapture(void)
 
     if(NULL != parserddl)
     {
-        parserddl = guc_getConfigOption(RIPPLE_CFG_KEY_DDL);
+        parserddl = guc_getConfigOption(CFG_KEY_DDL);
         if(strlen("on") == strlen(parserddl)
             && 0 == strcmp("on", parserddl))
         {
@@ -816,48 +816,48 @@ bool ripple_cmd_startcapture(void)
     /*
      * 添加主常驻线程
      */
-    if(false == ripple_threads_addpersist(inccapture->threads, &inccapture->persistno, "CAPTURE INCREMENT"))
+    if(false == threads_addpersist(inccapture->threads, &inccapture->persistno, "CAPTURE INCREMENT"))
     {
         bret = false;
         elog(RLOG_WARNING, "add capture increment persist to threads error");
-        goto ripple_cmd_startcapture_done;
+        goto cmd_startcapture_done;
     }
 
     /* 启动常驻工作线程 */
-    if(false == ripple_cmd_startcapturethreads(inccapture))
+    if(false == cmd_startcapturethreads(inccapture))
     {
         bret = false;
         elog(RLOG_WARNING, "start capture increment persist job threads error");
-        goto ripple_cmd_startcapture_done;
+        goto cmd_startcapture_done;
     }
 
     /* 启动refresh mgr */
     if(NULL != rcapture)
     {
         /* 注册 refresh 管理线程 */
-        if(false == ripple_threads_addsubmanger(inccapture->threads,
-                                                RIPPLE_THRNODE_IDENTITY_CAPTURE_REFRESH_MGR,
+        if(false == threads_addsubmanger(inccapture->threads,
+                                                THRNODE_IDENTITY_CAPTURE_REFRESH_MGR,
                                                 inccapture->persistno,
                                                 &rcapture->thrsmgr,
                                                 (void*)rcapture,
-                                                ripple_refresh_capture_free,
+                                                refresh_capture_free,
                                                 NULL,
-                                                ripple_refresh_capture_main))
+                                                refresh_capture_main))
         {
             bret = false;
             elog(RLOG_WARNING, "start refresh mgr failed");
-            goto ripple_cmd_startcapture_done;
+            goto cmd_startcapture_done;
         }
     }
 
     /* 解除信号屏蔽 */
-    ripple_singal_setmask();
+    singal_setmask();
 
     elog(RLOG_INFO, "capture start, pid:%d", getpid());
 
-    ripple_log_destroyerrorstack();
+    log_destroyerrorstack();
     /* 关闭标准输入/输出/错误 */
-    ripple_closestd();
+    closestd();
 
     while(1)
     {
@@ -865,31 +865,31 @@ bool ripple_cmd_startcapture(void)
         if(true == g_gotsigterm)
         {
             /* 捕获到 sigterm 信号, 设置线程退出 */
-            ripple_threads_exit(inccapture->threads);
+            threads_exit(inccapture->threads);
             break;
         }
 
         /* 启动 onlinerefresh */
-        if(false == ripple_cmd_startcapture_startonlinerefresh(inccapture))
+        if(false == cmd_startcapture_startonlinerefresh(inccapture))
         {
             elog(RLOG_WARNING, "capture add onlinerefresh error");
             continue;
         }
 
         /* 启动线程 */
-        ripple_threads_startthread(inccapture->threads);
+        threads_startthread(inccapture->threads);
 
         /* 尝试捕获异常线程 */
-        ripple_threads_tryjoin(inccapture->threads);
+        threads_tryjoin(inccapture->threads);
 
         /* 回收 FREE 节点 */
-        ripple_threads_thrnoderecycle(inccapture->threads);
+        threads_thrnoderecycle(inccapture->threads);
 
-        if(false == ripple_threads_hasthrnode(inccapture->threads))
+        if(false == threads_hasthrnode(inccapture->threads))
         {
             /* 所有的线程退出, 主线程退出 */
             /* 记录 */
-            ripple_misc_stat_decodewrite(&(inccapture->writestate->base), &inccapture->writestate->basefd);
+            misc_stat_decodewrite(&(inccapture->writestate->base), &inccapture->writestate->basefd);
             break;
         }
 
@@ -923,21 +923,21 @@ bool ripple_cmd_startcapture(void)
                     inccapture->writestate->base.curtlid);
 
 
-ripple_cmd_startcapture_done:
+cmd_startcapture_done:
 
     /* inccapture 资源回收*/
-    ripple_increment_capture_destroy(inccapture);
+    increment_capture_destroy(inccapture);
 
     /* control 文件内存释放 */
-    ripple_misc_controldata_destroy();
+    misc_controldata_destroy();
 
     /* 锁文件释放 */
-    ripple_misc_lockfiles_unlink(0, NULL);
+    misc_lockfiles_unlink(0, NULL);
 
     guc_destroy();
 
     /* 泄露内存打印 */
-    ripple_mem_print(RIPPLE_MEMPRINT_ALL);
+    mem_print(MEMPRINT_ALL);
     if (true == bret)
     {
         /* 已经进入过逻辑处理中, 直接退出即可 */

@@ -1,81 +1,81 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
 #include "utils/algorithm/crc/crc_check.h"
-#include "misc/ripple_misc_control.h"
+#include "misc/misc_control.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_transcache.h"
-#include "storage/ripple_file_buffer.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_ffsmgr.h"
-#include "storage/trail/ripple_fftrail.h"
-#include "storage/trail/head/ripple_fftrail_head.h"
-#include "storage/trail/data/ripple_fftrail_data.h"
-#include "storage/trail/tail/ripple_fftrail_tail.h"
-#include "storage/trail/reset/ripple_fftrail_reset.h"
-#include "storage/trail/data/ripple_fftrail_dbmetadata.h"
-#include "parser/trail/ripple_parsertrail.h"
-#include "parser/trail/head/ripple_parsertrail_head.h"
-#include "parser/trail/data/ripple_parsertrail_dbmetadata.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/transcache.h"
+#include "storage/file_buffer.h"
+#include "storage/ff_detail.h"
+#include "storage/ffsmgr.h"
+#include "storage/trail/fftrail.h"
+#include "storage/trail/head/fftrail_head.h"
+#include "storage/trail/data/fftrail_data.h"
+#include "storage/trail/tail/fftrail_tail.h"
+#include "storage/trail/reset/fftrail_reset.h"
+#include "storage/trail/data/fftrail_dbmetadata.h"
+#include "parser/trail/parsertrail.h"
+#include "parser/trail/head/parsertrail_head.h"
+#include "parser/trail/data/parsertrail_dbmetadata.h"
 
 
 typedef bool (*serialtoken)(void* data, void* state);
 
 typedef bool (*deserialtoken)(void** data, void* state);
 
-typedef struct RIPPLE_TRAIL_GROUP
+typedef struct TRAIL_GROUP
 {
     int8            groupid;                        /* group id                     */
     char*           desc;                           /* 描述                          */
     serialtoken     serialfunc;                     /* 将 结构体中的数据序列化到缓存中   */
     deserialtoken   deserialfunc;                   /* 将 缓存中的数据反序列化到结构体   */
-} ripple_trail_group;
+} trail_group;
 
-static ripple_trail_group           m_trailgroups[] = 
+static trail_group           m_trailgroups[] = 
 {
     {
-        RIPPLE_FFTRAIL_GROUPTYPE_NOP,
+        FFTRAIL_GROUPTYPE_NOP,
         "trail nop",
         NULL,
         NULL
     },
     {
-        RIPPLE_FFTRAIL_GROUPTYPE_FHEADER,
+        FFTRAIL_GROUPTYPE_FHEADER,
         "trail file header",
-        ripple_fftrail_head_serail,
-        ripple_fftrail_head_deserail
+        fftrail_head_serail,
+        fftrail_head_deserail
     },
     {
-        RIPPLE_FFTRAIL_GROUPTYPE_DATA,
+        FFTRAIL_GROUPTYPE_DATA,
         "trail file data",
-        ripple_fftrail_data_serail,
-        ripple_fftrail_data_deserail
+        fftrail_data_serail,
+        fftrail_data_deserail
     },
     {
-        RIPPLE_FFTRAIL_GROUPTYPE_RESET,
+        FFTRAIL_GROUPTYPE_RESET,
         "trail file reset",
-        ripple_fftrail_reset_serail,
-        ripple_fftrail_reset_deserail
+        fftrail_reset_serail,
+        fftrail_reset_deserail
     },
     {
-        RIPPLE_FFTRAIL_GROUPTYPE_FTAIL,
+        FFTRAIL_GROUPTYPE_FTAIL,
         "trail file tail",
-        ripple_fftrail_tail_serail,
-        ripple_fftrail_tail_deserail
+        fftrail_tail_serail,
+        fftrail_tail_deserail
     }
 };
 
 /* 校验数据是否完整 */
 /* 校验头部完整 */
-static bool ripple_fftrail_validfhead(uint8* header)
+static bool fftrail_validfhead(uint8* header)
 {
-    uint8   tokenid = RIPPLE_FFTRAIL_GROUPTYPE_NOP;
-    uint8   tokeninfo = RIPPLE_FFTRAIL_INFOTYPE_TOKEN;
+    uint8   tokenid = FFTRAIL_GROUPTYPE_NOP;
+    uint8   tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
     uint32  tokenlen = 0;
     uint32  tfmagic = 0;
 
@@ -84,9 +84,9 @@ static bool ripple_fftrail_validfhead(uint8* header)
 
     /* 解析头信息 */
     uptr = header;
-    RIPPLE_FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(RIPPLE_FFTRAIL_GROUPTYPE_FHEADER != tokenid
-        || RIPPLE_FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
+    if(FFTRAIL_GROUPTYPE_FHEADER != tokenid
+        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         return false;
     }
@@ -94,14 +94,14 @@ static bool ripple_fftrail_validfhead(uint8* header)
     /* 查看最后的四字节内容是否为 magic */
     uptr = header;
 
-    tokenlen -= RIPPLE_TOKENHDRSIZE;
+    tokenlen -= TOKENHDRSIZE;
     tokenlen -= 4;
 
     tokendata += tokenlen;
 
     /* 魔数 */
-    tfmagic = RIPPLE_CONCAT(get, 32bit)(&tokendata);
-    if(tfmagic != RIPPLE_FTRAIL_MAGIC)
+    tfmagic = CONCAT(get, 32bit)(&tokendata);
+    if(tfmagic != FTRAIL_MAGIC)
     {
         /* 大概率是没有刷盘完成 */
         return false;
@@ -111,15 +111,15 @@ static bool ripple_fftrail_validfhead(uint8* header)
 }
 
 /* 校验数据完整 */
-static bool ripple_fftrail_validdata(int compatibility, uint8* data)
+static bool fftrail_validdata(int compatibility, uint8* data)
 {
     /*
      * 1、获取完整的 record 数据
      * 2、在头部中获取 reclength
      * 3、获取 record 尾部
     */
-    uint8   tokenid = RIPPLE_FFTRAIL_GROUPTYPE_NOP;
-    uint8   tokeninfo = RIPPLE_FFTRAIL_INFOTYPE_TOKEN;
+    uint8   tokenid = FFTRAIL_GROUPTYPE_NOP;
+    uint8   tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
     int     headlen = 0;
     uint16  reclength = 0;
     uint32  tokenlen = 0;
@@ -132,9 +132,9 @@ static bool ripple_fftrail_validdata(int compatibility, uint8* data)
 
     /* 获取 record 数据 */
     uptr = data;
-    RIPPLE_FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(RIPPLE_FFTRAIL_GROUPTYPE_DATA != tokenid
-        || RIPPLE_FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
+    if(FFTRAIL_GROUPTYPE_DATA != tokenid
+        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         elog(RLOG_WARNING, "1");
         return false;
@@ -142,7 +142,7 @@ static bool ripple_fftrail_validdata(int compatibility, uint8* data)
 
     /* 偏移 group 头部长度 */
     crcuptr = uptr = tokendata;
-    reclength = ripple_fftrail_data_getreclengthfromhead(compatibility, uptr);
+    reclength = fftrail_data_getreclengthfromhead(compatibility, uptr);
     if(0 == reclength)
     {
         elog(RLOG_WARNING, "2");
@@ -150,26 +150,26 @@ static bool ripple_fftrail_validdata(int compatibility, uint8* data)
     }
 
     /* 偏移 record 内容 */
-    headlen = ripple_fftrail_data_headlen(0);
+    headlen = fftrail_data_headlen(0);
     uptr += headlen;
 
     /* 换算 crc */
-    headlen -= (RIPPLE_TOKENHDRSIZE + 4);
+    headlen -= (TOKENHDRSIZE + 4);
     INIT_CRC32C(crc32);
     COMP_CRC32C(crc32, crcuptr, headlen);
 
     /* 获取记录中的 crc */
     crcuptr += headlen;
-    RIPPLE_FTRAIL_BUFFER2TOKEN(get, crcuptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(RIPPLE_TRAIL_TOKENDATAHDR_ID_CRC32 != tokenid
-        || RIPPLE_FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
+    FTRAIL_BUFFER2TOKEN(get, crcuptr, tokenid, tokeninfo, tokenlen, tokendata)
+    if(TRAIL_TOKENDATAHDR_ID_CRC32 != tokenid
+        || FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
     {
-        elog(RLOG_WARNING, "invalid record, hope RIPPLE_TRAIL_TOKENDATAHDR_ID_CRC32:%u, got:%u",
-                            RIPPLE_TRAIL_TOKENDATAHDR_ID_CRC32,
+        elog(RLOG_WARNING, "invalid record, hope TRAIL_TOKENDATAHDR_ID_CRC32:%u, got:%u",
+                            TRAIL_TOKENDATAHDR_ID_CRC32,
                             tokenid);
         return false;
     }
-    crc32rec = RIPPLE_CONCAT(get, 32bit)(&tokendata);
+    crc32rec = CONCAT(get, 32bit)(&tokendata);
 
     /* 换算数据的 crc32 */
     COMP_CRC32C(crc32, uptr, reclength);
@@ -186,9 +186,9 @@ static bool ripple_fftrail_validdata(int compatibility, uint8* data)
     /* 获取 rectail 信息 */
     uptr += reclength;
 
-    RIPPLE_FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(RIPPLE_TRAIL_TOKENDATA_RECTAIL != tokenid
-        || RIPPLE_FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
+    FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
+    if(TRAIL_TOKENDATA_RECTAIL != tokenid
+        || FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
     {
         elog(RLOG_WARNING, "4,reclength:%u", reclength);
         return false;
@@ -198,10 +198,10 @@ static bool ripple_fftrail_validdata(int compatibility, uint8* data)
 }
 
 /* 校验文件RESET完整 */
-static bool ripple_fftrail_validreset(int compatibility, uint64 fileid, uint8* tail)
+static bool fftrail_validreset(int compatibility, uint64 fileid, uint8* tail)
 {
-    uint8   tokenid = RIPPLE_FFTRAIL_GROUPTYPE_NOP;
-    uint8   tokeninfo = RIPPLE_FFTRAIL_INFOTYPE_TOKEN;
+    uint8   tokenid = FFTRAIL_GROUPTYPE_NOP;
+    uint8   tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
     uint32  tokenlen = 0;
     uint64  nfileid = 0;
     uint8*  uptr = NULL;
@@ -209,24 +209,24 @@ static bool ripple_fftrail_validreset(int compatibility, uint64 fileid, uint8* t
 
     /* 获取 record 数据 */
     uptr = tail;
-    RIPPLE_FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(RIPPLE_FFTRAIL_GROUPTYPE_RESET != tokenid
-        || RIPPLE_FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
+    if(FFTRAIL_GROUPTYPE_RESET != tokenid
+        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         return false;
     }
 
     /* 根据版本校验长度 */
-    if(tokenlen != ripple_fftrail_resetlen(compatibility))
+    if(tokenlen != fftrail_resetlen(compatibility))
     {
         return false;
     }
 
     /* 获取内容 */
     uptr = tokendata;
-    uptr += RIPPLE_TOKENHDRSIZE;
+    uptr += TOKENHDRSIZE;
 
-    nfileid = RIPPLE_CONCAT(get, 64bit)(&uptr);
+    nfileid = CONCAT(get, 64bit)(&uptr);
     if((fileid + 1) != nfileid)
     {
         return false;
@@ -236,10 +236,10 @@ static bool ripple_fftrail_validreset(int compatibility, uint64 fileid, uint8* t
 }
 
 /* 校验文件尾部完整 */
-static bool ripple_fftrail_validftail(int compatibility, uint64 fileid, uint8* tail)
+static bool fftrail_validftail(int compatibility, uint64 fileid, uint8* tail)
 {
-    uint8   tokenid = RIPPLE_FFTRAIL_GROUPTYPE_NOP;
-    uint8   tokeninfo = RIPPLE_FFTRAIL_INFOTYPE_TOKEN;
+    uint8   tokenid = FFTRAIL_GROUPTYPE_NOP;
+    uint8   tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
     uint32  tokenlen = 0;
     uint64  nfileid = 0;
     uint8*  uptr = NULL;
@@ -247,24 +247,24 @@ static bool ripple_fftrail_validftail(int compatibility, uint64 fileid, uint8* t
 
     /* 获取 record 数据 */
     uptr = tail;
-    RIPPLE_FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(RIPPLE_FFTRAIL_GROUPTYPE_FTAIL != tokenid
-        || RIPPLE_FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
+    if(FFTRAIL_GROUPTYPE_FTAIL != tokenid
+        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         return false;
     }
 
     /* 根据版本校验长度 */
-    if(tokenlen != ripple_fftrail_taillen(compatibility))
+    if(tokenlen != fftrail_taillen(compatibility))
     {
         return false;
     }
 
     /* 获取内容 */
     uptr = tokendata;
-    uptr += RIPPLE_TOKENHDRSIZE;
+    uptr += TOKENHDRSIZE;
 
-    nfileid = RIPPLE_CONCAT(get, 64bit)(&uptr);
+    nfileid = CONCAT(get, 64bit)(&uptr);
     if((fileid + 1) != nfileid)
     {
         return false;
@@ -273,30 +273,30 @@ static bool ripple_fftrail_validftail(int compatibility, uint64 fileid, uint8* t
     return true;
 }
 
-bool ripple_fftrail_validrecord(ripple_ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record)
+bool fftrail_validrecord(ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record)
 {
     bool result = false;
-    ripple_ffsmgr_state* ffstate = NULL;
-    ffstate = (ripple_ffsmgr_state*)state;
+    ffsmgr_state* ffstate = NULL;
+    ffstate = (ffsmgr_state*)state;
 
-    if (RIPPLE_FFTRAIL_INFOTYPE_GROUP != infotype)
+    if (FFTRAIL_INFOTYPE_GROUP != infotype)
     {
         return result;
     }
     
     switch (type)
     {
-        case RIPPLE_FFTRAIL_GROUPTYPE_FHEADER:
-            result = ripple_fftrail_validfhead(record);
+        case FFTRAIL_GROUPTYPE_FHEADER:
+            result = fftrail_validfhead(record);
             break;
-        case RIPPLE_FFTRAIL_GROUPTYPE_DATA:
-            result = ripple_fftrail_validdata(ffstate->compatibility, record);
+        case FFTRAIL_GROUPTYPE_DATA:
+            result = fftrail_validdata(ffstate->compatibility, record);
             break;
-        case RIPPLE_FFTRAIL_GROUPTYPE_RESET:
-            result = ripple_fftrail_validreset(ffstate->compatibility, fileid, record);
+        case FFTRAIL_GROUPTYPE_RESET:
+            result = fftrail_validreset(ffstate->compatibility, fileid, record);
             break;
-        case RIPPLE_FFTRAIL_GROUPTYPE_FTAIL:
-            result = ripple_fftrail_validftail(ffstate->compatibility, fileid, record);
+        case FFTRAIL_GROUPTYPE_FTAIL:
+            result = fftrail_validftail(ffstate->compatibility, fileid, record);
             break;
         default:
             elog(RLOG_WARNING, "unknown group type:%u", type);
@@ -314,22 +314,22 @@ bool ripple_fftrail_validrecord(ripple_ff_cxt_type type, void* state, uint8 info
  *  false           没有切换
  *  true            切换
  */
-bool ripple_fftrail_serialpreshiftblock(void* state)
+bool fftrail_serialpreshiftblock(void* state)
 {
     bool shiftfile = false;
     int minsize = 0;
     int timeout = 0;
     uint64 freespc = 0;
 
-    ripple_file_buffer* fbuffer = NULL;                 /* 缓存信息 */
-    ripple_file_buffer* tmpfbuffer = NULL;              /* 缓存信息 */
-    ripple_ffsmgr_state* ffstate = NULL;
-    ripple_ff_fileinfo* finfo = NULL;                   /* 文件信息 */
-    ripple_ff_fileinfo* tmpfinfo = NULL;
-    ripple_file_buffers* txn2filebuffer = NULL;
+    file_buffer* fbuffer = NULL;                 /* 缓存信息 */
+    file_buffer* tmpfbuffer = NULL;              /* 缓存信息 */
+    ffsmgr_state* ffstate = NULL;
+    ff_fileinfo* finfo = NULL;                   /* 文件信息 */
+    ff_fileinfo* tmpfinfo = NULL;
+    file_buffers* txn2filebuffer = NULL;
 
     /* 获取表序列化所需的信息 */
-    ffstate = (ripple_ffsmgr_state*)state;
+    ffstate = (ffsmgr_state*)state;
 
     /* 获取file_buffers */
     txn2filebuffer = ffstate->callback.getfilebuffer(ffstate->privdata);
@@ -340,14 +340,14 @@ bool ripple_fftrail_serialpreshiftblock(void* state)
      *  2、file tail 需要的大小
      */
     /* 根据 bufid 获取 fbuffer */
-    fbuffer = ripple_file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
-    finfo = (ripple_ff_fileinfo*)fbuffer->privdata;
+    fbuffer = file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
+    finfo = (ff_fileinfo*)fbuffer->privdata;
 
     /* 查看 fbuffer 中的 start 是否为0,若为0,那么初始化文件 */
     if(1 == finfo->blknum && 0 == fbuffer->start)
     {
         /* 初始化文件头部信息 */
-        ripple_fftrail_fileinit(state);
+        fftrail_fileinit(state);
     }
 
     /*
@@ -355,13 +355,13 @@ bool ripple_fftrail_serialpreshiftblock(void* state)
      *  1、token 需要的大小
      *  2、file tail 需要的大小
      */
-    minsize = ripple_fftrail_data_tokenminsize(ffstate->compatibility);
+    minsize = fftrail_data_tokenminsize(ffstate->compatibility);
 
     /* file tail 需要的大小 */
     if(finfo->blknum == ffstate->maxbufid)
     {
         shiftfile = true;
-        minsize += ripple_fftrail_taillen(ffstate->compatibility);
+        minsize += fftrail_taillen(ffstate->compatibility);
     }
 
     /* 查看剩余空间 */
@@ -376,21 +376,21 @@ bool ripple_fftrail_serialpreshiftblock(void* state)
     if(true == shiftfile)
     {
         /* 添加尾部信息 */
-        ripple_ff_tail fftail = { 0 };                  /* tail 信息 */
+        ff_tail fftail = { 0 };                  /* tail 信息 */
         fftail.nexttrailno = (finfo->fileid + 1);
-        ffstate->ffsmgr->ffsmgr_serial(RIPPLE_FFTRAIL_CXT_TYPE_FTAIL, &fftail, ffstate);
+        ffstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_FTAIL, &fftail, ffstate);
 
         /* 缓存清理 */
-        ripple_fftrail_invalidprivdata(RIPPLE_FFSMGR_IF_OPTYPE_SERIAL, ffstate->fdata->ffdata);
+        fftrail_invalidprivdata(FFSMGR_IF_OPTYPE_SERIAL, ffstate->fdata->ffdata);
     }
 
     /* 获取缓存 */
     while(1)
     {
-        ffstate->bufid = ripple_file_buffer_get(txn2filebuffer, &timeout);
-        if(RIPPLE_INVALID_BUFFERID == ffstate->bufid)
+        ffstate->bufid = file_buffer_get(txn2filebuffer, &timeout);
+        if(INVALID_BUFFERID == ffstate->bufid)
         {
-            if(RIPPLE_ERROR_TIMEOUT == timeout)
+            if(ERROR_TIMEOUT == timeout)
             {
                 usleep(10000);
                 continue;
@@ -402,33 +402,33 @@ bool ripple_fftrail_serialpreshiftblock(void* state)
     }
 
     /* 获取对应的 buffer */
-    tmpfbuffer = ripple_file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
+    tmpfbuffer = file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
     if(NULL == tmpfbuffer->privdata)
     {
-        tmpfinfo = (ripple_ff_fileinfo*)rmalloc1(sizeof(ripple_ff_fileinfo));
+        tmpfinfo = (ff_fileinfo*)rmalloc1(sizeof(ff_fileinfo));
         if(NULL == tmpfinfo)
         {
             elog(RLOG_ERROR, "out of memory");
         }
-        rmemset0(tmpfinfo, 0, '\0', sizeof(ripple_ff_fileinfo));
+        rmemset0(tmpfinfo, 0, '\0', sizeof(ff_fileinfo));
         tmpfbuffer->privdata = (void*)tmpfinfo;
     }
     else
     {
-        tmpfinfo = (ripple_ff_fileinfo*)tmpfbuffer->privdata;
+        tmpfinfo = (ff_fileinfo*)tmpfbuffer->privdata;
     }
 
-    rmemcpy0(tmpfinfo, 0, finfo, sizeof(ripple_ff_fileinfo));
+    rmemcpy0(tmpfinfo, 0, finfo, sizeof(ff_fileinfo));
 
     tmpfinfo->fileid = (true == shiftfile ? (finfo->fileid + 1) : finfo->fileid);
     tmpfinfo->blknum = (true == shiftfile ? 1 : (finfo->blknum + 1));
 
     /* 将 buffer 写入到待刷新缓存中 */
-    rmemcpy1(&tmpfbuffer->extra, 0, &fbuffer->extra, sizeof(ripple_file_buffer_extra));
-    ripple_file_buffer_waitflush_add(txn2filebuffer, fbuffer);
+    rmemcpy1(&tmpfbuffer->extra, 0, &fbuffer->extra, sizeof(file_buffer_extra));
+    file_buffer_waitflush_add(txn2filebuffer, fbuffer);
 
     /* 重置 tmpfbuffer 中的 信息 */
-    tmpfbuffer->flag = RIPPLE_FILE_BUFFER_FLAG_DATA;
+    tmpfbuffer->flag = FILE_BUFFER_FLAG_DATA;
 
     finfo = NULL;
     fbuffer = NULL;
@@ -439,25 +439,25 @@ bool ripple_fftrail_serialpreshiftblock(void* state)
     if(true == shiftfile)
     {
         /* 初始化文件信息 */
-        ripple_fftrail_fileinit(ffstate);
-        ffstate->status = RIPPLE_FFSMGR_STATUS_SHIFTFILE;
+        fftrail_fileinit(ffstate);
+        ffstate->status = FFSMGR_STATUS_SHIFTFILE;
     }
     return true;
 }
 
-bool ripple_fftrail_serialshiffile(void* state)
+bool fftrail_serialshiffile(void* state)
 {
     int timeout = 0;
-    ripple_ff_tail fftail = { 0 };                      /* tail 信息 */
-    ripple_file_buffer* fbuffer = NULL;                 /* 缓存信息 */
-    ripple_file_buffer* tmpfbuffer = NULL;              /* 缓存信息 */
-    ripple_ffsmgr_state* ffstate = NULL;
-    ripple_ff_fileinfo* finfo = NULL;                   /* 文件信息 */
-    ripple_ff_fileinfo* tmpfinfo = NULL;
-    ripple_file_buffers* txn2filebuffer = NULL;
+    ff_tail fftail = { 0 };                      /* tail 信息 */
+    file_buffer* fbuffer = NULL;                 /* 缓存信息 */
+    file_buffer* tmpfbuffer = NULL;              /* 缓存信息 */
+    ffsmgr_state* ffstate = NULL;
+    ff_fileinfo* finfo = NULL;                   /* 文件信息 */
+    ff_fileinfo* tmpfinfo = NULL;
+    file_buffers* txn2filebuffer = NULL;
 
     /* 获取表序列化所需的信息 */
-    ffstate = (ripple_ffsmgr_state*)state;
+    ffstate = (ffsmgr_state*)state;
 
     /* 获取file_buffers */
     txn2filebuffer = ffstate->callback.getfilebuffer(ffstate->privdata);
@@ -468,30 +468,30 @@ bool ripple_fftrail_serialshiffile(void* state)
      *  2、file tail 需要的大小
      */
     /* 根据 bufid 获取 fbuffer */
-    fbuffer = ripple_file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
-    finfo = (ripple_ff_fileinfo*)fbuffer->privdata;
+    fbuffer = file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
+    finfo = (ff_fileinfo*)fbuffer->privdata;
 
     /* 查看 fbuffer 中的 start 是否为0,若为0,那么初始化文件 */
     if(1 == finfo->blknum && 0 == fbuffer->start)
     {
         /* 初始化文件头部信息 */
-        ripple_fftrail_fileinit(state);
+        fftrail_fileinit(state);
     }
 
     /* 添加尾部信息 */
     fftail.nexttrailno = (finfo->fileid + 1);
-    ffstate->ffsmgr->ffsmgr_serial(RIPPLE_FFTRAIL_CXT_TYPE_FTAIL, &fftail, ffstate);
+    ffstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_FTAIL, &fftail, ffstate);
 
     /* 缓存清理 */
-    ripple_fftrail_invalidprivdata(RIPPLE_FFSMGR_IF_OPTYPE_SERIAL, ffstate->fdata->ffdata);
+    fftrail_invalidprivdata(FFSMGR_IF_OPTYPE_SERIAL, ffstate->fdata->ffdata);
 
     /* 获取缓存 */
     while(1)
     {
-        ffstate->bufid = ripple_file_buffer_get(txn2filebuffer, &timeout);
-        if(RIPPLE_INVALID_BUFFERID == ffstate->bufid)
+        ffstate->bufid = file_buffer_get(txn2filebuffer, &timeout);
+        if(INVALID_BUFFERID == ffstate->bufid)
         {
-            if(RIPPLE_ERROR_TIMEOUT == timeout)
+            if(ERROR_TIMEOUT == timeout)
             {
                 usleep(10000);
                 continue;
@@ -503,45 +503,45 @@ bool ripple_fftrail_serialshiffile(void* state)
     }
 
     /* 获取对应的 buffer */
-    tmpfbuffer = ripple_file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
+    tmpfbuffer = file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
     if(NULL == tmpfbuffer->privdata)
     {
-        tmpfinfo = (ripple_ff_fileinfo*)rmalloc1(sizeof(ripple_ff_fileinfo));
+        tmpfinfo = (ff_fileinfo*)rmalloc1(sizeof(ff_fileinfo));
         if(NULL == tmpfinfo)
         {
             elog(RLOG_ERROR, "out of memory");
         }
-        rmemset0(tmpfinfo, 0, '\0', sizeof(ripple_ff_fileinfo));
+        rmemset0(tmpfinfo, 0, '\0', sizeof(ff_fileinfo));
         tmpfbuffer->privdata = (void*)tmpfinfo;
     }
     else
     {
-        tmpfinfo = (ripple_ff_fileinfo*)tmpfbuffer->privdata;
+        tmpfinfo = (ff_fileinfo*)tmpfbuffer->privdata;
     }
 
-    rmemcpy0(tmpfinfo, 0, finfo, sizeof(ripple_ff_fileinfo));
+    rmemcpy0(tmpfinfo, 0, finfo, sizeof(ff_fileinfo));
 
     tmpfinfo->fileid = finfo->fileid + 1;
     tmpfinfo->blknum = 1;
 
     /* 将 buffer 写入到待刷新缓存中 */
-    rmemcpy1(&tmpfbuffer->extra, 0, &fbuffer->extra, sizeof(ripple_file_buffer_extra));
-    ripple_file_buffer_waitflush_add(txn2filebuffer, fbuffer);
+    rmemcpy1(&tmpfbuffer->extra, 0, &fbuffer->extra, sizeof(file_buffer_extra));
+    file_buffer_waitflush_add(txn2filebuffer, fbuffer);
     finfo = NULL;
     fbuffer = NULL;
 
     /* 重置 tmpfbuffer 中的 信息 */
-    tmpfbuffer->flag = RIPPLE_FILE_BUFFER_FLAG_DATA;
+    tmpfbuffer->flag = FILE_BUFFER_FLAG_DATA;
 
     /* 初始化文件信息 */
-    ripple_fftrail_fileinit(ffstate);
-    ffstate->status = RIPPLE_FFSMGR_STATUS_USED;
+    fftrail_fileinit(ffstate);
+    ffstate->status = FFSMGR_STATUS_USED;
 
     return true;
 }
 
 /* 将具体的数据加入到buffer中 */
-uint8* ripple_fftrail_body2buffer(ripple_ftrail_tokendatatype tdtype,
+uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype,
                                             uint16  tdatalen,
                                             uint8*  tdata,
                                             uint8*  buffer)
@@ -552,19 +552,19 @@ uint8* ripple_fftrail_body2buffer(ripple_ftrail_tokendatatype tdtype,
 
     switch (tdtype)
     {
-        case RIPPLE_FTRAIL_TOKENDATATYPE_TINYINT:
-            RIPPLE_CONCAT(put, 8bit)(&_uptr_, *((uint8*)tdata));
+        case FTRAIL_TOKENDATATYPE_TINYINT:
+            CONCAT(put, 8bit)(&_uptr_, *((uint8*)tdata));
             break;
-        case RIPPLE_FTRAIL_TOKENDATATYPE_SMALLINT:
-            RIPPLE_CONCAT(put,16bit)(&_uptr_, *((uint16*)tdata));
+        case FTRAIL_TOKENDATATYPE_SMALLINT:
+            CONCAT(put,16bit)(&_uptr_, *((uint16*)tdata));
             break;
-        case RIPPLE_FTRAIL_TOKENDATATYPE_INT:
-            RIPPLE_CONCAT(put, 32bit)(&_uptr_, *((uint32*)tdata));
+        case FTRAIL_TOKENDATATYPE_INT:
+            CONCAT(put, 32bit)(&_uptr_, *((uint32*)tdata));
             break;
-        case RIPPLE_FTRAIL_TOKENDATATYPE_BIGINT:
-            RIPPLE_CONCAT(put, 64bit)(&_uptr_, *((uint64*)tdata));
+        case FTRAIL_TOKENDATATYPE_BIGINT:
+            CONCAT(put, 64bit)(&_uptr_, *((uint64*)tdata));
             break;
-        case RIPPLE_FTRAIL_TOKENDATATYPE_STR:
+        case FTRAIL_TOKENDATATYPE_STR:
             rmemcpy1(_uptr_, 0, (char*)tdata, tdatalen);
             _uptr_ += tdatalen;
             break;
@@ -576,7 +576,7 @@ uint8* ripple_fftrail_body2buffer(ripple_ftrail_tokendatatype tdtype,
 }
 
 /* 将具体的数据从buffer写入到 data 中 */
-uint8* ripple_fftrail_buffer2body(ripple_ftrail_tokendatatype tdtype,
+uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype,
                                             uint64  tdatalen,
                                             uint8*  tdata,
                                             uint8*  buffer)
@@ -587,19 +587,19 @@ uint8* ripple_fftrail_buffer2body(ripple_ftrail_tokendatatype tdtype,
 
     switch (tdtype)
     {
-        case RIPPLE_FTRAIL_TOKENDATATYPE_TINYINT:
-            *tdata = RIPPLE_CONCAT(get, 8bit)(&_uptr_);
+        case FTRAIL_TOKENDATATYPE_TINYINT:
+            *tdata = CONCAT(get, 8bit)(&_uptr_);
             break;
-        case RIPPLE_FTRAIL_TOKENDATATYPE_SMALLINT:
-            *((uint16*)tdata) = RIPPLE_CONCAT(get, 16bit)(&_uptr_);
+        case FTRAIL_TOKENDATATYPE_SMALLINT:
+            *((uint16*)tdata) = CONCAT(get, 16bit)(&_uptr_);
             break;
-        case RIPPLE_FTRAIL_TOKENDATATYPE_INT:
-            *((uint32*)tdata) = RIPPLE_CONCAT(get, 32bit)(&_uptr_);
+        case FTRAIL_TOKENDATATYPE_INT:
+            *((uint32*)tdata) = CONCAT(get, 32bit)(&_uptr_);
             break;
-        case RIPPLE_FTRAIL_TOKENDATATYPE_BIGINT:
-            *((uint64*)tdata) = RIPPLE_CONCAT(get, 64bit)(&_uptr_);
+        case FTRAIL_TOKENDATATYPE_BIGINT:
+            *((uint64*)tdata) = CONCAT(get, 64bit)(&_uptr_);
             break;
-        case RIPPLE_FTRAIL_TOKENDATATYPE_STR:
+        case FTRAIL_TOKENDATATYPE_STR:
             rmemcpy1(tdata, 0, _uptr_, tdatalen);
             _uptr_ += tdatalen;
             break;
@@ -618,15 +618,15 @@ uint8* ripple_fftrail_buffer2body(ripple_ftrail_tokendatatype tdtype,
  *      fhdr             函数头部标识
  *      tid              tokenid
  *      tinfo            tokeninfo
- *      tdtype           tokendatatype,取值参考: ripple_ftrail_tokendatatype
+ *      tdtype           tokendatatype,取值参考: ftrail_tokendatatype
  *      tdatalen         数据长度
  *      tdata            数据
  * 出参:
  *      tlen             加上 token 的总长度
  *      buffer           token 的内容保存到该缓存中，返回新的地址空间
  */
-uint8* ripple_fftrail_token2buffer(uint8 tid, uint8 tinfo,
-                                    ripple_ftrail_tokendatatype tdtype,
+uint8* fftrail_token2buffer(uint8 tid, uint8 tinfo,
+                                    ftrail_tokendatatype tdtype,
                                     uint16  tdatalen,
                                     uint8*  tdata,
                                     uint32* tlen,
@@ -636,13 +636,13 @@ uint8* ripple_fftrail_token2buffer(uint8 tid, uint8 tinfo,
     uint8* uptr = NULL;
 
     uptr = buffer;
-    _tokenlen_ += RIPPLE_TOKENHDRSIZE;
+    _tokenlen_ += TOKENHDRSIZE;
     _tokenlen_ += tdatalen;
 
-    RIPPLE_FTRAIL_TOKENHDR2BUFFER(put, tid, tinfo, _tokenlen_, uptr)
+    FTRAIL_TOKENHDR2BUFFER(put, tid, tinfo, _tokenlen_, uptr)
 
     /* 组装数据 */
-    uptr = ripple_fftrail_body2buffer(tdtype, tdatalen, tdata, uptr);
+    uptr = fftrail_body2buffer(tdtype, tdatalen, tdata, uptr);
     *tlen += _tokenlen_;
     return uptr;
 }
@@ -650,7 +650,7 @@ uint8* ripple_fftrail_token2buffer(uint8 tid, uint8 tinfo,
 /*
  * 尾部长度是固定的
 */
-int ripple_fftrail_taillen(int compatibility)
+int fftrail_taillen(int compatibility)
 {
     /*
      * 文件尾部根据不同的版本长度不同，但是必须为 8 的整数
@@ -669,7 +669,7 @@ int ripple_fftrail_taillen(int compatibility)
 /*
  * RESET长度是固定的
 */
-int ripple_fftrail_resetlen(int compatibility)
+int fftrail_resetlen(int compatibility)
 {
     /*
      * 文件RESET根据不同的版本长度不同，但是必须为 8 的整数
@@ -689,36 +689,36 @@ int ripple_fftrail_resetlen(int compatibility)
 /*
  * 文件头部信息初始化
 */
-void ripple_fftrail_fileinit(void* state)
+void fftrail_fileinit(void* state)
 {
     /* 添加文件头信息 */
     bool                found = false;
     Oid                 dbid = 0;
     char*               dbname = 0;
-    ripple_file_buffer* fbuffer = NULL;
-    ripple_ffsmgr_state* ffstate = NULL;
-    ripple_ff_header* ffheader = NULL;              /* trail 文件头结构 */
-    ripple_ff_dbmetadata* ffdbmd = NULL;            /* 数据库信息       */
-    ripple_ff_fileinfo* finfo = NULL;
-    ripple_fftrail_privdata* ffprivdata = NULL;
-    ripple_fftrail_database_serialentry* dbserialentry = NULL;
+    file_buffer* fbuffer = NULL;
+    ffsmgr_state* ffstate = NULL;
+    ff_header* ffheader = NULL;              /* trail 文件头结构 */
+    ff_dbmetadata* ffdbmd = NULL;            /* 数据库信息       */
+    ff_fileinfo* finfo = NULL;
+    fftrail_privdata* ffprivdata = NULL;
+    fftrail_database_serialentry* dbserialentry = NULL;
 
     /* 获取初始化信息 */
-    ffstate = (ripple_ffsmgr_state*)state;
-    ffprivdata = (ripple_fftrail_privdata*)ffstate->fdata->ffdata;
-    fbuffer = ripple_file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
-    finfo = (ripple_ff_fileinfo*)fbuffer->privdata;
+    ffstate = (ffsmgr_state*)state;
+    ffprivdata = (fftrail_privdata*)ffstate->fdata->ffdata;
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    finfo = (ff_fileinfo*)fbuffer->privdata;
 
     ffstate->recptr = fbuffer->data + fbuffer->start;
     /* 文件开头，增加文件头和 dbmetadata 信息 */
-    ffheader = ripple_ffsmgr_headinit(ffstate->compatibility, InvalidFullTransactionId, finfo->fileid);
+    ffheader = ffsmgr_headinit(ffstate->compatibility, InvalidFullTransactionId, finfo->fileid);
 
     /* 添加lsn信息 */
     ffheader->redolsn = fbuffer->extra.chkpoint.redolsn.wal.lsn;
     ffheader->confirmlsn = fbuffer->extra.rewind.confirmlsn.wal.lsn;
     ffheader->restartlsn = fbuffer->extra.rewind.restartlsn.wal.lsn;
 
-    ffstate->ffsmgr->ffsmgr_serial(RIPPLE_FFTRAIL_CXT_TYPE_FHEADER, ffheader, ffstate);
+    ffstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_FHEADER, ffheader, ffstate);
 
     if(NULL != ffheader->filename)
     {
@@ -739,7 +739,7 @@ void ripple_fftrail_fileinit(void* state)
         ffstate->callback.setdboid = NULL;
     }
 
-    ffdbmd = ripple_ffsmgr_dbmetadatainit(dbname);
+    ffdbmd = ffsmgr_dbmetadatainit(dbname);
     ffdbmd->oid = dbid;
     dbserialentry = hash_search(ffprivdata->databases, &dbid, HASH_ENTER, &found);
     if(false == found)
@@ -752,7 +752,7 @@ void ripple_fftrail_fileinit(void* state)
     }
     ffdbmd->dbmdno = dbserialentry->no;
     ffstate->recptr = fbuffer->data + fbuffer->start;
-    ffstate->ffsmgr->ffsmgr_serial(RIPPLE_FFTRAIL_CXT_TYPE_DATA, ffdbmd, ffstate);
+    ffstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_DATA, ffdbmd, ffstate);
 
     rfree(ffdbmd);
     return;
@@ -763,10 +763,10 @@ void ripple_fftrail_fileinit(void* state)
  * optype
  *  标识hash类型
  */
-void ripple_fftrail_invalidprivdata(int optype, void* privdata)
+void fftrail_invalidprivdata(int optype, void* privdata)
 {
     ListCell* lc = NULL;
-    ripple_fftrail_privdata* ffprivdata = NULL;
+    fftrail_privdata* ffprivdata = NULL;
 
     if(NULL == privdata)
     {
@@ -774,23 +774,23 @@ void ripple_fftrail_invalidprivdata(int optype, void* privdata)
     }
 
     /* 清理缓存 */
-    ffprivdata = (ripple_fftrail_privdata*)privdata;
+    ffprivdata = (fftrail_privdata*)privdata;
     ffprivdata->dbnum = 0;
     ffprivdata->tbnum = 0;
 
     /* 遍历删除表 */
     foreach(lc, ffprivdata->tbentrys)
     {
-        ripple_fftrail_table_serialentry* tbserialentry = NULL;
-        ripple_fftrail_table_deserialentry* tbdeserialentry = NULL;
-        if(optype == RIPPLE_FFSMGR_IF_OPTYPE_SERIAL)
+        fftrail_table_serialentry* tbserialentry = NULL;
+        fftrail_table_deserialentry* tbdeserialentry = NULL;
+        if(optype == FFSMGR_IF_OPTYPE_SERIAL)
         {
-            tbserialentry = (ripple_fftrail_table_serialentry*)lfirst(lc);
+            tbserialentry = (fftrail_table_serialentry*)lfirst(lc);
             hash_search(ffprivdata->tables, &tbserialentry->key, HASH_REMOVE, NULL);
         }
-        else if(optype == RIPPLE_FFSMGR_IF_OPTYPE_DESERIAL)
+        else if(optype == FFSMGR_IF_OPTYPE_DESERIAL)
         {
-            tbdeserialentry = (ripple_fftrail_table_deserialentry*)lfirst(lc);
+            tbdeserialentry = (fftrail_table_deserialentry*)lfirst(lc);
             hash_search(ffprivdata->tables, &tbdeserialentry->key, HASH_REMOVE, NULL);
 
             /* 释放 columns */
@@ -807,17 +807,17 @@ void ripple_fftrail_invalidprivdata(int optype, void* privdata)
     /* 遍历删除数据库 */
     foreach(lc, ffprivdata->dbentrys)
     {
-        ripple_fftrail_database_serialentry* dbserialentry = NULL;
-        ripple_fftrail_database_deserialentry* dbdeserialentry = NULL;
+        fftrail_database_serialentry* dbserialentry = NULL;
+        fftrail_database_deserialentry* dbdeserialentry = NULL;
 
-        if(optype == RIPPLE_FFSMGR_IF_OPTYPE_SERIAL)
+        if(optype == FFSMGR_IF_OPTYPE_SERIAL)
         {
-            dbserialentry = (ripple_fftrail_database_serialentry*)lfirst(lc);
+            dbserialentry = (fftrail_database_serialentry*)lfirst(lc);
             hash_search(ffprivdata->databases, &dbserialentry->oid, HASH_REMOVE, NULL);
         }
-        else if(optype == RIPPLE_FFSMGR_IF_OPTYPE_DESERIAL)
+        else if(optype == FFSMGR_IF_OPTYPE_DESERIAL)
         {
-            dbdeserialentry = (ripple_fftrail_database_deserialentry*)lfirst(lc);
+            dbdeserialentry = (fftrail_database_deserialentry*)lfirst(lc);
             hash_search(ffprivdata->databases, &dbdeserialentry->no, HASH_REMOVE, NULL);
         }
     }
@@ -831,16 +831,16 @@ void ripple_fftrail_invalidprivdata(int optype, void* privdata)
  * optype
  *  标识hash类型
  */
-static void ripple_fftrail_freeprivdata(int optype, void* privdata)
+static void fftrail_freeprivdata(int optype, void* privdata)
 {
-    ripple_fftrail_privdata* ffprivdata = NULL;
+    fftrail_privdata* ffprivdata = NULL;
     if(NULL == privdata)
     {
         return;
     }
 
-    ripple_fftrail_invalidprivdata(optype, privdata);
-    ffprivdata = (ripple_fftrail_privdata*)privdata;
+    fftrail_invalidprivdata(optype, privdata);
+    ffprivdata = (fftrail_privdata*)privdata;
 
     if(NULL != ffprivdata->tables)
     {
@@ -857,23 +857,23 @@ static void ripple_fftrail_freeprivdata(int optype, void* privdata)
 
 
 /* 数据序列化到 buffer */
-bool ripple_fftrail_serial(ripple_ff_cxt_type type, void* data, void* state)
+bool fftrail_serial(ff_cxt_type type, void* data, void* state)
 {
     return m_trailgroups[type].serialfunc(data, state);
 }
 
 /* 数据反序列化到 data */
-bool ripple_fftrail_deserial(ripple_ff_cxt_type type, void** data, void* state)
+bool fftrail_deserial(ff_cxt_type type, void** data, void* state)
 {
     return m_trailgroups[type].deserialfunc(data, state);
 }
 
 /* 初始化 */
-bool ripple_fftrail_init(int optype, void* state)
+bool fftrail_init(int optype, void* state)
 {
     HASHCTL hashCtl = {'\0'};
-    ripple_fftrail_privdata* privdata = NULL;
-    ripple_ffsmgr_state* ffstate = (ripple_ffsmgr_state*)state;
+    fftrail_privdata* privdata = NULL;
+    ffsmgr_state* ffstate = (ffsmgr_state*)state;
 
     /* 证明已经初始化过了，那么无需再次初始化 */
     if(NULL != ffstate->fdata)
@@ -882,22 +882,22 @@ bool ripple_fftrail_init(int optype, void* state)
     }
 
     /* 初始化 fdata 结构 */
-    ffstate->fdata = (ripple_ffsmgr_fdata*)rmalloc1(sizeof(ripple_ffsmgr_fdata));
+    ffstate->fdata = (ffsmgr_fdata*)rmalloc1(sizeof(ffsmgr_fdata));
     if(NULL == ffstate->fdata)
     {
         elog(RLOG_WARNING, "out of memory");
         return false;
     }
-    rmemset0(ffstate->fdata, 0, '\0', sizeof(ripple_ffsmgr_fdata));
+    rmemset0(ffstate->fdata, 0, '\0', sizeof(ffsmgr_fdata));
 
     /* 初始化具体的结构 */
-    privdata =(ripple_fftrail_privdata*)rmalloc1(sizeof(ripple_fftrail_privdata));
+    privdata =(fftrail_privdata*)rmalloc1(sizeof(fftrail_privdata));
     if(NULL == privdata)
     {
         elog(RLOG_WARNING, "out of memory");
         return false;
     }
-    rmemset0(privdata, 0, '\0', sizeof(ripple_fftrail_privdata));
+    rmemset0(privdata, 0, '\0', sizeof(fftrail_privdata));
     privdata->dbentrys = NULL;
     privdata->tbentrys = NULL;
     privdata->tables = NULL;
@@ -910,15 +910,15 @@ bool ripple_fftrail_init(int optype, void* state)
 
     /* 初始化表和数据库信息 */
     /* 表信息 */
-    if(optype == RIPPLE_FFSMGR_IF_OPTYPE_SERIAL)
+    if(optype == FFSMGR_IF_OPTYPE_SERIAL)
     {
-        hashCtl.keysize = sizeof(ripple_fftrail_table_serialkey);
-        hashCtl.entrysize = sizeof(ripple_fftrail_table_serialentry);
+        hashCtl.keysize = sizeof(fftrail_table_serialkey);
+        hashCtl.entrysize = sizeof(fftrail_table_serialentry);
     }
-    else if(optype == RIPPLE_FFSMGR_IF_OPTYPE_DESERIAL)
+    else if(optype == FFSMGR_IF_OPTYPE_DESERIAL)
     {
-        hashCtl.keysize = sizeof(ripple_fftrail_table_deserialkey);
-        hashCtl.entrysize = sizeof(ripple_fftrail_table_deserialentry);
+        hashCtl.keysize = sizeof(fftrail_table_deserialkey);
+        hashCtl.entrysize = sizeof(fftrail_table_deserialentry);
     }
     privdata->tables = hash_create("fftrail_privdata_tables",
                                     128,
@@ -926,15 +926,15 @@ bool ripple_fftrail_init(int optype, void* state)
                                     HASH_ELEM | HASH_BLOBS);
 
     /* 数据库信息 */
-    if(optype == RIPPLE_FFSMGR_IF_OPTYPE_SERIAL)
+    if(optype == FFSMGR_IF_OPTYPE_SERIAL)
     {
         hashCtl.keysize = sizeof(Oid);
-        hashCtl.entrysize = sizeof(ripple_fftrail_database_serialentry);
+        hashCtl.entrysize = sizeof(fftrail_database_serialentry);
     }
-    else if(optype == RIPPLE_FFSMGR_IF_OPTYPE_DESERIAL)
+    else if(optype == FFSMGR_IF_OPTYPE_DESERIAL)
     {
         hashCtl.keysize = sizeof(uint32);
-        hashCtl.entrysize = sizeof(ripple_fftrail_database_deserialentry);
+        hashCtl.entrysize = sizeof(fftrail_database_deserialentry);
     }
     privdata->databases = hash_create("fftrail_privdata_databases",
                                     128,
@@ -945,9 +945,9 @@ bool ripple_fftrail_init(int optype, void* state)
 }
 
 /* 内容释放 */
-void ripple_fftrail_free(int optype, void* state)
+void fftrail_free(int optype, void* state)
 {
-    ripple_ffsmgr_state* ffstate = (ripple_ffsmgr_state*)state;
+    ffsmgr_state* ffstate = (ffsmgr_state*)state;
 
     if(NULL == state)
     {
@@ -961,14 +961,14 @@ void ripple_fftrail_free(int optype, void* state)
     }
 
     /* ffdata 内容释放 */
-    ripple_fftrail_freeprivdata(optype, ffstate->fdata->ffdata);
+    fftrail_freeprivdata(optype, ffstate->fdata->ffdata);
     rfree(ffstate->fdata->ffdata);
     ffstate->fdata->ffdata = NULL;
 
     /* ffdata2 内容释放 */
-    if(RIPPLE_FFSMGR_IF_OPTYPE_DESERIAL == optype && NULL != ffstate->fdata->ffdata2)
+    if(FFSMGR_IF_OPTYPE_DESERIAL == optype && NULL != ffstate->fdata->ffdata2)
     {
-        ripple_fftrail_freeprivdata(optype, ffstate->fdata->ffdata2);
+        fftrail_freeprivdata(optype, ffstate->fdata->ffdata2);
         rfree(ffstate->fdata->ffdata2);
     }
     rfree(ffstate->fdata);
@@ -976,97 +976,97 @@ void ripple_fftrail_free(int optype, void* state)
 }
 
 /* 获取record 中记录的 subtype */
-bool ripple_fftrail_getrecordsubtype(void* state, uint8* record, uint16* subtype)
+bool fftrail_getrecordsubtype(void* state, uint8* record, uint16* subtype)
 {
-    ripple_ffsmgr_state* ffstate = NULL;
+    ffsmgr_state* ffstate = NULL;
 
-    ffstate = (ripple_ffsmgr_state*)state;
+    ffstate = (ffsmgr_state*)state;
 
     /* 跳过token部分 */
-    record += RIPPLE_TOKENHDRSIZE;
-    *subtype = ripple_fftrail_data_getsubtypefromhead(ffstate->compatibility, record);
+    record += TOKENHDRSIZE;
+    *subtype = fftrail_data_getsubtypefromhead(ffstate->compatibility, record);
 
     return true;
 }
 
 /* 获取 record 头中记录的长度 */
-uint64 ripple_fftrail_getrecordlsn(void* state, uint8* record)
+uint64 fftrail_getrecordlsn(void* state, uint8* record)
 {
-    ripple_ffsmgr_state* ffstate = NULL;
+    ffsmgr_state* ffstate = NULL;
 
-    ffstate = (ripple_ffsmgr_state*)state;
+    ffstate = (ffsmgr_state*)state;
 
     /* 跳过token部分 */
-    record += RIPPLE_TOKENHDRSIZE;
-    return ripple_fftrail_data_getorgposfromhead(ffstate->compatibility, record);
+    record += TOKENHDRSIZE;
+    return fftrail_data_getorgposfromhead(ffstate->compatibility, record);
 }
 
 /* 获取真实数据基于 record 的偏移 */
-uint16 ripple_fftrail_getrecorddataoffset(int compatibility)
+uint16 fftrail_getrecorddataoffset(int compatibility)
 {
     uint16 dataoffset = 0;
 
     /* 跳过token部分 */
-    dataoffset = ripple_fftrail_data_getrecorddataoffset(compatibility);
-    dataoffset += RIPPLE_TOKENHDRSIZE;
+    dataoffset = fftrail_data_getrecorddataoffset(compatibility);
+    dataoffset += TOKENHDRSIZE;
 
     return dataoffset;
 }
 
 /* 获取 total length */
-uint64 ripple_fftrail_getrecordtotallength(void* state, uint8* record)
+uint64 fftrail_getrecordtotallength(void* state, uint8* record)
 {
-    ripple_ffsmgr_state* ffstate = NULL;
+    ffsmgr_state* ffstate = NULL;
 
-    ffstate = (ripple_ffsmgr_state*)state;
+    ffstate = (ffsmgr_state*)state;
 
     /* 跳过token部分 */
-    record += RIPPLE_TOKENHDRSIZE;
-    return ripple_fftrail_data_gettotallengthfromhead(ffstate->compatibility, record);
+    record += TOKENHDRSIZE;
+    return fftrail_data_gettotallengthfromhead(ffstate->compatibility, record);
 }
 
 /* 获取 record length */
-uint16 ripple_fftrail_getrecordlength(void* state, uint8* record)
+uint16 fftrail_getrecordlength(void* state, uint8* record)
 {
-    ripple_ffsmgr_state* ffstate = NULL;
+    ffsmgr_state* ffstate = NULL;
 
-    ffstate = (ripple_ffsmgr_state*)state;
+    ffstate = (ffsmgr_state*)state;
 
     /* 跳过token部分 */
-    record += RIPPLE_TOKENHDRSIZE;
-    return ripple_fftrail_data_getreclengthfromhead(ffstate->compatibility, record);
+    record += TOKENHDRSIZE;
+    return fftrail_data_getreclengthfromhead(ffstate->compatibility, record);
 }
 
 /* 设置 record length */
-void ripple_fftrail_setrecordlength(void* state, uint8* record, uint16 reclength)
+void fftrail_setrecordlength(void* state, uint8* record, uint16 reclength)
 {
-    ripple_ffsmgr_state* ffstate = NULL;
+    ffsmgr_state* ffstate = NULL;
 
-    ffstate = (ripple_ffsmgr_state*)state;
+    ffstate = (ffsmgr_state*)state;
 
     /* 跳过token部分 */
-    record += RIPPLE_TOKENHDRSIZE;
+    record += TOKENHDRSIZE;
 
-    ripple_fftrail_data_setreclengthonhead(ffstate->compatibility, record, reclength);
+    fftrail_data_setreclengthonhead(ffstate->compatibility, record, reclength);
 }
 
 
 /* 获取record 中记录的 grouptype */
-void ripple_fftrail_getrecordgrouptype(void* state, uint8* record, uint8* grouptype)
+void fftrail_getrecordgrouptype(void* state, uint8* record, uint8* grouptype)
 {
         /* 调用反序列化接口，解析数据 */
-    uint8   tokenid = RIPPLE_FFTRAIL_GROUPTYPE_NOP;
-    uint8   tokeninfo = RIPPLE_FFTRAIL_INFOTYPE_TOKEN;
+    uint8   tokenid = FFTRAIL_GROUPTYPE_NOP;
+    uint8   tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
     uint32  tokenlen = 0;
 
     uint8*  uptr = NULL;
     uint8*  tokendata = NULL;
 
-    RIPPLE_UNUSED(tokendata);
-    RIPPLE_UNUSED(tokeninfo);
+    UNUSED(tokendata);
+    UNUSED(tokeninfo);
 
     uptr = record;
-    RIPPLE_FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
+    FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
 
     *grouptype = tokenid;
     return ;
@@ -1074,17 +1074,17 @@ void ripple_fftrail_getrecordgrouptype(void* state, uint8* record, uint8* groupt
 }
 
 /* 获取record 中记录的 grouptype */
-bool ripple_fftrail_isrecordtransstart(void* state, uint8* record)
+bool fftrail_isrecordtransstart(void* state, uint8* record)
 {
-    ripple_ffsmgr_state* ffstate = NULL;
+    ffsmgr_state* ffstate = NULL;
 
-    ffstate = (ripple_ffsmgr_state*)state;
-    return ripple_fftrail_data_deserail_check_transind_start(record, ffstate->compatibility);
+    ffstate = (ffsmgr_state*)state;
+    return fftrail_data_deserail_check_transind_start(record, ffstate->compatibility);
 
 }
 
 /* 获取 tokenminsize */
-int ripple_fftrail_gettokenminsize(int compatibility)
+int fftrail_gettokenminsize(int compatibility)
 {
-    return ripple_fftrail_data_tokenminsize(compatibility);
+    return fftrail_data_tokenminsize(compatibility);
 }

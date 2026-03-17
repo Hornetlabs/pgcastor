@@ -1,23 +1,23 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
-#include "port/thread/ripple_thread.h"
+#include "port/thread/thread.h"
 #include "utils/hash/hash_search.h"
-#include "misc/ripple_misc_stat.h"
-#include "misc/ripple_misc_control.h"
+#include "misc/misc_stat.h"
+#include "misc/misc_control.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "catalog/ripple_control.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
-#include "cache/ripple_fpwcache.h"
+#include "catalog/control.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
+#include "cache/fpwcache.h"
 
 /*
  * FPW 缓存由 PARSER 与 写线程共同维护，需要锁
 */
-HTAB *ripple_fpwcache_init(ripple_transcache *transcache)
+HTAB *fpwcache_init(transcache *transcache)
 {
     HTAB *result = NULL;
     HASHCTL hashCtl = {'\0'};
@@ -36,7 +36,7 @@ HTAB *ripple_fpwcache_init(ripple_transcache *transcache)
 }
 
 /* 该函数中, 所有指针都是malloc的, 因此调用完该函数后, 应释放无用的入参 */
-void ripple_fpwcache_add(ripple_transcache *transcache,
+void fpwcache_add(transcache *transcache,
                             ReorderBufferFPWKey *key,
                             ReorderBufferFPWEntry *entry)
 {
@@ -110,7 +110,7 @@ void ripple_fpwcache_add(ripple_transcache *transcache,
 }
 
 /* 删除 */
-static void ripple_fpwcache_removebyredolsn(ripple_transcache *transcache, XLogRecPtr redolsn)
+static void fpwcache_removebyredolsn(transcache *transcache, XLogRecPtr redolsn)
 {
     ListCell* lc = NULL;
     List* newlist = NULL;
@@ -171,13 +171,13 @@ static void ripple_fpwcache_removebyredolsn(ripple_transcache *transcache, XLogR
 }
 
 /* 遍历transcache->chkpts查看小于restartlsn清理fpw并更新redo */
-void ripple_fpwcache_calcredolsnbyrestartlsn(ripple_transcache *transcache,
+void fpwcache_calcredolsnbyrestartlsn(transcache *transcache,
                                             XLogRecPtr restartlsn,
                                             XLogRecPtr* redolsn)
 {
     XLogRecPtr curredolsn = InvalidXLogRecPtr;
-    ripple_checkpointnode* chkptnode = NULL;                /* 大于 restartlsn 的数据 */
-    ripple_checkpointnode* chkptnodeprev = NULL;            /* 小于 restartlsn 的数据 */
+    checkpointnode* chkptnode = NULL;                /* 大于 restartlsn 的数据 */
+    checkpointnode* chkptnodeprev = NULL;            /* 小于 restartlsn 的数据 */
 
     curredolsn = *redolsn;
     for(chkptnode = chkptnodeprev = transcache->chkpts->head; NULL != chkptnode; chkptnode= chkptnode->next)
@@ -216,7 +216,7 @@ void ripple_fpwcache_calcredolsnbyrestartlsn(ripple_transcache *transcache,
     }
 
     /* 清理fpw数据  */
-    ripple_fpwcache_removebyredolsn(transcache, transcache->chkpts->head->redolsn);
+    fpwcache_removebyredolsn(transcache, transcache->chkpts->head->redolsn);
 
     /* 设置新的 redolsn */
     *redolsn = transcache->chkpts->head->redolsn;

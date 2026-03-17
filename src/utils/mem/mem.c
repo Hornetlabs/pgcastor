@@ -1,13 +1,13 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
-#include "port/thread/ripple_thread.h"
+#include "port/thread/thread.h"
 
-static ripple_malloc_nodes m_nodes = { 0, PTHREAD_MUTEX_INITIALIZER, NULL, NULL};
+static malloc_nodes m_nodes = { 0, PTHREAD_MUTEX_INITIALIZER, NULL, NULL};
 
-void ripple_mem_init(void)
+void mem_init(void)
 {
     m_nodes.number = 0;
-    ripple_thread_mutex_init(&m_nodes.listlock, NULL);
+    osal_thread_mutex_init(&m_nodes.listlock, NULL);
     m_nodes.head = NULL;
     m_nodes.tail = NULL;
 }
@@ -22,25 +22,25 @@ void ripple_mem_init(void)
  *                      true            局部空间
  *                      false           全局空间
  */
-void* ripple_malloc(char* file, uint32 line, size_t size, bool local)
+void* rmalloc(char* file, uint32 line, size_t size, bool local)
 {
     void* addr = NULL;
-#ifdef RIPPLE_MEMCHECK
-    ripple_malloc_node* node = NULL;
+#ifdef MEMCHECK
+    malloc_node* node = NULL;
     if (0 == size)
     {
         elog(RLOG_ERROR, "%s:%d not supported size 0", file, line);
     }
-    addr = malloc(size + RIPPLE_MALLOC_NODE_SIZE);
+    addr = malloc(size + MALLOC_NODE_SIZE);
     if (addr == NULL)
     {
         elog(RLOG_ERROR, "%s:%d out of memory, %s", file, line, strerror(errno));
     }
-    memset(addr,'\0', RIPPLE_MALLOC_NODE_SIZE);
+    memset(addr,'\0', MALLOC_NODE_SIZE);
 
-    node = (ripple_malloc_node*)addr;
+    node = (malloc_node*)addr;
 
-    node->magic = RIPPLE_MALLOC_MAGIC;
+    node->magic = MALLOC_MAGIC;
     node->flag = local;
     node->number = ++m_nodes.number;
     node->line = line;
@@ -49,7 +49,7 @@ void* ripple_malloc(char* file, uint32 line, size_t size, bool local)
     node->prev = NULL;
     node->next = NULL;
 
-    ripple_thread_lock(&m_nodes.listlock);
+    osal_thread_lock(&m_nodes.listlock);
     if (!m_nodes.head)
     {
         m_nodes.head = m_nodes.tail = node;
@@ -60,9 +60,9 @@ void* ripple_malloc(char* file, uint32 line, size_t size, bool local)
         node->prev = m_nodes.tail;
         m_nodes.tail = node;
     }
-    ripple_thread_unlock(&m_nodes.listlock);
+    osal_thread_unlock(&m_nodes.listlock);
 
-    addr = (uint8*)addr + RIPPLE_MALLOC_NODE_SIZE;
+    addr = (uint8*)addr + MALLOC_NODE_SIZE;
 #else
     addr = (void*)malloc(size);
 #endif
@@ -80,10 +80,10 @@ void* ripple_malloc(char* file, uint32 line, size_t size, bool local)
  *                      true            堆
  *                      false           栈
  */
-void* ripple_memset(void* s, uint64 offset, int c, size_t n, bool heap)
+void* rmemset(void* s, uint64 offset, int c, size_t n, bool heap)
 {    
-#ifdef RIPPLE_MEMCHECK
-    ripple_malloc_node* node = NULL;
+#ifdef MEMCHECK
+    malloc_node* node = NULL;
     if (false == heap)
     {
         memset(((uint8*)s) + offset, c, n);
@@ -91,8 +91,8 @@ void* ripple_memset(void* s, uint64 offset, int c, size_t n, bool heap)
     else
     {
         
-        node = (ripple_malloc_node*)(((uint8_t*)s) - RIPPLE_MALLOC_NODE_SIZE);
-        if (node->magic != RIPPLE_MALLOC_MAGIC)
+        node = (malloc_node*)(((uint8_t*)s) - MALLOC_NODE_SIZE);
+        if (node->magic != MALLOC_MAGIC)
         {
             elog(RLOG_ERROR, "Memory failure or released");
         }
@@ -122,18 +122,18 @@ void* ripple_memset(void* s, uint64 offset, int c, size_t n, bool heap)
  *                      true            堆
  *                      false           栈
  */
-void* ripple_memcpy(void* dest, uint64 offset, const void* src, size_t n, bool heap)
+void* rmemcpy(void* dest, uint64 offset, const void* src, size_t n, bool heap)
 {
-#ifdef RIPPLE_MEMCHECK
-    ripple_malloc_node* node = NULL;
+#ifdef MEMCHECK
+    malloc_node* node = NULL;
     if (false == heap)
     {
         memcpy(((uint8_t*)dest) + offset, src, n);
     }
     else
     {
-        node = (ripple_malloc_node*)(((uint8_t*)dest) - RIPPLE_MALLOC_NODE_SIZE);
-        if (node->magic != RIPPLE_MALLOC_MAGIC)
+        node = (malloc_node*)(((uint8_t*)dest) - MALLOC_NODE_SIZE);
+        if (node->magic != MALLOC_MAGIC)
         {
             elog(RLOG_ERROR, "Memory failure or released");
         }
@@ -163,24 +163,24 @@ void* ripple_memcpy(void* dest, uint64 offset, const void* src, size_t n, bool h
  *                      false           全局空间
  * 
  * 备注:
- *  1、ptr 为空时，标识是新申请空间，功能与 malloc 相同
+ *  1、ptr 为空时，标识是新申请空间，功能与 rmalloc 相同
  *  2、在自写的逻辑里面判断待分配的空间是小于源空间，那么返回源空间即可
  * 
  */
-void* ripple_realloc(char* file, uint32 line, void* ptr, size_t size, bool local)
+void* rrealloc(char* file, uint32 line, void* ptr, size_t size, bool local)
 {
     void* addr = NULL;
-#ifdef RIPPLE_MEMCHECK
-    ripple_malloc_node new_node = {0};
-    ripple_malloc_node* node = NULL;
+#ifdef MEMCHECK
+    malloc_node new_node = {0};
+    malloc_node* node = NULL;
 
-    new_node.magic = RIPPLE_MALLOC_MAGIC;
+    new_node.magic = MALLOC_MAGIC;
     new_node.flag = local;
     new_node.line = line;
     memcpy(new_node.file, file, strlen(file));
     new_node.size = size;
     
-    ripple_thread_lock(&m_nodes.listlock);
+    osal_thread_lock(&m_nodes.listlock);
     if (ptr == NULL)
     {
         new_node.number = ++m_nodes.number;
@@ -189,27 +189,27 @@ void* ripple_realloc(char* file, uint32 line, void* ptr, size_t size, bool local
     }
     else
     {
-        ptr = ((uint8_t*)ptr) - RIPPLE_MALLOC_NODE_SIZE;
-        node = (ripple_malloc_node*)ptr;
+        ptr = ((uint8_t*)ptr) - MALLOC_NODE_SIZE;
+        node = (malloc_node*)ptr;
         new_node.number = node->number;
         new_node.prev = node->prev;
         new_node.next = node->next;
         if (size < node->size)
         {
-            memset(ptr, '\0', RIPPLE_MALLOC_NODE_SIZE);
-            memcpy(ptr, &new_node, RIPPLE_MALLOC_NODE_SIZE);
-            return ((uint8_t*)ptr) + RIPPLE_MALLOC_NODE_SIZE;
+            memset(ptr, '\0', MALLOC_NODE_SIZE);
+            memcpy(ptr, &new_node, MALLOC_NODE_SIZE);
+            return ((uint8_t*)ptr) + MALLOC_NODE_SIZE;
         }
     }
 
-    addr = realloc(ptr, size + RIPPLE_MALLOC_NODE_SIZE);
+    addr = realloc(ptr, size + MALLOC_NODE_SIZE);
     if (addr == NULL)
     {
         elog(RLOG_ERROR, "%s:%d out of memory, %s", file, line, strerror(errno));
     }
-    memcpy(addr, &new_node, RIPPLE_MALLOC_NODE_SIZE);
+    memcpy(addr, &new_node, MALLOC_NODE_SIZE);
 
-    node = (ripple_malloc_node*)addr;
+    node = (malloc_node*)addr;
     if (ptr == NULL)
     {
         if (NULL == m_nodes.head) 
@@ -244,8 +244,8 @@ void* ripple_realloc(char* file, uint32 line, void* ptr, size_t size, bool local
         }
     }
     
-    ripple_thread_unlock(&m_nodes.listlock);
-    addr = ((uint8_t*)addr) + RIPPLE_MALLOC_NODE_SIZE;
+    osal_thread_unlock(&m_nodes.listlock);
+    addr = ((uint8_t*)addr) + MALLOC_NODE_SIZE;
 #else
     addr = realloc(ptr, size);
 #endif
@@ -260,19 +260,19 @@ void* ripple_realloc(char* file, uint32 line, void* ptr, size_t size, bool local
  * 备注:
  *  在自写逻辑中发现 ptr 无对应的内存时，那么表名内存已经被释放,此时则为 doublefree，报错即可
  */
-void ripple_free(void* ptr)
+void rfree(void* ptr)
 {
-#ifdef RIPPLE_MEMCHECK
-    ripple_malloc_node* node = NULL;
-    node = (ripple_malloc_node*)(((uint8_t*)ptr) - RIPPLE_MALLOC_NODE_SIZE);
-    if(node->magic != RIPPLE_MALLOC_MAGIC)
+#ifdef MEMCHECK
+    malloc_node* node = NULL;
+    node = (malloc_node*)(((uint8_t*)ptr) - MALLOC_NODE_SIZE);
+    if(node->magic != MALLOC_MAGIC)
     {
         elog(RLOG_ERROR,"doublefree");
         return;
     }
 
     /* 添加到链表中 */
-    ripple_thread_lock(&m_nodes.listlock);
+    osal_thread_lock(&m_nodes.listlock);
     if (node->prev)
     {
         node->prev->next = node->next;
@@ -290,22 +290,22 @@ void ripple_free(void* ptr)
     {
         m_nodes.tail = node->prev;
     }
-    ripple_thread_unlock(&m_nodes.listlock);
+    osal_thread_unlock(&m_nodes.listlock);
 
-    ptr = ((uint8_t*)ptr) - RIPPLE_MALLOC_NODE_SIZE;
+    ptr = ((uint8_t*)ptr) - MALLOC_NODE_SIZE;
 #endif
     free(ptr);
 }
 
-void ripple_mem_print(ripple_memprint_flag flag)
+void mem_print(memprint_flag flag)
 {
     uint64 totalsize = 0;
-    ripple_malloc_node* cur = m_nodes.head;
-    ripple_thread_lock(&m_nodes.listlock);
+    malloc_node* cur = m_nodes.head;
+    osal_thread_lock(&m_nodes.listlock);
     while (cur) {
-        if ((flag == RIPPLE_MEMPRINT_GLOBAL && cur->flag == 0) ||
-            (flag == RIPPLE_MEMPRINT_LOCAL && cur->flag == 1) ||
-            (flag == RIPPLE_MEMPRINT_ALL))
+        if ((flag == MEMPRINT_GLOBAL && cur->flag == 0) ||
+            (flag == MEMPRINT_LOCAL && cur->flag == 1) ||
+            (flag == MEMPRINT_ALL))
             {
                 totalsize += cur->size;
                 elog(RLOG_INFO,"Allocated at %s:%u, size %lu, address %p, number %u\n",
@@ -314,7 +314,7 @@ void ripple_mem_print(ripple_memprint_flag flag)
 
         cur = cur->next;
     }
-    ripple_thread_unlock(&m_nodes.listlock);
+    osal_thread_unlock(&m_nodes.listlock);
     elog(RLOG_INFO, "ripple C Port Use Memory Size:%lu", totalsize);
 }
 
@@ -325,7 +325,7 @@ void ripple_mem_print(ripple_memprint_flag flag)
  *  line            分配空间所在的文件内的行号
  *  s               要拷贝的字符串
  */
-char * ripple_strdup(char* file, uint32 line, const char* s)
+char * _rstrdup(char* file, uint32 line, const char* s)
 {
     char* str = NULL;
     uint32 len = 0;
@@ -334,8 +334,8 @@ char * ripple_strdup(char* file, uint32 line, const char* s)
         return NULL;
     }
     len = strlen(s) + 1;
-#ifdef RIPPLE_MEMCHECK
-    str = (char*)ripple_malloc(file, line, len, true);
+#ifdef MEMCHECK
+    str = (char*)malloc(file, line, len, true);
     rmemset0(str, 0, '\0', len);
     rmemcpy0(str, 0, s, len - 1);
 #else
@@ -358,7 +358,7 @@ char * ripple_strdup(char* file, uint32 line, const char* s)
  *  s               要拷贝的字符串
  *  n               要拷贝的长度
  */
-char * ripple_strndup(char* file, uint32 line, const char* s, uint32 n)
+char * _rstrndup(char* file, uint32 line, const char* s, uint32 n)
 {
     char* str = NULL;
     uint32 len = 0;
@@ -367,8 +367,8 @@ char * ripple_strndup(char* file, uint32 line, const char* s, uint32 n)
         return NULL;
     }
     len = strnlen(s, n);
-#ifdef RIPPLE_MEMCHECK
-    str = ripple_malloc(file, line, len + 1, true);
+#ifdef MEMCHECK
+    str = malloc(file, line, len + 1, true);
     rmemcpy0(str, 0, s, len);
     str[len] = '\0';
 #else

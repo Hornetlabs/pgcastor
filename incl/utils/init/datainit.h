@@ -1,11 +1,11 @@
-#ifndef _RIPPLE_DATAINIT_H
-#define _RIPPLE_DATAINIT_H
+#ifndef _DATAINIT_H
+#define _DATAINIT_H
 
-bool ripple_datainit_init(char* in_wdata);
+bool datainit_init(char* in_wdata);
 
-void ripple_datainit_init_jobnamesubdir(char* dir_path);
+void datainit_init_jobnamesubdir(char* dir_path);
 
 /* 临时文件清理 */
-void ripple_datainit_clear(const char *dir_path);
+void datainit_clear(const char *dir_path);
 
 #endif

@@ -12,7 +12,7 @@
  *
  *-------------------------------------------------------------------------
  */
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/list/list_func.h"
 
 #define LIST_MEM_ALLOC rmalloc0

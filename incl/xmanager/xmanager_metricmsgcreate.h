@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_XMANAGER_METRICMSGCREATE_H_
-#define _RIPPLE_XMANAGER_METRICMSGCREATE_H_
+#ifndef _XMANAGER_METRICMSGCREATE_H_
+#define _XMANAGER_METRICMSGCREATE_H_
 
 /*
  * 处理 create 命令
@@ -7,8 +7,8 @@
  *  2、校验 job 是否已经存在
  *  3、将 job 加入到 xmetric->metricnodes 中
 */
-extern bool ripple_xmanager_metricmsg_parsecreate(ripple_xmanager_metric* xmetric,
-                                                  ripple_netpoolentry* npoolentry,
-                                                  ripple_netpacket* npacket);
+extern bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
+                                                  netpoolentry* npoolentry,
+                                                  netpacket* npacket);
 
 #endif

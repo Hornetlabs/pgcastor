@@ -1,27 +1,27 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
 #include "utils/hash/hash_search.h"
 #include "utils/string/stringinfo.h"
-#include "queue/ripple_queue.h"
-#include "task/ripple_task_slot.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "refresh/ripple_refresh_table_sharding.h"
-#include "refresh/ripple_refresh_table_syncstats.h"
+#include "queue/queue.h"
+#include "task/task_slot.h"
+#include "refresh/refresh_tables.h"
+#include "refresh/refresh_table_sharding.h"
+#include "refresh/refresh_table_syncstats.h"
 
-ripple_refresh_table_syncstat* ripple_refresh_table_syncstat_init(void)
+refresh_table_syncstat* refresh_table_syncstat_init(void)
 {
-    ripple_refresh_table_syncstat* tablesyncstat = NULL;
+    refresh_table_syncstat* tablesyncstat = NULL;
 
-    tablesyncstat = (ripple_refresh_table_syncstat*)rmalloc0(sizeof(ripple_refresh_table_syncstat));
+    tablesyncstat = (refresh_table_syncstat*)rmalloc0(sizeof(refresh_table_syncstat));
     if (NULL == tablesyncstat)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(tablesyncstat, 0, '\0', sizeof(ripple_refresh_table_syncstat));
+    rmemset0(tablesyncstat, 0, '\0', sizeof(refresh_table_syncstat));
     tablesyncstat->cnt = 0;
     tablesyncstat->completecnt = 0;
-    tablesyncstat->tablestat = RIPPLE_REFRESH_TABLE_STAT_WAIT;
+    tablesyncstat->tablestat = REFRESH_TABLE_STAT_WAIT;
     tablesyncstat->oid = InvalidOid;
     tablesyncstat->schema = NULL;
     tablesyncstat->table = NULL;
@@ -32,7 +32,7 @@ ripple_refresh_table_syncstat* ripple_refresh_table_syncstat_init(void)
     return tablesyncstat;
 }
 
-void ripple_refresh_table_syncstat_schema_set(char* schema, ripple_refresh_table_syncstat* syncstat)
+void refresh_table_syncstat_schema_set(char* schema, refresh_table_syncstat* syncstat)
 {
     if (NULL == schema || NULL == syncstat)
     {
@@ -45,7 +45,7 @@ void ripple_refresh_table_syncstat_schema_set(char* schema, ripple_refresh_table
 
 }
 
-void ripple_refresh_table_syncstat_table_set(char* table, ripple_refresh_table_syncstat* syncstat)
+void refresh_table_syncstat_table_set(char* table, refresh_table_syncstat* syncstat)
 {
     if (NULL == table || NULL == syncstat)
     {
@@ -57,7 +57,7 @@ void ripple_refresh_table_syncstat_table_set(char* table, ripple_refresh_table_s
     return;
 }
 
-void ripple_refresh_table_syncstat_oid_set(Oid oid, ripple_refresh_table_syncstat* syncstat)
+void refresh_table_syncstat_oid_set(Oid oid, refresh_table_syncstat* syncstat)
 {
     if (NULL == syncstat)
     {
@@ -69,7 +69,7 @@ void ripple_refresh_table_syncstat_oid_set(Oid oid, ripple_refresh_table_syncsta
     return;
 }
 
-void ripple_refreshtablesyncstat_cnt_set(int cnt, ripple_refresh_table_syncstat* syncstat)
+void refreshtablesyncstat_cnt_set(int cnt, refresh_table_syncstat* syncstat)
 {
     if (NULL == syncstat)
     {
@@ -90,36 +90,36 @@ void ripple_refreshtablesyncstat_cnt_set(int cnt, ripple_refresh_table_syncstat*
 }
 
 /* 遍历refresh目录根据tablesyncstats, 生成queue */
-bool ripple_refresh_table_syncstat_genqueue(ripple_refresh_table_syncstats* tablesyncstats, void* queue, char* refreshdir)
+bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, void* queue_ptr, char* refreshdir)
 {
     DIR* compdir = NULL;
     struct dirent *entry = NULL;
     StringInfo  path = NULL;
-    ripple_refresh_table_syncstat* tables = NULL;
+    refresh_table_syncstat* tables = NULL;
 
     path = makeStringInfo();
 
     /* 遍历complete目录生成任务 */
     for (tables = tablesyncstats->tablesyncall; tables != NULL; tables = tables->next)
     {
-        ripple_refresh_table_syncstat *temp_table_state = NULL;
+        refresh_table_syncstat *temp_table_state = NULL;
 
         resetStringInfo(path);
 
         appendStringInfo(path, "%s/%s/%s_%s/%s", refreshdir,
-                                                 RIPPLE_REFRESH_REFRESH,
+                                                 REFRESH_REFRESH,
                                                  tables->schema,
                                                  tables->table,
-                                                 RIPPLE_REFRESH_COMPLETE);
-        compdir = OpenDir(path->data);
+                                                 REFRESH_COMPLETE);
+        compdir = osal_open_dir(path->data);
         if(NULL == compdir)
         {
             continue;
         }
 
-        while (NULL != (entry = ReadDir(compdir, path->data)))
+        while (NULL != (entry = osal_read_dir(compdir, path->data)))
         {
-            ripple_refresh_table_sharding *table_shard = NULL;
+            refresh_table_sharding *table_shard = NULL;
 
             if (0 == strcmp(".", entry->d_name)
             || 0 == strcmp("..", entry->d_name))
@@ -127,43 +127,43 @@ bool ripple_refresh_table_syncstat_genqueue(ripple_refresh_table_syncstats* tabl
                 continue;
             }
 
-            table_shard = ripple_refresh_table_sharding_init();
+            table_shard = refresh_table_sharding_init();
 
             table_shard->sharding_condition = NULL;
 
-            ripple_refresh_table_sharding_set_schema(table_shard, tables->schema);
-            ripple_refresh_table_sharding_set_table(table_shard, tables->table);
+            refresh_table_sharding_set_schema(table_shard, tables->schema);
+            refresh_table_sharding_set_table(table_shard, tables->table);
 
-            ripple_refresh_table_sharding_get_info_from_filename(entry->d_name, table_shard);
+            refresh_table_sharding_get_info_from_filename(entry->d_name, table_shard);
 
-            if (ripple_refresh_table_check_in_syncing(tablesyncstats, table_shard, &temp_table_state))
+            if (refresh_table_check_in_syncing(tablesyncstats, table_shard, &temp_table_state))
             {
                 /* 释放 */
-                ripple_refresh_table_sharding_free(table_shard);
+                refresh_table_sharding_free(table_shard);
 
                 continue;
             }
 
             if (NULL == temp_table_state->stat)
             {
-                ripple_refreshtablesyncstat_cnt_set(table_shard->shardings, temp_table_state);
+                refreshtablesyncstat_cnt_set(table_shard->shardings, temp_table_state);
             }
 
             if (0 == table_shard->shardings 
-                && RIPPLE_REFRESH_TABLE_STAT_WAIT != temp_table_state->tablestat)
+                && REFRESH_TABLE_STAT_WAIT != temp_table_state->tablestat)
             {
                 /* 释放 */
-                ripple_refresh_table_sharding_free(table_shard);
+                refresh_table_sharding_free(table_shard);
                 continue;
             }
 
-            temp_table_state->tablestat = RIPPLE_REFRESH_TABLE_STAT_SYNCING;
+            temp_table_state->tablestat = REFRESH_TABLE_STAT_SYNCING;
 
             if (temp_table_state->stat)
             {
-                if (temp_table_state->stat[table_shard->sharding_no - 1] == RIPPLE_REFRESH_TABLE_SYNCS_SHARD_STAT_INIT)
+                if (temp_table_state->stat[table_shard->sharding_no - 1] == REFRESH_TABLE_SYNCS_SHARD_STAT_INIT)
                 {
-                    temp_table_state->stat[table_shard->sharding_no - 1] = RIPPLE_REFRESH_TABLE_SYNCS_SHARD_STAT_SYNCING;
+                    temp_table_state->stat[table_shard->sharding_no - 1] = REFRESH_TABLE_SYNCS_SHARD_STAT_SYNCING;
                 }
             }
 
@@ -180,10 +180,10 @@ bool ripple_refresh_table_syncstat_genqueue(ripple_refresh_table_syncstats* tabl
             }
 
             /* 添加到缓存中 */
-            ripple_queue_put((ripple_queue*)queue, (void *)table_shard);
+            queue_put((queue*)queue_ptr, (void *)table_shard);
         }
 
-        FreeDir(compdir);
+        osal_free_dir(compdir);
 
     }
     /* 清理工作 */
@@ -192,10 +192,10 @@ bool ripple_refresh_table_syncstat_genqueue(ripple_refresh_table_syncstats* tabl
     return true;
 }
 
-void ripple_refresh_table_syncstat_free(ripple_refresh_table_syncstat* tablesyncstat)
+void refresh_table_syncstat_free(refresh_table_syncstat* tablesyncstat)
 {
-    ripple_refresh_table_syncstat *next = NULL;
-    ripple_refresh_table_syncstat *current = tablesyncstat;
+    refresh_table_syncstat *next = NULL;
+    refresh_table_syncstat *current = tablesyncstat;
 
     if ( NULL == tablesyncstat)
     {

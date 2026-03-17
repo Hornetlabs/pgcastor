@@ -1,40 +1,40 @@
-#ifndef _RIPPLE_ONLINEREFRESH_INTEGRATEDATASET_H
-#define _RIPPLE_ONLINEREFRESH_INTEGRATEDATASET_H
+#ifndef _ONLINEREFRESH_INTEGRATEDATASET_H
+#define _ONLINEREFRESH_INTEGRATEDATASET_H
 
 
-typedef struct RIPPLE_ONLINEREFRESH_INTEGRATEDATASETNODE
+typedef struct ONLINEREFRESH_INTEGRATEDATASETNODE
 {
-    ripple_uuid_t                   onlinerefreshno;
+    uuid_t                   onlinerefreshno;
     FullTransactionId               txid;
-    ripple_refresh_tables*          refreshtables;          /* 待同步的表 */
-}ripple_onlinerefresh_integratedatasetnode;
+    refresh_tables*          refreshtables;          /* 待同步的表 */
+}onlinerefresh_integratedatasetnode;
 
-typedef struct RIPPLE_ONLINEREFRESH_INTEGRATEDATASET
+typedef struct ONLINEREFRESH_INTEGRATEDATASET
 {
-    dlist*                                          onlinerefresh;      /* 内容为 ripple_onlinerefresh_integratedatasetnode */
-}ripple_onlinerefresh_integratedataset;
+    dlist*                                          onlinerefresh;      /* 内容为 onlinerefresh_integratedatasetnode */
+}onlinerefresh_integratedataset;
 
-ripple_onlinerefresh_integratedatasetnode* ripple_onlinerefresh_integratedatasetnode_init(void);
+onlinerefresh_integratedatasetnode* onlinerefresh_integratedatasetnode_init(void);
 
-void ripple_onlinerefresh_integratedatasetnode_no_set(ripple_onlinerefresh_integratedatasetnode* onlinerefreshnode, void* no);
+void onlinerefresh_integratedatasetnode_no_set(onlinerefresh_integratedatasetnode* onlinerefreshnode, void* no);
 
-void ripple_onlinerefresh_integratedatasetnode_txid_set(ripple_onlinerefresh_integratedatasetnode* onlinerefreshnode, FullTransactionId txid);
+void onlinerefresh_integratedatasetnode_txid_set(onlinerefresh_integratedatasetnode* onlinerefreshnode, FullTransactionId txid);
 
-void ripple_onlinerefresh_integratedatasetnode_refreshtables_set(ripple_onlinerefresh_integratedatasetnode* onlinerefreshnode, ripple_refresh_tables* tables);
+void onlinerefresh_integratedatasetnode_refreshtables_set(onlinerefresh_integratedatasetnode* onlinerefreshnode, refresh_tables* tables);
 
-ripple_onlinerefresh_integratedataset* ripple_onlinerefresh_integratedataset_init(void);
+onlinerefresh_integratedataset* onlinerefresh_integratedataset_init(void);
 
-bool ripple_onlinerefresh_integratedataset_add(ripple_onlinerefresh_integratedataset* dataset, void* node);
+bool onlinerefresh_integratedataset_add(onlinerefresh_integratedataset* dataset, void* node);
 
 /* 复制onlinerefresh过滤集 */
-ripple_onlinerefresh_integratedataset* ripple_onlinerefresh_integratedataset_copy(ripple_onlinerefresh_integratedataset* dataset);
+onlinerefresh_integratedataset* onlinerefresh_integratedataset_copy(onlinerefresh_integratedataset* dataset);
 
-ripple_onlinerefresh_integratedatasetnode* ripple_onlinerefresh_integratedataset_number_get(ripple_onlinerefresh_integratedataset* dataset, void* no);
+onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_number_get(onlinerefresh_integratedataset* dataset, void* no);
 
-ripple_onlinerefresh_integratedatasetnode* ripple_onlinerefresh_integratedataset_txid_get(ripple_onlinerefresh_integratedataset* dataset, FullTransactionId txid);
+onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_txid_get(onlinerefresh_integratedataset* dataset, FullTransactionId txid);
 
-void ripple_onlinerefresh_integratedataset_delete(ripple_onlinerefresh_integratedataset* dataset, void* no);
+void onlinerefresh_integratedataset_delete(onlinerefresh_integratedataset* dataset, void* no);
 
-void ripple_onlinerefresh_integratedataset_free(void* data);
+void onlinerefresh_integratedataset_free(void* data);
 
 #endif

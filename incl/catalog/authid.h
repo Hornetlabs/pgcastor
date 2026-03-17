@@ -1,22 +1,22 @@
-#ifndef _RIPPLE_AUTHID_H
-#define _RIPPLE_AUTHID_H
+#ifndef _AUTHID_H
+#define _AUTHID_H
 
-void ripple_authid_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts);
+void authid_getfromdb(PGconn *conn, cache_sysdicts* sysdicts);
 
-void ripple_authiddata_write(List* authid_list, uint64 *offset, ripple_sysdict_header_array* array);
+void authiddata_write(List* authid_list, uint64 *offset, sysdict_header_array* array);
 
-HTAB* ripple_authidcache_load(ripple_sysdict_header_array* array);
+HTAB* authidcache_load(sysdict_header_array* array);
 
-void ripple_authidcache_write(HTAB* authidcache, uint64 *offset, ripple_sysdict_header_array* array);
+void authidcache_write(HTAB* authidcache, uint64 *offset, sysdict_header_array* array);
 
 
 /* colvalue2authid */
-ripple_catalogdata* ripple_authid_colvalue2authid(void* in_colvalue);
+catalogdata* authid_colvalue2authid(void* in_colvalue);
 
 /* catalogdata2transcache */
-void ripple_authid_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);
+void authid_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata);
 
 /* 释放 */
-void ripple_authid_catalogdatafree(ripple_catalogdata* catalogdata);
+void authid_catalogdatafree(catalogdata* catalogdata);
 
 #endif

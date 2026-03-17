@@ -1,9 +1,9 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/ipc/ipc.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
-#include "utils/path/ripple_path.h"
-#include "command/ripple_cmd.h"
+#include "utils/path/path.h"
+#include "command/cmd.h"
 
 static void help()
 {
@@ -15,7 +15,7 @@ static void help()
 
 int main(int argc, char** argv)
 {
-    ripple_optype optype            = RIPPLE_OPTYPE_NOP;
+    optype optype            = OPTYPE_NOP;
     const char* loglevel            = NULL;
     char* profilepath               = NULL;
 
@@ -43,27 +43,27 @@ int main(int argc, char** argv)
         if (strlen(argv[3]) == strlen("init")
             && 0 == strcasecmp(argv[3], "init"))
         {
-            optype = RIPPLE_OPTYPE_INIT;
+            optype = OPTYPE_INIT;
         }
         else if (strlen(argv[3]) == strlen("start")
                  && 0 == strcasecmp(argv[3], "start"))
         {
-            optype = RIPPLE_OPTYPE_START;
+            optype = OPTYPE_START;
         }
         else if (strlen(argv[3]) == strlen("stop")
                  && 0 == strcasecmp(argv[3], "stop"))
         {
-            optype = RIPPLE_OPTYPE_STOP;
+            optype = OPTYPE_STOP;
         }
         else if (strlen(argv[3]) == strlen("status")
                  && 0 == strcasecmp(argv[3], "status"))
         {
-            optype = RIPPLE_OPTYPE_STATUS;
+            optype = OPTYPE_STATUS;
         }
         else if (strlen(argv[3]) == strlen("reload")
                  && 0 == strcasecmp(argv[3], "reload"))
         {
-            optype = RIPPLE_OPTYPE_RELOAD;
+            optype = OPTYPE_RELOAD;
         }
         else
         {
@@ -77,10 +77,10 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    g_proctype = RIPPLE_PROC_TYPE_XMANAGER;
+    g_proctype = PROC_TYPE_XMANAGER;
 
     /* 保存配置文件路径绝对路径 */
-    profilepath = ripple_make_absolute_path(argv[2]);
+    profilepath = osal_make_absolute_path(argv[2]);
     rmemcpy1(g_profilepath, 0, profilepath, strlen(profilepath));
     rfree(profilepath);
 
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
     guc_debug();
 
     /* 设置 日志级别 */
-    loglevel = guc_getConfigOption(RIPPLE_CFG_KEY_LOG_LEVEL);
+    loglevel = guc_getConfigOption(CFG_KEY_LOG_LEVEL);
     if (NULL == loglevel)
     {
         elog(RLOG_WARNING, "unrecognized configuration parameter:%s", loglevel);
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
     elog_seteloglevel(loglevel);
 
     /* 执行 */
-    ripple_cmd(optype, NULL);
+    cmd(optype, NULL);
 
     return 0;
 }

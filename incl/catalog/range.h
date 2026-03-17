@@ -1,20 +1,20 @@
-#ifndef _RIPPLE_RANGE_H
-#define _RIPPLE_RANGE_H
+#ifndef _RANGE_H
+#define _RANGE_H
 
-void ripple_range_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts);
+void range_getfromdb(PGconn *conn, cache_sysdicts* sysdicts);
 
-void ripple_rangedata_write(List* ripple_range, uint64 *offset, ripple_sysdict_header_array* array);
+void rangedata_write(List* range, uint64 *offset, sysdict_header_array* array);
 
-HTAB* ripple_rangecache_load(ripple_sysdict_header_array* array);
+HTAB* rangecache_load(sysdict_header_array* array);
 
-void ripple_rangecache_write(HTAB* rangecache, uint64 *offset, ripple_sysdict_header_array* array);
+void rangecache_write(HTAB* rangecache, uint64 *offset, sysdict_header_array* array);
 
 /* colvalue2range */
-ripple_catalogdata* ripple_range_colvalue2range(void* in_colvalue);
+catalogdata* range_colvalue2range(void* in_colvalue);
 
 /* catalogdata2transcache */
-void ripple_range_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);
+void range_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata);
 
-void ripple_range_catalogdatafree(ripple_catalogdata* catalogdata);
+void range_catalogdatafree(catalogdata* catalogdata);
 
 #endif

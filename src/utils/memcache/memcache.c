@@ -1,4 +1,4 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
 #include "utils/dlist/dlist.h"
 #include "utils/memcache/memcache.h"
@@ -30,7 +30,7 @@ static void memcache_vnumber2pnode_freefordlist(void* args)
     vn2pnode = (memcache_vnumber2pnode*)args;
     if(-1 != vn2pnode->fd)
     {
-        FileClose(vn2pnode->fd);
+        osal_file_close(vn2pnode->fd);
     }
     rfree(vn2pnode);
 }
@@ -197,7 +197,7 @@ memcache* memcache_init(char* name, int csize, int blksize)
 
     /* 创建文件夹 */
     snprintf(mdir, MEMCACHE_DIRLEN, "%s/%s", MEMCACHE_DIR, name);
-    MakeDir(mdir);
+    osal_make_dir(mdir);
     return mcache;
 }
 
@@ -258,7 +258,7 @@ static bool memcache_vnumber2pnodeswap(memcache* mcache, memcache_vnumber2pnode*
         snprintf(vfile, MEMCACHE_DIRLEN, "%s/%s/%016lX", MEMCACHE_DIR, mcache->name, vn2pnode->vno);
 
         /* 打开文件 */
-        vn2pnode->fd = BasicOpenFile(vfile, O_RDWR | O_CREAT | RIPPLE_BINARY);
+        vn2pnode->fd = osal_basic_open_file(vfile, O_RDWR | O_CREAT | BINARY);
         if(-1 == vn2pnode->fd)
         {
             elog(RLOG_WARNING, "open file %s error, %s", vfile, strerror(errno));
@@ -266,7 +266,7 @@ static bool memcache_vnumber2pnodeswap(memcache* mcache, memcache_vnumber2pnode*
         }
     }
 
-    if(mcache->blksize != FilePWrite(vn2pnode->fd, (char*)blk, mcache->blksize, 0))
+    if(mcache->blksize != osal_file_pwrite(vn2pnode->fd, (char*)blk, mcache->blksize, 0))
     {
         elog(RLOG_WARNING, "pwrite file %s/%s/%016lX error, %s",
                             MEMCACHE_DIR,
@@ -280,7 +280,7 @@ static bool memcache_vnumber2pnodeswap(memcache* mcache, memcache_vnumber2pnode*
     vn2pnode->pno = 0;
     vn2pnode->flag = MEMCACHE_VNUMBER2PNODE_FLAG_OUT;
 
-    FileClose(vn2pnode->fd);
+    osal_file_close(vn2pnode->fd);
     vn2pnode->fd = -1;
     return true;
 }
@@ -295,7 +295,7 @@ static bool memcache_vnumber2pnodeload(memcache* mcache, memcache_vnumber2pnode*
         snprintf(vfile, MEMCACHE_DIRLEN, "%s/%s/%016lX", MEMCACHE_DIR, mcache->name, vn2pnode->vno);
 
         /* 打开文件 */
-        vn2pnode->fd = BasicOpenFile(vfile, O_RDWR | RIPPLE_BINARY);
+        vn2pnode->fd = osal_basic_open_file(vfile, O_RDWR | BINARY);
         if(-1 == vn2pnode->fd)
         {
             elog(RLOG_WARNING, "open file %s error, %s", vfile, strerror(errno));
@@ -303,7 +303,7 @@ static bool memcache_vnumber2pnodeload(memcache* mcache, memcache_vnumber2pnode*
         }
     }
 
-    if(mcache->blksize != FilePRead(vn2pnode->fd, (char*)blk, mcache->blksize, 0))
+    if(mcache->blksize != osal_file_pread(vn2pnode->fd, (char*)blk, mcache->blksize, 0))
     {
         elog(RLOG_WARNING, "pread file %s/%s/%016lX error, %s",
                             MEMCACHE_DIR,
@@ -313,7 +313,7 @@ static bool memcache_vnumber2pnodeload(memcache* mcache, memcache_vnumber2pnode*
         return false;
     }
 
-    FileClose(vn2pnode->fd);
+    osal_file_close(vn2pnode->fd);
     vn2pnode->fd = -1;
     return true;
 }
@@ -560,7 +560,7 @@ bool memcache_getpagebyvno(memcache* mcache, uint64 vno, uint8_t** pdata)
         }
 
         /* 关闭描述符 */
-        FileClose(vn2pnode->fd);
+        osal_file_close(vn2pnode->fd);
         vn2pnode->fd = -1;
     }
 
@@ -680,7 +680,7 @@ memcache_putvnode_done:
     if(true == vn2pnode->hasfile)
     {
         snprintf(vfile, MEMCACHE_DIRLEN, "%s/%s/%016lX", MEMCACHE_DIR, mcache->name, vn2pnode->vno);
-        durable_unlink(vfile, RLOG_DEBUG);
+        osal_durable_unlink(vfile, RLOG_DEBUG);
     }
 
     /* 清理 vnode 节点 */
@@ -756,7 +756,7 @@ void memcache_free(memcache* mcache)
 
     /* 创建文件夹 */
     snprintf(mdir, MEMCACHE_DIRLEN, "%s/%s", MEMCACHE_DIR, mcache->name);
-    RemoveDir(mdir);
+    osal_remove_dir(mdir);
 
     rfree(mcache);
 }

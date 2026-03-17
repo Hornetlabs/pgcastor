@@ -1,4 +1,4 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/guc/guc_tables.h"
 #include "port/file/fd.h"
 #include "common/xk_pg_parser_define.h"
@@ -20,12 +20,12 @@ int             g_max_page_per_refreshsharding = 1000;
 
 /* 监听ip地址 */
 /*---------------------capture 配置项 begin------------------------*/
-static ripple_capture_cfg              g_capturecfg = { 0 };
+static capture_cfg              g_capturecfg = { 0 };
 
 static struct config_int ConfigureNamesIntCapture[] =
 {
     {
-        {RIPPLE_CFG_KEY_TRAIL_MAX_SIZE, PGC_INTERNAL,
+        {CFG_KEY_TRAIL_MAX_SIZE, PGC_INTERNAL,
             gettext_noop("trail file max size, unit MB"),
             NULL,
         },
@@ -34,7 +34,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_CAPTURE_BUFFER, PGC_INTERNAL,
+        {CFG_KEY_CAPTURE_BUFFER, PGC_INTERNAL,
             gettext_noop("trail file max size, unit MB"),
             NULL,
         },
@@ -43,7 +43,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_COMPATIBILITY, PGC_INTERNAL,
+        {CFG_KEY_COMPATIBILITY, PGC_INTERNAL,
             gettext_noop("compatibility version"),
             NULL,
         },
@@ -52,7 +52,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_PORT, PGC_INTERNAL,
+        {CFG_KEY_PORT, PGC_INTERNAL,
             gettext_noop("target host listen port"),
             NULL
         },
@@ -61,7 +61,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_XMANAGER_PORT, PGC_INTERNAL,
+        {CFG_KEY_XMANAGER_PORT, PGC_INTERNAL,
             gettext_noop("xmanager listen port"),
             NULL
         },
@@ -70,7 +70,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVE, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVE, PGC_INTERNAL,
             gettext_noop("tcp keepalive, enable 1, disable 0"),
             NULL
         },
@@ -79,7 +79,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_USER_TIMEOUT, PGC_INTERNAL,
+        {CFG_KEY_TCP_USER_TIMEOUT, PGC_INTERNAL,
             gettext_noop("tcp user timeout"),
             NULL
         },
@@ -88,7 +88,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVES_IDLE, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVES_IDLE, PGC_INTERNAL,
             gettext_noop("tcp keepalives idle"),
             NULL
         },
@@ -97,7 +97,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVES_INTERVAL, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVES_INTERVAL, PGC_INTERNAL,
             gettext_noop("tcp keepalives interval"),
             NULL
         },
@@ -106,7 +106,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVES_COUNT, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVES_COUNT, PGC_INTERNAL,
             gettext_noop("tcp keepalives count"),
             NULL
         },
@@ -115,7 +115,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_GCTIME, PGC_INTERNAL,
+        {CFG_KEY_GCTIME, PGC_INTERNAL,
             gettext_noop("memory reclamation time"),
             NULL
         },
@@ -124,7 +124,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_MAX_WORK_PER_REFRESH, PGC_INTERNAL,
+        {CFG_KEY_MAX_WORK_PER_REFRESH, PGC_INTERNAL,
             gettext_noop("max refresh work num"),
             NULL
         },
@@ -133,7 +133,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_MAX_PAGE_PER_REFRESHSHARDING, PGC_INTERNAL,
+        {CFG_KEY_MAX_PAGE_PER_REFRESHSHARDING, PGC_INTERNAL,
             gettext_noop("shard threshold"),
             NULL
         },
@@ -142,7 +142,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_REFRESHSTRAGETY, PGC_INTERNAL,
+        {CFG_KEY_REFRESHSTRAGETY, PGC_INTERNAL,
             gettext_noop("Stock data sync strategy"),
             NULL
         },
@@ -151,7 +151,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_ENABLE_REPLICA_IDENTITY, PGC_INTERNAL,
+        {CFG_KEY_ENABLE_REPLICA_IDENTITY, PGC_INTERNAL,
             gettext_noop("enable replica identity"),
             NULL
         },
@@ -160,7 +160,7 @@ static struct config_int ConfigureNamesIntCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_CAPTURE_WAL_DECRYPT, PGC_INTERNAL,
+        {CFG_KEY_CAPTURE_WAL_DECRYPT, PGC_INTERNAL,
             gettext_noop("wal need decrypt"),
             NULL
         },
@@ -177,7 +177,7 @@ static struct config_int ConfigureNamesIntCapture[] =
 static struct config_string ConfigureNamesStringCapture[] =
 {
     {
-        {RIPPLE_CFG_KEY_LOG_LEVEL, PGC_INTERNAL,
+        {CFG_KEY_LOG_LEVEL, PGC_INTERNAL,
             gettext_noop("log level, DEBUG INFO WARNING ERROR"),
             NULL
         },
@@ -186,7 +186,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_DATA, PGC_INTERNAL,
+        {CFG_KEY_DATA, PGC_INTERNAL,
             gettext_noop("work dir"),
             NULL
         },
@@ -195,7 +195,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_URL, PGC_INTERNAL,
+        {CFG_KEY_URL, PGC_INTERNAL,
             gettext_noop("database connect string"),
             NULL
         },
@@ -204,7 +204,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_DDL, PGC_INTERNAL,
+        {CFG_KEY_DDL, PGC_INTERNAL,
             gettext_noop("log level, on parser /off unparser"),
             NULL
         },
@@ -213,7 +213,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_WAL_DIR, PGC_INTERNAL,
+        {CFG_KEY_WAL_DIR, PGC_INTERNAL,
             gettext_noop("wal log directory"),
             NULL
         },
@@ -222,7 +222,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_DBTYPE, PGC_INTERNAL,
+        {CFG_KEY_DBTYPE, PGC_INTERNAL,
             gettext_noop("Type of parsing database(postgres)"),
             NULL
         },
@@ -231,7 +231,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_DBVERION, PGC_INTERNAL,
+        {CFG_KEY_DBVERION, PGC_INTERNAL,
             gettext_noop("Type of parsing database version(127)"),
             NULL
         },
@@ -240,8 +240,8 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_CATALOGSCHEMA, PGC_INTERNAL,
-            gettext_noop("The schema where the ripple_sync_status table is located"),
+        {CFG_KEY_CATALOGSCHEMA, PGC_INTERNAL,
+            gettext_noop("The schema where the sync_status table is located"),
             NULL
         },
         &(g_capturecfg.xsynchschema),
@@ -249,7 +249,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_HOST, PGC_INTERNAL,
+        {CFG_KEY_HOST, PGC_INTERNAL,
             gettext_noop("target host"),
             NULL
         },
@@ -258,7 +258,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_COMPRESS_ALGORITHM, PGC_INTERNAL,
+        {CFG_KEY_COMPRESS_ALGORITHM, PGC_INTERNAL,
             gettext_noop("compress algorithm"),
             NULL
         },
@@ -267,7 +267,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_COMPRESS_LEVEL, PGC_INTERNAL,
+        {CFG_KEY_COMPRESS_LEVEL, PGC_INTERNAL,
             gettext_noop("compress level"),
             NULL
         },
@@ -276,7 +276,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_LOG_DIR, PGC_INTERNAL,
+        {CFG_KEY_LOG_DIR, PGC_INTERNAL,
             gettext_noop("log dir"),
             NULL
         },
@@ -285,7 +285,7 @@ static struct config_string ConfigureNamesStringCapture[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_JOBNAME, PGC_INTERNAL,
+        {CFG_KEY_JOBNAME, PGC_INTERNAL,
             gettext_noop("jobname"),
             NULL
         },
@@ -302,12 +302,12 @@ static struct config_string ConfigureNamesStringCapture[] =
 /*---------------------capture 配置项   end------------------------*/
 
 /*---------------------integrate 配置项 begin---------------------------*/
-static ripple_integrate_cfg                 g_integratecfg = { 0 };
+static integrate_cfg                 g_integratecfg = { 0 };
 
 static struct config_int ConfigureNamesIntIntegrate[] =
 {
     {
-        {RIPPLE_CFG_KEY_TRAIL_MAX_SIZE, PGC_INTERNAL,
+        {CFG_KEY_TRAIL_MAX_SIZE, PGC_INTERNAL,
             gettext_noop("trail file max size, unit MB"),
             NULL,
         },
@@ -316,7 +316,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_COMPATIBILITY, PGC_INTERNAL,
+        {CFG_KEY_COMPATIBILITY, PGC_INTERNAL,
             gettext_noop("compatibility version"),
             NULL,
         },
@@ -325,7 +325,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_MAX_WORK_PER_REFRESH, PGC_INTERNAL,
+        {CFG_KEY_MAX_WORK_PER_REFRESH, PGC_INTERNAL,
             gettext_noop("max refresh work num"),
             NULL
         },
@@ -334,7 +334,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_XMANAGER_PORT, PGC_INTERNAL,
+        {CFG_KEY_XMANAGER_PORT, PGC_INTERNAL,
             gettext_noop("xmanager listen port"),
             NULL
         },
@@ -343,7 +343,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVE, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVE, PGC_INTERNAL,
             gettext_noop("tcp keepalive, enable 1, disable 0"),
             NULL
         },
@@ -352,7 +352,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_USER_TIMEOUT, PGC_INTERNAL,
+        {CFG_KEY_TCP_USER_TIMEOUT, PGC_INTERNAL,
             gettext_noop("tcp user timeout"),
             NULL
         },
@@ -361,7 +361,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVES_IDLE, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVES_IDLE, PGC_INTERNAL,
             gettext_noop("tcp keepalives idle"),
             NULL
         },
@@ -370,7 +370,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVES_INTERVAL, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVES_INTERVAL, PGC_INTERNAL,
             gettext_noop("tcp keepalives interval"),
             NULL
         },
@@ -379,7 +379,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVES_COUNT, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVES_COUNT, PGC_INTERNAL,
             gettext_noop("tcp keepalives count"),
             NULL
         },
@@ -388,7 +388,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TRUNCATETABLE, PGC_INTERNAL,
+        {CFG_KEY_TRUNCATETABLE, PGC_INTERNAL,
             gettext_noop("truncate table"),
             NULL
         },
@@ -397,7 +397,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_GCTIME, PGC_INTERNAL,
+        {CFG_KEY_GCTIME, PGC_INTERNAL,
             gettext_noop("memory reclamation time"),
             NULL
         },
@@ -406,7 +406,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TXBUNDLESIZE, PGC_INTERNAL,
+        {CFG_KEY_TXBUNDLESIZE, PGC_INTERNAL,
             gettext_noop("txbundle size"),
             NULL
         },
@@ -415,7 +415,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_MERGETXN, PGC_INTERNAL,
+        {CFG_KEY_MERGETXN, PGC_INTERNAL,
             gettext_noop("merge txn"),
             NULL
         },
@@ -424,7 +424,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_INTEGRATE_BUFFER, PGC_INTERNAL,
+        {CFG_KEY_INTEGRATE_BUFFER, PGC_INTERNAL,
             gettext_noop("txn max size, unit MB"),
             NULL,
         },
@@ -442,7 +442,7 @@ static struct config_int ConfigureNamesIntIntegrate[] =
 static struct config_string ConfigureNamesStringIntegrate[] =
 {
     {
-        {RIPPLE_CFG_KEY_LOG_LEVEL, PGC_INTERNAL,
+        {CFG_KEY_LOG_LEVEL, PGC_INTERNAL,
             gettext_noop("log level, DEBUG INFO WARNING ERROR"),
             NULL
         },
@@ -451,7 +451,7 @@ static struct config_string ConfigureNamesStringIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_DATA, PGC_INTERNAL,
+        {CFG_KEY_DATA, PGC_INTERNAL,
             gettext_noop("work dir"),
             NULL
         },
@@ -460,7 +460,7 @@ static struct config_string ConfigureNamesStringIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_URL, PGC_INTERNAL,
+        {CFG_KEY_URL, PGC_INTERNAL,
             gettext_noop("database connect string"),
             NULL
         },
@@ -469,7 +469,7 @@ static struct config_string ConfigureNamesStringIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TRAIL_DIR, PGC_INTERNAL,
+        {CFG_KEY_TRAIL_DIR, PGC_INTERNAL,
             gettext_noop("trail directory"),
             NULL
         },
@@ -478,8 +478,8 @@ static struct config_string ConfigureNamesStringIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_CATALOGSCHEMA, PGC_INTERNAL,
-            gettext_noop("The schema where the ripple_sync_status table is located"),
+        {CFG_KEY_CATALOGSCHEMA, PGC_INTERNAL,
+            gettext_noop("The schema where the sync_status table is located"),
             NULL
         },
         &(g_integratecfg.xsynchschema),
@@ -487,7 +487,7 @@ static struct config_string ConfigureNamesStringIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_COMPRESS_ALGORITHM, PGC_INTERNAL,
+        {CFG_KEY_COMPRESS_ALGORITHM, PGC_INTERNAL,
             gettext_noop("compress algorithm"),
             NULL
         },
@@ -496,7 +496,7 @@ static struct config_string ConfigureNamesStringIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_COMPRESS_LEVEL, PGC_INTERNAL,
+        {CFG_KEY_COMPRESS_LEVEL, PGC_INTERNAL,
             gettext_noop("compress level"),
             NULL
         },
@@ -505,7 +505,7 @@ static struct config_string ConfigureNamesStringIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_LOG_DIR, PGC_INTERNAL,
+        {CFG_KEY_LOG_DIR, PGC_INTERNAL,
             gettext_noop("log dir"),
             NULL
         },
@@ -514,7 +514,7 @@ static struct config_string ConfigureNamesStringIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_JOBNAME, PGC_INTERNAL,
+        {CFG_KEY_JOBNAME, PGC_INTERNAL,
             gettext_noop("jobname"),
             NULL
         },
@@ -523,7 +523,7 @@ static struct config_string ConfigureNamesStringIntegrate[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_INTEGRATE_METHOD, PGC_INTERNAL,
+        {CFG_KEY_INTEGRATE_METHOD, PGC_INTERNAL,
             gettext_noop("method"),
             NULL
         },
@@ -543,12 +543,12 @@ static struct config_string ConfigureNamesStringIntegrate[] =
 /*---------------------receivelog 配置项 begin--------------------------*/
 
 
-static ripple_receivewal_cfg                m_receivewalcfg = { 0 };
+static receivewal_cfg                m_receivewalcfg = { 0 };
 
 static struct config_int ConfigureNamesIntReceivewal[] =
 {
     {
-        {RIPPLE_CFG_KEY_TIMELINE, PGC_INTERNAL,
+        {CFG_KEY_TIMELINE, PGC_INTERNAL,
             gettext_noop("start specified timeline"),
             NULL
         },
@@ -566,7 +566,7 @@ static struct config_int ConfigureNamesIntReceivewal[] =
 static struct config_string ConfigureNamesStringReceivewal[] =
 {
     {
-        {RIPPLE_CFG_KEY_LOG_LEVEL, PGC_INTERNAL,
+        {CFG_KEY_LOG_LEVEL, PGC_INTERNAL,
             gettext_noop("log level, DEBUG INFO WARNING ERROR"),
             NULL
         },
@@ -575,7 +575,7 @@ static struct config_string ConfigureNamesStringReceivewal[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_DATA, PGC_INTERNAL,
+        {CFG_KEY_DATA, PGC_INTERNAL,
             gettext_noop("work dir"),
             NULL
         },
@@ -584,7 +584,7 @@ static struct config_string ConfigureNamesStringReceivewal[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_JOBNAME, PGC_INTERNAL,
+        {CFG_KEY_JOBNAME, PGC_INTERNAL,
             gettext_noop("jobname"),
             NULL
         },
@@ -593,7 +593,7 @@ static struct config_string ConfigureNamesStringReceivewal[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_LOG_DIR, PGC_INTERNAL,
+        {CFG_KEY_LOG_DIR, PGC_INTERNAL,
             gettext_noop("log dir"),
             NULL
         },
@@ -602,7 +602,7 @@ static struct config_string ConfigureNamesStringReceivewal[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_PRIMARY_CONN_INFO, PGC_INTERNAL,
+        {CFG_KEY_PRIMARY_CONN_INFO, PGC_INTERNAL,
             gettext_noop("database server connect string"),
             NULL
         },
@@ -611,7 +611,7 @@ static struct config_string ConfigureNamesStringReceivewal[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_SLOT_NAME, PGC_INTERNAL,
+        {CFG_KEY_SLOT_NAME, PGC_INTERNAL,
             gettext_noop("physical replication use specified slot"),
             NULL
         },
@@ -620,7 +620,7 @@ static struct config_string ConfigureNamesStringReceivewal[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_STARTPOS, PGC_INTERNAL,
+        {CFG_KEY_STARTPOS, PGC_INTERNAL,
             gettext_noop("start replication replication lsn, XX/XXX"),
             NULL
         },
@@ -629,7 +629,7 @@ static struct config_string ConfigureNamesStringReceivewal[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_RESTORE_COMMAND, PGC_INTERNAL,
+        {CFG_KEY_RESTORE_COMMAND, PGC_INTERNAL,
             gettext_noop("After archiving at the source, use a command to retrieve it from the archive"),
             NULL
         },
@@ -647,12 +647,12 @@ static struct config_string ConfigureNamesStringReceivewal[] =
 
 /*---------------------xmanager 配置项 begin----------------------------*/
 
-static ripple_xmanager_cfg                m_xmanagercfg = { 0 };
+static xmanager_cfg                m_xmanagercfg = { 0 };
 
 static struct config_int ConfigureNamesIntXmanager[] =
 {
     {
-        {RIPPLE_CFG_KEY_PORT, PGC_INTERNAL,
+        {CFG_KEY_PORT, PGC_INTERNAL,
             gettext_noop("target host listen port"),
             NULL
         },
@@ -661,7 +661,7 @@ static struct config_int ConfigureNamesIntXmanager[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVE, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVE, PGC_INTERNAL,
             gettext_noop("tcp keepalive, enable 1, disable 0"),
             NULL
         },
@@ -670,7 +670,7 @@ static struct config_int ConfigureNamesIntXmanager[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_USER_TIMEOUT, PGC_INTERNAL,
+        {CFG_KEY_TCP_USER_TIMEOUT, PGC_INTERNAL,
             gettext_noop("tcp user timeout"),
             NULL
         },
@@ -679,7 +679,7 @@ static struct config_int ConfigureNamesIntXmanager[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVES_IDLE, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVES_IDLE, PGC_INTERNAL,
             gettext_noop("tcp keepalives idle"),
             NULL
         },
@@ -688,7 +688,7 @@ static struct config_int ConfigureNamesIntXmanager[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVES_INTERVAL, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVES_INTERVAL, PGC_INTERNAL,
             gettext_noop("tcp keepalives interval"),
             NULL
         },
@@ -697,7 +697,7 @@ static struct config_int ConfigureNamesIntXmanager[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_TCP_KEEPALIVES_COUNT, PGC_INTERNAL,
+        {CFG_KEY_TCP_KEEPALIVES_COUNT, PGC_INTERNAL,
             gettext_noop("tcp keepalives count"),
             NULL
         },
@@ -714,7 +714,7 @@ static struct config_int ConfigureNamesIntXmanager[] =
 static struct config_string ConfigureNamesStringXmanager[] =
 {
     {
-        {RIPPLE_CFG_KEY_LOG_LEVEL, PGC_INTERNAL,
+        {CFG_KEY_LOG_LEVEL, PGC_INTERNAL,
             gettext_noop("log level, DEBUG INFO WARNING ERROR"),
             NULL
         },
@@ -723,7 +723,7 @@ static struct config_string ConfigureNamesStringXmanager[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_LOG_DIR, PGC_INTERNAL,
+        {CFG_KEY_LOG_DIR, PGC_INTERNAL,
             gettext_noop("log dir"),
             NULL
         },
@@ -732,7 +732,7 @@ static struct config_string ConfigureNamesStringXmanager[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_DATA, PGC_INTERNAL,
+        {CFG_KEY_DATA, PGC_INTERNAL,
             gettext_noop("work dir"),
             NULL
         },
@@ -741,7 +741,7 @@ static struct config_string ConfigureNamesStringXmanager[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_HOST, PGC_INTERNAL,
+        {CFG_KEY_HOST, PGC_INTERNAL,
             gettext_noop("listen host"),
             NULL
         },
@@ -750,7 +750,7 @@ static struct config_string ConfigureNamesStringXmanager[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_JOBNAME, PGC_INTERNAL,
+        {CFG_KEY_JOBNAME, PGC_INTERNAL,
             gettext_noop("jobname"),
             NULL
         },
@@ -759,7 +759,7 @@ static struct config_string ConfigureNamesStringXmanager[] =
         NULL, NULL
     },
     {
-        {RIPPLE_CFG_KEY_UNIXDOMAINDIR, PGC_INTERNAL,
+        {CFG_KEY_UNIXDOMAINDIR, PGC_INTERNAL,
             gettext_noop("unix domain dir"),
             NULL
         },
@@ -778,13 +778,13 @@ static struct config_string ConfigureNamesStringXmanager[] =
 /*---------------------guc begin----------------------------------*/
 typedef void (*gucdebug)();
 
-typedef struct RIPPLE_GUC_CFG
+typedef struct GUC_CFG
 {
     int                     type;
     struct config_int*      cint;
     struct config_string*   cstr;
     gucdebug                debugfunc;
-} ripple_guc_cfg;
+} guc_cfg;
 
 /*---------------------guc   end----------------------------------*/
 
@@ -941,34 +941,34 @@ static void guc_xmanagerdebug(void)
     printf("---------xmanager config   end--------------\n");
 }
 
-static ripple_guc_cfg m_guccfg[] =
+static guc_cfg m_guccfg[] =
 {
     {
-        RIPPLE_PROC_TYPE_NOP,
+        PROC_TYPE_NOP,
         NULL,
         NULL,
         NULL
     },
     {
-        RIPPLE_PROC_TYPE_CAPTURE,
+        PROC_TYPE_CAPTURE,
         ConfigureNamesIntCapture,
         ConfigureNamesStringCapture,
         guc_capturedebug
     },
     {
-        RIPPLE_PROC_TYPE_INTEGRATE,
+        PROC_TYPE_INTEGRATE,
         ConfigureNamesIntIntegrate,
         ConfigureNamesStringIntegrate,
         guc_integratedebug
     },
     {
-        RIPPLE_PROC_TYPE_PGRECEIVEWAL,
+        PROC_TYPE_PGRECEIVEWAL,
         ConfigureNamesIntReceivewal,
         ConfigureNamesStringReceivewal,
         guc_receivewaldebug
     },
     {
-        RIPPLE_PROC_TYPE_XMANAGER,
+        PROC_TYPE_XMANAGER,
         ConfigureNamesIntXmanager,
         ConfigureNamesStringXmanager,
         guc_xmanagerdebug
@@ -1054,7 +1054,7 @@ guc_var_compare(const void *a, const void *b)
 	return guc_name_compare(confa->name, confb->name);
 }
 
-static void guc_loadbuildin(ripple_proc_type type)
+static void guc_loadbuildin(proc_type type)
 {
     int			i;
     int			num_vars = 0;
@@ -1146,7 +1146,7 @@ guc_parseConfigFile(const char *config_file,
     char*   key = NULL;
     char*   value = NULL;
 
-    fp = AllocateFile(config_file, "r");
+    fp = osal_allocate_file(config_file, "r");
     if (!fp)
     {
         elog(RLOG_ERROR, "could not open configuration file:%s", config_file);
@@ -1323,19 +1323,19 @@ guc_parseConfigFile(const char *config_file,
         }
         rmemset0(value, 0, 0, len);
         rmemcpy0(value, 0, fline + pos, len - 1);
-        if(strcmp(key, RIPPLE_TBINCLUDE) == 0 )
+        if(strcmp(key, TBINCLUDE) == 0 )
         {
             g_table = lappend(g_table, value);
             rfree(key);
             continue;
         }
-        if(strcmp(key, RIPPLE_TBEXCLUDE) == 0)
+        if(strcmp(key, TBEXCLUDE) == 0)
         {
             g_tableexclude = lappend(g_tableexclude, value);
             rfree(key);
             continue;
         }
-        if(strcmp(key, RIPPLE_ADDTABLEPATTERN) == 0)
+        if(strcmp(key, ADDTABLEPATTERN) == 0)
         {
             g_addtablepattern = lappend(g_addtablepattern, value);
             rfree(key);
@@ -1687,14 +1687,14 @@ char* guc_getdata(void)
 {
     switch (g_proctype)
     {
-        case RIPPLE_PROC_TYPE_CAPTURE:
+        case PROC_TYPE_CAPTURE:
             return g_capturecfg.data;
             break;
-        case RIPPLE_PROC_TYPE_INTEGRATE:
+        case PROC_TYPE_INTEGRATE:
             return g_integratecfg.data;
-        case RIPPLE_PROC_TYPE_PGRECEIVEWAL:
+        case PROC_TYPE_PGRECEIVEWAL:
             return m_receivewalcfg.data;
-        case RIPPLE_PROC_TYPE_XMANAGER:
+        case PROC_TYPE_XMANAGER:
             return m_xmanagercfg.data;
         default:
             return NULL;
@@ -1705,11 +1705,11 @@ char* guc_gettrail(void)
 {
     switch (g_proctype)
     {
-        case RIPPLE_PROC_TYPE_INTEGRATE:
+        case PROC_TYPE_INTEGRATE:
             return g_integratecfg.traildir;
-        case RIPPLE_PROC_TYPE_PGRECEIVEWAL:
-        case RIPPLE_PROC_TYPE_CAPTURE:
-        case RIPPLE_PROC_TYPE_XMANAGER:
+        case PROC_TYPE_PGRECEIVEWAL:
+        case PROC_TYPE_CAPTURE:
+        case PROC_TYPE_XMANAGER:
             return NULL;
         default:
             return NULL;

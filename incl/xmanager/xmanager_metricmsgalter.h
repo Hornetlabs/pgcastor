@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_XMANAGER_METRICMSGALTER_H_
-#define _RIPPLE_XMANAGER_METRICMSGALTER_H_
+#ifndef _XMANAGER_METRICMSGALTER_H_
+#define _XMANAGER_METRICMSGALTER_H_
 
 /*
  * 处理 alter 命令
@@ -8,8 +8,8 @@
  *  3、add/remove job
  *  4、组装返回消息
 */
-extern bool ripple_xmanager_metricmsg_parsealter(ripple_xmanager_metric* xmetric,
-                                                 ripple_netpoolentry* npoolentry,
-                                                 ripple_netpacket* npacket);
+extern bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric,
+                                                 netpoolentry* npoolentry,
+                                                 netpacket* npacket);
 
 #endif

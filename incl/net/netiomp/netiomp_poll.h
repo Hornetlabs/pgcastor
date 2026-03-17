@@ -1,23 +1,23 @@
-#ifndef _RIPPLE_NETIOMP_POLL_H
-#define _RIPPLE_NETIOMP_POLL_H
+#ifndef _NETIOMP_POLL_H
+#define _NETIOMP_POLL_H
 
 /* 重置 */
-void ripple_netiomp_pollreset(ripple_netiompbase* base);
+void netiomp_pollreset(netiompbase* base);
 
 /* 创建函数 */
-bool ripple_netiomp_pollcreate(ripple_netiompbase** refbase);
+bool netiomp_pollcreate(netiompbase** refbase);
 
-int ripple_netiomp_polladd(ripple_netiompbase* base, int fd, uint16 flag);
+int netiomp_polladd(netiompbase* base, int fd, uint16 flag);
 
-int ripple_netiomp_polldel(ripple_netiompbase* base, int fd);
+int netiomp_polldel(netiompbase* base, int fd);
 
-int ripple_netiomp_pollmodify(ripple_netiompbase* base, int fd);
+int netiomp_pollmodify(netiompbase* base, int fd);
 
-int ripple_netiomp_poll(ripple_netiompbase* base);
+int netiomp_poll(netiompbase* base);
 
 /* 获取触发事件的类型 */
-int ripple_netiomp_getevent(ripple_netiompbase* base, int pos);
+int netiomp_getevent(netiompbase* base, int pos);
 
-void ripple_netiomp_free(ripple_netiompbase* base);
+void netiomp_free(netiompbase* base);
 
 #endif

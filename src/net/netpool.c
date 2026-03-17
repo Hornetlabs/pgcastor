@@ -1,42 +1,42 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
-#include "port/net/ripple_net.h"
+#include "port/net/net.h"
 #include "utils/guc/guc.h"
 #include "utils/dlist/dlist.h"
-#include "queue/ripple_queue.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netpool.h"
+#include "queue/queue.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netpool.h"
 
 /*----------------net pool entry operatiion begin------------------*/
-ripple_netpoolentry* ripple_netpoolentry_init(void)
+netpoolentry* netpoolentry_init(void)
 {
-    ripple_netpoolentry* npoolentry = NULL;
+    netpoolentry* npoolentry = NULL;
 
-    npoolentry = rmalloc0(sizeof(ripple_netpoolentry));
+    npoolentry = rmalloc0(sizeof(netpoolentry));
     if (NULL == npoolentry)
     {
         elog(RLOG_WARNING, "net pool entry init error, out of memory");
         return NULL;
     }
-    rmemset0(npoolentry, 0, '\0', sizeof(ripple_netpoolentry));
+    rmemset0(npoolentry, 0, '\0', sizeof(netpoolentry));
 
     npoolentry->fd = -1;
-    npoolentry->stat = RIPPLE_NETPOOLENTRY_STAT_NOP;
+    npoolentry->stat = NETPOOLENTRY_STAT_NOP;
     npoolentry->host = NULL;
     npoolentry->port = NULL;
-    npoolentry->rpackets = ripple_queue_init();
+    npoolentry->rpackets = queue_init();
     if (NULL == npoolentry->rpackets)
     {
         rfree(npoolentry);
         return NULL;
     }
 
-    npoolentry->wpackets = ripple_queue_init();
+    npoolentry->wpackets = queue_init();
     if (NULL == npoolentry->wpackets)
     {
-        ripple_queue_destroy(npoolentry->wpackets, NULL);
+        queue_destroy(npoolentry->wpackets, NULL);
         rfree(npoolentry);
         return NULL;
     }
@@ -44,18 +44,18 @@ ripple_netpoolentry* ripple_netpoolentry_init(void)
 }
 
 /* 描述符设置 */
-void ripple_netpoolentry_setfd(ripple_netpoolentry* npoolentry, int fd)
+void netpoolentry_setfd(netpoolentry* npoolentry, int fd)
 {
     if (NULL == npoolentry)
     {
         return;
     }
     npoolentry->fd = fd;
-    npoolentry->stat = RIPPLE_NETPOOLENTRY_STAT_OK;
+    npoolentry->stat = NETPOOLENTRY_STAT_OK;
 }
 
 /* 设置主机信息 */
-bool ripple_netpoolentry_sethost(ripple_netpoolentry* npoolentry, char* host)
+bool netpoolentry_sethost(netpoolentry* npoolentry, char* host)
 {
     int len = 0;
     if (NULL == npoolentry || NULL == host)
@@ -83,7 +83,7 @@ bool ripple_netpoolentry_sethost(ripple_netpoolentry* npoolentry, char* host)
 }
 
 /* 设置端口信息 */
-bool ripple_netpoolentry_setport(ripple_netpoolentry* npoolentry, char* port)
+bool netpoolentry_setport(netpoolentry* npoolentry, char* port)
 {
     int len = 0;
     if (NULL == npoolentry || NULL == port)
@@ -110,7 +110,7 @@ bool ripple_netpoolentry_setport(ripple_netpoolentry* npoolentry, char* port)
     return true;
 }
 
-void ripple_netpoolentry_destroy(ripple_netpoolentry* npoolentry)
+void netpoolentry_destroy(netpoolentry* npoolentry)
 {
     if (NULL == npoolentry)
     {
@@ -119,7 +119,7 @@ void ripple_netpoolentry_destroy(ripple_netpoolentry* npoolentry)
 
     if (-1 != npoolentry->fd)
     {
-        ripple_close(npoolentry->fd);
+        close(npoolentry->fd);
         npoolentry->fd = -1;
     }
 
@@ -135,27 +135,27 @@ void ripple_netpoolentry_destroy(ripple_netpoolentry* npoolentry)
         npoolentry->port = NULL;
     }
 
-    ripple_queue_destroy(npoolentry->rpackets, ripple_netpacket_destroyvoid);
-    ripple_queue_destroy(npoolentry->wpackets, ripple_netpacket_destroyvoid);
+    queue_destroy(npoolentry->rpackets, netpacket_destroyvoid);
+    queue_destroy(npoolentry->wpackets, netpacket_destroyvoid);
     rfree(npoolentry);
 }
 
 /*----------------net pool entry operatiion   end------------------*/
 
-ripple_netpool* ripple_netpool_init(void)
+netpool* netpool_init(void)
 {
     int index = 0;
-    ripple_netpool* npool = NULL;
+    netpool* npool = NULL;
 
-    npool = rmalloc0(sizeof(ripple_netpool));
+    npool = rmalloc0(sizeof(netpool));
     if (NULL == npool)
     {
         elog(RLOG_WARNING, "net pool init error");
         return NULL;
     }
-    rmemset0(npool, 0, '\0', sizeof(ripple_netpool));
+    rmemset0(npool, 0, '\0', sizeof(netpool));
 
-    npool->fdmax = RIPPLE_NETPOOL_DEFAULTFDSIZE;
+    npool->fdmax = NETPOOL_DEFAULTFDSIZE;
     npool->fds = rmalloc0(sizeof(void*)*npool->fdmax);
     if (NULL == npool->fds)
     {
@@ -188,20 +188,20 @@ ripple_netpool* ripple_netpool_init(void)
     }
 
     /* 申请 base 信息，用于后续的描述符处理 */
-    npool->ops = ripple_netiomp_init(RIPPLE_NETIOMP_TYPE_POLL);
+    npool->ops = netiomp_init(NETIOMP_TYPE_POLL);
     if(false == npool->ops->create(&npool->base))
     {
-        elog(RLOG_ERROR, "net pool reset RIPPLE_NETIOMP_TYPE_POLL create error");
+        elog(RLOG_ERROR, "net pool reset NETIOMP_TYPE_POLL create error");
         return NULL;
     }
     npool->ops->reset(npool->base);
-    npool->base->timeout = RIPPLE_NET_POLLTIMEOUT;
+    npool->base->timeout = NET_POLLTIMEOUT;
 
     return npool;
 }
 
 /* 添加 */
-bool ripple_netpool_add(ripple_netpool* npool, ripple_netpoolentry* entry)
+bool netpool_add(netpool* npool, netpoolentry* entry)
 {
     /*
      * 1、在原 fds 中查照未使用的槽
@@ -211,7 +211,7 @@ bool ripple_netpool_add(ripple_netpool* npool, ripple_netpoolentry* entry)
     int fdmax = 0;
     int* pos = NULL;
     int* errorfds = NULL;
-    ripple_netpoolentry** pentrys = NULL;
+    netpoolentry** pentrys = NULL;
 
     for (index = 0; index < npool->fdmax; index++)
     {
@@ -229,7 +229,7 @@ bool ripple_netpool_add(ripple_netpool* npool, ripple_netpoolentry* entry)
     }
 
     fdmax = (npool->fdmax * 2);
-    pentrys = (ripple_netpoolentry**)rmalloc0(sizeof(void*)*fdmax);
+    pentrys = (netpoolentry**)rmalloc0(sizeof(void*)*fdmax);
     if (NULL == pentrys)
     {
         elog(RLOG_WARNING, "net pool add entry error, out of memory");
@@ -282,7 +282,7 @@ bool ripple_netpool_add(ripple_netpool* npool, ripple_netpoolentry* entry)
 }
 
 /* 删除 */
-void ripple_netpool_del(ripple_netpool* npool, int fd)
+void netpool_del(netpool* npool, int fd)
 {
     int index = 0;
     int fdcnt = 0;
@@ -300,14 +300,14 @@ void ripple_netpool_del(ripple_netpool* npool, int fd)
             continue;
         }
 
-        ripple_netpoolentry_destroy(npool->fds[index]);
+        netpoolentry_destroy(npool->fds[index]);
         npool->fds[index] = NULL;
         npool->pos[index] = -1;
     }
 }
 
 /* 根据 fd 在 netpool 中获取 entry */
-ripple_netpoolentry* ripple_netpool_getentrybyfd(ripple_netpool* npool, int fd)
+netpoolentry* netpool_getentrybyfd(netpool* npool, int fd)
 {
     int index = 0;
 
@@ -330,14 +330,14 @@ ripple_netpoolentry* ripple_netpool_getentrybyfd(ripple_netpool* npool, int fd)
 }
 
 /* 接收数据 */
-static bool ripple_netpool_recv(ripple_netpoolentry* npoolentry)
+static bool netpool_recv(netpoolentry* npoolentry)
 {
     bool bhead                  = false;
     int rlen                    = 0;
     int readlen                 = 0;
     int msglen                  = 0;
     uint8* cptr                 = NULL;
-    ripple_netpacket* npacket   = NULL;
+    netpacket* npacket   = NULL;
     uint8 hdr[8]                 = { 0 };
     if (NULL == npoolentry)
     {
@@ -351,9 +351,9 @@ static bool ripple_netpool_recv(ripple_netpoolentry* npoolentry)
      * 2、队列为空
      *  申请一个新 packet 挂载到 读队列中
      */
-    if (false == ripple_queue_isnull(npoolentry->rpackets))
+    if (false == queue_isnull(npoolentry->rpackets))
     {
-        npacket = (ripple_netpacket*)npoolentry->rpackets->tail->data;
+        npacket = (netpacket*)npoolentry->rpackets->tail->data;
         if (npacket->offset == npacket->used)
         {
             npacket = NULL;
@@ -362,7 +362,7 @@ static bool ripple_netpool_recv(ripple_netpoolentry* npoolentry)
 
     if (NULL == npacket)
     {
-        npacket = ripple_netpacket_init();
+        npacket = netpacket_init();
         if (NULL == npacket)
         {
             elog(RLOG_WARNING, "net pool read out of memory");
@@ -371,10 +371,10 @@ static bool ripple_netpool_recv(ripple_netpoolentry* npoolentry)
         bhead = true;
         rlen = readlen = 8;
         cptr = hdr;
-        if (false == ripple_queue_put(npoolentry->rpackets, npacket))
+        if (false == queue_put(npoolentry->rpackets, npacket))
         {
             elog(RLOG_WARNING, "net pool add packet to read queue error");
-            ripple_netpacket_destroy(npacket);
+            netpacket_destroy(npacket);
             return false;
         }
     }
@@ -385,7 +385,7 @@ static bool ripple_netpool_recv(ripple_netpoolentry* npoolentry)
         cptr = npacket->data + npacket->offset;
     }
 
-    if (false == ripple_net_read(npoolentry->fd, cptr, &rlen))
+    if (false == osal_net_read(npoolentry->fd, cptr, &rlen))
     {
         elog(RLOG_WARNING, "net pool read data error");
         return false;
@@ -399,7 +399,7 @@ static bool ripple_netpool_recv(ripple_netpoolentry* npoolentry)
 
     rmemcpy1(&msglen, 0, cptr, 4);
     msglen = r_ntoh32(msglen);
-    npacket->data = ripple_netpacket_data_init(msglen);
+    npacket->data = netpacket_data_init(msglen);
     if (NULL == npacket->data)
     {
         elog(RLOG_WARNING, "net pool netpacket data init out of memory, msglen:%d", msglen);
@@ -413,7 +413,7 @@ static bool ripple_netpool_recv(ripple_netpoolentry* npoolentry)
 }
 
 /* 发送数据 */
-static bool ripple_netpool_send(ripple_netpoolentry* npoolentry)
+static bool netpool_send(netpoolentry* npoolentry)
 {
     /* 
      * 发送数据
@@ -423,18 +423,18 @@ static bool ripple_netpool_send(ripple_netpoolentry* npoolentry)
     int timeout                 = 0;
     int sendlen                 = 0;
     uint8* cptr                 = NULL;
-    ripple_netpacket* npacket   = NULL;
+    netpacket* npacket   = NULL;
     if (NULL == npoolentry)
     {
         return true;
     }
 
-    if (true == ripple_queue_isnull(npoolentry->wpackets))
+    if (true == queue_isnull(npoolentry->wpackets))
     {
         return true;
     }
 
-    npacket = ripple_queue_get(npoolentry->wpackets, &timeout);
+    npacket = queue_get(npoolentry->wpackets, &timeout);
     if (NULL == npacket)
     {
         elog(RLOG_WARNING, "net pool send get packet from queue error");
@@ -443,19 +443,19 @@ static bool ripple_netpool_send(ripple_netpoolentry* npoolentry)
 
     cptr = npacket->data + npacket->offset;
     sendlen = npacket->used - npacket->offset;
-    if (false == ripple_net_write(npoolentry->fd, cptr, sendlen))
+    if (false == osal_net_write(npoolentry->fd, cptr, sendlen))
     {
         elog(RLOG_WARNING, "net pool send packet error, %s", strerror(errno));
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return false;
     }
 
-    ripple_netpacket_destroy(npacket);
+    netpacket_destroy(npacket);
     return true;
 }
 
 /* 创建事件并接收描述符,等待触发后调用回掉函数处理 */
-bool ripple_netpool_desc(ripple_netpool* npool, int* cnt, int** perrorfds)
+bool netpool_desc(netpool* npool, int* cnt, int** perrorfds)
 {
     uint16 event            = 0;
     uint16 revent           = 0;
@@ -481,11 +481,11 @@ bool ripple_netpool_desc(ripple_netpool* npool, int* cnt, int** perrorfds)
 
         /* 处于发送完就关闭的状态, 那么不再读取数据 */
         event = 0;
-        if (RIPPLE_NETPOOLENTRY_STAT_CLOSEUTILWPACKETNULL != npool->fds[index]->stat)
+        if (NETPOOLENTRY_STAT_CLOSEUTILWPACKETNULL != npool->fds[index]->stat)
         {
             event = POLLIN;
         }
-        if (false == ripple_queue_isnull(npool->fds[index]->wpackets))
+        if (false == queue_isnull(npool->fds[index]->wpackets))
         {
             event |= POLLOUT;
         }
@@ -531,12 +531,12 @@ bool ripple_netpool_desc(ripple_netpool* npool, int* cnt, int** perrorfds)
         if (POLLIN == (revent&POLLIN))
         {
             /* 接收数据 */
-            if (false == ripple_netpool_recv(npool->fds[index]))
+            if (false == netpool_recv(npool->fds[index]))
             {
                 elog(RLOG_WARNING, "net pool recv error");
                 npool->errorfds[*cnt] = npool->fds[index]->fd;
                 (*cnt)++;
-                ripple_netpoolentry_destroy(npool->fds[index]);
+                netpoolentry_destroy(npool->fds[index]);
                 npool->fds[index] = NULL;
                 continue;
             }
@@ -545,12 +545,12 @@ bool ripple_netpool_desc(ripple_netpool* npool, int* cnt, int** perrorfds)
         if (POLLOUT == (revent&POLLOUT))
         {
             /* 发送数据 */
-            if (false == ripple_netpool_send(npool->fds[index]))
+            if (false == netpool_send(npool->fds[index]))
             {
                 elog(RLOG_WARNING, "net pool send error");
                 npool->errorfds[*cnt] = npool->fds[index]->fd;
                 (*cnt)++;
-                ripple_netpoolentry_destroy(npool->fds[index]);
+                netpoolentry_destroy(npool->fds[index]);
                 npool->fds[index] = NULL;
                 continue;
             }
@@ -562,7 +562,7 @@ bool ripple_netpool_desc(ripple_netpool* npool, int* cnt, int** perrorfds)
             elog(RLOG_WARNING, "iomp pollhup/pollerr error, %s", strerror(errno));
             npool->errorfds[*cnt] = npool->fds[index]->fd;
             (*cnt)++;
-            ripple_netpoolentry_destroy(npool->fds[index]);
+            netpoolentry_destroy(npool->fds[index]);
             npool->fds[index] = NULL;
             continue;
         }
@@ -572,7 +572,7 @@ bool ripple_netpool_desc(ripple_netpool* npool, int* cnt, int** perrorfds)
 }
 
 /* 销毁 */
-void ripple_netpool_destroy(ripple_netpool* npool)
+void netpool_destroy(netpool* npool)
 {
     int index = 0;
     if (NULL == npool)
@@ -588,7 +588,7 @@ void ripple_netpool_destroy(ripple_netpool* npool)
             {
                 continue;
             }
-            ripple_netpoolentry_destroy(npool->fds[index]);
+            netpoolentry_destroy(npool->fds[index]);
             npool->fds[index] = NULL;
         }
         rfree(npool->fds);

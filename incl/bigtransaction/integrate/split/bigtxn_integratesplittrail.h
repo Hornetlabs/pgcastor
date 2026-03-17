@@ -1,16 +1,16 @@
-#ifndef _RIPPLE_BIGTXN_INTEGRATESPLITTRAIL_H
-#define _RIPPLE_BIGTXN_INTEGRATESPLITTRAIL_H
+#ifndef _BIGTXN_INTEGRATESPLITTRAIL_H
+#define _BIGTXN_INTEGRATESPLITTRAIL_H
 
-typedef struct RIPPLE_BIGTXN_INTEGRATESPLITTRAIL
+typedef struct BIGTXN_INTEGRATESPLITTRAIL
 {
-    ripple_increment_integratesplittrail*   splittrailctx;
-}ripple_bigtxn_integratesplittrail;
+    increment_integratesplittrail*   splittrailctx;
+}bigtxn_integratesplittrail;
 
-ripple_bigtxn_integratesplittrail* ripple_bigtxn_integratesplittrail_init(void);
+bigtxn_integratesplittrail* bigtxn_integratesplittrail_init(void);
 
-void *ripple_bigtxn_integratesplittrail_main(void* args);
+void *bigtxn_integratesplittrail_main(void* args);
 
-void ripple_bigtxn_integratesplittrail_free(void* args);
+void bigtxn_integratesplittrail_free(void* args);
 
 #endif
 

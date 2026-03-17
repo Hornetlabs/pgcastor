@@ -1,43 +1,43 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "port/file/fd.h"
-#include "port/thread/ripple_thread.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
-#include "utils/uuid/ripple_uuid.h"
+#include "utils/uuid/uuid.h"
 #include "utils/hash/hash_search.h"
 #include "utils/mpage/mpage.h"
-#include "threads/ripple_threads.h"
-#include "misc/ripple_misc_stat.h"
-#include "misc/ripple_misc_control.h"
+#include "threads/threads.h"
+#include "misc/misc_stat.h"
+#include "misc/misc_control.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "catalog/ripple_control.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
-#include "queue/ripple_queue.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadwalrecords.h"
-#include "works/splitwork/wal/ripple_splitwork_wal.h"
-#include "works/splitwork/wal/ripple_wal_define.h"
-#include "snapshot/ripple_snapshot.h"
-#include "works/parserwork/wal/ripple_rewind.h"
-#include "works/parserwork/wal/ripple_parserwork_decode.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "refresh/ripple_refresh_table_sharding.h"
-#include "stmts/ripple_txnstmt_refresh.h"
-#include "stmts/ripple_txnstmt_onlinerefresh.h"
-#include "works/parserwork/wal/ripple_onlinerefresh.h"
-#include "works/parserwork/wal/ripple_parserwork_wal.h"
-#include "task/ripple_task_slot.h"
-#include "onlinerefresh/capture/loadrecord/ripple_onlinerefresh_captureloadrecord.h"
+#include "catalog/control.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
+#include "queue/queue.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadwalrecords.h"
+#include "works/splitwork/wal/splitwork_wal.h"
+#include "works/splitwork/wal/wal_define.h"
+#include "snapshot/snapshot.h"
+#include "works/parserwork/wal/rewind.h"
+#include "works/parserwork/wal/parserwork_decode.h"
+#include "refresh/refresh_tables.h"
+#include "refresh/refresh_table_sharding.h"
+#include "stmts/txnstmt_refresh.h"
+#include "stmts/txnstmt_onlinerefresh.h"
+#include "works/parserwork/wal/onlinerefresh.h"
+#include "works/parserwork/wal/parserwork_wal.h"
+#include "task/task_slot.h"
+#include "onlinerefresh/capture/loadrecord/onlinerefresh_captureloadrecord.h"
 
 typedef struct HISTORY_TIMELINE_ENDLSN
 {
@@ -62,7 +62,7 @@ static void wal_usleep(long microsec)
     }
 }
 
-static history_timeline_file* ripple_splitwork_wal_history_file_parser(char* buffer, size_t len)
+static history_timeline_file* splitwork_wal_history_file_parser(char* buffer, size_t len)
 {
     char* start_ptr = buffer;
     TimeLineID timeline = 0;
@@ -132,9 +132,9 @@ static history_timeline_file* ripple_splitwork_wal_history_file_parser(char* buf
     return result;
 }
 
-static TimeLineID ripple_splitwork_wal_get_timelineid_from_file(char* buffer, size_t len, XLogRecPtr lsn)
+static TimeLineID splitwork_wal_get_timelineid_from_file(char* buffer, size_t len, XLogRecPtr lsn)
 {
-    history_timeline_file *history = ripple_splitwork_wal_history_file_parser(buffer, len);
+    history_timeline_file *history = splitwork_wal_history_file_parser(buffer, len);
     TimeLineID result = 0;
     uint32_t left = 0;
     uint32_t right = history->len;
@@ -172,45 +172,45 @@ static TimeLineID ripple_splitwork_wal_get_timelineid_from_file(char* buffer, si
 }
 
 
-static bool ripple_splitwork_wal_history_file_read(char **buffer, size_t *len, char *dpath, uint32_t timeline)
+static bool splitwork_wal_history_file_read(char **buffer, size_t *len, char *dpath, uint32_t timeline)
 {
     int fd = -1;
     char fpath[MAXPGPATH];
 
     snprintf(fpath, MAXPGPATH, "%s/%08X.history", dpath, timeline);
 
-    fd = FileOpen(fpath, O_RDONLY, 0);
+    fd = osal_file_open(fpath, O_RDONLY, 0);
 
     /* 不存在history文件的情况下返回false */
     if (fd < 0)
         return false;
 
-    *len = FileSize(fd);
+    *len = osal_file_size(fd);
     *buffer = rmalloc0(*len);
     rmemset0(*buffer, 0, 0, *len);
     lseek(fd, 0, SEEK_SET);
 
     /* 无法读取文件的情况下返回false */
-    if (FileRead(fd, *buffer, *len) < 0)
+    if (osal_file_read(fd, *buffer, *len) < 0)
     {
-        FileClose(fd);
+        osal_file_close(fd);
         return false;
     }
 
-    FileClose(fd);
+    osal_file_close(fd);
     return true;
 }
 
-static void tryUpdateTimeLine(ripple_loadwalrecords *readCtl)
+static void tryUpdateTimeLine(loadwalrecords *readCtl)
 {
     char *his_buffer = NULL;
     size_t len = 0;
     TimeLineID history_num = readCtl->timeline;
     TimeLineID timeline = 0;
-    ripple_loadpagefromfile* loadpage = NULL;
+    loadpagefromfile* loadpage = NULL;
     bool rewind = (readCtl->startptr && readCtl->endptr) ? true : false;
 
-    loadpage = (ripple_loadpagefromfile*)readCtl->loadpage;
+    loadpage = (loadpagefromfile*)readCtl->loadpage;
 
     if (!rewind)
     {
@@ -219,9 +219,9 @@ static void tryUpdateTimeLine(ripple_loadwalrecords *readCtl)
     }
 
     /* 获取history文件 */
-    if (ripple_splitwork_wal_history_file_read(&his_buffer, &len, loadpage->fdir, history_num))
+    if (splitwork_wal_history_file_read(&his_buffer, &len, loadpage->fdir, history_num))
     {
-        timeline = ripple_splitwork_wal_get_timelineid_from_file(his_buffer, len, readCtl->startptr);
+        timeline = splitwork_wal_get_timelineid_from_file(his_buffer, len, readCtl->startptr);
         readCtl->timeline = timeline;
         /* 关闭文件 */
         readCtl->loadpageroutine->loadpageclose(readCtl->loadpage);
@@ -233,24 +233,24 @@ static void tryUpdateTimeLine(ripple_loadwalrecords *readCtl)
     }
 }
 
-static void ripple_splitwork_wal_freerecorddlist(void *dlist_v)
+static void splitwork_wal_freerecorddlist(void *dlist_v)
 {
     dlist* list = (dlist*)dlist_v;
 
     /* record 双向链表 内存释放 */
-    dlist_free(list, (dlistvaluefree )ripple_record_free);
+    dlist_free(list, (dlistvaluefree )record_free);
 }
 
 /* 将 records 加入到队列中 */
-static bool ripple_splitwork_wal_addrecords2queue(ripple_splitwalcontext *walctx,
-                                                  ripple_thrnode* thrnode)
+static bool splitwork_wal_addrecords2queue(splitwalcontext *walctx,
+                                                  thrnode* thrnode)
 {
     /* 加入到队列中 */
-    while(RIPPLE_THRNODE_STAT_WORK == thrnode->stat)
+    while(THRNODE_STAT_WORK == thrnode->stat)
     {
-        if(false == ripple_queue_put(walctx->recordqueue, walctx->loadrecords->records))
+        if(false == queue_put(walctx->recordqueue, walctx->loadrecords->records))
         {
-            if(RIPPLE_ERROR_QUEUE_FULL == walctx->recordqueue->error)
+            if(ERROR_QUEUE_FULL == walctx->recordqueue->error)
             {
                 usleep(50000);
                 continue;
@@ -265,48 +265,48 @@ static bool ripple_splitwork_wal_addrecords2queue(ripple_splitwalcontext *walctx
     return false;
 }
 
-void* ripple_splitwork_wal_main(void *args)
+void* splitwork_wal_main(void *args)
 {
     bool delay                                  = false;
     uint32 waitCount                            = 0;
-    ripple_thrnode* thrnode                     = NULL;
-    ripple_splitwalcontext *walctx              = NULL;
-    ripple_loadwalrecords *loadrecords          = NULL;
+    thrnode* thrnode_ptr                     = NULL;
+    splitwalcontext *walctx              = NULL;
+    loadwalrecords *loadrecords          = NULL;
 
-    thrnode = (ripple_thrnode*)args;
-    walctx = (ripple_splitwalcontext *) thrnode->data;
+    thrnode_ptr = (thrnode*)args;
+    walctx = (splitwalcontext *) thrnode_ptr->data;
 
     loadrecords = walctx->loadrecords;
     /* 查看状态 */
-    if(RIPPLE_THRNODE_STAT_STARTING != thrnode->stat)
+    if(THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING, "increment capture split stat exception, expected state is RIPPLE_THRNODE_STAT_STARTING");
-        thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
-        ripple_pthread_exit(NULL);
+        elog(RLOG_WARNING, "increment capture split stat exception, expected state is THRNODE_STAT_STARTING");
+        thrnode_ptr->stat = THRNODE_STAT_ABORT;
+        pthread_exit(NULL);
     }
 
     /* 设置为工作状态 */
-    thrnode->stat = RIPPLE_THRNODE_STAT_WORK;
+    thrnode_ptr->stat = THRNODE_STAT_WORK;
 
     while(1)
     {
-        if(RIPPLE_THRNODE_STAT_TERM == thrnode->stat)
+        if(THRNODE_STAT_TERM == thrnode_ptr->stat)
         {
             /* 解析器 */
-            thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
+            thrnode_ptr->stat = THRNODE_STAT_EXIT;
             break;
         }
 
-        if (RIPPLE_SPLITWORK_WAL_STATUS_INIT == walctx->status)
+        if (SPLITWORK_WAL_STATUS_INIT == walctx->status)
         {
             /* 睡眠20ms */
             wal_usleep(20 * 1000);
             continue;
         }
-        else if (RIPPLE_SPLITWORK_WAL_STATUS_REWIND == walctx->status)
+        else if (SPLITWORK_WAL_STATUS_REWIND == walctx->status)
         {
             /* 如果此时start ptr超过了endlsn, 则重新指定start和end */
-            if (!ripple_loadwalrecords_checkend(loadrecords->startptr, loadrecords))
+            if (!loadwalrecords_checkend(loadrecords->startptr, loadrecords))
             {
                 /* 关闭文件描述符 */
                 loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
@@ -330,20 +330,20 @@ void* ripple_splitwork_wal_main(void *args)
         if (walctx->change)
         {
             /* 先清理queue缓存 */
-            ripple_queue_clear(walctx->recordqueue, ripple_splitwork_wal_freerecorddlist);
+            queue_clear(walctx->recordqueue, splitwork_wal_freerecorddlist);
 
             walctx->callback.parserwal_rewindstat_setemiting(walctx->privdata);
             walctx->change = false;
 
             /* 重置loadrecord */
-            ripple_loadwalrecords_clean(loadrecords);
+            loadwalrecords_clean(loadrecords);
 
             /* 设置起点为新起点 */
             loadrecords->startptr = walctx->change_startptr;
             loadrecords->endptr = InvalidFullTransactionId;
             elog(RLOG_DEBUG, "rewind finish, start lsn:%lu", loadrecords->startptr);
 
-            walctx->status = RIPPLE_SPLITWORK_WAL_STATUS_NORMAL;
+            walctx->status = SPLITWORK_WAL_STATUS_NORMAL;
             /* 重新获取timeline */
             tryUpdateTimeLine(loadrecords);
             continue;
@@ -352,20 +352,20 @@ void* ripple_splitwork_wal_main(void *args)
         delay = false;
 
         /* 根据已知信息获取wal文件的一个block的数据 */
-        if (!ripple_loadwalrecords_load(loadrecords))
+        if (!loadwalrecords_load(loadrecords))
         {
             delay = true;
         }
 
         /* 当划分到了endlsn时 */
-        if (RIPPLE_SPLITWORK_WAL_STATUS_REWIND == walctx->status
+        if (SPLITWORK_WAL_STATUS_REWIND == walctx->status
          && loadrecords->startptr >= loadrecords->endptr)
         {
             /* 存在下一个文件开始第一条不完整record */
             if (loadrecords->seg_first_incomplete_next)
             {
                 /* 尝试合并 */
-                ripple_loadwalrecords_merge_seg_last_record(loadrecords);
+                loadwalrecords_merge_seg_last_record(loadrecords);
             }
             /* 合并结束后, 不应存在页最后一个不完整record和下一个文件开始不完整record */
             if (loadrecords->seg_first_incomplete_next && loadrecords->page_last_record_incomplete)
@@ -377,7 +377,7 @@ void* ripple_splitwork_wal_main(void *args)
             if (loadrecords->page_last_record_incomplete)
             {
                 /* 直接释放 */
-                ripple_recordcross_free(loadrecords->page_last_record_incomplete);
+                recordcross_free(loadrecords->page_last_record_incomplete);
                 /* 置空 */
                 loadrecords->page_last_record_incomplete = NULL;
             }
@@ -393,7 +393,7 @@ void* ripple_splitwork_wal_main(void *args)
         if (loadrecords->records)
         {
             /* 添加到queue中 */
-            ripple_splitwork_wal_addrecords2queue(walctx, thrnode);
+            splitwork_wal_addrecords2queue(walctx, thrnode_ptr);
         }
 
         if (delay)
@@ -414,21 +414,21 @@ void* ripple_splitwork_wal_main(void *args)
         }
     }
 
-    ripple_pthread_exit(NULL);
+    pthread_exit(NULL);
     return NULL;
 }
 
-void ripple_splitwal_destroy(ripple_splitwalcontext *split_wal_ctx)
+void splitwal_destroy(splitwalcontext *split_wal_ctx)
 {
     if (NULL == split_wal_ctx)
     {
         return;
     }
 
-    /* 释放ripple_loadwalrecords */
+    /* 释放loadwalrecords */
     if (NULL != split_wal_ctx->loadrecords)
     {
-        ripple_loadwalrecords_free(split_wal_ctx->loadrecords);
+        loadwalrecords_free(split_wal_ctx->loadrecords);
     }
 
     split_wal_ctx->privdata = NULL;
@@ -440,57 +440,57 @@ void ripple_splitwal_destroy(ripple_splitwalcontext *split_wal_ctx)
     return;
 }
 
-ripple_splitwalcontext *ripple_splitwal_init(void)
+splitwalcontext *splitwal_init(void)
 {
-    ripple_splitwalcontext *split_wal_ctx = NULL;
+    splitwalcontext *split_wal_ctx = NULL;
 
-    split_wal_ctx = rmalloc0(sizeof(ripple_splitwalcontext));
+    split_wal_ctx = rmalloc0(sizeof(splitwalcontext));
     if (NULL == split_wal_ctx)
     {
         elog(RLOG_ERROR, "out of memory");
     }
-    rmemset0(split_wal_ctx, 0, 0, sizeof(ripple_splitwalcontext));
+    rmemset0(split_wal_ctx, 0, 0, sizeof(splitwalcontext));
 
     /* 初始化loadrecords, loadpage相关也在此内初始化 */
-    split_wal_ctx->loadrecords = ripple_loadwalrecords_init();
+    split_wal_ctx->loadrecords = loadwalrecords_init();
 
     split_wal_ctx->rewind_start = InvalidXLogRecPtr;
 
     return split_wal_ctx;
 }
 
-void *ripple_onlinerefresh_captureloadrecord_main(void *args)
+void *onlinerefresh_captureloadrecord_main(void *args)
 {
     uint32 waitCount                                    = 0;
-    ripple_thrnode* thrnode                             = NULL;
-    ripple_splitwalcontext *walctx                      = NULL;
-    ripple_loadwalrecords *loadrecords                  = NULL;
-    ripple_recpos pos = {{'\0'}};
-    ripple_onlinerefresh_captureloadrecord *split_task  = NULL;
+    thrnode* thrnode_ptr                             = NULL;
+    splitwalcontext *walctx                      = NULL;
+    loadwalrecords *loadrecords                  = NULL;
+    recpos pos = {{'\0'}};
+    onlinerefresh_captureloadrecord *split_task  = NULL;
     bool delay = false;
 
-    thrnode = (ripple_thrnode*)args;
-    split_task = (ripple_onlinerefresh_captureloadrecord *)thrnode->data;
+    thrnode_ptr = (thrnode*)args;
+    split_task = (onlinerefresh_captureloadrecord *)thrnode_ptr->data;
     walctx = split_task->splitwalctx;
     loadrecords = walctx->loadrecords;
-    pos.wal.type = RIPPLE_RECPOS_TYPE_WAL;
+    pos.wal.type = RECPOS_TYPE_WAL;
 
     /* 查看状态 */
-    if(RIPPLE_THRNODE_STAT_STARTING != thrnode->stat)
+    if(THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING, "onlinerefresh capture loadrecord stat exception, expected state is RIPPLE_THRNODE_STAT_STARTING");
-        thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
-        ripple_pthread_exit(NULL);
+        elog(RLOG_WARNING, "onlinerefresh capture loadrecord stat exception, expected state is THRNODE_STAT_STARTING");
+        thrnode_ptr->stat = THRNODE_STAT_ABORT;
+        pthread_exit(NULL);
         return NULL;
     }
-    thrnode->stat = RIPPLE_THRNODE_STAT_WORK;
+    thrnode_ptr->stat = THRNODE_STAT_WORK;
 
     while(1)
     {
         /* 首先判断是否接收到退出信号 */
-        if(RIPPLE_THRNODE_STAT_TERM == thrnode->stat)
+        if(THRNODE_STAT_TERM == thrnode_ptr->stat)
         {
-            thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
+            thrnode_ptr->stat = THRNODE_STAT_EXIT;
             break;
         }
     
@@ -502,7 +502,7 @@ void *ripple_onlinerefresh_captureloadrecord_main(void *args)
         delay = false;
 
         /* 根据已知信息获取wal文件的一个block的数据 */
-        if (!ripple_loadwalrecords_load(loadrecords))
+        if (!loadwalrecords_load(loadrecords))
         {
             delay = true;
         }
@@ -510,20 +510,20 @@ void *ripple_onlinerefresh_captureloadrecord_main(void *args)
         if (loadrecords->records)
         {
             /* 当划分到了endlsn时 */
-            if (walctx->status == RIPPLE_SPLITWORK_WAL_STATUS_REWIND
+            if (walctx->status == SPLITWORK_WAL_STATUS_REWIND
              && loadrecords->startptr >= loadrecords->endptr)
             {
                 /* 存在下一个文件开始第一条不完整record */
                 if (loadrecords->seg_first_incomplete_next)
                 {
                     /* 尝试合并 */
-                    ripple_loadwalrecords_merge_seg_last_record(loadrecords);
+                    loadwalrecords_merge_seg_last_record(loadrecords);
                 }
                 /* 合并结束后, 不应存在任何不完整的record */
                 if (loadrecords->seg_first_incomplete_next && loadrecords->page_last_record_incomplete)
                 {
                     elog(RLOG_WARNING, "have incomplete record when split rewinding");
-                    thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
+                    thrnode_ptr->stat = THRNODE_STAT_ABORT;
                     break;
                 }
 
@@ -531,7 +531,7 @@ void *ripple_onlinerefresh_captureloadrecord_main(void *args)
                 if (loadrecords->page_last_record_incomplete)
                 {
                     /* 直接释放 */
-                    ripple_recordcross_free(loadrecords->page_last_record_incomplete);
+                    recordcross_free(loadrecords->page_last_record_incomplete);
                     /* 置空 */
                     loadrecords->page_last_record_incomplete = NULL;
                 }
@@ -544,7 +544,7 @@ void *ripple_onlinerefresh_captureloadrecord_main(void *args)
             }
 
             /* 添加到queue中 */
-            ripple_splitwork_wal_addrecords2queue(walctx, thrnode);
+            splitwork_wal_addrecords2queue(walctx, thrnode_ptr);
         }
 
         if (delay)
@@ -565,16 +565,16 @@ void *ripple_onlinerefresh_captureloadrecord_main(void *args)
         }
     }
 
-    ripple_pthread_exit(NULL);
+    pthread_exit(NULL);
     return NULL;
 }
 
-void ripple_onlinerefresh_captureloadrecord_free(void *args)
+void onlinerefresh_captureloadrecord_free(void *args)
 {
-    ripple_splitwalcontext *split_wal_ctx = NULL;
-    ripple_onlinerefresh_captureloadrecord *split_task = NULL;
+    splitwalcontext *split_wal_ctx = NULL;
+    onlinerefresh_captureloadrecord *split_task = NULL;
 
-    split_task = (ripple_onlinerefresh_captureloadrecord *) args;
+    split_task = (onlinerefresh_captureloadrecord *) args;
     if(NULL == split_task)
     {
         return;
@@ -588,10 +588,10 @@ void ripple_onlinerefresh_captureloadrecord_free(void *args)
         return;
     }
 
-    /* 释放ripple_loadwalrecords */
+    /* 释放loadwalrecords */
     if (NULL != split_wal_ctx->loadrecords)
     {
-        ripple_loadwalrecords_free(split_wal_ctx->loadrecords);
+        loadwalrecords_free(split_wal_ctx->loadrecords);
     }
 
     split_wal_ctx->privdata = NULL;

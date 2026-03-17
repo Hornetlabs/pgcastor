@@ -1,7 +1,7 @@
-#ifndef _RIPPLE_SMGR_H
-#define _RIPPLE_SMGR_H
+#ifndef _SMGR_H
+#define _SMGR_H
 
-typedef struct RIPPLE_SMGR_IF
+typedef struct SMGR_IF
 {
     /* 打开 */
     bool (*smgr_open)(void* state);
@@ -20,14 +20,14 @@ typedef struct RIPPLE_SMGR_IF
 
     /* 删除 */
     bool (*smgr_unlink)(void* state);
-} ripple_smgr_if;
+} smgr_if;
 
-typedef struct RIPPLE_SMGR_STATE
+typedef struct SMGR_STATE
 {
     int                     bufid;
     int                     fileid;
-    ripple_smgr_if*         smgr;
-} ripple_smgr_state;
+    smgr_if*         smgr;
+} smgr_state;
 
 
 #endif

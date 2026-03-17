@@ -1,22 +1,22 @@
-#ifndef _RIPPLE_LOADPAGE_H_
-#define _RIPPLE_LOADPAGE_H_
+#ifndef _LOADPAGE_H_
+#define _LOADPAGE_H_
 
-typedef enum RIPPLE_LOADPAGE_TYPE
+typedef enum LOADPAGE_TYPE
 {
-    RIPPLE_LOADPAGE_TYPE_NOP                = 0x00,
-    RIPPLE_LOADPAGE_TYPE_FILE               ,
-    RIPPLE_LOADPAGE_TYPE_REPLICATION        
-} ripple_loadpage_type;
+    LOADPAGE_TYPE_NOP                = 0x00,
+    LOADPAGE_TYPE_FILE               ,
+    LOADPAGE_TYPE_REPLICATION        
+} loadpage_type;
 
-typedef struct RIPPLE_LOADPAGE
+typedef struct LOADPAGE
 {
-    ripple_loadpage_type    type;
+    loadpage_type    type;
     uint32                  blksize;
     uint64                  filesize;
 
     /* 错误码 */
     int                     error;
-} ripple_loadpage;
+} loadpage;
 
 
 #define LOADPAGEBLKSIZEMASK(blksize)            ((uint64)(blksize - 1))

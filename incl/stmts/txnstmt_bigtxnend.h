@@ -1,9 +1,9 @@
-#ifndef _RIPPLE_TXNSTMT_BIGTXNEND_H
-#define _RIPPLE_TXNSTMT_BIGTXNEND_H
+#ifndef _TXNSTMT_BIGTXNEND_H
+#define _TXNSTMT_BIGTXNEND_H
 
 
-ripple_bigtxn_end_stmt* ripple_txnstmt_bigtxnend_init(void);
+bigtxn_end_stmt* txnstmt_bigtxnend_init(void);
 
-void ripple_txnstmt_bigtxnend_free(void* data);
+void txnstmt_bigtxnend_free(void* data);
 
 #endif

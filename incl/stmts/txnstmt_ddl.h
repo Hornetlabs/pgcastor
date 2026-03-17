@@ -1,6 +1,6 @@
-#ifndef _RIPPLE_TXNSTMT_DDL_H
-#define _RIPPLE_TXNSTMT_DDL_H
+#ifndef _TXNSTMT_DDL_H
+#define _TXNSTMT_DDL_H
 
-void ripple_txnstmt_ddlfree(void* data);
+void txnstmt_ddlfree(void* data);
 
 #endif

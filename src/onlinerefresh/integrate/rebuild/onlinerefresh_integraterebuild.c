@@ -1,36 +1,36 @@
-#include "ripple_app_incl.h"
-#include "port/thread/ripple_thread.h"
+#include "app_incl.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 #include "utils/dlist/dlist.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
-#include "threads/ripple_threads.h"
+#include "threads/threads.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
-#include "stmts/ripple_txnstmt.h"
-#include "stmts/ripple_txnstmt_updaterewind.h"
-#include "rebuild/ripple_rebuild.h"
-#include "onlinerefresh/integrate/rebuild/ripple_onlinerefresh_integraterebuild.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
+#include "stmts/txnstmt.h"
+#include "stmts/txnstmt_updaterewind.h"
+#include "rebuild/rebuild.h"
+#include "onlinerefresh/integrate/rebuild/onlinerefresh_integraterebuild.h"
 
 /* 只用于更新解析到的位置 */
-static bool ripple_onlinerefresh_integraterebuild_updaterewindstmt_set(ripple_onlinerefresh_integraterebuild* rebuild, ripple_txn* txn)
+static bool onlinerefresh_integraterebuild_updaterewindstmt_set(onlinerefresh_integraterebuild* rebuild_obj, txn* txn)
 {
-    ripple_txnstmt* stmtnode = NULL;
-    ripple_txnstmt_updaterewind* updaterewind = NULL;
+    txnstmt* stmtnode = NULL;
+    txnstmt_updaterewind* updaterewind = NULL;
 
     /* 申请空间 */
-    stmtnode = ripple_txnstmt_init();
+    stmtnode = txnstmt_init();
     if(NULL == stmtnode)
     {
         return false;
     }
-    rmemset0(stmtnode, 0, '\0', sizeof(ripple_txnstmt));
+    rmemset0(stmtnode, 0, '\0', sizeof(txnstmt));
 
-    updaterewind = ripple_txnstmt_updaterewind_init();
+    updaterewind = txnstmt_updaterewind_init();
     if (NULL == updaterewind)
     {
         rfree(stmtnode);
@@ -40,7 +40,7 @@ static bool ripple_onlinerefresh_integraterebuild_updaterewindstmt_set(ripple_on
     updaterewind->rewind.trail.fileid = txn->segno;
     updaterewind->rewind.trail.offset = txn->end.trail.offset;
 
-    stmtnode->type = RIPPLE_TXNSTMT_TYPE_UPDATEREWIND;
+    stmtnode->type = TXNSTMT_TYPE_UPDATEREWIND;
     stmtnode->stmt = (void*)updaterewind;
 
     txn->stmts = lappend(txn->stmts, stmtnode);
@@ -49,81 +49,81 @@ static bool ripple_onlinerefresh_integraterebuild_updaterewindstmt_set(ripple_on
 }
 
 /* 初始化 */
-ripple_onlinerefresh_integraterebuild* ripple_onlinerefresh_integraterebuild_init(void)
+onlinerefresh_integraterebuild* onlinerefresh_integraterebuild_init(void)
 {
     char* burst                                     = NULL;
-    ripple_onlinerefresh_integraterebuild* rebuild  = NULL;
+    onlinerefresh_integraterebuild* rebuild_obj  = NULL;
 
-    rebuild = rmalloc0(sizeof(ripple_onlinerefresh_integraterebuild));
-    if(NULL == rebuild)
+    rebuild_obj = rmalloc0(sizeof(onlinerefresh_integraterebuild));
+    if(NULL == rebuild_obj)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return NULL;
     }
-    rmemset0(rebuild, 0, '\0', sizeof(ripple_onlinerefresh_integraterebuild));
-    ripple_rebuild_reset((ripple_rebuild*)rebuild);
-    rebuild->parser2rebuild = NULL;
-    rebuild->rebuild2sync = NULL;
-    rebuild->mergetxn = (0 == guc_getConfigOptionInt(RIPPLE_CFG_KEY_MERGETXN)) ? false : true;
-    rebuild->txbundlesize = guc_getConfigOptionInt(RIPPLE_CFG_KEY_TXBUNDLESIZE);
+    rmemset0(rebuild_obj, 0, '\0', sizeof(onlinerefresh_integraterebuild));
+    rebuild_reset(&rebuild_obj->rebuild);
+    rebuild_obj->parser2rebuild = NULL;
+    rebuild_obj->rebuild2sync = NULL;
+    rebuild_obj->mergetxn = (0 == guc_getConfigOptionInt(CFG_KEY_MERGETXN)) ? false : true;
+    rebuild_obj->txbundlesize = guc_getConfigOptionInt(CFG_KEY_TXBUNDLESIZE);
     /* 设置integrate_method */
-    burst = guc_getConfigOption(RIPPLE_CFG_KEY_INTEGRATE_METHOD);
+    burst = guc_getConfigOption(CFG_KEY_INTEGRATE_METHOD);
     if (burst != NULL && '\0' != burst[0] && 0 == strcmp(burst, "burst"))
     {
-        rebuild->burst = true;
+        rebuild_obj->burst = true;
     }
-    return rebuild;
+    return rebuild_obj;
 }
 
 /* 工作 */
-void* ripple_onlinerefresh_integraterebuild_main(void *args)
+void* onlinerefresh_integraterebuild_main(void *args)
 {
     int timeout                                             = 0;
     int txbundlesize                                        = 0;
-    ripple_txn* txns                                        = NULL;
-    ripple_txn* ntxn                                        = NULL;
-    ripple_txn* txnnode                                     = NULL;
-    ripple_thrnode* thrnode                                 = NULL;
-    ripple_onlinerefresh_integraterebuild* rebuild          = NULL;
+    txn* txns                                        = NULL;
+    txn* ntxn                                        = NULL;
+    txn* txnnode                                     = NULL;
+    thrnode* thr_node                                 = NULL;
+    onlinerefresh_integraterebuild* rebuild_obj          = NULL;
 
-    thrnode = (ripple_thrnode*)args;
+    thr_node = (thrnode*)args;
 
-    rebuild = (ripple_onlinerefresh_integraterebuild*)thrnode->data;
+    rebuild_obj = (onlinerefresh_integraterebuild*)thr_node->data;
 
     /* 查看状态 */
-    if(RIPPLE_THRNODE_STAT_STARTING != thrnode->stat)
+    if(THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "onlinerefresh integrate rebuild stat exception, expected state is RIPPLE_THRNODE_STAT_STARTING");
-        thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
-        ripple_pthread_exit(NULL);
+        elog(RLOG_WARNING, "onlinerefresh integrate rebuild stat exception, expected state is THRNODE_STAT_STARTING");
+        thr_node->stat = THRNODE_STAT_ABORT;
+        pthread_exit(NULL);
         return NULL;
     }
 
     /* 设置为工作状态 */
-    thrnode->stat = RIPPLE_THRNODE_STAT_WORK;
+    thr_node->stat = THRNODE_STAT_WORK;
 
     while(1)
     {
         /* 首先判断是否接收到退出信号 */
-        if(RIPPLE_THRNODE_STAT_TERM == thrnode->stat)
+        if(THRNODE_STAT_TERM == thr_node->stat)
         {
-            thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
+            thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
         /* 在缓存中获取数据 */
-        txns = ripple_cache_txn_getbatch(rebuild->parser2rebuild, &timeout);
+        txns = cache_txn_getbatch(rebuild_obj->parser2rebuild, &timeout);
         if(NULL == txns)
         {
             /* 超时继续执行 */
-            if(RIPPLE_ERROR_TIMEOUT == timeout)
+            if(ERROR_TIMEOUT == timeout)
             {
                 continue;
             }
 
             /* 处理失败, 退出 */
             elog(RLOG_WARNING, "onlinerefrese integrate rebuild cache_txn_getbatch error");
-            thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
+            thr_node->stat = THRNODE_STAT_ABORT;
             break;
         }
 
@@ -134,68 +134,68 @@ void* ripple_onlinerefresh_integraterebuild_main(void *args)
             txns = txnnode->cachenext;
 
             /* 事务类型为增量结束，直接加入缓存保证状态表内容正确 */
-            if (RIPPLE_TXN_TYPE_ONLINEREFRESH_INC_END == txnnode->type)
+            if (TXN_TYPE_ONLINEREFRESH_INC_END == txnnode->type)
             {
                 if (NULL != ntxn)
                 {
-                    ripple_onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild, ntxn);
-                    ripple_cache_txn_add(rebuild->rebuild2sync, ntxn);
+                    onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild_obj, ntxn);
+                    cache_txn_add(rebuild_obj->rebuild2sync, ntxn);
                     ntxn = NULL;
                     txbundlesize = 0;
                 }
                 /* 将事务放入到缓存中 */
-                ripple_onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild, txnnode);
-                ripple_cache_txn_add(rebuild->rebuild2sync, txnnode);
+                onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild_obj, txnnode);
+                cache_txn_add(rebuild_obj->rebuild2sync, txnnode);
                 break;
             }
 
-            if (true == rebuild->burst)
+            if (true == rebuild_obj->burst)
             {
                 /* burst重组 */
-                if(false == ripple_rebuild_txnburst((ripple_rebuild*)rebuild, txnnode))
+                if(false == rebuild_txnburst(&rebuild_obj->rebuild, txnnode))
                 {
                     elog(RLOG_WARNING, "onlinerefrese integrate rebuild_txnburst error");
-                    thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
+                    thr_node->stat = THRNODE_STAT_ABORT;
                     break;
                 }
             }
             else
             {
                 /* 重组 */
-                if(false == ripple_rebuild_prepared((ripple_rebuild*)rebuild, txnnode))
+                if(false == rebuild_prepared(&rebuild_obj->rebuild, txnnode))
                 {
                     elog(RLOG_WARNING, "onlinerefrese integrate rebuild_prepared error");
-                    thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
+                    thr_node->stat = THRNODE_STAT_ABORT;
                     break;
                 }
             }
 
             if(NULL == txnnode->stmts)
             {
-                ripple_txn_free(txnnode);
+                txn_free(txnnode);
                 rfree(txnnode);
                 continue;
             }
 
-            if (false == rebuild->mergetxn)
+            if (false == rebuild_obj->mergetxn)
             {
                 /* 将事务放入到缓存中 */
-                ripple_onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild, txnnode);
-                ripple_cache_txn_add(rebuild->rebuild2sync, txnnode);
+                onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild_obj, txnnode);
+                cache_txn_add(rebuild_obj->rebuild2sync, txnnode);
                 continue;
             }
 
-            if (txnnode->stmts->length > rebuild->txbundlesize)
+            if (txnnode->stmts->length > rebuild_obj->txbundlesize)
             {
                 if (NULL != ntxn)
                 {
-                    ripple_onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild, ntxn);
-                    ripple_cache_txn_add(rebuild->rebuild2sync, ntxn);
+                    onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild_obj, ntxn);
+                    cache_txn_add(rebuild_obj->rebuild2sync, ntxn);
                     ntxn = NULL;
                     txbundlesize = 0;
                 }
-                ripple_onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild, txnnode);
-                ripple_cache_txn_add(rebuild->rebuild2sync, txnnode);
+                onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild_obj, txnnode);
+                cache_txn_add(rebuild_obj->rebuild2sync, txnnode);
                 continue;
             }
 
@@ -203,14 +203,14 @@ void* ripple_onlinerefresh_integraterebuild_main(void *args)
             /* 若为空,那么申请空间 */
             if(NULL == ntxn)
             {
-                ntxn = (ripple_txn*)rmalloc0(sizeof(ripple_txn));
+                ntxn = (txn*)rmalloc0(sizeof(txn));
                 if(NULL == ntxn)
                 {
-                    elog(RLOG_WARNING, "onlinerefrese integrate rebuild malloc txn out of memory, %s", strerror(errno));
-                    thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
+                    elog(RLOG_WARNING, "onlinerefrese integrate rebuild_obj malloc txn out of memory, %s", strerror(errno));
+                    thr_node->stat = THRNODE_STAT_ABORT;
                     break;
                 }
-                rmemset0(ntxn, 0, '\0', sizeof(ripple_txn));
+                rmemset0(ntxn, 0, '\0', sizeof(txn));
             }
 
             /* 复制事务信息 */
@@ -234,41 +234,41 @@ void* ripple_onlinerefresh_integraterebuild_main(void *args)
             txnnode->stmts = NULL;
 
             /* entry 释放 */
-            ripple_txn_free(txnnode);
+            txn_free(txnnode);
             rfree(txnnode);
 
             /* 最后一个事务或超出合并事务的大小 */
             if(NULL != txns && NULL != txns->stmts
-                && ((txbundlesize + txns->stmts->length) < rebuild->txbundlesize))
+                && ((txbundlesize + txns->stmts->length) < rebuild_obj->txbundlesize))
             {
                 continue;
             }
-            ripple_onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild, ntxn);
-            ripple_cache_txn_add(rebuild->rebuild2sync, ntxn);
+            onlinerefresh_integraterebuild_updaterewindstmt_set(rebuild_obj, ntxn);
+            cache_txn_add(rebuild_obj->rebuild2sync, ntxn);
             ntxn = NULL;
             txbundlesize = 0;
         }
     }
 
-    ripple_pthread_exit(NULL);
+    pthread_exit(NULL);
     return NULL;
 }
 
-void ripple_onlinerefresh_integraterebuild_free(void *args)
+void onlinerefresh_integraterebuild_free(void *args)
 {
-    ripple_onlinerefresh_integraterebuild* rebuild = NULL;
+    onlinerefresh_integraterebuild* rebuild_obj = NULL;
 
-    rebuild = (ripple_onlinerefresh_integraterebuild*)args;
+    rebuild_obj = (onlinerefresh_integraterebuild*)args;
 
-    if (NULL == rebuild)
+    if (NULL == rebuild_obj)
     {
         return;
     }
 
-    rebuild->parser2rebuild = NULL;
-    rebuild->rebuild2sync = NULL;
+    rebuild_obj->parser2rebuild = NULL;
+    rebuild_obj->rebuild2sync = NULL;
     
-    ripple_rebuild_destroy((ripple_rebuild *)rebuild);
+    rebuild_destroy(&rebuild_obj->rebuild);
 
-    rfree(rebuild);
+    rfree(rebuild_obj);
 }

@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_GUC_TABLES_H
-#define _RIPPLE_GUC_TABLES_H
+#ifndef _GUC_TABLES_H
+#define _GUC_TABLES_H
 
 
 #include "utils/guc/guc.h"

@@ -1,46 +1,46 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
-#include "port/thread/ripple_thread.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
 #include "utils/hash/hash_utils.h"
-#include "misc/ripple_misc_stat.h"
+#include "misc/misc_stat.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_errnodef.h"
 #include "common/xk_pg_parser_translog.h"
-#include "stmts/ripple_txnstmt.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
+#include "stmts/txnstmt.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
 #include "utils/mpage/mpage.h"
-#include "queue/ripple_queue.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadwalrecords.h"
-#include "cache/ripple_fpwcache.h"
-#include "catalog/ripple_catalog.h"
-#include "snapshot/ripple_snapshot.h"
-#include "works/parserwork/wal/ripple_rewind.h"
-#include "works/parserwork/wal/ripple_parserwork_decode.h"
-#include "works/parserwork/wal/ripple_decode_heap.h"
-#include "works/parserwork/wal/ripple_decode_heap_util.h"
-#include "works/parserwork/wal/ripple_decode_ddl.h"
-#include "works/parserwork/wal/ripple_decode_colvalue.h"
-#include "utils/regex/ripple_regex.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "refresh/ripple_refresh_table_sharding.h"
-#include "strategy/ripple_filter_dataset.h"
-#include "storage/ripple_file_buffer.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_ffsmgr.h"
-#include "bigtransaction/persist/ripple_bigtxn_persist.h"
-#include "bigtransaction/ripple_bigtxn.h"
+#include "queue/queue.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadwalrecords.h"
+#include "cache/fpwcache.h"
+#include "catalog/catalog.h"
+#include "snapshot/snapshot.h"
+#include "works/parserwork/wal/rewind.h"
+#include "works/parserwork/wal/parserwork_decode.h"
+#include "works/parserwork/wal/decode_heap.h"
+#include "works/parserwork/wal/decode_heap_util.h"
+#include "works/parserwork/wal/decode_ddl.h"
+#include "works/parserwork/wal/decode_colvalue.h"
+#include "utils/regex/regex.h"
+#include "refresh/refresh_tables.h"
+#include "refresh/refresh_table_sharding.h"
+#include "strategy/filter_dataset.h"
+#include "storage/file_buffer.h"
+#include "storage/ff_detail.h"
+#include "storage/ffsmgr.h"
+#include "bigtransaction/persist/bigtxn_persist.h"
+#include "bigtransaction/bigtxn.h"
 
 #define PGTEMP_NAME "pg_temp"
 #define PGTEMP_NAME_LEN 7
@@ -52,7 +52,7 @@
 
 #define HEAP_STORAGE_CATALOG(txn, trans_return) txn->sysdict = lappend(txn->sysdict, (void*)trans_return)
 
-static bool heap_check_catalog(ripple_txn *txn, Oid oid)
+static bool heap_check_catalog(txn *txn, Oid oid)
 {
     if (txn->oidmap)
     {
@@ -64,12 +64,12 @@ static bool heap_check_catalog(ripple_txn *txn, Oid oid)
 }
 
 static bool heap_check_special_table(Oid oid,
-                                ripple_decodingcontext* decodingctx,
-                                ripple_txn *txn)
+                                decodingcontext* decodingctx,
+                                txn *txn)
 {
-    HTAB *class_htab = decodingctx->transcache->sysdicts->by_class;
+    HTAB *class_htab = decodingctx->trans_cache->sysdicts->by_class;
     xk_pg_sysdict_Form_pg_class class = NULL;
-    class = (xk_pg_sysdict_Form_pg_class) ripple_catalog_get_class_sysdict(class_htab,
+    class = (xk_pg_sysdict_Form_pg_class) catalog_get_class_sysdict(class_htab,
                                                                            txn->sysdict,
                                                                            txn->sysdictHis,
                                                                            oid);
@@ -111,7 +111,7 @@ static xk_pg_parser_translog_tuplecache *get_tuple_from_cache(HTAB *tuple_cache,
     return result;
 }
 
-static void storage_tuple(ripple_transcache *storage,
+static void storage_tuple(transcache *storage,
                           XLogRecPtr lsn,
                           xk_pg_parser_translog_tbcolbase *trans_return)
 {
@@ -119,7 +119,7 @@ static void storage_tuple(ripple_transcache *storage,
     ReorderBufferFPWEntry entry = {'\0'};
 
     if (!storage->by_fpwtuples)
-        storage->by_fpwtuples = ripple_fpwcache_init(storage);
+        storage->by_fpwtuples = fpwcache_init(storage);
 
     entry.lsn = lsn;
 
@@ -143,7 +143,7 @@ static void storage_tuple(ripple_transcache *storage,
             entry.data = nvalues->m_tuple[index_tuple_cnt].m_tupledata;
             entry.len = nvalues->m_tuple[index_tuple_cnt].m_tuplelen;
 
-            ripple_fpwcache_add(storage, &key, &entry);
+            fpwcache_add(storage, &key, &entry);
         }
     }
     else
@@ -166,20 +166,20 @@ static void storage_tuple(ripple_transcache *storage,
             entry.len = values->m_tuple[index_tuple_cnt].m_tuplelen;
             elog(RLOG_DEBUG, "storage tuple, rel: %u, blk: %u, off:%hu", key.relfilenode, key.blcknum, key.itemoffset);
 
-            ripple_fpwcache_add(storage, &key, &entry);
+            fpwcache_add(storage, &key, &entry);
         }
     }
 }
 
-static bool ripple_large_txn_filter(ripple_decodingcontext* ctx)
+static bool large_txn_filter(decodingcontext* ctx)
 {
     uint64 max_stmtsize = 0;
-    ripple_txn *max_txn = NULL;
-    ripple_txn *current = NULL;
-    ripple_txnstmt* txnstmt = NULL;
-    ripple_txn_dlist* transdlist = NULL;
+    txn *max_txn = NULL;
+    txn *current = NULL;
+    txnstmt* txnstmt = NULL;
+    txn_dlist* transdlist = NULL;
 
-    RIPPLE_UNUSED(max_txn);
+    UNUSED(max_txn);
 
     /* 判断是否需要过滤大事务 */
     if (!ctx->filterbigtrans)
@@ -187,7 +187,7 @@ static bool ripple_large_txn_filter(ripple_decodingcontext* ctx)
         return true;
     }
 
-    transdlist = ctx->transcache->transdlist;
+    transdlist = ctx->trans_cache->transdlist;
 
     if (transdlist == NULL)
     {
@@ -198,7 +198,7 @@ static bool ripple_large_txn_filter(ripple_decodingcontext* ctx)
     /* 遍历所有事物, 挑选出最大的不处于DDL和TOAST的事物 */
     for(current = transdlist->head; NULL != current; current = current->next)
     {
-        if (RIPPLE_TXN_CHECK_COULD_SAVE(current->flag))
+        if (TXN_CHECK_COULD_SAVE(current->flag))
         {
             continue;
         }
@@ -217,18 +217,18 @@ static bool ripple_large_txn_filter(ripple_decodingcontext* ctx)
     }
 
     /* 已经拿到了筛选出的事物, 拷贝必要信息后放到缓存中 */
-    if (!RIPPLE_TXN_ISBIGTXN(max_txn->flag))
+    if (!TXN_ISBIGTXN(max_txn->flag))
     {
-        ripple_txn *begintxn = NULL;
-        ripple_txn *copytxn = NULL;
+        txn *begintxn = NULL;
+        txn *copytxn = NULL;
         FullTransactionId* xid = NULL;
 
         /* 第一次放入大事务序列化缓存 */
-        RIPPLE_TXN_SET_BIGTXN(max_txn->flag);
-        max_txn->type = RIPPLE_TXN_TYPE_BIGTXN_BEGIN;
+        TXN_SET_BIGTXN(max_txn->flag);
+        max_txn->type = TXN_TYPE_BIGTXN_BEGIN;
 
         /* 构建大事务开始txnstmt */
-        begintxn = ripple_txn_initbigtxn(max_txn->xid);
+        begintxn = txn_initbigtxn(max_txn->xid);
         if(NULL == begintxn)
         {
             elog(RLOG_WARNING, "init big txn error");
@@ -237,7 +237,7 @@ static bool ripple_large_txn_filter(ripple_decodingcontext* ctx)
         begintxn->end.wal.lsn = ctx->parselsn + 1;
 
         /* 大事务开始 stmt */
-        txnstmt = ripple_txnstmt_init();
+        txnstmt = txnstmt_init();
         if (NULL == txnstmt)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
@@ -251,17 +251,17 @@ static bool ripple_large_txn_filter(ripple_decodingcontext* ctx)
         }
         rmemset0(xid, 0, 0, sizeof(FullTransactionId));
         *xid = max_txn->xid;
-        txnstmt->type = RIPPLE_TXNSTMT_TYPE_BIGTXN_BEGIN;
+        txnstmt->type = TXNSTMT_TYPE_BIGTXN_BEGIN;
         txnstmt->stmt = (void*)xid;
         txnstmt->extra0.wal.lsn = ctx->parselsn + 1;
         begintxn->stmts = lappend(begintxn->stmts, txnstmt);
 
         /* 添加到缓存 */
-        ripple_txn_addcommit(begintxn);
-        ripple_cache_txn_add(ctx->parser2txns, begintxn);
+        txn_addcommit(begintxn);
+        cache_txn_add(ctx->parser2txns, begintxn);
 
         /* 进行txn拷贝 */
-        copytxn = ripple_txn_copy(max_txn);
+        copytxn = txn_copy(max_txn);
 
         if (max_txn->sysdict)
         {
@@ -284,22 +284,22 @@ static bool ripple_large_txn_filter(ripple_decodingcontext* ctx)
         copytxn->cachenext = NULL;
 
         /* 处理系统表, 进行拷贝 */
-        max_txn->sysdictHis = ripple_decode_heap_sysdicthis_copy(copytxn->sysdictHis);
+        max_txn->sysdictHis = decode_heap_sysdicthis_copy(copytxn->sysdictHis);
 
         /* 添加到大事务缓存 */
-        ctx->transcache->totalsize -= (copytxn->stmtsize - 4);
-        ripple_cache_txn_add(ctx->parser2bigtxns, copytxn);
+        ctx->trans_cache->totalsize -= (copytxn->stmtsize - 4);
+        cache_txn_add(ctx->parser2bigtxns, copytxn);
     }
     else
     {
         /* 第二次及以后 */
-        ripple_txn *copytxn = NULL;
+        txn *copytxn = NULL;
 
         /* 取消设置为大事务开始 */
-        max_txn->type = RIPPLE_TXN_TYPE_NORMAL;
+        max_txn->type = TXN_TYPE_NORMAL;
 
         /* 进行txn拷贝 */
-        copytxn = ripple_txn_copy(max_txn);
+        copytxn = txn_copy(max_txn);
 
         if (max_txn->sysdict)
         {
@@ -322,18 +322,18 @@ static bool ripple_large_txn_filter(ripple_decodingcontext* ctx)
         copytxn->cachenext = NULL;
 
         /* 处理系统表, 进行拷贝 */
-        max_txn->sysdictHis = ripple_decode_heap_sysdicthis_copy(copytxn->sysdictHis);
+        max_txn->sysdictHis = decode_heap_sysdicthis_copy(copytxn->sysdictHis);
 
         /* 添加到大事务缓存 */
-        ctx->transcache->totalsize -= (copytxn->stmtsize - 4);
-        ripple_cache_txn_add(ctx->parser2bigtxns, copytxn);
+        ctx->trans_cache->totalsize -= (copytxn->stmtsize - 4);
+        cache_txn_add(ctx->parser2bigtxns, copytxn);
     }
     return true;
 }
 
 static void init_heap_trans_data(xk_pg_parser_translog_translog2col *trans_data,
-                                 ripple_decodingcontext* decodingctx,
-                                 ripple_txn *txn,
+                                 decodingcontext* decodingctx,
+                                 txn *txn,
                                  xk_pg_parser_translog_pre_heap *heap_pre,
                                  Oid oid)
 {
@@ -342,7 +342,7 @@ static void init_heap_trans_data(xk_pg_parser_translog_translog2col *trans_data,
     if (heap_pre->m_needtuple && trans_data->m_iscatalog)
     {
         trans_data->m_tuplecnt = 1;
-        trans_data->m_tuples = get_tuple_from_cache(decodingctx->transcache->by_fpwtuples, heap_pre);
+        trans_data->m_tuples = get_tuple_from_cache(decodingctx->trans_cache->by_fpwtuples, heap_pre);
     }
     else
     {
@@ -379,7 +379,7 @@ static void init_heap_trans_data(xk_pg_parser_translog_translog2col *trans_data,
  *  1、global 数据库的表需要捕获
  *  2、正在捕获的库
  */
-static bool ripple_heap_check_dboid(uint32_t dboid, uint32_t capture_dboid)
+static bool heap_check_dboid(uint32_t dboid, uint32_t capture_dboid)
 {
     /* 在事务日志中, global 数据库的 oid 为 0, 且 global 数据库中的表也是需要解析的 */
     if (dboid && dboid != capture_dboid)
@@ -387,7 +387,7 @@ static bool ripple_heap_check_dboid(uint32_t dboid, uint32_t capture_dboid)
     return true;
 }
 
-void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
 {
     bool find                                       = false;
     bool isexternal                                 = false;
@@ -395,7 +395,7 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
     bool recovery                                   = false;
     Oid oid                                         = 0;
     int32_t err_num                                 = 0;
-    ripple_txn *txn                                 = NULL;
+    txn *txn                                 = NULL;
     char* table_name                                = NULL;
     xk_pg_parser_translog_translog2col *trans_data  = NULL;
     xk_pg_parser_translog_tbcolbase *trans_return   = NULL;
@@ -406,7 +406,7 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
 
     /*----------------调用解析接口数据前处理 begin------------------------*/
     /* 查看是否为需要解析的库 */
-    if (!ripple_heap_check_dboid(heap_pre->m_dboid, decodingctx->database))
+    if (!heap_check_dboid(heap_pre->m_dboid, decodingctx->database))
     {
         return;
     }
@@ -424,10 +424,10 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
     }
 
     /* 获取当前事务的信息 */
-    txn = ripple_transcache_getTXNByXid((void*)decodingctx, pbase->m_xid);
+    txn = transcache_getTXNByXid((void*)decodingctx, pbase->m_xid);
 
     /* 通过relfilenode获取oid */
-    oid = ripple_catalog_get_oid_by_relfilenode(decodingctx->transcache->sysdicts->by_relfilenode,
+    oid = catalog_get_oid_by_relfilenode(decodingctx->trans_cache->sysdicts->by_relfilenode,
                                                 txn->sysdictHis,
                                                 txn->sysdict,
                                                 heap_pre->m_dboid,
@@ -449,7 +449,7 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
         }
     }
 
-    temp_class = (xk_pg_parser_sysdict_pgclass *)ripple_catalog_get_class_sysdict(decodingctx->transcache->sysdicts->by_class,
+    temp_class = (xk_pg_parser_sysdict_pgclass *)catalog_get_class_sysdict(decodingctx->trans_cache->sysdicts->by_class,
                                                                                   txn->sysdict,
                                                                                   txn->sysdictHis,
                                                                                   oid);
@@ -466,10 +466,10 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
     if (CHECK_NEED_DDL_TRANS(is_catalog, txn, table_name))
     {
         /* 尝试处理可能存在的update中间语句 */
-        ripple_dml2ddl(decodingctx, txn);
-        ripple_transcache_sysdict2his(txn);
-        ripple_transcache_sysdict_free(txn);
-        RIPPLE_TXN_UNSET_TRANS_DDL(txn->flag);
+        dml2ddl(decodingctx, txn);
+        transcache_sysdict2his(txn);
+        transcache_sysdict_free(txn);
+        TXN_UNSET_TRANS_DDL(txn->flag);
     }
 
     /* 双向过滤含有状态表的事务过滤 */
@@ -482,7 +482,7 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
     }
     else
     {
-        hash_search(decodingctx->transcache->htxnfilterdataset, &oid, HASH_FIND, &find);
+        hash_search(decodingctx->trans_cache->htxnfilterdataset, &oid, HASH_FIND, &find);
         if (true == find)
         {
             txn->filter = true;
@@ -499,17 +499,17 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
      */
     if (!is_catalog && !heap_check_special_table(oid, decodingctx, txn))
     {
-        if ((false == ripple_filter_dataset_dml(decodingctx->transcache->hsyncdataset, oid)
-        && false == ripple_filter_dataset_dml(txn->hsyncdataset, oid)))
+        if ((false == filter_dataset_dml(decodingctx->trans_cache->hsyncdataset, oid)
+        && false == filter_dataset_dml(txn->hsyncdataset, oid)))
         {
             return;
         }
     }
 
     /* 大事务筛选 */
-    if (decodingctx->transcache->totalsize >= decodingctx->transcache->capture_buffer)
+    if (decodingctx->trans_cache->totalsize >= decodingctx->trans_cache->capture_buffer)
     {
-        ripple_large_txn_filter(decodingctx);
+        large_txn_filter(decodingctx);
     }
 
     /*----------------调用解析接口数据前处理   end------------------------*/
@@ -540,7 +540,7 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
     }
 
     if (trans_data->m_iscatalog)
-        storage_tuple(decodingctx->transcache, decodingctx->decode_record->start.wal.lsn, trans_return);
+        storage_tuple(decodingctx->trans_cache, decodingctx->decode_record->start.wal.lsn, trans_return);
 
     /*
      * 对pg_class表内记录的操作
@@ -555,8 +555,8 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
         xk_pg_parser_translog_tbcol_values *col = NULL;
 
         col = (xk_pg_parser_translog_tbcol_values *)trans_return;
-        temp_relname = ripple_get_class_value_from_colvalue(col->m_new_values,
-                                                                  RIPPLE_CLASS_MAPNUM_RELNAME,
+        temp_relname = get_class_value_from_colvalue(col->m_new_values,
+                                                                  CLASS_MAPNUM_RELNAME,
                                                                   g_idbtype,
                                                                   g_idbversion);
 
@@ -574,8 +574,8 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
         {
             uint32_t real_oid = 0;
             char *temp_str = temp_relname;
-            char *temp_nspname = ripple_get_class_value_from_colvalue(col->m_new_values,
-                                                                      RIPPLE_CLASS_MAPNUM_RELNSPOID,
+            char *temp_nspname = get_class_value_from_colvalue(col->m_new_values,
+                                                                      CLASS_MAPNUM_RELNSPOID,
                                                                       g_idbtype,
                                                                       g_idbversion);
             temp_str = temp_str + 8;
@@ -590,19 +590,19 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
                 col->m_new_values[7].m_value = rstrdup((char *) col->m_new_values[0].m_value);
 
 
-                temp_oid_char = ripple_get_class_value_from_colvalue(col->m_new_values,
-                                                                     RIPPLE_CLASS_MAPNUM_OID,
+                temp_oid_char = get_class_value_from_colvalue(col->m_new_values,
+                                                                     CLASS_MAPNUM_OID,
                                                                      g_idbtype,
                                                                      g_idbversion);
                 temp_oid = (Oid) atoi(temp_oid_char);
 
-                ripple_free_class_value_from_colvalue(col->m_new_values,
-                                                      RIPPLE_CLASS_MAPNUM_RELFILENODE,
+                free_class_value_from_colvalue(col->m_new_values,
+                                                      CLASS_MAPNUM_RELFILENODE,
                                                       g_idbtype,
                                                       g_idbversion);
-                ripple_set_class_value_from_colvalue(col->m_new_values,
+                set_class_value_from_colvalue(col->m_new_values,
                                                      temp_oid_char,
-                                                     RIPPLE_CLASS_MAPNUM_RELFILENODE,
+                                                     CLASS_MAPNUM_RELFILENODE,
                                                      g_idbtype,
                                                      g_idbversion);
 
@@ -624,30 +624,30 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
     {
         heap_storage_external_data(txn, trans_return);
         heap_free_trans_result(trans_return);
-        RIPPLE_TXN_SET_TRANS_TOAST(txn->flag);
+        TXN_SET_TRANS_TOAST(txn->flag);
     }
     else if (trans_data->m_iscatalog)
     {
         /*
          * 保存系统表二次解析结果
-         * 添加系统表数据到ripple_transcache_txn->sysdict
+         * 添加系统表数据到trans_cache_txn->sysdict
          * 系统表数据无需转为sql语句
          */
         if (trans_return->m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
         {
             /* pg14版本以上, ddl语句针对系统表的insert优化为了multi insert */
-            txn->sysdict = ripple_decode_heap_multi_insert_save_sysdict_as_insert(txn->sysdict, trans_return);
+            txn->sysdict = decode_heap_multi_insert_save_sysdict_as_insert(txn->sysdict, trans_return);
 
-            RIPPLE_TXN_SET_TRANS_DDL(txn->flag);
+            TXN_SET_TRANS_DDL(txn->flag);
         }
         else
         {
-            ripple_txn_sysdict *dict = rmalloc0(sizeof(ripple_txn_sysdict));
+            txn_sysdict *dict = rmalloc0(sizeof(txn_sysdict));
 
             dict->colvalues = (xk_pg_parser_translog_tbcol_values *)trans_return;
             dict->convert_colvalues = NULL;
             HEAP_STORAGE_CATALOG(txn, dict);
-            RIPPLE_TXN_SET_TRANS_DDL(txn->flag);
+            TXN_SET_TRANS_DDL(txn->flag);
         }
     }
     else if (strncmp(trans_return->m_tbname, PGTEMP_NAME, PGTEMP_NAME_LEN))
@@ -665,13 +665,13 @@ void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_transl
     heap_free_trans_pre(trans_data);
 }
 
-void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_heap_emit(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
 {
     xk_pg_parser_translog_translog2col *trans_data = NULL;
     xk_pg_parser_translog_tbcolbase *trans_return = NULL;
     xk_pg_parser_translog_pre_heap *heap_pre = (xk_pg_parser_translog_pre_heap*)pbase;
      xk_pg_parser_sysdict_pgclass *temp_class = NULL;
-    ripple_txn *txn = NULL;
+    txn *txn = NULL;
     bool        is_catalog = false;
     bool        find = false;
     char        *table_name = NULL;
@@ -681,7 +681,7 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
 
     bool        isexternal = false;
 
-    if (!ripple_heap_check_dboid(heap_pre->m_dboid, decodingctx->database))
+    if (!heap_check_dboid(heap_pre->m_dboid, decodingctx->database))
         return;
 
     if (!heap_pre->m_dboid)
@@ -690,10 +690,10 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
     /* 所有数据正常解析 */
 
     //获取当前事务的信息
-    txn = ripple_transcache_getTXNByXid((void*)decodingctx, pbase->m_xid);
+    txn = transcache_getTXNByXid((void*)decodingctx, pbase->m_xid);
 
     /* 通过relfilenode获取oid */
-    oid = ripple_catalog_get_oid_by_relfilenode(decodingctx->transcache->sysdicts->by_relfilenode,
+    oid = catalog_get_oid_by_relfilenode(decodingctx->trans_cache->sysdicts->by_relfilenode,
                                                 txn->sysdictHis,
                                                 txn->sysdict,
                                                 heap_pre->m_dboid,
@@ -708,7 +708,7 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
 
     is_catalog = heap_check_catalog(txn, oid);
 
-    temp_class = (xk_pg_parser_sysdict_pgclass *)ripple_catalog_get_class_sysdict(decodingctx->transcache->sysdicts->by_class,
+    temp_class = (xk_pg_parser_sysdict_pgclass *)catalog_get_class_sysdict(decodingctx->trans_cache->sysdicts->by_class,
                                                                                   txn->sysdict,
                                                                                   txn->sysdictHis,
                                                                                   oid);
@@ -717,10 +717,10 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
     if (CHECK_NEED_DDL_TRANS(is_catalog, txn, table_name))
     {
         /* 尝试处理可能存在的update中间语句 */
-        ripple_dml2ddl(decodingctx, txn);
-        ripple_transcache_sysdict2his(txn);
-        ripple_transcache_sysdict_free(txn);
-        RIPPLE_TXN_UNSET_TRANS_DDL(txn->flag);
+        dml2ddl(decodingctx, txn);
+        transcache_sysdict2his(txn);
+        transcache_sysdict_free(txn);
+        TXN_UNSET_TRANS_DDL(txn->flag);
     }
 
     /* 双向过滤含有状态表的事务过滤 */
@@ -733,7 +733,7 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
     }
     else
     {
-        hash_search(decodingctx->transcache->htxnfilterdataset, &oid, HASH_FIND, &find);
+        hash_search(decodingctx->trans_cache->htxnfilterdataset, &oid, HASH_FIND, &find);
         if (true == find)
         {
             txn->filter = true;
@@ -743,8 +743,8 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
 
     if (!is_catalog && !heap_check_special_table(oid, decodingctx, txn))
     {
-        if ((false == ripple_filter_dataset_dml(decodingctx->transcache->hsyncdataset, oid)
-        && false == ripple_filter_dataset_dml(txn->hsyncdataset, oid)))
+        if ((false == filter_dataset_dml(decodingctx->trans_cache->hsyncdataset, oid)
+        && false == filter_dataset_dml(txn->hsyncdataset, oid)))
         {
             return;
         }
@@ -768,7 +768,7 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
     }
 
     if (trans_data->m_iscatalog)
-        storage_tuple(decodingctx->transcache, decodingctx->decode_record->start.wal.lsn, trans_return);
+        storage_tuple(decodingctx->trans_cache, decodingctx->decode_record->start.wal.lsn, trans_return);
 
     /* 如果是对pg_class的pg_temp表进行操作, 首先使用我们保存的映射 */
     if (!strcmp(trans_return->m_schemaname, "pg_catalog")
@@ -778,8 +778,8 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
         xk_pg_parser_translog_tbcol_values *col = 
             (xk_pg_parser_translog_tbcol_values *) trans_return;
 
-        char *temp_relname = ripple_get_class_value_from_colvalue(col->m_new_values,
-                                                                  RIPPLE_CLASS_MAPNUM_RELNAME,
+        char *temp_relname = get_class_value_from_colvalue(col->m_new_values,
+                                                                  CLASS_MAPNUM_RELNAME,
                                                                   g_idbtype,
                                                                   g_idbversion);
 
@@ -787,8 +787,8 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
         {
             uint32_t real_oid = 0;
             char *temp_str = temp_relname;
-            char *temp_nspname = ripple_get_class_value_from_colvalue(col->m_new_values,
-                                                                      RIPPLE_CLASS_MAPNUM_RELNSPOID,
+            char *temp_nspname = get_class_value_from_colvalue(col->m_new_values,
+                                                                      CLASS_MAPNUM_RELNSPOID,
                                                                       g_idbtype,
                                                                       g_idbversion);
             temp_str = temp_str + 8;
@@ -803,19 +803,19 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
                 col->m_new_values[7].m_value = rstrdup((char *) col->m_new_values[0].m_value);
 
 
-                temp_oid_char = ripple_get_class_value_from_colvalue(col->m_new_values,
-                                                                     RIPPLE_CLASS_MAPNUM_OID,
+                temp_oid_char = get_class_value_from_colvalue(col->m_new_values,
+                                                                     CLASS_MAPNUM_OID,
                                                                      g_idbtype,
                                                                      g_idbversion);
                 temp_oid = (Oid) atoi(temp_oid_char);
 
-                ripple_free_class_value_from_colvalue(col->m_new_values,
-                                                      RIPPLE_CLASS_MAPNUM_RELFILENODE,
+                free_class_value_from_colvalue(col->m_new_values,
+                                                      CLASS_MAPNUM_RELFILENODE,
                                                       g_idbtype,
                                                       g_idbversion);
-                ripple_set_class_value_from_colvalue(col->m_new_values,
+                set_class_value_from_colvalue(col->m_new_values,
                                                      temp_oid_char,
-                                                     RIPPLE_CLASS_MAPNUM_RELFILENODE,
+                                                     CLASS_MAPNUM_RELFILENODE,
                                                      g_idbtype,
                                                      g_idbversion);
 
@@ -837,30 +837,30 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
     {
         heap_storage_external_data(txn, trans_return);
         heap_free_trans_result(trans_return);
-        RIPPLE_TXN_SET_TRANS_TOAST(txn->flag);
+        TXN_SET_TRANS_TOAST(txn->flag);
     }
     else if (trans_data->m_iscatalog)
     {
         /*
          * 保存系统表二次解析结果
-         * 添加系统表数据到ripple_transcache_txn->sysdict
+         * 添加系统表数据到trans_cache_txn->sysdict
          * 系统表数据无需转为sql语句
          */
         if (trans_return->m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
         {
             /* pg14版本以上, ddl语句针对系统表的insert优化为了multi insert */
-            txn->sysdict = ripple_decode_heap_multi_insert_save_sysdict_as_insert(txn->sysdict, trans_return);
+            txn->sysdict = decode_heap_multi_insert_save_sysdict_as_insert(txn->sysdict, trans_return);
 
-            RIPPLE_TXN_SET_TRANS_DDL(txn->flag);
+            TXN_SET_TRANS_DDL(txn->flag);
         }
         else
         {
-            ripple_txn_sysdict *dict = rmalloc0(sizeof(ripple_txn_sysdict));
+            txn_sysdict *dict = rmalloc0(sizeof(txn_sysdict));
 
             dict->colvalues = (xk_pg_parser_translog_tbcol_values *)trans_return;
             dict->convert_colvalues = NULL;
             HEAP_STORAGE_CATALOG(txn, dict);
-            RIPPLE_TXN_SET_TRANS_DDL(txn->flag);
+            TXN_SET_TRANS_DDL(txn->flag);
         }
     }
     else if (strncmp(trans_return->m_tbname, PGTEMP_NAME, PGTEMP_NAME_LEN))
@@ -878,17 +878,17 @@ void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_t
     heap_free_trans_pre(trans_data);
 }
 
-void ripple_heap_truncate(ripple_decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
+void heap_truncate(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
 {
     xk_pg_parser_translog_pre_heap_truncate *truncate =
         (xk_pg_parser_translog_pre_heap_truncate*)pbase;
-    ripple_txn *txn = NULL;
+    txn *txn = NULL;
     int index_relnum = 0;
 
     if (truncate->dbid != decodingctx->database)
         return;
 
-    txn = ripple_transcache_getTXNByXid((void*)decodingctx, pbase->m_xid);
+    txn = transcache_getTXNByXid((void*)decodingctx, pbase->m_xid);
 
     for (index_relnum = 0; index_relnum < truncate->nrelids; index_relnum++)
     {
@@ -897,12 +897,12 @@ void ripple_heap_truncate(ripple_decodingcontext* decodingctx, xk_pg_parser_tran
     /* 内存释放在预解析释放中完成 */
 }
 
-void ripple_heap_fpw_tuples(ripple_decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
+void heap_fpw_tuples(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase)
 {
     Oid oid = 0;
     xk_pg_parser_translog_pre_image_tuple *tup = (xk_pg_parser_translog_pre_image_tuple *)pbase;
-    ripple_transcache *storage = decodingctx->transcache;
-    ripple_txn *txn = NULL;
+    transcache *storage = decodingctx->trans_cache;
+    txn *txn = NULL;
     List *sysdict = NULL;
     List *sysdicthis = NULL;
 
@@ -912,7 +912,7 @@ void ripple_heap_fpw_tuples(ripple_decodingcontext* decodingctx, xk_pg_parser_tr
 
     if (pbase->m_xid)
     {
-        txn = ripple_transcache_getTXNByXid((void*)decodingctx, pbase->m_xid);
+        txn = transcache_getTXNByXid((void*)decodingctx, pbase->m_xid);
         sysdict = txn->sysdict;
         sysdicthis = txn->sysdictHis;
     }
@@ -920,7 +920,7 @@ void ripple_heap_fpw_tuples(ripple_decodingcontext* decodingctx, xk_pg_parser_tr
     if (tup->m_dboid == 0)
         tup->m_dboid = decodingctx->database;
 
-    oid = ripple_catalog_get_oid_by_relfilenode(decodingctx->transcache->sysdicts->by_relfilenode,
+    oid = catalog_get_oid_by_relfilenode(decodingctx->trans_cache->sysdicts->by_relfilenode,
                                                 sysdicthis,
                                                 sysdict,
                                                 tup->m_dboid,
@@ -932,7 +932,7 @@ void ripple_heap_fpw_tuples(ripple_decodingcontext* decodingctx, xk_pg_parser_tr
 
     /* 判断是否存在fpw缓存*/
     if (!storage->by_fpwtuples)
-        storage->by_fpwtuples = ripple_fpwcache_init(decodingctx->transcache);
+        storage->by_fpwtuples = fpwcache_init(decodingctx->trans_cache);
 
     /* 忽略非系统表缓存, 因为是logical模式 */
     if (!txn)
@@ -960,6 +960,6 @@ void ripple_heap_fpw_tuples(ripple_decodingcontext* decodingctx, xk_pg_parser_tr
         entry.len = tup->m_tuples[index_tuple_cnt].m_tuplelen;
         entry.lsn = decodingctx->decode_record->start.wal.lsn;
         elog(RLOG_DEBUG, "get tuple, rel: %u, blk: %u, off:%hu", key.relfilenode, key.blcknum, key.itemoffset);
-        ripple_fpwcache_add(decodingctx->transcache, &key, &entry);
+        fpwcache_add(decodingctx->trans_cache, &key, &entry);
     }
 }

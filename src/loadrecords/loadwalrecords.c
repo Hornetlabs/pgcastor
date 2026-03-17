@@ -1,15 +1,15 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/dlist/dlist.h"
 #include "utils/guc/guc.h"
 #include "utils/mpage/mpage.h"
 #include "utils/algorithm/crc/crc_check.h"
-#include "works/splitwork/wal/ripple_wal_define.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadwalrecords.h"
+#include "works/splitwork/wal/wal_define.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadwalrecords.h"
 
 #define XLOG_PAGE_MAGIC_PG127 0xD101
 #define XLOG_PAGE_MAGIC_PG149 0xD10D
@@ -24,7 +24,7 @@ typedef struct totalLen
     uint32 len;
 }totalLen;
 
-static bool ripple_splitwork_wal_crccheck(uint8 *bytes)
+static bool splitwork_wal_crccheck(uint8 *bytes)
 {
     pg_crc32c    crc;
     XLogRecord *record = NULL;
@@ -53,7 +53,7 @@ static bool check_magic(uint16 magic)
     return (magic == XLOG_PAGE_MAGIC_PG127 || magic == XLOG_PAGE_MAGIC_PG149 || magic == XLOG_PAGE_MAGIC_PG95);
 }
 
-static bool check_is_same_segno(XLogRecPtr ptr1, XLogRecPtr ptr2, ripple_loadwalrecords *rctl)
+static bool check_is_same_segno(XLogRecPtr ptr1, XLogRecPtr ptr2, loadwalrecords *rctl)
 {
     uint32_t segno1 = 0;
     uint32_t segno2 = 0;
@@ -87,7 +87,7 @@ static bool check_record_len_is_valid(uint32_t len)
     return (RecordAllocSizeIsValid(len) && len >= SizeOfXLogRecord);
 }
 
-static bool check_seg_first_incomplete_record_incompleted(ripple_loadwalrecords *rctl)
+static bool check_seg_first_incomplete_record_incompleted(loadwalrecords *rctl)
 {
     if (rctl->seg_first_incomplete)
     {
@@ -120,12 +120,12 @@ static void wal_usleep(long microsec)
 }
 
 /* 初始化划分record的loadpage部分 */
-static bool ripple_loadwalrecords_initloadpage(ripple_loadwalrecords* loadrecords, ripple_loadpage_type type)
+static bool loadwalrecords_initloadpage(loadwalrecords* loadrecords, loadpage_type type)
 {
     char *dirpath = NULL;
 
     /* 获取函数指针 */
-    loadrecords->loadpageroutine = ripple_loadpage_getpageroutine(type);
+    loadrecords->loadpageroutine = loadpage_getpageroutine(type);
 
     if(NULL == loadrecords->loadpageroutine)
     {
@@ -143,10 +143,10 @@ static bool ripple_loadwalrecords_initloadpage(ripple_loadwalrecords* loadrecord
     /* 设置文件块大小和文件大小 */
     loadrecords->loadpage->blksize = g_blocksize;
     loadrecords->loadpage->filesize = g_walsegsize * 1048576;
-    loadrecords->loadpageroutine->loadpagesettype(loadrecords->loadpage, RIPPLE_LOADPAGEFROMFILE_TYPE_WAL);
+    loadrecords->loadpageroutine->loadpagesettype(loadrecords->loadpage, LOADPAGEFROMFILE_TYPE_WAL);
 
     /* 设置文件夹路径 */
-    dirpath = guc_getConfigOption(RIPPLE_CFG_KEY_WAL_DIR);
+    dirpath = guc_getConfigOption(CFG_KEY_WAL_DIR);
     if(false == loadrecords->loadpageroutine->loadpagesetfilesource(loadrecords->loadpage, dirpath))
     {
         elog(RLOG_WARNING, "load trail record set load source error");
@@ -156,20 +156,20 @@ static bool ripple_loadwalrecords_initloadpage(ripple_loadwalrecords* loadrecord
     return true;
 }
 
-ripple_loadwalrecords* ripple_loadwalrecords_init(void)
+loadwalrecords* loadwalrecords_init(void)
 {
-    ripple_loadwalrecords* result = NULL;
+    loadwalrecords* result = NULL;
     mpage* page = NULL;
 
-    result = rmalloc0(sizeof(ripple_loadwalrecords));
+    result = rmalloc0(sizeof(loadwalrecords));
     if (!result)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(result, 0, 0, sizeof(ripple_loadwalrecords));
+    rmemset0(result, 0, 0, sizeof(loadwalrecords));
 
     /* 初始化loadpage相关 */
-    if (!ripple_loadwalrecords_initloadpage(result, RIPPLE_LOADPAGE_TYPE_FILE))
+    if (!loadwalrecords_initloadpage(result, LOADPAGE_TYPE_FILE))
     {
         return NULL;
     }
@@ -196,7 +196,7 @@ ripple_loadwalrecords* ripple_loadwalrecords_init(void)
     return result;
 }
 
-void ripple_loadwalrecords_free(ripple_loadwalrecords* loadrecords)
+void loadwalrecords_free(loadwalrecords* loadrecords)
 {
     if (!loadrecords)
     {
@@ -206,23 +206,23 @@ void ripple_loadwalrecords_free(ripple_loadwalrecords* loadrecords)
     /* 释放不完整的record */
     if (NULL != loadrecords->seg_first_incomplete)
     {
-        ripple_recordcross_free(loadrecords->seg_first_incomplete);
+        recordcross_free(loadrecords->seg_first_incomplete);
     }
 
     if (NULL != loadrecords->seg_first_incomplete_next)
     {
-        ripple_recordcross_free(loadrecords->seg_first_incomplete_next);
+        recordcross_free(loadrecords->seg_first_incomplete_next);
     }
 
     if (NULL != loadrecords->page_last_record_incomplete)
     {
-        ripple_recordcross_free(loadrecords->page_last_record_incomplete);
+        recordcross_free(loadrecords->page_last_record_incomplete);
     }
 
     /* 释放records链表 */
     if (NULL != loadrecords->records)
     {
-        dlist_free(loadrecords->records, (dlistvaluefree)ripple_record_free);
+        dlist_free(loadrecords->records, (dlistvaluefree)record_free);
     }
 
     /* 释放loadpage */
@@ -247,15 +247,15 @@ void ripple_loadwalrecords_free(ripple_loadwalrecords* loadrecords)
     rfree(loadrecords);
 }
 
-static bool ripple_loadtwalrecords_loadpage(ripple_loadwalrecords *loadrecords)
+static bool loadtwalrecords_loadpage(loadwalrecords *loadrecords)
 {
     bool result = false;
-    ripple_recpos pos = {{'\0'}};
+    recpos pos = {{'\0'}};
     mpage *buff = loadrecords->page;
 
     /* 计算block开始的lsn */
     loadrecords->block_startptr = loadrecords->startptr - (loadrecords->startptr & (loadrecords->loadpage->blksize - 1));
-    pos.wal.type = RIPPLE_RECPOS_TYPE_WAL;
+    pos.wal.type = RECPOS_TYPE_WAL;
     pos.wal.timeline = loadrecords->timeline;
     pos.wal.lsn = loadrecords->block_startptr;
 
@@ -278,7 +278,7 @@ static bool ripple_loadtwalrecords_loadpage(ripple_loadwalrecords *loadrecords)
     return result;
 }
 
-bool ripple_loadwalrecords_checkend(XLogRecPtr cur, ripple_loadwalrecords *rctl)
+bool loadwalrecords_checkend(XLogRecPtr cur, loadwalrecords *rctl)
 {
     if (!rctl->endptr)
     {
@@ -296,7 +296,7 @@ bool ripple_loadwalrecords_checkend(XLogRecPtr cur, ripple_loadwalrecords *rctl)
 
 /* 从bolck头开始划分 */
 static bool splitStartWithBlockBegin(char *currentBuf,
-                                     ripple_loadwalrecords* loadrecords,
+                                     loadwalrecords* loadrecords,
                                      mpage* buff,
                                      XLogRecPtr *currentPtr,
                                      uint32_t *offset)
@@ -349,7 +349,7 @@ static bool splitStartWithBlockBegin(char *currentBuf,
             loadrecords->startptr = loadrecords->page_last_record_incomplete->record->start.wal.lsn;
 
             /* 释放 */
-            ripple_recordcross_free(loadrecords->page_last_record_incomplete);
+            recordcross_free(loadrecords->page_last_record_incomplete);
             loadrecords->page_last_record_incomplete = NULL;
 
             return false;
@@ -361,7 +361,7 @@ static bool splitStartWithBlockBegin(char *currentBuf,
         /* 是否存在不完整record */
         if (loadrecords->page_last_record_incomplete && !check_seg_first_incomplete_record_incompleted(loadrecords))
         {
-            ripple_recordcross *record_cross = loadrecords->page_last_record_incomplete;
+            recordcross *record_cross = loadrecords->page_last_record_incomplete;
             uint32      temp_offset = 0;
             char       *temp_record_ptr = (char *)record_cross->record->data;
             uint32      realSize = MAXALIGN(phdr->xlp_rem_len);
@@ -386,7 +386,7 @@ static bool splitStartWithBlockBegin(char *currentBuf,
                 loadrecords->startptr = record_cross->record->start.wal.lsn;
 
                 /* 释放 */
-                ripple_recordcross_free(record_cross);
+                recordcross_free(record_cross);
                 loadrecords->page_last_record_incomplete = NULL;
 
                 return false;
@@ -403,18 +403,18 @@ static bool splitStartWithBlockBegin(char *currentBuf,
             if (record_cross->remainlen == record_cross->totallen)
             {
                 /* 已经是完整record, 附加到结果中 */
-                ripple_record *complete_record = record_cross->record;
+                record *complete_record = record_cross->record;
 
                 /* type设置为NORMAL */
-                complete_record->type = RIPPLE_RECORD_TYPE_WAL_NORMAL;
+                complete_record->type = RECORD_TYPE_WAL_NORMAL;
                 complete_record->totallength = record_cross->totallen;
 
                 /* 设置end */
-                complete_record->end.wal.type = RIPPLE_RECPOS_TYPE_WAL;
+                complete_record->end.wal.type = RECPOS_TYPE_WAL;
                 complete_record->end.wal.lsn = loadrecords->block_startptr + *offset + realSize;
                 complete_record->end.wal.timeline = loadrecords->timeline;
 
-                if (!ripple_splitwork_wal_crccheck((uint8 *)complete_record->data)
+                if (!splitwork_wal_crccheck((uint8 *)complete_record->data)
                  || !check_prev_lsn((XLogRecord *)complete_record->data, loadrecords->prev))
                 {
                     /* 不处于同一个wal文件时,  */
@@ -429,7 +429,7 @@ static bool splitStartWithBlockBegin(char *currentBuf,
                                     (uint32) (loadrecords->startptr >> 32),
                                     (uint32) loadrecords->startptr);
                     /* 释放 */
-                    ripple_recordcross_free(record_cross);
+                    recordcross_free(record_cross);
                     loadrecords->page_last_record_incomplete = NULL;
 
                     /* 校验失败时, 等待200ms */
@@ -449,7 +449,7 @@ static bool splitStartWithBlockBegin(char *currentBuf,
                 g_walrecno++;
 
                 /* 释放 */
-                ripple_recordcross_free(loadrecords->page_last_record_incomplete);
+                recordcross_free(loadrecords->page_last_record_incomplete);
                 loadrecords->page_last_record_incomplete = NULL;
             }
 
@@ -467,7 +467,7 @@ static bool splitStartWithBlockBegin(char *currentBuf,
             if (loadrecords->seg_first_incomplete)
             {
                 /* 已经存在文件第一个block */
-                ripple_recordcross *record_cross = loadrecords->seg_first_incomplete;
+                recordcross *record_cross = loadrecords->seg_first_incomplete;
 
                 /* 确定真实长度 */
                 realSize = (realSize <= freeSpace) ? realSize : freeSpace;
@@ -483,15 +483,15 @@ static bool splitStartWithBlockBegin(char *currentBuf,
                 /* 这里不可能完整, 因此不做完整性检查 */
 
                 /* 每次都设置结束lsn */
-                record_cross->record->end.wal.type = RIPPLE_RECPOS_TYPE_WAL;
+                record_cross->record->end.wal.type = RECPOS_TYPE_WAL;
                 record_cross->record->end.wal.lsn = *currentPtr;
                 record_cross->record->end.wal.timeline = loadrecords->timeline;
             }
             else
             {
                 /* 不存在文件第一个block */
-                ripple_recordcross *record_cross = ripple_recordcross_init();
-                ripple_record *record = ripple_record_init();
+                recordcross *record_cross = recordcross_init();
+                record *record = record_init();
 
                 record_cross->record = record;
 
@@ -502,7 +502,7 @@ static bool splitStartWithBlockBegin(char *currentBuf,
                 record_cross->totallen = MAXALIGN(phdr->xlp_rem_len);
                 record_cross->remainlen = realSize;
 
-                record->type = RIPPLE_RECORD_TYPE_WAL_CROSS;
+                record->type = RECORD_TYPE_WAL_CROSS;
                 record->data = rmalloc0(record_cross->totallen);
                 if (!record->data)
                 {
@@ -518,7 +518,7 @@ static bool splitStartWithBlockBegin(char *currentBuf,
                 updateCurrentPtr(*currentPtr, loadrecords, *offset);
 
                 /* 设置结束lsn */
-                record->end.wal.type = RIPPLE_RECPOS_TYPE_WAL;
+                record->end.wal.type = RECPOS_TYPE_WAL;
                 record->end.wal.lsn = *currentPtr;
                 record->end.wal.timeline = loadrecords->timeline;
 
@@ -541,7 +541,7 @@ static bool splitStartWithBlockBegin(char *currentBuf,
 
 /* 从record开始划分 */
 static bool splitStartWithRecordBegin(char* currentBuf,
-                                      ripple_loadwalrecords* loadrecords,
+                                      loadwalrecords* loadrecords,
                                       mpage* buff,
                                       XLogRecPtr* currentPtr,
                                       uint32_t* offset)
@@ -562,7 +562,7 @@ static bool splitStartWithRecordBegin(char* currentBuf,
         loadrecords->startptr = loadrecords->page_last_record_incomplete->record->start.wal.lsn;
 
         /* 释放 */
-        ripple_recordcross_free(loadrecords->page_last_record_incomplete);
+        recordcross_free(loadrecords->page_last_record_incomplete);
         loadrecords->page_last_record_incomplete = NULL;
 
         return false;
@@ -598,7 +598,7 @@ static bool splitStartWithRecordBegin(char* currentBuf,
     if (*offset + total_len->len > buff->size)
     {
         /* 跨block, 初始化incomplete record */
-        ripple_recordcross* recordcross = ripple_recordcross_init();
+        recordcross* recordcross = recordcross_init();
 
         recordcross->totallen = MAXALIGN(total_len->len);
 
@@ -610,7 +610,7 @@ static bool splitStartWithRecordBegin(char* currentBuf,
 
             elog(RLOG_INFO, "irecord malloc len:%u, wait next flush", recordcross->totallen);
 
-            ripple_recordcross_free(recordcross);
+            recordcross_free(recordcross);
             loadrecords->startptr = *currentPtr;
 
             return false;
@@ -619,7 +619,7 @@ static bool splitStartWithRecordBegin(char* currentBuf,
         /* 计算有效长度 */
         recordcross->remainlen = buff->size - *offset;
 
-        recordcross->record = ripple_record_init();
+        recordcross->record = record_init();
 
         /* 分配长度 */
         recordcross->record->data = rmalloc0(recordcross->totallen);
@@ -627,7 +627,7 @@ static bool splitStartWithRecordBegin(char* currentBuf,
         rmemcpy0(recordcross->record->data, 0, buff->data + *offset, buff->size - *offset);
 
         recordcross->record->totallength = recordcross->totallen;
-        recordcross->record->start.wal.type = RIPPLE_RECPOS_TYPE_WAL;
+        recordcross->record->start.wal.type = RECPOS_TYPE_WAL;
         recordcross->record->start.wal.timeline = loadrecords->timeline;
         recordcross->record->start.wal.lsn = *currentPtr;
 
@@ -640,7 +640,7 @@ static bool splitStartWithRecordBegin(char* currentBuf,
     {
         /* 不跨block, 正常解析 */
         uint32 realSize = MAXALIGN(total_len->len);
-        ripple_record* recordEntry = ripple_record_init();
+        record* recordEntry = record_init();
 
         /* 最大值为 1G - 1 最小值为 24 */
         if(!check_record_len_is_valid(total_len->len))
@@ -648,18 +648,18 @@ static bool splitStartWithRecordBegin(char* currentBuf,
             /* 校验失败时, 等待200ms */
             wal_usleep(20 * 1000);
 
-            ripple_record_free(recordEntry);
+            record_free(recordEntry);
             loadrecords->startptr = *currentPtr;
 
             return false;
         }
 
         recordEntry->totallength = realSize;
-        recordEntry->start.wal.type = RIPPLE_RECPOS_TYPE_WAL;
+        recordEntry->start.wal.type = RECPOS_TYPE_WAL;
         recordEntry->start.wal.lsn = *currentPtr;
         recordEntry->start.wal.timeline = loadrecords->timeline;
 
-        recordEntry->end.wal.type = RIPPLE_RECPOS_TYPE_WAL;
+        recordEntry->end.wal.type = RECPOS_TYPE_WAL;
         recordEntry->end.wal.lsn = *currentPtr + realSize;
         recordEntry->end.wal.timeline = loadrecords->timeline;
 
@@ -667,7 +667,7 @@ static bool splitStartWithRecordBegin(char* currentBuf,
         rmemset0(recordEntry->data, 0, 0, realSize);
         rmemcpy0(recordEntry->data, 0, buff->data + *offset, realSize);
 
-        if (!ripple_splitwork_wal_crccheck((uint8 *)recordEntry->data)
+        if (!splitwork_wal_crccheck((uint8 *)recordEntry->data)
          || !check_prev_lsn((XLogRecord *)recordEntry->data, loadrecords->prev))
         {
             /* 校验失败时, 等待200ms */
@@ -677,7 +677,7 @@ static bool splitStartWithRecordBegin(char* currentBuf,
             elog(RLOG_DEBUG, "record crc or prev check failed, lsn:%X/%X",
                                (uint32) (loadrecords->startptr >> 32),
                                (uint32) loadrecords->startptr);
-            ripple_record_free(recordEntry);
+            record_free(recordEntry);
 
             return false;
         }
@@ -696,22 +696,22 @@ static bool splitStartWithRecordBegin(char* currentBuf,
     return true;
 }
 
-bool ripple_loadwalrecords_load(ripple_loadwalrecords* loadrecords)
+bool loadwalrecords_load(loadwalrecords* loadrecords)
 {
     XLogRecPtr  currentPtr = loadrecords->startptr;
     uint32      offset = 0;
     char*       currentBuf = NULL;
     mpage*      buff = loadrecords->page;
-    ripple_recpos pos = {{'\0'}};
+    recpos pos = {{'\0'}};
 
-    pos.wal.type = RIPPLE_RECPOS_TYPE_WAL;
+    pos.wal.type = RECPOS_TYPE_WAL;
     pos.wal.lsn = currentPtr;
     pos.wal.timeline = loadrecords->timeline;
 
     loadrecords->loadpageroutine->loadpagesetstartpos(loadrecords->loadpage, pos);
 
     /* 读取页 */
-    if (false == ripple_loadtwalrecords_loadpage(loadrecords))
+    if (false == loadtwalrecords_loadpage(loadrecords))
     {
         elog(RLOG_WARNING, "in loadwalrecords_load, call loadtwalrecords_loadpage false");
         return false;
@@ -721,7 +721,7 @@ bool ripple_loadwalrecords_load(ripple_loadwalrecords* loadrecords)
 
     currentBuf = (char*)buff->data + offset;
 
-    while (offset < buff->size && ripple_loadwalrecords_checkend(currentPtr, loadrecords))
+    while (offset < buff->size && loadwalrecords_checkend(currentPtr, loadrecords))
     {
         /* 标志着从blockheader开始 */
         if (IsXlogPageBegin(currentPtr, buff->size))
@@ -748,7 +748,7 @@ bool ripple_loadwalrecords_load(ripple_loadwalrecords* loadrecords)
     return true;
 }
 
-static void ripple_loadwalrecords_recorddlist_clean(ripple_loadwalrecords* loadrecords)
+static void loadwalrecords_recorddlist_clean(loadwalrecords* loadrecords)
 {
     if (!loadrecords->records)
     {
@@ -756,19 +756,19 @@ static void ripple_loadwalrecords_recorddlist_clean(ripple_loadwalrecords* loadr
     }
 
     /* 删除双向链表 */
-    dlist_free(loadrecords->records, (dlistvaluefree )ripple_record_free);
+    dlist_free(loadrecords->records, (dlistvaluefree )record_free);
 
     /* 置空 */
     loadrecords->records = NULL;
 }
 
-void ripple_loadwalrecords_clean(ripple_loadwalrecords* loadrecords)
+void loadwalrecords_clean(loadwalrecords* loadrecords)
 {
     /* 关闭文件 */
     loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
 
     /* 释放已经划分好的record */
-    ripple_loadwalrecords_recorddlist_clean(loadrecords);
+    loadwalrecords_recorddlist_clean(loadrecords);
 
     /* 重置 */
     loadrecords->block_startptr = InvalidXLogRecPtr;
@@ -779,18 +779,18 @@ void ripple_loadwalrecords_clean(ripple_loadwalrecords* loadrecords)
     /* clean */
     if (loadrecords->seg_first_incomplete)
     {
-        ripple_recordcross_free(loadrecords->seg_first_incomplete);
+        recordcross_free(loadrecords->seg_first_incomplete);
         loadrecords->seg_first_incomplete = NULL;
     }
     if (loadrecords->seg_first_incomplete_next)
     {
-        ripple_recordcross_free(loadrecords->seg_first_incomplete_next);
+        recordcross_free(loadrecords->seg_first_incomplete_next);
         loadrecords->seg_first_incomplete_next = NULL;
     }
 
     if (loadrecords->page_last_record_incomplete)
     {
-        ripple_recordcross_free(loadrecords->page_last_record_incomplete);
+        recordcross_free(loadrecords->page_last_record_incomplete);
         loadrecords->page_last_record_incomplete = NULL;
     }
 
@@ -798,12 +798,12 @@ void ripple_loadwalrecords_clean(ripple_loadwalrecords* loadrecords)
     rmemset0(loadrecords->page->data, 0, 0, loadrecords->loadpage->blksize);
 }
 
-bool ripple_loadwalrecords_merge_seg_last_record(ripple_loadwalrecords *rctl)
+bool loadwalrecords_merge_seg_last_record(loadwalrecords *rctl)
 {
-    ripple_recordcross* f_record = rctl->page_last_record_incomplete;
-    ripple_recordcross* l_record = rctl->seg_first_incomplete_next;
+    recordcross* f_record = rctl->page_last_record_incomplete;
+    recordcross* l_record = rctl->seg_first_incomplete_next;
 
-    ripple_record* record = NULL;
+    record* record = NULL;
 
     /* 检查是否存在, 不存在时是错误情况, 直接返回 */
     if (!rctl->page_last_record_incomplete)
@@ -822,7 +822,7 @@ bool ripple_loadwalrecords_merge_seg_last_record(ripple_loadwalrecords *rctl)
     /* 校验通过, 组装, 使用前一个不完整record */
     record = f_record->record;
     record->totallength = f_record->totallen;
-    record->end.wal.type = RIPPLE_RECPOS_TYPE_WAL;
+    record->end.wal.type = RECPOS_TYPE_WAL;
     record->end.wal.lsn = l_record->record->end.wal.lsn;
     record->end.wal.timeline = l_record->record->end.wal.timeline;
 
@@ -833,7 +833,7 @@ bool ripple_loadwalrecords_merge_seg_last_record(ripple_loadwalrecords *rctl)
     f_record->record = NULL;
 
     /* crc和prev校验 */
-    if (!ripple_splitwork_wal_crccheck((uint8 *)record->data)
+    if (!splitwork_wal_crccheck((uint8 *)record->data)
      || !check_prev_lsn((XLogRecord *)record->data, rctl->prev))
     {
         /* 校验不应该失败, 这里有问题 */
@@ -850,8 +850,8 @@ bool ripple_loadwalrecords_merge_seg_last_record(ripple_loadwalrecords *rctl)
     g_walrecno++;
 
     /* 清理, 清理前一个不完整record和下一个文件开头的不完整record, 前一个不完整record已经置空 */
-    ripple_recordcross_free(f_record);
-    ripple_recordcross_free(l_record);
+    recordcross_free(f_record);
+    recordcross_free(l_record);
 
     /* 置空 */
     rctl->seg_first_incomplete_next = NULL;

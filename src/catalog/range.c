@@ -1,37 +1,37 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "port/file/fd.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
 #include "utils/guc/guc.h"
 #include "utils/hash/hash_utils.h"
-#include "utils/conn/ripple_conn.h"
+#include "utils/conn/conn.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_transcache.h"
-#include "catalog/ripple_catalog.h"
-#include "catalog/ripple_range.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/transcache.h"
+#include "catalog/catalog.h"
+#include "catalog/range.h"
 
-void ripple_range_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
+void range_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 {
 	int i, j;
 	HASHCTL hash_ctl;
 	bool found = false;
 	PGresult *res  = NULL;
-	ripple_catalog_range_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_range ripple_range = NULL;
+	catalog_range_value *entry = NULL;
+	xk_pg_sysdict_Form_pg_range range = NULL;
 	const char *query = "SELECT rel.rngtypid,rel.rngsubtype FROM pg_range rel;";
 
 	rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
 	hash_ctl.keysize = sizeof(Oid);
-	hash_ctl.entrysize = sizeof(ripple_catalog_range_value);
-	sysdicts->by_range = hash_create("ripple_catalog_sysdicts_range", 2048, &hash_ctl,
+	hash_ctl.entrysize = sizeof(catalog_range_value);
+	sysdicts->by_range = hash_create("catalog_sysdicts_range", 2048, &hash_ctl,
 										HASH_ELEM | HASH_BLOBS);
 
-	res = ripple_conn_exec(conn, query);
+	res = conn_exec(conn, query);
 	if (NULL == res)
 	{
 		elog(RLOG_ERROR, "pg_range query failed");
@@ -40,63 +40,63 @@ void ripple_range_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
 	// 打印行数据
 	for (i = 0; i < PQntuples(res); i++) 
 	{
-		ripple_range = (xk_pg_sysdict_Form_pg_range)rmalloc0(sizeof(xk_pg_parser_sysdict_pgrange));
-		if(NULL == ripple_range)
+		range = (xk_pg_sysdict_Form_pg_range)rmalloc0(sizeof(xk_pg_parser_sysdict_pgrange));
+		if(NULL == range)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemset0(ripple_range, 0, '\0', sizeof(xk_pg_parser_sysdict_pgrange));
+		rmemset0(range, 0, '\0', sizeof(xk_pg_parser_sysdict_pgrange));
 		j=0;
-		sscanf(PQgetvalue(res, i, j++), "%u", &ripple_range->rngtypid);
-		sscanf(PQgetvalue(res, i, j++), "%u", &ripple_range->rngsubtype);
+		sscanf(PQgetvalue(res, i, j++), "%u", &range->rngtypid);
+		sscanf(PQgetvalue(res, i, j++), "%u", &range->rngsubtype);
 
-		entry = hash_search(sysdicts->by_range, &ripple_range->rngtypid, HASH_ENTER, &found);
+		entry = hash_search(sysdicts->by_range, &range->rngtypid, HASH_ENTER, &found);
 		if(found)
 		{
-			elog(RLOG_ERROR, "range_oid:%u already exist in by_range", entry->ripple_range->rngtypid);
+			elog(RLOG_ERROR, "range_oid:%u already exist in by_range", entry->range->rngtypid);
 		}
-		entry->rngtypid = ripple_range->rngtypid;
-		entry->ripple_range = ripple_range;
+		entry->rngtypid = range->rngtypid;
+		entry->range = range;
 	}
 	PQclear(res);
 	return;
 }
 
-void ripple_rangedata_write(List* ripple_range, uint64 *offset, ripple_sysdict_header_array* array)
+void rangedata_write(List* range, uint64 *offset, sysdict_header_array* array)
 {
 	int	 fd;
 	uint64 page_num = 0;
 	uint64 page_offset = 0;
 	ListCell*	cell = NULL;
-	char buffer[RIPPLE_FILE_BLK_SIZE];
+	char buffer[FILE_BLK_SIZE];
 	xk_pg_sysdict_Form_pg_range riplerange;
 	
-	array->type = RIPPLE_CATALOG_TYPE_RANGE;
+	array->type = CATALOG_TYPE_RANGE;
 	array->offset = *offset;
 	page_num = *offset;
 
-	rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
-	fd = BasicOpenFile(RIPPLE_SYSDICTS_FILE,
-						O_RDWR | O_CREAT | RIPPLE_BINARY);
+	rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
+	fd = osal_basic_open_file(SYSDICTS_FILE,
+						O_RDWR | O_CREAT | BINARY);
 
 	if (fd < 0)
 	{
-		elog(RLOG_ERROR, "could not create file %s", RIPPLE_SYSDICTS_FILE);
+		elog(RLOG_ERROR, "could not create file %s", SYSDICTS_FILE);
 	}
 
-	foreach(cell, ripple_range)
+	foreach(cell, range)
 	{
 		riplerange = (xk_pg_sysdict_Form_pg_range) lfirst(cell);
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgrange) > RIPPLE_FILE_BLK_SIZE)
+		if(page_offset + sizeof(xk_pg_parser_sysdict_pgrange) > FILE_BLK_SIZE)
 		{
-			if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-				elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_FILE);
-				FileClose(fd);
+			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
+				osal_file_close(fd);
 				return;
 			}
-			rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
+			rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
 			page_num = *offset + page_offset;
-			*offset += RIPPLE_FILE_BLK_SIZE;
+			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
 		rmemcpy1(buffer, page_offset, riplerange, sizeof(xk_pg_parser_sysdict_pgrange));
@@ -104,30 +104,30 @@ void ripple_rangedata_write(List* ripple_range, uint64 *offset, ripple_sysdict_h
 	}
 
 	if (page_offset > 0) {
-		if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-			elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_FILE);
-			FileClose(fd);
+		if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+			elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
+			osal_file_close(fd);
 			return;
 		}
 		page_num = page_offset + *offset;
-		*offset += RIPPLE_FILE_BLK_SIZE;
+		*offset += FILE_BLK_SIZE;
 	}
 
-	if(0 != FileSync(fd))
+	if(0 != osal_file_sync(fd))
 	{
-		elog(RLOG_ERROR, "could not fsync file %s", RIPPLE_SYSDICTS_FILE);
+		elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_FILE);
 	}
 
-	if(FileClose(fd))
+	if(osal_file_close(fd))
 	{
-		elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_FILE);
+		elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
 	}
 
 	array->len = page_num;
 
 }
 
-HTAB* ripple_rangecache_load(ripple_sysdict_header_array* array)
+HTAB* rangecache_load(sysdict_header_array* array)
 {
     int r = 0;
     int fd = -1;
@@ -135,35 +135,35 @@ HTAB* ripple_rangecache_load(ripple_sysdict_header_array* array)
     HASHCTL hash_ctl;
     bool found = false;
     uint64 fileoffset = 0;
-    char buffer[RIPPLE_FILE_BLK_SIZE];
+    char buffer[FILE_BLK_SIZE];
     xk_pg_sysdict_Form_pg_range range;
-    ripple_catalog_range_value *entry = NULL;
+    catalog_range_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(uint32_t);
-    hash_ctl.entrysize = sizeof(ripple_catalog_range_value);
-    rangehtab = hash_create("ripple_catalog_range_value", 2048, &hash_ctl,
+    hash_ctl.entrysize = sizeof(catalog_range_value);
+    rangehtab = hash_create("catalog_range_value", 2048, &hash_ctl,
                                  HASH_ELEM | HASH_BLOBS);
 
-    if (array[RIPPLE_CATALOG_TYPE_RANGE - 1].len == array[RIPPLE_CATALOG_TYPE_RANGE - 1].offset)
+    if (array[CATALOG_TYPE_RANGE - 1].len == array[CATALOG_TYPE_RANGE - 1].offset)
     {
         return rangehtab;
     }
 
-    fd = BasicOpenFile(RIPPLE_SYSDICTS_FILE,
-                        O_RDWR | RIPPLE_BINARY);
+    fd = osal_basic_open_file(SYSDICTS_FILE,
+                        O_RDWR | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_ERROR, "could not open file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not open file %s", SYSDICTS_FILE);
     }
 
-    fileoffset = array[RIPPLE_CATALOG_TYPE_RANGE - 1].offset;
-    while ((r = FilePRead(fd, buffer, RIPPLE_FILE_BLK_SIZE, fileoffset)) > 0) 
+    fileoffset = array[CATALOG_TYPE_RANGE - 1].offset;
+    while ((r = osal_file_pread(fd, buffer, FILE_BLK_SIZE, fileoffset)) > 0) 
     {
         uint64 offset = 0;
 
-        while (offset + sizeof(xk_pg_parser_sysdict_pgrange) < RIPPLE_FILE_BLK_SIZE)
+        while (offset + sizeof(xk_pg_parser_sysdict_pgrange) < FILE_BLK_SIZE)
         {
             range = (xk_pg_sysdict_Form_pg_range)rmalloc1(sizeof(xk_pg_parser_sysdict_pgrange));
             if(NULL == range)
@@ -175,26 +175,26 @@ HTAB* ripple_rangecache_load(ripple_sysdict_header_array* array)
             entry = hash_search(rangehtab, &range->rngtypid, HASH_ENTER, &found);
             if(found)
             {
-                elog(RLOG_ERROR, "range_oid:%u already exist in by_range", entry->ripple_range->rngtypid);
+                elog(RLOG_ERROR, "range_oid:%u already exist in by_range", entry->range->rngtypid);
             }
             entry->rngtypid = range->rngtypid;
-            entry->ripple_range = range;
+            entry->range = range;
             offset += sizeof(xk_pg_parser_sysdict_pgrange);
-            if (fileoffset + offset == array[RIPPLE_CATALOG_TYPE_RANGE - 1].len)
+            if (fileoffset + offset == array[CATALOG_TYPE_RANGE - 1].len)
             {
-                if(FileClose(fd))
+                if(osal_file_close(fd))
                 {
-                    elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_FILE);
+                    elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
                 }
                 return rangehtab;
             }
         }
-        fileoffset += RIPPLE_FILE_BLK_SIZE;
+        fileoffset += FILE_BLK_SIZE;
     }
 
-    if(FileClose(fd))
+    if(osal_file_close(fd))
     {
-        elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
     }
 
     return rangehtab;
@@ -202,31 +202,31 @@ HTAB* ripple_rangecache_load(ripple_sysdict_header_array* array)
 }
 
 /* colvalue2range */
-ripple_catalogdata* ripple_range_colvalue2range(void* in_colvalue)
+catalogdata* range_colvalue2range(void* in_colvalue)
 {
-    ripple_catalogdata* catalogdata = NULL;
-    ripple_catalog_range_value* rangevalue = NULL;
+    catalogdata* catalog_data = NULL;
+    catalog_range_value* rangevalue = NULL;
     xk_pg_sysdict_Form_pg_range pgrange = NULL;
     xk_pg_parser_translog_tbcol_value* colvalue = NULL;
 
     colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
-    catalogdata = (ripple_catalogdata*)rmalloc0(sizeof(ripple_catalogdata));
-    if(NULL == catalogdata)
+    catalog_data = (catalogdata*)rmalloc0(sizeof(catalogdata));
+    if(NULL == catalog_data)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(catalogdata, 0, '\0', sizeof(ripple_catalogdata));
+    rmemset0(catalog_data, 0, '\0', sizeof(catalogdata));
 
-    rangevalue = (ripple_catalog_range_value*)rmalloc0(sizeof(ripple_catalog_range_value));
+    rangevalue = (catalog_range_value*)rmalloc0(sizeof(catalog_range_value));
     if(NULL == rangevalue)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(rangevalue, 0, '\0', sizeof(ripple_catalog_range_value));
-    catalogdata->catalog = rangevalue;
-    catalogdata->type = RIPPLE_CATALOG_TYPE_RANGE;
+    rmemset0(rangevalue, 0, '\0', sizeof(catalog_range_value));
+    catalog_data->catalog = rangevalue;
+    catalog_data->type = CATALOG_TYPE_RANGE;
 
     pgrange = (xk_pg_sysdict_Form_pg_range)rmalloc1(sizeof(xk_pg_parser_sysdict_pgrange));
     if(NULL == pgrange)
@@ -234,7 +234,7 @@ ripple_catalogdata* ripple_range_colvalue2range(void* in_colvalue)
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
     rmemset0(pgrange, 0, '\0', sizeof(xk_pg_parser_sysdict_pgrange));
-    rangevalue->ripple_range = pgrange;
+    rangevalue->range = pgrange;
 
     /* rngsubtype 1 */
     sscanf((char*)((colvalue + 1)->m_value), "%u", &pgrange->rngsubtype);
@@ -243,74 +243,74 @@ ripple_catalogdata* ripple_range_colvalue2range(void* in_colvalue)
     sscanf((char*)((colvalue + 0)->m_value), "%u", &pgrange->rngtypid);
     rangevalue->rngtypid = pgrange->rngtypid;
 
-    return catalogdata;
+    return catalog_data;
 }
 
 
 /* catalogdata2transcache */
-void ripple_range_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata)
+void range_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata)
 {
     bool found = false;
-    ripple_catalog_range_value* newcatalog = NULL;
-    ripple_catalog_range_value* catalogInHash = NULL;
+    catalog_range_value* newcatalog = NULL;
+    catalog_range_value* catalogInHash = NULL;
 
     if(NULL == catalogdata || NULL == catalogdata->catalog)
     {
         return;
     }
 
-    newcatalog = (ripple_catalog_range_value*)catalogdata->catalog;
-    if(RIPPLE_CATALOG_OP_INSERT == catalogdata->op)
+    newcatalog = (catalog_range_value*)catalogdata->catalog;
+    if(CATALOG_OP_INSERT == catalogdata->op)
     {
         catalogInHash = hash_search(sysdicts->by_range, &newcatalog->rngtypid, HASH_ENTER, &found);
         if(true == found)
         {
             elog(RLOG_WARNING, "by_range hash duplicate oid, %u, %u",
-                                catalogInHash->ripple_range->rngtypid,
-                                catalogInHash->ripple_range->rngsubtype);
+                                catalogInHash->range->rngtypid,
+                                catalogInHash->range->rngsubtype);
 
-            if(NULL != catalogInHash->ripple_range)
+            if(NULL != catalogInHash->range)
             {
-                rfree(catalogInHash->ripple_range);
+                rfree(catalogInHash->range);
             }
         }
         catalogInHash->rngtypid = newcatalog->rngtypid;
-		catalogInHash->ripple_range = (xk_pg_sysdict_Form_pg_range)rmalloc1(sizeof(xk_pg_parser_sysdict_pgrange));
-		if(NULL == catalogInHash->ripple_range)
+		catalogInHash->range = (xk_pg_sysdict_Form_pg_range)rmalloc1(sizeof(xk_pg_parser_sysdict_pgrange));
+		if(NULL == catalogInHash->range)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-        rmemcpy0(catalogInHash->ripple_range, 0, newcatalog->ripple_range, sizeof(xk_pg_parser_sysdict_pgrange));
+        rmemcpy0(catalogInHash->range, 0, newcatalog->range, sizeof(xk_pg_parser_sysdict_pgrange));
     }
-    else if(RIPPLE_CATALOG_OP_DELETE == catalogdata->op)
+    else if(CATALOG_OP_DELETE == catalogdata->op)
     {
         catalogInHash = hash_search(sysdicts->by_range, &newcatalog->rngtypid, HASH_REMOVE, &found);
         if(NULL != catalogInHash)
         {
-            if(NULL != catalogInHash->ripple_range)
+            if(NULL != catalogInHash->range)
             {
-                rfree(catalogInHash->ripple_range);
+                rfree(catalogInHash->range);
             }
         }
     }
-    else if(RIPPLE_CATALOG_OP_UPDATE == catalogdata->op)
+    else if(CATALOG_OP_UPDATE == catalogdata->op)
     {
         catalogInHash = hash_search(sysdicts->by_range, &newcatalog->rngtypid, HASH_FIND, &found);
         if(NULL == catalogInHash)
         {
             elog(RLOG_WARNING, "by_range hash duplicate oid, %u, %u",
-                                newcatalog->ripple_range->rngtypid,
-                                newcatalog->ripple_range->rngsubtype);
+                                newcatalog->range->rngtypid,
+                                newcatalog->range->rngsubtype);
 			return;
         }
-        rfree(catalogInHash->ripple_range);
+        rfree(catalogInHash->range);
 
-		catalogInHash->ripple_range = (xk_pg_sysdict_Form_pg_range)rmalloc1(sizeof(xk_pg_parser_sysdict_pgrange));
-		if(NULL == catalogInHash->ripple_range)
+		catalogInHash->range = (xk_pg_sysdict_Form_pg_range)rmalloc1(sizeof(xk_pg_parser_sysdict_pgrange));
+		if(NULL == catalogInHash->range)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-        rmemcpy0(catalogInHash->ripple_range, 0, newcatalog->ripple_range, sizeof(xk_pg_parser_sysdict_pgrange));
+        rmemcpy0(catalogInHash->range, 0, newcatalog->range, sizeof(xk_pg_parser_sysdict_pgrange));
     }
     else
     {
@@ -319,76 +319,76 @@ void ripple_range_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple
 }
 
 
-void ripple_rangecache_write(HTAB* rangecache, uint64 *offset, ripple_sysdict_header_array* array)
+void rangecache_write(HTAB* rangecache, uint64 *offset, sysdict_header_array* array)
 {
 	int	 fd;
 	uint64 page_num = 0;
 	uint64 page_offset = 0;
 	HASH_SEQ_STATUS status;
-	char buffer[RIPPLE_FILE_BLK_SIZE];
-	ripple_catalog_range_value *entry = NULL;
+	char buffer[FILE_BLK_SIZE];
+	catalog_range_value *entry = NULL;
 	xk_pg_sysdict_Form_pg_range riplerange = NULL;
 	
-	array[RIPPLE_CATALOG_TYPE_RANGE - 1].type = RIPPLE_CATALOG_TYPE_RANGE;
-	array[RIPPLE_CATALOG_TYPE_RANGE - 1].offset = *offset;
+	array[CATALOG_TYPE_RANGE - 1].type = CATALOG_TYPE_RANGE;
+	array[CATALOG_TYPE_RANGE - 1].offset = *offset;
 	page_num = *offset;
 
-	rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
-	fd = BasicOpenFile(RIPPLE_SYSDICTS_TMP_FILE,
-						O_RDWR | O_CREAT | RIPPLE_BINARY);
+	rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
+	fd = osal_basic_open_file(SYSDICTS_TMP_FILE,
+						O_RDWR | O_CREAT | BINARY);
 
 	if (fd < 0)
 	{
-		elog(RLOG_ERROR, "could not create file %s", RIPPLE_SYSDICTS_TMP_FILE);
+		elog(RLOG_ERROR, "could not create file %s", SYSDICTS_TMP_FILE);
 	}
 
 	hash_seq_init(&status,rangecache);
 	while ((entry = hash_seq_search(&status)) != NULL)
 	{
-		riplerange = entry->ripple_range;
+		riplerange = entry->range;
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgrange) > RIPPLE_FILE_BLK_SIZE)
+		if(page_offset + sizeof(xk_pg_parser_sysdict_pgrange) > FILE_BLK_SIZE)
 		{
-			if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-				elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_TMP_FILE);
-				FileClose(fd);
+			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
+				osal_file_close(fd);
 				return;
 			}
-			rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
+			rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
 			page_num = *offset + page_offset;
-			*offset += RIPPLE_FILE_BLK_SIZE;
+			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
 		rmemcpy1(buffer, page_offset, riplerange, sizeof(xk_pg_parser_sysdict_pgrange));
 		page_offset += sizeof(xk_pg_parser_sysdict_pgrange);
 	}
 	if (page_offset > 0) {
-		if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-			elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_TMP_FILE);
-			FileClose(fd);
+		if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+			elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
+			osal_file_close(fd);
 			return;
 		}
 		page_num = page_offset + *offset;
-		*offset += RIPPLE_FILE_BLK_SIZE;
+		*offset += FILE_BLK_SIZE;
 	}
 
-	if(0 != FileSync(fd))
+	if(0 != osal_file_sync(fd))
 	{
-		elog(RLOG_ERROR, "could not fsync file %s", RIPPLE_SYSDICTS_TMP_FILE);
+		elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_TMP_FILE);
 	}
 
-	if(FileClose(fd))
+	if(osal_file_close(fd))
 	{
-		elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_TMP_FILE);
+		elog(RLOG_ERROR, "could not close file %s", SYSDICTS_TMP_FILE);
 	}
 
-	array[RIPPLE_CATALOG_TYPE_RANGE - 1].len = page_num;
+	array[CATALOG_TYPE_RANGE - 1].len = page_num;
 
 }
 
-void ripple_range_catalogdatafree(ripple_catalogdata* catalogdata)
+void range_catalogdatafree(catalogdata* catalogdata)
 {
-    ripple_catalog_range_value* catalog = NULL;
+    catalog_range_value* catalog = NULL;
     if(NULL == catalogdata)
     {
         return;
@@ -401,10 +401,10 @@ void ripple_range_catalogdatafree(ripple_catalogdata* catalogdata)
     }
 
     /* catalog 内存释放 */
-    catalog = (ripple_catalog_range_value*)catalogdata->catalog;
-    if(NULL != catalog->ripple_range)
+    catalog = (catalog_range_value*)catalogdata->catalog;
+    if(NULL != catalog->range)
     {
-        rfree(catalog->ripple_range);
+        rfree(catalog->range);
     }
     rfree(catalogdata->catalog);
     rfree(catalogdata);

@@ -1,6 +1,6 @@
-#ifndef _RIPPLE_TXNSTMT_ABANDON_H
-#define _RIPPLE_TXNSTMT_ABANDON_H
+#ifndef _TXNSTMT_ABANDON_H
+#define _TXNSTMT_ABANDON_H
 
-void ripple_txnstmt_abandon_free(void* data);
+void txnstmt_abandon_free(void* data);
 
 #endif

@@ -1,18 +1,18 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/guc/guc.h"
-#include "port/thread/ripple_thread.h"
+#include "port/thread/thread.h"
 #include "utils/list/list_func.h"
-#include "storage/ripple_file_buffer.h"
+#include "storage/file_buffer.h"
 
 
-static void ripple_file_buffer_reset(ripple_file_buffer* rfbuffer)
+static void file_buffer_reset(file_buffer* rfbuffer)
 {
     if(NULL == rfbuffer)
     {
         return;
     }
 
-    rfbuffer->flag = RIPPLE_FILE_BUFFER_FLAG_NOP;
+    rfbuffer->flag = FILE_BUFFER_FLAG_NOP;
     rfbuffer->next = NULL;
     rfbuffer->tail = NULL;
     rfbuffer->start = 0;
@@ -31,11 +31,11 @@ static void ripple_file_buffer_reset(ripple_file_buffer* rfbuffer)
 }
 
 /* 初始化 */
-ripple_file_buffers* ripple_file_buffer_init(void)
+file_buffers* file_buffer_init(void)
 {
     int index = 0;
     int mbytes = 0;
-    ripple_file_buffers* filebuffers = NULL;
+    file_buffers* filebuffers = NULL;
 
     if(NULL != filebuffers)
     {
@@ -43,52 +43,52 @@ ripple_file_buffers* ripple_file_buffer_init(void)
     }
 
     /* 获取缓存大小 */
-    mbytes = guc_getConfigOptionInt(RIPPLE_CFG_KEY_TRAIL_MAX_SIZE);
-    if(mbytes < RIPPLE_FILE_BUFFER_MINSIZE)
+    mbytes = guc_getConfigOptionInt(CFG_KEY_TRAIL_MAX_SIZE);
+    if(mbytes < FILE_BUFFER_MINSIZE)
     {
-        mbytes = RIPPLE_FILE_BUFFER_MINSIZE;
+        mbytes = FILE_BUFFER_MINSIZE;
     }
-    else if(mbytes > RIPPLE_FILE_BUFFER_MAXSIZE)
+    else if(mbytes > FILE_BUFFER_MAXSIZE)
     {
-        mbytes = RIPPLE_FILE_BUFFER_MAXSIZE;
+        mbytes = FILE_BUFFER_MAXSIZE;
     }
-    mbytes = RIPPLE_MB2BYTE(mbytes);
+    mbytes = MB2BYTE(mbytes);
 
     /* 空间申请，并设置初始值 */
-    filebuffers = (ripple_file_buffers*)rmalloc1(sizeof(ripple_file_buffers));
+    filebuffers = (file_buffers*)rmalloc1(sizeof(file_buffers));
     if(NULL == filebuffers)
     {
         elog(RLOG_ERROR, "out of memory");
     }
-    rmemset0(filebuffers, 0, '\0', sizeof(ripple_file_buffers));
+    rmemset0(filebuffers, 0, '\0', sizeof(file_buffers));
 
     /* 锁和信号初始化 */
-    ripple_thread_mutex_init(&filebuffers->fllock, NULL);
-    ripple_thread_mutex_init(&filebuffers->wfllock, NULL);
+    osal_thread_mutex_init(&filebuffers->fllock, NULL);
+    osal_thread_mutex_init(&filebuffers->wfllock, NULL);
     filebuffers->flwsignal = false;
     filebuffers->wflwsignal = false;
-    if(0 != ripple_thread_cond_init(&filebuffers->flcond, NULL))
+    if(0 != osal_thread_cond_init(&filebuffers->flcond, NULL))
     {
         elog(RLOG_ERROR, "buffer init, can not init pthread flcond, %s", strerror(errno));
     }
 
-    if(0 != ripple_thread_cond_init(&filebuffers->wflcond, NULL))
+    if(0 != osal_thread_cond_init(&filebuffers->wflcond, NULL))
     {
         elog(RLOG_ERROR, "buffer init, can not init pthread wflcond, %s", strerror(errno));
     }
 
-    filebuffers->maxbufid = (mbytes / RIPPLE_FILE_BUFFER_SIZE);
+    filebuffers->maxbufid = (mbytes / FILE_BUFFER_SIZE);
 
     /* 缓存初始化 */
-    filebuffers->buffers = (ripple_file_buffer*)rmalloc0(filebuffers->maxbufid*sizeof(ripple_file_buffer));
+    filebuffers->buffers = (file_buffer*)rmalloc0(filebuffers->maxbufid*sizeof(file_buffer));
     if(NULL == filebuffers->buffers)
     {
         elog(RLOG_ERROR, "out of memory");
     }
-    rmemset0(filebuffers->buffers, 0, '\0', (filebuffers->maxbufid*sizeof(ripple_file_buffer)));
+    rmemset0(filebuffers->buffers, 0, '\0', (filebuffers->maxbufid*sizeof(file_buffer)));
     for(index = 0; index < filebuffers->maxbufid; index++)
     {
-        ripple_file_buffer_reset(&filebuffers->buffers[index]);
+        file_buffer_reset(&filebuffers->buffers[index]);
         filebuffers->buffers[index].bufid = (index+1);
         filebuffers->buffers[index].data = NULL;
         filebuffers->buffers[index].maxsize = 0;
@@ -106,27 +106,27 @@ ripple_file_buffers* ripple_file_buffer_init(void)
 }
 
 /* 根据 bufid 获取 buffer */
-ripple_file_buffer* ripple_file_buffer_getbybufid(ripple_file_buffers* filebuffers, int bufid)
+file_buffer* file_buffer_getbybufid(file_buffers* filebuffers, int bufid)
 {
     return &filebuffers->buffers[bufid - 1];
 }
 
 /* 获取可用的 buffer */
-int ripple_file_buffer_get(ripple_file_buffers* filebuffers, int* timeout)
+int file_buffer_get(file_buffers* filebuffers, int* timeout)
 {
     int iret = 0;
-    ripple_file_buffer* rfbuffer = NULL;
+    file_buffer* rfbuffer = NULL;
 
     /* 加锁 */
     /* 加入到链表中 */
-    *timeout = RIPPLE_ERROR_SUCCESS;
+    *timeout = ERROR_SUCCESS;
     while(1)
     {
-        iret = ripple_thread_lock(&filebuffers->fllock);
+        iret = osal_thread_lock(&filebuffers->fllock);
         if(0 != iret)
         {
             elog(RLOG_WARNING, "get buffer from freelist, lock error:%s", strerror(errno));
-            return RIPPLE_INVALID_BUFFERID;
+            return INVALID_BUFFERID;
         }
 
         /* 是否含有数据，不含有数据，那么等待数据 */
@@ -138,23 +138,23 @@ int ripple_file_buffer_get(ripple_file_buffers* filebuffers, int* timeout)
             ts.tv_sec += 1;
 
             filebuffers->flwsignal = true;
-            iret = ripple_thread_cond_timewait(&filebuffers->flcond, &filebuffers->fllock, &ts);
+            iret = osal_thread_cond_timewait(&filebuffers->flcond, &filebuffers->fllock, &ts);
             if(0 != iret)
             {
                 if(iret == ETIMEDOUT)
                 {
                     filebuffers->flwsignal = false;
-                    *timeout = RIPPLE_ERROR_TIMEOUT;
-                    ripple_thread_unlock(&(filebuffers->fllock));
-                    return RIPPLE_INVALID_BUFFERID;
+                    *timeout = ERROR_TIMEOUT;
+                    osal_thread_unlock(&(filebuffers->fllock));
+                    return INVALID_BUFFERID;
                 }
 
-                ripple_thread_unlock(&(filebuffers->fllock));
+                osal_thread_unlock(&(filebuffers->fllock));
                 elog(RLOG_WARNING, "get lock error:%s", strerror(errno));
-                return RIPPLE_INVALID_BUFFERID;
+                return INVALID_BUFFERID;
             }
             filebuffers->flwsignal = false;
-            ripple_thread_unlock(&(filebuffers->fllock));
+            osal_thread_unlock(&(filebuffers->fllock));
             usleep(50000);
             continue;
         }
@@ -163,11 +163,11 @@ int ripple_file_buffer_get(ripple_file_buffers* filebuffers, int* timeout)
         filebuffers->freelist = filebuffers->freelist->next;
 
         /* 解锁 */
-        iret = ripple_thread_unlock(&filebuffers->fllock);
+        iret = osal_thread_unlock(&filebuffers->fllock);
         if(0 != iret)
         {
             elog(RLOG_WARNING, "unlock error:%s", strerror(errno));
-            return RIPPLE_INVALID_BUFFERID;
+            return INVALID_BUFFERID;
         }
 
         rfbuffer->tail = NULL;
@@ -176,24 +176,24 @@ int ripple_file_buffer_get(ripple_file_buffers* filebuffers, int* timeout)
         if(NULL == rfbuffer->data)
         {
             /* 申请空间 */
-            rfbuffer->maxsize = RIPPLE_FILE_BUFFER_SIZE;
+            rfbuffer->maxsize = FILE_BUFFER_SIZE;
             rfbuffer->data = rmalloc1(rfbuffer->maxsize);
             if(NULL == rfbuffer->data)
             {
                 elog(RLOG_WARNING, "out of memory");
-                return RIPPLE_INVALID_BUFFERID;
+                return INVALID_BUFFERID;
             }
             rmemset0(rfbuffer->data, 0, '\0', rfbuffer->maxsize);
         }
-        rfbuffer->flag = RIPPLE_FILE_BUFFER_FLAG_DATA;
+        rfbuffer->flag = FILE_BUFFER_FLAG_DATA;
         return rfbuffer->bufid;
     }
 
-    return RIPPLE_INVALID_BUFFERID;
+    return INVALID_BUFFERID;
 }
 
 /* 将 buffer 放入空闲队列 */
-void ripple_file_buffer_free(ripple_file_buffers* filebuffers, ripple_file_buffer* rfbuffer)
+void file_buffer_free(file_buffers* filebuffers, file_buffer* rfbuffer)
 {
     /*
      * 1、在 wflushlist 表中移除
@@ -201,11 +201,11 @@ void ripple_file_buffer_free(ripple_file_buffers* filebuffers, ripple_file_buffe
      */
     int iret = 0;
 
-    ripple_file_buffer_reset(rfbuffer);
+    file_buffer_reset(rfbuffer);
 
     /* 加入到空闲链表中 */
     /* 加锁 */
-    iret = ripple_thread_lock(&filebuffers->fllock);
+    iret = osal_thread_lock(&filebuffers->fllock);
     if(0 != iret)
     {
         elog(RLOG_ERROR, "wait flush buffer set, get fllock error:%s", strerror(errno));
@@ -222,19 +222,19 @@ void ripple_file_buffer_free(ripple_file_buffers* filebuffers, ripple_file_buffe
     if(true == filebuffers->flwsignal)
     {
         filebuffers->flwsignal = false;
-        ripple_thread_cond_signal(&filebuffers->flcond);
+        osal_thread_cond_signal(&filebuffers->flcond);
     }
 
     /* 解锁 */
-    ripple_thread_unlock(&filebuffers->fllock);
+    osal_thread_unlock(&filebuffers->fllock);
 }
 
 /* 将 buffer 放入待刷新队列 */
-void ripple_file_buffer_waitflush_add(ripple_file_buffers* filebuffers, ripple_file_buffer* fbuffer)
+void file_buffer_waitflush_add(file_buffers* filebuffers, file_buffer* fbuffer)
 {
     int iret = 0;
     /* 加锁 */
-    iret = ripple_thread_lock(&filebuffers->wfllock);
+    iret = osal_thread_lock(&filebuffers->wfllock);
     if(0 != iret)
     {
         elog(RLOG_ERROR, "add buffer 2 waitflush, lock error:%s", strerror(errno));
@@ -253,17 +253,17 @@ void ripple_file_buffer_waitflush_add(ripple_file_buffers* filebuffers, ripple_f
 
     if(true == filebuffers->wflwsignal)
     {
-        ripple_thread_cond_signal(&filebuffers->wflcond);
+        osal_thread_cond_signal(&filebuffers->wflcond);
     }
 
-    ripple_thread_unlock(&filebuffers->wfllock);
+    osal_thread_unlock(&filebuffers->wfllock);
 }
 
 /* 
  * 做 copy
  *  需要关注的时 src->privdata 会设置为空
 */
-void ripple_file_buffer_copy(ripple_file_buffer* src, ripple_file_buffer* dst)
+void file_buffer_copy(file_buffer* src, file_buffer* dst)
 {
     if(NULL == src || NULL == dst)
     {
@@ -272,7 +272,7 @@ void ripple_file_buffer_copy(ripple_file_buffer* src, ripple_file_buffer* dst)
 
     dst->bufid = src->bufid;
     rmemcpy0(dst->data, 0, src->data, src->maxsize);
-    rmemcpy1(&dst->extra, 0, &src->extra, sizeof(ripple_file_buffer_extra));
+    rmemcpy1(&dst->extra, 0, &src->extra, sizeof(file_buffer_extra));
     dst->flag = src->flag;
     dst->maxsize = src->maxsize;
     dst->next = NULL;
@@ -293,27 +293,27 @@ void ripple_file_buffer_copy(ripple_file_buffer* src, ripple_file_buffer* dst)
  *     extra           0               退出
  *     extra          1               超时
  */
-ripple_file_buffer* ripple_file_buffer_waitflush_get(ripple_file_buffers* filebuffers, int* timeout)
+file_buffer* file_buffer_waitflush_get(file_buffers* filebuffers, int* timeout)
 {
     int iret = 0;
-    ripple_file_buffer* rfbuffer = NULL;
+    file_buffer* rfbuffer = NULL;
 
     /* 加锁 */
     /* 加入到链表中 */
     if(NULL != timeout)
     {
-        *timeout = RIPPLE_ERROR_SUCCESS;
+        *timeout = ERROR_SUCCESS;
     }
     while(1)
     {
-        iret = ripple_thread_lock(&filebuffers->wfllock);
+        iret = osal_thread_lock(&filebuffers->wfllock);
         if(0 != iret)
         {
             elog(RLOG_WARNING, "get waitflush buffer from wbuffer, lock error:%s", strerror(errno));
             return NULL;
         }
 
-ripple_file_buffer_waitflush_get_recheck:
+file_buffer_waitflush_get_recheck:
         /* 是否含有数据，不含有数据，那么等待数据 */
         if(NULL == filebuffers->wflushlist)
         {
@@ -323,16 +323,16 @@ ripple_file_buffer_waitflush_get_recheck:
             ts.tv_sec += 1;
 
             filebuffers->wflwsignal = true;
-            iret = ripple_thread_cond_timewait(&filebuffers->wflcond, &filebuffers->wfllock, &ts);
+            iret = osal_thread_cond_timewait(&filebuffers->wflcond, &filebuffers->wfllock, &ts);
             if(0 != iret)
             {
                 if(iret == ETIMEDOUT)
                 {
                     filebuffers->wflwsignal = false;
-                    ripple_thread_unlock(&(filebuffers->wfllock));
+                    osal_thread_unlock(&(filebuffers->wfllock));
                     if(NULL != timeout)
                     {
-                        *timeout = RIPPLE_ERROR_TIMEOUT;
+                        *timeout = ERROR_TIMEOUT;
                         return NULL;
                     }
                     continue;
@@ -342,7 +342,7 @@ ripple_file_buffer_waitflush_get_recheck:
                 return NULL;
             }
             filebuffers->wflwsignal = false;
-            goto ripple_file_buffer_waitflush_get_recheck;
+            goto file_buffer_waitflush_get_recheck;
         }
 
         /* 在 wflushlist 表中移除 */
@@ -354,7 +354,7 @@ ripple_file_buffer_waitflush_get_recheck:
         filebuffers->wflushlist = filebuffers->wflushlist->next;
 
         /* 解锁 */
-        iret = ripple_thread_unlock(&filebuffers->wfllock);
+        iret = osal_thread_unlock(&filebuffers->wfllock);
         if(0 != iret)
         {
             elog(RLOG_ERROR, "unlock error:%s", strerror(errno));
@@ -368,7 +368,7 @@ ripple_file_buffer_waitflush_get_recheck:
 }
 
 /* 清理buffer */
-void ripple_file_buffer_clean(ripple_file_buffers* filebuffers)
+void file_buffer_clean(file_buffers* filebuffers)
 {
     int iret = 0;
     int index = 0;
@@ -379,7 +379,7 @@ void ripple_file_buffer_clean(ripple_file_buffers* filebuffers)
     }
 
     /* 上锁 */
-    iret = ripple_thread_lock(&filebuffers->wfllock);
+    iret = osal_thread_lock(&filebuffers->wfllock);
     if(0 != iret)
     {
         elog(RLOG_ERROR, "get waitflush buffer from wbuffer, lock error:%s", strerror(errno));
@@ -391,7 +391,7 @@ void ripple_file_buffer_clean(ripple_file_buffers* filebuffers)
 
     for(index = 0; index < filebuffers->maxbufid; index++)
     {
-        ripple_file_buffer_reset(&filebuffers->buffers[index]);
+        file_buffer_reset(&filebuffers->buffers[index]);
         filebuffers->buffers[index].bufid = (index+1);
         if (NULL != filebuffers->buffers[index].data)
         {
@@ -409,7 +409,7 @@ void ripple_file_buffer_clean(ripple_file_buffers* filebuffers)
     filebuffers->wflushlist = NULL;
 
     /* 解锁 */
-    iret = ripple_thread_unlock(&filebuffers->wfllock);
+    iret = osal_thread_unlock(&filebuffers->wfllock);
     if(0 != iret)
     {
         elog(RLOG_ERROR, "unlock error:%s", strerror(errno));
@@ -418,12 +418,12 @@ void ripple_file_buffer_clean(ripple_file_buffers* filebuffers)
 
 
 /* 清理 waitflush */
-void riple_file_buffer_clean_waitflush(ripple_file_buffers* filebuffers)
+void riple_file_buffer_clean_waitflush(file_buffers* filebuffers)
 {
     int iret = 0;
-    ripple_file_buffer* rfbuffer = NULL;
+    file_buffer* rfbuffer = NULL;
     
-    iret = ripple_thread_lock(&filebuffers->wfllock);
+    iret = osal_thread_lock(&filebuffers->wfllock);
     if(0 != iret)
     {
         elog(RLOG_ERROR, "get waitflush buffer from wbuffer, lock error:%s", strerror(errno));
@@ -432,7 +432,7 @@ void riple_file_buffer_clean_waitflush(ripple_file_buffers* filebuffers)
     if(NULL == filebuffers->wflushlist)
     {
         /* 解锁 */
-        iret = ripple_thread_unlock(&filebuffers->wfllock);
+        iret = osal_thread_unlock(&filebuffers->wfllock);
         if(0 != iret)
         {
             elog(RLOG_ERROR, "unlock error:%s", strerror(errno));
@@ -453,11 +453,11 @@ void riple_file_buffer_clean_waitflush(ripple_file_buffers* filebuffers)
         filebuffers->wflushlist = filebuffers->wflushlist->next;
         rfbuffer->next = NULL;
         rfbuffer->tail = NULL;
-        ripple_file_buffer_free(filebuffers, rfbuffer);
+        file_buffer_free(filebuffers, rfbuffer);
     }
 
     /* 解锁 */
-    iret = ripple_thread_unlock(&filebuffers->wfllock);
+    iret = osal_thread_unlock(&filebuffers->wfllock);
     if(0 != iret)
     {
         elog(RLOG_ERROR, "unlock error:%s", strerror(errno));
@@ -467,7 +467,7 @@ void riple_file_buffer_clean_waitflush(ripple_file_buffers* filebuffers)
 
 
 /* 内存释放 */
-void ripple_file_buffer_destroy(ripple_file_buffers* filebuffers)
+void file_buffer_destroy(file_buffers* filebuffers)
 {
     int index = 0;
     if(NULL == filebuffers)

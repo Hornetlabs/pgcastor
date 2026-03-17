@@ -1,7 +1,7 @@
-#ifndef _RIPPLE_RECORD_H_
-#define _RIPPLE_RECORD_H_
+#ifndef _RECORD_H_
+#define _RECORD_H_
 
-#define RIPPLE_RECORD_TAIL_LEN          128
+#define RECORD_TAIL_LEN          128
 
 /*
  * 在传统的 record 中，正常一个 record 会包含三项内容:
@@ -14,28 +14,28 @@
  * 所以在对 wal 和 trail 文件的处理中应注意区分此处的区别
 */
 
-typedef enum RIPPLE_RECORD_TYPE
+typedef enum RECORD_TYPE
 {
-    RIPPLE_RECORD_TYPE_NOP              = 0x00,
-    RIPPLE_RECORD_TYPE_WAL_NORMAL       ,
-    RIPPLE_RECORD_TYPE_WAL_CROSS        ,
-    RIPPLE_RECORD_TYPE_WAL_CONT         ,
-    RIPPLE_RECORD_TYPE_WAL_TIMELINE     ,
-    RIPPLE_RECORD_TYPE_TRAIL_HEADER     ,
-    RIPPLE_RECORD_TYPE_TRAIL_DBMETA     ,
-    RIPPLE_RECORD_TYPE_TRAIL_NORMAL     ,
-    RIPPLE_RECORD_TYPE_TRAIL_CROSS      ,
-    RIPPLE_RECORD_TYPE_TRAIL_CONT       ,
-    RIPPLE_RECORD_TYPE_TRAIL_RESET      ,
-    RIPPLE_RECORD_TYPE_TRAIL_TAIL       
-} ripple_record_type;
+    RECORD_TYPE_NOP              = 0x00,
+    RECORD_TYPE_WAL_NORMAL       ,
+    RECORD_TYPE_WAL_CROSS        ,
+    RECORD_TYPE_WAL_CONT         ,
+    RECORD_TYPE_WAL_TIMELINE     ,
+    RECORD_TYPE_TRAIL_HEADER     ,
+    RECORD_TYPE_TRAIL_DBMETA     ,
+    RECORD_TYPE_TRAIL_NORMAL     ,
+    RECORD_TYPE_TRAIL_CROSS      ,
+    RECORD_TYPE_TRAIL_CONT       ,
+    RECORD_TYPE_TRAIL_RESET      ,
+    RECORD_TYPE_TRAIL_TAIL       
+} record_type;
 
-typedef struct RIPPLE_RECORD
+typedef struct RECORD
 {
     int                                 type;
-    ripple_recpos                       start;
-    ripple_recpos                       end;
-    ripple_recpos                       orgpos;
+    recpos                       start;
+    recpos                       end;
+    recpos                       orgpos;
 
     /* 
      * data 数据的长度,当前 record 的长度
@@ -56,10 +56,10 @@ typedef struct RIPPLE_RECORD
     /* for debug */
     uint64                              debugno;
     uint8*                              data;
-} ripple_record;
+} record;
 
 
-typedef struct RIPPLE_RECORDCROSS
+typedef struct RECORDCROSS
 {
     /* uint16 尾部长度 */
     uint16                              rectaillen;
@@ -76,23 +76,23 @@ typedef struct RIPPLE_RECORDCROSS
      * 尾部的数据
      *  trail: 含有一个尾部的长度
      */
-    uint8                               rectail[RIPPLE_RECORD_TAIL_LEN];
+    uint8                               rectail[RECORD_TAIL_LEN];
 
-    ripple_record*                      record;
-} ripple_recordcross;
+    record*                      record;
+} recordcross;
 
-ripple_record* ripple_record_init(void);
-
-/* record 释放 */
-void ripple_record_free(ripple_record* rec);
-
-/* ripple_recordcross初始化 */
-ripple_recordcross* ripple_recordcross_init(void);
-
-/* ripple_recordcross释放 */
-void ripple_recordcross_free(ripple_recordcross* rec_cross);
+record* record_init(void);
 
 /* record 释放 */
-void ripple_record_freevoid(void* args);
+void record_free(record* rec);
+
+/* recordcross初始化 */
+recordcross* recordcross_init(void);
+
+/* recordcross释放 */
+void recordcross_free(recordcross* rec_cross);
+
+/* record 释放 */
+void record_freevoid(void* args);
 
 #endif

@@ -1,7 +1,7 @@
-#ifndef _RIPPLE_CONTROL_H
-#define _RIPPLE_CONTROL_H
+#ifndef _CONTROL_H
+#define _CONTROL_H
 
-typedef struct RIPPLE_CONTROLFILEDATA
+typedef struct CONTROLFILEDATA
 {
     int                     stat;
     Oid                     database;
@@ -11,7 +11,7 @@ typedef struct RIPPLE_CONTROLFILEDATA
     char                    timezone[NAMEDATALEN];
     char                    orgencoding[NAMEDATALEN];
     char                    dstencoding[NAMEDATALEN];
-    char                    cahceline[RIPPLE_CACHELINE_SIZE];
-} ripple_controlfiledata;
+    char                    cahceline[CACHELINE_SIZE];
+} controlfiledata;
 
 #endif

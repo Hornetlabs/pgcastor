@@ -1,34 +1,34 @@
-#ifndef _RIPPLE_NETSERVER_H
-#define _RIPPLE_NETSERVER_H
+#ifndef _NETSERVER_H
+#define _NETSERVER_H
 
-#define RIPPLE_NETSERVER_HOSTMAXLEN                         1024
-#define RIPPLE_NETSERVER_DEFAULTSOCKSIZE                    8
+#define NETSERVER_HOSTMAXLEN                         1024
+#define NETSERVER_DEFAULTSOCKSIZE                    8
 
 typedef bool (*netserver_handler)(void* netserver, rsocket  sock);
 
-typedef enum RIPPLE_NETSERVER_TYPE
+typedef enum NETSERVER_TYPE
 {
-    RIPPLE_NETSERVER_TYPE_NOP               = 0x00,
-    RIPPLE_NETSERVER_TYPE_XMANAGER          
-} ripple_netserver_type;
+    NETSERVER_TYPE_NOP               = 0x00,
+    NETSERVER_TYPE_XMANAGER          
+} netserver_type;
 
-typedef enum RIPPLE_NETSERVER_HOSTTYPE
+typedef enum NETSERVER_HOSTTYPE
 {
-    RIPPLE_NETSERVER_HOSTTYPE_NOP               = 0x00,
-    RIPPLE_NETSERVER_HOSTTYPE_UNIXDOMAIN        ,
-    RIPPLE_NETSERVER_HOSTTYPE_IP
-} ripple_netserver_hosttype;
+    NETSERVER_HOSTTYPE_NOP               = 0x00,
+    NETSERVER_HOSTTYPE_UNIXDOMAIN        ,
+    NETSERVER_HOSTTYPE_IP
+} netserver_hosttype;
 
-typedef struct RIPPLE_NETSERVER_HOST
+typedef struct NETSERVER_HOST
 {
-    ripple_netserver_hosttype           type;
+    netserver_hosttype           type;
     char                                host[512];               /* 服务端监听地址                    */
-} ripple_netserver_host;
+} netserver_host;
 
 /* 服务 */
-typedef struct RIPPLE_NETSERVER
+typedef struct NETSERVER
 {
-    ripple_netserver_type               type;                   /* 具体类型                             */
+    netserver_type               type;                   /* 具体类型                             */
     int                                 fdcnt;
     int                                 fdmax;                  /* 描述符的个数                         */
     int                                 keepalive;              /* 是否启用 keepalive                   */
@@ -40,30 +40,30 @@ typedef struct RIPPLE_NETSERVER
     dlist*                              hosts;                  /* 监听                                 */
     int*                                pos;                    /* 在模型中的位置下标                   */
     rsocket*                            fd;                     /* 网络描述符                           */
-    ripple_netiompbase*                 base;                   /* IO复用基础信息                       */
-    ripple_netiompops*                  ops;                    /* IO 复用模型                          */
+    netiompbase*                 base;                   /* IO复用基础信息                       */
+    netiompops*                  ops;                    /* IO 复用模型                          */
     netserver_handler                   callback;               /* 回调函数                             */
-} ripple_netserver;
+} netserver;
 
 /* 初始设置 */
-bool ripple_netserver_reset(ripple_netserver* netserver);
+bool netserver_reset(netserver* netserver);
 
 /* 设置netserver svrhost */
-bool ripple_netserver_host_set(ripple_netserver* netserver, char* host, ripple_netserver_hosttype hosttype);
+bool netserver_host_set(netserver* netserver, char* host, netserver_hosttype hosttype);
 
 /* 设置netserver svrport */
-void ripple_netserver_port_set(ripple_netserver* netserver, int port);
+void netserver_port_set(netserver* netserver, int port);
 
 /* 设置类型 */
-void ripple_netserver_type_set(ripple_netserver* netserver, int type);
+void netserver_type_set(netserver* netserver, int type);
 
 /* 创建server端 */
-bool ripple_netserver_create(ripple_netserver* netserver);
+bool netserver_create(netserver* netserver);
 
 /* 创建事件并接收描述符,等待触发后调用回掉函数处理 */
-bool ripple_netserver_desc(ripple_netserver* netserver);
+bool netserver_desc(netserver* netserver);
 
 /* 资源回收 */
-void ripple_netserver_free(ripple_netserver* netserver);
+void netserver_free(netserver* netserver);
 
 #endif

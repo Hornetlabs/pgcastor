@@ -1,8 +1,8 @@
-#ifndef _RIPPLE_PARSERTRAIL_TXNONLINEREFRESHEND_H
-#define _RIPPLE_PARSERTRAIL_TXNONLINEREFRESHEND_H
+#ifndef _PARSERTRAIL_TXNONLINEREFRESHEND_H
+#define _PARSERTRAIL_TXNONLINEREFRESHEND_H
 
 
-bool ripple_parsertrail_txnonlinerefreshendapply(ripple_parsertrail*  parsertrail, void* data);
+bool parsertrail_txnonlinerefreshendapply(parsertrail*  parsertrail, void* data);
 
 
 #endif

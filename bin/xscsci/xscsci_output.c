@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ripple_c.h"
+#include "app_c.h"
 #include "xsynch_fe.h"
 #include "xscsci_output.h"
 

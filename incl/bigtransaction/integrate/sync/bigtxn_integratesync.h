@@ -1,17 +1,17 @@
-#ifndef _RIPPLE_BIGTXN_INTEGRATEINCSYNCSTATE_H
-#define _RIPPLE_BIGTXN_INTEGRATEINCSYNCSTATE_H
+#ifndef _BIGTXN_INTEGRATEINCSYNCSTATE_H
+#define _BIGTXN_INTEGRATEINCSYNCSTATE_H
 
-typedef struct RIPPLE_BIGTXN_INTEGRATEINCSYNC
+typedef struct BIGTXN_INTEGRATEINCSYNC
 {
-    ripple_syncstate                base;
-    ripple_cache_txn*               rebuild2sync;
-}ripple_bigtxn_integrateincsync;
+    syncstate                base;
+    cache_txn*               rebuild2sync;
+}bigtxn_integrateincsync;
 
 
-ripple_bigtxn_integrateincsync* ripple_bigtxn_integrateincsync_init(void);
+bigtxn_integrateincsync* bigtxn_integrateincsync_init(void);
 
-void *ripple_bigtxn_integrateincsync_main(void *args);
+void *bigtxn_integrateincsync_main(void *args);
 
-void ripple_bigtxn_integrateincsync_free(void *args);
+void bigtxn_integrateincsync_free(void *args);
 
 #endif

@@ -1,5 +1,5 @@
-#include "ripple_app_incl.h"
-#include "utils/uuid/ripple_uuid.h"
+#include "app_incl.h"
+#include "utils/uuid/uuid.h"
 #include "utils/string/stringinfo.h"
 
 static bool
@@ -37,7 +37,7 @@ random_from_file(const char *filename, void *buf, size_t len)
     return true;
 }
 
-static bool ripple_strong_random(void *buf, size_t len)
+static bool strong_random(void *buf, size_t len)
 {
     if (random_from_file("/dev/urandom", buf, len))
     {
@@ -47,29 +47,29 @@ static bool ripple_strong_random(void *buf, size_t len)
 }
 
 /* uuid初始化 */
-ripple_uuid_t *ripple_uuid_init(void)
+uuid_t *uuid_init(void)
 {
-    ripple_uuid_t *result = rmalloc0(RIPPLE_UUID_LEN);
+    uuid_t *result = rmalloc0(UUID_LEN);
     if (!result)
     {
         elog(RLOG_WARNING, "malloc uuid oom");
         return NULL;
     }
-    rmemset0(result, 0, 0, sizeof(ripple_uuid_t));
+    rmemset0(result, 0, 0, sizeof(uuid_t));
     return result;
 }
 
-ripple_uuid_t *ripple_random_uuid(void)
+uuid_t *random_uuid(void)
 {
-    ripple_uuid_t *result = rmalloc0(RIPPLE_UUID_LEN);
+    uuid_t *result = rmalloc0(UUID_LEN);
     if (!result)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(result, 0, 0, sizeof(ripple_uuid_t));
+    rmemset0(result, 0, 0, sizeof(uuid_t));
 
     /* Generate random bits. */
-    if (!ripple_strong_random((void *)result->data, RIPPLE_UUID_LEN))
+    if (!strong_random((void *)result->data, UUID_LEN))
     {
         elog(RLOG_ERROR, "can't gen uuid");
     }
@@ -85,26 +85,26 @@ ripple_uuid_t *ripple_random_uuid(void)
 }
 
 /* uuid拷贝 */
-ripple_uuid_t *ripple_uuid_copy(ripple_uuid_t *uuid)
+uuid_t *uuid_copy(uuid_t *uuid)
 {
-    ripple_uuid_t *result = rmalloc0(RIPPLE_UUID_LEN);
+    uuid_t *result = rmalloc0(UUID_LEN);
     if (!result)
     {
         elog(RLOG_ERROR, "oom");
     }
-    rmemset0(result, 0, 0, sizeof(ripple_uuid_t));
+    rmemset0(result, 0, 0, sizeof(uuid_t));
 
-    rmemcpy0(result, 0, uuid, sizeof(ripple_uuid_t));
+    rmemcpy0(result, 0, uuid, sizeof(uuid_t));
 
     return result;
 }
 
-void ripple_uuid_free(ripple_uuid_t *uuid)
+void uuid_free(uuid_t *uuid)
 {
     rfree(uuid);
 }
 
-char *uuid2string(ripple_uuid_t *uuid)
+char *uuid2string(uuid_t *uuid)
 {
     static const char hex_chars[] = "0123456789abcdef";
     StringInfoData buf;
@@ -112,7 +112,7 @@ char *uuid2string(ripple_uuid_t *uuid)
     char *result = NULL;
 
     initStringInfo(&buf);
-    for (i = 0; i < RIPPLE_UUID_LEN; i++)
+    for (i = 0; i < UUID_LEN; i++)
     {
         int            hi;
         int            lo;

@@ -1,20 +1,20 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
 #include "utils/hash/hash_search.h"
 #include "utils/string/stringinfo.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "refresh/ripple_refresh_table_sharding.h"
+#include "refresh/refresh_tables.h"
+#include "refresh/refresh_table_sharding.h"
 
-ripple_refresh_table* ripple_refresh_table_init(void)
+refresh_table* refresh_table_init(void)
 {
-    ripple_refresh_table* refreshtable = NULL;
-    refreshtable = (ripple_refresh_table*)rmalloc0(sizeof(ripple_refresh_table));
+    refresh_table* refreshtable = NULL;
+    refreshtable = (refresh_table*)rmalloc0(sizeof(refresh_table));
     if (NULL == refreshtable)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(refreshtable, 0, '\0', sizeof(ripple_refresh_tables));
+    rmemset0(refreshtable, 0, '\0', sizeof(refresh_tables));
     refreshtable->oid = InvalidOid;
     refreshtable->schema = NULL;
     refreshtable->table = NULL;
@@ -24,22 +24,22 @@ ripple_refresh_table* ripple_refresh_table_init(void)
     return refreshtable;
 }
 
-ripple_refresh_tables* ripple_refresh_tables_init(void)
+refresh_tables* refresh_tables_init(void)
 {
-    ripple_refresh_tables* refreshtables = NULL;
-    refreshtables = (ripple_refresh_tables*)rmalloc0(sizeof(ripple_refresh_tables));
+    refresh_tables* refreshtables = NULL;
+    refreshtables = (refresh_tables*)rmalloc0(sizeof(refresh_tables));
     if (NULL == refreshtables)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(refreshtables, 0, '\0', sizeof(ripple_refresh_tables));
+    rmemset0(refreshtables, 0, '\0', sizeof(refresh_tables));
     refreshtables->cnt = 0;
     refreshtables->tables = NULL;
 
     return refreshtables;
 }
 
-bool ripple_refresh_tables_add(ripple_refresh_table* table, ripple_refresh_tables* tables)
+bool refresh_tables_add(refresh_table* table, refresh_tables* tables)
 {
     if (NULL == table || NULL == tables)
     {
@@ -59,9 +59,9 @@ bool ripple_refresh_tables_add(ripple_refresh_table* table, ripple_refresh_table
 
 }
 
-ripple_refresh_table* ripple_refresh_tables_get(ripple_refresh_tables* tables)
+refresh_table* refresh_tables_get(refresh_tables* tables)
 {
-    ripple_refresh_table* table = NULL;
+    refresh_table* table = NULL;
     if (NULL == tables || NULL == tables->tables)
     {
         elog(RLOG_ERROR, "tables or tables->tables is NULL");
@@ -79,7 +79,7 @@ ripple_refresh_table* ripple_refresh_tables_get(ripple_refresh_tables* tables)
     return table;
 }
 
-void ripple_refresh_table_setschema(char* schema, ripple_refresh_table* refreshtable)
+void refresh_table_setschema(char* schema, refresh_table* refreshtable)
 {
     if (NULL == schema || NULL == refreshtable)
     {
@@ -89,7 +89,7 @@ void ripple_refresh_table_setschema(char* schema, ripple_refresh_table* refresht
     return;
 }
 
-void ripple_refresh_table_setoid(Oid oid, ripple_refresh_table* refreshtable)
+void refresh_table_setoid(Oid oid, refresh_table* refreshtable)
 {
     if (NULL == refreshtable)
     {
@@ -99,7 +99,7 @@ void ripple_refresh_table_setoid(Oid oid, ripple_refresh_table* refreshtable)
     return;
 }
 
-void ripple_refresh_table_settable(char* table, ripple_refresh_table* refreshtable)
+void refresh_table_settable(char* table, refresh_table* refreshtable)
 {
     if (NULL == table || NULL == refreshtable)
     {
@@ -109,9 +109,9 @@ void ripple_refresh_table_settable(char* table, ripple_refresh_table* refreshtab
     return;
 }
 
-void ripple_refresh_freetable(ripple_refresh_table *refreshtable)
+void refresh_freetable(refresh_table *refreshtable)
 {
-    ripple_refresh_table *current = refreshtable;
+    refresh_table *current = refreshtable;
 
     if (NULL == refreshtable)
     {
@@ -120,7 +120,7 @@ void ripple_refresh_freetable(ripple_refresh_table *refreshtable)
 
     while (NULL != current)
     {
-        ripple_refresh_table *next = current->next;
+        refresh_table *next = current->next;
 
         if (current->schema)
         {
@@ -139,25 +139,25 @@ void ripple_refresh_freetable(ripple_refresh_table *refreshtable)
     return;
 }
 
-void ripple_refresh_freetables(ripple_refresh_tables *refreshtables)
+void refresh_freetables(refresh_tables *refreshtables)
 {
     if (NULL == refreshtables)
     {
         return;
     }
-    ripple_refresh_freetable(refreshtables->tables);
+    refresh_freetable(refreshtables->tables);
     
     rfree(refreshtables);
     refreshtables = NULL;
 }
 
-ripple_refresh_tables* ripple_refresh_tables_copy(ripple_refresh_tables* refreshtables)
+refresh_tables* refresh_tables_copy(refresh_tables* refreshtables)
 {
-    ripple_refresh_tables* new_tables = NULL;
-    ripple_refresh_table* table = NULL;
-    ripple_refresh_table* current_table = NULL;
+    refresh_tables* new_tables = NULL;
+    refresh_table* table = NULL;
+    refresh_table* current_table = NULL;
 
-    new_tables = ripple_refresh_tables_init();
+    new_tables = refresh_tables_init();
 
     if (!refreshtables || !refreshtables->tables)
     {
@@ -168,13 +168,13 @@ ripple_refresh_tables* ripple_refresh_tables_copy(ripple_refresh_tables* refresh
 
     while (current_table)
     {
-        table = ripple_refresh_table_init();
+        table = refresh_table_init();
 
-        ripple_refresh_table_setschema(current_table->schema, table);
-        ripple_refresh_table_settable(current_table->table, table);
-        ripple_refresh_table_setoid(current_table->oid, table);
+        refresh_table_setschema(current_table->schema, table);
+        refresh_table_settable(current_table->table, table);
+        refresh_table_setoid(current_table->oid, table);
 
-        ripple_refresh_tables_add(table, new_tables);
+        refresh_tables_add(table, new_tables);
 
         current_table = current_table->next;
     }
@@ -183,12 +183,12 @@ ripple_refresh_tables* ripple_refresh_tables_copy(ripple_refresh_tables* refresh
 
 }
 
-bool ripple_refresh_tables_hasrepeat(ripple_refresh_tables* syncdataset,
-                                     ripple_refresh_tables* newdataset,
-                                     ripple_refresh_table** prepeattable)
+bool refresh_tables_hasrepeat(refresh_tables* syncdataset,
+                                     refresh_tables* newdataset,
+                                     refresh_table** prepeattable)
 {
-    ripple_refresh_table *table_new = NULL;
-    ripple_refresh_table *table_sync = NULL;
+    refresh_table *table_new = NULL;
+    refresh_table *table_sync = NULL;
 
     /* 任何一个为空则没有新表 */
     if (!syncdataset || !newdataset)
@@ -227,9 +227,9 @@ bool ripple_refresh_tables_hasrepeat(ripple_refresh_tables* syncdataset,
 }
 
 /* 从同步表哈希中查找是否存在 */
-bool ripple_refresh_tables_hasnew(HTAB *syncdataset, ripple_refresh_tables* newdataset)
+bool refresh_tables_hasnew(HTAB *syncdataset, refresh_tables* newdataset)
 {
-    ripple_refresh_table *oltable = NULL; 
+    refresh_table *oltable = NULL; 
 
     if (!newdataset || (newdataset->cnt == 0) || !syncdataset)
     {
@@ -251,7 +251,7 @@ bool ripple_refresh_tables_hasnew(HTAB *syncdataset, ripple_refresh_tables* newd
 }
 
 /* 从refresh文件夹中生成refresh tables */
-static void ripple_refresh_table_get_table_from_filename(char *filename, ripple_refresh_table *table)
+static void refresh_table_get_table_from_filename(char *filename, refresh_table *table)
 {
     char *ptr_left = filename;
     char *ptr_right = NULL;
@@ -277,25 +277,25 @@ static void ripple_refresh_table_get_table_from_filename(char *filename, ripple_
     table->table = rstrdup(temp_name);
 }
 
-ripple_refresh_tables *ripple_refresh_tables_gen_from_file(char *path)
+refresh_tables *refresh_tables_gen_from_file(char *path)
 {
-    ripple_refresh_tables *result = NULL;
-    ripple_refresh_table *table_prev = NULL;
+    refresh_tables *result = NULL;
+    refresh_table *table_prev = NULL;
     DIR* compdir = NULL;
     int table_cnt = 0;
     struct dirent *entry = NULL;
 
-    compdir = OpenDir(path);
+    compdir = osal_open_dir(path);
     if(NULL == compdir)
     {
         return result;
     }
 
-    result = ripple_refresh_tables_init();
+    result = refresh_tables_init();
 
-    while (NULL != (entry = ReadDir(compdir, path)))
+    while (NULL != (entry = osal_read_dir(compdir, path)))
     {
-        ripple_refresh_table *table = NULL;
+        refresh_table *table = NULL;
 
         if (0 == strcmp(".", entry->d_name)
         || 0 == strcmp("..", entry->d_name))
@@ -305,7 +305,7 @@ ripple_refresh_tables *ripple_refresh_tables_gen_from_file(char *path)
 
         table_cnt++;
 
-        table = ripple_refresh_table_init();
+        table = refresh_table_init();
 
         if (!result->tables)
         {
@@ -320,10 +320,10 @@ ripple_refresh_tables *ripple_refresh_tables_gen_from_file(char *path)
         table->prev = table_prev;
         table_prev = table;
 
-        ripple_refresh_table_get_table_from_filename(entry->d_name, table);
+        refresh_table_get_table_from_filename(entry->d_name, table);
     }
 
-    FreeDir(compdir);
+    osal_free_dir(compdir);
     result->cnt = table_cnt;
 
     return result;

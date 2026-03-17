@@ -14,7 +14,7 @@
  */
 #include <limits.h>
 
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/hash/hash_search.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/string/strlcpy.h"
@@ -323,7 +323,7 @@ HTAB *hash_create(const char *tabname, long nelem, HASHCTL *info, int flags)
 	else if (hashp->hash == string_hash)
 		hashp->keycopy = (HashCopyFunc) strlcpy;
 	else
-		hashp->keycopy = ripple_memcpy;
+		hashp->keycopy = rmemcpy;
 
 	/* And select the entry allocation function, too. */
 	if (flags & HASH_ALLOC)

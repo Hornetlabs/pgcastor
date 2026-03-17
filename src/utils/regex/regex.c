@@ -1,7 +1,7 @@
-#include "ripple_app_incl.h"
-#include "utils/regex/ripple_regex.h"
+#include "app_incl.h"
+#include "utils/regex/regex.h"
 
-bool ripple_cmp_regexbase(ripple_regex* regex, char* name)
+bool cmp_regexbase(regex* regex, char* name)
 {
     size_t len = 0;
     if(regex->blike == false)
@@ -57,7 +57,7 @@ bool ripple_cmp_regexbase(ripple_regex* regex, char* name)
     return false;
 }
 
-void ripple_make_regexbase(ripple_regex* regex, char* rule)
+void make_regexbase(regex* regex, char* rule)
 {
     char* uptr = rule;
     int pos = 0;
@@ -119,7 +119,7 @@ void ripple_make_regexbase(ripple_regex* regex, char* rule)
     }
 }
 
-void ripple_free_regexbase(ripple_regex* regex)
+void free_regexbase(regex* regex)
 {
     if (NULL == regex)
     {

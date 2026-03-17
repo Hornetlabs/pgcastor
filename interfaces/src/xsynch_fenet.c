@@ -15,8 +15,8 @@
 #include <poll.h>
 #include <fcntl.h>
 
-#include "ripple_c.h"
-#include "ripple_config.h"
+#include "app_c.h"
+#include "config.h"
 #include "xsynch_exbufferdata.h"
 #include "xsynch_fe.h"
 #include "xsynch_int.h"

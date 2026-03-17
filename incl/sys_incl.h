@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_SYS_INCL
-#define _RIPPLE_SYS_INCL
+#ifndef _SYS_INCL
+#define _SYS_INCL
 
 #include <stdio.h>
 #include <string.h>

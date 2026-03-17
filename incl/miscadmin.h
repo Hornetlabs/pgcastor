@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_MISCADMIN_H
-#define _RIPPLE_MISCADMIN_H
+#ifndef _MISCADMIN_H
+#define _MISCADMIN_H
 
 extern volatile bool    g_gotsigterm;
 extern volatile bool    g_gotsigusr2;

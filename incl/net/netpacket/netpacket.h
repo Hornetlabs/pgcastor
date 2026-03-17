@@ -1,8 +1,8 @@
-#ifndef _RIPPLE_NETPACKET_H
-#define _RIPPLE_NETPACKET_H
+#ifndef _NETPACKET_H
+#define _NETPACKET_H
 
 
-typedef struct RIPPLE_NETPACKET
+typedef struct NETPACKET
 {
     int             offset;             /* 含义如下:
                                         * 读数据时: 已经读取到的长度
@@ -11,15 +11,15 @@ typedef struct RIPPLE_NETPACKET
     int             used;               /* 总数据长度 */
     int             max;
     uint8*          data;
-} ripple_netpacket;
+} netpacket;
 
 
-ripple_netpacket* ripple_netpacket_init(void);
+netpacket* netpacket_init(void);
 
-uint8* ripple_netpacket_data_init(int len);
+uint8* netpacket_data_init(int len);
 
-void ripple_netpacket_destroyvoid(void* value);
+void netpacket_destroyvoid(void* value);
 
-void ripple_netpacket_destroy(ripple_netpacket* netpacket);
+void netpacket_destroy(netpacket* netpacket);
 
 #endif

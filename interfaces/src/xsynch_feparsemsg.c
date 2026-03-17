@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <inttypes.h>
 
-#include "ripple_c.h"
+#include "app_c.h"
 #include "xsynch_exbufferdata.h"
 #include "xsynch_fe.h"
 #include "xsynch_int.h"

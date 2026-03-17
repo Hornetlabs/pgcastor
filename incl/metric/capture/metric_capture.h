@@ -1,8 +1,8 @@
-#ifndef _RIPPLE_METRIC_CAPTURE_H
-#define _RIPPLE_METRIC_CAPTURE_H
+#ifndef _METRIC_CAPTURE_H
+#define _METRIC_CAPTURE_H
 
 
-typedef struct RIPPLE_METRIC_CAPTURE
+typedef struct METRIC_CAPTURE
 {
     XLogRecPtr          redolsn;
     XLogRecPtr          restartlsn;
@@ -17,22 +17,22 @@ typedef struct RIPPLE_METRIC_CAPTURE
 
     pthread_mutex_t     dlpacketslock;
     dlist*              dlpackets;
-    char                padding[RIPPLE_CACHELINE_SIZE];
+    char                padding[CACHELINE_SIZE];
     void                (*addonlinerefresh)(void* privdata, void* rtables);
     void*               privdata;
-    char                padding1[RIPPLE_CACHELINE_SIZE];
-} ripple_metric_capture;
+    char                padding1[CACHELINE_SIZE];
+} metric_capture;
 
 /* 状态主线程 */
-extern void* ripple_metric_capture_main(void *args);
+extern void* metric_capture_main(void *args);
 
 
-extern ripple_metric_capture* ripple_metric_capture_init(void);
+extern metric_capture* metric_capture_init(void);
 
-extern void ripple_metric_capture_addpackets(ripple_metric_capture* mcapture, ripple_netpacket* npacket);
+extern void metric_capture_addpackets(metric_capture* mcapture, netpacket* npacket);
 
 
 /* 缓存清理 */
-extern void ripple_metric_capture_destroy(ripple_metric_capture* state);
+extern void metric_capture_destroy(metric_capture* state);
 
 #endif

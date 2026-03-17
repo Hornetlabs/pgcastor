@@ -1,9 +1,9 @@
-#include "ripple_app_incl.h"
-#include "utils/init/ripple_init.h"
-#include "command/ripple_cmd.h"
+#include "app_incl.h"
+#include "utils/init/init.h"
+#include "command/cmd.h"
 
-bool ripple_cmd_init(void *extra_config)
+bool cmd_init(void *extra_config)
 {
-    RIPPLE_UNUSED(extra_config);
-    return ripple_init();
+    UNUSED(extra_config);
+    return init();
 }

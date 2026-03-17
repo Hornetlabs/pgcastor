@@ -1,38 +1,38 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "port/file/fd.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
 #include "utils/guc/guc.h"
 #include "utils/hash/hash_utils.h"
-#include "utils/conn/ripple_conn.h"
+#include "utils/conn/conn.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_transcache.h"
-#include "catalog/ripple_catalog.h"
-#include "catalog/ripple_proc.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/transcache.h"
+#include "catalog/catalog.h"
+#include "catalog/proc.h"
 
 
-void ripple_proc_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
+void proc_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 {
 	int	 i, j;
 	HASHCTL hash_ctl;
 	bool found = false;
 	PGresult *res  = NULL;
-	ripple_catalog_proc_value *entry = NULL;
-	xk_pg_sysdict_Form_pg_proc ripple_proc = NULL;
+	catalog_proc_value *entry = NULL;
+	xk_pg_sysdict_Form_pg_proc proc = NULL;
 	const char *query = "SELECT rel.oid,rel.proname, rel.pronamespace,rel.pronargs, rel.proargtypes FROM pg_proc rel;";
 	
 	rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
 	hash_ctl.keysize = sizeof(Oid);
-	hash_ctl.entrysize = sizeof(ripple_catalog_proc_value);
-	sysdicts->by_proc = hash_create("ripple_catalog_sysdicts_proc", 2048, &hash_ctl,
+	hash_ctl.entrysize = sizeof(catalog_proc_value);
+	sysdicts->by_proc = hash_create("catalog_sysdicts_proc", 2048, &hash_ctl,
 								 HASH_ELEM | HASH_BLOBS);
 
-	res = ripple_conn_exec(conn, query);
+	res = conn_exec(conn, query);
 	if (NULL == res)
 	{
 		elog(RLOG_ERROR, "pg_proc query failed");
@@ -42,95 +42,95 @@ void ripple_proc_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
 	// 打印行数据
 	for (i = 0; i < PQntuples(res); i++) 
 	{
-		ripple_proc = (xk_pg_sysdict_Form_pg_proc)rmalloc0(sizeof(xk_pg_parser_sysdict_pgproc));
-		if(NULL == ripple_proc)
+		proc = (xk_pg_sysdict_Form_pg_proc)rmalloc0(sizeof(xk_pg_parser_sysdict_pgproc));
+		if(NULL == proc)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemset0(ripple_proc, 0, '\0', sizeof(xk_pg_parser_sysdict_pgproc));
+		rmemset0(proc, 0, '\0', sizeof(xk_pg_parser_sysdict_pgproc));
 		j=0;
-		sscanf(PQgetvalue(res, i, j++), "%u", &ripple_proc->oid);
-		strcpy(ripple_proc->proname.data ,PQgetvalue(res, i, j++));
-		sscanf(PQgetvalue(res, i, j++), "%u", &ripple_proc->pronamespace);
-		sscanf(PQgetvalue(res, i, j++), "%hd", &ripple_proc->pronargs);
+		sscanf(PQgetvalue(res, i, j++), "%u", &proc->oid);
+		strcpy(proc->proname.data ,PQgetvalue(res, i, j++));
+		sscanf(PQgetvalue(res, i, j++), "%u", &proc->pronamespace);
+		sscanf(PQgetvalue(res, i, j++), "%hd", &proc->pronargs);
 
-		entry = hash_search(sysdicts->by_proc, &ripple_proc->oid, HASH_ENTER, &found);
+		entry = hash_search(sysdicts->by_proc, &proc->oid, HASH_ENTER, &found);
 		if(found)
 		{
-			elog(RLOG_ERROR, "proc_oid:%u already exist in by_proc", entry->ripple_proc->oid);
+			elog(RLOG_ERROR, "proc_oid:%u already exist in by_proc", entry->proc->oid);
 		}
-		entry->oid = ripple_proc->oid;
-		entry->ripple_proc = ripple_proc;
+		entry->oid = proc->oid;
+		entry->proc = proc;
 	}
 	PQclear(res);
 	return;
 }
 
-void ripple_procdata_write(List* ripple_proc, uint64 *offset, ripple_sysdict_header_array* array)
+void procdata_write(List* proc, uint64 *offset, sysdict_header_array* array)
 {
 	int	 fd;
 	uint64 page_num = 0;
 	uint64 page_offset = 0;
 	ListCell*	cell = NULL;
-	char buffer[RIPPLE_FILE_BLK_SIZE];
-	xk_pg_sysdict_Form_pg_proc proc;
+	char buffer[FILE_BLK_SIZE];
+	xk_pg_sysdict_Form_pg_proc proc_data;
 
-	array->type = RIPPLE_CATALOG_TYPE_PROC;
+	array->type = CATALOG_TYPE_PROC;
 	array->offset = *offset;
 	page_num = *offset;
 
-	rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
-	fd = BasicOpenFile(RIPPLE_SYSDICTS_FILE,
-						O_RDWR | O_CREAT | RIPPLE_BINARY);
+	rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
+	fd = osal_basic_open_file(SYSDICTS_FILE,
+				O_RDWR | O_CREAT | BINARY);
 
 	if (fd < 0)
 	{
-		elog(RLOG_ERROR, "could not create file %s", RIPPLE_SYSDICTS_FILE);
+		elog(RLOG_ERROR, "could not create file %s", SYSDICTS_FILE);
 	}
 
-	foreach(cell, ripple_proc)
+	foreach(cell, proc)
 	{
-		proc = (xk_pg_sysdict_Form_pg_proc) lfirst(cell);
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgproc) > RIPPLE_FILE_BLK_SIZE)
+		proc_data = (xk_pg_sysdict_Form_pg_proc) lfirst(cell);
+		if(page_offset + sizeof(xk_pg_parser_sysdict_pgproc) > FILE_BLK_SIZE)
 		{
-			if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-				elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_FILE);
+			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
 				close(fd);
 				return;
 			}
-			rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
+			rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
 			page_num = *offset + page_offset;
-			*offset += RIPPLE_FILE_BLK_SIZE;
+			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
-		rmemcpy1(buffer, page_offset, proc, sizeof(xk_pg_parser_sysdict_pgproc));
+		rmemcpy1(buffer, page_offset, proc_data, sizeof(xk_pg_parser_sysdict_pgproc));
 		page_offset += sizeof(xk_pg_parser_sysdict_pgproc);
 	}
 
 	if (page_offset > 0) {
-		if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-			elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_FILE);
-			FileClose(fd);
+		if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+			elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
+			osal_file_close(fd);
 			return;
 		}
 		page_num = page_offset + *offset;
-		*offset += RIPPLE_FILE_BLK_SIZE;
+		*offset += FILE_BLK_SIZE;
 	}
 
-	if(0 != FileSync(fd))
+	if(0 != osal_file_sync(fd))
 	{
-		elog(RLOG_ERROR, "could not fsync file %s", RIPPLE_SYSDICTS_FILE);
+		elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_FILE);
 	}
 
-	if(FileClose(fd))
+	if(osal_file_close(fd))
 	{
-		elog(RLOG_ERROR, "could not FileClose file %s", RIPPLE_SYSDICTS_FILE);
+		elog(RLOG_ERROR, "could not osal_file_close file %s", SYSDICTS_FILE);
 	}
 
 	array->len = page_num;
 }
 
-HTAB* ripple_proccache_load(ripple_sysdict_header_array* array)
+HTAB* proccache_load(sysdict_header_array* array)
 {
     int r = 0;
     int fd = -1;
@@ -138,35 +138,35 @@ HTAB* ripple_proccache_load(ripple_sysdict_header_array* array)
     HASHCTL hash_ctl;
     bool found = false;
     uint64 fileoffset = 0;
-    char buffer[RIPPLE_FILE_BLK_SIZE];
+    char buffer[FILE_BLK_SIZE];
     xk_pg_sysdict_Form_pg_proc proc;
-    ripple_catalog_proc_value *entry = NULL;
+    catalog_proc_value *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(uint32_t);
-    hash_ctl.entrysize = sizeof(ripple_catalog_proc_value);
-    prochtab = hash_create("ripple_catalog_proc_value", 2048, &hash_ctl,
+    hash_ctl.entrysize = sizeof(catalog_proc_value);
+    prochtab = hash_create("catalog_proc_value", 2048, &hash_ctl,
                                  HASH_ELEM | HASH_BLOBS);
 
-    if (array[RIPPLE_CATALOG_TYPE_PROC - 1].len == array[RIPPLE_CATALOG_TYPE_PROC - 1].offset)
+    if (array[CATALOG_TYPE_PROC - 1].len == array[CATALOG_TYPE_PROC - 1].offset)
     {
         return prochtab;
     }
 
-    fd = BasicOpenFile(RIPPLE_SYSDICTS_FILE,
-                        O_RDWR | RIPPLE_BINARY);
+    fd = osal_basic_open_file(SYSDICTS_FILE,
+                        O_RDWR | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_ERROR, "could not open file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not open file %s", SYSDICTS_FILE);
     }
 
-    fileoffset = array[RIPPLE_CATALOG_TYPE_PROC - 1].offset;
-    while ((r = FilePRead(fd, buffer, RIPPLE_FILE_BLK_SIZE, fileoffset)) > 0) 
+    fileoffset = array[CATALOG_TYPE_PROC - 1].offset;
+    while ((r = osal_file_pread(fd, buffer, FILE_BLK_SIZE, fileoffset)) > 0) 
     {
         uint64 offset = 0;
 
-        while (offset + sizeof(xk_pg_parser_sysdict_pgproc) < RIPPLE_FILE_BLK_SIZE)
+        while (offset + sizeof(xk_pg_parser_sysdict_pgproc) < FILE_BLK_SIZE)
         {
             proc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
             if(NULL == proc)
@@ -178,57 +178,57 @@ HTAB* ripple_proccache_load(ripple_sysdict_header_array* array)
             entry = hash_search(prochtab, &proc->oid, HASH_ENTER, &found);
             if(found)
             {
-                elog(RLOG_ERROR, "proc_oid:%u already exist in by_proc", entry->ripple_proc->oid);
+                elog(RLOG_ERROR, "proc_oid:%u already exist in by_proc", entry->proc->oid);
             }
             entry->oid = proc->oid;
-            entry->ripple_proc = proc;
+            entry->proc = proc;
             offset += sizeof(xk_pg_parser_sysdict_pgproc);
-            if (fileoffset + offset == array[RIPPLE_CATALOG_TYPE_PROC - 1].len)
+            if (fileoffset + offset == array[CATALOG_TYPE_PROC - 1].len)
             {
-                if(FileClose(fd))
+                if(osal_file_close(fd))
                 {
-                    elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_FILE);
+                    elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
                 }
                 return prochtab;
             }
         }
-        fileoffset += RIPPLE_FILE_BLK_SIZE;
+        fileoffset += FILE_BLK_SIZE;
     }
 
-    if(FileClose(fd))
+    if(osal_file_close(fd))
     {
-        elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
     }
 
     return prochtab;
 }
 
 /* colvalue2proc */
-ripple_catalogdata* ripple_proc_colvalue2proc(void* in_colvalue)
+catalogdata* proc_colvalue2proc(void* in_colvalue)
 {
-    ripple_catalogdata* catalogdata = NULL;
-    ripple_catalog_proc_value* procvalue = NULL;
+    catalogdata* catalog_data = NULL;
+    catalog_proc_value* procvalue = NULL;
     xk_pg_sysdict_Form_pg_proc pgproc = NULL;
     xk_pg_parser_translog_tbcol_value* colvalue = NULL;
 
     colvalue = (xk_pg_parser_translog_tbcol_value*)in_colvalue;
 
     /* 值转换 */
-    catalogdata = (ripple_catalogdata*)rmalloc0(sizeof(ripple_catalogdata));
-    if(NULL == catalogdata)
+    catalog_data = (catalogdata*)rmalloc0(sizeof(catalogdata));
+    if(NULL == catalog_data)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(catalogdata, 0, '\0', sizeof(ripple_catalogdata));
+    rmemset0(catalog_data, 0, '\0', sizeof(catalogdata));
 
-    procvalue = (ripple_catalog_proc_value*)rmalloc0(sizeof(ripple_catalog_proc_value));
+    procvalue = (catalog_proc_value*)rmalloc0(sizeof(catalog_proc_value));
     if(NULL == procvalue)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(procvalue, 0, '\0', sizeof(ripple_catalog_proc_value));
-    catalogdata->catalog = procvalue;
-    catalogdata->type = RIPPLE_CATALOG_TYPE_PROC;
+    rmemset0(procvalue, 0, '\0', sizeof(catalog_proc_value));
+    catalog_data->catalog = procvalue;
+    catalog_data->type = CATALOG_TYPE_PROC;
 
     pgproc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
     if(NULL == pgproc)
@@ -236,7 +236,7 @@ ripple_catalogdata* ripple_proc_colvalue2proc(void* in_colvalue)
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
     rmemset0(pgproc, 0, '\0', sizeof(xk_pg_parser_sysdict_pgproc));
-    procvalue->ripple_proc = pgproc;
+    procvalue->proc = pgproc;
 
     /* oid 0 */
     sscanf((char*)((colvalue + 0)->m_value), "%u", &pgproc->oid);
@@ -251,74 +251,74 @@ ripple_catalogdata* ripple_proc_colvalue2proc(void* in_colvalue)
     /* pronargs 16 */
     sscanf((char*)((colvalue + 16)->m_value), "%hd", &pgproc->pronargs);
 
-    return catalogdata;
+    return catalog_data;
 }
 
 /* catalogdata2transcache */
-void ripple_proc_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata)
+void proc_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata)
 {
     bool found = false;
-    ripple_catalog_proc_value* newcatalog = NULL;
-    ripple_catalog_proc_value* catalogInHash = NULL;
+    catalog_proc_value* newcatalog = NULL;
+    catalog_proc_value* catalogInHash = NULL;
 
     if(NULL == catalogdata || NULL == catalogdata->catalog)
     {
         return;
     }
 
-    newcatalog = (ripple_catalog_proc_value*)catalogdata->catalog;
-    if(RIPPLE_CATALOG_OP_INSERT == catalogdata->op)
+    newcatalog = (catalog_proc_value*)catalogdata->catalog;
+    if(CATALOG_OP_INSERT == catalogdata->op)
     {
         catalogInHash = hash_search(sysdicts->by_proc, &newcatalog->oid, HASH_ENTER, &found);
         if(true == found)
         {
             elog(RLOG_WARNING, "by_proc hash duplicate oid, %u, %s",
-                                catalogInHash->ripple_proc->oid,
-                                catalogInHash->ripple_proc->proname.data);
+                                catalogInHash->proc->oid,
+                                catalogInHash->proc->proname.data);
 
-            if(NULL != catalogInHash->ripple_proc)
+            if(NULL != catalogInHash->proc)
             {
-                rfree(catalogInHash->ripple_proc);
+                rfree(catalogInHash->proc);
             }
         }
         catalogInHash->oid = newcatalog->oid;
 
-		catalogInHash->ripple_proc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
-		if(NULL == catalogInHash->ripple_proc)
+		catalogInHash->proc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
+		if(NULL == catalogInHash->proc)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemcpy0(catalogInHash->ripple_proc, 0, newcatalog->ripple_proc, sizeof(xk_pg_parser_sysdict_pgproc));
+		rmemcpy0(catalogInHash->proc, 0, newcatalog->proc, sizeof(xk_pg_parser_sysdict_pgproc));
     }
-    else if(RIPPLE_CATALOG_OP_DELETE == catalogdata->op)
+    else if(CATALOG_OP_DELETE == catalogdata->op)
     {
         catalogInHash = hash_search(sysdicts->by_proc, &newcatalog->oid, HASH_REMOVE, &found);
         if(NULL != catalogInHash)
         {
-            if(NULL != catalogInHash->ripple_proc)
+            if(NULL != catalogInHash->proc)
             {
-                rfree(catalogInHash->ripple_proc);
+                rfree(catalogInHash->proc);
             }
         }
     }
-    else if(RIPPLE_CATALOG_OP_UPDATE == catalogdata->op)
+    else if(CATALOG_OP_UPDATE == catalogdata->op)
     {
         catalogInHash = hash_search(sysdicts->by_proc, &newcatalog->oid, HASH_FIND, &found);
         if(NULL == catalogInHash)
         {
             elog(RLOG_WARNING, "by_proc hash not found, %u, %s",
-                                newcatalog->ripple_proc->oid,
-                                newcatalog->ripple_proc->proname.data);
+                                newcatalog->proc->oid,
+                                newcatalog->proc->proname.data);
 			return;
         }
-        rfree(catalogInHash->ripple_proc);
+        rfree(catalogInHash->proc);
 
-		catalogInHash->ripple_proc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
-		if(NULL == catalogInHash->ripple_proc)
+		catalogInHash->proc = (xk_pg_sysdict_Form_pg_proc)rmalloc1(sizeof(xk_pg_parser_sysdict_pgproc));
+		if(NULL == catalogInHash->proc)
 		{
 			elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
 		}
-		rmemcpy0(catalogInHash->ripple_proc, 0, newcatalog->ripple_proc, sizeof(xk_pg_parser_sysdict_pgproc));
+		rmemcpy0(catalogInHash->proc, 0, newcatalog->proc, sizeof(xk_pg_parser_sysdict_pgproc));
     }
     else
     {
@@ -326,44 +326,44 @@ void ripple_proc_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_
     }
 }
 
-void ripple_proccache_write(HTAB* proccache, uint64 *offset, ripple_sysdict_header_array* array)
+void proccache_write(HTAB* proccache, uint64 *offset, sysdict_header_array* array)
 {
 	int	 fd;
 	uint64 page_num = 0;
 	uint64 page_offset = 0;
 	HASH_SEQ_STATUS status;
-	char buffer[RIPPLE_FILE_BLK_SIZE];
-	ripple_catalog_proc_value *entry = NULL;
+	char buffer[FILE_BLK_SIZE];
+	catalog_proc_value *entry = NULL;
 	xk_pg_sysdict_Form_pg_proc proc = NULL;
 
-	array[RIPPLE_CATALOG_TYPE_PROC - 1].type = RIPPLE_CATALOG_TYPE_PROC;
-	array[RIPPLE_CATALOG_TYPE_PROC - 1].offset = *offset;
+	array[CATALOG_TYPE_PROC - 1].type = CATALOG_TYPE_PROC;
+	array[CATALOG_TYPE_PROC - 1].offset = *offset;
 	page_num = *offset;
 
-	rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
-	fd = BasicOpenFile(RIPPLE_SYSDICTS_TMP_FILE,
-						O_RDWR | O_CREAT | RIPPLE_BINARY);
+	rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
+	fd = osal_basic_open_file(SYSDICTS_TMP_FILE,
+						O_RDWR | O_CREAT | BINARY);
 
 	if (fd < 0)
 	{
-		elog(RLOG_ERROR, "could not create file %s", RIPPLE_SYSDICTS_TMP_FILE);
+		elog(RLOG_ERROR, "could not create file %s", SYSDICTS_TMP_FILE);
 	}
 
 	hash_seq_init(&status,proccache);
 	while ((entry = hash_seq_search(&status)) != NULL)
 	{
-		proc = entry->ripple_proc;
+		proc = entry->proc;
 
-		if(page_offset + sizeof(xk_pg_parser_sysdict_pgproc) > RIPPLE_FILE_BLK_SIZE)
+		if(page_offset + sizeof(xk_pg_parser_sysdict_pgproc) > FILE_BLK_SIZE)
 		{
-			if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-				elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_TMP_FILE);
+			if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+				elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
 				close(fd);
 				return;
 			}
-			rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
+			rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
 			page_num = *offset + page_offset;
-			*offset += RIPPLE_FILE_BLK_SIZE;
+			*offset += FILE_BLK_SIZE;
 			page_offset = 0;
 		}
 		rmemcpy1(buffer, page_offset, proc, sizeof(xk_pg_parser_sysdict_pgproc));
@@ -371,30 +371,30 @@ void ripple_proccache_write(HTAB* proccache, uint64 *offset, ripple_sysdict_head
 	}
 
 	if (page_offset > 0) {
-		if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-			elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_TMP_FILE);
-			FileClose(fd);
+		if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+			elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
+			osal_file_close(fd);
 			return;
 		}
 		page_num = page_offset + *offset;
-		*offset += RIPPLE_FILE_BLK_SIZE;
+		*offset += FILE_BLK_SIZE;
 	}
 
-	if(0 != FileSync(fd))
+	if(0 != osal_file_sync(fd))
 	{
-		elog(RLOG_ERROR, "could not fsync file %s", RIPPLE_SYSDICTS_TMP_FILE);
+		elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_TMP_FILE);
 	}
 
-	if(FileClose(fd))
+	if(osal_file_close(fd))
 	{
-		elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_TMP_FILE);
+		elog(RLOG_ERROR, "could not close file %s", SYSDICTS_TMP_FILE);
 	}
-	array[RIPPLE_CATALOG_TYPE_PROC - 1].len = page_num;
+	array[CATALOG_TYPE_PROC - 1].len = page_num;
 }
 
-void ripple_proc_catalogdatafree(ripple_catalogdata* catalogdata)
+void proc_catalogdatafree(catalogdata* catalogdata)
 {
-    ripple_catalog_proc_value* catalog = NULL;
+    catalog_proc_value* catalog = NULL;
     if(NULL == catalogdata)
     {
         return;
@@ -407,10 +407,10 @@ void ripple_proc_catalogdatafree(ripple_catalogdata* catalogdata)
     }
 
     /* catalog 内存释放 */
-    catalog = (ripple_catalog_proc_value*)catalogdata->catalog;
-    if(NULL != catalog->ripple_proc)
+    catalog = (catalog_proc_value*)catalogdata->catalog;
+    if(NULL != catalog->proc)
     {
-        rfree(catalog->ripple_proc);
+        rfree(catalog->proc);
     }
     rfree(catalogdata->catalog);
     rfree(catalogdata);

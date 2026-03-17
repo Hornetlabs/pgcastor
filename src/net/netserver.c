@@ -1,27 +1,27 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
-#include "port/net/ripple_net.h"
+#include "port/net/net.h"
 #include "utils/guc/guc.h"
 #include "utils/dlist/dlist.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netserver.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netserver.h"
 
 /* 初始设置 */
-bool ripple_netserver_reset(ripple_netserver* netserver)
+bool netserver_reset(netserver* netserver)
 {
     int index = 0;
-    netserver->type = RIPPLE_NETSERVER_TYPE_NOP;
+    netserver->type = NETSERVER_TYPE_NOP;
     netserver->fdcnt = 0;
-    netserver->fdmax = RIPPLE_NETSERVER_DEFAULTSOCKSIZE;
+    netserver->fdmax = NETSERVER_DEFAULTSOCKSIZE;
 
     /* 在配置文件中获取 keepalive 和 usertimeout 的配置信息 */
-    netserver->keepalive         = guc_getConfigOptionInt(RIPPLE_CFG_KEY_TCP_KEEPALIVE);
-    netserver->keepaliveidle     = guc_getConfigOptionInt(RIPPLE_CFG_KEY_TCP_KEEPALIVES_IDLE);
-    netserver->keepaliveinterval = guc_getConfigOptionInt(RIPPLE_CFG_KEY_TCP_KEEPALIVES_INTERVAL);
-    netserver->keepalivecount    = guc_getConfigOptionInt(RIPPLE_CFG_KEY_TCP_KEEPALIVES_COUNT);
-    netserver->usertimeout       = guc_getConfigOptionInt(RIPPLE_CFG_KEY_TCP_USER_TIMEOUT);
+    netserver->keepalive         = guc_getConfigOptionInt(CFG_KEY_TCP_KEEPALIVE);
+    netserver->keepaliveidle     = guc_getConfigOptionInt(CFG_KEY_TCP_KEEPALIVES_IDLE);
+    netserver->keepaliveinterval = guc_getConfigOptionInt(CFG_KEY_TCP_KEEPALIVES_INTERVAL);
+    netserver->keepalivecount    = guc_getConfigOptionInt(CFG_KEY_TCP_KEEPALIVES_COUNT);
+    netserver->usertimeout       = guc_getConfigOptionInt(CFG_KEY_TCP_USER_TIMEOUT);
 
     if (NULL == netserver->fd)
     {
@@ -52,30 +52,30 @@ bool ripple_netserver_reset(ripple_netserver* netserver)
     {
         if ( -1 != netserver->fd[index])
         {
-            ripple_close(netserver->fd[index]);
+            osal_close(netserver->fd[index]);
             netserver->fd[index] = -1;
         }
         netserver->pos[index] = -1;
     }
 
-    netserver->ops = ripple_netiomp_init(RIPPLE_NETIOMP_TYPE_POLL);
+    netserver->ops = netiomp_init(NETIOMP_TYPE_POLL);
     /* 申请 base 信息，用于后续的描述符处理 */
     if(false == netserver->ops->create(&netserver->base))
     {
-        elog(RLOG_ERROR, "net server reset RIPPLE_NETIOMP_TYPE_POLL create error");
+        elog(RLOG_ERROR, "net server reset NETIOMP_TYPE_POLL create error");
         return false;
     }
 
     netserver->ops->reset(netserver->base);
-    netserver->base->timeout = RIPPLE_NET_POLLTIMEOUT;
+    netserver->base->timeout = NET_POLLTIMEOUT;
     netserver->callback = NULL;
     return true;
 }
 
 /* 设置netserver svrhost */
-bool ripple_netserver_host_set(ripple_netserver* netserver, char* host, ripple_netserver_hosttype hosttype)
+bool netserver_host_set(netserver* netserver, char* host, netserver_hosttype hosttype)
 {
-    ripple_netserver_host* nsvrhost = NULL;
+    netserver_host* nsvrhost = NULL;
     if (NULL == netserver)
     {
         return false;
@@ -86,13 +86,13 @@ bool ripple_netserver_host_set(ripple_netserver* netserver, char* host, ripple_n
         host = "127.0.0.1";
     }
 
-    nsvrhost = rmalloc0(sizeof(ripple_netserver_host));
+    nsvrhost = rmalloc0(sizeof(netserver_host));
     if (NULL == nsvrhost)
     {
         elog(RLOG_WARNING, "netserver set host out of memory");
         return false;
     }
-    rmemset0(nsvrhost, 0, '\0', sizeof(ripple_netserver_host));
+    rmemset0(nsvrhost, 0, '\0', sizeof(netserver_host));
     nsvrhost->type = hosttype;
     rmemcpy1(nsvrhost->host, 0, host, strlen(host));
 
@@ -107,7 +107,7 @@ bool ripple_netserver_host_set(ripple_netserver* netserver, char* host, ripple_n
 }
 
 /* 设置netserver svrport */
-void ripple_netserver_port_set(ripple_netserver* netserver, int port)
+void netserver_port_set(netserver* netserver, int port)
 {
     if (NULL == netserver)
     {
@@ -120,7 +120,7 @@ void ripple_netserver_port_set(ripple_netserver* netserver, int port)
 }
 
 /* 设置类型 */
-void ripple_netserver_type_set(ripple_netserver* netserver, int type)
+void netserver_type_set(netserver* netserver, int type)
 {
     if (NULL == netserver)
     {
@@ -132,7 +132,7 @@ void ripple_netserver_type_set(ripple_netserver* netserver, int type)
 }
 
 /* 创建server端 */
-bool ripple_netserver_create(ripple_netserver* netserver)
+bool netserver_create(netserver* netserver)
 {
     bool bret = false;
     int yes = 1;
@@ -141,11 +141,11 @@ bool ripple_netserver_create(ripple_netserver* netserver)
     int domain = 0;
     int bindlen = 0;
     dlistnode* dlnode = NULL;
-    ripple_netserver_host* nsvrhost = NULL;
+    netserver_host* nsvrhost = NULL;
     struct sockaddr* bindaddr = NULL;
     struct sockaddr_un addrun;
     struct sockaddr_in addr;
-    char unixpath[RIPPLE_NETSERVER_HOSTMAXLEN] = { 0 };
+    char unixpath[NETSERVER_HOSTMAXLEN] = { 0 };
 
     if(NULL == netserver)
     {
@@ -155,14 +155,14 @@ bool ripple_netserver_create(ripple_netserver* netserver)
     for (dlnode = netserver->hosts->head; NULL != dlnode; dlnode = dlnode->next)
     {
         domain = AF_INET;
-        nsvrhost = (ripple_netserver_host*)dlnode->value;
-        if (RIPPLE_NETSERVER_HOSTTYPE_IP == nsvrhost->type)
+        nsvrhost = (netserver_host*)dlnode->value;
+        if (NETSERVER_HOSTTYPE_IP == nsvrhost->type)
         {
             /* 创建服务端监听 */
             domain = AF_INET;
             /* 获取host对应的地址 */
             rmemset1(&addr, 0, 0, sizeof(struct sockaddr_in));
-            bret = ripple_host2sockaddr(&addr,
+            bret = osal_host2sockaddr(&addr,
                                         nsvrhost->host,
                                         netserver->port,
                                         domain,
@@ -178,18 +178,18 @@ bool ripple_netserver_create(ripple_netserver* netserver)
             bindlen = sizeof(struct sockaddr_in);
             elog(RLOG_INFO, "host %s.%s listend", nsvrhost->host, netserver->port);
         }
-        else if (RIPPLE_NETSERVER_HOSTTYPE_UNIXDOMAIN == nsvrhost->type)
+        else if (NETSERVER_HOSTTYPE_UNIXDOMAIN == nsvrhost->type)
         {
             domain = AF_LOCAL;
             rmemset1(&addrun, 0, '\0', sizeof(struct sockaddr_un));
-            snprintf(unixpath, RIPPLE_NETSERVER_HOSTMAXLEN, "%s%s", nsvrhost->host, netserver->port);
+            snprintf(unixpath, NETSERVER_HOSTMAXLEN, "%s%s", nsvrhost->host, netserver->port);
 
             if (strlen(unixpath) > sizeof(addrun.sun_path))
             {
                 elog(RLOG_WARNING, "unix domain path too long");
                 return false;
             }
-            durable_unlink(unixpath, RLOG_INFO);
+            osal_durable_unlink(unixpath, RLOG_INFO);
 
             rmemcpy1(addrun.sun_path, 0, unixpath, strlen(unixpath));
             addrun.sun_family = domain;
@@ -199,7 +199,7 @@ bool ripple_netserver_create(ripple_netserver* netserver)
         }
 
         /* 创建描述符 */
-        fd = ripple_socket(domain, SOCK_STREAM, 0);
+        fd = osal_socket(domain, SOCK_STREAM, 0);
         if(-1 == fd)
         {
             elog(RLOG_WARNING, "call socket error, %s", strerror(errno));
@@ -207,29 +207,29 @@ bool ripple_netserver_create(ripple_netserver* netserver)
         }
 
         /* 禁用 TCP_NODELAY */
-        ripple_setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(int));
+        osal_setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(int));
 
         /* 设置为 非阻塞模式 */
-        ripple_setunblock(fd);
+        osal_setunblock(fd);
 
         /* 设置可以使用 TIME_WAIT 状态的描述符 */
-        ripple_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+        osal_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
         /* 将 socket 与 地址绑定 */
-        iret = ripple_bind(fd, bindaddr, bindlen);
+        iret = osal_bind(fd, bindaddr, bindlen);
         if(0 != iret)
         {
-            ripple_close(fd);
-            elog(RLOG_WARNING, "bind error, %s", strerror(errno));
+            osal_close(fd);
+            elog(RLOG_WARNING, "rbind error, %s", strerror(errno));
             return false;
         }
 
         /* 启动监听 */
-        iret = ripple_listen(fd, 10000);
+        iret = osal_listen(fd, 10000);
         if(0 != iret)
         {
-            ripple_close(fd);
-            elog(RLOG_WARNING, "listen error, %s", strerror(errno));
+            osal_close(fd);
+            elog(RLOG_WARNING, "osal_listen error, %s", strerror(errno));
             return false;
         }
 
@@ -241,7 +241,7 @@ bool ripple_netserver_create(ripple_netserver* netserver)
 }
 
 /* 创建事件并接收描述符,等待触发后调用回掉函数处理 */
-bool ripple_netserver_desc(ripple_netserver* netserver)
+bool netserver_desc(netserver* netserver)
 {
     int yes             = 1;
     int iret            = 0;
@@ -310,20 +310,20 @@ bool ripple_netserver_desc(ripple_netserver* netserver)
 
         /* 有新的链接, 接收连接并调用回掉函数处理 */
         addrlen = sizeof(struct sockaddr_in);
-        nsock =  ripple_accept(netserver->fd[index], &addr, &addrlen);
+        nsock =  osal_accept(netserver->fd[index], &addr, &addrlen);
         if(-1 == nsock)
         {
-            elog(RLOG_WARNING, "accept error, %s", strerror(errno));
+            elog(RLOG_WARNING, "osal_accept error, %s", strerror(errno));
             return false;
         }
         elog(RLOG_INFO, "nsock:%d, %s", nsock, strerror(errno));
 
         /* 设置新连接的参数 */
         /* 禁用 TCP_NODELAY */
-        ripple_setsockopt(nsock, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(int));
+        osal_setsockopt(nsock, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(int));
 
         /* 设置为 非阻塞模式 */
-        ripple_setunblock(nsock);
+        osal_setunblock(nsock);
 
         if(0 == netserver->keepalive)
         {
@@ -331,22 +331,22 @@ bool ripple_netserver_desc(ripple_netserver* netserver)
             return netserver->callback(netserver, nsock);
         }
 
-        ripple_setsockopt(nsock,
+        osal_setsockopt(nsock,
                         SOL_SOCKET, SO_KEEPALIVE,
                         (char *) &netserver->keepalive, sizeof(netserver->keepalive));
 
-        ripple_setsockopt(nsock,
+        osal_setsockopt(nsock,
                         IPPROTO_TCP, TCP_KEEPIDLE,
                         (char *) &netserver->keepaliveidle, sizeof(netserver->keepaliveidle));
 
-        ripple_setsockopt(nsock, IPPROTO_TCP, TCP_KEEPINTVL,
+        osal_setsockopt(nsock, IPPROTO_TCP, TCP_KEEPINTVL,
                         (char *) &netserver->keepaliveinterval, sizeof(netserver->keepaliveinterval));
 
-        ripple_setsockopt(nsock,
+        osal_setsockopt(nsock,
                         IPPROTO_TCP, TCP_KEEPCNT,
                         (char *) &netserver->keepalivecount, sizeof(netserver->keepalivecount));
 
-        ripple_setsockopt(nsock,
+        osal_setsockopt(nsock,
                         IPPROTO_TCP, TCP_USER_TIMEOUT,
                         (char *) &netserver->usertimeout, sizeof(netserver->usertimeout));
 
@@ -360,7 +360,7 @@ bool ripple_netserver_desc(ripple_netserver* netserver)
 }
 
 /* 资源回收 */
-void ripple_netserver_free(ripple_netserver* netserver)
+void netserver_free(netserver* netserver)
 {
     int index = 0;
     if(NULL == netserver)
@@ -374,8 +374,8 @@ void ripple_netserver_free(ripple_netserver* netserver)
         {
             if(-1 != netserver->fd[index])
             {
-                elog(RLOG_DEBUG, "netsvr listen sock:%d", netserver->fd[index]);
-                ripple_close(netserver->fd[index]);
+                elog(RLOG_DEBUG, "netsvr osal_listen sock:%d", netserver->fd[index]);
+                osal_close(netserver->fd[index]);
                 netserver->fd[index] = -1;
             }
         }
@@ -384,7 +384,7 @@ void ripple_netserver_free(ripple_netserver* netserver)
         netserver->fd = NULL;
     }
 
-    dlist_free(netserver->hosts, ripple_free);
+    dlist_free(netserver->hosts, free);
     if (NULL != netserver->pos)
     {
         rfree(netserver->pos);

@@ -1,35 +1,35 @@
-#include "ripple_app_incl.h"
-#include "net/netmsg/ripple_netmsg.h"
+#include "app_incl.h"
+#include "net/netmsg/netmsg.h"
 
 typedef bool (*netmsgs_op)(void* privdata, uint8* msg);
 
-typedef struct RIPPLE_NETMSGS
+typedef struct NETMSGS
 {
     int                 type;                   /* 消息类型 */
     char*               desc;                   /* 消息描述 */
     netmsgs_op          func;                   /* 消息处理 */
-} ripple_netmsgs;
+} netmsgs;
 
-static ripple_netmsgs   m_netmsgsops[] =
+static netmsgs   m_netmsgsops[] =
 {
     {
-        RIPPLE_NETMSG_TYPE_NOP,
+        NETMSG_TYPE_NOP,
         "NOP",
         NULL
     },
     {
-        RIPPLE_NETMSG_TYPE_MAX,
+        NETMSG_TYPE_MAX,
         " MAX ",
         NULL
     }
 };
 
 /* 消息分发处理 */
-bool ripple_netmsg(void* privdata,
+bool netmsg(void* privdata,
                     uint32 msgtype,
                     uint8* msg)
 {
-    if(RIPPLE_NETMSG_TYPE_MAX < msgtype)
+    if(NETMSG_TYPE_MAX < msgtype)
     {
         elog(RLOG_WARNING, "unknown net msgtype:%u", msgtype);
         return false;

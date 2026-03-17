@@ -1,42 +1,42 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
-#include "stmts/ripple_txnstmt.h"
-#include "stmts/ripple_txnstmt_metadata.h"
-#include "catalog/ripple_catalog.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_file_buffer.h"
-#include "storage/ripple_ffsmgr.h"
-#include "storage/trail/ripple_fftrail.h"
-#include "parser/trail/ripple_parsertrail.h"
-#include "parser/trail/data/ripple_parsertrail_dbmetadata.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
+#include "stmts/txnstmt.h"
+#include "stmts/txnstmt_metadata.h"
+#include "catalog/catalog.h"
+#include "storage/ff_detail.h"
+#include "storage/file_buffer.h"
+#include "storage/ffsmgr.h"
+#include "storage/trail/fftrail.h"
+#include "parser/trail/parsertrail.h"
+#include "parser/trail/data/parsertrail_dbmetadata.h"
 
 
 /* 向数据库hash里面增加数据 */
-static bool ripple_parsertrail_dbmetadata2hash(ripple_parsertrail* parsertrail,
-                                                ripple_ff_dbmetadata* ffdbmd)
+static bool parsertrail_dbmetadata2hash(parsertrail* parsertrail,
+                                                ff_dbmetadata* ffdbmd)
 {
     /*
      * 存在则不处理，不存在则增加
      */
     bool nadd = false;
     bool found = false;
-    ripple_catalog_database_value *dbentry = NULL;
-    ripple_catalog_datname2oid_value* dbnameentry = NULL;
+    catalog_database_value *dbentry = NULL;
+    catalog_datname2oid_value* dbnameentry = NULL;
     xk_pg_parser_NameData dbname = {{'\0'}};
     HASHCTL hctl = { 0 };
-    ripple_txn *cur_txn = parsertrail->lasttxn;
+    txn *cur_txn = parsertrail->lasttxn;
     bool add_txn = false;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_metadata *metadata = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_metadata *metadata = NULL;
     ListCell *sys_begin = NULL;
 
     /*
@@ -48,7 +48,7 @@ static bool ripple_parsertrail_dbmetadata2hash(ripple_parsertrail* parsertrail,
         nadd = true;
         rmemset1(&hctl, 0, 0, sizeof(hctl));
         hctl.keysize = sizeof(Oid);
-        hctl.entrysize = sizeof(ripple_catalog_database_value);
+        hctl.entrysize = sizeof(catalog_database_value);
         parsertrail->transcache->sysdicts->by_database = hash_create("decodehdatabase",
                                                         256,
                                                         &hctl,
@@ -60,15 +60,15 @@ static bool ripple_parsertrail_dbmetadata2hash(ripple_parsertrail* parsertrail,
     {
         /* 添加 */
         dbentry->oid = ffdbmd->oid;
-        dbentry->ripple_database = (xk_pg_sysdict_Form_pg_database)rmalloc1(sizeof(xk_pg_parser_sysdict_pgdatabase));
-        if(NULL == dbentry->ripple_database)
+        dbentry->database = (xk_pg_sysdict_Form_pg_database)rmalloc1(sizeof(xk_pg_parser_sysdict_pgdatabase));
+        if(NULL == dbentry->database)
         {
             elog(RLOG_WARNING, "out of memory");
             return false;
         }
-        rmemset0(dbentry->ripple_database, 0, '\0', sizeof(xk_pg_parser_sysdict_pgdatabase));
-        dbentry->ripple_database->oid = ffdbmd->oid;
-        rmemcpy1(dbentry->ripple_database->datname.data, 0, ffdbmd->dbname, strlen(ffdbmd->dbname));
+        rmemset0(dbentry->database, 0, '\0', sizeof(xk_pg_parser_sysdict_pgdatabase));
+        dbentry->database->oid = ffdbmd->oid;
+        rmemcpy1(dbentry->database->datname.data, 0, ffdbmd->dbname, strlen(ffdbmd->dbname));
     }
 
     if(false == nadd)
@@ -80,7 +80,7 @@ static bool ripple_parsertrail_dbmetadata2hash(ripple_parsertrail* parsertrail,
     {
         rmemset1(&hctl, 0, 0, sizeof(hctl));
         hctl.keysize = sizeof(xk_pg_parser_NameData);
-        hctl.entrysize = sizeof(ripple_catalog_datname2oid_value);
+        hctl.entrysize = sizeof(catalog_datname2oid_value);
         parsertrail->transcache->sysdicts->by_datname2oid = hash_create("decodehdbname2oid",
                                                         256,
                                                         &hctl,
@@ -101,27 +101,27 @@ static bool ripple_parsertrail_dbmetadata2hash(ripple_parsertrail* parsertrail,
     {
         /* 不在事务内, 创建一个新的txn */
         add_txn = true;
-        cur_txn = ripple_txn_init(RIPPLE_FROZEN_TXNID, InvalidXLogRecPtr, InvalidXLogRecPtr);
-        cur_txn->type = RIPPLE_TXN_TYPE_METADATA;
+        cur_txn = txn_init(FROZEN_TXNID, InvalidXLogRecPtr, InvalidXLogRecPtr);
+        cur_txn->type = TXN_TYPE_METADATA;
     }
 
     /* 拼装sysdictHis */
     if (ffdbmd)
     {
         /* pg_database */
-        ripple_catalogdata *catalog_db = rmalloc0(sizeof(ripple_catalogdata));
-        ripple_catalog_database_value *db_value = rmalloc0(sizeof(ripple_catalog_database_value));
+        catalogdata *catalog_db = rmalloc0(sizeof(catalogdata));
+        catalog_database_value *db_value = rmalloc0(sizeof(catalog_database_value));
 
-        rmemset0(catalog_db, 0, 0, sizeof(ripple_catalogdata));
-        rmemset0(db_value, 0, 0, sizeof(ripple_catalog_database_value));
+        rmemset0(catalog_db, 0, 0, sizeof(catalogdata));
+        rmemset0(db_value, 0, 0, sizeof(catalog_database_value));
 
         /* database catalogdata赋值 */
-        catalog_db->op = RIPPLE_CATALOG_OP_INSERT;
-        catalog_db->type = RIPPLE_CATALOG_TYPE_DATABASE;
+        catalog_db->op = CATALOG_OP_INSERT;
+        catalog_db->type = CATALOG_TYPE_DATABASE;
 
         /* db_value赋值 */
-        db_value->ripple_database = rmalloc0(sizeof(xk_pg_parser_sysdict_pgdatabase));
-        rmemset0(db_value->ripple_database, 0, 0, sizeof(xk_pg_parser_sysdict_pgdatabase));
+        db_value->database = rmalloc0(sizeof(xk_pg_parser_sysdict_pgdatabase));
+        rmemset0(db_value->database, 0, 0, sizeof(xk_pg_parser_sysdict_pgdatabase));
         db_value->oid = ffdbmd->oid;
 
         /* 
@@ -130,8 +130,8 @@ static bool ripple_parsertrail_dbmetadata2hash(ripple_parsertrail* parsertrail,
          * oid
          * datname
          */
-        db_value->ripple_database->oid = ffdbmd->oid;
-        strcpy(db_value->ripple_database->datname.data, ffdbmd->dbname);
+        db_value->database->oid = ffdbmd->oid;
+        strcpy(db_value->database->datname.data, ffdbmd->dbname);
 
         catalog_db->catalog = (void *) db_value;
 
@@ -142,15 +142,15 @@ static bool ripple_parsertrail_dbmetadata2hash(ripple_parsertrail* parsertrail,
 
     /* 创建METADATA stmt */
     /* 添加stmt, 作为系统表段标识 */
-    stmt = ripple_txnstmt_init();
+    stmt = txnstmt_init();
     if(NULL == stmt)
     {
         elog(RLOG_WARNING, "init txnstmt error");
         return false;
     }
-    stmt->type = RIPPLE_TXNSTMT_TYPE_METADATA;
+    stmt->type = TXNSTMT_TYPE_METADATA;
 
-    metadata = ripple_txnstmt_metadata_init();
+    metadata = txnstmt_metadata_init();
     if(NULL == metadata)
     {
         elog(RLOG_WARNING, "init metastmt error");
@@ -180,14 +180,14 @@ static bool ripple_parsertrail_dbmetadata2hash(ripple_parsertrail* parsertrail,
  * 数据库信息应用
  *  此处为独立的处理逻辑，函数流程到此说明前期的处理已经完成，在这只需要应用即可
 */
-bool ripple_parsertrail_dbmetadataapply(ripple_parsertrail* parsertrail, void* data)
+bool parsertrail_dbmetadataapply(parsertrail* parsertrail, void* data)
 {
     bool found = false;
-    ripple_ff_dbmetadata* dbmetadata = NULL;
-    ripple_fftrail_privdata* privdata = NULL;
-    ripple_fftrail_database_deserialentry* deserialentry = NULL;
+    ff_dbmetadata* dbmetadata = NULL;
+    fftrail_privdata* privdata = NULL;
+    fftrail_database_deserialentry* deserialentry = NULL;
 
-    dbmetadata = (ripple_ff_dbmetadata*)data;
+    dbmetadata = (ff_dbmetadata*)data;
 
     /* 将数据库信息应用 */
     privdata = parsertrail->ffsmgrstate->fdata->ffdata;
@@ -206,7 +206,7 @@ bool ripple_parsertrail_dbmetadataapply(ripple_parsertrail* parsertrail, void* d
     /* 加入到链表中 */
     privdata->dbentrys = lappend(privdata->dbentrys, deserialentry);
 
-    if(false == ripple_parsertrail_dbmetadata2hash(parsertrail, dbmetadata))
+    if(false == parsertrail_dbmetadata2hash(parsertrail, dbmetadata))
     {
         elog(RLOG_WARNING, "parser trail dbmetadata error");
         return false;
@@ -238,18 +238,18 @@ bool ripple_parsertrail_dbmetadataapply(ripple_parsertrail* parsertrail, void* d
 }
 
 /* 清理工作 */
-void ripple_parsertrail_dbmetadataclean(ripple_parsertrail* parsertrail, void* data)
+void parsertrail_dbmetadataclean(parsertrail* parsertrail, void* data)
 {
-    ripple_ff_dbmetadata* dbmetadata = NULL;
+    ff_dbmetadata* dbmetadata = NULL;
 
     if (!data)
     {
         return;
     }
 
-    dbmetadata = (ripple_ff_dbmetadata*)data;
+    dbmetadata = (ff_dbmetadata*)data;
 
-    RIPPLE_UNUSED(parsertrail);
+    UNUSED(parsertrail);
 
     /* 内存释放 */
     if(NULL != dbmetadata->dbname)

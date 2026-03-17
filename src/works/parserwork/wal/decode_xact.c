@@ -1,51 +1,51 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
-#include "utils/uuid/ripple_uuid.h"
+#include "utils/uuid/uuid.h"
 #include "utils/hash/hash_search.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/sinval/sinval.h"
-#include "utils/regex/ripple_regex.h"
-#include "misc/ripple_misc_stat.h"
+#include "utils/regex/regex.h"
+#include "misc/misc_stat.h"
 #include "common/xk_pg_parser_errnodef.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "catalog/ripple_control.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
+#include "catalog/control.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
 #include "utils/mpage/mpage.h"
-#include "queue/ripple_queue.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadwalrecords.h"
-#include "stmts/ripple_txnstmt.h"
-#include "stmts/ripple_txnstmt_bigtxnend.h"
-#include "cache/ripple_fpwcache.h"
-#include "storage/ripple_file_buffer.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_ffsmgr.h"
-#include "snapshot/ripple_snapshot.h"
-#include "works/parserwork/wal/ripple_rewind.h"
-#include "works/parserwork/wal/ripple_parserwork_decode.h"
-#include "works/parserwork/wal/ripple_decode_xact.h"
-#include "works/parserwork/wal/ripple_decode_ddl.h"
-#include "works/parserwork/wal/ripple_decode_relmap.h"
-#include "works/parserwork/wal/ripple_decode_heap_util.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "stmts/ripple_txnstmt_refresh.h"
-#include "stmts/ripple_txnstmt_onlinerefresh.h"
-#include "strategy/ripple_filter_dataset.h"
-#include "works/parserwork/wal/ripple_onlinerefresh.h"
-#include "works/parserwork/wal/ripple_parserwork_wal.h"
-#include "stmts/ripple_txnstmt_onlinerefresh_dataset.h"
-#include "bigtransaction/persist/ripple_bigtxn_persist.h"
-#include "bigtransaction/ripple_bigtxn.h"
+#include "queue/queue.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadwalrecords.h"
+#include "stmts/txnstmt.h"
+#include "stmts/txnstmt_bigtxnend.h"
+#include "cache/fpwcache.h"
+#include "storage/file_buffer.h"
+#include "storage/ff_detail.h"
+#include "storage/ffsmgr.h"
+#include "snapshot/snapshot.h"
+#include "works/parserwork/wal/rewind.h"
+#include "works/parserwork/wal/parserwork_decode.h"
+#include "works/parserwork/wal/decode_xact.h"
+#include "works/parserwork/wal/decode_ddl.h"
+#include "works/parserwork/wal/decode_relmap.h"
+#include "works/parserwork/wal/decode_heap_util.h"
+#include "refresh/refresh_tables.h"
+#include "stmts/txnstmt_refresh.h"
+#include "stmts/txnstmt_onlinerefresh.h"
+#include "strategy/filter_dataset.h"
+#include "works/parserwork/wal/onlinerefresh.h"
+#include "works/parserwork/wal/parserwork_wal.h"
+#include "stmts/txnstmt_onlinerefresh_dataset.h"
+#include "bigtransaction/persist/bigtxn_persist.h"
+#include "bigtransaction/bigtxn.h"
 
 #define GIDSIZE 200
 
@@ -100,52 +100,52 @@ typedef struct xl_xact_parsed_abort
 } xl_xact_parsed_abort;
 
 
-static void ripple_decode_xact_appendsubtxn(List** ptxnstmts, List** psysdicthis, ripple_txn* subtxn)
+static void decode_xact_appendsubtxn(List** ptxnstmts, List** psysdicthis, txn* subtxn_ptr)
 {
     ListCell* lc = NULL;
-    ripple_txnstmt* stmt = NULL;
+    txnstmt* stmt = NULL;
 
-    foreach(lc, subtxn->stmts)
+    foreach(lc, subtxn_ptr->stmts)
     {
-        stmt = (ripple_txnstmt*)lfirst(lc);
+        stmt = (txnstmt*)lfirst(lc);
         *ptxnstmts = lappend(*ptxnstmts, stmt);
     }
-    list_free(subtxn->stmts);
-    subtxn->stmts = NULL;
+    list_free(subtxn_ptr->stmts);
+    subtxn_ptr->stmts = NULL;
 
-    foreach(lc, subtxn->sysdictHis)
+    foreach(lc, subtxn_ptr->sysdictHis)
     {
         *psysdicthis = lappend(*psysdicthis, lfirst(lc));
     }
-    list_free(subtxn->sysdictHis);
-    subtxn->sysdictHis = NULL;
+    list_free(subtxn_ptr->sysdictHis);
+    subtxn_ptr->sysdictHis = NULL;
 }
 
-static void check_online_refresh_node_need_clean(ripple_onlinerefresh *olnode, dlistnode *dlnode, ripple_decodingcontext* ctx)
+static void check_online_refresh_node_need_clean(onlinerefresh *olnode, dlistnode *dlnode, decodingcontext* ctx)
 {
-    if (olnode->state == RIPPLE_ONLINEREFRESH_STATE_FULLSNAPSHOT && ripple_onlinerefresh_xids_isnull(olnode))
+    if (olnode->state == ONLINEREFRESH_STATE_FULLSNAPSHOT && onlinerefresh_xids_isnull(olnode))
     {
         /* xids为空, 所有事务均已完成 */
-        ripple_txn *end_txn = NULL;
-        ripple_txn *dataset_txn = NULL;
+        txn *end_txn_ptr = NULL;
+        txn *dataset_txn_ptr = NULL;
 
         /* 构建onlinerefresh end事务 */
-        end_txn = ripple_parserwork_build_onlinerefresh_end_txn(olnode->no->data, ctx->parselsn);
+        end_txn_ptr = parserwork_build_onlinerefresh_end_txn(olnode->no->data, ctx->parselsn);
 
         /* 事务添加到缓存 */
-        ripple_cache_txn_add(ctx->parser2txns, end_txn);
+        cache_txn_add(ctx->parser2txns, end_txn_ptr);
 
         if (olnode->newtables)
         {
             /* 构建onlinerefresh dataset事务 */
-            dataset_txn = (ripple_txn *)ripple_parserwork_build_onlinerefresh_dataset_txn(olnode->newtables);
+            dataset_txn_ptr = (txn *)parserwork_build_onlinerefresh_dataset_txn(olnode->newtables);
 
             /* 事务添加到缓存 */
-            ripple_cache_txn_add(ctx->parser2txns, dataset_txn);
+            cache_txn_add(ctx->parser2txns, dataset_txn_ptr);
         }
 
         /* 清理 */
-        ctx->onlinerefresh = ripple_onlinerefresh_refreshdlist_delete(ctx->onlinerefresh, dlnode);
+        ctx->onlinerefresh = onlinerefresh_refreshdlist_delete(ctx->onlinerefresh, dlnode);
 
         /* 判断链表是否为空*/
         if (dlist_isnull(ctx->onlinerefresh))
@@ -157,11 +157,11 @@ static void check_online_refresh_node_need_clean(ripple_onlinerefresh *olnode, d
     }
 }
 
-static void check_online_refresh_xids(ripple_decodingcontext* ctx, TransactionId xid)
+static void check_online_refresh_xids(decodingcontext* ctx, TransactionId xid)
 {
     dlistnode *dlnode = NULL;
     dlistnode *dlnode_xid = NULL;
-    ripple_onlinerefresh *olnode = NULL;
+    onlinerefresh *olnode = NULL;
 
     /* 不存在olrefresh节点时直接返回 */
     if (!ctx->onlinerefresh)
@@ -173,7 +173,7 @@ static void check_online_refresh_xids(ripple_decodingcontext* ctx, TransactionId
     while (dlnode)
     {
         dlistnode *dlnode_next = NULL;
-        olnode = (ripple_onlinerefresh *)dlnode->value;
+        olnode = (onlinerefresh *)dlnode->value;
 
         /* 先推进 */
         dlnode_next = dlnode->next;
@@ -182,36 +182,36 @@ static void check_online_refresh_xids(ripple_decodingcontext* ctx, TransactionId
         {
             /* 不需要增量, 判断commit/abort xid是否大于refresh xid */
             if (xid > olnode->txid)
-            {
-                ripple_txn *end_txn = NULL;
-                ripple_txn *dataset_txn = NULL;
-
-                /* 构建onlinerefresh end事务 */
-                end_txn = ripple_parserwork_build_onlinerefresh_end_txn(olnode->no->data, ctx->parselsn);
-
-                /* 事务添加到缓存 */
-                ripple_cache_txn_add(ctx->parser2txns, end_txn);
-
-                if (olnode->newtables)
                 {
-                    /* 构建onlinerefresh dataset事务 */
-                    dataset_txn = (ripple_txn *)ripple_parserwork_build_onlinerefresh_dataset_txn(olnode->newtables);
+                    txn *end_txn_ptr = NULL;
+                    txn *dataset_txn_ptr = NULL;
+
+                    /* 构建onlinerefresh end事务 */
+                    end_txn_ptr = parserwork_build_onlinerefresh_end_txn(olnode->no->data, ctx->parselsn);
 
                     /* 事务添加到缓存 */
-                    ripple_cache_txn_add(ctx->parser2txns, dataset_txn);
-                }
+                    cache_txn_add(ctx->parser2txns, end_txn_ptr);
 
-                /* 清理 */
-                ctx->onlinerefresh = ripple_onlinerefresh_refreshdlist_delete(ctx->onlinerefresh, dlnode);
+                    if (olnode->newtables)
+                    {
+                        /* 构建onlinerefresh dataset事务 */
+                        dataset_txn_ptr = (txn *)parserwork_build_onlinerefresh_dataset_txn(olnode->newtables);
 
-                /* 判断链表是否为空*/
-                if (dlist_isnull(ctx->onlinerefresh))
-                {
-                    dlist_free(ctx->onlinerefresh, NULL);
-                    ctx->onlinerefresh = NULL;
-                    return;
+                        /* 事务添加到缓存 */
+                        cache_txn_add(ctx->parser2txns, dataset_txn_ptr);
+                    }
+
+                    /* 清理 */
+                    ctx->onlinerefresh = onlinerefresh_refreshdlist_delete(ctx->onlinerefresh, dlnode);
+
+                    /* 判断链表是否为空*/
+                    if (dlist_isnull(ctx->onlinerefresh))
+                    {
+                        dlist_free(ctx->onlinerefresh, NULL);
+                        ctx->onlinerefresh = NULL;
+                        return;
+                    }
                 }
-            }
             dlnode = dlnode_next;
             continue;
         }
@@ -236,7 +236,7 @@ static void check_online_refresh_xids(ripple_decodingcontext* ctx, TransactionId
             if (*xid_p == (FullTransactionId) xid)
             {
                 /* 在链表中, 删除 */
-                ripple_onlinerefresh_xids_delete(olnode, olnode->xids, dlnode_xid);
+                onlinerefresh_xids_delete(olnode, olnode->xids, dlnode_xid);
             }
             dlnode_xid = dlnode_xid_next;
         }
@@ -249,9 +249,9 @@ static void check_online_refresh_xids(ripple_decodingcontext* ctx, TransactionId
 /*
  * 在 Commit 时, 将子事务中的内容 append 到主事务中
 */
-static void ripple_decode_xact_buildcommittxn(ripple_decodingcontext* ctx,
+static void decode_xact_buildcommittxn(decodingcontext* ctx,
                                                 xk_pg_parser_translog_pre_trans* pretrans,
-                                                ripple_txn* in_txn,
+                                                txn* in_txn_ptr,
                                                 bool redo)
 {
     int index = 0;
@@ -265,68 +265,68 @@ static void ripple_decode_xact_buildcommittxn(ripple_decodingcontext* ctx,
         return;
     }
 
-    txnstmts = in_txn->stmts;
-    in_txn->stmts = NULL;
+    txnstmts = in_txn_ptr->stmts;
+    in_txn_ptr->stmts = NULL;
 
-    sysdicthis = in_txn->sysdictHis;
-    in_txn->sysdictHis = NULL;
+    sysdicthis = in_txn_ptr->sysdictHis;
+    in_txn_ptr->sysdictHis = NULL;
 
     /* 遍历子事务放到合适的位置 */
     for(index = 0; index < parsedcommit->nsubxacts; index++)
     {
         bool brestart = false;
         bool bconfirm = false;
-        ripple_txn* subtxn = NULL;
+        txn* subtxn_ptr = NULL;
         TransactionId subxid = parsedcommit->subxacts[index];
 
         /* 获取事务号，并获取存储的事务信息 */
-        subtxn = ripple_transcache_getTXNByXidFind(ctx->transcache, subxid);
+        subtxn_ptr = transcache_getTXNByXidFind(ctx->trans_cache, subxid);
 
         /* DDL 兑换 */
-        if(NULL != subtxn->sysdict)
+        if(NULL != subtxn_ptr->sysdict)
         {
             /* DDL兑换 */
-            if(ripple_decodingcontext_isddlfilter(subtxn->filter, redo))
+            if(decodingcontext_isddlfilter(subtxn_ptr->filter, redo))
             {
-                ripple_dml2ddl(ctx, subtxn);
+                dml2ddl(ctx, subtxn_ptr);
             }
 
             /* 将 sysdict 转移到 sysdicthis 中 */
-            ripple_transcache_sysdict2his(subtxn);
+            transcache_sysdict2his(subtxn_ptr);
 
             /* 释放 */
-            ripple_transcache_sysdict_free(subtxn);
-            RIPPLE_TXN_UNSET_TRANS_DDL(subtxn->flag);
+            transcache_sysdict_free(subtxn_ptr);
+            TXN_UNSET_TRANS_DDL(subtxn_ptr->flag);
         }
 
         /* 将子事务的数据 append 到 主数据库中 */
-        if(NULL != subtxn->stmts)
+        if(NULL != subtxn_ptr->stmts)
         {
-            in_txn->stmtsize += subtxn->stmtsize;
+            in_txn_ptr->stmtsize += subtxn_ptr->stmtsize;
         }
-        ripple_decode_xact_appendsubtxn(&txnstmts, &sysdicthis, subtxn);
+        decode_xact_appendsubtxn(&txnstmts, &sysdicthis, subtxn_ptr);
 
         /* 将事务在事务链表中删除 */
-        ripple_transcache_dlist_remove((void*)ctx, subtxn, &brestart, NULL, &bconfirm, NULL, false);
+        transcache_dlist_remove((void*)ctx, subtxn_ptr, &brestart, NULL, &bconfirm, NULL, false);
 
         /* subtxn 内存释放 */
-        ripple_txn_free(subtxn);
+        txn_free(subtxn_ptr);
 
         /* 将子事务在hash中删除 */
-        ripple_transcache_removeTXNByXid(ctx->transcache, subtxn->xid);
+        transcache_removeTXNByXid(ctx->trans_cache, subtxn_ptr->xid);
         check_online_refresh_xids(ctx, subxid);
     }
 
-    in_txn->sysdictHis = sysdicthis;
-    in_txn->stmts = txnstmts;
+    in_txn_ptr->sysdictHis = sysdicthis;
+    in_txn_ptr->stmts = txnstmts;
 }
 
-static bool ripple_large_txn_end_filter(ripple_decodingcontext* ctx, ripple_txn *commit_txn, bool commit)
+static bool large_txn_end_filter(decodingcontext* ctx, txn *commit_txn_ptr, bool commit)
 {
-    ripple_txnstmt* txnstmt = NULL;
-    ripple_bigtxn_end_stmt *endstmt = NULL;
-    ripple_txn *copytxn = NULL;
-    ripple_txn *endtxn = NULL;
+    txnstmt* txnstmt_ptr = NULL;
+    bigtxn_end_stmt *endstmt = NULL;
+    txn *copytxn_ptr = NULL;
+    txn *endtxn_ptr = NULL;
 
     /* 判断是否需要过滤大事务 */
     if (!ctx->filterbigtrans)
@@ -335,27 +335,27 @@ static bool ripple_large_txn_end_filter(ripple_decodingcontext* ctx, ripple_txn 
     }
 
     /* 检查是否存在大事务 */
-    if (!RIPPLE_TXN_ISBIGTXN(commit_txn->flag))
+    if (!TXN_ISBIGTXN(commit_txn_ptr->flag))
     {
         /* 只处理正常txn的commit */
         if (commit)
         {
             /* 不存在大事务, 构建一个只有系统表的事物给大事务序列化 */
-            copytxn = ripple_txn_copy(commit_txn);
+            copytxn_ptr = txn_copy(commit_txn_ptr);
 
             /* 置空拷贝后txn部分指针 */
-            copytxn->toast_hash = NULL;
-            copytxn->sysdictHis = ripple_decode_heap_sysdicthis_copy(commit_txn->sysdictHis);
-            copytxn->stmts = NULL;
-            copytxn->hsyncdataset = NULL;
-            copytxn->oidmap = NULL;
-            copytxn->prev = NULL;
-            copytxn->next = NULL;
-            copytxn->cachenext = NULL;
+            copytxn_ptr->toast_hash = NULL;
+            copytxn_ptr->sysdictHis = decode_heap_sysdicthis_copy(commit_txn_ptr->sysdictHis);
+            copytxn_ptr->stmts = NULL;
+            copytxn_ptr->hsyncdataset = NULL;
+            copytxn_ptr->oidmap = NULL;
+            copytxn_ptr->prev = NULL;
+            copytxn_ptr->next = NULL;
+            copytxn_ptr->cachenext = NULL;
 
             /* 添加到大事务缓存 */
             
-            ripple_cache_txn_add(ctx->parser2bigtxns, copytxn);
+            cache_txn_add(ctx->parser2bigtxns, copytxn_ptr);
         }
         return true;
     }
@@ -363,83 +363,83 @@ static bool ripple_large_txn_end_filter(ripple_decodingcontext* ctx, ripple_txn 
     /* 设置为大事务结束 */
     if (commit)
     {
-        commit_txn->type = RIPPLE_TXN_TYPE_BIGTXN_END_COMMIT;
+        commit_txn_ptr->type = TXN_TYPE_BIGTXN_END_COMMIT;
     }
     else
     {
-        commit_txn->type = RIPPLE_TXN_TYPE_BIGTXN_END_ABORT;
+        commit_txn_ptr->type = TXN_TYPE_BIGTXN_END_ABORT;
     }
 
     /* 
      * 构建大事务结束txnstmt
      * 添加到缓存中
      */
-    endtxn = ripple_txn_initbigtxn(commit_txn->xid);
-    if(NULL == endtxn)
+    endtxn_ptr = txn_initbigtxn(commit_txn_ptr->xid);
+    if(NULL == endtxn_ptr)
     {
         elog(RLOG_WARNING, "init bigtxn error, out of memory");
         return false;
     }
-    txnstmt = ripple_txnstmt_init();
-    if(NULL == txnstmt)
+    txnstmt_ptr = txnstmt_init();
+    if(NULL == txnstmt_ptr)
     {
         elog(RLOG_WARNING, "init txn stmt error, out of memory");
         return false;
     }
-    endtxn->stmts = lappend(endtxn->stmts, txnstmt);
-    endtxn->end.wal.lsn = ctx->parselsn;
-    txnstmt->type = RIPPLE_TXNSTMT_TYPE_BIGTXN_END;
-    txnstmt->extra0.wal.lsn = ctx->parselsn;
-    endstmt = ripple_txnstmt_bigtxnend_init();
+    endtxn_ptr->stmts = lappend(endtxn_ptr->stmts, txnstmt_ptr);
+    endtxn_ptr->end.wal.lsn = ctx->parselsn;
+    txnstmt_ptr->type = TXNSTMT_TYPE_BIGTXN_END;
+    txnstmt_ptr->extra0.wal.lsn = ctx->parselsn;
+    endstmt = txnstmt_bigtxnend_init();
     if(NULL == endstmt)
     {
         elog(RLOG_WARNING, "init bigtxn endstmt error, out of memory");
         return false;
     }
-    txnstmt->stmt = (void*)endstmt;
-    endstmt->xid = commit_txn->xid;
+    txnstmt_ptr->stmt = (void*)endstmt;
+    endstmt->xid = commit_txn_ptr->xid;
     endstmt->commit = commit;
-    endtxn->endtimestamp = commit_txn->endtimestamp;
+    endtxn_ptr->endtimestamp = commit_txn_ptr->endtimestamp;
 
-    ripple_txn_addcommit(endtxn);
-    ripple_cache_txn_add(ctx->parser2txns, endtxn);
+    txn_addcommit(endtxn_ptr);
+    cache_txn_add(ctx->parser2txns, endtxn_ptr);
 
     /* 进行txn拷贝 */
-    copytxn = ripple_txn_copy(commit_txn);
-    if (commit_txn->sysdict)
+    copytxn_ptr = txn_copy(commit_txn_ptr);
+    if (commit_txn_ptr->sysdict)
     {
         elog(RLOG_WARNING, "big txn copy, txn in ddl");
         return false;
     }
 
     /* 重置原txn的部分指针 */
-    commit_txn->sysdictHis = NULL;
-    commit_txn->stmts = NULL;
-    txnstmt = ripple_txnstmt_init();
-    if(NULL == txnstmt)
+    commit_txn_ptr->sysdictHis = NULL;
+    commit_txn_ptr->stmts = NULL;
+    txnstmt_ptr = txnstmt_init();
+    if(NULL == txnstmt_ptr)
     {
         elog(RLOG_WARNING, "init txn stmt error, out of memory");
         return false;
     }
-    txnstmt->type = RIPPLE_TXNSTMT_TYPE_SYSDICTHIS;
-    commit_txn->stmts = lappend(commit_txn->stmts, txnstmt);
+    txnstmt_ptr->type = TXNSTMT_TYPE_SYSDICTHIS;
+    commit_txn_ptr->stmts = lappend(commit_txn_ptr->stmts, txnstmt_ptr);
     /* 初始化stmt大小 */
-    commit_txn->stmtsize = 4;
+    commit_txn_ptr->stmtsize = 4;
 
     /* 置空拷贝后txn部分指针 */
-    copytxn->toast_hash = NULL;
-    copytxn->hsyncdataset = NULL;
-    copytxn->oidmap = NULL;
-    copytxn->prev = NULL;
-    copytxn->next = NULL;
-    copytxn->cachenext = NULL;
+    copytxn_ptr->toast_hash = NULL;
+    copytxn_ptr->hsyncdataset = NULL;
+    copytxn_ptr->oidmap = NULL;
+    copytxn_ptr->prev = NULL;
+    copytxn_ptr->next = NULL;
+    copytxn_ptr->cachenext = NULL;
 
     /* 处理系统表, 进行拷贝 */
-    commit_txn->sysdictHis = ripple_decode_heap_sysdicthis_copy(copytxn->sysdictHis);
+    commit_txn_ptr->sysdictHis = decode_heap_sysdicthis_copy(copytxn_ptr->sysdictHis);
 
     /* 添加到大事务缓存 */
-    ripple_txn_addcommit(copytxn);
-    ripple_cache_txn_add(ctx->parser2bigtxns, copytxn);
+    txn_addcommit(copytxn_ptr);
+    cache_txn_add(ctx->parser2bigtxns, copytxn_ptr);
 
     return true;
 }
@@ -458,70 +458,71 @@ static bool ripple_large_txn_end_filter(ripple_decodingcontext* ctx, ripple_txn 
  *      savepoint   子事务 xid2，父事务  在逻辑上为 xid1,但是在 PG 中没有嵌套事务的逻辑，所以父事务为 xid
  * 
 */
-void ripple_decode_xact_commit(ripple_decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_xact_commit(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
 {
     bool redo = false;
     ListCell* lc = NULL;
-    ripple_txnstmt* stmt = NULL;
-    ripple_txn* txn = NULL;
-    ripple_txn* ctxn = NULL;
+    txnstmt* stmt = NULL;
+    txn* txn_ptr = NULL;
+    txn* copied_txn = NULL;
     xk_pg_parser_translog_pre_trans* pretrans = NULL;
+    List* metalist = NULL;
 
     pretrans = (xk_pg_parser_translog_pre_trans*)pbase;
 
     /*
      * 根据事务号获取事务链表
      */
-    txn = ripple_transcache_getTXNByXidFind(ctx->transcache, pretrans->m_base.m_xid);
+    txn_ptr = transcache_getTXNByXidFind(ctx->trans_cache, pretrans->m_base.m_xid);
     /* 如果为空，那么说明不需要处理 */
-    if(NULL == txn)
+    if(NULL == txn_ptr)
     {
         check_online_refresh_xids(ctx, pretrans->m_base.m_xid);
         return;
     }
 
-    txn->end.wal.lsn = ctx->decode_record->end.wal.lsn;
+    txn_ptr->end.wal.lsn = ctx->decode_record->end.wal.lsn;
     elog(RLOG_DEBUG, "xid:%lu, startlsn:%X/%X, endlsn:%X/%X, confirmed_lsn:%X/%X",
-                    txn->xid,
-                    (uint32)(txn->start.wal.lsn >> 32), (uint32)(txn->start.wal.lsn),
-                    (uint32)(txn->end.wal.lsn >> 32), (uint32)(txn->end.wal.lsn),
+                    txn_ptr->xid,
+                    (uint32)(txn_ptr->start.wal.lsn >> 32), (uint32)(txn_ptr->start.wal.lsn),
+                    (uint32)(txn_ptr->end.wal.lsn >> 32), (uint32)(txn_ptr->end.wal.lsn),
                     (uint32)(ctx->base.confirmedlsn >> 32), (uint32)(ctx->base.confirmedlsn));
 
     /* 查看是否处于 redo 中 */
-    if(txn->end.wal.lsn <= ctx->base.confirmedlsn)
+    if(txn_ptr->end.wal.lsn <= ctx->base.confirmedlsn)
     {
         redo = true;
     }
 
-    if(NULL != txn->sysdict)
+    if(NULL != txn_ptr->sysdict)
     {
         /* 
          * DDL兑换
          *  redo    true        处于 redo 的逻辑中，不需要转换 ddl 语句
         */
-        if(ripple_decodingcontext_isddlfilter(txn->filter, redo))
+        if(decodingcontext_isddlfilter(txn_ptr->filter, redo))
         {
-            ripple_dml2ddl(ctx, txn);
+            dml2ddl(ctx, txn_ptr);
         }
 
         /* 将 sysdict 转移到 sysdicthis 中 */
-        ripple_transcache_sysdict2his(txn);
+        transcache_sysdict2his(txn_ptr);
 
-        ripple_transcache_sysdict_free(txn);
-        RIPPLE_TXN_UNSET_TRANS_DDL(txn->flag);
+        transcache_sysdict_free(txn_ptr);
+        TXN_UNSET_TRANS_DDL(txn_ptr->flag);
     }
 
     /* 子事务处理 */
-    ripple_decode_xact_buildcommittxn(ctx, pretrans, txn, redo);
+    decode_xact_buildcommittxn(ctx, pretrans, txn_ptr, redo);
 
     /* sysdicthis 应用 */
-    ripple_cache_sysdicts_txnsysdicthis2cache(ctx->transcache->sysdicts, txn->sysdictHis);
+    cache_sysdicts_txnsysdicthis2cache(ctx->trans_cache->sysdicts, txn_ptr->sysdictHis);
 
     /* 更新同步数据集 */
-    ripple_filter_dataset_updatedatasets(ctx->transcache->addtablepattern,
-                                        ctx->transcache->sysdicts->by_namespace,
-                                        txn->sysdictHis,
-                                        ctx->transcache->hsyncdataset);
+    filter_dataset_updatedatasets(ctx->trans_cache->addtablepattern,
+                                        ctx->trans_cache->sysdicts->by_namespace,
+                                        txn_ptr->sysdictHis,
+                                        ctx->trans_cache->hsyncdataset);
 
     /* 符合过滤条件,那么将语句清理 */
     /* 
@@ -529,91 +530,92 @@ void ripple_decode_xact_commit(ripple_decodingcontext* ctx, xk_pg_parser_translo
      * 1、将 redo--->confirmlsn 之间的系统表变化在后续流程中应用
      * 2、在双向过滤中, originid 不能为空, 但是后面的流程中又需要系统表的变更
      */
-    if(ripple_decodingcontext_isstmtsfilter(txn->filter, redo))
+    if(decodingcontext_isstmtsfilter(txn_ptr->filter, redo))
     {
-        List* metalist = NULL;
-        
-        foreach(lc, txn->stmts)
+        metalist = NULL;
+        foreach(lc, txn_ptr->stmts)
         {
-            stmt = (ripple_txnstmt*)lfirst(lc);
-            if(NULL != stmt->stmt && RIPPLE_TXNSTMT_TYPE_METADATA != stmt->type)
+            stmt = (txnstmt*)lfirst(lc);
+            if(NULL != stmt->stmt && TXNSTMT_TYPE_METADATA != stmt->type)
             {
                 /* 根据不同的类型,调用不同的释放函数 */
-                ripple_txnstmt_free(stmt);
+                txnstmt_free(stmt);
             }
             else
             {
                 metalist = lappend(metalist, stmt);
             }
         }
-        list_free(txn->stmts);
-        txn->stmts = metalist;
+        list_free(txn_ptr->stmts);
+        txn_ptr->stmts = metalist;
     }
 
     /* 将事务写入到缓存中 */
     elog(RLOG_DEBUG, "stmtlen:%lu, startlsn:%X/%X, %lu, xid:%lu, walrec:%lu, parserrec:%lu",
-                        txn->stmtsize,
-                        (uint32)(txn->start.wal.lsn >> 32), (uint32)(txn->start.wal.lsn),
-                        txn->xid,
-                        txn->debugno,
+                        txn_ptr->stmtsize,
+                        (uint32)(txn_ptr->start.wal.lsn >> 32), (uint32)(txn_ptr->start.wal.lsn),
+                        txn_ptr->xid,
+                        txn_ptr->debugno,
                         g_walrecno,
                         g_parserecno);
 
     /* 检查最后一条最后一条语句的extra0并赋值 */
-    if (NULL != (lc = list_tail(txn->stmts)))
+    if (NULL != (lc = list_tail(txn_ptr->stmts)))
     {
-        stmt = (ripple_txnstmt*)lfirst(lc);
+        stmt = (txnstmt*)lfirst(lc);
         stmt->extra0.wal.lsn = ctx->decode_record->end.wal.lsn;
     }
 
     /* 根据事务startlsn/endlsn更新redo/restart/confirm lsn */
-    ripple_transcache_refreshlsn((void*)ctx, txn);
+    transcache_refreshlsn((void*)ctx, txn_ptr);
 
     ctx->callback.setmetricparsetimestamp(ctx->privdata, (TimestampTz)pretrans->m_time);
-    txn->endtimestamp = pretrans->m_time;
+    txn_ptr->endtimestamp = pretrans->m_time;
 
     /* 复制一个事务加到缓存中 */
-    ctxn = ripple_txn_copy(txn);
+    copied_txn = txn_copy(txn_ptr);
 
     /* 将事务在transdlist、by_txns中删除 */
-    ctx->transcache->totalsize -= (txn->stmtsize - 4);
-    ripple_transcache_deletetxn((void*)ctx, txn);
+    ctx->trans_cache->totalsize -= (txn_ptr->stmtsize - 4);
+    transcache_deletetxn((void*)ctx, txn_ptr);
 
     /* 大事务过滤 */
-    ripple_large_txn_end_filter(ctx, ctxn, true);
+    large_txn_end_filter(ctx, copied_txn, true);
 
-    ripple_txn_addcommit(ctxn);
-    ripple_cache_txn_add(ctx->parser2txns, ctxn);
+    txn_addcommit(copied_txn);
+    cache_txn_add(ctx->parser2txns, copied_txn);
     check_online_refresh_xids(ctx, pretrans->m_base.m_xid);
 }
 
-void ripple_decode_xact_commit_emit(ripple_decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_xact_commit_emit(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
 {
     bool redo = true;
     ListCell* lc = NULL;
-    ripple_txnstmt* stmt = NULL;
-    ripple_txn* txn = NULL;
-    ripple_txn* ctxn = NULL;
+    txnstmt* stmt = NULL;
+    txn* txn_ptr = NULL;
+    txn* copied_txn = NULL;
     xk_pg_parser_translog_pre_trans* pretrans = NULL;
+    List* metalist = NULL;
+    bool find = false;
 
     pretrans = (xk_pg_parser_translog_pre_trans*)pbase;
 
     /*
      * 根据事务号获取事务链表
      */
-    txn = ripple_transcache_getTXNByXidFind(ctx->transcache, pretrans->m_base.m_xid);
+    txn_ptr = transcache_getTXNByXidFind(ctx->trans_cache, pretrans->m_base.m_xid);
     /* 如果为空，那么说明不需要处理 */
-    if(NULL == txn)
+    if(NULL == txn_ptr)
     {
         return;
     }
 
-    if (pretrans->m_base.m_xid >= ctx->rewind->strategy.xmax)
+    if (pretrans->m_base.m_xid >= ctx->rewind_ptr->strategy.xmax)
     {
         /* 找到了大于xmax的事务的commit */
         ctx->base.confirmedlsn = ctx->decode_record->start.wal.lsn - 1;
-        ctx->base.restartlsn = ctx->rewind->redolsn;
-        ctx->stat = RIPPLE_DECODINGCONTEXT_RUNNING;
+        ctx->base.restartlsn = ctx->rewind_ptr->redolsn;
+        ctx->stat = DECODINGCONTEXT_RUNNING;
         if (ctx->callback.setparserlsn)
         {
             ctx->callback.setparserlsn(ctx->privdata, ctx->base.confirmedlsn, ctx->base.restartlsn, ctx->base.restartlsn);
@@ -624,23 +626,23 @@ void ripple_decode_xact_commit_emit(ripple_decodingcontext* ctx, xk_pg_parser_tr
         }
 
 
-        elog(RLOG_INFO, "commit emit rewind end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
+        elog(RLOG_INFO, "commit emit rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
                         (uint32)(ctx->base.redolsn>>32), (uint32)ctx->base.redolsn,
                         (uint32)(ctx->base.restartlsn>>32), (uint32)ctx->base.restartlsn,
                         (uint32)(ctx->base.confirmedlsn>>32), (uint32)ctx->base.confirmedlsn);
-        ripple_rewind_stat_setemited(ctx->rewind);
+        rewind_stat_setemited(ctx->rewind_ptr);
         redo = false;
     }
-    else if (ctx->rewind->strategy.xips)
+    else if (ctx->rewind_ptr->strategy.xips)
     {
-        bool find = false;
-        hash_search(ctx->rewind->strategy.xips, &pretrans->m_base.m_xid, HASH_FIND, &find);
+        find = false;
+        hash_search(ctx->rewind_ptr->strategy.xips, &pretrans->m_base.m_xid, HASH_FIND, &find);
         if (find)
         {
             /* 找到了xid列表中仍活跃事务的commit */
             ctx->base.confirmedlsn = ctx->decode_record->start.wal.lsn - 1;
-            ctx->base.restartlsn = ctx->rewind->redolsn;
-            ctx->stat = RIPPLE_DECODINGCONTEXT_RUNNING;
+            ctx->base.restartlsn = ctx->rewind_ptr->redolsn;
+            ctx->stat = DECODINGCONTEXT_RUNNING;
             if (ctx->callback.setparserlsn)
             {
                 ctx->callback.setparserlsn(ctx->privdata, ctx->base.confirmedlsn, ctx->base.restartlsn, ctx->base.restartlsn);
@@ -650,86 +652,86 @@ void ripple_decode_xact_commit_emit(ripple_decodingcontext* ctx, xk_pg_parser_tr
                 elog(RLOG_WARNING, "be carefull! setparserlsn is null");
             }
 
-            elog(RLOG_INFO, "commit emit rewind end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
+            elog(RLOG_INFO, "commit emit rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
                         (uint32)(ctx->base.redolsn>>32), (uint32)ctx->base.redolsn,
                         (uint32)(ctx->base.restartlsn>>32), (uint32)ctx->base.restartlsn,
                         (uint32)(ctx->base.confirmedlsn>>32), (uint32)ctx->base.confirmedlsn);
-            ripple_rewind_stat_setemited(ctx->rewind);
+            rewind_stat_setemited(ctx->rewind_ptr);
             redo = false;
         }
     }
 
-    txn->end.wal.lsn = ctx->decode_record->end.wal.lsn;
+    txn_ptr->end.wal.lsn = ctx->decode_record->end.wal.lsn;
     elog(RLOG_DEBUG, "xid:%lu, startlsn:%X/%X, endlsn:%X/%X, confirmed_lsn:%X/%X",
-                    txn->xid,
-                    (uint32)(txn->start.wal.lsn >> 32), (uint32)(txn->start.wal.lsn),
-                    (uint32)(txn->end.wal.lsn >> 32), (uint32)(txn->end.wal.lsn),
+                    txn_ptr->xid,
+                    (uint32)(txn_ptr->start.wal.lsn >> 32), (uint32)(txn_ptr->start.wal.lsn),
+                    (uint32)(txn_ptr->end.wal.lsn >> 32), (uint32)(txn_ptr->end.wal.lsn),
                     (uint32)(ctx->base.confirmedlsn >> 32), (uint32)(ctx->base.confirmedlsn));
 
-    if(NULL != txn->sysdict)
+    if(NULL != txn_ptr->sysdict)
     {
         /* 
          * DDL兑换
          *  redo    true        处于 redo 的逻辑中，不需要转换 ddl 语句
         */
-        if(ripple_decodingcontext_isddlfilter(txn->filter, redo))
+        if(decodingcontext_isddlfilter(txn_ptr->filter, redo))
         {
-            ripple_dml2ddl(ctx, txn);
+            dml2ddl(ctx, txn_ptr);
         }
 
         /* 将 sysdict 转移到 sysdicthis 中 */
-        ripple_transcache_sysdict2his(txn);
+        transcache_sysdict2his(txn_ptr);
 
-        ripple_transcache_sysdict_free(txn);
-        RIPPLE_TXN_UNSET_TRANS_DDL(txn->flag);
+        transcache_sysdict_free(txn_ptr);
+        TXN_UNSET_TRANS_DDL(txn_ptr->flag);
     }
 
     /* 子事务处理 */
-    ripple_decode_xact_buildcommittxn(ctx, pretrans, txn, redo);
+    decode_xact_buildcommittxn(ctx, pretrans, txn_ptr, redo);
 
     /* sysdicthis 应用 */
-    ripple_cache_sysdicts_txnsysdicthis2cache(ctx->transcache->sysdicts, txn->sysdictHis);
+    cache_sysdicts_txnsysdicthis2cache(ctx->trans_cache->sysdicts, txn_ptr->sysdictHis);
 
     /* 更新同步数据集 */
-    ripple_filter_dataset_updatedatasets(ctx->transcache->addtablepattern,
-                                        ctx->transcache->sysdicts->by_namespace,
-                                        txn->sysdictHis,
-                                        ctx->transcache->hsyncdataset);
+    filter_dataset_updatedatasets(ctx->trans_cache->addtablepattern,
+                                        ctx->trans_cache->sysdicts->by_namespace,
+                                        txn_ptr->sysdictHis,
+                                        ctx->trans_cache->hsyncdataset);
 
     /* 符合过滤条件,那么将语句清理 */
-    if(ripple_decodingcontext_isstmtsfilter(txn->filter, redo))
+    if(decodingcontext_isstmtsfilter(txn_ptr->filter, redo))
     {
-        List* metalist = NULL;
-        foreach(lc, txn->stmts)
+        metalist = NULL;
+        foreach(lc, txn_ptr->stmts)
         {
-            stmt = (ripple_txnstmt*)lfirst(lc);
-            if(NULL != stmt->stmt && RIPPLE_TXNSTMT_TYPE_METADATA != stmt->type)
+            stmt = (txnstmt*)lfirst(lc);
+            if(NULL != stmt->stmt && TXNSTMT_TYPE_METADATA != stmt->type)
             {
                 /* 根据不同的类型,调用不同的释放函数 */
-                ripple_txnstmt_free(stmt);
+                txnstmt_free(stmt);
             }
             else
             {
                 metalist = lappend(metalist, stmt);
             }
         }
-        list_free(txn->stmts);
-        txn->stmts = metalist;
+        list_free(txn_ptr->stmts);
+        txn_ptr->stmts = metalist;
     }
 
     /* 将事务写入到缓存中 */
     elog(RLOG_DEBUG, "stmtlen:%lu, startlsn:%X/%X, %lu, xid:%lu, walrec:%lu, parserrec:%lu",
-                        txn->stmtsize,
-                        (uint32)(txn->start.wal.lsn >> 32), (uint32)(txn->start.wal.lsn),
-                        txn->xid,
-                        txn->debugno,
+                        txn_ptr->stmtsize,
+                        (uint32)(txn_ptr->start.wal.lsn >> 32), (uint32)(txn_ptr->start.wal.lsn),
+                        txn_ptr->xid,
+                        txn_ptr->debugno,
                         g_walrecno,
                         g_parserecno);
     
     /* 检查最后一条最后一条语句的extra0并赋值 */
-    if (NULL != (lc = list_tail(txn->stmts)))
+    if (NULL != (lc = list_tail(txn_ptr->stmts)))
     {
-        stmt = (ripple_txnstmt*)lfirst(lc);
+        stmt = (txnstmt*)lfirst(lc);
         if (InvalidXLogRecPtr == stmt->extra0.wal.lsn)
         {
             stmt->extra0.wal.lsn = ctx->decode_record->end.wal.lsn;
@@ -738,19 +740,19 @@ void ripple_decode_xact_commit_emit(ripple_decodingcontext* ctx, xk_pg_parser_tr
     }
 
     /* 根据事务startlsn/endlsn更新redo/restart/confirm lsn */
-    ripple_transcache_refreshlsn((void*)ctx, txn);
+    transcache_refreshlsn((void*)ctx, txn_ptr);
 
     ctx->callback.setmetricparsetimestamp(ctx->privdata, (TimestampTz)pretrans->m_time);
-    txn->endtimestamp = pretrans->m_time;
+    txn_ptr->endtimestamp = pretrans->m_time;
 
     /* 复制一个事务加到缓存中 */
-    ctxn = ripple_txn_copy(txn);
+    copied_txn = txn_copy(txn_ptr);
 
     /* 将事务在transdlist、by_txns中删除 */
-    ripple_transcache_deletetxn((void*)ctx, txn);
+    transcache_deletetxn((void*)ctx, txn_ptr);
 
-    ctx->transcache->totalsize -= (ctxn->stmtsize - 4);
-    ripple_cache_txn_add(ctx->parser2txns, ctxn);
+    ctx->trans_cache->totalsize -= (txn_ptr->stmtsize - 4);
+    cache_txn_add(ctx->parser2txns, copied_txn);
 }
 
 /* 
@@ -758,140 +760,144 @@ void ripple_decode_xact_commit_emit(ripple_decodingcontext* ctx, xk_pg_parser_tr
  *  当解析的 lsn < confirmlsn 时，此时释放资源即可
  *  当解析的 lsn > confirmlsn 时，那么需要将事务传递到 格式化 线程，用于向前推进 restartlsn
  */
-void ripple_decode_xact_abort(ripple_decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_xact_abort(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
 {
     bool brestart = false;
     bool bconfirm = false;
     int index = 0;
     ListCell* lc = NULL;
-    ripple_txn* txn = NULL;
-    ripple_txn* ctxn = NULL;
-    ripple_txnstmt* txnstmt = NULL;
+    txn* txn_ptr = NULL;
+    txn* subtxn_ptr = NULL;
+    txn* copied_txn = NULL;
+    txnstmt* txnstmt_ptr = NULL;
     xl_xact_parsed_abort* parsedabort = NULL;
     xk_pg_parser_translog_pre_trans* pretrans = NULL;
+    TransactionId subxid;
 
     pretrans = (xk_pg_parser_translog_pre_trans*)pbase;
 
     /*
      * 根据事务号获取事务链表
      */
-    txn = ripple_transcache_getTXNByXidFind(ctx->transcache, pretrans->m_base.m_xid);
+    txn_ptr = transcache_getTXNByXidFind(ctx->trans_cache, pretrans->m_base.m_xid);
     /* 如果为空，那么说明不需要处理 */
-    if(NULL == txn)
+    if(NULL == txn_ptr)
     {
         check_online_refresh_xids(ctx, pretrans->m_base.m_xid);
         return;
     }
 
-    txn->end.wal.lsn = ctx->decode_record->end.wal.lsn;
+    txn_ptr->end.wal.lsn = ctx->decode_record->end.wal.lsn;
     parsedabort = (xl_xact_parsed_abort*)pretrans->m_transdata;
     for(index = 0; index < parsedabort->nsubxacts; index++)
     {
-        ripple_txn* subtxn = NULL;
-        TransactionId subxid = parsedabort->subxacts[index];
+        subxid = parsedabort->subxacts[index];
 
         /* 获取事务号，并获取存储的事务信息 */
-        subtxn = ripple_transcache_getTXNByXidFind(ctx->transcache, subxid);
-        if(NULL == subtxn)
+        subtxn_ptr = transcache_getTXNByXidFind(ctx->trans_cache, subxid);
+        if(NULL == subtxn_ptr)
         {
             continue;
         }
 
         /* 系统表释放 */
-        ripple_transcache_sysdict_free(subtxn);
+        transcache_sysdict_free(subtxn_ptr);
 
         /* 将事务在事务链表中删除 */
-        ripple_transcache_dlist_remove((void*)ctx, subtxn, &brestart, NULL, &bconfirm, NULL, false);
+        transcache_dlist_remove((void*)ctx, subtxn_ptr, &brestart, NULL, &bconfirm, NULL, false);
 
         /* subtxn 内存释放 */
-        ripple_txn_free(subtxn);
+        txn_free(subtxn_ptr);
 
         /* 将子事务在hash中删除 */
-        ripple_transcache_removeTXNByXid(ctx->transcache, subtxn->xid);
+        transcache_removeTXNByXid(ctx->trans_cache, subtxn_ptr->xid);
 
         check_online_refresh_xids(ctx, subxid);
     }
 
     /* 系统表释放 */
-    ripple_transcache_sysdict_free(txn);
+    transcache_sysdict_free(txn_ptr);
 
-    if(txn->end.wal.lsn <= ctx->base.confirmedlsn)
+    if(txn_ptr->end.wal.lsn <= ctx->base.confirmedlsn)
     {
         /* txn 释放 */
         /* 将事务在事务链表中删除 */
-        ripple_transcache_dlist_remove((void*)ctx, txn, &brestart, NULL, &bconfirm, NULL, false);
+        transcache_dlist_remove((void*)ctx, txn_ptr, &brestart, NULL, &bconfirm, NULL, false);
 
         /* txn 内存释放 */
-        ripple_txn_free(txn);
+        txn_free(txn_ptr);
 
         /* 将事务在hash中删除 */
-        ripple_transcache_removeTXNByXid(ctx->transcache, txn->xid);
+        transcache_removeTXNByXid(ctx->trans_cache, txn_ptr->xid);
 
         return;
     }
 
-    /* 将 txn->stmts 的内容释放掉 */
-    foreach(lc, txn->stmts)
+    /* 将 txn_ptr->stmts 的内容释放掉 */
+    foreach(lc, txn_ptr->stmts)
     {
-        txnstmt = (ripple_txnstmt*)lfirst(lc);
-        ripple_txnstmt_free(txnstmt);
+        txnstmt_ptr = (txnstmt*)lfirst(lc);
+        txnstmt_free(txnstmt_ptr);
     }
-    list_free(txn->stmts);
-    txn->stmts = NULL;
+    list_free(txn_ptr->stmts);
+    txn_ptr->stmts = NULL;
 
     /* 根据事务startlsn/endlsn更新redo/restart/confirm lsn */
-    ripple_transcache_refreshlsn((void*)ctx, txn);
+    transcache_refreshlsn((void*)ctx, txn_ptr);
 
     ctx->callback.setmetricparsetimestamp(ctx->privdata, (TimestampTz)pretrans->m_time);
-    txn->endtimestamp = pretrans->m_time;
+    txn_ptr->endtimestamp = pretrans->m_time;
 
     /* 复制一个事务加到缓存中 */
-    ctxn = ripple_txn_copy(txn);
+    copied_txn = txn_copy(txn_ptr);
 
     /* 将事务在transdlist、by_txns中删除 */
-    ripple_transcache_deletetxn((void*)ctx, txn);
+    transcache_deletetxn((void*)ctx, txn_ptr);
 
     /* 大事务过滤 */
-    ripple_large_txn_end_filter(ctx, ctxn, false);
+    large_txn_end_filter(ctx, copied_txn, false);
 
     /* 放入到事务缓存中,让 write 线程处理 */
-    ctx->transcache->totalsize -= (ctxn->stmtsize - 4);
-    ripple_cache_txn_add(ctx->parser2txns, ctxn);
+    ctx->trans_cache->totalsize -= (txn_ptr->stmtsize - 4);
+    cache_txn_add(ctx->parser2txns, copied_txn);
 
     check_online_refresh_xids(ctx, pretrans->m_base.m_xid);
     return;
 }
 
-void ripple_decode_xact_abort_emit(ripple_decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
+void decode_xact_abort_emit(decodingcontext* ctx, xk_pg_parser_translog_pre_base* pbase)
 {
     bool brestart = false;
     bool bconfirm = false;
     int index = 0;
     ListCell* lc = NULL;
-    ripple_txn* txn = NULL;
-    ripple_txn* ctxn = NULL;
-    ripple_txnstmt* txnstmt = NULL;
+    txn* txn_ptr = NULL;
+    txn* subtxn_ptr = NULL;
+    txn* copied_txn = NULL;
+    txnstmt* txnstmt_ptr = NULL;
     xl_xact_parsed_abort* parsedabort = NULL;
     xk_pg_parser_translog_pre_trans* pretrans = NULL;
+    TransactionId subxid;
+    bool find = false;
 
     pretrans = (xk_pg_parser_translog_pre_trans*)pbase;
 
     /*
      * 根据事务号获取事务链表
      */
-    txn = ripple_transcache_getTXNByXidFind(ctx->transcache, pretrans->m_base.m_xid);
+    txn_ptr = transcache_getTXNByXidFind(ctx->trans_cache, pretrans->m_base.m_xid);
     /* 如果为空，那么说明不需要处理 */
-    if(NULL == txn)
+    if(NULL == txn_ptr)
     {
         return;
     }
 
-    if (pretrans->m_base.m_xid >= ctx->rewind->strategy.xmax)
+    if (pretrans->m_base.m_xid >= ctx->rewind_ptr->strategy.xmax)
     {
         /* 找到了xid列表中仍活跃事务的commit */
         ctx->base.confirmedlsn = ctx->decode_record->start.wal.lsn - 1;
-        ctx->base.restartlsn = ctx->rewind->redolsn;
-        ctx->stat = RIPPLE_DECODINGCONTEXT_RUNNING;
+        ctx->base.restartlsn = ctx->rewind_ptr->redolsn;
+        ctx->stat = DECODINGCONTEXT_RUNNING;
         if (ctx->callback.setparserlsn)
         {
             ctx->callback.setparserlsn(ctx->privdata, ctx->base.confirmedlsn, ctx->base.restartlsn, ctx->base.restartlsn);
@@ -901,23 +907,23 @@ void ripple_decode_xact_abort_emit(ripple_decodingcontext* ctx, xk_pg_parser_tra
             elog(RLOG_WARNING, "be carefull! setparserlsn is null");
         }
 
-        elog(RLOG_INFO, "abort emit rewind end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
+        elog(RLOG_INFO, "abort emit rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
                         (uint32)(ctx->base.redolsn>>32), (uint32)ctx->base.redolsn,
                         (uint32)(ctx->base.restartlsn>>32), (uint32)ctx->base.restartlsn,
                         (uint32)(ctx->base.confirmedlsn>>32), (uint32)ctx->base.confirmedlsn);
-        ripple_rewind_stat_setemited(ctx->rewind);
+        rewind_stat_setemited(ctx->rewind_ptr);
     }
     /* 检查是否在xips中 */
-    else if (ctx->rewind->strategy.xips)
+    else if (ctx->rewind_ptr->strategy.xips)
     {
-        bool find = false;
-        hash_search(ctx->rewind->strategy.xips, &pretrans->m_base.m_xid, HASH_FIND, &find);
+        find = false;
+        hash_search(ctx->rewind_ptr->strategy.xips, &pretrans->m_base.m_xid, HASH_FIND, &find);
         if (find)
         {
             /* 找到了xid列表中仍活跃事务的commit */
             ctx->base.confirmedlsn = ctx->decode_record->start.wal.lsn - 1;
-            ctx->base.restartlsn = ctx->rewind->redolsn;
-            ctx->stat = RIPPLE_DECODINGCONTEXT_RUNNING;
+            ctx->base.restartlsn = ctx->rewind_ptr->redolsn;
+            ctx->stat = DECODINGCONTEXT_RUNNING;
             if (ctx->callback.setparserlsn)
             {
                 ctx->callback.setparserlsn(ctx->privdata, ctx->base.confirmedlsn, ctx->base.restartlsn, ctx->base.restartlsn);
@@ -927,82 +933,81 @@ void ripple_decode_xact_abort_emit(ripple_decodingcontext* ctx, xk_pg_parser_tra
                 elog(RLOG_WARNING, "be carefull! setparserlsn is null");
             }
 
-            elog(RLOG_INFO, "abort emit rewind end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
+            elog(RLOG_INFO, "abort emit rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
                         (uint32)(ctx->base.redolsn>>32), (uint32)ctx->base.redolsn,
                         (uint32)(ctx->base.restartlsn>>32), (uint32)ctx->base.restartlsn,
                         (uint32)(ctx->base.confirmedlsn>>32), (uint32)ctx->base.confirmedlsn);
-            ripple_rewind_stat_setemited(ctx->rewind);
+            rewind_stat_setemited(ctx->rewind_ptr);
         }
     }
 
-    txn->end.wal.lsn = ctx->decode_record->end.wal.lsn;
+    txn_ptr->end.wal.lsn = ctx->decode_record->end.wal.lsn;
     parsedabort = (xl_xact_parsed_abort*)pretrans->m_transdata;
     for(index = 0; index < parsedabort->nsubxacts; index++)
     {
-        ripple_txn* subtxn = NULL;
-        TransactionId subxid = parsedabort->subxacts[index];
+        subxid = parsedabort->subxacts[index];
 
         /* 获取事务号，并获取存储的事务信息 */
-        subtxn = ripple_transcache_getTXNByXidFind(ctx->transcache, subxid);
-        if(NULL == subtxn)
+        subtxn_ptr = transcache_getTXNByXidFind(ctx->trans_cache, subxid);
+        if(NULL == subtxn_ptr)
         {
             continue;
         }
 
         /* 系统表释放 */
-        ripple_transcache_sysdict_free(subtxn);
+        transcache_sysdict_free(subtxn_ptr);
 
         /* 将事务在事务链表中删除 */
-        ripple_transcache_dlist_remove((void*)ctx, subtxn, &brestart, NULL, &bconfirm, NULL, false);
+        transcache_dlist_remove((void*)ctx, subtxn_ptr, &brestart, NULL, &bconfirm, NULL, false);
 
         /* subtxn 内存释放 */
-        ripple_txn_free(subtxn);
+        txn_free(subtxn_ptr);
 
         /* 将子事务在hash中删除 */
-        ripple_transcache_removeTXNByXid(ctx->transcache, subtxn->xid);
+        transcache_removeTXNByXid(ctx->trans_cache, subtxn_ptr->xid);
     }
 
     /* 系统表释放 */
-    ripple_transcache_sysdict_free(txn);
+    transcache_sysdict_free(txn_ptr);
 
-    if(txn->end.wal.lsn <= ctx->base.confirmedlsn)
+    if(txn_ptr->end.wal.lsn <= ctx->base.confirmedlsn)
     {
         /* txn 释放 */
         /* 将事务在事务链表中删除 */
-        ripple_transcache_dlist_remove((void*)ctx, txn, &brestart, NULL, &bconfirm, NULL, false);
+        transcache_dlist_remove((void*)ctx, txn_ptr, &brestart, NULL, &bconfirm, NULL, false);
 
         /* txn 内存释放 */
-        ripple_txn_free(txn);
+        txn_free(txn_ptr);
 
         /* 将事务在hash中删除 */
-        ripple_transcache_removeTXNByXid(ctx->transcache, txn->xid);
+        transcache_removeTXNByXid(ctx->trans_cache, txn_ptr->xid);
 
         return;
     }
 
-    /* 将 txn->stmts 的内容释放掉 */
-    foreach(lc, txn->stmts)
+    /* 将 txn_ptr->stmts 的内容释放掉 */
+    foreach(lc, txn_ptr->stmts)
     {
-        txnstmt = (ripple_txnstmt*)lfirst(lc);
-        ripple_txnstmt_free(txnstmt);
+        txnstmt_ptr = (txnstmt*)lfirst(lc);
+        txnstmt_free(txnstmt_ptr);
     }
-    list_free(txn->stmts);
-    txn->stmts = NULL;
+    list_free(txn_ptr->stmts);
+    txn_ptr->stmts = NULL;
 
     /* 根据事务startlsn/endlsn更新redo/restart/confirm lsn */
-    ripple_transcache_refreshlsn((void*)ctx, txn);
+    transcache_refreshlsn((void*)ctx, txn_ptr);
 
     ctx->callback.setmetricparsetimestamp(ctx->privdata, (TimestampTz)pretrans->m_time);
-    txn->endtimestamp = pretrans->m_time;
+    txn_ptr->endtimestamp = pretrans->m_time;
 
     /* 复制一个事务加到缓存中 */
-    ctxn = ripple_txn_copy(txn);
+    copied_txn = txn_copy(txn_ptr);
 
     /* 将事务在transdlist、by_txns中删除 */
-    ripple_transcache_deletetxn((void*)ctx, txn);
+    transcache_deletetxn((void*)ctx, txn_ptr);
 
     /* 放入到事务缓存中,让 write 线程处理 */
-    ctx->transcache->totalsize -= (ctxn->stmtsize - 4);
-    ripple_cache_txn_add(ctx->parser2txns, ctxn);
+    ctx->trans_cache->totalsize -= (txn_ptr->stmtsize - 4);
+    cache_txn_add(ctx->parser2txns, copied_txn);
     return;
 }

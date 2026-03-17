@@ -1,9 +1,9 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/list/list_func.h"
-#include "stmts/ripple_txnstmt.h"
-#include "stmts/ripple_txnstmt_reset.h"
+#include "stmts/txnstmt.h"
+#include "stmts/txnstmt_reset.h"
 
-void ripple_txnstmt_reset_free(void* data)
+void txnstmt_reset_free(void* data)
 {
     if(NULL == data)
     {

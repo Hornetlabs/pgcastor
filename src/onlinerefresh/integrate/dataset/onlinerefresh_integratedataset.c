@@ -1,69 +1,69 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
-#include "utils/uuid/ripple_uuid.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "onlinerefresh/integrate/dataset/ripple_onlinerefresh_integratedataset.h"
+#include "utils/uuid/uuid.h"
+#include "refresh/refresh_tables.h"
+#include "onlinerefresh/integrate/dataset/onlinerefresh_integratedataset.h"
 
 
 /* 向 onlinerefresh 编号内增加内容 */
-bool ripple_onlinerefresh_integratedataset_add(ripple_onlinerefresh_integratedataset* dataset, void* node)
+bool onlinerefresh_integratedataset_add(onlinerefresh_integratedataset* dataset, void* node)
 {
     dataset->onlinerefresh = dlist_put(dataset->onlinerefresh, node);
     return true;
 }
 
-ripple_onlinerefresh_integratedatasetnode* ripple_onlinerefresh_integratedatasetnode_init(void)
+onlinerefresh_integratedatasetnode* onlinerefresh_integratedatasetnode_init(void)
 {
-    ripple_onlinerefresh_integratedatasetnode* node = NULL;
+    onlinerefresh_integratedatasetnode* node = NULL;
 
-    node = rmalloc0(sizeof(ripple_onlinerefresh_integratedatasetnode));
+    node = rmalloc0(sizeof(onlinerefresh_integratedatasetnode));
     if(NULL == node)
     {
         elog(RLOG_ERROR, "out of memory");
     }
-    rmemset0(node, 0, '\0', sizeof(ripple_onlinerefresh_integratedatasetnode));
+    rmemset0(node, 0, '\0', sizeof(onlinerefresh_integratedatasetnode));
     return node;
 }
 
-void ripple_onlinerefresh_integratedatasetnode_no_set(ripple_onlinerefresh_integratedatasetnode* onlinerefreshnode, void* no)
+void onlinerefresh_integratedatasetnode_no_set(onlinerefresh_integratedatasetnode* onlinerefreshnode, void* no)
 {
-    rmemcpy1(onlinerefreshnode->onlinerefreshno.data, 0, no, RIPPLE_UUID_LEN);
+    rmemcpy1(onlinerefreshnode->onlinerefreshno.data, 0, no, UUID_LEN);
 }
 
-void ripple_onlinerefresh_integratedatasetnode_txid_set(ripple_onlinerefresh_integratedatasetnode* onlinerefreshnode, FullTransactionId txid)
+void onlinerefresh_integratedatasetnode_txid_set(onlinerefresh_integratedatasetnode* onlinerefreshnode, FullTransactionId txid)
 {
     onlinerefreshnode->txid = txid;
 }
 
-void ripple_onlinerefresh_integratedatasetnode_refreshtables_set(ripple_onlinerefresh_integratedatasetnode* onlinerefreshnode, ripple_refresh_tables* tables)
+void onlinerefresh_integratedatasetnode_refreshtables_set(onlinerefresh_integratedatasetnode* onlinerefreshnode, refresh_tables* tables)
 {
-    onlinerefreshnode->refreshtables = ripple_refresh_tables_copy(tables);
+    onlinerefreshnode->refreshtables = refresh_tables_copy(tables);
 }
 
-ripple_onlinerefresh_integratedataset* ripple_onlinerefresh_integratedataset_init(void)
+onlinerefresh_integratedataset* onlinerefresh_integratedataset_init(void)
 {
-    ripple_onlinerefresh_integratedataset* integratedataset = NULL;
+    onlinerefresh_integratedataset* integratedataset = NULL;
 
-    integratedataset = rmalloc0(sizeof(ripple_onlinerefresh_integratedataset));
+    integratedataset = rmalloc0(sizeof(onlinerefresh_integratedataset));
     if(NULL == integratedataset)
     {
         elog(RLOG_ERROR, "out of memory");
     }
-    rmemset0(integratedataset, 0, '\0', sizeof(ripple_onlinerefresh_integratedataset));
+    rmemset0(integratedataset, 0, '\0', sizeof(onlinerefresh_integratedataset));
     integratedataset->onlinerefresh = NULL;
 
     return integratedataset;
 }
 
-ripple_onlinerefresh_integratedataset* ripple_onlinerefresh_integratedataset_copy(ripple_onlinerefresh_integratedataset* dataset)
+onlinerefresh_integratedataset* onlinerefresh_integratedataset_copy(onlinerefresh_integratedataset* dataset)
 {
     dlistnode* dlnode = NULL;
-    ripple_onlinerefresh_integratedataset* result = NULL;
-    ripple_onlinerefresh_integratedatasetnode* node = NULL;
-    ripple_onlinerefresh_integratedatasetnode* new_node = NULL;
+    onlinerefresh_integratedataset* result = NULL;
+    onlinerefresh_integratedatasetnode* node = NULL;
+    onlinerefresh_integratedatasetnode* new_node = NULL;
 
-    result = ripple_onlinerefresh_integratedataset_init();
+    result = onlinerefresh_integratedataset_init();
     if(NULL == result)
     {
         elog(RLOG_WARNING, "out of memory");
@@ -72,23 +72,23 @@ ripple_onlinerefresh_integratedataset* ripple_onlinerefresh_integratedataset_cop
 
     for(dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        node = (ripple_onlinerefresh_integratedatasetnode*)dlnode->value;
+        node = (onlinerefresh_integratedatasetnode*)dlnode->value;
         
-        new_node = ripple_onlinerefresh_integratedatasetnode_init();
-        ripple_onlinerefresh_integratedatasetnode_no_set(new_node, node->onlinerefreshno.data);
-        ripple_onlinerefresh_integratedatasetnode_txid_set(new_node, node->txid);
-        ripple_onlinerefresh_integratedatasetnode_refreshtables_set(new_node, node->refreshtables);
-        ripple_onlinerefresh_integratedataset_add(result, new_node);
+        new_node = onlinerefresh_integratedatasetnode_init();
+        onlinerefresh_integratedatasetnode_no_set(new_node, node->onlinerefreshno.data);
+        onlinerefresh_integratedatasetnode_txid_set(new_node, node->txid);
+        onlinerefresh_integratedatasetnode_refreshtables_set(new_node, node->refreshtables);
+        onlinerefresh_integratedataset_add(result, new_node);
     }
 
     return result;
 }
 
-ripple_onlinerefresh_integratedatasetnode* ripple_onlinerefresh_integratedataset_number_get(ripple_onlinerefresh_integratedataset* dataset, void* no)
+onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_number_get(onlinerefresh_integratedataset* dataset, void* no)
 {
     dlistnode* dlnode = NULL;
     dlistnode* dlnodetmp = NULL;
-    ripple_onlinerefresh_integratedatasetnode* node = NULL;
+    onlinerefresh_integratedatasetnode* node = NULL;
     if(NULL == dataset->onlinerefresh)
     {
         return NULL;
@@ -97,8 +97,8 @@ ripple_onlinerefresh_integratedatasetnode* ripple_onlinerefresh_integratedataset
     for(dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
-        node = (ripple_onlinerefresh_integratedatasetnode*)dlnode->value;
-        if (0 == memcmp(node->onlinerefreshno.data, no, RIPPLE_UUID_LEN))
+        node = (onlinerefresh_integratedatasetnode*)dlnode->value;
+        if (0 == memcmp(node->onlinerefreshno.data, no, UUID_LEN))
         {
             break;
         }
@@ -106,11 +106,11 @@ ripple_onlinerefresh_integratedatasetnode* ripple_onlinerefresh_integratedataset
     return node;
 }
 
-ripple_onlinerefresh_integratedatasetnode* ripple_onlinerefresh_integratedataset_txid_get(ripple_onlinerefresh_integratedataset* dataset, FullTransactionId txid)
+onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_txid_get(onlinerefresh_integratedataset* dataset, FullTransactionId txid)
 {
     dlistnode* dlnode = NULL;
     dlistnode* dlnodetmp = NULL;
-    ripple_onlinerefresh_integratedatasetnode* node = NULL;
+    onlinerefresh_integratedatasetnode* node = NULL;
     if(NULL == dataset->onlinerefresh)
     {
         return NULL;
@@ -119,7 +119,7 @@ ripple_onlinerefresh_integratedatasetnode* ripple_onlinerefresh_integratedataset
     for(dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
-        node = (ripple_onlinerefresh_integratedatasetnode*)dlnode->value;
+        node = (onlinerefresh_integratedatasetnode*)dlnode->value;
         if (txid == node->txid)
         {
             break;
@@ -128,12 +128,12 @@ ripple_onlinerefresh_integratedatasetnode* ripple_onlinerefresh_integratedataset
     return node;
 }
 
-void ripple_onlinerefresh_integratedataset_delete(ripple_onlinerefresh_integratedataset* dataset, void* no)
+void onlinerefresh_integratedataset_delete(onlinerefresh_integratedataset* dataset, void* no)
 {
     bool find = false;
     dlistnode* dlnode = NULL;
     dlistnode* dlnodetmp = NULL;
-    ripple_onlinerefresh_integratedatasetnode* node = NULL;
+    onlinerefresh_integratedatasetnode* node = NULL;
     if(NULL == dataset->onlinerefresh)
     {
         return;
@@ -142,8 +142,8 @@ void ripple_onlinerefresh_integratedataset_delete(ripple_onlinerefresh_integrate
     for(dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
-        node = (ripple_onlinerefresh_integratedatasetnode*)dlnode->value;
-        if (0 == memcmp(node->onlinerefreshno.data, no, RIPPLE_UUID_LEN))
+        node = (onlinerefresh_integratedatasetnode*)dlnode->value;
+        if (0 == memcmp(node->onlinerefreshno.data, no, UUID_LEN))
         {
             find = true;
             break;
@@ -151,22 +151,22 @@ void ripple_onlinerefresh_integratedataset_delete(ripple_onlinerefresh_integrate
     }
     if (true == find)
     {
-        dlist_delete(dataset->onlinerefresh, dlnode, ripple_onlinerefresh_integratedataset_free);
+        dlist_delete(dataset->onlinerefresh, dlnode, onlinerefresh_integratedataset_free);
     }
 
     return;
 }
 
-void ripple_onlinerefresh_integratedataset_free(void* data)
+void onlinerefresh_integratedataset_free(void* data)
 {
-    ripple_onlinerefresh_integratedatasetnode* node = NULL;
+    onlinerefresh_integratedatasetnode* node = NULL;
     if(NULL == data)
     {
         return;
     }
 
-    node = (ripple_onlinerefresh_integratedatasetnode*)data;
-    ripple_refresh_freetables(node->refreshtables);
+    node = (onlinerefresh_integratedatasetnode*)data;
+    refresh_freetables(node->refreshtables);
     
     rfree(data);
 

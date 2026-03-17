@@ -8,7 +8,7 @@
 #include <memory.h>
 #include <errno.h>
 
-#include "ripple_c.h"
+#include "app_c.h"
 #include "xsynch_exbufferdata.h"
 #include "xsynch_fe.h"
 #include "xsynch_int.h"
@@ -1493,7 +1493,7 @@ bool xsynch_febuildmsg_cmd2msg(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
     /*
      * 组装 长度 等信息数据时，需要将主机字节序转换为网络字节序
-     *  在 ripple_c.h 中含有转换函数:
+     *  在 c.h 中含有转换函数:
      *      r_hton16 r_hton32 r_hton64
      */
     if (NULL == m_cmd2msgmap[cmd->type].assemble)

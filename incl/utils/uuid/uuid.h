@@ -1,17 +1,17 @@
-#ifndef RIPPLE_UUID_H
-#define RIPPLE_UUID_H
+#ifndef UUID_H
+#define UUID_H
 
 /* uuid size in bytes */
-#define RIPPLE_UUID_LEN 16
+#define UUID_LEN 16
 
-typedef struct ripple_uuid_t
+typedef struct uuid_t
 {
-    unsigned char data[RIPPLE_UUID_LEN];
-} ripple_uuid_t;
+    unsigned char data[UUID_LEN];
+} uuid_t;
 
-extern ripple_uuid_t *ripple_uuid_init(void);
-extern ripple_uuid_t *ripple_random_uuid(void);
-extern ripple_uuid_t *ripple_uuid_copy(ripple_uuid_t *uuid);
-extern void ripple_uuid_free(ripple_uuid_t *uuid);
-extern char *uuid2string(ripple_uuid_t *uuid);
+extern uuid_t *uuid_init(void);
+extern uuid_t *random_uuid(void);
+extern uuid_t *uuid_copy(uuid_t *uuid);
+extern void uuid_free(uuid_t *uuid);
+extern char *uuid2string(uuid_t *uuid);
 #endif

@@ -1,22 +1,22 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
 #include "utils/dlist/dlist.h"
-#include "utils/daemon/ripple_process.h"
-#include "queue/ripple_queue.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netpool.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "xmanager/ripple_xmanager_metricnode.h"
-#include "xmanager/ripple_xmanager_metric.h"
-#include "xmanager/ripple_xmanager_metricmsgedit.h"
-#include "xmanager/ripple_xmanager_metricmsg.h"
+#include "utils/daemon/process.h"
+#include "queue/queue.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netpool.h"
+#include "xmanager/xmanager_msg.h"
+#include "xmanager/xmanager_metricnode.h"
+#include "xmanager/xmanager_metric.h"
+#include "xmanager/xmanager_metricmsgedit.h"
+#include "xmanager/xmanager_metricmsg.h"
 
 
-static bool ripple_xmanager_metricmsg_assembleedit(ripple_xmanager_metric* xmetric,
-                                                   ripple_netpoolentry* npoolentry,
-                                                   ripple_xmanager_metricnode* metricnode)
+static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric,
+                                                   netpoolentry* npoolentry,
+                                                   xmanager_metricnode* metricnode)
 {
     uint8 u8value                                               = 0;
     int fd                                                      = 0;
@@ -27,7 +27,7 @@ static bool ripple_xmanager_metricmsg_assembleedit(ripple_xmanager_metric* xmetr
     uint8* rowuptr                                              = 0;
     uint8* uptr                                                 = 0;
     char* conffile                                              = NULL;
-    ripple_netpacket* npacket                                   = NULL;
+    netpacket* npacket                                   = NULL;
 
     if (NULL == metricnode->conf)
     {
@@ -40,7 +40,7 @@ static bool ripple_xmanager_metricmsg_assembleedit(ripple_xmanager_metric* xmetr
     /* 
      * 读取文件
      */
-    fd = FileOpen(conffile, O_RDONLY, 0);
+    fd = osal_file_open(conffile, O_RDONLY, 0);
     if (-1 == fd)
     {
         elog(RLOG_WARNING, "xmanager metric assemble edit msg not open file:%s.", conffile);
@@ -48,10 +48,10 @@ static bool ripple_xmanager_metricmsg_assembleedit(ripple_xmanager_metric* xmetr
     }
 
     /* 获取文件大小 */
-    filesize = FileSize(fd);
+    filesize = osal_file_size(fd);
     if (-1 == filesize)
     {
-        FileClose(fd);
+        osal_file_close(fd);
         elog(RLOG_WARNING, "xmanager metric assemble edit msg not get file:%s size, error:%s.", conffile, strerror(errno));
         return false;
     }
@@ -68,18 +68,18 @@ static bool ripple_xmanager_metricmsg_assembleedit(ripple_xmanager_metric* xmetr
     msglen += rowlen;
 
     /* 申请空间 */
-    npacket = ripple_netpacket_init();
+    npacket = netpacket_init();
     if (NULL == npacket)
     {
         elog(RLOG_WARNING, "xmanager metric assemble edit msg out of memory");
         return false;
     }
     msglen += 1;
-    npacket->data = ripple_netpacket_data_init(msglen);
+    npacket->data = netpacket_data_init(msglen);
     if (NULL == npacket->data)
     {
         elog(RLOG_WARNING, "xmanager metric assemble edit msg data, out of memory");
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return false;
     }
     msglen -= 1;
@@ -98,7 +98,7 @@ static bool ripple_xmanager_metricmsg_assembleedit(ripple_xmanager_metric* xmetr
     uptr += 4;
 
     /* 类型 */
-    ivalue = RIPPLE_XMANAGER_MSG_EDITCMD;
+    ivalue = XMANAGER_MSG_EDITCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -128,14 +128,14 @@ static bool ripple_xmanager_metricmsg_assembleedit(ripple_xmanager_metric* xmetr
     uptr += 4;
 
     /* 重新设置到文件头部*/
-    FileSeek(fd, 0);
+    osal_file_seek(fd, 0);
 
     /* 读取文件，写入消息 */
-    if (filesize != FileRead(fd, (char*)uptr, filesize))
+    if (filesize != osal_file_read(fd, (char*)uptr, filesize))
     {
-        FileClose(fd);
+        osal_file_close(fd);
         fd = -1;
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         elog(RLOG_WARNING, "xmanager metric assemble edit msg read file %s error, %s", conffile, strerror(errno));
         return false;
     }
@@ -143,7 +143,7 @@ static bool ripple_xmanager_metricmsg_assembleedit(ripple_xmanager_metric* xmetr
     rowlen += filesize;
 
     /* 关闭文件 */
-    FileClose(fd);
+    osal_file_close(fd);
     fd = -1;
 
     /* 行总长度 */
@@ -151,27 +151,27 @@ static bool ripple_xmanager_metricmsg_assembleedit(ripple_xmanager_metric* xmetr
     rmemcpy1(rowuptr, 0, &rowlen, 4);
 
     /* 将 netpacket 挂载到待发送队列中 */
-    if (false == ripple_queue_put(npoolentry->wpackets, (void*)npacket))
+    if (false == queue_put(npoolentry->wpackets, (void*)npacket))
     {
         elog(RLOG_WARNING, "xmanager metric assemble edit msg add message to queue error");
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return false;
     }
 
     return true;
 }
 
-bool ripple_xmanager_metricmsg_parseedit(ripple_xmanager_metric* xmetric,
-                                         ripple_netpoolentry* npoolentry,
-                                         ripple_netpacket* npacket)
+bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric,
+                                         netpoolentry* npoolentry,
+                                         netpacket* npacket)
 {
     int len                                             = 0;
     int jobtype                                         = 0;
     int errcode                                         = 0;
     uint8* uptr                                         = NULL;
     char* jobname                                       = NULL;
-    ripple_xmanager_metricnode* pxmetricnode            = NULL;
-    ripple_xmanager_metricnode xmetricnode              = { 0 };
+    xmanager_metricnode* pxmetricnode            = NULL;
+    xmanager_metricnode xmetricnode              = { 0 };
     char errormsg[2048]                                 = { 0 };
 
     /* 获取作业类型 */
@@ -185,13 +185,13 @@ bool ripple_xmanager_metricmsg_parseedit(ripple_xmanager_metric* xmetric,
     jobtype = r_ntoh32(jobtype);
     uptr += 4;
 
-    if (RIPPLE_XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
+    if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
-        errcode = RIPPLE_ERROR_MSGCOMMANDUNVALID;
+        errcode = ERROR_MSGCOMMANDUNVALID;
         snprintf(errormsg, 2048, 
                  "ERROR: xmanager parse edit command, unsupport %s",
-                 ripple_xmanager_metricnode_getname(jobtype));
-        goto ripple_xmanager_metricmsg_parseedit_error;
+                 xmanager_metricnode_getname(jobtype));
+        goto xmanager_metricmsg_parseedit_error;
     }
 
     /* 获取 jobname */
@@ -203,9 +203,9 @@ bool ripple_xmanager_metricmsg_parseedit(ripple_xmanager_metric* xmetric,
     jobname = rmalloc0(len);
     if (NULL == jobname)
     {
-        errcode = RIPPLE_ERROR_OOM;
+        errcode = ERROR_OOM;
         snprintf(errormsg, 2048, "ERROR: xmanager parse edit command, out of memory.");
-        goto ripple_xmanager_metricmsg_parseedit_error;
+        goto xmanager_metricmsg_parseedit_error;
     }
     rmemset0(jobname, 0, '\0', len);
     len -= 1;
@@ -215,20 +215,20 @@ bool ripple_xmanager_metricmsg_parseedit(ripple_xmanager_metric* xmetric,
     xmetricnode.type = jobtype;
     xmetricnode.name = jobname;
 
-    pxmetricnode = dlist_get(xmetric->metricnodes, &xmetricnode, ripple_xmanager_metricnode_cmp);
+    pxmetricnode = dlist_get(xmetric->metricnodes, &xmetricnode, xmanager_metricnode_cmp);
     if (NULL == pxmetricnode)
     {
-        errcode = RIPPLE_ERROR_NOENT;
+        errcode = ERROR_NOENT;
         snprintf(errormsg, 2048, "ERROR: %s does not exist.", jobname);
-        goto ripple_xmanager_metricmsg_parseedit_error;
+        goto xmanager_metricmsg_parseedit_error;
     }
 
     /* 组装返回消息 */
-    if (false == ripple_xmanager_metricmsg_assembleedit(xmetric, npoolentry, pxmetricnode))
+    if (false == xmanager_metricmsg_assembleedit(xmetric, npoolentry, pxmetricnode))
     {
-        errcode = RIPPLE_ERROR_OOM;
+        errcode = ERROR_OOM;
         snprintf(errormsg, 2048, "ERROR: %s does not assemble edit result.", jobname);
-        goto ripple_xmanager_metricmsg_parseedit_error;
+        goto xmanager_metricmsg_parseedit_error;
     }
 
     if (NULL != jobname)
@@ -236,9 +236,9 @@ bool ripple_xmanager_metricmsg_parseedit(ripple_xmanager_metric* xmetric,
         rfree(jobname);
     }
 
-    return ripple_xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, RIPPLE_XMANAGER_MSG_EDITCMD);;
+    return xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_EDITCMD);;
 
-ripple_xmanager_metricmsg_parseedit_error:
+xmanager_metricmsg_parseedit_error:
 
     if (NULL != jobname)
     {
@@ -246,9 +246,9 @@ ripple_xmanager_metricmsg_parseedit_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return ripple_xmanager_metricmsg_assembleerrormsg(xmetric,
+    return xmanager_metricmsg_assembleerrormsg(xmetric,
                                                       npoolentry->wpackets,
-                                                      RIPPLE_XMANAGER_MSG_EDITCMD,
+                                                      XMANAGER_MSG_EDITCMD,
                                                       errcode,
                                                       errormsg);
 

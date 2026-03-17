@@ -1,23 +1,23 @@
-#ifndef _RIPPLE_NAMESPACE_H
-#define _RIPPLE_NAMESPACE_H
+#ifndef _NAMESPACE_H
+#define _NAMESPACE_H
 
-void ripple_namespace_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts);
+void namespace_getfromdb(PGconn *conn, cache_sysdicts* sysdicts);
 
-void ripple_namespacedata_write(List* ripple_namespace, uint64 *offset, ripple_sysdict_header_array* array);
+void namespacedata_write(List* namespace, uint64 *offset, sysdict_header_array* array);
 
-HTAB* ripple_namespacecache_load(ripple_sysdict_header_array* array);
+HTAB* namespacecache_load(sysdict_header_array* array);
 
-void ripple_namespacecache_write(HTAB* namespacecache, uint64 *offset, ripple_sysdict_header_array* array);
+void namespacecache_write(HTAB* namespacecache, uint64 *offset, sysdict_header_array* array);
 
 /* colvalue2namespace */
-ripple_catalogdata* ripple_namespace_colvalue2namespace(void* in_colvalue);
+catalogdata* namespace_colvalue2namespace(void* in_colvalue);
 
 /* catalogdata2transcache */
-void ripple_namespace_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata);
+void namespace_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata);
 
-void ripple_namespace_catalogdatafree(ripple_catalogdata* catalogdata);
+void namespace_catalogdatafree(catalogdata* catalogdata);
 
 /* 根据oid获取namespace数据 */
-void* ripple_namespace_getbyoid(Oid oid, HTAB* by_namespace);
+void* namespace_getbyoid(Oid oid, HTAB* by_namespace);
 
 #endif

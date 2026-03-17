@@ -3,9 +3,9 @@
 
 typedef enum 
 {
-    RIPPLE_RBTREE_COLOR_BLACK = 0,
-    RIPPLE_RBTREE_COLOR_RED
-} RIPPLE_RBTREE_COLOR;
+    RBTREE_COLOR_BLACK = 0,
+    RBTREE_COLOR_RED
+} RBTREE_COLOR;
 
 typedef struct RBTREE_NODE 
 {
@@ -35,12 +35,12 @@ typedef struct TABLEOPTYPE
     uint8                       optype;                             /* optype */
 } tableoptype;
 
-typedef struct RIPPLE_TABLEOP2PREPARESTMT
+typedef struct TABLEOP2PREPARESTMT
 {
     tableoptype                 tableop;
     rbtree*                     rbtree;
     char*                       debugstr;
-} ripple_tableop2preparestmt;
+} tableop2preparestmt;
 
 /*
  *insert node

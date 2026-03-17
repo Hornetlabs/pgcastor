@@ -9,7 +9,7 @@
 #include <pwd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include "ripple_c.h"
+#include "app_c.h"
 #include "xsynch_exbufferdata.h"
 #include "xscsci_input.h"
 #include "xscsci_tabcomplete.h"
@@ -78,7 +78,7 @@ static bool xscsci_input_savehistory(char *fname)
     history_truncate_file(fname, nlines);
 
     /* 打开文件, 打开后立即关闭, 若文件不存在 append_history 会失败 */
-    fd = open(fname, O_CREAT | O_WRONLY | RIPPLE_BINARY, 0600);
+    fd = open(fname, O_CREAT | O_WRONLY | BINARY, 0600);
     if (0 < fd)
     {
         close(fd);

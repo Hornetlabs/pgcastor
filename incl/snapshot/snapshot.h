@@ -1,24 +1,24 @@
-#ifndef _RIPPLE_SNAPSHOT_H
-#define _RIPPLE_SNAPSHOT_H
+#ifndef _SNAPSHOT_H
+#define _SNAPSHOT_H
 
-typedef struct RIPPLE_SNAPSHOT
+typedef struct SNAPSHOT
 {
     char*                   name;
     TransactionId           xmin;
     TransactionId           xmax;
     HTAB*                   xids;
-}ripple_snapshot;
+}snapshot;
 
-typedef struct RIPPLE_SNAPSHOT_XID
+typedef struct SNAPSHOT_XID
 {
     TransactionId   xid;
-} ripple_snapshot_xid;
+} snapshot_xid;
 
 
-ripple_snapshot* ripple_snapshot_buildfromdb(PGconn *conn);
+snapshot* snapshot_buildfromdb(PGconn *conn);
 
-ripple_snapshot *ripple_snapshot_copy(ripple_snapshot *snap);
+snapshot *snapshot_copy(snapshot *snap);
 
-void ripple_snapshot_free(ripple_snapshot *snapshot);
+void snapshot_free(snapshot *snapshot);
 
 #endif

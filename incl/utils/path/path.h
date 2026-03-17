@@ -1,6 +1,6 @@
-#ifndef _RIPPLE_PATH_H
-#define _RIPPLE_PATH_H
+#ifndef _PATH_H
+#define _PATH_H
 
-void ripple_path_canonicalize_path(char *path);
+void path_canonicalize_path(char *path);
 
 #endif

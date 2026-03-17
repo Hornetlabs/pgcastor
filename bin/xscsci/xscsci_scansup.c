@@ -3,7 +3,7 @@
 #include <string.h>
 #include <strings.h>
 
-#include "ripple_c.h"
+#include "app_c.h"
 #include "xscsci_scansup.h"
 
 

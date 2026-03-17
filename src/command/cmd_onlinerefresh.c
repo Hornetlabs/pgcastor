@@ -1,13 +1,13 @@
-#include "ripple_app_incl.h"
-#include "utils/init/ripple_init.h"
+#include "app_incl.h"
+#include "utils/init/init.h"
 #include "utils/string/stringinfo.h"
 #include "utils/list/list_func.h"
-#include "command/ripple_cmd.h"
+#include "command/cmd.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
-#include "misc/ripple_misc_lockfiles.h"
+#include "misc/misc_lockfiles.h"
 
-static bool ripple_cmd_onlinerefresh_append_result(char *input, StringInfo str)
+static bool cmd_onlinerefresh_append_result(char *input, StringInfo str)
 {
     if (strlen(input) > 129)
     {
@@ -23,7 +23,7 @@ static bool ripple_cmd_onlinerefresh_append_result(char *input, StringInfo str)
     return true;
 }
 
-static char *ripple_cmd_onlinerefresh_format_table_info(List *source)
+static char *cmd_onlinerefresh_format_table_info(List *source)
 {
     StringInfoData str = {'\0'};
     ListCell *cell = NULL;
@@ -35,7 +35,7 @@ static char *ripple_cmd_onlinerefresh_format_table_info(List *source)
     {
         char *table = (char *) lfirst(cell);
 
-        if (!ripple_cmd_onlinerefresh_append_result(table, &str))
+        if (!cmd_onlinerefresh_append_result(table, &str))
         {
             return NULL;
         }
@@ -48,7 +48,7 @@ static char *ripple_cmd_onlinerefresh_format_table_info(List *source)
 }
 
 /* 输出 */
-static void ripple_onlinerefresh_status_print(void)
+static void onlinerefresh_status_print(void)
 {
     FILE *fp = NULL;
     char fline[1024] = {'\0'};
@@ -57,10 +57,10 @@ static void ripple_onlinerefresh_status_print(void)
 
     initStringInfo(&str);
 
-    fp = FileFOpen(RIPPLE_ONLINEREFRESH_STATUS, "r");
+    fp = osal_file_fopen(ONLINEREFRESH_STATUS, "r");
     if (NULL == fp)
     {
-        printf("open %s failed\n", RIPPLE_ONLINEREFRESH_STATUS);
+        printf("open %s failed\n", ONLINEREFRESH_STATUS);
         rfree(str.data);
         /* make compiler happy */
         return;
@@ -106,8 +106,8 @@ static void ripple_onlinerefresh_status_print(void)
                 printf("success send online refresh signal to capture!\n");
                 rfree(str.data);
                 /* 删除文件 */
-                unlink(RIPPLE_ONLINEREFRESH_STATUS);
-                unlink(RIPPLE_ONLINEREFRESH_DAT);
+                unlink(ONLINEREFRESH_STATUS);
+                unlink(ONLINEREFRESH_DAT);
                 return;
             }
 
@@ -123,19 +123,19 @@ static void ripple_onlinerefresh_status_print(void)
 
     rfree(str.data);
     /* 删除文件 */
-    unlink(RIPPLE_ONLINEREFRESH_STATUS);
-    unlink(RIPPLE_ONLINEREFRESH_DAT);
+    unlink(ONLINEREFRESH_STATUS);
+    unlink(ONLINEREFRESH_DAT);
 }
 
 /* 获取onlinerefresh状态信息 */
-static void ripple_cmd_onlinerefresh_get_onlinerefresh_status(void)
+static void cmd_onlinerefresh_get_onlinerefresh_status(void)
 {
     int cnt = 0;
     long    ripplepid;
     struct stat statbuf;
     char    szMsg[256] = { 0 };
 
-    ripplepid = ripple_misc_lockfiles_getpid();
+    ripplepid = misc_lockfiles_getpid();
     if(0 == ripplepid)
     {
         printf("Is ripple running?\n");
@@ -149,21 +149,21 @@ static void ripple_cmd_onlinerefresh_get_onlinerefresh_status(void)
     }
 
     /* 检测onlinerefresh */
-    for(cnt = 0; cnt < (RIPPLE_WAIT*RIPPLE_WAITS_PER_SEC); cnt++)
+    for(cnt = 0; cnt < (WAIT*WAITS_PER_SEC); cnt++)
     {
         /* 检测文件是否存在 */
-        if (0 != stat(RIPPLE_ONLINEREFRESH_STATUS, &statbuf))
+        if (0 != stat(ONLINEREFRESH_STATUS, &statbuf))
         {
             if (errno != ENOENT)
             {
                 /* 读取数据并输出 */
-                printf("get %s stat error, %s\n", RIPPLE_ONLINEREFRESH_STATUS, strerror(errno));
+                printf("get %s stat error, %s\n", ONLINEREFRESH_STATUS, strerror(errno));
                 exit(-1);
             }
         }
         else
         {
-            ripple_onlinerefresh_status_print();
+            onlinerefresh_status_print();
             exit(0);
         }
 
@@ -175,7 +175,7 @@ static void ripple_cmd_onlinerefresh_get_onlinerefresh_status(void)
     printf("can not get online refresh status\n");
 }
 
-bool ripple_cmd_onlinerefresh(void *extra_config)
+bool cmd_onlinerefresh(void *extra_config)
 {
     char   *wdata = NULL;
     char   *rewrite = NULL;
@@ -193,7 +193,7 @@ bool ripple_cmd_onlinerefresh(void *extra_config)
     wdata = guc_getdata();
 
     /* 检测 data 目录是否存在 */
-    if(false == DirExist(wdata))
+    if(false == osal_dir_exist(wdata))
     {
         printf("work data not exist:%s\n", wdata);
         return false;
@@ -203,25 +203,25 @@ bool ripple_cmd_onlinerefresh(void *extra_config)
     chdir(wdata);
 
     /* 格式化输入 */
-    rewrite = ripple_cmd_onlinerefresh_format_table_info(table_list);
+    rewrite = cmd_onlinerefresh_format_table_info(table_list);
     if (!rewrite)
     {
         printf("invalid online refresh tables format, please check your input\n");
         return false;
     }
 
-    fd = BasicOpenFile(RIPPLE_ONLINEREFRESH_DAT, O_RDWR | O_CREAT | RIPPLE_BINARY);
+    fd = osal_basic_open_file(ONLINEREFRESH_DAT, O_RDWR | O_CREAT | BINARY);
     if(-1 == fd)
     {
-        printf("open file:%s error, %s\n", RIPPLE_ONLINEREFRESH_DAT, strerror(errno));
+        printf("open file:%s error, %s\n", ONLINEREFRESH_DAT, strerror(errno));
         return false;
     }
 
-    FileWrite(fd, rewrite, strlen(rewrite));
+    osal_file_write(fd, rewrite, strlen(rewrite));
 
-    FileClose(fd);
+    osal_file_close(fd);
 
-    ripple_cmd_onlinerefresh_get_onlinerefresh_status();
+    cmd_onlinerefresh_get_onlinerefresh_status();
 
     return true;
 }

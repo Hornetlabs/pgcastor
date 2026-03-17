@@ -1,10 +1,10 @@
-#ifndef _RIPPLE_IPC_H
-#define _RIPPLE_IPC_H
+#ifndef _IPC_H
+#define _IPC_H
 
-typedef void (*ripple_on_exit_callback) (int code, void* arg);
+typedef void (*on_exit_callback) (int code, void* arg);
 
-pid_t ripple_ipc_fork(void);
+pid_t osal_ipc_fork(void);
 
-int ripple_ipc_pipe(int channel[2]);
+int osal_ipc_pipe(int channel[2]);
 
 #endif

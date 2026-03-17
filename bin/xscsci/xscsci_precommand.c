@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 
-#include "ripple_c.h"
+#include "app_c.h"
 #include "xsynch_exbufferdata.h"
 #include "xsynch_fe.h"
 #include "xscsci_output.h"

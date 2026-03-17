@@ -1,8 +1,8 @@
-#ifndef _RIPPLE_FFTRAIL_TXNINSERT_H
-#define _RIPPLE_FFTRAIL_TXTINSERT_H
+#ifndef _FFTRAIL_TXNINSERT_H
+#define _FFTRAIL_TXTINSERT_H
 
-bool ripple_fftrail_txninsert_serial(void* data, void* state);
+bool fftrail_txninsert_serial(void* data, void* state);
 
-bool ripple_fftrail_txninsert_deserial(void** data, void* state);
+bool fftrail_txninsert_deserial(void** data, void* state);
 
 #endif

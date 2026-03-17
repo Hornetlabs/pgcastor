@@ -1,5 +1,5 @@
-#include "ripple_app_incl.h"
-#include "utils/path/ripple_path.h"
+#include "app_incl.h"
+#include "utils/path/path.h"
 
 #define skip_drive(path)	(path)
 
@@ -43,7 +43,7 @@ trim_directory(char *path)
     *p = '\0';
 }
 
-void ripple_path_canonicalize_path(char *path)
+void path_canonicalize_path(char *path)
 {
     char	   *p,
                 *to_p;

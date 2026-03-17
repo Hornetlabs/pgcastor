@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_XMANAGER_METRICMSGINFO_H_
-#define _RIPPLE_XMANAGER_METRICMSGINFO_H_
+#ifndef _XMANAGER_METRICMSGINFO_H_
+#define _XMANAGER_METRICMSGINFO_H_
 
 /*
  * 处理 info 命令
@@ -7,8 +7,8 @@
  *  2、校验 job 是否已经存在
  *  3、获取信息并返回
 */
-extern bool ripple_xmanager_metricmsg_parseinfo(ripple_xmanager_metric* xmetric,
-                                                  ripple_netpoolentry* npoolentry,
-                                                  ripple_netpacket* npacket);
+extern bool xmanager_metricmsg_parseinfo(xmanager_metric* xmetric,
+                                                  netpoolentry* npoolentry,
+                                                  netpacket* npacket);
 
 #endif

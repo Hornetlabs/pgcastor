@@ -1,6 +1,6 @@
-#ifndef RIPPLE_ONLINEREFRESH_CAPTURE_DECODE_HEAP_H
-#define RIPPLE_ONLINEREFRESH_CAPTURE_DECODE_HEAP_H
+#ifndef ONLINEREFRESH_CAPTURE_DECODE_HEAP_H
+#define ONLINEREFRESH_CAPTURE_DECODE_HEAP_H
 
-extern void ripple_onlinerefresh_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
+extern void onlinerefresh_decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
 
 #endif

@@ -1,28 +1,28 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
 #include "utils/dlist/dlist.h"
-#include "utils/daemon/ripple_process.h"
-#include "queue/ripple_queue.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netpool.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "xmanager/ripple_xmanager_metricasyncmsg.h"
-#include "xmanager/ripple_xmanager_metricnode.h"
-#include "xmanager/ripple_xmanager_metricxscscinode.h"
-#include "xmanager/ripple_xmanager_metriccapturenode.h"
-#include "xmanager/ripple_xmanager_metric.h"
-#include "xmanager/ripple_xmanager_metricmsgcapturerefresh.h"
-#include "xmanager/ripple_xmanager_metricmsg.h"
+#include "utils/daemon/process.h"
+#include "queue/queue.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netpool.h"
+#include "xmanager/xmanager_msg.h"
+#include "xmanager/xmanager_metricasyncmsg.h"
+#include "xmanager/xmanager_metricnode.h"
+#include "xmanager/xmanager_metricxscscinode.h"
+#include "xmanager/xmanager_metriccapturenode.h"
+#include "xmanager/xmanager_metric.h"
+#include "xmanager/xmanager_metricmsgcapturerefresh.h"
+#include "xmanager/xmanager_metricmsg.h"
 
 
 /*
  * 处理 capture onlinerefresh 命令
 */
-bool ripple_xmanager_metricmsg_parsecapturerefresh(ripple_xmanager_metric* xmetric,
-                                                   ripple_netpoolentry* npoolentry,
-                                                   ripple_netpacket* npacket)
+bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric,
+                                                   netpoolentry* npoolentry,
+                                                   netpacket* npacket)
 {
     /*
      * 1、获取 capture 的 metric node 节点
@@ -37,10 +37,10 @@ bool ripple_xmanager_metricmsg_parsecapturerefresh(ripple_xmanager_metric* xmetr
     char* errmsg                                       = NULL;
     dlistnode* dlnodemsg                                = NULL;
     dlistnode* dlnodemsgtmp                             = NULL;
-    ripple_xmanager_metricnode* xmetricnode             = NULL;
-    ripple_xmanager_metricfd2node* fd2node              = NULL;
-    ripple_xmanager_metricasyncmsg* asyncmsg            = NULL;
-    ripple_xmanager_metricxscscinode* xmetricxscscinode = NULL;
+    xmanager_metricnode* xmetricnode             = NULL;
+    xmanager_metricfd2node* fd2node              = NULL;
+    xmanager_metricasyncmsg* asyncmsg            = NULL;
+    xmanager_metricxscscinode* xmetricxscscinode = NULL;
 
     /* 获取最后的内容 */
     uptr = npacket->data;
@@ -72,19 +72,19 @@ bool ripple_xmanager_metricmsg_parsecapturerefresh(ripple_xmanager_metric* xmetr
     /* 获取 capture 节点 */
     fd2node = dlist_get(xmetric->fd2metricnodes,
                         (void*)((uintptr_t)npoolentry->fd),
-                        ripple_xmanager_metricfd2node_cmp);
+                        xmanager_metricfd2node_cmp);
     xmetricnode = fd2node->metricnode;
 
     /* 获取 xscsci 节点 */
     for (dlnode = xmetric->fd2metricnodes->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        fd2node = (ripple_xmanager_metricfd2node*)dlnode->value;
-        if (RIPPLE_XMANAGER_METRICNODETYPE_XSCSCI != fd2node->metricnode->type)
+        fd2node = (xmanager_metricfd2node*)dlnode->value;
+        if (XMANAGER_METRICNODETYPE_XSCSCI != fd2node->metricnode->type)
         {
             continue;
         }
 
-        xmetricxscscinode = (ripple_xmanager_metricxscscinode*)fd2node->metricnode;
+        xmetricxscscinode = (xmanager_metricxscscinode*)fd2node->metricnode;
         if (NULL == xmetricxscscinode->asyncmsgs
             || true == dlist_isnull(xmetricxscscinode->asyncmsgs->msgs))
         {
@@ -94,10 +94,10 @@ bool ripple_xmanager_metricmsg_parsecapturerefresh(ripple_xmanager_metric* xmetr
         dlnodemsg = xmetricxscscinode->asyncmsgs->msgs->head;
         while(NULL != dlnodemsg)
         {
-            asyncmsg = (ripple_xmanager_metricasyncmsg*)dlnodemsg->value;
+            asyncmsg = (xmanager_metricasyncmsg*)dlnodemsg->value;
             dlnodemsgtmp = dlnodemsg->next;
 
-            if (RIPPLE_XMANAGER_MSG_REFRESHCMD != asyncmsg->msgtype)
+            if (XMANAGER_MSG_REFRESHCMD != asyncmsg->msgtype)
             {
                 dlnodemsg = dlnodemsgtmp;
                 continue;
@@ -116,7 +116,7 @@ bool ripple_xmanager_metricmsg_parsecapturerefresh(ripple_xmanager_metric* xmetr
             }
 
             /* 找到了节点 */
-            npoolentry = ripple_netpool_getentrybyfd(xmetric->npool, fd2node->fd);
+            npoolentry = netpool_getentrybyfd(xmetric->npool, fd2node->fd);
             if (NULL == npoolentry)
             {
                 elog(RLOG_WARNING, "can not get pool entry by fd:%d", fd2node->fd);
@@ -129,7 +129,7 @@ bool ripple_xmanager_metricmsg_parsecapturerefresh(ripple_xmanager_metric* xmetr
 
             /* 将 asyncmsg 转移到 results 中 */
             asyncmsg->result = 1;
-            asyncmsg->errcode = RIPPLE_ERROR_APPENDMSG;
+            asyncmsg->errcode = ERROR_APPENDMSG;
             asyncmsg->errormsg = errmsg;
             errmsg = NULL;
 
@@ -158,31 +158,31 @@ bool ripple_xmanager_metricmsg_parsecapturerefresh(ripple_xmanager_metric* xmetr
         return true;
     }
 
-    if (false == ripple_xmanager_metricmsg_assembleresponse(xmetric,
+    if (false == xmanager_metricmsg_assembleresponse(xmetric,
                                                             npoolentry,
-                                                            RIPPLE_XMANAGER_MSG_REFRESHCMD,
+                                                            XMANAGER_MSG_REFRESHCMD,
                                                             xmetricxscscinode->asyncmsgs->results))
     {
         elog(RLOG_WARNING, "assemble response to xscsci error, close xscsci connect");
 
         /* netpool 中的节点移除 */
-        ripple_netpool_del(xmetric->npool, npoolentry->fd);
+        netpool_del(xmetric->npool, npoolentry->fd);
 
         /* metricnode 节点在链表中移除 */
         xmetric->metricnodes = dlist_deletebyvaluefirstmatch(xmetric->metricnodes,
                                                              xmetricxscscinode,
-                                                             ripple_xmanager_metricnode_cmp,
-                                                             ripple_xmanager_metricnode_destroyvoid);
+                                                             xmanager_metricnode_cmp,
+                                                             xmanager_metricnode_destroyvoid);
 
         /* 在描述符映射链表中将数据移除 */
         xmetric->fd2metricnodes = dlist_delete(xmetric->fd2metricnodes,
                                                dlnode,
-                                               ripple_xmanager_metricfd2node_destroyvoid);
+                                               xmanager_metricfd2node_destroyvoid);
         return true;
     }
 
     /* 清理 results */
-    dlist_free(xmetricxscscinode->asyncmsgs->results, ripple_xmanager_metricasyncmsg_destroyvoid);
+    dlist_free(xmetricxscscinode->asyncmsgs->results, xmanager_metricasyncmsg_destroyvoid);
     xmetricxscscinode->asyncmsgs->results = NULL;
     xmetricxscscinode->asyncmsgs->timeout = 0;
     return true;

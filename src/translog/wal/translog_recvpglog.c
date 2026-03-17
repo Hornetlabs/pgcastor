@@ -1,29 +1,29 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
 #include "utils/dttime/dttimestamp.h"
-#include "utils/conn/ripple_conn.h"
-#include "utils/init/ripple_databaserecv.h"
-#include "translog/ripple_translog_recvlogdb.h"
-#include "translog/wal/ripple_translog_walcontrol.h"
-#include "translog/wal/ripple_translog_waltimeline.h"
-#include "translog/wal/ripple_translog_walmsg.h"
-#include "translog/wal/ripple_translog_recvlog.h"
-#include "translog/wal/ripple_translog_recvpglog.h"
+#include "utils/conn/conn.h"
+#include "utils/init/databaserecv.h"
+#include "translog/translog_recvlogdb.h"
+#include "translog/wal/translog_walcontrol.h"
+#include "translog/wal/translog_waltimeline.h"
+#include "translog/wal/translog_walmsg.h"
+#include "translog/wal/translog_recvlog.h"
+#include "translog/wal/translog_recvpglog.h"
 
 /* 生成事务日志空文件 */
-static bool ripple_translog_recvpglog_initemptywalfile(ripple_translog_recvlog* recvwal)
+static bool translog_recvpglog_initemptywalfile(translog_recvlog* recvwal)
 {
     uint64 segno                        = 0;
-    char xlogfile[RIPPLE_MAXPATH]       = { 0 };
-    char blkdata[RIPPLE_XLOG_BLKSIZE]   = { 0 };
+    char xlogfile[MAXPATH]       = { 0 };
+    char blkdata[XLOG_BLKSIZE]   = { 0 };
 
     struct stat st;
 
     segno = PGWALBYTETOSEG(recvwal->startpos, recvwal->segsize);
     snprintf(xlogfile,
-             RIPPLE_MAXPATH,
+             MAXPATH,
              "%s/%08X%08X%08X",                         /* 目录/timeline segno size */
              recvwal->data,
              recvwal->tli,
@@ -45,10 +45,10 @@ static bool ripple_translog_recvpglog_initemptywalfile(ripple_translog_recvlog* 
     }
 
     /* 写空文件 */
-    if(false == CreateFileWithSize(xlogfile,
-                                   O_RDWR | O_CREAT | O_EXCL | RIPPLE_BINARY,
+    if(false == osal_create_file_with_size(xlogfile,
+                                   O_RDWR | O_CREAT | O_EXCL | BINARY,
                                    recvwal->segsize,
-                                   RIPPLE_XLOG_BLKSIZE,
+                                   XLOG_BLKSIZE,
                                    (uint8*)blkdata))
     {
         elog(RLOG_WARNING, "create empty file %s error", xlogfile);
@@ -59,26 +59,26 @@ static bool ripple_translog_recvpglog_initemptywalfile(ripple_translog_recvlog* 
 }
 
 /* 打开文件 */
-static bool ripple_translog_recvpglog_openwalfile(ripple_translog_recvlog* recvwal)
+static bool translog_recvpglog_openwalfile(translog_recvlog* recvwal)
 {
-    char xlogfile[RIPPLE_MAXPATH]       = { 0 };
+    char xlogfile[MAXPATH]       = { 0 };
 
     /* 生成空文件 */
-    if(false == ripple_translog_recvpglog_initemptywalfile(recvwal))
+    if(false == translog_recvpglog_initemptywalfile(recvwal))
     {
         elog(RLOG_WARNING, "open wal file error");
         return false;
     }
 
     snprintf(xlogfile,
-             RIPPLE_MAXPATH,
+             MAXPATH,
              "%s/%08X%08X%08X",                         /* 目录/timeline segno size */
              recvwal->data,
              recvwal->tli,
              (uint32)(( recvwal->segno) / PGWALSEGMENTSPERXLOGID(recvwal->segsize)),
              (uint32)(( recvwal->segno) % PGWALSEGMENTSPERXLOGID(recvwal->segsize)));
 
-    recvwal->fd = BasicOpenFile(xlogfile, O_RDWR | RIPPLE_BINARY);
+    recvwal->fd = osal_basic_open_file(xlogfile, O_RDWR | BINARY);
     if(-1 == recvwal->fd)
     {
         elog(RLOG_WARNING, "open file error, %s", xlogfile);
@@ -88,7 +88,7 @@ static bool ripple_translog_recvpglog_openwalfile(ripple_translog_recvlog* recvw
 }
 
 /* 解析下个时间线和开始位置 */
-static bool ripple_translog_recvpglog_parsenewpos(PGresult* res, TimeLineID* ptli, XLogRecPtr* pstartpos)
+static bool translog_recvpglog_parsenewpos(PGresult* res, TimeLineID* ptli, XLogRecPtr* pstartpos)
 {
     uint32 xlogid   = InvalidXLogRecPtr;
     uint32 xrecoff  = InvalidXLogRecPtr;
@@ -114,7 +114,7 @@ static bool ripple_translog_recvpglog_parsenewpos(PGresult* res, TimeLineID* ptl
 /*
  * 处理数据
 */
-static bool ripple_translog_recvpglog_datamsg(ripple_translog_recvlog* recvwal, char* buffer, int blen)
+static bool translog_recvpglog_datamsg(translog_recvlog* recvwal, char* buffer, int blen)
 {
     /*
      * PG 12 的消息格式
@@ -152,7 +152,7 @@ static bool ripple_translog_recvpglog_datamsg(ripple_translog_recvlog* recvwal, 
     if (-1 == recvwal->fd)
     {
         /* 打开文件 */
-        if(false == ripple_translog_recvpglog_openwalfile(recvwal))
+        if(false == translog_recvpglog_openwalfile(recvwal))
         {
             elog(RLOG_WARNING, "open wal file error");
             return false;
@@ -179,7 +179,7 @@ static bool ripple_translog_recvpglog_datamsg(ripple_translog_recvlog* recvwal, 
         }
 
         /* 将 wal 数据落盘 */
-        byteswrite = FileWrite(recvwal->fd, cptr, byteswrite);
+        byteswrite = osal_file_write(recvwal->fd, cptr, byteswrite);
         if (-1 == byteswrite)
         {
             elog(RLOG_WARNING, "write data to wal file error, %s", strerror(errno));
@@ -195,12 +195,12 @@ static bool ripple_translog_recvpglog_datamsg(ripple_translog_recvlog* recvwal, 
         if (0 == PGWALSEGMENTOFFSET(recvwal->startpos, recvwal->segsize))
         {
             /* 文件切换 */
-            FileClose(recvwal->fd);
+            osal_file_close(recvwal->fd);
             recvwal->fd = -1;
             xlogoff = 0;
 
             /* 打开新文件 */
-            if(false == ripple_translog_recvpglog_openwalfile(recvwal))
+            if(false == translog_recvpglog_openwalfile(recvwal))
             {
                 elog(RLOG_WARNING, "open wal file error");
                 return false;
@@ -214,7 +214,7 @@ static bool ripple_translog_recvpglog_datamsg(ripple_translog_recvlog* recvwal, 
 /*
  * 心跳
 */
-static bool ripple_translog_recvpglog_keepalivemsg(ripple_translog_recvlog* recvwal, PGconn* conn, char* buffer, int blen)
+static bool translog_recvpglog_keepalivemsg(translog_recvlog* recvwal, PGconn* conn, char* buffer, int blen)
 {
     /*
      * 源端发送的消息格式为:
@@ -238,7 +238,7 @@ static bool ripple_translog_recvpglog_keepalivemsg(ripple_translog_recvlog* recv
     }
 
     /* 组装心跳包并发送 */
-    if(false == ripple_translog_walmsg_sendkeepalivemsg(recvwal->startpos, conn))
+    if(false == translog_walmsg_sendkeepalivemsg(recvwal->startpos, conn))
     {
         elog(RLOG_WARNING, "recvwal keepalive msg type error");
         return false;
@@ -247,12 +247,12 @@ static bool ripple_translog_recvpglog_keepalivemsg(ripple_translog_recvlog* recv
 }
 
 /* 根据消息类型处理 */
-bool ripple_translog_recvpglog_msgop(ripple_translog_recvlog* recvwal, PGconn* conn, char* buffer, int blen)
+bool translog_recvpglog_msgop(translog_recvlog* recvwal, PGconn* conn, char* buffer, int blen)
 {
     if (PG_REPLICATION_MSGTYPE_LK == buffer[0])
     {
         /* 保活 */
-        if(false == ripple_translog_recvpglog_keepalivemsg(recvwal, conn, buffer, blen))
+        if(false == translog_recvpglog_keepalivemsg(recvwal, conn, buffer, blen))
         {
             elog(RLOG_WARNING, "keepalive error");
             return false;
@@ -261,7 +261,7 @@ bool ripple_translog_recvpglog_msgop(ripple_translog_recvlog* recvwal, PGconn* c
     else if (PG_REPLICATION_MSGTYPE_LW == buffer[0])
     {
         /* 数据流 */
-        if(false == ripple_translog_recvpglog_datamsg(recvwal, buffer, blen))
+        if(false == translog_recvpglog_datamsg(recvwal, buffer, blen))
         {
             elog(RLOG_WARNING, "write wal file error");
             return false;
@@ -271,7 +271,7 @@ bool ripple_translog_recvpglog_msgop(ripple_translog_recvlog* recvwal, PGconn* c
 }
 
 /* 获取版本 */
-bool ripple_translog_recvpglog_getpgversion(PGconn* conn, ripple_translog_recvlog_dbversion* dbversion)
+bool translog_recvpglog_getpgversion(PGconn* conn, translog_recvlog_dbversion* dbversion)
 {
     *dbversion = (PQserverVersion(conn) / (100*100));
     return true;
@@ -286,8 +286,8 @@ bool ripple_translog_recvpglog_getpgversion(PGconn* conn, ripple_translog_recvlo
  *      当开始流复制时, resultstatus 的值为 PGRES_COPY_BOTH
  *      源端结束流复制时, resultstatus 的状态会转换为 PGRES_COPY_IN, 所以在此处需要判断 resultstatus 的状态
 */
-bool ripple_translog_recvpglog_endreplication(ripple_translog_recvlog* recvwal,
-                                              ripple_translog_walcontrol* walctrl,
+bool translog_recvpglog_endreplication(translog_recvlog* recvwal,
+                                              translog_walcontrol* walctrl,
                                               PGconn* conn,
                                               bool* endcommand,
                                               int* error)
@@ -312,7 +312,7 @@ bool ripple_translog_recvpglog_endreplication(ripple_translog_recvlog* recvwal,
          */
         if(0 == recvwal->senddone)
         {
-            if(false == ripple_translog_walmsg_senddone(conn))
+            if(false == translog_walmsg_senddone(conn))
             {
                 elog(RLOG_WARNING, "endreplication error");
                 PQclear(res);
@@ -327,7 +327,7 @@ bool ripple_translog_recvpglog_endreplication(ripple_translog_recvlog* recvwal,
     if (PGRES_TUPLES_OK == PQresultStatus(res))
     {
         /* 到达了时间线的结束位置, 那么获取下个时间线 */
-        if(false == ripple_translog_recvpglog_parsenewpos(res, &tli, &startpos))
+        if(false == translog_recvpglog_parsenewpos(res, &tli, &startpos))
         {
             elog(RLOG_WARNING, "parse new pos error");
             PQclear(res);
@@ -335,13 +335,13 @@ bool ripple_translog_recvpglog_endreplication(ripple_translog_recvlog* recvwal,
         }
 
         /* 更新 recvwal 中的 startpos 和 tli 并落盘 */
-        ripple_translog_recvlog_setstartpos(recvwal, startpos);
-        ripple_translog_recvlog_settli(recvwal, tli);
-        ripple_translog_walcontrol_setstartpos(walctrl, startpos);
-        ripple_translog_walcontrol_settli(walctrl, tli);
+        translog_recvlog_setstartpos(recvwal, startpos);
+        translog_recvlog_settli(recvwal, tli);
+        translog_walcontrol_setstartpos(walctrl, startpos);
+        translog_walcontrol_settli(walctrl, tli);
 
         /* 写 control 文件 */
-        ripple_translog_walcontrol_flush(walctrl, recvwal->data);
+        translog_walcontrol_flush(walctrl, recvwal->data);
 
         elog(RLOG_WARNING,
              "receivewal will shift replication timeline:%u, pos:%08X/%08X",
@@ -369,10 +369,10 @@ bool ripple_translog_recvpglog_endreplication(ripple_translog_recvlog* recvwal,
              PQresultErrorMessage(res),
              PQresultErrorField(res, PG_DIAG_SQLSTATE));
 
-        *error = RIPPLE_ERROR_SUCCESS;
+        *error = ERROR_SUCCESS;
         if(0 == strcmp(PG_ERROR_FILEREMOVED, PQresultErrorField(res, PG_DIAG_SQLSTATE)))
         {
-            *error = RIPPLE_ERROR_FILEREMOVED;
+            *error = ERROR_FILEREMOVED;
         }
         
         PQclear(res);

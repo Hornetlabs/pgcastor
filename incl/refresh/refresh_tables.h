@@ -1,48 +1,48 @@
-#ifndef _RIPPLE_REFRESH_TABLES_H
-#define _RIPPLE_REFRESH_TABLES_H
+#ifndef _REFRESH_TABLES_H
+#define _REFRESH_TABLES_H
 
-typedef struct RIPPLE_REFRESH_TABLE
+typedef struct REFRESH_TABLE
 {
     Oid   oid;
     char *schema;
     char *table;
-    struct RIPPLE_REFRESH_TABLE* prev;
-    struct RIPPLE_REFRESH_TABLE* next;
-} ripple_refresh_table;
+    struct REFRESH_TABLE* prev;
+    struct REFRESH_TABLE* next;
+} refresh_table;
 
-typedef struct RIPPLE_REFRESH_TABLES
+typedef struct REFRESH_TABLES
 {
     int cnt;
-    ripple_refresh_table *tables;
-} ripple_refresh_tables;
+    refresh_table *tables;
+} refresh_tables;
 
 
-extern ripple_refresh_table* ripple_refresh_table_init(void);
+extern refresh_table* refresh_table_init(void);
 
-extern void ripple_refresh_table_setschema(char* schema, ripple_refresh_table* refreshtable);
+extern void refresh_table_setschema(char* schema, refresh_table* refreshtable);
 
-extern void ripple_refresh_table_setoid(Oid oid, ripple_refresh_table* refreshtable);
+extern void refresh_table_setoid(Oid oid, refresh_table* refreshtable);
 
-extern void ripple_refresh_table_settable(char* table, ripple_refresh_table* refreshtable);
+extern void refresh_table_settable(char* table, refresh_table* refreshtable);
 
-extern void ripple_refresh_freetable(ripple_refresh_table *refreshtable);
+extern void refresh_freetable(refresh_table *refreshtable);
 
-extern ripple_refresh_tables* ripple_refresh_tables_init(void);
+extern refresh_tables* refresh_tables_init(void);
 
-extern bool ripple_refresh_tables_add(ripple_refresh_table* table, ripple_refresh_tables* tables);
+extern bool refresh_tables_add(refresh_table* table, refresh_tables* tables);
 
-extern ripple_refresh_table* ripple_refresh_tables_get(ripple_refresh_tables* tables);
+extern refresh_table* refresh_tables_get(refresh_tables* tables);
 
-extern void ripple_refresh_freetables(ripple_refresh_tables *refreshtables);
+extern void refresh_freetables(refresh_tables *refreshtables);
 
-extern ripple_refresh_tables* ripple_refresh_tables_copy(ripple_refresh_tables* refreshtables);
+extern refresh_tables* refresh_tables_copy(refresh_tables* refreshtables);
 
-extern bool ripple_refresh_tables_hasrepeat(ripple_refresh_tables* syncdataset,
-                                            ripple_refresh_tables* newdataset,
-                                            ripple_refresh_table** prepeattable);
+extern bool refresh_tables_hasrepeat(refresh_tables* syncdataset,
+                                            refresh_tables* newdataset,
+                                            refresh_table** prepeattable);
 
-extern bool ripple_refresh_tables_hasnew(HTAB *syncdataset, ripple_refresh_tables* newdataset);
+extern bool refresh_tables_hasnew(HTAB *syncdataset, refresh_tables* newdataset);
 
-extern ripple_refresh_tables *ripple_refresh_tables_gen_from_file(char *path);
+extern refresh_tables *refresh_tables_gen_from_file(char *path);
 
 #endif

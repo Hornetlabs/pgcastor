@@ -1,22 +1,22 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/string/strtrim.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
 #include "utils/string/stringinfo.h"
-#include "utils/regex/ripple_regex.h"
+#include "utils/regex/regex.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "catalog/ripple_catalog.h"
+#include "cache/cache_sysidcts.h"
+#include "catalog/catalog.h"
 #include "port/file/fd.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "refresh/ripple_refresh_table_sharding.h"
-#include "strategy/ripple_filter_dataset.h"
+#include "refresh/refresh_tables.h"
+#include "refresh/refresh_table_sharding.h"
+#include "strategy/filter_dataset.h"
 
 
-#define RIPPLE_FILTER_MAXLINE 129
+#define FILTER_MAXLINE 129
 
 /* 全局变量 */
 extern List *g_table;
@@ -25,10 +25,10 @@ extern List *g_addtablepattern;
 
 
 /* ----- static 函数声明 begin ----- */
-static bool ripple_filter_dataset_byoid(HTAB* oid2datasets, Oid oid);
+static bool filter_dataset_byoid(HTAB* oid2datasets, Oid oid);
 /* ----- static 函数声明 end ----- */
 
-static void ripple_filter_dataset_str2table(char *line, char *nspname, char *relname)
+static void filter_dataset_str2table(char *line, char *nspname, char *relname)
 {
     char *temp_nspname = line;
     char *temp_relname = NULL;
@@ -73,7 +73,7 @@ static void ripple_filter_dataset_str2table(char *line, char *nspname, char *rel
     }
 }
 
-void ripple_filter_dataset_pairfree(ripple_filter_pair* filterpair)
+void filter_dataset_pairfree(filter_pair* filterpair)
 {
     if (NULL == filterpair)
     {
@@ -82,66 +82,66 @@ void ripple_filter_dataset_pairfree(ripple_filter_pair* filterpair)
 
     if (NULL != filterpair->sch)
     {
-        ripple_free_regexbase(filterpair->sch);
+        free_regexbase(filterpair->sch);
     }
 
     if (NULL != filterpair->table)
     {
-        ripple_free_regexbase(filterpair->table);
+        free_regexbase(filterpair->table);
     }
 
     rfree(filterpair);
 }
 
 /* 根据 refreshtable 生成策略 */
-List* ripple_filter_dataset_buildpairsbyrefreshtables(ripple_refresh_tables* rtables)
+List* filter_dataset_buildpairsbyrefreshtables(refresh_tables* rtables)
 {
     List* filters                   = NULL;
     ListCell* lc                    = NULL;
-    ripple_refresh_table* rtable    = NULL;
-    ripple_filter_pair* filterpair  = NULL;
+    refresh_table* rtable    = NULL;
+    filter_pair* filterpair  = NULL;
 
     for (rtable = rtables->tables; NULL != rtable; rtable = rtable->next)
     {
-        filterpair = (ripple_filter_pair*)rmalloc0(sizeof(ripple_filter_pair));
+        filterpair = (filter_pair*)rmalloc0(sizeof(filter_pair));
         if(NULL == filterpair)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
-            goto ripple_filter_dataset_initpairslistbyrefreshtables_error;
+            goto filter_dataset_initpairslistbyrefreshtables_error;
         }
-        rmemset0(filterpair, 0, '\0', sizeof(ripple_filter_pair));
-        filterpair->sch = (ripple_regex*)rmalloc0(sizeof(ripple_regex));
+        rmemset0(filterpair, 0, '\0', sizeof(filter_pair));
+        filterpair->sch = (regex*)rmalloc0(sizeof(regex));
         if(NULL == filterpair->sch)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
-            goto ripple_filter_dataset_initpairslistbyrefreshtables_error;
+            goto filter_dataset_initpairslistbyrefreshtables_error;
         }
-        rmemset0(filterpair->sch, 0, '\0', sizeof(ripple_regex));
-        filterpair->table = (ripple_regex*)rmalloc0(sizeof(ripple_regex));
+        rmemset0(filterpair->sch, 0, '\0', sizeof(regex));
+        filterpair->table = (regex*)rmalloc0(sizeof(regex));
         if(NULL == filterpair->table)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
-            goto ripple_filter_dataset_initpairslistbyrefreshtables_error;
+            goto filter_dataset_initpairslistbyrefreshtables_error;
         }
-        rmemset0(filterpair->table, 0, '\0', sizeof(ripple_regex));
-        ripple_make_regexbase(filterpair->sch, rtable->schema);
-        ripple_make_regexbase(filterpair->table, rtable->table);
+        rmemset0(filterpair->table, 0, '\0', sizeof(regex));
+        make_regexbase(filterpair->sch, rtable->schema);
+        make_regexbase(filterpair->table, rtable->table);
         filters = lappend(filters, filterpair);
     }
 
     return filters;
-ripple_filter_dataset_initpairslistbyrefreshtables_error:
+filter_dataset_initpairslistbyrefreshtables_error:
 
     foreach (lc, filters)
     {
-        filterpair = (ripple_filter_pair*)lfirst(lc);
-        ripple_filter_dataset_pairfree(filterpair);
+        filterpair = (filter_pair*)lfirst(lc);
+        filter_dataset_pairfree(filterpair);
     }
     return NULL;
 }
 
 /* 重新生成 refreshtables */
-bool ripple_filter_dataset_buildrefreshtablesbyfilters(ripple_refresh_tables** prtables,
+bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables,
                                                       List* filters,
                                                       HTAB* hnamespace,
                                                       HTAB* hclass)
@@ -149,11 +149,11 @@ bool ripple_filter_dataset_buildrefreshtablesbyfilters(ripple_refresh_tables** p
     bool found                                      = false;
     Oid nspoid                                      = InvalidOid;
     ListCell* lc                                    = NULL;
-    ripple_filter_pair* filterpair                  = NULL;
-    ripple_refresh_table* rtable                    = NULL;
-    ripple_refresh_tables* rtables                  = NULL;
-    ripple_catalog_class_value *classentry          = NULL;
-    ripple_catalog_namespace_value *nspentry        = NULL;
+    filter_pair* filterpair                  = NULL;
+    refresh_table* rtable                    = NULL;
+    refresh_tables* rtables                  = NULL;
+    catalog_class_value *classentry          = NULL;
+    catalog_namespace_value *nspentry        = NULL;
     xk_pg_parser_sysdict_pgclass *sysdictclass      = NULL;
     xk_pg_parser_sysdict_pgnamespace *sysdictnsp    = NULL;
     
@@ -164,7 +164,7 @@ bool ripple_filter_dataset_buildrefreshtablesbyfilters(ripple_refresh_tables** p
     {
         found = false;
         nspoid = InvalidOid;
-        sysdictclass = classentry->ripple_class;
+        sysdictclass = classentry->class;
 
         /* 只保留r和p */
         if (!(sysdictclass->relkind == 'r' || sysdictclass->relkind == 'p'))
@@ -177,16 +177,16 @@ bool ripple_filter_dataset_buildrefreshtablesbyfilters(ripple_refresh_tables** p
         if (!nspentry)
         {
             elog(RLOG_WARNING, "can't find namespace entry by oid: %u in filter init", nspoid);
-            goto ripple_filter_dataset_genrefreshtablesbyfilters_error;
+            goto filter_dataset_genrefreshtablesbyfilters_error;
         }
-        sysdictnsp = nspentry->ripple_namespace;
+        sysdictnsp = nspentry->namespace;
 
         found = false;
         foreach (lc, filters)
         {
-            filterpair = (ripple_filter_pair *) lfirst(lc);
-            if (ripple_cmp_regexbase(filterpair->sch, sysdictnsp->nspname.data)
-                && ripple_cmp_regexbase(filterpair->table, sysdictclass->relname.data))
+            filterpair = (filter_pair *) lfirst(lc);
+            if (cmp_regexbase(filterpair->sch, sysdictnsp->nspname.data)
+                && cmp_regexbase(filterpair->table, sysdictclass->relname.data))
             {
                 found = true;
                 break;
@@ -201,44 +201,44 @@ bool ripple_filter_dataset_buildrefreshtablesbyfilters(ripple_refresh_tables** p
         /* 符合规则, 那么生成 refreshtables */
         if (NULL == rtables)
         {
-            rtables = ripple_refresh_tables_init();
+            rtables = refresh_tables_init();
             if (NULL == rtables)
             {
                 elog(RLOG_WARNING, "generate refresh tables, out of memory");
-                goto ripple_filter_dataset_genrefreshtablesbyfilters_error;
+                goto filter_dataset_genrefreshtablesbyfilters_error;
             }
         }
 
-        rtable = ripple_refresh_table_init();
+        rtable = refresh_table_init();
         if (NULL == rtable)
         {
             elog(RLOG_WARNING, "generate refresh tables, out of memory");
-            goto ripple_filter_dataset_genrefreshtablesbyfilters_error;
+            goto filter_dataset_genrefreshtablesbyfilters_error;
         }
 
-        ripple_refresh_table_setoid(sysdictclass->oid, rtable);
-        ripple_refresh_table_setschema(sysdictnsp->nspname.data, rtable);
-        ripple_refresh_table_settable(sysdictclass->relname.data, rtable);
+        refresh_table_setoid(sysdictclass->oid, rtable);
+        refresh_table_setschema(sysdictnsp->nspname.data, rtable);
+        refresh_table_settable(sysdictclass->relname.data, rtable);
 
-        ripple_refresh_tables_add(rtable, rtables);
+        refresh_tables_add(rtable, rtables);
     }
 
     *prtables = rtables;
     return true;
-ripple_filter_dataset_genrefreshtablesbyfilters_error:
+filter_dataset_genrefreshtablesbyfilters_error:
 
-    ripple_refresh_freetables(rtables);
+    refresh_freetables(rtables);
     return false;
 }
 
 /* 生成策略 */
-static List* ripple_filter_dataset_initpairslist(List* rulelist)
+static List* filter_dataset_initpairslist(List* rulelist)
 {
     char* cptr                      = NULL;
     char* include                   = NULL;
     ListCell* cell                  = NULL;
     List* filter_list               = NULL;
-    ripple_filter_pair* filter_pair = NULL;
+    filter_pair* filter_pair_obj = NULL;
 
     char table[64]                  = {'\0'};
     char schema[64]                 = {'\0'};
@@ -267,38 +267,38 @@ static List* ripple_filter_dataset_initpairslist(List* rulelist)
         }
 
         /* 拆分为 模式.表名 */
-        ripple_filter_dataset_str2table(temp, schema, table);
+        filter_dataset_str2table(temp, schema, table);
 
-        filter_pair = (ripple_filter_pair*)rmalloc0(sizeof(ripple_filter_pair));
-        if(NULL == filter_pair)
+        filter_pair_obj = (filter_pair*)rmalloc0(sizeof(filter_pair));
+        if(NULL == filter_pair_obj)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemset0(filter_pair, 0, '\0', sizeof(ripple_filter_pair));
-        filter_pair->sch = (ripple_regex*)rmalloc0(sizeof(ripple_regex));
-        if(NULL == filter_pair->sch)
+        rmemset0(filter_pair_obj, 0, '\0', sizeof(filter_pair));
+        filter_pair_obj->sch = (regex*)rmalloc0(sizeof(regex));
+        if(NULL == filter_pair_obj->sch)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemset0(filter_pair->sch, 0, '\0', sizeof(ripple_regex));
-        filter_pair->table = (ripple_regex*)rmalloc0(sizeof(ripple_regex));
-        if(NULL == filter_pair->table)
+        rmemset0(filter_pair_obj->sch, 0, '\0', sizeof(regex));
+        filter_pair_obj->table = (regex*)rmalloc0(sizeof(regex));
+        if(NULL == filter_pair_obj->table)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemset0(filter_pair->table, 0, '\0', sizeof(ripple_regex));
-        ripple_make_regexbase(filter_pair->sch, schema);
-        ripple_make_regexbase(filter_pair->table, table);
-        filter_list = lappend(filter_list, filter_pair);
+        rmemset0(filter_pair_obj->table, 0, '\0', sizeof(regex));
+        make_regexbase(filter_pair_obj->sch, schema);
+        make_regexbase(filter_pair_obj->table, table);
+        filter_list = lappend(filter_list, filter_pair_obj);
     }
     return filter_list;
 }
 
 /* 删除策略 */
-void ripple_filter_dataset_listpairsfree(List* rulelist)
+void filter_dataset_listpairsfree(List* rulelist)
 {
     ListCell* lc = NULL;
-    ripple_filter_pair* filter_pair = NULL;
+    filter_pair* filter_pair_obj = NULL;
     if(NULL == rulelist)
     {
         return;
@@ -307,21 +307,21 @@ void ripple_filter_dataset_listpairsfree(List* rulelist)
     /* 删除 rulelist 中的内容 */
     foreach(lc, rulelist)
     {
-        filter_pair = (ripple_filter_pair*)lfirst(lc);
-        ripple_free_regexbase(filter_pair->sch);
-        ripple_free_regexbase(filter_pair->table);
-        rfree(filter_pair);
+        filter_pair_obj = (filter_pair*)lfirst(lc);
+        free_regexbase(filter_pair_obj->sch);
+        free_regexbase(filter_pair_obj->table);
+        rfree(filter_pair_obj);
     }
     list_free(rulelist);
     rulelist = NULL;
     return;
 }
 
-static bool ripple_filter_dataset_match_addtablepattern(List* addtablepattern, char* schema, char* table)
+static bool filter_dataset_match_addtablepattern(List* addtablepattern, char* schema, char* table)
 {
     bool result = false;
     ListCell* lc = NULL;
-    ripple_filter_pair* filter_pair = NULL;
+    filter_pair* filter_pair_obj = NULL;
 
     if (NULL == addtablepattern)
     {
@@ -330,10 +330,10 @@ static bool ripple_filter_dataset_match_addtablepattern(List* addtablepattern, c
 
     foreach(lc, addtablepattern)
     {
-        filter_pair = (ripple_filter_pair*)lfirst(lc);
+        filter_pair_obj = (filter_pair*)lfirst(lc);
 
-        if (ripple_cmp_regexbase(filter_pair->sch, schema)
-             && ripple_cmp_regexbase(filter_pair->table, table))
+        if (cmp_regexbase(filter_pair_obj->sch, schema)
+             && cmp_regexbase(filter_pair_obj->table, table))
         {
             result = true;
             break;
@@ -344,7 +344,7 @@ static bool ripple_filter_dataset_match_addtablepattern(List* addtablepattern, c
 }
 
 /* 从根据传入的oid从哈希表中查找是否存在 */
-static bool ripple_filter_dataset_byoid(HTAB* oid2datasets, Oid oid)
+static bool filter_dataset_byoid(HTAB* oid2datasets, Oid oid)
 {
     bool find = false;
 
@@ -353,31 +353,31 @@ static bool ripple_filter_dataset_byoid(HTAB* oid2datasets, Oid oid)
 }
 
 /* 初始化同步数据集 */
-List* ripple_filter_dataset_inittableinclude(List* table)
+List* filter_dataset_inittableinclude(List* table)
 {
     /* 清空过滤规则 */
-    ripple_filter_dataset_listpairsfree(table);
+    filter_dataset_listpairsfree(table);
 
-    table = ripple_filter_dataset_initpairslist(g_table);
+    table = filter_dataset_initpairslist(g_table);
     return table;
 }
 
 /* 初始化同步排除表 */
-List* ripple_filter_dataset_inittableexclude(List* tableexclude)
+List* filter_dataset_inittableexclude(List* tableexclude)
 {
     /* 清空过滤规则 */
-    ripple_filter_dataset_listpairsfree(tableexclude);
+    filter_dataset_listpairsfree(tableexclude);
 
-    tableexclude = ripple_filter_dataset_initpairslist(g_tableexclude);
+    tableexclude = filter_dataset_initpairslist(g_tableexclude);
     return tableexclude;
 }
 
-List* ripple_filter_dataset_initaddtablepattern(List* tablepattern)
+List* filter_dataset_initaddtablepattern(List* tablepattern)
 {
     /* 清空过滤规则 */
-    ripple_filter_dataset_listpairsfree(tablepattern);
+    filter_dataset_listpairsfree(tablepattern);
 
-    tablepattern = ripple_filter_dataset_initpairslist(g_addtablepattern);
+    tablepattern = filter_dataset_initpairslist(g_addtablepattern);
 
     return tablepattern;
 }
@@ -391,15 +391,15 @@ List* ripple_filter_dataset_initaddtablepattern(List* tablepattern)
  * 5. 匹配通过, 将nspname.relname落盘
  * 6. 遍历完成后写入文件
  */
-bool ripple_filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namespace, HTAB* class)
+bool filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namespace, HTAB* class)
 {
     HASH_SEQ_STATUS status;
-    ripple_catalog_class_value *class_value_entry = NULL;
-    ripple_catalog_namespace_value *nsp_value_entry = NULL;
+    catalog_class_value *class_value_entry = NULL;
+    catalog_namespace_value *nsp_value_entry = NULL;
     xk_pg_parser_sysdict_pgclass *temp_class = NULL;
     xk_pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
-    char filepath_tmp[RIPPLE_MAXPATH] = {'\0'};
-    char filepath[RIPPLE_MAXPATH] = {'\0'};
+    char filepath_tmp[MAXPATH] = {'\0'};
+    char filepath[MAXPATH] = {'\0'};
     struct stat statbuf;
     FILE *fp = NULL;
 
@@ -407,18 +407,18 @@ bool ripple_filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namesp
     /* nspname + relname + . + \n - 1个\0 */
     char nsp_relname[129] = {'\0'};
 
-    snprintf(filepath_tmp, RIPPLE_MAXPATH, "%s/%s", RIPPLE_FILTER_DIR, RIPPLE_FILTER_DATASET_TMP);
-    snprintf(filepath, RIPPLE_MAXPATH, "%s/%s", RIPPLE_FILTER_DIR, RIPPLE_FILTER_DATASET);
+    snprintf(filepath_tmp, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET_TMP);
+    snprintf(filepath, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET);
 
     /* 判断数据集临时文件是否存在 */
     if (0 == stat(filepath_tmp, &statbuf))
     {
         /* 存在, 先unlink掉 */
-        durable_unlink(filepath_tmp, RLOG_DEBUG);
+        osal_durable_unlink(filepath_tmp, RLOG_DEBUG);
     }
 
     /* 打开数据集文件 */
-    fp = AllocateFile(filepath_tmp, "w+");
+    fp = osal_allocate_file(filepath_tmp, "w+");
 
     /* 遍历pg_class系统表, 挑选符合过滤条件的数据集 */
     hash_seq_init(&status, class);
@@ -427,7 +427,7 @@ bool ripple_filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namesp
         Oid temp_nsp_oid = InvalidOid;
         bool temp_nsp_find = false;
 
-        temp_class = class_value_entry->ripple_class;
+        temp_class = class_value_entry->class;
 
         /* 只保留r和p */
         if (!(temp_class->relkind == 'r' || temp_class->relkind == 'p'))
@@ -441,7 +441,7 @@ bool ripple_filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namesp
         {
             elog(RLOG_ERROR, "can't find namespace entry by oid: %u in filter init", temp_nsp_oid);
         }
-        temp_nsp = nsp_value_entry->ripple_namespace;
+        temp_nsp = nsp_value_entry->namespace;
 
         sprintf(nsp_relname, "%s.%s\n", temp_nsp->nspname.data, temp_class->relname.data);
 
@@ -452,9 +452,9 @@ bool ripple_filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namesp
 
             foreach(temp_cell, tbexcludes)
             {
-                ripple_filter_pair *temp_pair = (ripple_filter_pair *) lfirst(temp_cell);
-                if (ripple_cmp_regexbase(temp_pair->sch, temp_nsp->nspname.data)
-                 && ripple_cmp_regexbase(temp_pair->table, temp_class->relname.data))
+                filter_pair *temp_pair = (filter_pair *) lfirst(temp_cell);
+                if (cmp_regexbase(temp_pair->sch, temp_nsp->nspname.data)
+                 && cmp_regexbase(temp_pair->table, temp_class->relname.data))
                 {
                     exclude = true;
                     break;
@@ -475,9 +475,9 @@ bool ripple_filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namesp
 
             foreach(temp_cell, tbincludes)
             {
-                ripple_filter_pair *temp_pair = (ripple_filter_pair *) lfirst(temp_cell);
-                if (ripple_cmp_regexbase(temp_pair->sch, temp_nsp->nspname.data)
-                 && ripple_cmp_regexbase(temp_pair->table, temp_class->relname.data))
+                filter_pair *temp_pair = (filter_pair *) lfirst(temp_cell);
+                if (cmp_regexbase(temp_pair->sch, temp_nsp->nspname.data)
+                 && cmp_regexbase(temp_pair->table, temp_class->relname.data))
                 {
                     include = true;
                     break;
@@ -499,10 +499,10 @@ bool ripple_filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namesp
     }
 
     /* 关闭临时文件 */
-    FreeFile(fp);
+    osal_free_file(fp);
 
     /* 将临时文件重命名 */
-    if (durable_rename(filepath_tmp, filepath, RLOG_WARNING) != 0) 
+    if (osal_durable_rename(filepath_tmp, filepath, RLOG_WARNING) != 0) 
     {
         elog(RLOG_ERROR, "Error renaming file %s to %s", filepath_tmp, filepath);
     }
@@ -518,29 +518,29 @@ bool ripple_filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namesp
  * 5. 遍历dataset2oid哈希表, 去除无效数据, 保存oid2dataset哈希表
  * 6. 清理dataset2oid哈希表, 返回oid2dataset哈希表
  */
-HTAB *ripple_filter_dataset_load(HTAB* namespace, HTAB* class)
+HTAB *filter_dataset_load(HTAB* namespace, HTAB* class)
 {
     FILE *fp = NULL;
     HASH_SEQ_STATUS status_class;
     HASH_SEQ_STATUS status_d2o;
-    ripple_catalog_class_value *class_value_entry = NULL;
-    ripple_catalog_namespace_value *nsp_value_entry = NULL;
+    catalog_class_value *class_value_entry = NULL;
+    catalog_namespace_value *nsp_value_entry = NULL;
     xk_pg_parser_sysdict_pgclass *temp_class = NULL;
     xk_pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
-    ripple_filter_dataset2oidnode *scan_d2o_entry = NULL;
+    filter_dataset2oidnode *scan_d2o_entry = NULL;
     HTAB *dataset2oid_htab = NULL;
     HTAB *oid2dataset_htab = NULL;
     HASHCTL hashCtl_d2o = {'\0'};
     HASHCTL hashCtl_o2d = {'\0'};
     struct stat st;
-    char filepath[RIPPLE_MAXPATH] = {'\0'};
+    char filepath[MAXPATH] = {'\0'};
     char fline[1024] = {'\0'};
     char temp_nspname[64] = {'\0'};
     char temp_relname[64] = {'\0'};
     int line_num = 0;
 
     /* 获取文件路径 */
-    snprintf(filepath, RIPPLE_MAXPATH, "%s/%s", RIPPLE_FILTER_DIR, RIPPLE_FILTER_DATASET);
+    snprintf(filepath, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET);
 
     /* 查看文件是否存在 */
     if(-1 == stat(filepath, &st))
@@ -554,7 +554,7 @@ HTAB *ripple_filter_dataset_load(HTAB* namespace, HTAB* class)
         return NULL;
     }
 
-    fp = FileFOpen(filepath, "r");
+    fp = osal_file_fopen(filepath, "r");
     if (NULL == fp)
     {
         elog(RLOG_ERROR, "open %s failed", filepath);
@@ -564,19 +564,19 @@ HTAB *ripple_filter_dataset_load(HTAB* namespace, HTAB* class)
     }
 
     /* 首先读取数据集, 创建dataset2oid hash */
-    hashCtl_d2o.keysize = sizeof(ripple_filter_dataset);
-    hashCtl_d2o.entrysize = sizeof(ripple_filter_dataset2oidnode);
+    hashCtl_d2o.keysize = sizeof(filter_dataset);
+    hashCtl_d2o.entrysize = sizeof(filter_dataset2oidnode);
 
     dataset2oid_htab = hash_create("filter_d2o_htab",
                                256,
                               &hashCtl_d2o,
                                HASH_ELEM | HASH_BLOBS);
 
-    while(fgets(fline, RIPPLE_FILTER_MAXLINE, fp))
+    while(fgets(fline, FILTER_MAXLINE, fp))
     {
         int line_len = 0;
-        ripple_filter_dataset temp_dataset_key= {{'\0'}};
-        ripple_filter_dataset2oidnode *temp_d2o_entry = NULL;
+        filter_dataset temp_dataset_key= {{'\0'}};
+        filter_dataset2oidnode *temp_d2o_entry = NULL;
 
         line_len = strlen(fline);
         /* 排除换行符 */
@@ -606,7 +606,7 @@ HTAB *ripple_filter_dataset_load(HTAB* namespace, HTAB* class)
             /* 空行 */
             continue;
         }
-        ripple_filter_dataset_str2table(fline, temp_nspname, temp_relname);
+        filter_dataset_str2table(fline, temp_nspname, temp_relname);
         strcpy(temp_dataset_key.schema, temp_nspname);
         strcpy(temp_dataset_key.table, temp_relname);
 
@@ -641,13 +641,13 @@ HTAB *ripple_filter_dataset_load(HTAB* namespace, HTAB* class)
     hash_seq_init(&status_class, class);
     while (NULL != (class_value_entry = hash_seq_search(&status_class)))
     {
-        ripple_filter_dataset temp_dataset_key= {{'\0'}};
-        ripple_filter_dataset2oidnode *temp_d2o_entry = NULL;
+        filter_dataset temp_dataset_key= {{'\0'}};
+        filter_dataset2oidnode *temp_d2o_entry = NULL;
         Oid temp_nsp_oid = InvalidOid;
         bool temp_nsp_find = false;
         bool temp_d2o_find = false;
 
-        temp_class = class_value_entry->ripple_class;
+        temp_class = class_value_entry->class;
 
         /* 只保留r和p */
         if (!(temp_class->relkind == 'r' || temp_class->relkind == 'p'))
@@ -661,7 +661,7 @@ HTAB *ripple_filter_dataset_load(HTAB* namespace, HTAB* class)
         {
             elog(RLOG_ERROR, "can't find namespace entry by oid: %u in filter init", temp_nsp_oid);
         }
-        temp_nsp = nsp_value_entry->ripple_namespace;
+        temp_nsp = nsp_value_entry->namespace;
 
         strcpy(temp_dataset_key.schema, temp_nsp->nspname.data);
         strcpy(temp_dataset_key.table, temp_class->relname.data);
@@ -675,7 +675,7 @@ HTAB *ripple_filter_dataset_load(HTAB* namespace, HTAB* class)
 
     /* 创建oid2dataset hash */
     hashCtl_o2d.keysize = sizeof(Oid);
-    hashCtl_o2d.entrysize = sizeof(ripple_filter_oid2datasetnode);
+    hashCtl_o2d.entrysize = sizeof(filter_oid2datasetnode);
 
     oid2dataset_htab = hash_create("filter_o2d_htab",
                                256,
@@ -687,7 +687,7 @@ HTAB *ripple_filter_dataset_load(HTAB* namespace, HTAB* class)
     while (NULL != (scan_d2o_entry = hash_seq_search(&status_d2o)))
     {
         Oid temp_oid = scan_d2o_entry->oid;
-        ripple_filter_oid2datasetnode *temp_o2d_entry = NULL;
+        filter_oid2datasetnode *temp_o2d_entry = NULL;
 
         if (temp_oid == InvalidOid)
         {
@@ -718,7 +718,7 @@ HTAB *ripple_filter_dataset_load(HTAB* namespace, HTAB* class)
  * 2. 遍历class哈希表，查找namespaceoid和tablename匹配的table的oid
  * 3. 生成oid2dataset哈希表, 返回oid2dataset哈希表
  */
-HTAB *ripple_filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
+HTAB *filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
 {
     HASH_SEQ_STATUS status_class;
     HASH_SEQ_STATUS status_nap;
@@ -726,22 +726,22 @@ HTAB *ripple_filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
     HASHCTL hashCtl_o2d                         = {'\0'};
     char* schema                                = NULL;
     HTAB *oid2dataset_htab                      = NULL;
-    ripple_catalog_class_value *class_entry     = NULL;
-    ripple_catalog_namespace_value *nsp_entry   = NULL;
+    catalog_class_value *class_entry     = NULL;
+    catalog_namespace_value *nsp_entry   = NULL;
     xk_pg_parser_sysdict_pgclass *temp_class    = NULL;
     xk_pg_parser_sysdict_pgnamespace *temp_nsp  = NULL;
-    ripple_filter_oid2datasetnode *o2d_entry    = NULL;
+    filter_oid2datasetnode *o2d_entry    = NULL;
 
     /* 创建oid2dataset hash */
     hashCtl_o2d.keysize = sizeof(Oid);
-    hashCtl_o2d.entrysize = sizeof(ripple_filter_oid2datasetnode);
+    hashCtl_o2d.entrysize = sizeof(filter_oid2datasetnode);
 
     oid2dataset_htab = hash_create("filter_o2d_htab",
                                     128,
                                     &hashCtl_o2d,
                                     HASH_ELEM | HASH_BLOBS);
 
-    schema = guc_getConfigOption(RIPPLE_CFG_KEY_CATALOGSCHEMA);
+    schema = guc_getConfigOption(CFG_KEY_CATALOGSCHEMA);
     if (NULL == schema)
     {
         return oid2dataset_htab;
@@ -751,7 +751,7 @@ HTAB *ripple_filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
     hash_seq_init(&status_nap, namespace);
     while (NULL != (nsp_entry = hash_seq_search(&status_nap)))
     {
-        temp_nsp = nsp_entry->ripple_namespace;
+        temp_nsp = nsp_entry->namespace;
         if (0 == strcmp(temp_nsp->nspname.data, schema))
         {
             findnsp = true;
@@ -769,8 +769,8 @@ HTAB *ripple_filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
     hash_seq_init(&status_class, class);
     while (NULL != (class_entry = hash_seq_search(&status_class)))
     {
-        temp_class = class_entry->ripple_class;
-        if (0 == strcmp(temp_class->relname.data, RIPPLE_SYNC_STATUSTABLE_NAME)
+        temp_class = class_entry->class;
+        if (0 == strcmp(temp_class->relname.data, SYNC_STATUSTABLE_NAME)
             && temp_nsp->oid == temp_class->relnamespace)
         {
             o2d_entry = hash_search(oid2dataset_htab, &temp_class->oid, HASH_ENTER, NULL);
@@ -790,46 +790,46 @@ HTAB *ripple_filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
 
 /*
  * 重新加载数据集
- * 1. 调用ripple_filter_dataset_free释放原有数据集
- * 2. 调用ripple_filter_dataset_load加载数据库
+ * 1. 调用filter_dataset_free释放原有数据集
+ * 2. 调用filter_dataset_load加载数据库
  * 3. 返回读取的数据集哈希表
  */
-HTAB *ripple_filter_dataset_reload(HTAB* namespace, HTAB* class, HTAB* oid2datasets)
+HTAB *filter_dataset_reload(HTAB* namespace, HTAB* class, HTAB* oid2datasets)
 {
-    ripple_filter_dataset_free(oid2datasets);
-    return ripple_filter_dataset_load(namespace, class);
+    filter_dataset_free(oid2datasets);
+    return filter_dataset_load(namespace, class);
 }
 
 /*
  * 判断DML是否存在于需要捕获的表记录中
- * 调用ripple_filter_dataset_byoid
+ * 调用filter_dataset_byoid
  */
-bool ripple_filter_dataset_dml(HTAB* oid2datasets, Oid oid)
+bool filter_dataset_dml(HTAB* oid2datasets, Oid oid)
 {
     if (!oid2datasets)
     {
         return false;
     }
-    return ripple_filter_dataset_byoid(oid2datasets, oid);
+    return filter_dataset_byoid(oid2datasets, oid);
 }
 
 /*
  * 判断DDL是否存在于需要捕获的表记录中
- * 调用ripple_filter_dataset_byoid
+ * 调用filter_dataset_byoid
  */
-bool ripple_filter_dataset_ddl(HTAB* oid2datasets, Oid oid)
+bool filter_dataset_ddl(HTAB* oid2datasets, Oid oid)
 {
     if (!oid2datasets)
     {
         return false;
     }
-    return ripple_filter_dataset_byoid(oid2datasets, oid);
+    return filter_dataset_byoid(oid2datasets, oid);
 }
 
 /*
  * 判断CREATE TABLE语句的表是否符合捕获逻辑
  */
-bool ripple_filter_dataset_matchforcreate(List* tablepattern, char* schema, char* table)
+bool filter_dataset_matchforcreate(List* tablepattern, char* schema, char* table)
 {
     bool result = false;
     ListCell *lc = NULL;
@@ -840,10 +840,10 @@ bool ripple_filter_dataset_matchforcreate(List* tablepattern, char* schema, char
 
     foreach(lc, tablepattern)
     {
-        ripple_filter_pair *temp_pair = (ripple_filter_pair *) lfirst(lc);
+        filter_pair *temp_pair = (filter_pair *) lfirst(lc);
         /* 符合正则表达式 result 赋值为 true */
-        if (ripple_cmp_regexbase(temp_pair->sch, schema)
-            && ripple_cmp_regexbase(temp_pair->table, table))
+        if (cmp_regexbase(temp_pair->sch, schema)
+            && cmp_regexbase(temp_pair->table, table))
         {
             result = true;
             break;
@@ -856,9 +856,9 @@ bool ripple_filter_dataset_matchforcreate(List* tablepattern, char* schema, char
 /*
  * 向数据集哈希中添加一条记录
  */
-bool ripple_filter_dataset_add(HTAB* oid2datasets, Oid oid, char* schema, char* table)
+bool filter_dataset_add(HTAB* oid2datasets, Oid oid, char* schema, char* table)
 {
-    ripple_filter_oid2datasetnode *o2d_entry = NULL;
+    filter_oid2datasetnode *o2d_entry = NULL;
     o2d_entry = hash_search(oid2datasets, &oid, HASH_ENTER, NULL);
     if (!o2d_entry)
     {
@@ -875,9 +875,9 @@ bool ripple_filter_dataset_add(HTAB* oid2datasets, Oid oid, char* schema, char* 
 /*
  * 修改数据集哈希中的一条记录
  */
-bool ripple_filter_dataset_modify(HTAB* oid2datasets, Oid oid, char* schema, char* table)
+bool filter_dataset_modify(HTAB* oid2datasets, Oid oid, char* schema, char* table)
 {
-    ripple_filter_oid2datasetnode *o2d_entry = NULL;
+    filter_oid2datasetnode *o2d_entry = NULL;
     o2d_entry = hash_search(oid2datasets, &oid, HASH_FIND, NULL);
     if (!o2d_entry)
     {
@@ -895,7 +895,7 @@ bool ripple_filter_dataset_modify(HTAB* oid2datasets, Oid oid, char* schema, cha
 /*
  * 删除数据集哈希中的一条记录
  */
-bool ripple_filter_dataset_delete(HTAB* oid2datasets, Oid oid)
+bool filter_dataset_delete(HTAB* oid2datasets, Oid oid)
 {
     bool find = false;
     hash_search(oid2datasets, &oid, HASH_REMOVE, &find);
@@ -911,31 +911,31 @@ bool ripple_filter_dataset_delete(HTAB* oid2datasets, Oid oid)
 /*
  * 数据集落盘
  */
-bool ripple_filter_dataset_flush(HTAB* oid2datasets)
+bool filter_dataset_flush(HTAB* oid2datasets)
 {
     HASH_SEQ_STATUS status;
     struct stat statbuf;
     FILE *fp = NULL;
-    ripple_filter_oid2datasetnode *o2d_entry = NULL;
-    char filepath_tmp[RIPPLE_MAXPATH] = {'\0'};
-    char filepath[RIPPLE_MAXPATH] = {'\0'};
+    filter_oid2datasetnode *o2d_entry = NULL;
+    char filepath_tmp[MAXPATH] = {'\0'};
+    char filepath[MAXPATH] = {'\0'};
 
     /* 64 + 64 + 1 + 1 - 1 */
     /* nspname + relname + . + \n - 1个\0 */
     char nsp_relname[129] = {'\0'};
 
-    snprintf(filepath_tmp, RIPPLE_MAXPATH, "%s/%s", RIPPLE_FILTER_DIR, RIPPLE_FILTER_DATASET_TMP);
-    snprintf(filepath, RIPPLE_MAXPATH, "%s/%s", RIPPLE_FILTER_DIR, RIPPLE_FILTER_DATASET);
+    snprintf(filepath_tmp, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET_TMP);
+    snprintf(filepath, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET);
 
     /* 判断数据集临时文件是否存在 */
     if (0 == stat(filepath_tmp, &statbuf))
     {
         /* 存在, 先unlink掉 */
-        durable_unlink(filepath_tmp, RLOG_DEBUG);
+        osal_durable_unlink(filepath_tmp, RLOG_DEBUG);
     }
 
     /* 打开数据集文件 */
-    fp = AllocateFile(filepath_tmp, "w+");
+    fp = osal_allocate_file(filepath_tmp, "w+");
 
     /* 遍历pg_class系统表, 挑选符合过滤条件的数据集 */
     hash_seq_init(&status, oid2datasets);
@@ -951,10 +951,10 @@ bool ripple_filter_dataset_flush(HTAB* oid2datasets)
     }
 
     /* 关闭临时文件 */
-    FreeFile(fp);
+    osal_free_file(fp);
 
     /* 将临时文件重命名 */
-    if (durable_rename(filepath_tmp, filepath, RLOG_WARNING) != 0) 
+    if (osal_durable_rename(filepath_tmp, filepath, RLOG_WARNING) != 0) 
     {
         elog(RLOG_ERROR, "Error renaming file %s to %s", filepath_tmp, filepath);
     }
@@ -964,19 +964,19 @@ bool ripple_filter_dataset_flush(HTAB* oid2datasets)
 /*
  * 数据集哈希释放
  */
-void ripple_filter_dataset_free(HTAB* oid2datasets)
+void filter_dataset_free(HTAB* oid2datasets)
 {
     hash_destroy(oid2datasets);
 }
 
-ripple_refresh_tables* ripple_filter_dataset_buildrefreshtables(HTAB* hfilters)
+refresh_tables* filter_dataset_buildrefreshtables(HTAB* hfilters)
 {
     HASH_SEQ_STATUS status;
-    ripple_filter_oid2datasetnode *entry = NULL;
-    ripple_refresh_table *table = NULL;
-    ripple_refresh_tables *refreshtables = NULL;
+    filter_oid2datasetnode *entry = NULL;
+    refresh_table *table = NULL;
+    refresh_tables *refreshtables = NULL;
 
-    refreshtables = ripple_refresh_tables_init();
+    refreshtables = refresh_tables_init();
 
     if (NULL == hfilters)
     {
@@ -987,31 +987,31 @@ ripple_refresh_tables* ripple_filter_dataset_buildrefreshtables(HTAB* hfilters)
     hash_seq_init(&status, hfilters);
     while ((entry = hash_seq_search(&status)) != NULL)
     {
-        if (RIPPLE_FirstNormalObjectId > entry->oid)
+        if (FirstNormalObjectId > entry->oid)
         {
             continue;
         }
-        table = ripple_refresh_table_init();
+        table = refresh_table_init();
 
-        ripple_refresh_table_setschema(entry->dataset.schema, table);
-        ripple_refresh_table_settable(entry->dataset.table, table);
-        ripple_refresh_table_setoid(entry->oid, table);
+        refresh_table_setschema(entry->dataset.schema, table);
+        refresh_table_settable(entry->dataset.table, table);
+        refresh_table_setoid(entry->oid, table);
 
-        ripple_refresh_tables_add(table, refreshtables);
+        refresh_tables_add(table, refreshtables);
     }
     return refreshtables;
 }
 
-bool ripple_filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List* sysdicthis, HTAB* syncdatasets)
+bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List* sysdicthis, HTAB* syncdatasets)
 {
     bool found = false;
     bool haschange = false;
     char* table = NULL;
     char* schema = NULL;
     ListCell* lc = NULL;
-    ripple_catalogdata* catalogdata = NULL;
-    ripple_catalog_class_value* classvalue = NULL;
-    ripple_catalog_namespace_value* nspvalue = NULL;
+    catalogdata* catalog_data = NULL;
+    catalog_class_value* classvalue = NULL;
+    catalog_namespace_value* nspvalue = NULL;
 
     if (NULL == syncdatasets)
     {
@@ -1020,79 +1020,79 @@ bool ripple_filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace
     
     foreach(lc, sysdicthis)
     {
-        catalogdata = (ripple_catalogdata*)lfirst(lc);
+        catalog_data = (catalogdata*)lfirst(lc);
 
-        if(NULL == catalogdata || NULL == catalogdata->catalog)
+        if(NULL == catalog_data || NULL == catalog_data->catalog)
         {
             return false;
         }
-        if(RIPPLE_CATALOG_TYPE_CLASS == catalogdata->type)
+        if(CATALOG_TYPE_CLASS == catalog_data->type)
         {
-            classvalue = (ripple_catalog_class_value*)catalogdata->catalog;
+            classvalue = (catalog_class_value*)catalog_data->catalog;
             elog(RLOG_DEBUG, "syncdatasets op:%d, classvalue, %s, %u.%u",
-                            catalogdata->op,
-                            classvalue->ripple_class->relname.data,
-                            classvalue->ripple_class->oid,
-                            classvalue->ripple_class->relnamespace);
+                            catalog_data->op,
+                            classvalue->class->relname.data,
+                            classvalue->class->oid,
+                            classvalue->class->relnamespace);
 
-            if ('p' != classvalue->ripple_class->relkind && 'r' != classvalue->ripple_class->relkind)
+            if ('p' != classvalue->class->relkind && 'r' != classvalue->class->relkind)
             {
                 continue;
             }
 
-            table = classvalue->ripple_class->relname.data;
-            nspvalue = hash_search(namespace, &(classvalue->ripple_class->relnamespace), HASH_FIND, &found);
+            table = classvalue->class->relname.data;
+            nspvalue = hash_search(namespace, &(classvalue->class->relnamespace), HASH_FIND, &found);
             if (found)
             {
-                schema = nspvalue->ripple_namespace->nspname.data;
+                schema = nspvalue->namespace->nspname.data;
             }
             else
             {
-                catalogdata->op = RIPPLE_CATALOG_OP_DELETE;
+                catalog_data->op = CATALOG_OP_DELETE;
             }
 
-            if(RIPPLE_CATALOG_OP_INSERT == catalogdata->op)
+            if(CATALOG_OP_INSERT == catalog_data->op)
             {
-                if (ripple_filter_dataset_match_addtablepattern(addtablepattern, schema, table))
+                if (filter_dataset_match_addtablepattern(addtablepattern, schema, table))
                 {
-                    if(ripple_filter_dataset_add(syncdatasets, classvalue->ripple_class->oid, schema, table))
+                    if(filter_dataset_add(syncdatasets, classvalue->class->oid, schema, table))
                     {
                         haschange = true;
                     }
                 }
             }
-            else if(RIPPLE_CATALOG_OP_DELETE == catalogdata->op)
+            else if(CATALOG_OP_DELETE == catalog_data->op)
             {
-                if(ripple_filter_dataset_delete(syncdatasets, classvalue->ripple_class->oid))
+                if(filter_dataset_delete(syncdatasets, classvalue->class->oid))
                 {
                     haschange = true;
                 }
             }
-            else if(RIPPLE_CATALOG_OP_UPDATE == catalogdata->op)
+            else if(CATALOG_OP_UPDATE == catalog_data->op)
             {
-                if(ripple_filter_dataset_modify(syncdatasets, classvalue->ripple_class->oid, schema, table))
+                if(filter_dataset_modify(syncdatasets, classvalue->class->oid, schema, table))
                 {
                     haschange = true;
                 }
             }
             else
             {
-                elog(RLOG_ERROR, "unknown op:%d", catalogdata->op);
+                elog(RLOG_ERROR, "unknown op:%d", catalog_data->op);
             }
         }
     }
     return haschange;
 }
 
-void ripple_filter_dataset_updatedatasets_onlinerefresh(HTAB* dataset, List* tables_list)
+void filter_dataset_updatedatasets_onlinerefresh(HTAB* dataset, List* tables_list)
 {
     ListCell *cell = NULL;
 
     foreach(cell, tables_list)
     {
-        ripple_refresh_table *table = lfirst(cell);
+        refresh_table *table = lfirst(cell);
 
-        ripple_filter_dataset_add(dataset, table->oid, table->schema, table->table);
+        filter_dataset_add(dataset, table->oid, table->schema, table->table);
     }
 }
 

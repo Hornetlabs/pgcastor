@@ -1,5 +1,5 @@
-#ifndef RIPPLE_WAL_DEFINE_H
-#define RIPPLE_WAL_DEFINE_H
+#ifndef WAL_DEFINE_H
+#define WAL_DEFINE_H
 
 #define XLOG_PAGE_MAGIC 0xD101
 
@@ -122,4 +122,4 @@ typedef enum XLOG_RMGR_ENUM
 #define GetLastXlogSegmentBegin(xlrp, wal_segsz_bytes) \
         (IsXLogSegmentBegin(xlrp, wal_segsz_bytes) ? (xlrp - 2 * wal_segsz_bytes) : (xlrp - XLogSegmentOffset(xlrp, wal_segsz_bytes) - wal_segsz_bytes))
 
-#endif /* RIPPLE_WAL_DEFINE_H*/
+#endif /* WAL_DEFINE_H*/

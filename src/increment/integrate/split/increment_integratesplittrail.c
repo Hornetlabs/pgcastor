@@ -1,30 +1,30 @@
-#include "ripple_app_incl.h"
-#include "port/thread/ripple_thread.h"
+#include "app_incl.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 #include "utils/dlist/dlist.h"
 #include "utils/list/list_func.h"
 #include "utils/mpage/mpage.h"
 #include "utils/hash/hash_search.h"
-#include "queue/ripple_queue.h"
+#include "queue/queue.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "storage/ripple_file_buffer.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_ffsmgr.h"
-#include "storage/trail/ripple_fftrail.h"
-#include "threads/ripple_threads.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadtrailrecords.h"
-#include "increment/integrate/split/ripple_increment_integratesplittrail.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "storage/file_buffer.h"
+#include "storage/ff_detail.h"
+#include "storage/ffsmgr.h"
+#include "storage/trail/fftrail.h"
+#include "threads/threads.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadtrailrecords.h"
+#include "increment/integrate/split/increment_integratesplittrail.h"
 
 
 /* 设置 integrate 拆分线程的状态 */
-void ripple_increment_integratesplittrail_state_set(ripple_increment_integratesplittrail* splittrail, int state)
+void increment_integratesplittrail_state_set(increment_integratesplittrail* splittrail, int state)
 {
     splittrail->state = state;
 }
@@ -34,7 +34,7 @@ void ripple_increment_integratesplittrail_state_set(ripple_increment_integratesp
   *    fileid 设置为 loadtrail->fileid, loadtrail->offset 设置为 0
   *    emitoffset 设置为 emitoffset
   */
-void ripple_increment_integratesplittrail_emit_set(ripple_increment_integratesplittrail* splittrail, uint64 fileid, uint64 emitoffset)
+void increment_integratesplittrail_emit_set(increment_integratesplittrail* splittrail, uint64 fileid, uint64 emitoffset)
 {
     /* 重置过滤的起点 */
     splittrail->loadrecords->fileid = fileid;
@@ -42,12 +42,12 @@ void ripple_increment_integratesplittrail_emit_set(ripple_increment_integratespl
     splittrail->emitoffset = emitoffset;
 
     /* 重置解析的起点和过滤的起点 */
-    ripple_loadtrailrecords_setloadposition(splittrail->loadrecords, splittrail->loadrecords->fileid, splittrail->loadrecords->foffset);
+    loadtrailrecords_setloadposition(splittrail->loadrecords, splittrail->loadrecords->fileid, splittrail->loadrecords->foffset);
 }
 
-static bool ripple_increment_integratesplittrail_state_checkandset(ripple_increment_integratesplittrail* splittrail)
+static bool increment_integratesplittrail_state_checkandset(increment_integratesplittrail* splittrail)
 {
-    if (RIPPLE_INTEGRATE_STATUS_SPLIT_WORKING == splittrail->state)
+    if (INTEGRATE_STATUS_SPLIT_WORKING == splittrail->state)
     {
         return true;
     }
@@ -55,17 +55,17 @@ static bool ripple_increment_integratesplittrail_state_checkandset(ripple_increm
 }
 
 /* 初始化信息,包含设置 loadtrail中的基础信息 */
-ripple_increment_integratesplittrail* ripple_increment_integratesplittrail_init(void)
+increment_integratesplittrail* increment_integratesplittrail_init(void)
 {
     char* cdata = NULL;
-    ripple_increment_integratesplittrail* splittrail = NULL;
+    increment_integratesplittrail* splittrail = NULL;
 
-    splittrail = (ripple_increment_integratesplittrail*)rmalloc1(sizeof(ripple_increment_integratesplittrail));
+    splittrail = (increment_integratesplittrail*)rmalloc1(sizeof(increment_integratesplittrail));
     if(NULL == splittrail)
     {
         elog(RLOG_ERROR, "out of memory");
     }
-    rmemset0(splittrail, 0, '\0', sizeof(ripple_increment_integratesplittrail));
+    rmemset0(splittrail, 0, '\0', sizeof(increment_integratesplittrail));
 
     /* 根据配置文件设置 loadtrail信息 */
     splittrail->capturedata = rmalloc0(MAXPGPATH);
@@ -75,46 +75,46 @@ ripple_increment_integratesplittrail* ripple_increment_integratesplittrail_init(
         return NULL;
     }
     rmemset0(splittrail->capturedata, 0, '\0', MAXPGPATH);
-    cdata = guc_getConfigOption(RIPPLE_CFG_KEY_TRAIL_DIR);
-    snprintf(splittrail->capturedata, MAXPGPATH, "%s/%s", cdata, RIPPLE_STORAGE_TRAIL_DIR);
+    cdata = guc_getConfigOption(CFG_KEY_TRAIL_DIR);
+    snprintf(splittrail->capturedata, MAXPGPATH, "%s/%s", cdata, STORAGE_TRAIL_DIR);
 
     /*------------------------load record 模块初始化 begin---------------------------*/
-    splittrail->loadrecords = ripple_loadtrailrecords_init();
+    splittrail->loadrecords = loadtrailrecords_init();
     if(NULL == splittrail->loadrecords)
     {
         elog(RLOG_WARNING, "integrate increment load records error");
         return NULL;
     }
 
-    if(false == ripple_loadtrailrecords_setloadpageroutine(splittrail->loadrecords, RIPPLE_LOADPAGE_TYPE_FILE))
+    if(false == loadtrailrecords_setloadpageroutine(splittrail->loadrecords, LOADPAGE_TYPE_FILE))
     {
         elog(RLOG_WARNING, "integrate increment set load page error");
         return NULL;
     }
 
-    if(false == ripple_loadtrailrecords_setloadsource(splittrail->loadrecords, splittrail->capturedata))
+    if(false == loadtrailrecords_setloadsource(splittrail->loadrecords, splittrail->capturedata))
     {
         elog(RLOG_WARNING, "integrate increment set capture data error");
         return NULL;
     }
-    ripple_loadtrailrecords_setloadposition(splittrail->loadrecords, 0, 0);
+    loadtrailrecords_setloadposition(splittrail->loadrecords, 0, 0);
     /*------------------------load record 模块初始化   end---------------------------*/
 
     /* 设置状态为等待设置 */
-    ripple_increment_integratesplittrail_state_set(splittrail, RIPPLE_INTEGRATE_STATUS_SPLIT_WAITSET);
+    increment_integratesplittrail_state_set(splittrail, INTEGRATE_STATUS_SPLIT_WAITSET);
     splittrail->filter = true;
     return splittrail;
 }
 
 /* 将 records 加入到队列中 */
-static bool ripple_increment_integratesplitrail_addrecords2queue(ripple_increment_integratesplittrail* splittrail)
+static bool increment_integratesplitrail_addrecords2queue(increment_integratesplittrail* splittrail)
 {
     /* 加入到队列中 */
-    while(RIPPLE_INTEGRATE_STATUS_SPLIT_WORKING == splittrail->state)
+    while(INTEGRATE_STATUS_SPLIT_WORKING == splittrail->state)
     {
-        if(false == ripple_queue_put(splittrail->recordscache, splittrail->loadrecords->records))
+        if(false == queue_put(splittrail->recordscache, splittrail->loadrecords->records))
         {
-            if(RIPPLE_ERROR_QUEUE_FULL == splittrail->recordscache->error)
+            if(ERROR_QUEUE_FULL == splittrail->recordscache->error)
             {
                 usleep(50000);
                 continue;
@@ -130,37 +130,37 @@ static bool ripple_increment_integratesplitrail_addrecords2queue(ripple_incremen
 }
 
 /* 处理主入口 */
-void* ripple_increment_integratesplitrail_main(void* args)
+void* increment_integratesplitrail_main(void* args)
 {
     uint64 fileid                                           = 0;
-    ripple_thrnode* thrnode                                 = NULL;
-    ripple_increment_integratesplittrail* splittrail        = NULL;
+    thrnode* thr_node                                 = NULL;
+    increment_integratesplittrail* splittrail        = NULL;
 
-    thrnode = (ripple_thrnode*)args;
+    thr_node = (thrnode*)args;
     /* 入参转换 */
-    splittrail = (ripple_increment_integratesplittrail*)thrnode->data;
+    splittrail = (increment_integratesplittrail*)thr_node->data;
 
     /* 查看状态 */
-    if(RIPPLE_THRNODE_STAT_STARTING != thrnode->stat)
+    if(THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "increment integrate splittrail exception, expected state is RIPPLE_THRNODE_STAT_STARTING");
-        thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
-        ripple_pthread_exit(NULL);
+        elog(RLOG_WARNING, "increment integrate splittrail exception, expected state is THRNODE_STAT_STARTING");
+        thr_node->stat = THRNODE_STAT_ABORT;
+        pthread_exit(NULL);
     }
 
     /* 设置为工作状态 */
-    thrnode->stat = RIPPLE_THRNODE_STAT_WORK;
+    thr_node->stat = THRNODE_STAT_WORK;
 
     while(true)
     {
-        if(RIPPLE_THRNODE_STAT_TERM == thrnode->stat)
+        if(THRNODE_STAT_TERM == thr_node->stat)
         {
             /* 序列化/落盘 */
-            thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
+            thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
-        if (!ripple_increment_integratesplittrail_state_checkandset(splittrail))
+        if (!increment_integratesplittrail_state_checkandset(splittrail))
         {
             /* 睡眠 10 毫秒 */
             usleep(10000);
@@ -170,10 +170,10 @@ void* ripple_increment_integratesplitrail_main(void* args)
         /* 加载records */
         /* 预保留 fileid, 在 loadrecords 时, 会自动切换文件 */
         fileid = splittrail->loadrecords->fileid;
-        if(false == ripple_loadtrailrecords_load(splittrail->loadrecords))
+        if(false == loadtrailrecords_load(splittrail->loadrecords))
         {
             elog(RLOG_WARNING, "load trail records error");
-            thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
+            thr_node->stat = THRNODE_STAT_ABORT;
             break;
         }
 
@@ -185,14 +185,14 @@ void* ripple_increment_integratesplitrail_main(void* args)
             /* 
              * 没有读取到数据, 追上了最新的, 所以需要重新读取该块
              */
-            /* 需要退出，等待 thrnode->stat 变为 TERM 后退出*/
-            if(RIPPLE_THRNODE_STAT_TERM != thrnode->stat)
+            /* 需要退出，等待 thr_node->stat 变为 TERM 后退出*/
+            if(THRNODE_STAT_TERM != thr_node->stat)
             {
                 /* 睡眠 10 毫秒 */
                 usleep(10000);
                 continue;
             }
-            thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
+            thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
@@ -200,16 +200,16 @@ void* ripple_increment_integratesplitrail_main(void* args)
         if(false == splittrail->filter)
         {
             /* 加入到队列中 */
-            if(false == ripple_increment_integratesplitrail_addrecords2queue(splittrail))
+            if(false == increment_integratesplitrail_addrecords2queue(splittrail))
             {
                 elog(RLOG_WARNING, "integrate add records 2 queue error");
-                thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
+                thr_node->stat = THRNODE_STAT_ABORT;
                 break;
             }
             continue;
         }
 
-        if(false == ripple_loadtrailrecords_filterremainmetadata(splittrail->loadrecords, fileid, splittrail->emitoffset))
+        if(false == loadtrailrecords_filterremainmetadata(splittrail->loadrecords, fileid, splittrail->emitoffset))
         {
             splittrail->filter = false;
         }
@@ -223,19 +223,19 @@ void* ripple_increment_integratesplitrail_main(void* args)
         }
 
         /* 加入到队列中 */
-        if(false == ripple_increment_integratesplitrail_addrecords2queue(splittrail))
+        if(false == increment_integratesplitrail_addrecords2queue(splittrail))
         {
             elog(RLOG_WARNING, "integrate add records 2 queue error");
-            thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
+            thr_node->stat = THRNODE_STAT_ABORT;
             break;
         }
     }
 
-    ripple_pthread_exit(NULL);
+    pthread_exit(NULL);
     return NULL;
 }
 
-void ripple_increment_integratesplittrail_free(ripple_increment_integratesplittrail* splitrail)
+void increment_integratesplittrail_free(increment_integratesplittrail* splitrail)
 {
     if (NULL == splitrail)
     {
@@ -249,7 +249,7 @@ void ripple_increment_integratesplittrail_free(ripple_increment_integratesplittr
 
     if (NULL != splitrail->loadrecords)
     {
-        ripple_loadtrailrecords_free(splitrail->loadrecords);
+        loadtrailrecords_free(splitrail->loadrecords);
     }
     splitrail->recordscache = NULL;
     rfree(splitrail);

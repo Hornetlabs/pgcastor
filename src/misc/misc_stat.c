@@ -1,34 +1,34 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
-#include "port/thread/ripple_thread.h"
-#include "misc/ripple_misc_stat.h"
+#include "port/thread/thread.h"
+#include "misc/misc_stat.h"
 
 /* 加载 decode.stat 文件 */
-void ripple_misc_stat_loaddecode(ripple_capturebase* decodebase)
+void misc_stat_loaddecode(capturebase* decodebase)
 {
     int     r;
     int     fd;
-    char    path[RIPPLE_MAXPATH] = { 0 };
+    char    path[MAXPATH] = { 0 };
 
     if(NULL == decodebase)
     {
         elog(RLOG_ERROR, "argv error");
     }
 
-    snprintf(path, RIPPLE_MAXPATH, "%s/%s", RIPPLE_STAT, RIPPLE_STAT_DECODE);
-    rmemset1(decodebase, 0, '\0', sizeof(ripple_capturebase));
+    snprintf(path, MAXPATH, "%s/%s", STAT, STAT_DECODE);
+    rmemset1(decodebase, 0, '\0', sizeof(capturebase));
 
     /* 在磁盘中加载数据 */
-    fd = BasicOpenFile(path, O_RDWR | RIPPLE_BINARY);
+    fd = osal_basic_open_file(path, O_RDWR | BINARY);
     if (fd < 0)
     {
         elog(RLOG_ERROR, "could not open file %s", path);
     }
 
     /* 读取文件 */
-    r = FileRead(fd, (char*)decodebase, sizeof(ripple_capturebase));
-    if(r != sizeof(ripple_capturebase))
+    r = osal_file_read(fd, (char*)decodebase, sizeof(capturebase));
+    if(r != sizeof(capturebase))
     {
         if (r < 0)
         {
@@ -39,11 +39,11 @@ void ripple_misc_stat_loaddecode(ripple_capturebase* decodebase)
             elog(RLOG_ERROR, "could not read file %s : %d of %zu",
                                 path,
                                 r,
-                                sizeof(ripple_capturebase));
+                                sizeof(capturebase));
         }
     }
 
-    FileClose(fd);
+    osal_file_close(fd);
     return;
 }
 
@@ -57,11 +57,11 @@ void ripple_misc_stat_loaddecode(ripple_capturebase* decodebase)
  *                          false 不需要加锁
  *                          当前此函数会在三处调用 解析事务日志 格式化事务 trail文件落盘
 */
-void ripple_misc_stat_decodewrite(ripple_capturebase* decodebase, int* pfd)
+void misc_stat_decodewrite(capturebase* decodebase, int* pfd)
 {
     int     fd = -1;
-    char    path[RIPPLE_MAXPATH] = {'\0'};
-    char buffer[RIPPLE_DECODE_STAT] = { 0 };    /* need not be aligned */
+    char    path[MAXPATH] = {'\0'};
+    char buffer[DECODE_STAT] = { 0 };    /* need not be aligned */
 
     if(NULL == decodebase)
     {
@@ -70,19 +70,19 @@ void ripple_misc_stat_decodewrite(ripple_capturebase* decodebase, int* pfd)
 
     if(NULL == pfd || -1 == *pfd)
     {
-        snprintf(path, RIPPLE_MAXPATH, "%s/%s", RIPPLE_STAT, RIPPLE_STAT_DECODE);
-        rmemset1(buffer, 0, 0, RIPPLE_DECODE_STAT);
+        snprintf(path, MAXPATH, "%s/%s", STAT, STAT_DECODE);
+        rmemset1(buffer, 0, 0, DECODE_STAT);
     }
     else
     {
         fd = *pfd;
     }
     
-    rmemcpy1(buffer, 0, decodebase, sizeof(ripple_capturebase));
+    rmemcpy1(buffer, 0, decodebase, sizeof(capturebase));
     if(NULL == pfd || -1 == *pfd)
     {
-        fd = BasicOpenFile(path,
-                        O_RDWR | O_CREAT | RIPPLE_BINARY);
+        fd = osal_basic_open_file(path,
+                        O_RDWR | O_CREAT | BINARY);
         if (fd < 0)
         {
             elog(RLOG_ERROR, "could not create file %s", path);
@@ -94,19 +94,19 @@ void ripple_misc_stat_decodewrite(ripple_capturebase* decodebase, int* pfd)
         }
     }
 
-    if (RIPPLE_CONTROL_FILE_SIZE != FilePWrite(fd, buffer, RIPPLE_CONTROL_FILE_SIZE, 0))
+    if (CONTROL_FILE_SIZE != osal_file_pwrite(fd, buffer, CONTROL_FILE_SIZE, 0))
     {
         elog(RLOG_ERROR, "could not write to file %s", path);
     }
 
-    if(0 != FileSync(fd))
+    if(0 != osal_file_sync(fd))
     {
         elog(RLOG_ERROR, "could not fsync file %s", path);
     }
 
     if(NULL == pfd)
     {
-        if(FileClose(fd))
+        if(osal_file_close(fd))
         {
             elog(RLOG_ERROR, "could not close file %s", path);
         }
@@ -114,16 +114,16 @@ void ripple_misc_stat_decodewrite(ripple_capturebase* decodebase, int* pfd)
 }
 
 /* 初始化 */
-static ripple_capturebase* ripple_misc_stat_decodeinit(void)
+static capturebase* misc_stat_decodeinit(void)
 {
-    ripple_capturebase*     decodebase = NULL;
+    capturebase*     decodebase = NULL;
 
-    decodebase = (ripple_capturebase *)rmalloc1(sizeof(ripple_capturebase));
+    decodebase = (capturebase *)rmalloc1(sizeof(capturebase));
     if(NULL == decodebase)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset1(decodebase, 0, 0, sizeof(ripple_capturebase));
+    rmemset1(decodebase, 0, 0, sizeof(capturebase));
 
     decodebase->confirmedlsn = InvalidXLogRecPtr;
     decodebase->restartlsn = InvalidXLogRecPtr;
@@ -134,13 +134,13 @@ static ripple_capturebase* ripple_misc_stat_decodeinit(void)
 }
 
 /* capture状态信息初始化 */
-void ripple_misc_capturestat_init(void)
+void misc_capturestat_init(void)
 {
-    ripple_capturebase* decodebase = NULL;
+    capturebase* decodebase = NULL;
 
     /* 获取复制槽信息 */
-    decodebase = ripple_misc_stat_decodeinit();
+    decodebase = misc_stat_decodeinit();
 
-    ripple_misc_stat_decodewrite(decodebase, NULL);
+    misc_stat_decodewrite(decodebase, NULL);
     rfree(decodebase);
 }

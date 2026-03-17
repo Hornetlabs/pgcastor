@@ -1,40 +1,40 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
-#include "port/net/ripple_net.h"
-#include "port/thread/ripple_thread.h"
+#include "port/net/net.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
-#include "command/ripple_cmd.h"
-#include "threads/ripple_threads.h"
-#include "queue/ripple_queue.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netpool.h"
-#include "net/ripple_netserver.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "xmanager/ripple_xmanager_metricasyncmsg.h"
-#include "xmanager/ripple_xmanager_auth.h"
-#include "xmanager/ripple_xmanager_metricnode.h"
-#include "xmanager/ripple_xmanager_metricxscscinode.h"
-#include "xmanager/ripple_xmanager_metriccapturenode.h"
-#include "xmanager/ripple_xmanager_metricintegratenode.h"
-#include "xmanager/ripple_xmanager_listen.h"
-#include "xmanager/ripple_xmanager_metric.h"
-#include "xmanager/ripple_xmanager_metricmsg.h"
+#include "command/cmd.h"
+#include "threads/threads.h"
+#include "queue/queue.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netpool.h"
+#include "net/netserver.h"
+#include "xmanager/xmanager_msg.h"
+#include "xmanager/xmanager_metricasyncmsg.h"
+#include "xmanager/xmanager_auth.h"
+#include "xmanager/xmanager_metricnode.h"
+#include "xmanager/xmanager_metricxscscinode.h"
+#include "xmanager/xmanager_metriccapturenode.h"
+#include "xmanager/xmanager_metricintegratenode.h"
+#include "xmanager/xmanager_listen.h"
+#include "xmanager/xmanager_metric.h"
+#include "xmanager/xmanager_metricmsg.h"
 
-typedef struct RIPPLE_XMANAGER_AUTHFD2TIMEOUT
+typedef struct XMANAGER_AUTHFD2TIMEOUT
 {
     int                         fd;
     int                         timeout;
-} ripple_xmanager_authfd2timeout;
+} xmanager_authfd2timeout;
 
-static ripple_xmanager_authfd2timeout* ripple_xmanager_authfd2timeout_init(void)
+static xmanager_authfd2timeout* xmanager_authfd2timeout_init(void)
 {
-    ripple_xmanager_authfd2timeout* fd2timeout = NULL;
+    xmanager_authfd2timeout* fd2timeout = NULL;
 
-    fd2timeout = rmalloc0(sizeof(ripple_xmanager_authfd2timeout));
+    fd2timeout = rmalloc0(sizeof(xmanager_authfd2timeout));
     if (NULL == fd2timeout)
     {
         elog(RLOG_WARNING, "authfd2timeout init error");
@@ -46,13 +46,13 @@ static ripple_xmanager_authfd2timeout* ripple_xmanager_authfd2timeout_init(void)
 }
 
 /* 比较 */
-static int ripple_xmanager_authfd2timeout_cmp(void* s1, void* s2)
+static int xmanager_authfd2timeout_cmp(void* s1, void* s2)
 {
     int fd = -1;
-    ripple_xmanager_authfd2timeout* fd2timeout = NULL;
+    xmanager_authfd2timeout* fd2timeout = NULL;
 
     fd = (int)((uintptr_t)s1);
-    fd2timeout = (ripple_xmanager_authfd2timeout*)s2;
+    fd2timeout = (xmanager_authfd2timeout*)s2;
 
     if (fd == fd2timeout->fd)
     {
@@ -62,7 +62,7 @@ static int ripple_xmanager_authfd2timeout_cmp(void* s1, void* s2)
 }
 
 /* 销毁 */
-static void ripple_xmanager_authfd2timeout_destroy(ripple_xmanager_authfd2timeout* fd2timeout)
+static void xmanager_authfd2timeout_destroy(xmanager_authfd2timeout* fd2timeout)
 {
     if (NULL == fd2timeout)
     {
@@ -72,25 +72,25 @@ static void ripple_xmanager_authfd2timeout_destroy(ripple_xmanager_authfd2timeou
     rfree(fd2timeout);
 }
 
-static void ripple_xmanager_authfd2timeout_destroyvoid(void* args)
+static void xmanager_authfd2timeout_destroyvoid(void* args)
 {
-    ripple_xmanager_authfd2timeout_destroy((ripple_xmanager_authfd2timeout*)args);
+    xmanager_authfd2timeout_destroy((xmanager_authfd2timeout*)args);
 }
 
-ripple_xmanager_auth* ripple_xmanager_auth_init(void)
+xmanager_auth* xmanager_auth_init(void)
 {
-    ripple_xmanager_auth* xauth = NULL;
+    xmanager_auth* xauth = NULL;
 
-    xauth = rmalloc0(sizeof(ripple_xmanager_auth));
+    xauth = rmalloc0(sizeof(xmanager_auth));
     if (NULL == xauth)
     {
         elog(RLOG_WARNING, "xmanager auth error");
         return NULL;
     }
-    rmemset0(xauth, 0, '\0', sizeof(ripple_xmanager_auth));
-    xauth->timeout = RIPPLE_XMANAGER_AUTH_DEFAULTTIMEOUT;
+    rmemset0(xauth, 0, '\0', sizeof(xmanager_auth));
+    xauth->timeout = XMANAGER_AUTH_DEFAULTTIMEOUT;
     xauth->no = 1;
-    xauth->npool = ripple_netpool_init();
+    xauth->npool = netpool_init();
     if (NULL == xauth->npool)
     {
         rfree(xauth);
@@ -102,40 +102,40 @@ ripple_xmanager_auth* ripple_xmanager_auth_init(void)
 }
 
 /* xscsci */
-static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityxscsci(ripple_xmanager_auth* xauth, uint8* uptr)
+static xmanager_metricregnode* xmanager_auth_identityxscsci(xmanager_auth* xauth, uint8* uptr)
 {
     int jobnamelen                                  = 0;
     char* jobname                                   = NULL;
-    ripple_xmanager_metricregnode* xmetricregnode   = NULL;
-    ripple_xmanager_metricfd2node* xmetricfd2node   = NULL;
-    ripple_xmanager_metricxscscinode* xmetricxscsci = NULL;
+    xmanager_metricregnode* xmetricregnode   = NULL;
+    xmanager_metricfd2node* xmetricfd2node   = NULL;
+    xmanager_metricxscscinode* xmetricxscsci = NULL;
 
-    xmetricregnode = ripple_xmanager_metricregnode_init();
+    xmetricregnode = xmanager_metricregnode_init();
     if (NULL == xmetricregnode)
     {
         elog(RLOG_WARNING, "xmanager auth xscsci identity regist node error, out of memory");
         return NULL;
     }
     xmetricregnode->result = 0;
-    xmetricregnode->nodetype = RIPPLE_XMANAGER_METRICNODETYPE_XSCSCI;
+    xmetricregnode->nodetype = XMANAGER_METRICNODETYPE_XSCSCI;
 
-    xmetricfd2node = ripple_xmanager_metricfd2node_init();
+    xmetricfd2node = xmanager_metricfd2node_init();
     if (NULL == xmetricfd2node)
     {
         elog(RLOG_WARNING, "xmanager auth xscsci identity fd2node error, out of memeory");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
     xmetricregnode->metricfd2node = xmetricfd2node;
 
-    xmetricfd2node->metricnode = ripple_xmanager_metricnode_init(xmetricregnode->nodetype);
+    xmetricfd2node->metricnode = xmanager_metricnode_init(xmetricregnode->nodetype);
     if (NULL == xmetricfd2node->metricnode)
     {
         elog(RLOG_WARNING, "xmanager auth identity xscsci error, out of memory");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
-    xmetricxscsci = (ripple_xmanager_metricxscscinode*)xmetricfd2node->metricnode;
+    xmetricxscsci = (xmanager_metricxscscinode*)xmetricfd2node->metricnode;
     xmetricxscsci->number = xauth->no;
     xauth->no++;
 
@@ -152,7 +152,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityxscsci(ripple
         if (NULL == jobname)
         {
             elog(RLOG_WARNING, "auth identity jobname error");
-            ripple_xmanager_metricregnode_destroy(xmetricregnode);
+            xmanager_metricregnode_destroy(xmetricregnode);
             return NULL;
         }
         rmemset0(jobname, 0, '\0', jobnamelen);
@@ -169,47 +169,47 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityxscsci(ripple
     xmetricxscsci->base.traildir = NULL;
     xmetricxscsci->base.name = jobname;
     xmetricxscsci->base.remote = false;
-    xmetricxscsci->base.stat = RIPPLE_XMANAGER_METRICNODESTAT_ONLINE;
+    xmetricxscsci->base.stat = XMANAGER_METRICNODESTAT_ONLINE;
     return xmetricregnode;
 }
 
 /* capture/integrate */
-static ripple_xmanager_metricregnode* ripple_xmanager_auth_identitycapture(ripple_xmanager_auth* xauth, uint8* uptr)
+static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xauth, uint8* uptr)
 {
     int8 result                                         = 0;
     int ivalue                                          = 0;
     int len                                             = 0;
     char* value                                         = NULL;
-    ripple_xmanager_metricregnode* xmetricregnode       = NULL;
-    ripple_xmanager_metricfd2node* xmetricfd2node       = NULL;
-    ripple_xmanager_metriccapturenode* xmetriccapture   = NULL;
+    xmanager_metricregnode* xmetricregnode       = NULL;
+    xmanager_metricfd2node* xmetricfd2node       = NULL;
+    xmanager_metriccapturenode* xmetriccapture   = NULL;
 
-    xmetricregnode = ripple_xmanager_metricregnode_init();
+    xmetricregnode = xmanager_metricregnode_init();
     if (NULL == xmetricregnode)
     {
         elog(RLOG_WARNING, "xmanager auth identity regist node error, out of memory");
         return NULL;
     }
     xmetricregnode->result = 0;
-    xmetricregnode->nodetype = RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE;
+    xmetricregnode->nodetype = XMANAGER_METRICNODETYPE_CAPTURE;
 
-    xmetricfd2node = ripple_xmanager_metricfd2node_init();
+    xmetricfd2node = xmanager_metricfd2node_init();
     if (NULL == xmetricfd2node)
     {
         elog(RLOG_WARNING, "xmanager auth capture identity fd2node error, out of memeory");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
     xmetricregnode->metricfd2node = xmetricfd2node;
 
-    xmetricfd2node->metricnode = ripple_xmanager_metricnode_init(xmetricregnode->nodetype);
+    xmetricfd2node->metricnode = xmanager_metricnode_init(xmetricregnode->nodetype);
     if (NULL == xmetricfd2node->metricnode)
     {
         elog(RLOG_WARNING, "xmanager auth identity capture error, out of memory");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
-    xmetriccapture = (ripple_xmanager_metriccapturenode*)xmetricfd2node->metricnode;
+    xmetriccapture = (xmanager_metriccapturenode*)xmetricfd2node->metricnode;
 
     /* 名称长度 */
     rmemcpy1(&len, 0, uptr, 4);
@@ -218,7 +218,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identitycapture(rippl
     if (0 == len)
     {
         elog(RLOG_WARNING, "auth identity capture jobname can not be zero");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
 
@@ -228,7 +228,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identitycapture(rippl
     if (NULL == value)
     {
         elog(RLOG_WARNING, "auth identity capture jobname error");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
     rmemset0(value, 0, '\0', len);
@@ -262,11 +262,11 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identitycapture(rippl
             if (NULL == xmetricregnode->msg)
             {
                 elog(RLOG_WARNING, "auth identity capture errmsg error");
-                ripple_xmanager_metricregnode_destroy(xmetricregnode);
+                xmanager_metricregnode_destroy(xmetricregnode);
                 return NULL;
             }
             rmemset0(xmetricregnode->msg, 0, '\0', 128);
-            snprintf(xmetricregnode->msg, 128, "%s error", ripple_xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
+            snprintf(xmetricregnode->msg, 128, "%s error", xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
         }
         else
         {
@@ -284,7 +284,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identitycapture(rippl
             if (NULL == xmetricregnode->msg)
             {
                 elog(RLOG_WARNING, "auth identity capture errmsg error");
-                ripple_xmanager_metricregnode_destroy(xmetricregnode);
+                xmanager_metricregnode_destroy(xmetricregnode);
                 return NULL;
             }
             rmemset0(xmetricregnode->msg, 0, '\0', len);
@@ -309,7 +309,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identitycapture(rippl
     if (0 == len)
     {
         elog(RLOG_WARNING, "auth identity capture data len can not be zero");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
 
@@ -319,7 +319,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identitycapture(rippl
     if (NULL == value)
     {
         elog(RLOG_WARNING, "auth identity capture data error, out of memory");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
     rmemset0(value, 0, '\0', len);
@@ -331,42 +331,42 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identitycapture(rippl
 }
 
 /* integrate*/
-static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityintegrate(ripple_xmanager_auth* xauth, uint8* uptr)
+static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xauth, uint8* uptr)
 {
     int8 result                                             = 0;
     int ivalue                                              = 0;
     int len                                                 = 0;
     char* value                                             = NULL;
-    ripple_xmanager_metricregnode* xmetricregnode           = NULL;
-    ripple_xmanager_metricfd2node* xmetricfd2node           = NULL;
-    ripple_xmanager_metricintegratenode* xmetricintegrate   = NULL;
+    xmanager_metricregnode* xmetricregnode           = NULL;
+    xmanager_metricfd2node* xmetricfd2node           = NULL;
+    xmanager_metricintegratenode* xmetricintegrate   = NULL;
 
-    xmetricregnode = ripple_xmanager_metricregnode_init();
+    xmetricregnode = xmanager_metricregnode_init();
     if (NULL == xmetricregnode)
     {
         elog(RLOG_WARNING, "xmanager auth identity regist node error, out of memory");
         return NULL;
     }
     xmetricregnode->result = 0;
-    xmetricregnode->nodetype = RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE;
+    xmetricregnode->nodetype = XMANAGER_METRICNODETYPE_INTEGRATE;
 
-    xmetricfd2node = ripple_xmanager_metricfd2node_init();
+    xmetricfd2node = xmanager_metricfd2node_init();
     if (NULL == xmetricfd2node)
     {
         elog(RLOG_WARNING, "xmanager auth integrate identity fd2node error, out of memeory");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
     xmetricregnode->metricfd2node = xmetricfd2node;
 
-    xmetricfd2node->metricnode = ripple_xmanager_metricnode_init(xmetricregnode->nodetype);
+    xmetricfd2node->metricnode = xmanager_metricnode_init(xmetricregnode->nodetype);
     if (NULL == xmetricfd2node->metricnode)
     {
         elog(RLOG_WARNING, "xmanager auth identity integrate error, out of memory");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
-    xmetricintegrate = (ripple_xmanager_metricintegratenode*)xmetricfd2node->metricnode;
+    xmetricintegrate = (xmanager_metricintegratenode*)xmetricfd2node->metricnode;
 
     /* 名称长度 */
     rmemcpy1(&len, 0, uptr, 4);
@@ -375,7 +375,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityintegrate(rip
     if (0 == len)
     {
         elog(RLOG_WARNING, "auth identity integrate jobname can not be zero");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
 
@@ -385,7 +385,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityintegrate(rip
     if (NULL == value)
     {
         elog(RLOG_WARNING, "auth identity integrate jobname error");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
     rmemset0(value, 0, '\0', len);
@@ -416,11 +416,11 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityintegrate(rip
             if (NULL == xmetricregnode->msg)
             {
                 elog(RLOG_WARNING, "auth identity integrate errmsg error");
-                ripple_xmanager_metricregnode_destroy(xmetricregnode);
+                xmanager_metricregnode_destroy(xmetricregnode);
                 return NULL;
             }
             rmemset0(xmetricregnode->msg, 0, '\0', 128);
-            snprintf(xmetricregnode->msg, 128, "%s error", ripple_xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
+            snprintf(xmetricregnode->msg, 128, "%s error", xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
         }
         else
         {
@@ -436,7 +436,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityintegrate(rip
             if (NULL == xmetricregnode->msg)
             {
                 elog(RLOG_WARNING, "auth identity integrate errmsg error");
-                ripple_xmanager_metricregnode_destroy(xmetricregnode);
+                xmanager_metricregnode_destroy(xmetricregnode);
                 return NULL;
             }
             rmemset0(xmetricregnode->msg, 0, '\0', len);
@@ -461,7 +461,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityintegrate(rip
     if (0 == len)
     {
         elog(RLOG_WARNING, "auth identity integrate data len can not be zero");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
 
@@ -471,7 +471,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityintegrate(rip
     if (NULL == value)
     {
         elog(RLOG_WARNING, "auth identity integrate data error, out of memory");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
     rmemset0(value, 0, '\0', len);
@@ -493,7 +493,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityintegrate(rip
     if (0 == len)
     {
         elog(RLOG_WARNING, "auth identity integrate trail len can not be zero");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
 
@@ -503,7 +503,7 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityintegrate(rip
     if (NULL == value)
     {
         elog(RLOG_WARNING, "auth identity integrate trail error, out of memory");
-        ripple_xmanager_metricregnode_destroy(xmetricregnode);
+        xmanager_metricregnode_destroy(xmetricregnode);
         return NULL;
     }
     rmemset0(value, 0, '\0', len);
@@ -515,14 +515,14 @@ static ripple_xmanager_metricregnode* ripple_xmanager_auth_identityintegrate(rip
 }
 
 /* 身份信息 */
-static bool ripple_xmanager_auth_identity(ripple_xmanager_auth* xauth, ripple_netpoolentry* npoolentry, ripple_netpacket* npacket)
+static bool xmanager_auth_identity(xmanager_auth* xauth, netpoolentry* npoolentry, netpacket* npacket)
 {
     int msglen                                      = 0;
     int crc32                                       = 0;
     int msgtype                                     = 0;
     int jobtype                                     = 0;
     uint8* uptr                                     = NULL;
-    ripple_xmanager_metricregnode* metricregnode    = NULL;
+    xmanager_metricregnode* metricregnode    = NULL;
 
     /* 拆解内容 */
     uptr = npacket->data;
@@ -537,7 +537,7 @@ static bool ripple_xmanager_auth_identity(ripple_xmanager_auth* xauth, ripple_ne
     msgtype = r_ntoh32(msgtype);
 
     /* 不是 identitycmd */
-    if (RIPPLE_XMANAGER_MSG_IDENTITYCMD != msgtype)
+    if (XMANAGER_MSG_IDENTITYCMD != msgtype)
     {
         elog(RLOG_WARNING, "need identity command, but now msgtype:%d", msgtype);
         return false;
@@ -550,14 +550,14 @@ static bool ripple_xmanager_auth_identity(ripple_xmanager_auth* xauth, ripple_ne
 
     switch (jobtype)
     {
-        case RIPPLE_XMANAGER_METRICNODETYPE_XSCSCI:
-            metricregnode = ripple_xmanager_auth_identityxscsci(xauth, uptr);
+        case XMANAGER_METRICNODETYPE_XSCSCI:
+            metricregnode = xmanager_auth_identityxscsci(xauth, uptr);
             break;
-        case RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE:
-            metricregnode = ripple_xmanager_auth_identitycapture(xauth, uptr);
+        case XMANAGER_METRICNODETYPE_CAPTURE:
+            metricregnode = xmanager_auth_identitycapture(xauth, uptr);
             break;
-        case RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE:
-            metricregnode = ripple_xmanager_auth_identityintegrate(xauth, uptr);
+        case XMANAGER_METRICNODETYPE_INTEGRATE:
+            metricregnode = xmanager_auth_identityintegrate(xauth, uptr);
             break;
         default:
             elog(RLOG_WARNING, "unknown jobtype, %d.", jobtype);
@@ -567,27 +567,27 @@ static bool ripple_xmanager_auth_identity(ripple_xmanager_auth* xauth, ripple_ne
     if (NULL == metricregnode)
     {
         elog(RLOG_WARNING, "auth identity node init error");
-        ripple_xmanager_metricregnode_destroy(metricregnode);
+        xmanager_metricregnode_destroy(metricregnode);
         return false;
     }
 
     /* 加入到队列中 */
     metricregnode->metricfd2node->fd = npoolentry->fd;
     npoolentry->fd = -1;
-    ripple_queue_put(xauth->metricqueue, metricregnode);
+    queue_put(xauth->metricqueue, metricregnode);
     return true;
 }
 
 /* 处理读队列 */
-static bool ripple_xmanager_auth_msg(ripple_xmanager_auth* xauth, int index)
+static bool xmanager_auth_msg(xmanager_auth* xauth, int index)
 {
-    ripple_netpacket* npacket = NULL;
-    ripple_netpoolentry* npoolentry = NULL;
+    netpacket* npacket = NULL;
+    netpoolentry* npoolentry = NULL;
 
     npoolentry = xauth->npool->fds[index];
     while(1)
     {
-        npacket = ripple_queue_tryget(npoolentry->rpackets);
+        npacket = queue_tryget(npoolentry->rpackets);
         if (NULL == npacket)
         {
             return true;
@@ -595,7 +595,7 @@ static bool ripple_xmanager_auth_msg(ripple_xmanager_auth* xauth, int index)
 
         if (npacket->offset != npacket->used)
         {
-            if (false == ripple_queue_put(npoolentry->rpackets, npacket))
+            if (false == queue_put(npoolentry->rpackets, npacket))
             {
                 return false;
             }
@@ -603,112 +603,112 @@ static bool ripple_xmanager_auth_msg(ripple_xmanager_auth* xauth, int index)
         }
 
         /* 解析数据 */
-        if (false == ripple_xmanager_auth_identity(xauth, npoolentry, npacket))
+        if (false == xmanager_auth_identity(xauth, npoolentry, npacket))
         {
-            ripple_netpacket_destroy(npacket);
+            netpacket_destroy(npacket);
             return false;
         }
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
 
         /* 在 auth 模块只会有一条数据 */
         break;
     }
 
     /* 处理 npoolentry */
-    ripple_netpoolentry_destroy(npoolentry);
+    netpoolentry_destroy(npoolentry);
     xauth->npool->fds[index] = NULL;
     return true;
 }
 
 
 /* 主流程 */
-void* ripple_xmanager_auth_main(void *args)
+void* xmanager_auth_main(void *args)
 {
     int fd                                      = -1;
     int index                                   = 0;
     int errorfdscnt                             = 0;
     int* errorfds                               = NULL;
     dlist* dlfd2timeout                         = NULL;
-    ripple_thrnode* thrnode                     = NULL;
-    ripple_queueitem* item                      = NULL;
-    ripple_queueitem* items                     = NULL;
-    ripple_xmanager_auth* xauth                 = NULL;
-    ripple_netpoolentry* npoolentry             = NULL;
-    ripple_xmanager_authfd2timeout* fd2timeout  = NULL;
+    thrnode* thrnode_ptr                     = NULL;
+    queueitem* item                      = NULL;
+    queueitem* items                     = NULL;
+    xmanager_auth* xauth                 = NULL;
+    netpoolentry* npoolentry             = NULL;
+    xmanager_authfd2timeout* fd2timeout  = NULL;
 
-    thrnode = (ripple_thrnode*)args;
+    thrnode_ptr = (thrnode*)args;
 
-    xauth = (ripple_xmanager_auth*)thrnode->data;
+    xauth = (xmanager_auth*)thrnode_ptr->data;
 
     /* 查看状态 */
-    if (RIPPLE_THRNODE_STAT_STARTING != thrnode->stat)
+    if (THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING, "xmanager auth stat exception, expected state is RIPPLE_THRNODE_STAT_STARTING");
-        thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
-        ripple_pthread_exit(NULL);
+        elog(RLOG_WARNING, "xmanager auth stat exception, expected state is THRNODE_STAT_STARTING");
+        thrnode_ptr->stat = THRNODE_STAT_ABORT;
+        pthread_exit(NULL);
     }
 
     /* 设置为工作状态 */
-    thrnode->stat = RIPPLE_THRNODE_STAT_WORK;
+    thrnode_ptr->stat = THRNODE_STAT_WORK;
 
     while(1)
     {
         items = NULL;
-        if (RIPPLE_THRNODE_STAT_TERM == thrnode->stat)
+        if (THRNODE_STAT_TERM == thrnode_ptr->stat)
         {
-            thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
+            thrnode_ptr->stat = THRNODE_STAT_EXIT;
             break;
         }
 
         /* 在队列中获取描述符 */
-        items = ripple_queue_trygetbatch(xauth->authqueue);
+        items = queue_trygetbatch(xauth->authqueue);
         for (item = items; NULL != item; item = items)
         {
             items = item->next;
             fd = (int)((uintptr_t)item->data);
-            npoolentry = ripple_netpoolentry_init();
+            npoolentry = netpoolentry_init();
             if (NULL == npoolentry)
             {
                 elog(RLOG_WARNING, "xmanager auth net pool entry error");
-                ripple_close(fd);
+                close(fd);
                 fd = -1;
-                ripple_queueitem_free(item, NULL);
+                queueitem_free(item, NULL);
                 continue;
             }
-            ripple_netpoolentry_setfd(npoolentry, fd);
+            netpoolentry_setfd(npoolentry, fd);
 
-            fd2timeout = ripple_xmanager_authfd2timeout_init();
+            fd2timeout = xmanager_authfd2timeout_init();
             if (NULL == fd2timeout)
             {
                 elog(RLOG_WARNING, "xmanager auth auth fd2timeout out of memory");
-                ripple_netpoolentry_destroy(npoolentry);
-                ripple_queueitem_free(item, NULL);
+                netpoolentry_destroy(npoolentry);
+                queueitem_free(item, NULL);
                 continue;
             }
             fd2timeout->fd = fd;
             dlfd2timeout = dlist_put(dlfd2timeout, fd2timeout);
 
             /* 加入到队列中 */
-            if (false == ripple_netpool_add(xauth->npool, npoolentry))
+            if (false == netpool_add(xauth->npool, npoolentry))
             {
                 elog(RLOG_WARNING, "xmanager auth add entry to net pool error");
                 dlist_deletebyvalue(dlfd2timeout,
                                     (void*)((uintptr_t)fd2timeout->fd),
-                                    ripple_xmanager_authfd2timeout_cmp,
-                                    ripple_xmanager_authfd2timeout_destroyvoid);
+                                    xmanager_authfd2timeout_cmp,
+                                    xmanager_authfd2timeout_destroyvoid);
 
-                ripple_netpoolentry_destroy(npoolentry);
-                ripple_queueitem_free(item, NULL);
+                netpoolentry_destroy(npoolentry);
+                queueitem_free(item, NULL);
                 continue;
             }
-            ripple_queueitem_free(item, NULL);
+            queueitem_free(item, NULL);
         }
 
         /* 监听 */
-        if (false == ripple_netpool_desc(xauth->npool, &errorfdscnt, &errorfds))
+        if (false == netpool_desc(xauth->npool, &errorfdscnt, &errorfds))
         {
             elog(RLOG_WARNING, "xmanager auth net pool desc error");
-            thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
+            thrnode_ptr->stat = THRNODE_STAT_ABORT;
             break;
         }
 
@@ -717,8 +717,8 @@ void* ripple_xmanager_auth_main(void *args)
         {
             dlist_deletebyvalue(dlfd2timeout,
                                 (void*)((uintptr_t)errorfds[index]),
-                                ripple_xmanager_authfd2timeout_cmp,
-                                ripple_xmanager_authfd2timeout_destroyvoid);
+                                xmanager_authfd2timeout_cmp,
+                                xmanager_authfd2timeout_destroyvoid);
         }
 
         /* 遍历读队列并处理 */
@@ -730,21 +730,21 @@ void* ripple_xmanager_auth_main(void *args)
             }
 
             npoolentry = xauth->npool->fds[index];
-            if (true == ripple_queue_isnull(npoolentry->rpackets))
+            if (true == queue_isnull(npoolentry->rpackets))
             {
                 continue;
             }
 
             fd = npoolentry->fd;
-            if (false == ripple_xmanager_auth_msg(xauth, index))
+            if (false == xmanager_auth_msg(xauth, index))
             {
                 elog(RLOG_WARNING, "xmanager auth deal identity msg error");
                 dlist_deletebyvalue(dlfd2timeout,
                                     (void*)((uintptr_t)npoolentry->fd),
-                                    ripple_xmanager_authfd2timeout_cmp,
-                                    ripple_xmanager_authfd2timeout_destroyvoid);
+                                    xmanager_authfd2timeout_cmp,
+                                    xmanager_authfd2timeout_destroyvoid);
                 
-                ripple_netpoolentry_destroy(npoolentry);
+                netpoolentry_destroy(npoolentry);
                 xauth->npool->fds[index] = NULL;
                 continue;
             }
@@ -753,24 +753,24 @@ void* ripple_xmanager_auth_main(void *args)
             {
                 dlist_deletebyvalue(dlfd2timeout,
                                     (void*)((uintptr_t)fd),
-                                    ripple_xmanager_authfd2timeout_cmp,
-                                    ripple_xmanager_authfd2timeout_destroyvoid);
+                                    xmanager_authfd2timeout_cmp,
+                                    xmanager_authfd2timeout_destroyvoid);
             }
         }
     }
 
-    dlist_free(dlfd2timeout, ripple_xmanager_authfd2timeout_destroyvoid);
-    ripple_pthread_exit(NULL);
+    dlist_free(dlfd2timeout, xmanager_authfd2timeout_destroyvoid);
+    pthread_exit(NULL);
     return NULL;
 }
 
-void ripple_xmanager_auth_destroy(ripple_xmanager_auth* xauth)
+void xmanager_auth_destroy(xmanager_auth* xauth)
 {
     if (NULL == xauth)
     {
         return;
     }
 
-    ripple_netpool_destroy(xauth->npool);
+    netpool_destroy(xauth->npool);
     rfree(xauth);
 }

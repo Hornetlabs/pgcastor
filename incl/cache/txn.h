@@ -1,67 +1,67 @@
-#ifndef _RIPPLE_TXN_H_
-#define _RIPPLE_TXN_H_
+#ifndef _TXN_H_
+#define _TXN_H_
 
-typedef enum RIPPLE_TXN_FLAG 
+typedef enum TXN_FLAG 
 {
-    RIPPLE_TXN_FLAG_NORMAL                      = 0x00,
-    RIPPLE_TXN_FLAG_TOAST                       = 0x01,
-    RIPPLE_TXN_FLAG_DDL                         = 0x02,
-    RIPPLE_TXN_FLAG_INHASH                      = 0x04,         /* 保证标记的唯一性       */
-    RIPPLE_TXN_FLAG_BIGTXN                      = 0x08,         /* 大事务标识             */
-    RIPPLE_TXN_FLAG_ONLINEREFRESH               = 0x10          /* onlinerefesh 标识      */
-}ripple_txn_flag;
+    TXN_FLAG_NORMAL                      = 0x00,
+    TXN_FLAG_TOAST                       = 0x01,
+    TXN_FLAG_DDL                         = 0x02,
+    TXN_FLAG_INHASH                      = 0x04,         /* 保证标记的唯一性       */
+    TXN_FLAG_BIGTXN                      = 0x08,         /* 大事务标识             */
+    TXN_FLAG_ONLINEREFRESH               = 0x10          /* onlinerefesh 标识      */
+}txn_flag;
 
 
-typedef enum RIPPLE_TXN_TYPE
+typedef enum TXN_TYPE
 {
-    RIPPLE_TXN_TYPE_NORMAL                      = 0x00,
-    RIPPLE_TXN_TYPE_METADATA                    ,               /* metadata */
-    RIPPLE_TXN_TYPE_REFRESH                     ,               /* 存量事务 */
-    RIPPLE_TXN_TYPE_BIGTXN_BEGIN                ,               /* 大事务开始 */
-    RIPPLE_TXN_TYPE_BIGTXN_END_COMMIT           ,               /* 大事务提交 */
-    RIPPLE_TXN_TYPE_BIGTXN_END_ABORT            ,               /* 大事务回滚 */
-    RIPPLE_TXN_TYPE_ONLINEREFRESH_BEGIN         ,               /* onlinerefresh开始 */
-    RIPPLE_TXN_TYPE_ONLINEREFRESH_END           ,               /* onlinerefresh结束 */
-    RIPPLE_TXN_TYPE_ONLINEREFRESH_INC_END       ,               /* onlinerefresh增量结束 */
-    RIPPLE_TXN_TYPE_ONLINEREFRESH_ABANDON       ,               /* 要放弃的onlinerefresh */
-    RIPPLE_TXN_TYPE_ONLINEREFRESH_DATASET       ,               /* onlinerefresh过滤数据集 */
-    RIPPLE_TXN_TYPE_RESET                       ,               /* reset事务 */
-    RIPPLE_TXN_TYPE_ABANDON                     ,               /* 要放弃的onlinerefresh */
-    RIPPLE_TXN_TYPE_TIMELINE                    ,               /* timeline切换事务 */
-    RIPPLE_TXN_TYPE_SHIFTFILE                                   /* 文件切换事务 */
-}ripple_txn_type;
+    TXN_TYPE_NORMAL                      = 0x00,
+    TXN_TYPE_METADATA                    ,               /* metadata */
+    TXN_TYPE_REFRESH                     ,               /* 存量事务 */
+    TXN_TYPE_BIGTXN_BEGIN                ,               /* 大事务开始 */
+    TXN_TYPE_BIGTXN_END_COMMIT           ,               /* 大事务提交 */
+    TXN_TYPE_BIGTXN_END_ABORT            ,               /* 大事务回滚 */
+    TXN_TYPE_ONLINEREFRESH_BEGIN         ,               /* onlinerefresh开始 */
+    TXN_TYPE_ONLINEREFRESH_END           ,               /* onlinerefresh结束 */
+    TXN_TYPE_ONLINEREFRESH_INC_END       ,               /* onlinerefresh增量结束 */
+    TXN_TYPE_ONLINEREFRESH_ABANDON       ,               /* 要放弃的onlinerefresh */
+    TXN_TYPE_ONLINEREFRESH_DATASET       ,               /* onlinerefresh过滤数据集 */
+    TXN_TYPE_RESET                       ,               /* reset事务 */
+    TXN_TYPE_ABANDON                     ,               /* 要放弃的onlinerefresh */
+    TXN_TYPE_TIMELINE                    ,               /* timeline切换事务 */
+    TXN_TYPE_SHIFTFILE                                   /* 文件切换事务 */
+}txn_type;
 
 
 /*----------------onlinerefresh标识操作相关 begin-----------------*/
-#define RIPPLE_TXN_SET_ONLINEREFRESHTXN(flag)                   (flag |= RIPPLE_TXN_FLAG_ONLINEREFRESH)
-#define RIPPLE_TXN_UNSET_ONLINEREFRESHTXN(flag)                 (flag &= ~(RIPPLE_TXN_FLAG_ONLINEREFRESH))
-#define RIPPLE_TXN_ISONLINEREFRESHTXN(flag)                     (flag & RIPPLE_TXN_FLAG_ONLINEREFRESH)
+#define TXN_SET_ONLINEREFRESHTXN(flag)                   (flag |= TXN_FLAG_ONLINEREFRESH)
+#define TXN_UNSET_ONLINEREFRESHTXN(flag)                 (flag &= ~(TXN_FLAG_ONLINEREFRESH))
+#define TXN_ISONLINEREFRESHTXN(flag)                     (flag & TXN_FLAG_ONLINEREFRESH)
 
 /*----------------onlinerefresh标识操作相关   end-----------------*/
 
 /*----------------大事务标识操作相关 begin------------------------*/
 
-#define RIPPLE_TXN_SET_BIGTXN(flag)                             (flag |= RIPPLE_TXN_FLAG_BIGTXN)
-#define RIPPLE_TXN_UNSET_BIGTXN(flag)                           (flag &= ~(RIPPLE_TXN_FLAG_BIGTXN))
-#define RIPPLE_TXN_ISBIGTXN(flag)                               (flag & RIPPLE_TXN_FLAG_BIGTXN)
+#define TXN_SET_BIGTXN(flag)                             (flag |= TXN_FLAG_BIGTXN)
+#define TXN_UNSET_BIGTXN(flag)                           (flag &= ~(TXN_FLAG_BIGTXN))
+#define TXN_ISBIGTXN(flag)                               (flag & TXN_FLAG_BIGTXN)
 
 /*----------------大事务标识操作相关   end------------------------*/
 
-#define RIPPLE_TXN_SET_TRANS_TOAST(flag)                        (flag |= RIPPLE_TXN_FLAG_TOAST)
-#define RIPPLE_TXN_UNSET_TRANS_TOAST(flag)                      (flag &= ~(RIPPLE_TXN_FLAG_TOAST))
-#define RIPPLE_TXN_CHECK_TRANS_TOAST(flag)                      (flag & RIPPLE_TXN_FLAG_TOAST)
+#define TXN_SET_TRANS_TOAST(flag)                        (flag |= TXN_FLAG_TOAST)
+#define TXN_UNSET_TRANS_TOAST(flag)                      (flag &= ~(TXN_FLAG_TOAST))
+#define TXN_CHECK_TRANS_TOAST(flag)                      (flag & TXN_FLAG_TOAST)
 
-#define RIPPLE_TXN_SET_TRANS_DDL(flag)                          (flag |= RIPPLE_TXN_FLAG_DDL)
-#define RIPPLE_TXN_UNSET_TRANS_DDL(flag)                        (flag &= ~(RIPPLE_TXN_FLAG_DDL))
-#define RIPPLE_TXN_CHECK_TRANS_DDL(flag)                        (flag & RIPPLE_TXN_FLAG_DDL)
+#define TXN_SET_TRANS_DDL(flag)                          (flag |= TXN_FLAG_DDL)
+#define TXN_UNSET_TRANS_DDL(flag)                        (flag &= ~(TXN_FLAG_DDL))
+#define TXN_CHECK_TRANS_DDL(flag)                        (flag & TXN_FLAG_DDL)
 
-#define RIPPLE_TXN_SET_TRANS_INHASH(flag)                       (flag |= RIPPLE_TXN_FLAG_INHASH)
-#define RIPPLE_TXN_CHECK_TRANS_INHASH(flag)                     (flag & RIPPLE_TXN_FLAG_INHASH)
+#define TXN_SET_TRANS_INHASH(flag)                       (flag |= TXN_FLAG_INHASH)
+#define TXN_CHECK_TRANS_INHASH(flag)                     (flag & TXN_FLAG_INHASH)
 
 
-#define RIPPLE_TXN_CHECK_COULD_SAVE(flag) ((RIPPLE_TXN_CHECK_TRANS_TOAST(flag)) || (RIPPLE_TXN_CHECK_TRANS_DDL(flag)))
+#define TXN_CHECK_COULD_SAVE(flag) ((TXN_CHECK_TRANS_TOAST(flag)) || (TXN_CHECK_TRANS_DDL(flag)))
 
-typedef struct RIPPLE_TXN
+typedef struct TXN
 {
     FullTransactionId       xid;                /* 事务号                   */
                                                 /*
@@ -76,20 +76,20 @@ typedef struct RIPPLE_TXN
     bool                    commit;             /* 大事务中事务结束表示 */
     uint32                  curtlid;            /* 当前时间线id */
     uint16                  flag;               /* 用于标记该事务的特殊性, 是否处于行外存储或系统表处理流程中 */
-    ripple_txn_type         type;               /* 事务类型             */
+    txn_type         type;               /* 事务类型             */
     int64                   endtimestamp;       /* 事务结束时间戳 */
     uint64                  segno;              /* 文件号, 读取或写入的 */
     uint64                  stmtsize;
     uint64                  debugno;
-    ripple_recpos           start;
-    ripple_recpos           end;
-    ripple_recpos           redo;
-    ripple_recpos           restart;
-    ripple_recpos           confirm;
+    recpos           start;
+    recpos           end;
+    recpos           redo;
+    recpos           restart;
+    recpos           confirm;
     HTAB*                   toast_hash;         /* toast 缓存                                   */
-    List*                   sysdict;            /* 结构(ripple_txn_sysdict)                     */
-    List*                   sysdictHis;         /* 结构(ripple_catalogdata)  */
-    List*                   stmts;              /* 提交时将此语句写入到中转线程缓存, 结构内容为 ripple_txnstmt */
+    List*                   sysdict;            /* 结构(txn_sysdict)                     */
+    List*                   sysdictHis;         /* 结构(catalogdata)  */
+    List*                   stmts;              /* 提交时将此语句写入到中转线程缓存, 结构内容为 txnstmt */
     HTAB*                   hsyncdataset;       /* 
                                                  * 为了应对如下场景:
                                                  *  1、begin;                           ---开启一个事务
@@ -99,34 +99,34 @@ typedef struct RIPPLE_TXN
                                                  *  4、commit
                                                  */
     HTAB*                   oidmap;
-    struct RIPPLE_TXN*      prev;
-    struct RIPPLE_TXN*      next;
-    struct RIPPLE_TXN*      cachenext;
-} ripple_txn;
+    struct TXN*      prev;
+    struct TXN*      next;
+    struct TXN*      cachenext;
+} txn;
 
-typedef struct RIPPLE_TXN_DLIST
+typedef struct TXN_DLIST
 {
-    ripple_txn* head;
-    ripple_txn* tail;
-} ripple_txn_dlist;
+    txn* head;
+    txn* tail;
+} txn_dlist;
 
-void ripple_txn_initset(ripple_txn *tx_entry, FullTransactionId xid, XLogRecPtr startlsn);
+void txn_initset(txn *tx_entry, FullTransactionId xid, XLogRecPtr startlsn);
 
 /* 生成一个没有 xid 的事务 */
-ripple_txn* ripple_txn_init(FullTransactionId xid, XLogRecPtr startlsn, XLogRecPtr endlsn);
+txn* txn_init(FullTransactionId xid, XLogRecPtr startlsn, XLogRecPtr endlsn);
 
 /* 事务复制 */
-ripple_txn* ripple_txn_copy(ripple_txn* txn);
+txn* txn_copy(txn* txn);
 
-ripple_txn *ripple_txn_initbigtxn(FullTransactionId xid);
+txn *txn_initbigtxn(FullTransactionId xid);
 
-bool ripple_txn_addcommit(ripple_txn* txn);
+bool txn_addcommit(txn* txn);
 
-ripple_txn *ripple_txn_initabandon(ripple_txn *txninhash);
+txn *txn_initabandon(txn *txninhash);
 
 /* 删除事务缓存 */
-void ripple_txn_free(ripple_txn* txn);
+void txn_free(txn* txn);
 
-void ripple_txn_freevoid(void* args);
+void txn_freevoid(void* args);
 
 #endif

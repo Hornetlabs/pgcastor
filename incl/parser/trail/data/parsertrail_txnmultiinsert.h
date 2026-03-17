@@ -1,7 +1,7 @@
-#ifndef _RIPPLE_PARSERTRAIL_TXNMULTIINSERT_H
-#define _RIPPLE_PARSERTRAIL_TXNMULTIINSERT_H
+#ifndef _PARSERTRAIL_TXNMULTIINSERT_H
+#define _PARSERTRAIL_TXNMULTIINSERT_H
 
 
-bool ripple_parsertrail_txnmultiinsertapply(ripple_parsertrail* parsertrail, void* data);
+bool parsertrail_txnmultiinsertapply(parsertrail* parsertrail, void* data);
 
 #endif

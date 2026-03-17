@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_XMANAGER_METRICMSGDROP_H_
-#define _RIPPLE_XMANAGER_METRICMSGDROP_H_
+#ifndef _XMANAGER_METRICMSGDROP_H_
+#define _XMANAGER_METRICMSGDROP_H_
 
 /*
  * 处理 drop 命令
@@ -9,9 +9,9 @@
  *  4、删除data和conf文件
  *  5、返回成功消息
 */
-extern bool ripple_xmanager_metricmsg_parsedrop(ripple_xmanager_metric* xmetric,
-                                                 ripple_netpoolentry* npoolentry,
-                                                 ripple_netpacket* npacket);
+extern bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
+                                                 netpoolentry* npoolentry,
+                                                 netpacket* npacket);
 
 
 #endif

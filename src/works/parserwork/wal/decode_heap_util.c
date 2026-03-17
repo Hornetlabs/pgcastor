@@ -1,41 +1,41 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
 #include "utils/hash/hash_utils.h"
 #include "utils/string/stringinfo.h"
-#include "misc/ripple_misc_stat.h"
+#include "misc/misc_stat.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_errnodef.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
 #include "utils/mpage/mpage.h"
-#include "queue/ripple_queue.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadwalrecords.h"
-#include "cache/ripple_fpwcache.h"
-#include "cache/ripple_toastcache.h"
-#include "catalog/ripple_catalog.h"
-#include "catalog/ripple_class.h"
-#include "catalog/ripple_attribute.h"
-#include "stmts/ripple_txnstmt.h"
-#include "snapshot/ripple_snapshot.h"
-#include "works/parserwork/wal/ripple_rewind.h"
-#include "works/parserwork/wal/ripple_parserwork_decode.h"
-#include "works/parserwork/wal/ripple_decode_heap.h"
-#include "works/parserwork/wal/ripple_decode_heap_util.h"
+#include "queue/queue.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadwalrecords.h"
+#include "cache/fpwcache.h"
+#include "cache/toastcache.h"
+#include "catalog/catalog.h"
+#include "catalog/class.h"
+#include "catalog/attribute.h"
+#include "stmts/txnstmt.h"
+#include "snapshot/snapshot.h"
+#include "works/parserwork/wal/rewind.h"
+#include "works/parserwork/wal/parserwork_decode.h"
+#include "works/parserwork/wal/decode_heap.h"
+#include "works/parserwork/wal/decode_heap_util.h"
 
 
-static void get_all_sysdict(ripple_decodingcontext *decodingctx,
-                            ripple_txn *txn,
+static void get_all_sysdict(decodingcontext *decodingctx,
+                            txn *txn,
                             Oid search_oid,
                             bool search_his,
                             List **class_list,
@@ -76,7 +76,7 @@ static void get_all_sysdict(ripple_decodingcontext *decodingctx,
     }
 
     /* 查找pg_class */
-     temp_dict = ripple_catalog_get_class_sysdict(decodingctx->transcache->sysdicts->by_class, txn->sysdict, temp_sysdicthis, search_oid);
+     temp_dict = catalog_get_class_sysdict(decodingctx->trans_cache->sysdicts->by_class, txn->sysdict, temp_sysdicthis, search_oid);
     if (!temp_dict)
     {
         elog(RLOG_ERROR, "can't find pg_class relation");
@@ -86,7 +86,7 @@ static void get_all_sysdict(ripple_decodingcontext *decodingctx,
     temp_class_list = lappend(temp_class_list, temp_dict);
 
     /* 查找pg_namespace */
-    temp_dict = ripple_catalog_get_namespace_sysdict(decodingctx->transcache->sysdicts->by_namespace, txn->sysdict, temp_sysdicthis, nspid);
+    temp_dict = catalog_get_namespace_sysdict(decodingctx->trans_cache->sysdicts->by_namespace, txn->sysdict, temp_sysdicthis, nspid);
     if (!temp_dict)
     {
         elog(RLOG_ERROR, "can't find pg_namespace relation");
@@ -96,7 +96,7 @@ static void get_all_sysdict(ripple_decodingcontext *decodingctx,
     for (i = 0; i < natts; i++)
     {
         void *temp_att = NULL;
-        temp_att = ripple_catalog_get_attribute_sysdict(decodingctx->transcache->sysdicts->by_attribute,
+        temp_att = catalog_get_attribute_sysdict(decodingctx->trans_cache->sysdicts->by_attribute,
                                                       txn->sysdict,
                                                       temp_sysdicthis,
                                                       search_oid,
@@ -127,7 +127,7 @@ static void get_all_sysdict(ripple_decodingcontext *decodingctx,
         }
         if (!have_type_cache)
         {
-            void *temp_type = ripple_catalog_get_type_sysdict(decodingctx->transcache->sysdicts->by_type,
+            void *temp_type = catalog_get_type_sysdict(decodingctx->trans_cache->sysdicts->by_type,
                                                               NULL,
                                                               temp_sysdicthis,
                                                               att_typid);
@@ -159,7 +159,7 @@ static void get_all_sysdict(ripple_decodingcontext *decodingctx,
         }
         if (!have_type_cache)
         {
-           void *temp_type = ripple_catalog_get_type_sysdict(decodingctx->transcache->sysdicts->by_type,
+           void *temp_type = catalog_get_type_sysdict(decodingctx->trans_cache->sysdicts->by_type,
                                                               NULL,
                                                               temp_sysdicthis,
                                                               typ->typelem);
@@ -181,7 +181,7 @@ static void get_all_sysdict(ripple_decodingcontext *decodingctx,
         if (typ->typtype == 'r')
         {
             xk_pg_parser_sysdict_pgrange *temp_range = 
-                (xk_pg_parser_sysdict_pgrange *) ripple_catalog_get_range_sysdict(decodingctx->transcache->sysdicts->by_range,
+                (xk_pg_parser_sysdict_pgrange *) catalog_get_range_sysdict(decodingctx->trans_cache->sysdicts->by_range,
                                                                                   NULL,
                                                                                   temp_sysdicthis,
                                                                                   typ->oid);
@@ -202,7 +202,7 @@ static void get_all_sysdict(ripple_decodingcontext *decodingctx,
             }
             if (!have_type_cache)
             {
-                void *temp_type = ripple_catalog_get_type_sysdict(decodingctx->transcache->sysdicts->by_type,
+                void *temp_type = catalog_get_type_sysdict(decodingctx->trans_cache->sysdicts->by_type,
                                                                   NULL,
                                                                   temp_sysdicthis,
                                                                   temp_range->rngsubtype);
@@ -218,12 +218,12 @@ static void get_all_sysdict(ripple_decodingcontext *decodingctx,
         }
         else if (typ->typtype == 'e')
         {
-            temp_enum_list = (List *) ripple_catalog_get_enum_sysdict_list(decodingctx->transcache->sysdicts->by_enum,
+            temp_enum_list = (List *) catalog_get_enum_sysdict_list(decodingctx->trans_cache->sysdicts->by_enum,
                                                                            NULL,
                                                                            temp_sysdicthis,
                                                                            typ->oid);
         }
-        temp_dict = ripple_catalog_get_proc_sysdict(decodingctx->transcache->sysdicts->by_proc,
+        temp_dict = catalog_get_proc_sysdict(decodingctx->trans_cache->sysdicts->by_proc,
                                                     NULL,
                                                     temp_sysdicthis,
                                                     typ->typoutput);
@@ -336,11 +336,11 @@ static void get_all_sysdict(ripple_decodingcontext *decodingctx,
 }
 
 xk_pg_parser_sysdicts *heap_get_sysdict_by_oid(void *decodingctx_in,
-                                          ripple_txn *txn,
+                                          txn *txn,
                                           Oid oid,
                                           bool search_his)
 {
-    ripple_decodingcontext *decodingctx = (ripple_decodingcontext *)decodingctx_in;
+    decodingcontext *decodingctx = (decodingcontext *)decodingctx_in;
     xk_pg_parser_sysdicts *result = NULL;
     List *class_list = NULL,
          *attributes_list = NULL,
@@ -488,7 +488,7 @@ static HTAB *init_toast_hash(void)
     HASHCTL hashCtl = {'\0'};
 
     hashCtl.keysize = sizeof(Oid);
-    hashCtl.entrysize = sizeof(ripple_toast_cache_entry);
+    hashCtl.entrysize = sizeof(toast_cache_entry);
 
     result = hash_create("TOAST_HASH",
                           128,
@@ -509,20 +509,20 @@ static HTAB *init_toast_hash(void)
 
 #define TOAST_COLUMN_NUM 3
 
-void heap_storage_external_data(ripple_txn *txn, xk_pg_parser_translog_tbcolbase *trans_return)
+void heap_storage_external_data(txn *txn, xk_pg_parser_translog_tbcolbase *trans_return)
 {
     Oid     oid = 0;
     bool    find = false;
     xk_pg_parser_translog_tbcol_values *tb_col = (xk_pg_parser_translog_tbcol_values *)trans_return;
     xk_pg_parser_translog_tbcol_value *value = NULL;
-    ripple_toast_cache_entry *toast_entry = NULL;
-    ripple_chunk_data *chunk_data = NULL;
+    toast_cache_entry *toast_entry = NULL;
+    chunk_data *chunk_data = NULL;
 
     if (trans_return->m_dmltype == XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE)
         return;
 
-    chunk_data = rmalloc0(sizeof(ripple_chunk_data));
-    rmemset0(chunk_data, 0, 0, sizeof(ripple_chunk_data));
+    chunk_data = rmalloc0(sizeof(chunk_data));
+    rmemset0(chunk_data, 0, 0, sizeof(chunk_data));
 
     if (tb_col->m_valueCnt != TOAST_COLUMN_NUM)
         elog(RLOG_ERROR, "toast return trans have invalid vaule count");
@@ -549,7 +549,7 @@ void heap_storage_external_data(ripple_txn *txn, xk_pg_parser_translog_tbcolbase
     toast_entry = hash_search(txn->toast_hash, &oid, HASH_ENTER, &find);
     if (!find)
     {
-        rmemset1(toast_entry, 0, 0, sizeof(ripple_toast_cache_entry));
+        rmemset1(toast_entry, 0, 0, sizeof(toast_cache_entry));
         toast_entry->chunk_id = oid;
     }
 
@@ -758,25 +758,25 @@ void heap_free_trans_pre(xk_pg_parser_translog_translog2col *trans_data)
     }
 }
 
-static char *heap_get_output_name(ripple_decodingcontext* decodingctx, Oid oid)
+static char *heap_get_output_name(decodingcontext* decodingctx, Oid oid)
 {
-    ripple_catalog_type_value *pgtype_v = NULL;
-    ripple_catalog_proc_value   *pgproc_v = NULL;
+    catalog_type_value *pgtype_v = NULL;
+    catalog_proc_value   *pgproc_v = NULL;
 
     Oid typout = InvalidOid;
     bool find = false;
 
-    pgtype_v = hash_search(decodingctx->transcache->sysdicts->by_type, &oid, HASH_FIND, &find);
+    pgtype_v = hash_search(decodingctx->trans_cache->sysdicts->by_type, &oid, HASH_FIND, &find);
     if (!find)
         elog(RLOG_ERROR, "can't find pg_type record by oid: %u", oid);
 
-    typout = pgtype_v->ripple_type->typoutput;
+    typout = pgtype_v->type->typoutput;
 
-    pgproc_v = hash_search(decodingctx->transcache->sysdicts->by_proc, &typout, HASH_FIND, &find);
+    pgproc_v = hash_search(decodingctx->trans_cache->sysdicts->by_proc, &typout, HASH_FIND, &find);
     if (!find)
         elog(RLOG_ERROR, "can't find pg_proc record by oid: %u", typout);
 
-    return rstrdup(pgproc_v->ripple_proc->proname.data);
+    return rstrdup(pgproc_v->proc->proname.data);
 }
 
 static bool check_high_version(int dbtype, char *dbversion)
@@ -800,7 +800,7 @@ static bool check_high_version(int dbtype, char *dbversion)
     return result;
 }
 
-static char *heap_get_external_data(ripple_txn *txn,
+static char *heap_get_external_data(txn *txn,
                                     uint32_t chunkid,
                                     uint32_t *chunk_len,
                                     xk_pg_parser_translog_tbcol_valuetype_external *ext,
@@ -814,7 +814,7 @@ static char *heap_get_external_data(ripple_txn *txn,
 
     int len = 0;
     bool find = false;
-    ripple_toast_cache_entry *toast_entry = NULL;
+    toast_cache_entry *toast_entry = NULL;
 
     if (!txn->toast_hash)
         return NULL;
@@ -828,7 +828,7 @@ static char *heap_get_external_data(ripple_txn *txn,
     /* 是顺序放好的, 首先遍历一遍获取长度信息 */
     foreach(cell, toast_entry->chunk_list)
     {
-        ripple_chunk_data *chunk = (ripple_chunk_data *)lfirst(cell);
+        chunk_data *chunk = (chunk_data *)lfirst(cell);
         len += XK_PG_PARSER_VARSIZE_ANY_EXHDR(chunk->chunk_data);
     }
     len += VARHDRSZ;
@@ -841,7 +841,7 @@ static char *heap_get_external_data(ripple_txn *txn,
     i = 0;
     foreach(cell, toast_entry->chunk_list)
     {
-        ripple_chunk_data *chunk = (ripple_chunk_data *)lfirst(cell);
+        chunk_data *chunk = (chunk_data *)lfirst(cell);
 
         /* 第一次, 组装头部信息 */
         if (i == 0)
@@ -887,7 +887,7 @@ static char *heap_get_external_data(ripple_txn *txn,
     /* 我们已经将toast数据拼装完了, 删除缓存 */
     foreach(cell, toast_entry->chunk_list)
     {
-        ripple_chunk_data *chunk = (ripple_chunk_data *)lfirst(cell);
+        chunk_data *chunk = (chunk_data *)lfirst(cell);
         if (chunk->chunk_data)
             rfree(chunk->chunk_data);
         rfree(chunk);
@@ -900,8 +900,8 @@ static char *heap_get_external_data(ripple_txn *txn,
     return result;
 }
 
-static xk_pg_parser_translog_tbcol_value *heap_get_detoast_column(ripple_decodingcontext* decodingctx,
-                                                                  ripple_txn *txn,
+static xk_pg_parser_translog_tbcol_value *heap_get_detoast_column(decodingcontext* decodingctx,
+                                                                  txn *txn,
                                                                   xk_pg_parser_translog_tbcol_value *col)
 {
     int ereno = 0;
@@ -946,22 +946,22 @@ static xk_pg_parser_translog_tbcol_value *heap_get_detoast_column(ripple_decodin
     return result;
 }
 
-static void heap_assemble_insert(ripple_decodingcontext* decodingctx,
-                                 ripple_txn *txn,
+static void heap_assemble_insert(decodingcontext* decodingctx,
+                                 txn *txn,
                                  xk_pg_parser_translog_tbcol_values *tbcol_values)
 {
     StringInfo result_str = makeStringInfo();
     StringInfo column_name_str = makeStringInfo();
     StringInfo column_value_str = makeStringInfo();
 
-    ripple_txnstmt *stmt = rmalloc0(sizeof(ripple_txnstmt));
+    txnstmt *stmt = rmalloc0(sizeof(txnstmt));
 
     int column_index = 0;
     uint32_t stmt_len = 0;
     bool need_comma = false;
 
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DML;
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DML;
     stmt->start.wal.lsn = decodingctx->decode_record->start.wal.lsn;
     stmt->end.wal.lsn = decodingctx->decode_record->end.wal.lsn;
 
@@ -1058,7 +1058,7 @@ static void heap_assemble_insert(ripple_decodingcontext* decodingctx,
     rmemcpy0(stmt->stmt, 0, result_str->data, stmt->len - 1);
 
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
 
     deleteStringInfo(result_str);
     deleteStringInfo(column_name_str);
@@ -1073,34 +1073,34 @@ static void heap_assemble_insert(ripple_decodingcontext* decodingctx,
         elog(RLOG_DEBUG, "dml trans length:%u, result: %s", stmt_len, stmt->stmt);
 }
 
-static bool check_have_pkey(ripple_decodingcontext* decodingctx, ripple_txn *txn, Oid oid)
+static bool check_have_pkey(decodingcontext* decodingctx, txn *txn, Oid oid)
 {
-    HTAB *class_htab = decodingctx->transcache->sysdicts->by_class;
+    HTAB *class_htab = decodingctx->trans_cache->sysdicts->by_class;
     xk_pg_sysdict_Form_pg_class class = NULL;
 
-    class = (xk_pg_sysdict_Form_pg_class) ripple_catalog_get_class_sysdict(class_htab,
+    class = (xk_pg_sysdict_Form_pg_class) catalog_get_class_sysdict(class_htab,
                                                                            NULL,
                                                                            txn->sysdictHis,
                                                                            oid);
     return class->relhaspk;
 }
 
-static void heap_assemble_delete(ripple_decodingcontext* decodingctx,
-                                 ripple_txn *txn,
+static void heap_assemble_delete(decodingcontext* decodingctx,
+                                 txn *txn,
                                  xk_pg_parser_translog_tbcol_values *tbcol_values,
                                  Oid oid)
 {
     StringInfo result_str = makeStringInfo();
     StringInfo where_str = makeStringInfo();
 
-    ripple_txnstmt *stmt = rmalloc0(sizeof(ripple_txnstmt));
+    txnstmt *stmt = rmalloc0(sizeof(txnstmt));
 
     int column_index = 0;
     bool have_data = false;
     bool need_and = false;
 
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DML;
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DML;
     stmt->start.wal.lsn = decodingctx->decode_record->start.wal.lsn;
     stmt->end.wal.lsn = decodingctx->decode_record->end.wal.lsn;
 
@@ -1184,7 +1184,7 @@ static void heap_assemble_delete(ripple_decodingcontext* decodingctx,
         uint32_t stmt_len = 0;
         //txn->stmtsize += 20;
         txn->stmtsize += stmt->len;
-        decodingctx->transcache->totalsize += stmt->len;
+        decodingctx->trans_cache->totalsize += stmt->len;
         txn->stmts = lappend(txn->stmts, (void*)stmt);
         stmt_len = strlen(stmt->stmt) + 1;
         if (stmt_len > 1000)
@@ -1194,8 +1194,8 @@ static void heap_assemble_delete(ripple_decodingcontext* decodingctx,
     }
 }
 
-static void heap_assemble_update(ripple_decodingcontext* decodingctx,
-                                 ripple_txn *txn,
+static void heap_assemble_update(decodingcontext* decodingctx,
+                                 txn *txn,
                                  xk_pg_parser_translog_tbcol_values *tbcol_values,
                                  Oid oid)
 {
@@ -1203,15 +1203,15 @@ static void heap_assemble_update(ripple_decodingcontext* decodingctx,
     StringInfo column_new_str = makeStringInfo();
     StringInfo column_old_str = makeStringInfo();
 
-    ripple_txnstmt *stmt = rmalloc0(sizeof(ripple_txnstmt));
+    txnstmt *stmt = rmalloc0(sizeof(txnstmt));
 
     int column_index = 0;
     bool have_data = false;
     bool need_sep = false;
     bool need_and = false;
 
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DML;
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DML;
     stmt->start.wal.lsn = decodingctx->decode_record->start.wal.lsn;
     stmt->end.wal.lsn = decodingctx->decode_record->end.wal.lsn;
 
@@ -1364,7 +1364,7 @@ static void heap_assemble_update(ripple_decodingcontext* decodingctx,
         uint32_t stmt_len = 0;
         //txn->stmtsize += 20;
         txn->stmtsize += stmt->len;
-        decodingctx->transcache->totalsize += stmt->len;
+        decodingctx->trans_cache->totalsize += stmt->len;
         txn->stmts = lappend(txn->stmts, (void*)stmt);
         stmt_len = strlen(stmt->stmt) + 1;
         if (stmt_len > 1000)
@@ -1374,15 +1374,15 @@ static void heap_assemble_update(ripple_decodingcontext* decodingctx,
     }
 }
 
-static void heap_assemble_multi_insert(ripple_decodingcontext* decodingctx,
-                                       ripple_txn *txn,
+static void heap_assemble_multi_insert(decodingcontext* decodingctx,
+                                       txn *txn,
                                        xk_pg_parser_translog_tbcol_nvalues *tbcol_nvalues)
 {
     StringInfo result_str = NULL;
     StringInfo column_name_str = NULL;
     StringInfo column_value_str = NULL;
 
-    ripple_txnstmt *stmt = NULL;
+    txnstmt *stmt = NULL;
 
     int column_index = 0;
     int row_index = 0;
@@ -1394,9 +1394,9 @@ static void heap_assemble_multi_insert(ripple_decodingcontext* decodingctx,
         column_name_str = makeStringInfo();
         column_value_str = makeStringInfo();
 
-        stmt = rmalloc0(sizeof(ripple_txnstmt));
-        rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-        stmt->type = RIPPLE_TXNSTMT_TYPE_DML;
+        stmt = rmalloc0(sizeof(txnstmt));
+        rmemset0(stmt, 0, 0, sizeof(txnstmt));
+        stmt->type = TXNSTMT_TYPE_DML;
         stmt->start.wal.lsn = decodingctx->decode_record->start.wal.lsn;
         stmt->end.wal.lsn = decodingctx->decode_record->end.wal.lsn;
 
@@ -1480,7 +1480,7 @@ static void heap_assemble_multi_insert(ripple_decodingcontext* decodingctx,
         deleteStringInfo(column_value_str);
         //txn->stmtsize += 20;
         txn->stmtsize += stmt->len;
-        decodingctx->transcache->totalsize += stmt->len;
+        decodingctx->trans_cache->totalsize += stmt->len;
         txn->stmts = lappend(txn->stmts, (void*)stmt);
 
         stmt_len = strlen(stmt->stmt) + 1;
@@ -1492,11 +1492,11 @@ static void heap_assemble_multi_insert(ripple_decodingcontext* decodingctx,
 }
 
 void heap_parser2sql(void* decodingctx_in,
-                     ripple_txn *txn,
+                     txn *txn,
                      xk_pg_parser_translog_tbcolbase *trans_return,
                      Oid oid)
 {
-    ripple_decodingcontext* decodingctx = (ripple_decodingcontext*) decodingctx_in;
+    decodingcontext* decodingctx = (decodingcontext*) decodingctx_in;
     switch (trans_return->m_dmltype)
     {
         case XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT:
@@ -1570,15 +1570,15 @@ Oid get_real_oid_from_oidmap(HTAB *htab, Oid temp)
 }
 
 void heap_parser_count_size(void* decodingctx_in,
-                            ripple_txn *txn,
+                            txn *txn,
                             xk_pg_parser_translog_tbcolbase *trans_return,
                             Oid oid)
 {
-    ripple_decodingcontext* decodingctx = (ripple_decodingcontext*)decodingctx_in;
+    decodingcontext* decodingctx = (decodingcontext*)decodingctx_in;
     bool deal_toast = false;
-    ripple_txnstmt *stmt = rmalloc0(sizeof(ripple_txnstmt));
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    stmt->type = RIPPLE_TXNSTMT_TYPE_DML;
+    txnstmt *stmt = rmalloc0(sizeof(txnstmt));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    stmt->type = TXNSTMT_TYPE_DML;
     stmt->start.wal.lsn = decodingctx->decode_record->start.wal.lsn;
     stmt->end.wal.lsn = decodingctx->decode_record->end.wal.lsn;
     stmt->extra0.wal.lsn = decodingctx->decode_record->end.wal.lsn;
@@ -1652,7 +1652,7 @@ void heap_parser_count_size(void* decodingctx_in,
         int index_column = 0;
         int index_key = 0;
         List* index_list = NULL;
-        ripple_catalog_index_value* index_value = NULL;
+        catalog_index_value* index_value = NULL;
         uint32_t index_key_num = 0;
         uint32_t* index_key_ptr = NULL;
 
@@ -1660,7 +1660,7 @@ void heap_parser_count_size(void* decodingctx_in,
         {
             ListCell* cell = NULL;
 
-            index_list = ripple_catalog_get_index_sysdict_list(decodingctx->transcache->sysdicts->by_index,
+            index_list = catalog_get_index_sysdict_list(decodingctx->trans_cache->sysdicts->by_index,
                                                                NULL,
                                                                txn->sysdictHis,
                                                                oid);
@@ -1670,19 +1670,19 @@ void heap_parser_count_size(void* decodingctx_in,
             {
                 foreach(cell, index_list)
                 {
-                    ripple_catalog_index_value* temp_index_value = (ripple_catalog_index_value*)lfirst(cell);
+                    catalog_index_value* temp_index_value = (catalog_index_value*)lfirst(cell);
 
                     index_value = temp_index_value;
 
                     /* 优先设置主键索引 */
-                    if (temp_index_value->ripple_index->indisprimary)
+                    if (temp_index_value->index->indisprimary)
                     {
                         break;
                     }
                 }
                 /* 设置索引键 */
-                index_key_num = index_value->ripple_index->indnatts;
-                index_key_ptr = index_value->ripple_index->indkey;
+                index_key_num = index_value->index->indnatts;
+                index_key_ptr = index_value->index->indkey;
             }
         }
 
@@ -1841,15 +1841,15 @@ void heap_parser_count_size(void* decodingctx_in,
     }
     stmt->stmt = (void *)trans_return;
     txn->stmtsize += stmt->len;
-    decodingctx->transcache->totalsize += stmt->len;
+    decodingctx->trans_cache->totalsize += stmt->len;
     txn->stmts = lappend(txn->stmts, (void*)stmt);
     if (deal_toast)
     {
-        RIPPLE_TXN_UNSET_TRANS_TOAST(txn->flag);
+        TXN_UNSET_TRANS_TOAST(txn->flag);
     }
 }
 
-List *ripple_decode_heap_multi_insert_save_sysdict_as_insert(List *sysdict,
+List *decode_heap_multi_insert_save_sysdict_as_insert(List *sysdict,
                                                              xk_pg_parser_translog_tbcolbase *trans_return)
 {
     xk_pg_parser_translog_tbcol_nvalues *multi_values =
@@ -1859,7 +1859,7 @@ List *ripple_decode_heap_multi_insert_save_sysdict_as_insert(List *sysdict,
     /* 展开multi insert */
     for (index_row = 0; index_row < multi_values->m_rowCnt; index_row++)
     {
-        ripple_txn_sysdict *dict = NULL;
+        txn_sysdict *dict = NULL;
         xk_pg_parser_translog_tbcol_values *temp_colvalues = NULL;
 
         temp_colvalues = rmalloc0(sizeof(xk_pg_parser_translog_tbcol_values));
@@ -1887,7 +1887,7 @@ List *ripple_decode_heap_multi_insert_save_sysdict_as_insert(List *sysdict,
         multi_values->m_rows[index_row].m_new_values = NULL;
 
         /* 保存到系统表链表中 */
-        dict = rmalloc0(sizeof(ripple_txn_sysdict));
+        dict = rmalloc0(sizeof(txn_sysdict));
         dict->colvalues = temp_colvalues;
         dict->convert_colvalues = NULL;
 
@@ -1901,17 +1901,17 @@ List *ripple_decode_heap_multi_insert_save_sysdict_as_insert(List *sysdict,
 }
 
 /* 拷贝系统表 */
-List *ripple_decode_heap_sysdicthis_copy(List *his)
+List *decode_heap_sysdicthis_copy(List *his)
 {
     List *result = NULL;
     ListCell *cell = NULL;
-    ripple_catalogdata *catalog_copy = NULL;
+    catalogdata *catalog_copy_obj = NULL;
 
     foreach(cell, his)
     {
-        ripple_catalogdata *catalog = (ripple_catalogdata *)lfirst(cell);
-        catalog_copy = ripple_catalog_copy(catalog);
-        result = lappend(result, (void *)catalog_copy);
+        catalogdata *catalog = (catalogdata *)lfirst(cell);
+        catalog_copy_obj = catalog_copy(catalog);
+        result = lappend(result, (void *)catalog_copy_obj);
     }
     return result;
 }

@@ -1,4 +1,4 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/rbtree/rbtree.h"
 
 /*
@@ -17,7 +17,7 @@ static rbtreenode *rbtree_newnode(void)
         return NULL;
     }
     rmemset0(tnode, 0, '\0', sizeof(rbtreenode));
-    tnode->color = RIPPLE_RBTREE_COLOR_RED;
+    tnode->color = RBTREE_COLOR_RED;
     tnode->data = NULL;
     return tnode;
 }
@@ -47,7 +47,7 @@ rbtree* rbtree_init(treenodedatacmp datacmp, treenodedatafree datafree, treenode
         return NULL;
     }
 
-    sentinel->color = RIPPLE_RBTREE_COLOR_BLACK;
+    sentinel->color = RBTREE_COLOR_BLACK;
     sentinel->left = sentinel->right = sentinel->parent = NULL;
     tree->root = tree->sentinel = sentinel;
     tree->cmpare = datacmp;
@@ -141,7 +141,7 @@ static void rbtree_addnode(rbtree* tree, rbtreenode *node)
     node->parent = tnode;
     node->left = tree->sentinel;
     node->right = tree->sentinel;
-    node->color = RIPPLE_RBTREE_COLOR_RED;
+    node->color = RBTREE_COLOR_RED;
 }
 
 
@@ -173,7 +173,7 @@ bool rbtree_insert(rbtree *rbtree, void* data)
         node->parent = NULL;
         node->left = rbtree->sentinel;
         node->right = rbtree->sentinel;
-        node->color = RIPPLE_RBTREE_COLOR_BLACK;
+        node->color = RBTREE_COLOR_BLACK;
         *root = node;
         return true;
     }
@@ -182,16 +182,16 @@ bool rbtree_insert(rbtree *rbtree, void* data)
     rbtree_addnode(rbtree, node);
 
     /* rebalance */
-    while((node != *root) && (node->parent->color == RIPPLE_RBTREE_COLOR_RED))
+    while((node != *root) && (node->parent->color == RBTREE_COLOR_RED))
     {
         if(node->parent == node->parent->parent->left)
         {
             temp = node->parent->parent->right;
-            if(temp->color == RIPPLE_RBTREE_COLOR_RED)
+            if(temp->color == RBTREE_COLOR_RED)
             {
-                temp->color = RIPPLE_RBTREE_COLOR_BLACK;
-                node->parent->color = RIPPLE_RBTREE_COLOR_BLACK;
-                node->parent->parent->color = RIPPLE_RBTREE_COLOR_RED;
+                temp->color = RBTREE_COLOR_BLACK;
+                node->parent->color = RBTREE_COLOR_BLACK;
+                node->parent->parent->color = RBTREE_COLOR_RED;
                 node = node->parent->parent;
             }
             else
@@ -203,18 +203,18 @@ bool rbtree_insert(rbtree *rbtree, void* data)
                     rbtree_leftrotate(root, node, rbtree->sentinel);
                 }
 
-                node->parent->color = RIPPLE_RBTREE_COLOR_BLACK;
-                node->parent->parent->color = RIPPLE_RBTREE_COLOR_RED;
+                node->parent->color = RBTREE_COLOR_BLACK;
+                node->parent->parent->color = RBTREE_COLOR_RED;
                 rbtree_rightrotate(root, node->parent->parent, rbtree->sentinel);
             }
         }
         else
         {
             temp = node->parent->parent->left;
-            if(temp->color == RIPPLE_RBTREE_COLOR_RED){
-                temp->color = RIPPLE_RBTREE_COLOR_BLACK;
-                node->parent->color = RIPPLE_RBTREE_COLOR_BLACK;
-                node->parent->parent->color = RIPPLE_RBTREE_COLOR_RED;
+            if(temp->color == RBTREE_COLOR_RED){
+                temp->color = RBTREE_COLOR_BLACK;
+                node->parent->color = RBTREE_COLOR_BLACK;
+                node->parent->parent->color = RBTREE_COLOR_RED;
                 node = node->parent->parent;
             }
             else
@@ -225,13 +225,13 @@ bool rbtree_insert(rbtree *rbtree, void* data)
                     /* right rotate */
                     rbtree_rightrotate(root, node, rbtree->sentinel);
                 }
-                node->parent->color = RIPPLE_RBTREE_COLOR_BLACK;
-                node->parent->parent->color = RIPPLE_RBTREE_COLOR_RED;
+                node->parent->color = RBTREE_COLOR_BLACK;
+                node->parent->parent->color = RBTREE_COLOR_RED;
                 rbtree_leftrotate(root, node->parent->parent, rbtree->sentinel);
             }
         }
     }
-    (*root)->color = RIPPLE_RBTREE_COLOR_BLACK;
+    (*root)->color = RBTREE_COLOR_BLACK;
     return true;
 }
 
@@ -247,7 +247,7 @@ static rbtreenode *rbtree_minnode(rbtreenode *node, rbtreenode *sentinel)
 /* delete node */
 void rbtree_delete(rbtree *rbtree, rbtreenode *node)
 {
-    int    color = RIPPLE_RBTREE_COLOR_RED;
+    int    color = RBTREE_COLOR_RED;
     rbtreenode *bro = NULL;
     rbtreenode *subnode = NULL;
     rbtreenode *temp = NULL;
@@ -291,7 +291,7 @@ void rbtree_delete(rbtree *rbtree, rbtreenode *node)
     if(subnode == rbtree->root)
     {
         *root = temp;
-        temp->color = RIPPLE_RBTREE_COLOR_BLACK;
+        temp->color = RBTREE_COLOR_BLACK;
         return;
     }
     
@@ -355,7 +355,7 @@ void rbtree_delete(rbtree *rbtree, rbtreenode *node)
     }
     rfree(node);
 
-    if(RIPPLE_RBTREE_COLOR_RED == color)
+    if(RBTREE_COLOR_RED == color)
     {
         return;
     }
@@ -363,68 +363,68 @@ void rbtree_delete(rbtree *rbtree, rbtreenode *node)
     /*
      * reblance
      *  */
-    while(temp != rbtree->root && (RIPPLE_RBTREE_COLOR_BLACK == temp->color)){
+    while(temp != rbtree->root && (RBTREE_COLOR_BLACK == temp->color)){
         if(temp == temp->parent->left){
             bro = temp->parent->right;
             /* case 1: bro's red, need right rotate */
-            if(RIPPLE_RBTREE_COLOR_RED == bro->color){
-                bro->color = RIPPLE_RBTREE_COLOR_BLACK;
-                temp->parent->color = RIPPLE_RBTREE_COLOR_RED;
+            if(RBTREE_COLOR_RED == bro->color){
+                bro->color = RBTREE_COLOR_BLACK;
+                temp->parent->color = RBTREE_COLOR_RED;
                 rbtree_leftrotate(&(rbtree->root), temp->parent, sentinel);
                 bro = temp->parent->right;
             }
     
-            if(RIPPLE_RBTREE_COLOR_BLACK == bro->left->color && RIPPLE_RBTREE_COLOR_BLACK == bro->right->color){
+            if(RBTREE_COLOR_BLACK == bro->left->color && RBTREE_COLOR_BLACK == bro->right->color){
                 /* 兄弟节点的子节点都为黑色 */
-                bro->color = RIPPLE_RBTREE_COLOR_RED;
+                bro->color = RBTREE_COLOR_RED;
                 temp = temp->parent;
             }
             else{
-                if (RIPPLE_RBTREE_COLOR_BLACK == bro->right->color) {
-                    bro->left->color = RIPPLE_RBTREE_COLOR_BLACK;
-                    bro->color = RIPPLE_RBTREE_COLOR_RED;
+                if (RBTREE_COLOR_BLACK == bro->right->color) {
+                    bro->left->color = RBTREE_COLOR_BLACK;
+                    bro->color = RBTREE_COLOR_RED;
                     rbtree_rightrotate(&(rbtree->root), bro, sentinel);
                     bro = temp->parent->right;
                 }
     
                 bro->color = temp->parent->color;
-                temp->parent->color = RIPPLE_RBTREE_COLOR_BLACK;
-                bro->right->color= RIPPLE_RBTREE_COLOR_BLACK;
+                temp->parent->color = RBTREE_COLOR_BLACK;
+                bro->right->color= RBTREE_COLOR_BLACK;
                 rbtree_leftrotate(&(rbtree->root), temp->parent, sentinel);
                 temp = rbtree->root;
             }
         }
         else{
             bro = temp->parent->left;
-            if(RIPPLE_RBTREE_COLOR_RED == bro->color){
-                bro->color = RIPPLE_RBTREE_COLOR_BLACK;
-                temp->parent->color = RIPPLE_RBTREE_COLOR_RED;
+            if(RBTREE_COLOR_RED == bro->color){
+                bro->color = RBTREE_COLOR_BLACK;
+                temp->parent->color = RBTREE_COLOR_RED;
                 rbtree_rightrotate(&(rbtree->root), temp->parent, sentinel);
                 bro = temp->parent->left;
             }
     
-            if(RIPPLE_RBTREE_COLOR_BLACK == bro->right->color && RIPPLE_RBTREE_COLOR_BLACK == bro->left->color){
-                bro->color = RIPPLE_RBTREE_COLOR_RED;
+            if(RBTREE_COLOR_BLACK == bro->right->color && RBTREE_COLOR_BLACK == bro->left->color){
+                bro->color = RBTREE_COLOR_RED;
                 temp = temp->parent;
             }
             else{
-                if(RIPPLE_RBTREE_COLOR_BLACK == bro->left->color){
-                    bro->right->color = RIPPLE_RBTREE_COLOR_BLACK;
-                    bro->color = RIPPLE_RBTREE_COLOR_RED;
+                if(RBTREE_COLOR_BLACK == bro->left->color){
+                    bro->right->color = RBTREE_COLOR_BLACK;
+                    bro->color = RBTREE_COLOR_RED;
                     rbtree_leftrotate(&(rbtree->root), bro, sentinel);
                     bro = temp->parent->left;
                 }
     
                 bro->color = temp->parent->color;
-                temp->parent->color = RIPPLE_RBTREE_COLOR_BLACK;
-                bro->left->color = RIPPLE_RBTREE_COLOR_BLACK;
+                temp->parent->color = RBTREE_COLOR_BLACK;
+                bro->left->color = RBTREE_COLOR_BLACK;
                 rbtree_rightrotate(&(rbtree->root), temp->parent, sentinel);
                 temp = rbtree->root;
             }
         }
     }
     
-    temp->color = RIPPLE_RBTREE_COLOR_BLACK;
+    temp->color = RBTREE_COLOR_BLACK;
 }
 
 

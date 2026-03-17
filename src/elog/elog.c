@@ -1,6 +1,6 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
-#include "port/thread/ripple_thread.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 
 #define ELOG_ERRORSTACKSIZE             30
@@ -31,7 +31,7 @@ static char *m_loglevel[] = {
 
 static bool                     m_init = false;
 static int                      m_logfd = -1;
-static char                     m_logfilename[RIPPLE_MAXPATH] = { 0 };
+static char                     m_logfilename[MAXPATH] = { 0 };
 static int                      m_year = 0;
 static int                      m_month = 0;
 static int                      m_day = 0;
@@ -42,7 +42,7 @@ static elog_errorstacks*        m_errorstack = NULL;
 static pthread_mutex_t  m_loglock;
 
 /* 初始化错误堆栈 */
-bool ripple_log_initerrorstack(void)
+bool log_initerrorstack(void)
 {
     int index = 0;
     if (NULL != m_errorstack)
@@ -68,7 +68,7 @@ bool ripple_log_initerrorstack(void)
     return true;
 }
 
-char* ripple_log_geterrormsg(void)
+char* log_geterrormsg(void)
 {
     if (NULL == m_errorstack)
     {
@@ -78,7 +78,7 @@ char* ripple_log_geterrormsg(void)
     return m_errorstack->estacks[0].emsg;
 }
 
-void ripple_log_destroyerrorstack(void)
+void log_destroyerrorstack(void)
 {
     if (NULL == m_errorstack)
     {
@@ -88,7 +88,7 @@ void ripple_log_destroyerrorstack(void)
     m_errorstack = NULL;
 }
 
-void ripple_log_init(void)
+void log_init(void)
 {
     time_t now;
     struct tm *pcnow = NULL;
@@ -103,7 +103,7 @@ void ripple_log_init(void)
     }
 
     /* 获取日志存放路径 */
-    m_logdir = guc_getConfigOption(RIPPLE_CFG_KEY_LOG_DIR);
+    m_logdir = guc_getConfigOption(CFG_KEY_LOG_DIR);
     if(NULL == m_logdir)
     {
         m_logdir = (char*)rmalloc0((strlen("log") + 1));
@@ -111,10 +111,10 @@ void ripple_log_init(void)
         rmemcpy0(m_logdir, 0 , "log", strlen("log"));
     }
 
-    MakeDir(m_logdir);
+    osal_make_dir(m_logdir);
 
     /* 获取名称 */
-    m_jobname = guc_getConfigOption(RIPPLE_CFG_KEY_JOBNAME);
+    m_jobname = guc_getConfigOption(CFG_KEY_JOBNAME);
     if(NULL == m_jobname)
     {
         m_jobname = "ripple";
@@ -124,7 +124,7 @@ void ripple_log_init(void)
     m_month = (pcnow->tm_mon + 1);
     m_day = pcnow->tm_mday;
 
-    snprintf(m_logfilename, RIPPLE_MAXPATH, "%s/%s_%d-%d-%d-%02d%02d%02d.log",
+    snprintf(m_logfilename, MAXPATH, "%s/%s_%d-%d-%d-%02d%02d%02d.log",
                                                 m_logdir,
                                                 m_jobname,
                                                 pcnow->tm_year + 1900,
@@ -135,7 +135,7 @@ void ripple_log_init(void)
                                                 pcnow->tm_sec);
 
     /* 打开文件 */
-    m_logfd = BasicOpenFile(m_logfilename, O_RDWR | O_CREAT | RIPPLE_BINARY);
+    m_logfd = osal_basic_open_file(m_logfilename, O_RDWR | O_CREAT | BINARY);
     if (m_logfd  < 0)
     {
         printf("open file %s error %s\n", m_logfilename, strerror(errno));
@@ -144,22 +144,22 @@ void ripple_log_init(void)
     }
 
     /* 日志清理 */
-    FileTruncate(m_logfd, 0);
+    osal_file_truncate(m_logfd, 0);
 
     printf("\nThe logs of the ripple will be stored in %s\n", m_logfilename);
     m_init = true;
 
-    ripple_thread_mutex_init(&m_loglock, NULL);
+    osal_thread_mutex_init(&m_loglock, NULL);
 }
 
 /* 日志打印 */
-void ripple_log(const char *filename, int line, int level, const char *format, ...)
+void rlog(const char *filename, int line, int level, const char *format, ...)
 {
 	int pos = 0;
     int newfd = -1;
 	time_t now;
     char logFormat[] = {"\n %d-%d-%d:%d:%d:%d:%d|%s:%d|%s|"};
-    char logfilname[RIPPLE_MAXPATH] = { 0 };
+    char logfilname[MAXPATH] = { 0 };
 	char logInfo[MAX_LOGLINESIZE] = {0};
 	struct timeval tval;
 	struct tm *pcnow;
@@ -194,7 +194,7 @@ void ripple_log(const char *filename, int line, int level, const char *format, .
 
     if(true == m_init)
     {
-        ripple_thread_lock(&m_loglock);
+        osal_thread_lock(&m_loglock);
     }
 
     if(true == m_init)
@@ -204,7 +204,7 @@ void ripple_log(const char *filename, int line, int level, const char *format, .
             m_year = (pcnow->tm_year + 1900);
             m_month = (pcnow->tm_mon + 1);
             m_day = pcnow->tm_mday;
-            snprintf(m_logfilename, RIPPLE_MAXPATH, "%s/%s_%d-%d-%d-%02d%02d%02d.log",
+            snprintf(m_logfilename, MAXPATH, "%s/%s_%d-%d-%d-%02d%02d%02d.log",
                                                     m_logdir,
                                                     m_jobname,
                                                     pcnow->tm_year + 1900,
@@ -214,7 +214,7 @@ void ripple_log(const char *filename, int line, int level, const char *format, .
                                                     pcnow->tm_min,
                                                     pcnow->tm_sec);
             
-            m_logfd = BasicOpenFile(m_logfilename, O_RDWR | O_CREAT | RIPPLE_BINARY);
+            m_logfd = osal_basic_open_file(m_logfilename, O_RDWR | O_CREAT | BINARY);
             if (m_logfd  < 0)
             {
                 printf("open file %s error %s\n", m_logfilename, strerror(errno));
@@ -223,7 +223,7 @@ void ripple_log(const char *filename, int line, int level, const char *format, .
         }
         else
         {
-            snprintf(logfilname, RIPPLE_MAXPATH, "%s/%s_%d-%d-%d-%02d%02d%02d.log",
+            snprintf(logfilname, MAXPATH, "%s/%s_%d-%d-%d-%02d%02d%02d.log",
                                                     m_logdir,
                                                     m_jobname,
                                                     pcnow->tm_year + 1900,
@@ -239,19 +239,19 @@ void ripple_log(const char *filename, int line, int level, const char *format, .
                 || m_day != pcnow->tm_mday)
             {
                 /* 切换 */
-                newfd = BasicOpenFile(logfilname, O_RDWR | O_CREAT | RIPPLE_BINARY);
+                newfd = osal_basic_open_file(logfilname, O_RDWR | O_CREAT | BINARY);
                 if(newfd > 0)
                 {
-                    CloseTransientFile(m_logfd);
+                    osal_close_transient_file(m_logfd);
                 }
                 m_logfd = newfd;
-                memcpy(m_logfilename, logfilname, RIPPLE_MAXPATH);
+                memcpy(m_logfilename, logfilname, MAXPATH);
                 m_year = (pcnow->tm_year + 1900);
                 m_month = (pcnow->tm_mon + 1);
                 m_day = pcnow->tm_mday;
             }
         }
-        FileWrite(m_logfd, logInfo, strlen(logInfo));
+        osal_file_write(m_logfd, logInfo, strlen(logInfo));
 
         if(false == g_closestd)
         {
@@ -280,7 +280,7 @@ void ripple_log(const char *filename, int line, int level, const char *format, .
 
     if(true == m_init)
     {
-        ripple_thread_unlock(&m_loglock);
+        osal_thread_unlock(&m_loglock);
     }
 
     if(level >= RLOG_ERROR)
@@ -291,13 +291,13 @@ void ripple_log(const char *filename, int line, int level, const char *format, .
         }
         else
         {
-            ripple_pthread_exit(NULL);
+            pthread_exit(NULL);
         }
     }
 }
 
 
-void ripple_setloglevel(const char* loglevel)
+void setloglevel(const char* loglevel)
 {
 	if(strlen(loglevel) == strlen("DEBUG")
 		&& 0 == strcasecmp(loglevel, "DEBUG"))

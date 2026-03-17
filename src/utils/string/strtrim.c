@@ -1,4 +1,4 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/string/strtrim.h"
 
 /* 清除左面的空格和制表符 */

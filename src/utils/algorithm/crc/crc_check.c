@@ -1,6 +1,6 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/algorithm/crc/crc_check.h"
-#include "works/splitwork/wal/ripple_wal_define.h"
+#include "works/splitwork/wal/wal_define.h"
 
 static const uint32 pg_crc32c_table[8][256];
 

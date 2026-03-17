@@ -1,37 +1,37 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/hash/hash_search.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/guc/guc.h"
 #include "utils/mpage/mpage.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_file_buffer.h"
-#include "storage/ripple_ffsmgr.h"
-#include "storage/trail/ripple_fftrail.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadtrailrecords.h"
-#include "loadrecords/ripple_trailpage.h"
+#include "storage/ff_detail.h"
+#include "storage/file_buffer.h"
+#include "storage/ffsmgr.h"
+#include "storage/trail/fftrail.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadtrailrecords.h"
+#include "loadrecords/trailpage.h"
 
 /* 初始化 */
-ripple_loadtrailrecords* ripple_loadtrailrecords_init(void)
+loadtrailrecords* loadtrailrecords_init(void)
 {
-    ripple_loadtrailrecords* loadrecords = NULL;
+    loadtrailrecords* loadrecords = NULL;
 
-    loadrecords = (ripple_loadtrailrecords*)rmalloc0(sizeof(ripple_loadtrailrecords));
+    loadrecords = (loadtrailrecords*)rmalloc0(sizeof(loadtrailrecords));
     if(NULL == loadrecords)
     {
         elog(RLOG_WARNING, "load trail records init error, out of memory");
         return NULL;
     }
-    rmemset0(loadrecords, 0, '\0', sizeof(ripple_loadtrailrecords));
-    loadrecords->loadrecords.filesize = RIPPLE_MB2BYTE(guc_getConfigOptionInt(RIPPLE_CFG_KEY_TRAIL_MAX_SIZE));
-    loadrecords->loadrecords.blksize = RIPPLE_FILE_BUFFER_SIZE;
-    loadrecords->loadrecords.type = RIPPLE_LOADRECORDS_TYPE_TRAIL;
-    loadrecords->compatibility = guc_getConfigOptionInt(RIPPLE_CFG_KEY_COMPATIBILITY);
+    rmemset0(loadrecords, 0, '\0', sizeof(loadtrailrecords));
+    loadrecords->loadrecords.filesize = MB2BYTE(guc_getConfigOptionInt(CFG_KEY_TRAIL_MAX_SIZE));
+    loadrecords->loadrecords.blksize = FILE_BUFFER_SIZE;
+    loadrecords->loadrecords.type = LOADRECORDS_TYPE_TRAIL;
+    loadrecords->compatibility = guc_getConfigOptionInt(CFG_KEY_COMPATIBILITY);
     loadrecords->fileid = 0;
     loadrecords->foffset = 0;
     loadrecords->loadpage = NULL;
@@ -46,15 +46,15 @@ ripple_loadtrailrecords* ripple_loadtrailrecords_init(void)
         return NULL;
     }
     rmemset0(loadrecords->mp, 0, '\0', sizeof(mpage));
-    rmemset1(loadrecords->recordcross.rectail, 0, '\0', RIPPLE_RECORD_TAIL_LEN);
+    rmemset1(loadrecords->recordcross.rectail, 0, '\0', RECORD_TAIL_LEN);
     return loadrecords;
 }
 
 /* 设置加载trail文件的方式 */
-bool ripple_loadtrailrecords_setloadpageroutine(ripple_loadtrailrecords* loadrecords, ripple_loadpage_type type)
+bool loadtrailrecords_setloadpageroutine(loadtrailrecords* loadrecords, loadpage_type type)
 {
     /* 在文件中加载 */
-    loadrecords->loadpageroutine = ripple_loadpage_getpageroutine(type);
+    loadrecords->loadpageroutine = loadpage_getpageroutine(type);
     if(NULL == loadrecords->loadpageroutine)
     {
         elog(RLOG_WARNING, "set loadpage routine error");
@@ -73,26 +73,26 @@ bool ripple_loadtrailrecords_setloadpageroutine(ripple_loadtrailrecords* loadrec
     loadrecords->loadpage->filesize = loadrecords->loadrecords.filesize;
 
     /* 设置loadpagefromfile的类型 */
-    loadrecords->loadpageroutine->loadpagesettype(loadrecords->loadpage, RIPPLE_LOADPAGEFROMFILE_TYPE_TRAIL);
+    loadrecords->loadpageroutine->loadpagesettype(loadrecords->loadpage, LOADPAGEFROMFILE_TYPE_TRAIL);
 
     return true;
 }
 
 /* 设置加载的起点 */
-void ripple_loadtrailrecords_setloadposition(ripple_loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset)
+void loadtrailrecords_setloadposition(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset)
 {
-    ripple_recpos recpos;
+    recpos recpos;
     loadrecords->fileid = fileid;
     loadrecords->foffset = foffset;
 
-    recpos.trail.type = RIPPLE_RECPOS_TYPE_TRAIL;
+    recpos.trail.type = RECPOS_TYPE_TRAIL;
     recpos.trail.fileid = fileid;
     recpos.trail.offset = foffset;
     loadrecords->loadpageroutine->loadpagesetstartpos(loadrecords->loadpage, recpos);
 }
 
 /* 设置加载的路径 */
-bool ripple_loadtrailrecords_setloadsource(ripple_loadtrailrecords* loadrecords, char* source)
+bool loadtrailrecords_setloadsource(loadtrailrecords* loadrecords, char* source)
 {
     if(false == loadrecords->loadpageroutine->loadpagesetfilesource(loadrecords->loadpage, source))
     {
@@ -103,7 +103,7 @@ bool ripple_loadtrailrecords_setloadsource(ripple_loadtrailrecords* loadrecords,
 }
 
 /* 加载 records */
-bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
+bool loadtrailrecords_load(loadtrailrecords* loadrecords)
 {
     /* 
      * 1、加载文件块
@@ -121,18 +121,18 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
     uint64 reclen = 0;
     dlistnode* dlnode = NULL;
     dlistnode* dlnodenext = NULL;
-    ripple_record* record = NULL;
-    ripple_recpos recpos = { {0} };
+    record* record_obj = NULL;
+    recpos recpos = { {0} };
 
-    recpos.trail.type = RIPPLE_RECPOS_TYPE_TRAIL;
+    recpos.trail.type = RECPOS_TYPE_TRAIL;
 
     /* 加载文件块 */
-    loadrecords->loadrecords.error = RIPPLE_ERROR_SUCCESS;
+    loadrecords->loadrecords.error = ERROR_SUCCESS;
 
     /* 设置读取的起点 */
     if(false == loadrecords->loadpageroutine->loadpage(loadrecords->loadpage, loadrecords->mp))
     {
-        if(RIPPLE_ERROR_NOENT == loadrecords->loadpage->error)
+        if(ERROR_NOENT == loadrecords->loadpage->error)
         {
             /* 因文件不存在导致的问题, 不需要返回错误 */
             return true;
@@ -146,14 +146,14 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
      * 1、验证文件块的正确性
      * 2、将文件块拆分为 records
      */
-    if(false == ripple_trailpage_valid(loadrecords->mp))
+    if(false == trailpage_valid(loadrecords->mp))
     {
         elog(RLOG_WARNING, "load page valid page error");
         return false;
     }
 
     /* 将 page 拆分为 records */
-    if(false == ripple_trailpage_page2records(loadrecords, loadrecords->mp))
+    if(false == trailpage_page2records(loadrecords, loadrecords->mp))
     {
         elog(RLOG_WARNING, "page 2 records error");
         return false;
@@ -180,13 +180,13 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
         /* 含有 records */
         for(dlnode = loadrecords->records->head; NULL != dlnode;)
         {
-            record = (ripple_record*)dlnode->value;
+            record_obj = (record*)dlnode->value;
 
             /* 会出现在文件的头部 */
-            if(RIPPLE_RECORD_TYPE_TRAIL_HEADER == record->type
-                || RIPPLE_RECORD_TYPE_TRAIL_DBMETA == record->type)
+            if(RECORD_TYPE_TRAIL_HEADER == record_obj->type
+                || RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
             {
-                loadrecords->remainrecords = dlist_put(loadrecords->remainrecords, record);
+                loadrecords->remainrecords = dlist_put(loadrecords->remainrecords, record_obj);
                 
                 /* 将 dlnode 在链表中移除 */
                 dlnode->value = NULL;
@@ -195,10 +195,10 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
                 dlnode = dlnodenext;
                 continue;
             }
-            else if(RIPPLE_RECORD_TYPE_TRAIL_TAIL == record->type)
+            else if(RECORD_TYPE_TRAIL_TAIL == record_obj->type)
             {
                 shiftfile = true;
-                loadrecords->remainrecords = dlist_put(loadrecords->remainrecords, record);
+                loadrecords->remainrecords = dlist_put(loadrecords->remainrecords, record_obj);
                 
                 /* 将 dlnode 在链表中移除 */
                 dlnode->value = NULL;
@@ -207,11 +207,11 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
                 dlnode = dlnodenext;
                 continue;
             }
-            else if(RIPPLE_RECORD_TYPE_TRAIL_RESET == record->type)
+            else if(RECORD_TYPE_TRAIL_RESET == record_obj->type)
             {
                 shiftfile = true;
                 /* 为 RESET, 清理掉 */
-                ripple_record_free(loadrecords->recordcross.record);
+                record_free(loadrecords->recordcross.record);
                 loadrecords->recordcross.record = NULL;
                 loadrecords->recordcross.remainlen = 0;
                 loadrecords->recordcross.totallen = 0;
@@ -222,11 +222,11 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
                 break;
             }
 
-            if(RIPPLE_RECORD_TYPE_TRAIL_CONT != record->type)
+            if(RECORD_TYPE_TRAIL_CONT != record_obj->type)
             {
                 /* 此时应该为 continue record, 若不为 continue record 说明逻辑出现了错误 */
                 elog(RLOG_WARNING, "need continue record, but now type:%d, cross record:%lu.%lu, %lu.%u ,%lu",
-                                    record->type,
+                                    record_obj->type,
                                     loadrecords->recordcross.record->start.trail.fileid,
                                     loadrecords->recordcross.record->start.trail.offset,
                                     loadrecords->recordcross.record->totallength,
@@ -256,15 +256,15 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
             /* 将record tail 附加到数据的后面 */
             rmemcpy1(loadrecords->recordcross.record->data,
                     loadrecords->recordcross.record->dataoffset,
-                    record->data + record->dataoffset,
-                    record->reallength);
-            loadrecords->recordcross.record->dataoffset += record->reallength;
-            loadrecords->recordcross.remainlen -= record->reallength;
+                    record_obj->data + record_obj->dataoffset,
+                    record_obj->reallength);
+            loadrecords->recordcross.record->dataoffset += record_obj->reallength;
+            loadrecords->recordcross.remainlen -= record_obj->reallength;
 
             /* 将 record 的删除并将 dlnode 节点在双向链表中移除 */
-            loadrecords->recordcross.record->end.trail.fileid = record->end.trail.fileid;
-            loadrecords->recordcross.record->end.trail.offset = record->end.trail.offset;
-            ripple_record_free(record);
+            loadrecords->recordcross.record->end.trail.fileid = record_obj->end.trail.fileid;
+            loadrecords->recordcross.record->end.trail.offset = record_obj->end.trail.offset;
+            record_free(record_obj);
 
             /* 将 dlnode 在链表中移除 */
             dlnode->value = NULL;
@@ -291,7 +291,7 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
              */
             loadrecords->records = dlist_concat(loadrecords->remainrecords, loadrecords->records);
             loadrecords->remainrecords = NULL;
-            loadrecords->recordcross.record->type = RIPPLE_RECORD_TYPE_TRAIL_NORMAL;
+            loadrecords->recordcross.record->type = RECORD_TYPE_TRAIL_NORMAL;
             loadrecords->records = dlist_puthead(loadrecords->records, loadrecords->recordcross.record);
             loadrecords->recordcross.record = NULL;
             loadrecords->recordcross.rectaillen = 0;
@@ -304,30 +304,30 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
     /* 查看是否还有数据需要处理 */
     if(true == dlist_isnull(loadrecords->records))
     {
-        goto ripple_loadtrailrecords_load_done;
+        goto loadtrailrecords_load_done;
     }
 
     /* 从后向前处理 */
     for(dlnode = loadrecords->records->tail; NULL != dlnode; dlnode = dlnode->prev)
     {
-        record = (ripple_record*)dlnode->value;
+        record_obj = (record*)dlnode->value;
         /* 会出现在文件的头部 */
-        if(RIPPLE_RECORD_TYPE_TRAIL_HEADER == record->type || RIPPLE_RECORD_TYPE_TRAIL_DBMETA == record->type)
+        if(RECORD_TYPE_TRAIL_HEADER == record_obj->type || RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
         {
             continue;
         }
-        else if(RIPPLE_RECORD_TYPE_TRAIL_TAIL == record->type)
+        else if(RECORD_TYPE_TRAIL_TAIL == record_obj->type)
         {
             shiftfilecross = true;
             continue;
         }
-        else if(RIPPLE_RECORD_TYPE_TRAIL_RESET == record->type)
+        else if(RECORD_TYPE_TRAIL_RESET == record_obj->type)
         {
             shiftfilecross = true;
             crossreset = true;
             continue;
         }
-        else if(RIPPLE_RECORD_TYPE_TRAIL_CROSS != record->type)
+        else if(RECORD_TYPE_TRAIL_CROSS != record_obj->type)
         {
             break;
         }
@@ -339,7 +339,7 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
          */
         if(true == crossreset)
         {
-            ripple_record_free(record);
+            record_free(record_obj);
             dlnode->value = NULL;
             loadrecords->records = dlist_delete(loadrecords->records, dlnode, NULL);
             break;
@@ -351,21 +351,21 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
             elog(RLOG_WARNING, "The previous processing contained incomplete records, prev fileid:%lu:%lu, current fileid:%lu:%lu",
                                 loadrecords->recordcross.record->start.trail.fileid,
                                 loadrecords->recordcross.record->start.trail.offset,
-                                record->start.trail.fileid,
-                                record->start.trail.offset);
+                                record_obj->start.trail.fileid,
+                                record_obj->start.trail.offset);
             return false;
         }
 
         /* 放到 cross record 上,方便后续的合并 */
-        loadrecords->recordcross.record = record;
+        loadrecords->recordcross.record = record_obj;
 
         /* 计算长度 */
         /* 还需要的真实数据长度 */
-        loadrecords->recordcross.remainlen = (record->totallength - (uint64)record->reallength);
+        loadrecords->recordcross.remainlen = (record_obj->totallength - (uint64)record_obj->reallength);
 
         /* 数据总长度 */
-        loadrecords->recordcross.totallen = record->totallength;
-        loadrecords->recordcross.totallen += (uint64)record->dataoffset;
+        loadrecords->recordcross.totallen = record_obj->totallength;
+        loadrecords->recordcross.totallen += (uint64)record_obj->dataoffset;
 
         /* 
          * copy record tail 数据
@@ -374,12 +374,12 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
          *  3、复制数据
          */
         /* 计算 record tail 的开始位置 */
-        record->dataoffset += record->reallength;
-        loadrecords->recordcross.rectaillen = (uint16)(record->len - (uint64)record->dataoffset);
+        record_obj->dataoffset += record_obj->reallength;
+        loadrecords->recordcross.rectaillen = (uint16)(record_obj->len - (uint64)record_obj->dataoffset);
 
         /* 将 tail 数据的长度在原长度上裁剪掉 */
-        record->len -= (uint64)(loadrecords->recordcross.rectaillen);
-        rmemcpy1(loadrecords->recordcross.rectail, 0, (record->data + record->dataoffset), loadrecords->recordcross.rectaillen);
+        record_obj->len -= (uint64)(loadrecords->recordcross.rectaillen);
+        rmemcpy1(loadrecords->recordcross.rectail, 0, (record_obj->data + record_obj->dataoffset), loadrecords->recordcross.rectaillen);
 
         /* 将 dlnode 在链表中移除,并将 dlnode 之后的节点放入到暂存节点中 */
         dlnode->value = NULL;
@@ -396,7 +396,7 @@ bool ripple_loadtrailrecords_load(ripple_loadtrailrecords* loadrecords)
         break;
     }
 
-ripple_loadtrailrecords_load_done:
+loadtrailrecords_load_done:
     /* 上面流程处理完成后, 需要判断是否需要切换文件 */
     /* 在查找 continue record 时出现了切换文件的标识, 就不需要处理 cross 和 offset */
     if(true == shiftfile)
@@ -444,7 +444,7 @@ ripple_loadtrailrecords_load_done:
 }
 
 /* 关闭文件描述符 */
-void ripple_loadtrailrecords_fileclose(ripple_loadtrailrecords* loadrecords)
+void loadtrailrecords_fileclose(loadtrailrecords* loadrecords)
 {
     loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
 }
@@ -455,7 +455,7 @@ void ripple_loadtrailrecords_fileclose(ripple_loadtrailrecords* loadrecords)
  *   true           还需要继续过滤
  *   false          不需要继续过滤
  */
-bool ripple_loadtrailrecords_filterfortransbegin(ripple_loadtrailrecords* loadrecords)
+bool loadtrailrecords_filterfortransbegin(loadtrailrecords* loadrecords)
 {
     /*
      * 过滤说明:
@@ -469,47 +469,47 @@ bool ripple_loadtrailrecords_filterfortransbegin(ripple_loadtrailrecords* loadre
      *  1、元数据需要, 包含 database metadata 和 table metadata
      *  2、若该文件存在了 RESET 或 TAIL,那说明到了解析到了文件的尾部也没有需要的数据, 所以此时也不在需要在过滤了
      */
-    uint16 subtype = RIPPLE_FF_DATA_TYPE_NOP;
+    uint16 subtype = FF_DATA_TYPE_NOP;
     dlistnode* dlnode = NULL;
     dlistnode* dlnodenext = NULL;
-    ripple_record* record = NULL;
-    ripple_ffsmgr_state ffsmgrstate;
+    record* record_obj = NULL;
+    ffsmgr_state ffsmgrstate;
 
     /* 初始化验证接口 */
-    ripple_ffsmgr_init(RIPPLE_FFSMG_IF_TYPE_TRAIL, &ffsmgrstate);
+    ffsmgr_init(FFSMG_IF_TYPE_TRAIL, &ffsmgrstate);
     ffsmgrstate.compatibility = loadrecords->compatibility;
 
     for(dlnode = dlnodenext = loadrecords->records->head; NULL != dlnode; dlnode = dlnodenext)
     {
         dlnodenext = dlnode->next;
-        record = (ripple_record*)dlnode->value;
+        record_obj = (record*)dlnode->value;
         /* 文件开始并且切页TRAIL_CONT直接删除 */
-        if(RIPPLE_RECORD_TYPE_TRAIL_HEADER == record->type
-            || RIPPLE_RECORD_TYPE_TRAIL_DBMETA == record->type)
+        if(RECORD_TYPE_TRAIL_HEADER == record_obj->type
+            || RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
         {
             continue;
         }
-        else if(RIPPLE_RECORD_TYPE_TRAIL_RESET == record->type
-            || RIPPLE_RECORD_TYPE_TRAIL_TAIL == record->type)
+        else if(RECORD_TYPE_TRAIL_RESET == record_obj->type
+            || RECORD_TYPE_TRAIL_TAIL == record_obj->type)
         {
             return false;
         }
 
         /* 保留data的meta data数据, 这里无需处理 */
-        ffsmgrstate.ffsmgr->ffsmgr_getrecordsubtype(&ffsmgrstate, record->data, &subtype);
-        if (RIPPLE_FF_DATA_TYPE_DBMETADATA == subtype
-            || RIPPLE_FF_DATA_TYPE_TBMETADATA == subtype)
+        ffsmgrstate.ffsmgr->ffsmgr_getrecordsubtype(&ffsmgrstate, record_obj->data, &subtype);
+        if (FF_DATA_TYPE_DBMETADATA == subtype
+            || FF_DATA_TYPE_TBMETADATA == subtype)
         {
             continue;
         }
 
         /* 是否为事务开始的record，是之后全需要 */
-        if (ffsmgrstate.ffsmgr->ffsmgr_isrecordtransstart(&ffsmgrstate, record->data))
+        if (ffsmgrstate.ffsmgr->ffsmgr_isrecordtransstart(&ffsmgrstate, record_obj->data))
         {
             return false;
         }
 
-        loadrecords->records = dlist_delete(loadrecords->records, dlnode, ripple_record_freevoid);
+        loadrecords->records = dlist_delete(loadrecords->records, dlnode, record_freevoid);
     }
     return true;
 }
@@ -517,7 +517,7 @@ bool ripple_loadtrailrecords_filterfortransbegin(ripple_loadtrailrecords* loadre
 /*
  * 根据 fileid 和 offset 过滤,小于此值的不需要
 */
-void ripple_loadtrailrecords_filter(ripple_loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset)
+void loadtrailrecords_filter(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset)
 {
     /*
      * 过滤说明:
@@ -525,25 +525,25 @@ void ripple_loadtrailrecords_filter(ripple_loadtrailrecords* loadrecords, uint64
      */
     dlistnode* dlnode = NULL;
     dlistnode* dlnodenext = NULL;
-    ripple_record* record = NULL;
+    record* record_obj = NULL;
 
     for(dlnode = dlnodenext = loadrecords->records->head; NULL != dlnode; dlnode = dlnodenext)
     {
         dlnodenext = dlnode->next;
-        record = (ripple_record*)dlnode->value;
+        record_obj = (record*)dlnode->value;
 
-        if(fileid < record->start.trail.fileid)
+        if(fileid < record_obj->start.trail.fileid)
         {
             return;
         }
 
-        if(foffset <= record->start.trail.offset)
+        if(foffset <= record_obj->start.trail.offset)
         {
             break;
         }
 
         /* 此 record 不需要 */
-        loadrecords->records = dlist_delete(loadrecords->records, dlnode, ripple_record_freevoid);
+        loadrecords->records = dlist_delete(loadrecords->records, dlnode, record_freevoid);
     }
 }
 
@@ -553,53 +553,53 @@ void ripple_loadtrailrecords_filter(ripple_loadtrailrecords* loadrecords, uint64
  *   true           还需要继续过滤
  *   false          不需要继续过滤
 */
-bool ripple_loadtrailrecords_filterremainmetadata(ripple_loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset)
+bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset)
 {
     /*
      * 过滤说明:
      *  根据 fileid 和 foffset 
      */
-    uint16 subtype = RIPPLE_FF_DATA_TYPE_NOP;
+    uint16 subtype = FF_DATA_TYPE_NOP;
     dlistnode* dlnode               = NULL;
     dlistnode* dlnodenext           = NULL;
-    ripple_record* record           = NULL;
-    ripple_ffsmgr_state ffsmgrstate;
+    record* record_obj           = NULL;
+    ffsmgr_state ffsmgrstate;
 
     /* 初始化验证接口 */
-    ripple_ffsmgr_init(RIPPLE_FFSMG_IF_TYPE_TRAIL, &ffsmgrstate);
+    ffsmgr_init(FFSMG_IF_TYPE_TRAIL, &ffsmgrstate);
     ffsmgrstate.compatibility = loadrecords->compatibility;
 
     for(dlnode = dlnodenext = loadrecords->records->head; NULL != dlnode; dlnode = dlnodenext)
     {
         dlnodenext = dlnode->next;
-        record = (ripple_record*)dlnode->value;
+        record_obj = (record*)dlnode->value;
 
-        if(fileid < record->start.trail.fileid)
+        if(fileid < record_obj->start.trail.fileid)
         {
             return false;
         }
 
-        if (record->start.trail.offset >= foffset)
+        if (record_obj->start.trail.offset >= foffset)
         {
             return false;
         }
 
         /* reset/tail证明切换了文件, 那么就证明不需要在过滤了 */
-        if(RIPPLE_RECORD_TYPE_TRAIL_RESET == record->type
-            || RIPPLE_RECORD_TYPE_TRAIL_TAIL == record->type)
+        if(RECORD_TYPE_TRAIL_RESET == record_obj->type
+            || RECORD_TYPE_TRAIL_TAIL == record_obj->type)
         {
             return false;
         }
 
         /* 保留data的meta data数据, 这里无需处理 */
-        ffsmgrstate.ffsmgr->ffsmgr_getrecordsubtype(&ffsmgrstate, record->data, &subtype);
-        if (RIPPLE_FF_DATA_TYPE_DBMETADATA == subtype
-            || RIPPLE_FF_DATA_TYPE_TBMETADATA == subtype)
+        ffsmgrstate.ffsmgr->ffsmgr_getrecordsubtype(&ffsmgrstate, record_obj->data, &subtype);
+        if (FF_DATA_TYPE_DBMETADATA == subtype
+            || FF_DATA_TYPE_TBMETADATA == subtype)
         {
             continue;
         }
 
-        loadrecords->records = dlist_delete(loadrecords->records, dlnode, ripple_record_freevoid);
+        loadrecords->records = dlist_delete(loadrecords->records, dlnode, record_freevoid);
     }
 
     return true;
@@ -607,7 +607,7 @@ bool ripple_loadtrailrecords_filterremainmetadata(ripple_loadtrailrecords* loadr
 
 
 /* 释放 */
-void ripple_loadtrailrecords_free(ripple_loadtrailrecords* loadrecords)
+void loadtrailrecords_free(loadtrailrecords* loadrecords)
 {
     if(NULL == loadrecords)
     {
@@ -630,8 +630,8 @@ void ripple_loadtrailrecords_free(ripple_loadtrailrecords* loadrecords)
         rfree(loadrecords->mp);
     }
 
-    ripple_record_free(loadrecords->recordcross.record);
-    dlist_free(loadrecords->records, ripple_record_freevoid);
-    dlist_free(loadrecords->remainrecords, ripple_record_freevoid);
+    record_free(loadrecords->recordcross.record);
+    dlist_free(loadrecords->records, record_freevoid);
+    dlist_free(loadrecords->remainrecords, record_freevoid);
     rfree(loadrecords);
 }

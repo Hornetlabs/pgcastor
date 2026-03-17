@@ -1,24 +1,24 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
-#include "port/net/ripple_net.h"
-#include "port/thread/ripple_thread.h"
+#include "port/net/net.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
-#include "command/ripple_cmd.h"
-#include "queue/ripple_queue.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netpool.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "xmanager/ripple_xmanager_metricnode.h"
-#include "xmanager/ripple_xmanager_metric.h"
-#include "xmanager/ripple_xmanager_metricmsgcreate.h"
-#include "xmanager/ripple_xmanager_metricmsg.h"
-#include "xmanager/ripple_xmanager_metricprogressnode.h"
+#include "command/cmd.h"
+#include "queue/queue.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netpool.h"
+#include "xmanager/xmanager_msg.h"
+#include "xmanager/xmanager_metricnode.h"
+#include "xmanager/xmanager_metric.h"
+#include "xmanager/xmanager_metricmsgcreate.h"
+#include "xmanager/xmanager_metricmsg.h"
+#include "xmanager/xmanager_metricprogressnode.h"
 
-static bool ripple_xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
+static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
                                                                 char* dstpath,
                                                                 char* jobname)
 {
@@ -37,17 +37,17 @@ static bool ripple_xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
      * 读取文件
      * 找到 jobname 并替换为正确的名称 
      */
-    fd = FileOpen(srcpath, O_RDONLY, 0);
+    fd = osal_file_open(srcpath, O_RDONLY, 0);
     if (-1 == fd)
     {
         elog(RLOG_WARNING, "can not open sample file:%s.", srcpath);
         return false;
     }
 
-    filesize = FileSize(fd);
+    filesize = osal_file_size(fd);
     if (-1 == filesize)
     {
-        FileClose(fd);
+        osal_file_close(fd);
         elog(RLOG_WARNING, "can not get file:%s size, error:%s.", srcpath, strerror(errno));
         return false;
     }
@@ -56,7 +56,7 @@ static bool ripple_xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
     filedata = rmalloc0(filesize);
     if (NULL == filedata)
     {
-        FileClose(fd);
+        osal_file_close(fd);
         elog(RLOG_WARNING, "copy file, oom.");
         return false;
     }
@@ -64,18 +64,18 @@ static bool ripple_xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
     filesize -= 1;
 
     /* 重新设置到文件头部*/
-    FileSeek(fd, 0);
+    osal_file_seek(fd, 0);
 
     /* 读取文件 */
-    if (filesize != FileRead(fd, filedata, filesize))
+    if (filesize != osal_file_read(fd, filedata, filesize))
     {
         rfree(filedata);
-        FileClose(fd);
+        osal_file_close(fd);
         elog(RLOG_WARNING, "read file %s error, %s", srcpath, strerror(errno));
         return false;
     }
 
-    FileClose(fd);
+    osal_file_close(fd);
     fd = -1;
 
     dfilesize = (2 * filesize);
@@ -312,7 +312,7 @@ static bool ripple_xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
 
     rfree(filedata);
     /* 打开目标文件 */
-    fd = FileOpen(dstpath, O_RDWR | O_CREAT, g_file_create_mode);
+    fd = osal_file_open(dstpath, O_RDWR | O_CREAT, g_file_create_mode);
     if (-1 == fd)
     {
         rfree(dfiledata);
@@ -320,21 +320,21 @@ static bool ripple_xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
         return false;
     }
 
-    if (dfileoffset != FileWrite(fd, dfiledata, dfileoffset))
+    if (dfileoffset != osal_file_write(fd, dfiledata, dfileoffset))
     {
-        FileClose(fd);
+        osal_file_close(fd);
         fd = -1;
         rfree(dfiledata);
         return false;
     }
 
-    FileClose(fd);
+    osal_file_close(fd);
     rfree(dfiledata);
     return true;
 }
 
-static bool ripple_xmanager_metricmsg_parsecreateprocess(ripple_xmanager_metric* xmetric,
-                                                         ripple_netpoolentry* npoolentry,
+static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
+                                                         netpoolentry* npoolentry,
                                                          uint8* uptr,
                                                          char* jobname)
 {
@@ -343,12 +343,12 @@ static bool ripple_xmanager_metricmsg_parsecreateprocess(ripple_xmanager_metric*
     int jobtype                                             = 0;
     int idx_jobcnt                                          = 0;
     char* name                                              = NULL;
-    ripple_xmanager_metricnode* pxmetricnode                = NULL;
-    ripple_xmanager_metricnode* jobxmetricnode              = NULL;
-    ripple_xmanager_metricnode xmetricnode                  = { 0 };
-    ripple_xmanager_metricprogressnode* xmetricprogressnode = NULL;
+    xmanager_metricnode* pxmetricnode                = NULL;
+    xmanager_metricnode* jobxmetricnode              = NULL;
+    xmanager_metricnode xmetricnode                  = { 0 };
+    xmanager_metricprogressnode* xmetricprogressnode = NULL;
 
-    xmetricprogressnode = (ripple_xmanager_metricprogressnode*)ripple_xmanager_metricprogressnode_init();
+    xmetricprogressnode = (xmanager_metricprogressnode*)xmanager_metricprogressnode_init();
     if (NULL == xmetricprogressnode)
     {
         elog(RLOG_WARNING, "xmanager create progress error, out of memory");
@@ -369,10 +369,10 @@ static bool ripple_xmanager_metricmsg_parsecreateprocess(ripple_xmanager_metric*
         jobtype = r_ntoh32(jobtype);
         uptr += 4;
 
-        if (RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE < jobtype)
+        if (XMANAGER_METRICNODETYPE_INTEGRATE < jobtype)
         {
             elog(RLOG_WARNING, "xmanager recv create progress command, need jobtype less then HGRECEIVELOG");
-            ripple_xmanager_metricprogressnode_destroy((ripple_xmanager_metricnode*)xmetricprogressnode);
+            xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
             return false;
         }
 
@@ -386,7 +386,7 @@ static bool ripple_xmanager_metricmsg_parsecreateprocess(ripple_xmanager_metric*
         if (NULL == name)
         {
             elog(RLOG_WARNING, "%s", "xmanager recv create progress command, oom");
-            ripple_xmanager_metricprogressnode_destroy((ripple_xmanager_metricnode*)xmetricprogressnode);
+            xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
             return false;
         }
         rmemset0(name, 0, '\0', len);
@@ -398,20 +398,20 @@ static bool ripple_xmanager_metricmsg_parsecreateprocess(ripple_xmanager_metric*
         xmetricnode.type = jobtype;
         xmetricnode.name = name;
 
-        pxmetricnode = dlist_get(xmetric->metricnodes, &xmetricnode, ripple_xmanager_metricnode_cmp);
+        pxmetricnode = dlist_get(xmetric->metricnodes, &xmetricnode, xmanager_metricnode_cmp);
         if (NULL == pxmetricnode)
         {
             elog(RLOG_WARNING, "xmanager recv create progress command, not find %d.%s", jobtype, name);
-            ripple_xmanager_metricprogressnode_destroy((ripple_xmanager_metricnode*)xmetricprogressnode);
+            xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
             return false;
         }
 
         /* 创建新的 metricnode */
-        jobxmetricnode = ripple_xmanager_metricnode_init(jobtype);
+        jobxmetricnode = xmanager_metricnode_init(jobtype);
         if (NULL == jobxmetricnode)
         {
             elog(RLOG_WARNING, "%s", "xmanager create command, oom");
-            ripple_xmanager_metricprogressnode_destroy((ripple_xmanager_metricnode*)xmetricprogressnode);
+            xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
             return false;
         }
 
@@ -425,13 +425,13 @@ static bool ripple_xmanager_metricmsg_parsecreateprocess(ripple_xmanager_metric*
     }
 
     /* 设置为初始化状态 */
-    xmetricprogressnode->base.stat = RIPPLE_XMANAGER_METRICNODESTAT_ONLINE;
+    xmetricprogressnode->base.stat = XMANAGER_METRICNODESTAT_ONLINE;
 
     /* 将 xmetricnode 加入到链表中 */
     xmetric->metricnodes = dlist_put(xmetric->metricnodes, (void*)&xmetricprogressnode->base);
 
     /* 将 metricnode 落盘 */
-    ripple_xmanager_metricnode_flush(xmetric->metricnodes);
+    xmanager_metricnode_flush(xmetric->metricnodes);
     return true;
 }
 
@@ -441,9 +441,9 @@ static bool ripple_xmanager_metricmsg_parsecreateprocess(ripple_xmanager_metric*
  *  2、校验 job 是否已经存在
  *  3、将 job 加入到 xmetric->metricnodes 中
 */
-bool ripple_xmanager_metricmsg_parsecreate(ripple_xmanager_metric* xmetric,
-                                           ripple_netpoolentry* npoolentry,
-                                           ripple_netpacket* npacket)
+bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
+                                           netpoolentry* npoolentry,
+                                           netpacket* npacket)
 {
     /* 错误码 */
     int errcode                                         = 0;
@@ -451,8 +451,8 @@ bool ripple_xmanager_metricmsg_parsecreate(ripple_xmanager_metric* xmetric,
     int jobtype                                         = 0;
     uint8* uptr                                         = NULL;
     char* jobname                                       = NULL;
-    ripple_xmanager_metricnode* pxmetricnode            = NULL;
-    ripple_xmanager_metricnode xmetricnode              = { 0 };
+    xmanager_metricnode* pxmetricnode            = NULL;
+    xmanager_metricnode xmetricnode              = { 0 };
     char errormsg[512]                                  = { 0 };
     char srcpath[1024]                                  = { 0 };
     char dstpath[1024]                                  = { 0 };
@@ -468,11 +468,11 @@ bool ripple_xmanager_metricmsg_parsecreate(ripple_xmanager_metric* xmetric,
     jobtype = r_ntoh32(jobtype);
     uptr += 4;
 
-    if (RIPPLE_XMANAGER_METRICNODETYPE_ALL <= jobtype)
+    if (XMANAGER_METRICNODETYPE_ALL <= jobtype)
     {
         snprintf(errormsg, 512, "xmanager recv create command, need jobtype less then ALL");
-        errcode = RIPPLE_ERROR_MSGCOMMANDUNVALID;
-        goto ripple_xmanager_metricmsg_parsecreate_error;
+        errcode = ERROR_MSGCOMMANDUNVALID;
+        goto xmanager_metricmsg_parsecreate_error;
     }
 
     rmemcpy1(&len, 0, uptr, 4);
@@ -484,8 +484,8 @@ bool ripple_xmanager_metricmsg_parsecreate(ripple_xmanager_metric* xmetric,
     if (NULL == jobname)
     {
         snprintf(errormsg, 512, "%s", "xmanager recv create command, oom");
-        errcode = RIPPLE_ERROR_OOM;
-        goto ripple_xmanager_metricmsg_parsecreate_error;
+        errcode = ERROR_OOM;
+        goto xmanager_metricmsg_parsecreate_error;
     }
     rmemset0(jobname, 0, '\0', len);
     len -= 1;
@@ -496,25 +496,25 @@ bool ripple_xmanager_metricmsg_parsecreate(ripple_xmanager_metric* xmetric,
     xmetricnode.type = jobtype;
     xmetricnode.name = jobname;
 
-    if (NULL != dlist_isexist(xmetric->metricnodes, &xmetricnode, ripple_xmanager_metricnode_cmp))
+    if (NULL != dlist_isexist(xmetric->metricnodes, &xmetricnode, xmanager_metricnode_cmp))
     {
         snprintf(errormsg, 512, "%s already exist.", jobname);
-        errcode = RIPPLE_ERROR_MSGEXIST;
-        goto ripple_xmanager_metricmsg_parsecreate_error;
+        errcode = ERROR_MSGEXIST;
+        goto xmanager_metricmsg_parsecreate_error;
     }
 
-    if (RIPPLE_XMANAGER_METRICNODETYPE_PROCESS == jobtype)
+    if (XMANAGER_METRICNODETYPE_PROCESS == jobtype)
     {
-        if (false == ripple_xmanager_metricmsg_parsecreateprocess(xmetric,
+        if (false == xmanager_metricmsg_parsecreateprocess(xmetric,
                                                                   npoolentry,
                                                                   uptr,
                                                                   jobname))
         {
             snprintf(errormsg, 512, "xmanager create process command error ");
-            errcode = RIPPLE_ERROR_MSGCOMMAND;
-            goto ripple_xmanager_metricmsg_parsecreate_error;
+            errcode = ERROR_MSGCOMMAND;
+            goto xmanager_metricmsg_parsecreate_error;
         }
-        return ripple_xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, RIPPLE_XMANAGER_MSG_CREATECMD);
+        return xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_CREATECMD);
     }
 
     /* 生成新的配置文件 */
@@ -522,29 +522,29 @@ bool ripple_xmanager_metricmsg_parsecreate(ripple_xmanager_metric* xmetric,
              1024,
              "%s/sample/%s.cfg.sample",
              xmetric->configpath,
-             ripple_xmanager_metricnode_getname(jobtype));
+             xmanager_metricnode_getname(jobtype));
 
     snprintf(dstpath,
              1024,
              "%s/%s_%s.cfg",
              xmetric->configpath,
-             ripple_xmanager_metricnode_getname(jobtype),
+             xmanager_metricnode_getname(jobtype),
              jobname);
 
-    if (false == ripple_xmanager_metricmsg_parsecreateinplacejobname(srcpath, dstpath, jobname))
+    if (false == xmanager_metricmsg_parsecreateinplacejobname(srcpath, dstpath, jobname))
     {
         snprintf(errormsg, 512, "%s", "xmanager create command generate config file error");
-        errcode = RIPPLE_ERROR_MSGCOMMAND;
-        goto ripple_xmanager_metricmsg_parsecreate_error;
+        errcode = ERROR_MSGCOMMAND;
+        goto xmanager_metricmsg_parsecreate_error;
     }
 
     /* 创建新的 metricnode */
-    pxmetricnode = ripple_xmanager_metricnode_init(jobtype);
+    pxmetricnode = xmanager_metricnode_init(jobtype);
     if (NULL == pxmetricnode)
     {
         snprintf(errormsg, 512, "%s", "xmanager create command, oom");
-        errcode = RIPPLE_ERROR_OOM;
-        goto ripple_xmanager_metricmsg_parsecreate_error;
+        errcode = ERROR_OOM;
+        goto xmanager_metricmsg_parsecreate_error;
     }
 
     pxmetricnode->name = jobname;
@@ -558,26 +558,26 @@ bool ripple_xmanager_metricmsg_parsecreate(ripple_xmanager_metric* xmetric,
     if (NULL == pxmetricnode->conf)
     {
         snprintf(errormsg, 512, "%s", "xmanager recv create command, oom");
-        errcode = RIPPLE_ERROR_OOM;
-        goto ripple_xmanager_metricmsg_parsecreate_error;
+        errcode = ERROR_OOM;
+        goto xmanager_metricmsg_parsecreate_error;
     }
     rmemset0(pxmetricnode->conf, 0, '\0', len);
     len -= 1;
     rmemcpy0(pxmetricnode->conf, 0, dstpath, len);
 
     /* 设置为初始化状态 */
-    pxmetricnode->stat = RIPPLE_XMANAGER_METRICNODESTAT_INIT;
+    pxmetricnode->stat = XMANAGER_METRICNODESTAT_INIT;
 
     /* 将 xmetricnode 加入到链表中 */
     xmetric->metricnodes = dlist_put(xmetric->metricnodes, pxmetricnode);
 
     /* 将 metricnode 落盘 */
-    ripple_xmanager_metricnode_flush(xmetric->metricnodes);
+    xmanager_metricnode_flush(xmetric->metricnodes);
 
     /* 构建返回消息 */
-    return ripple_xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, RIPPLE_XMANAGER_MSG_CREATECMD);
+    return xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_CREATECMD);
 
-ripple_xmanager_metricmsg_parsecreate_error:
+xmanager_metricmsg_parsecreate_error:
 
     if (NULL != jobname)
     {
@@ -586,13 +586,13 @@ ripple_xmanager_metricmsg_parsecreate_error:
 
     if (NULL != pxmetricnode)
     {
-        ripple_xmanager_metricnode_destroy(pxmetricnode);
+        xmanager_metricnode_destroy(pxmetricnode);
     }
 
     elog(RLOG_WARNING, errormsg);
-    return ripple_xmanager_metricmsg_assembleerrormsg(xmetric,
+    return xmanager_metricmsg_assembleerrormsg(xmetric,
                                                       npoolentry->wpackets,
-                                                      RIPPLE_XMANAGER_MSG_CREATECMD,
+                                                      XMANAGER_MSG_CREATECMD,
                                                       errcode,
                                                       errormsg);
 }

@@ -1,23 +1,23 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
 #include "utils/guc/guc.h"
 #include "port/file/fd.h"
 #include "utils/hash/hash_utils.h"
-#include "utils/conn/ripple_conn.h"
-#include "misc/ripple_misc_stat.h"
-#include "misc/ripple_misc_control.h"
+#include "utils/conn/conn.h"
+#include "misc/misc_stat.h"
+#include "misc/misc_control.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_transcache.h"
-#include "catalog/ripple_catalog.h"
-#include "catalog/ripple_index.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/transcache.h"
+#include "catalog/catalog.h"
+#include "catalog/index.h"
 
-static void ripple_index_dict_index_free(xk_pg_sysdict_Form_pg_index index)
+static void index_dict_index_free(xk_pg_sysdict_Form_pg_index index)
 {
     if (index)
     {
@@ -29,7 +29,7 @@ static void ripple_index_dict_index_free(xk_pg_sysdict_Form_pg_index index)
     }
 }
 
-static uint32 *ripple_index_make_key_from_vector(char *vector_str, int32 natt)
+static uint32 *index_make_key_from_vector(char *vector_str, int32 natt)
 {
     uint32 *result = NULL;
     int index_col = 0;
@@ -71,26 +71,35 @@ static uint32 *ripple_index_make_key_from_vector(char *vector_str, int32 natt)
 }
 
 /* 生成系统字典 pg_index */
-void ripple_index_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
+void index_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
 {
-    int index_row = 0;
-    int index_col = 0;
-    int max_raw = 0;
-    bool find = false;
-    char sql_exec[RIPPLE_MAX_EXEC_SQL_LEN] = {'\0'};
-
-    PGresult* res = NULL;
-
-    xk_pg_sysdict_Form_pg_index catalog_index = NULL;
-    ripple_catalog_index_value *catalog_index_value = NULL;
-
-    HASHCTL index_hash_ctl = {'\0'};
-    ripple_catalog_index_hash_entry *index_entry = NULL;
+    int index_row;
+    int index_col;
+    int max_raw;
+    bool find;
+    char sql_exec[MAX_EXEC_SQL_LEN];
+    PGresult* res;
+    xk_pg_sysdict_Form_pg_index catalog_index;
+    catalog_index_value *idx_val;
+    HASHCTL index_hash_ctl;
+    catalog_index_hash_entry *index_entry;
+    
+    /* 初始化变量 */
+    index_row = 0;
+    index_col = 0;
+    max_raw = 0;
+    find = false;
+    rmemset1(sql_exec, 0, '\0', MAX_EXEC_SQL_LEN);
+    res = NULL;
+    catalog_index = NULL;
+    idx_val = NULL;
+    rmemset1(&index_hash_ctl, 0, '\0', sizeof(index_hash_ctl));
+    index_entry = NULL;
 
     /* hash初始化 */
     index_hash_ctl.keysize = sizeof(Oid);
-    index_hash_ctl.entrysize = sizeof(ripple_catalog_index_hash_entry);
-    sysdicts->by_index = hash_create("ripple_catalog_sysdict_index", 2048, &index_hash_ctl,
+    index_hash_ctl.entrysize = sizeof(catalog_index_hash_entry);
+    sysdicts->by_index = hash_create("catalog_sysdict_index", 2048, &index_hash_ctl,
                         HASH_ELEM | HASH_BLOBS);
 
     /* 排除非普通表的索引 */
@@ -106,7 +115,7 @@ void ripple_index_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
                       "WHERE ind.indrelid >= 16384 and rel.relkind = 'r' and ind.indisunique = TRUE "
                       "ORDER BY ind.indrelid;");
 
-    res = ripple_conn_exec(conn, sql_exec);
+    res = conn_exec(conn, sql_exec);
     if (NULL == res)
     {
         elog(RLOG_ERROR, "pg_index query failed");
@@ -141,17 +150,17 @@ void ripple_index_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
         sscanf(PQgetvalue(res, index_row, index_col++), "%d", &catalog_index->indnatts);
 
         /* indkey */
-        catalog_index->indkey = ripple_index_make_key_from_vector(PQgetvalue(res, index_row, index_col++), catalog_index->indnatts);
+        catalog_index->indkey = index_make_key_from_vector(PQgetvalue(res, index_row, index_col++), catalog_index->indnatts);
 
-        catalog_index_value = (ripple_catalog_index_value *)rmalloc0(sizeof(ripple_catalog_index_value));
-        if(NULL == catalog_index_value)
+        idx_val = (catalog_index_value *)rmalloc0(sizeof(catalog_index_value));
+        if(NULL == idx_val)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemset0(catalog_index_value, 0, '\0', sizeof(ripple_catalog_index_value));
+        rmemset0(idx_val, 0, '\0', sizeof(catalog_index_value));
 
-        catalog_index_value->oid = catalog_index->indrelid;
-        catalog_index_value->ripple_index = catalog_index;
+        idx_val->oid = catalog_index->indrelid;
+        idx_val->index = catalog_index;
 
         /* 赋值结束, 根据indrelid查找哈希 */
         index_entry = hash_search(sysdicts->by_index, &catalog_index->indrelid, HASH_ENTER, &find);
@@ -159,9 +168,9 @@ void ripple_index_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
         {
             /* 第一次需要初始化 */
             index_entry->oid = catalog_index->indrelid;
-            index_entry->ripple_index_list = NULL;
+            index_entry->index_list = NULL;
         }
-        index_entry->ripple_index_list = lappend(index_entry->ripple_index_list, catalog_index_value);
+        index_entry->index_list = lappend(index_entry->index_list, idx_val);
     }
 
     /* 结束, 清理 */
@@ -169,10 +178,10 @@ void ripple_index_getfromdb(PGconn *conn, ripple_cache_sysdicts* sysdicts)
 }
 
 /* colvalue2index */
-ripple_catalogdata* ripple_index_colvalue2index(void* in_colvalue)
+catalogdata* index_colvalue2index(void* in_colvalue)
 {
-    ripple_catalogdata* catalogdata = NULL;
-    ripple_catalog_index_value* index_value = NULL;
+    catalogdata* catalog_data = NULL;
+    catalog_index_value* index_value = NULL;
     xk_pg_sysdict_Form_pg_index pgindex = NULL;
     xk_pg_parser_translog_tbcol_value* colvalue = NULL;
     uint32_t temp_oid = InvalidOid;
@@ -191,22 +200,22 @@ ripple_catalogdata* ripple_index_colvalue2index(void* in_colvalue)
     }
 
     /* 值转换 */
-    catalogdata = (ripple_catalogdata*)rmalloc1(sizeof(ripple_catalogdata));
-    if(NULL == catalogdata)
+    catalog_data = (catalogdata*)rmalloc1(sizeof(catalogdata));
+    if(NULL == catalog_data)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(catalogdata, 0, '\0', sizeof(ripple_catalogdata));
+    rmemset0(catalog_data, 0, '\0', sizeof(catalogdata));
 
-    index_value = (ripple_catalog_index_value*)rmalloc1(sizeof(ripple_catalog_index_value));
+    index_value = (catalog_index_value*)rmalloc1(sizeof(catalog_index_value));
     if(NULL == index_value)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
-    rmemset0(index_value, 0, '\0', sizeof(ripple_catalog_index_value));
+    rmemset0(index_value, 0, '\0', sizeof(catalog_index_value));
 
-    catalogdata->catalog = index_value;
-    catalogdata->type = RIPPLE_CATALOG_TYPE_INDEX;
+    catalog_data->catalog = index_value;
+    catalog_data->type = CATALOG_TYPE_INDEX;
 
     pgindex = (xk_pg_sysdict_Form_pg_index)rmalloc1(sizeof(xk_pg_parser_sysdict_pgindex));
     if(NULL == pgindex)
@@ -214,7 +223,7 @@ ripple_catalogdata* ripple_index_colvalue2index(void* in_colvalue)
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
     rmemset0(pgindex, 0, '\0', sizeof(xk_pg_parser_sysdict_pgindex));
-    index_value->ripple_index = pgindex;
+    index_value->index = pgindex;
 
     /* indrelid 1 */
     pgindex->indrelid = temp_oid;
@@ -234,12 +243,12 @@ ripple_catalogdata* ripple_index_colvalue2index(void* in_colvalue)
 
     /* indkey 14 */
     temp_key = (char*)((colvalue + 14)->m_value);
-    pgindex->indkey = ripple_index_make_key_from_vector(temp_key, pgindex->indnatts);
+    pgindex->indkey = index_make_key_from_vector(temp_key, pgindex->indnatts);
 
-    return catalogdata;
+    return catalog_data;
 }
 
-static bool check_index_catalog_data_in_list(List *index_list, ripple_catalog_index_value* new_index_value)
+static bool check_index_catalog_data_in_list(List *index_list, catalog_index_value* new_index_value)
 {
     ListCell *cell = NULL;
     bool find = false;
@@ -251,9 +260,9 @@ static bool check_index_catalog_data_in_list(List *index_list, ripple_catalog_in
 
     foreach(cell, index_list)
     {
-        ripple_catalog_index_value* index_value = (ripple_catalog_index_value*)lfirst(cell);
-        xk_pg_sysdict_Form_pg_index dict_index = index_value->ripple_index;
-        if (dict_index->indexrelid == new_index_value->ripple_index->indexrelid)
+        catalog_index_value* index_value = (catalog_index_value*)lfirst(cell);
+        xk_pg_sysdict_Form_pg_index dict_index = index_value->index;
+        if (dict_index->indexrelid == new_index_value->index->indexrelid)
         {
             find = true;
             break;
@@ -262,7 +271,7 @@ static bool check_index_catalog_data_in_list(List *index_list, ripple_catalog_in
     return find;
 }
 
-static bool update_index_catalog_data_in_lsit(List *index_list, ripple_catalog_index_value* new_index_value)
+static bool update_index_catalog_data_in_lsit(List *index_list, catalog_index_value* new_index_value)
 {
     ListCell *cell = NULL;
     bool find = false;
@@ -278,16 +287,16 @@ static bool update_index_catalog_data_in_lsit(List *index_list, ripple_catalog_i
     while (cell)
     {
         ListCell *next_cell = cell->next;
-        ripple_catalog_index_value* index_value = (ripple_catalog_index_value*)lfirst(cell);
-        xk_pg_sysdict_Form_pg_index dict_index = index_value->ripple_index;
+        catalog_index_value* index_value = (catalog_index_value*)lfirst(cell);
+        xk_pg_sysdict_Form_pg_index dict_index = index_value->index;
 
         /* 查找指定的index记录 */
-        if (dict_index->indexrelid == new_index_value->ripple_index->indexrelid)
+        if (dict_index->indexrelid == new_index_value->index->indexrelid)
         {
             uint32 old_natt = dict_index->indnatts;
 
             /* 判断键值是否变更 */
-            if (old_natt != new_index_value->ripple_index->indnatts)
+            if (old_natt != new_index_value->index->indnatts)
             {
                 if (dict_index->indkey)
                 {
@@ -298,11 +307,11 @@ static bool update_index_catalog_data_in_lsit(List *index_list, ripple_catalog_i
                         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
                     }
                 }
-                rmemcpy0(dict_index->indkey, 0, new_index_value->ripple_index->indkey, sizeof(uint32) * new_index_value->ripple_index->indnatts);
+                rmemcpy0(dict_index->indkey, 0, new_index_value->index->indkey, sizeof(uint32) * new_index_value->index->indnatts);
             }
 
             /* 重新赋值 */
-            rmemcpy0(dict_index, 0, new_index_value->ripple_index, offsetof(xk_pg_parser_sysdict_pgindex, indkey));
+            rmemcpy0(dict_index, 0, new_index_value->index, offsetof(xk_pg_parser_sysdict_pgindex, indkey));
             find = true;
             break;
         }
@@ -312,38 +321,38 @@ static bool update_index_catalog_data_in_lsit(List *index_list, ripple_catalog_i
 }
 
 /* catalogdata2transcache */
-void ripple_index_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple_catalogdata* catalogdata)
+void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata)
 {
     bool found = false;
-    ripple_catalog_index_value* new_index_value = NULL;
-    ripple_catalog_index_hash_entry* indexInHash = NULL;
+    catalog_index_value* new_index_value = NULL;
+    catalog_index_hash_entry* indexInHash = NULL;
 
     if(NULL == catalogdata || NULL == catalogdata->catalog)
     {
         return;
     }
 
-    new_index_value = (ripple_catalog_index_value*)catalogdata->catalog;
+    new_index_value = (catalog_index_value*)catalogdata->catalog;
     elog(RLOG_DEBUG, "op:%d, newindex, indrelid:%u, primary:%s, isreplident:%s, keynum:%d",
                     catalogdata->op,
-                    new_index_value->ripple_index->indexrelid,
-                    new_index_value->ripple_index->indisprimary ? "true" : "false",
-                    new_index_value->ripple_index->indisreplident ? "true" : "false",
-                    new_index_value->ripple_index->indnatts);
+                    new_index_value->index->indexrelid,
+                    new_index_value->index->indisprimary ? "true" : "false",
+                    new_index_value->index->indisreplident ? "true" : "false",
+                    new_index_value->index->indnatts);
 
-    if(RIPPLE_CATALOG_OP_INSERT == catalogdata->op)
+    if(CATALOG_OP_INSERT == catalogdata->op)
     {
-        ripple_catalog_index_value* index_value = NULL;
+        catalog_index_value* index_value = NULL;
         xk_pg_sysdict_Form_pg_index dict_index = NULL;
 
         indexInHash = hash_search(sysdicts->by_index, &new_index_value->oid, HASH_ENTER, &found);
         if(false == found)
         {
-            indexInHash->ripple_index_list = NULL;
+            indexInHash->index_list = NULL;
         }
         indexInHash->oid = new_index_value->oid;
 
-        if (!check_index_catalog_data_in_list(indexInHash->ripple_index_list, new_index_value))
+        if (!check_index_catalog_data_in_list(indexInHash->index_list, new_index_value))
         {
             /* 申请空间，并赋值 */
             dict_index = (xk_pg_sysdict_Form_pg_index)rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
@@ -351,57 +360,57 @@ void ripple_index_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemcpy0(dict_index, 0, new_index_value->ripple_index, sizeof(xk_pg_parser_sysdict_pgindex));
+            rmemcpy0(dict_index, 0, new_index_value->index, sizeof(xk_pg_parser_sysdict_pgindex));
 
             dict_index->indkey = rmalloc0(sizeof(uint32) * dict_index->indnatts);
             if(NULL == dict_index->indkey)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemcpy0(dict_index->indkey, 0, new_index_value->ripple_index->indkey, sizeof(uint32) * dict_index->indnatts);
+            rmemcpy0(dict_index->indkey, 0, new_index_value->index->indkey, sizeof(uint32) * dict_index->indnatts);
 
-            index_value = (ripple_catalog_index_value *)rmalloc0(sizeof(ripple_catalog_index_value));
+            index_value = (catalog_index_value *)rmalloc0(sizeof(catalog_index_value));
             if(NULL == index_value)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(index_value, 0, 0, sizeof(ripple_catalog_index_value));
+            rmemset0(index_value, 0, 0, sizeof(catalog_index_value));
             index_value->oid = new_index_value->oid;
-            index_value->ripple_index = dict_index;
+            index_value->index = dict_index;
 
             /* 添加到链表中 */
-            indexInHash->ripple_index_list = lappend(indexInHash->ripple_index_list, index_value);
+            indexInHash->index_list = lappend(indexInHash->index_list, index_value);
         }
         else
         {
             elog(RLOG_DEBUG, "index r:%u,i:%u find in index hash list, do update",
-                                new_index_value->ripple_index->indrelid, new_index_value->ripple_index->indexrelid);
-            update_index_catalog_data_in_lsit(indexInHash->ripple_index_list, new_index_value);
+                                new_index_value->index->indrelid, new_index_value->index->indexrelid);
+            update_index_catalog_data_in_lsit(indexInHash->index_list, new_index_value);
         }
     }
-    else if(RIPPLE_CATALOG_OP_DELETE == catalogdata->op)
+    else if(CATALOG_OP_DELETE == catalogdata->op)
     {
         indexInHash = hash_search(sysdicts->by_index, &new_index_value->oid, HASH_FIND, NULL);
 
         if(NULL != indexInHash)
         {
-            if(NULL != indexInHash->ripple_index_list)
+            if(NULL != indexInHash->index_list)
             {
-                ListCell *cell = list_head(indexInHash->ripple_index_list);
+                ListCell *cell = list_head(indexInHash->index_list);
                 ListCell *cell_prev = NULL;
                 /* 遍历链表, 查找记录 */
                 while (cell)
                 {
                     ListCell *next_cell = cell->next;
-                    ripple_catalog_index_value* index_value = (ripple_catalog_index_value*)lfirst(cell);
-                    xk_pg_sysdict_Form_pg_index dict_index = index_value->ripple_index;
+                    catalog_index_value* index_value = (catalog_index_value*)lfirst(cell);
+                    xk_pg_sysdict_Form_pg_index dict_index = index_value->index;
 
                     /* 查找指定的index记录 */
-                    if (dict_index->indexrelid == new_index_value->ripple_index->indexrelid)
+                    if (dict_index->indexrelid == new_index_value->index->indexrelid)
                     {
-                        ripple_index_dict_index_free(dict_index);
+                        index_dict_index_free(dict_index);
                         rfree(index_value);
-                        indexInHash->ripple_index_list = list_delete_cell(indexInHash->ripple_index_list, cell, cell_prev);
+                        indexInHash->index_list = list_delete_cell(indexInHash->index_list, cell, cell_prev);
                         break;
                     }
                     else
@@ -413,7 +422,7 @@ void ripple_index_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple
                 }
 
                 /* 检查链表是否为空, 为空时从哈希中删除这条记录 */
-                if (!indexInHash->ripple_index_list)
+                if (!indexInHash->index_list)
                 {
                     hash_search(sysdicts->by_index, &new_index_value->oid, HASH_REMOVE, NULL);
                 }
@@ -425,20 +434,20 @@ void ripple_index_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple
             }
         }
     }
-    else if(RIPPLE_CATALOG_OP_UPDATE == catalogdata->op)
+    else if(CATALOG_OP_UPDATE == catalogdata->op)
     {
         indexInHash = hash_search(sysdicts->by_index, &new_index_value->oid, HASH_FIND, &found);
-        if(NULL == indexInHash || NULL == (indexInHash->ripple_index_list))
+        if(NULL == indexInHash || NULL == (indexInHash->index_list))
         {
             elog(RLOG_WARNING, "index r:%u,i:%u can not fond in index hash",
-                                new_index_value->ripple_index->indrelid, new_index_value->ripple_index->indexrelid);
+                                new_index_value->index->indrelid, new_index_value->index->indexrelid);
             return;
         }
 
-        if (!update_index_catalog_data_in_lsit(indexInHash->ripple_index_list, new_index_value))
+        if (!update_index_catalog_data_in_lsit(indexInHash->index_list, new_index_value))
         {
             elog(RLOG_WARNING, "index r:%u,i:%u can not fond in index hash list",
-                                new_index_value->ripple_index->indrelid, new_index_value->ripple_index->indexrelid);
+                                new_index_value->index->indrelid, new_index_value->index->indexrelid);
             return;
         }
     }
@@ -448,9 +457,9 @@ void ripple_index_catalogdata2transcache(ripple_cache_sysdicts* sysdicts, ripple
     }
 }
 
-void ripple_index_catalogdatafree(ripple_catalogdata* catalogdata)
+void index_catalogdatafree(catalogdata* catalogdata)
 {
-    ripple_catalog_index_value* catalog = NULL;
+    catalog_index_value* catalog = NULL;
     if(NULL == catalogdata)
     {
         return;
@@ -459,18 +468,18 @@ void ripple_index_catalogdatafree(ripple_catalogdata* catalogdata)
     /* catalog 内存释放 */
     if(NULL != catalogdata->catalog)
     {
-        catalog = (ripple_catalog_index_value*)catalogdata->catalog;
-        ripple_index_dict_index_free(catalog->ripple_index);
+        catalog = (catalog_index_value*)catalogdata->catalog;
+        index_dict_index_free(catalog->index);
         rfree(catalogdata->catalog);
     }
     rfree(catalogdata);
 }
 
 /* 根据oid获取pg_index链表 */
-void* ripple_index_getbyoid(Oid oid, HTAB* by_index)
+void* index_getbyoid(Oid oid, HTAB* by_index)
 {
     bool found = false;
-    ripple_catalog_index_hash_entry *indexentry = NULL;
+    catalog_index_hash_entry *indexentry = NULL;
     indexentry = hash_search(by_index, &oid, HASH_FIND, &found);
     if(false == found)
     {
@@ -478,31 +487,31 @@ void* ripple_index_getbyoid(Oid oid, HTAB* by_index)
     }
 
     /* need free */
-    return (void*)list_copy(indexentry->ripple_index_list);
+    return (void*)list_copy(indexentry->index_list);
 }
 
-void ripple_indexcache_write(HTAB* indexcache, uint64 *offset, ripple_sysdict_header_array* array)
+void indexcache_write(HTAB* indexcache, uint64 *offset, sysdict_header_array* array)
 {
     int     fd;
     uint64 page_num = 0;
-    uint64 page_offset = RIPPLE_PAGE_HEADER_SIZE;
+    uint64 page_offset = PAGE_HEADER_SIZE;
     HASH_SEQ_STATUS status;
-    char buffer[RIPPLE_FILE_BLK_SIZE];
+    char buffer[FILE_BLK_SIZE];
     xk_pg_sysdict_Form_pg_index index = NULL;
-    ripple_catalog_index_hash_entry *index_entry = NULL;
-    ripple_catalog_index_value *index_value = NULL;
+    catalog_index_hash_entry *index_entry = NULL;
+    catalog_index_value *index_value = NULL;
 
-    array[RIPPLE_CATALOG_TYPE_INDEX - 1].type = RIPPLE_CATALOG_TYPE_INDEX;
-    array[RIPPLE_CATALOG_TYPE_INDEX - 1].offset = *offset;
+    array[CATALOG_TYPE_INDEX - 1].type = CATALOG_TYPE_INDEX;
+    array[CATALOG_TYPE_INDEX - 1].offset = *offset;
     page_num = *offset;
 
-    rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
-    fd = BasicOpenFile(RIPPLE_SYSDICTS_TMP_FILE,
-                        O_RDWR | O_CREAT | RIPPLE_BINARY);
+    rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
+    fd = osal_basic_open_file(SYSDICTS_TMP_FILE,
+                        O_RDWR | O_CREAT | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_ERROR, "could not create file %s", RIPPLE_SYSDICTS_TMP_FILE);
+        elog(RLOG_ERROR, "could not create file %s", SYSDICTS_TMP_FILE);
     }
 
     hash_seq_init(&status, indexcache);
@@ -510,29 +519,29 @@ void ripple_indexcache_write(HTAB* indexcache, uint64 *offset, ripple_sysdict_he
     {
         ListCell *cell = NULL;
 
-        foreach(cell, index_entry->ripple_index_list)
+        foreach(cell, index_entry->index_list)
         {
             uint32 fix_len = 0;
             uint32 varlena_len = 0;
 
-            index_value = (ripple_catalog_index_value*)lfirst(cell);
-            index = index_value->ripple_index;
+            index_value = (catalog_index_value*)lfirst(cell);
+            index = index_value->index;
 
             fix_len = offsetof(xk_pg_parser_sysdict_pgindex, indkey);
             varlena_len = sizeof(uint32) * index->indnatts;
 
-            if(page_offset + fix_len + varlena_len > RIPPLE_FILE_BLK_SIZE)
+            if(page_offset + fix_len + varlena_len > FILE_BLK_SIZE)
             {
-                rmemcpy1(buffer, 0, &page_offset, RIPPLE_PAGE_HEADER_SIZE);
-                if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-                    elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_TMP_FILE);
-                    FileClose(fd);
+                rmemcpy1(buffer, 0, &page_offset, PAGE_HEADER_SIZE);
+                if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+                    elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
+                    osal_file_close(fd);
                     return;
                 }
-                rmemset1(buffer, 0, '\0', RIPPLE_FILE_BLK_SIZE);
+                rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
                 page_num = *offset + page_offset;
-                *offset += RIPPLE_FILE_BLK_SIZE;
-                page_offset = RIPPLE_PAGE_HEADER_SIZE;
+                *offset += FILE_BLK_SIZE;
+                page_offset = PAGE_HEADER_SIZE;
             }
             rmemcpy1(buffer, page_offset, index, fix_len);
             page_offset += fix_len;
@@ -542,35 +551,35 @@ void ripple_indexcache_write(HTAB* indexcache, uint64 *offset, ripple_sysdict_he
         }
     }
 
-    if (page_offset > RIPPLE_PAGE_HEADER_SIZE)
+    if (page_offset > PAGE_HEADER_SIZE)
     {
-        rmemcpy1(buffer, 0, &page_offset, RIPPLE_PAGE_HEADER_SIZE);
+        rmemcpy1(buffer, 0, &page_offset, PAGE_HEADER_SIZE);
 
-        if (FilePWrite(fd, buffer, RIPPLE_FILE_BLK_SIZE, *offset) != RIPPLE_FILE_BLK_SIZE) {
-            elog(RLOG_ERROR, "could not write to file %s", RIPPLE_SYSDICTS_TMP_FILE);
-            FileClose(fd);
+        if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+            elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
+            osal_file_close(fd);
             return;
         }
         page_num = page_offset + *offset;
-        *offset += RIPPLE_FILE_BLK_SIZE;
+        *offset += FILE_BLK_SIZE;
     }
 
-    if(0 != FileSync(fd))
+    if(0 != osal_file_sync(fd))
     {
-        elog(RLOG_ERROR, "could not fsync file %s", RIPPLE_SYSDICTS_TMP_FILE);
+        elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_TMP_FILE);
     }
 
-    if(FileClose(fd))
+    if(osal_file_close(fd))
     {
-        elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_TMP_FILE);
+        elog(RLOG_ERROR, "could not close file %s", SYSDICTS_TMP_FILE);
     }
 
-    array[RIPPLE_CATALOG_TYPE_INDEX - 1].len = page_num;
+    array[CATALOG_TYPE_INDEX - 1].len = page_num;
 
     return;
 }
 
-HTAB* ripple_indexcache_load(ripple_sysdict_header_array* array)
+HTAB* indexcache_load(sysdict_header_array* array)
 {
     int r = 0;
     int fd = -1;
@@ -581,38 +590,38 @@ HTAB* ripple_indexcache_load(ripple_sysdict_header_array* array)
     uint64 offset = 0;
     uint64 fileoffset = 0;
 
-    char buffer[RIPPLE_FILE_BLK_SIZE];
+    char buffer[FILE_BLK_SIZE];
     xk_pg_sysdict_Form_pg_index index;
-    ripple_catalog_index_hash_entry *entry = NULL;
+    catalog_index_hash_entry *entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(uint32_t);
-    hash_ctl.entrysize = sizeof(ripple_catalog_index_value);
-    indexhtab = hash_create("ripple_catalog_index_value", 2048, &hash_ctl,
+    hash_ctl.entrysize = sizeof(catalog_index_value);
+    indexhtab = hash_create("catalog_index_value", 2048, &hash_ctl,
                                  HASH_ELEM | HASH_BLOBS);
 
-    if (array[RIPPLE_CATALOG_TYPE_INDEX - 1].len == array[RIPPLE_CATALOG_TYPE_INDEX - 1].offset)
+    if (array[CATALOG_TYPE_INDEX - 1].len == array[CATALOG_TYPE_INDEX - 1].offset)
     {
         return indexhtab;
     }
 
-    fd = BasicOpenFile(RIPPLE_SYSDICTS_FILE,
-                        O_RDWR | RIPPLE_BINARY);
+    fd = osal_basic_open_file(SYSDICTS_FILE,
+                        O_RDWR | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_ERROR, "could not open file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not open file %s", SYSDICTS_FILE);
     }
 
-    fileoffset = array[RIPPLE_CATALOG_TYPE_INDEX - 1].offset;
-    while ((r = FilePRead(fd, buffer, RIPPLE_FILE_BLK_SIZE, fileoffset)) > 0) 
+    fileoffset = array[CATALOG_TYPE_INDEX - 1].offset;
+    while ((r = osal_file_pread(fd, buffer, FILE_BLK_SIZE, fileoffset)) > 0) 
     {
-        rmemcpy1(&datasize, 0, buffer, RIPPLE_PAGE_HEADER_SIZE);
-        offset = RIPPLE_PAGE_HEADER_SIZE;
+        rmemcpy1(&datasize, 0, buffer, PAGE_HEADER_SIZE);
+        offset = PAGE_HEADER_SIZE;
 
         while (offset < datasize)
         {
-            ripple_catalog_index_value *index_value = NULL;
+            catalog_index_value *index_value = NULL;
 
             index = (xk_pg_sysdict_Form_pg_index)rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
             if(NULL == index)
@@ -634,38 +643,38 @@ HTAB* ripple_indexcache_load(ripple_sysdict_header_array* array)
             rmemcpy0(index->indkey, 0, buffer + offset, sizeof(uint32) * index->indnatts);
             offset += sizeof(uint32) * index->indnatts;
 
-            index_value = rmalloc0(sizeof(ripple_catalog_index_value));
+            index_value = rmalloc0(sizeof(catalog_index_value));
             if(NULL == index_value)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(index_value, 0, '\0', sizeof(ripple_catalog_index_value));
+            rmemset0(index_value, 0, '\0', sizeof(catalog_index_value));
             index_value->oid = index->indrelid;
-            index_value->ripple_index = index;
+            index_value->index = index;
 
             entry = hash_search(indexhtab, &index->indrelid, HASH_ENTER, &found);
             if(!found)
             {
                 entry->oid = index->indrelid;
-                entry->ripple_index_list = NULL;
+                entry->index_list = NULL;
             }
-            entry->ripple_index_list = lappend(entry->ripple_index_list, index_value);
+            entry->index_list = lappend(entry->index_list, index_value);
 
-            if (fileoffset + offset == array[RIPPLE_CATALOG_TYPE_INDEX - 1].len)
+            if (fileoffset + offset == array[CATALOG_TYPE_INDEX - 1].len)
             {
-                if(FileClose(fd))
+                if(osal_file_close(fd))
                 {
-                    elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_FILE);
+                    elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
                 }
                 return indexhtab;
             }
         }
-        fileoffset += RIPPLE_FILE_BLK_SIZE;
+        fileoffset += FILE_BLK_SIZE;
     }
 
-    if(FileClose(fd))
+    if(osal_file_close(fd))
     {
-        elog(RLOG_ERROR, "could not close file %s", RIPPLE_SYSDICTS_FILE);
+        elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
     }
     return indexhtab;
 }

@@ -2,34 +2,34 @@
  * All Copyright (c) 2024-2024, Byte Sync Development Group
  *
 */
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/guc/guc.h"
 #include "port/ipc/ipc.h"
 #include "port/file/fd.h"
-#include "utils/daemon/ripple_process.h"
+#include "utils/daemon/process.h"
 
 /* 关闭标准输入/输出 */
-void ripple_closestd(void)
+void closestd(void)
 {
     /* stdin */
-    FileClose(STDIN_FILENO);
+    osal_file_close(STDIN_FILENO);
 
-    FileOpen("/dev/null", O_RDWR, 0);
+    osal_file_open("/dev/null", O_RDWR, 0);
 
     /* stdout */
-    FileClose(STDOUT_FILENO);
-    FileOpen("/dev/null", O_RDWR, 0);
+    osal_file_close(STDOUT_FILENO);
+    osal_file_open("/dev/null", O_RDWR, 0);
 
 
     /* stderr */
-    FileClose(STDERR_FILENO);
-    FileOpen("/dev/null", O_RDWR, 0);
+    osal_file_close(STDERR_FILENO);
+    osal_file_open("/dev/null", O_RDWR, 0);
     g_closestd = true;
 }
 
 
 /* 设置为后台执行 */
-void ripple_makedaemon(void)
+void makedaemon(void)
 {
     int ret = 0;
     pid_t pid = 0;
@@ -39,13 +39,13 @@ void ripple_makedaemon(void)
     fflush(stdout);
 	fflush(stderr);
 
-    ret = ripple_ipc_pipe(pipes);
+    ret = osal_ipc_pipe(pipes);
     if(0 != ret)
     {
         elog(RLOG_ERROR, "pipe error:%s", strerror(errno));
     }
 
-    pid = ripple_ipc_fork();
+    pid = osal_ipc_fork();
     if(-1 == pid)
     {
         elog(RLOG_ERROR, "make ripple daemon error ipc fork");
@@ -57,13 +57,13 @@ void ripple_makedaemon(void)
         /* 父进程 */
         /* 等待子进程退出 */
         wait(&ret);
-        FileClose(pipes[1]);
+        osal_file_close(pipes[1]);
         if(0 != ret)
         {
             elog(RLOG_ERROR, "ripple init error");
         }
 
-        while((ret = FileRead(pipes[0], pipemsg, 128)))
+        while((ret = osal_file_read(pipes[0], pipemsg, 128)))
         {
             if(0 > ret)
             {
@@ -77,25 +77,25 @@ void ripple_makedaemon(void)
             elog(RLOG_INFO, "pipe message:%s", pipemsg);
             rmemset1(pipemsg, 0, '\0', 128);
         }
-        FileClose(pipes[0]);
+        osal_file_close(pipes[0]);
         exit(0);
     }
 
     /* 子进程 */
-    FileClose(pipes[0]);
+    osal_file_close(pipes[0]);
     setsid();
     setpgid(0, getpid());
 
     /* 再次 fork */
-    pid = ripple_ipc_fork();
+    pid = osal_ipc_fork();
     if(-1 == pid)
     {
-        if(22 != FileWrite(pipes[1], "errorsecond fork error", 22))
+        if(22 != osal_file_write(pipes[1], "errorsecond fork error", 22))
         {
             elog(RLOG_ERROR, "write pipe error:%s\n", strerror(errno));
         }
 
-        FileClose(pipes[1]);
+        osal_file_close(pipes[1]);
         elog(RLOG_ERROR, "sec fork error:%s", strerror(errno));
         exit(-1);
     }
@@ -103,15 +103,15 @@ void ripple_makedaemon(void)
     if(0 < pid)
     {
         /* 父进程,退出 */
-        FileClose(pipes[1]);
+        osal_file_close(pipes[1]);
         exit(0);
     }
 
-    FileClose(pipes[1]);
+    osal_file_close(pipes[1]);
 }
 
 /* 执行后台命令 */
-bool ripple_execcommand(char* cmd, void* args, void (*childdestroy)(void* args))
+bool execcommand(char* cmd, void* args, void (*childdestroy)(void* args))
 {
     pid_t pid = 0;
     if (NULL == cmd)
@@ -119,7 +119,7 @@ bool ripple_execcommand(char* cmd, void* args, void (*childdestroy)(void* args))
         return false;
     }
 
-    pid = ripple_ipc_fork();
+    pid = osal_ipc_fork();
     if (-1 == pid)
     {
         elog(RLOG_WARNING, "exec command error, fork child error");

@@ -1,13 +1,13 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/ipc/ipc.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
-#include "misc/ripple_misc_lockfiles.h"
+#include "misc/misc_lockfiles.h"
 
 static char* m_lockfile = NULL;
 
 /* 删除锁文件 */
-void ripple_misc_lockfiles_unlink(int status, void* arg)
+void misc_lockfiles_unlink(int status, void* arg)
 {
     if(NULL == m_lockfile)
     {
@@ -23,7 +23,7 @@ void ripple_misc_lockfiles_unlink(int status, void* arg)
 /*
  * 创建锁文件
 */
-void ripple_misc_lockfiles_create(const char *filename)
+void misc_lockfiles_create(const char *filename)
 {
     int         fd;
     char        buffer[1024 * 2 + 256];
@@ -52,7 +52,7 @@ void ripple_misc_lockfiles_create(const char *filename)
             * Think not to make the file protection weaker than 0600/0640.  See
             * comments below.
             */
-        fd = FileOpen(filename, O_RDWR | O_CREAT | O_EXCL, g_file_create_mode);
+        fd = osal_file_open(filename, O_RDWR | O_CREAT | O_EXCL, g_file_create_mode);
         if (fd >= 0)
         {
             break;				/* Success; exit the retry loop */
@@ -70,7 +70,7 @@ void ripple_misc_lockfiles_create(const char *filename)
             * Read the file to get the old owner's PID.  Note race condition
             * here: file might have been deleted since we tried to create it.
             */
-        fd = FileOpen(filename, O_RDONLY, g_file_create_mode);
+        fd = osal_file_open(filename, O_RDONLY, g_file_create_mode);
         if (fd < 0)
         {
             if (errno == ENOENT)
@@ -81,7 +81,7 @@ void ripple_misc_lockfiles_create(const char *filename)
             elog(RLOG_ERROR, "could not open lock file:%s", filename);
         }
 
-        if ((len = FileRead(fd, buffer, sizeof(buffer) - 1)) < 0)
+        if ((len = osal_file_read(fd, buffer, sizeof(buffer) - 1)) < 0)
         {
             elog(RLOG_ERROR, "could not read lock file:%s", filename);
         }
@@ -153,7 +153,7 @@ void ripple_misc_lockfiles_create(const char *filename)
         elog(RLOG_ERROR, "could not write lock file %s", filename);
     }
 
-    if (FileSync(fd) != 0)
+    if (osal_file_sync(fd) != 0)
     {
         int			save_errno = errno;
 
@@ -176,7 +176,7 @@ void ripple_misc_lockfiles_create(const char *filename)
 }
 
 /* 在lock文件中获取 pid */
-long ripple_misc_lockfiles_getpid(void)
+long misc_lockfiles_getpid(void)
 {
     long    pid;
     FILE*   lockf = NULL;
@@ -186,7 +186,7 @@ long ripple_misc_lockfiles_getpid(void)
     wdata = guc_getdata();
     /* 切换工作目录 */
     chdir(wdata);
-    if (0 != stat(RIPPLE_LOCK_FILE, &statbuf))
+    if (0 != stat(LOCK_FILE, &statbuf))
     {
         if (errno == ENOENT)
         {
@@ -194,11 +194,11 @@ long ripple_misc_lockfiles_getpid(void)
         }
         else
         {
-            elog(RLOG_ERROR, "could not access file:%s/%s, error:%s", wdata, RIPPLE_LOCK_FILE, strerror(errno));
+            elog(RLOG_ERROR, "could not access file:%s/%s, error:%s", wdata, LOCK_FILE, strerror(errno));
         }
     }
 
-    lockf = FileFOpen(RIPPLE_LOCK_FILE, "r");
+    lockf = osal_file_fopen(LOCK_FILE, "r");
     if(NULL == lockf)
     {
         if(ENOENT == errno)
@@ -207,15 +207,15 @@ long ripple_misc_lockfiles_getpid(void)
         }
         else
         {
-            elog(RLOG_ERROR, "open lock file %s.%s, error:%s", wdata, RIPPLE_LOCK_FILE, strerror(errno));
+            elog(RLOG_ERROR, "open lock file %s.%s, error:%s", wdata, LOCK_FILE, strerror(errno));
         }
     }
     if (fscanf(lockf, "%ld", &pid) != 1)
     {
         /* Is the file empty? */
-        elog(RLOG_ERROR, "read file error:%s/%s, error:%s", wdata, RIPPLE_LOCK_FILE, strerror(errno));
+        elog(RLOG_ERROR, "read file error:%s/%s, error:%s", wdata, LOCK_FILE, strerror(errno));
     }
 
-    FreeFile(lockf);
+    osal_free_file(lockf);
     return pid;
 }

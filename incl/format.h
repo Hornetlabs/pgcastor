@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_FORMAT_H
-#define _RIPPLE_FORMAT_H
+#ifndef _FORMAT_H
+#define _FORMAT_H
 
 static inline void put64bit(uint8_t **ptr,uint64_t val) 
 {

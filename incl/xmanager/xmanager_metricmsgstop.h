@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_XMANAGER_METRICMSGSTOP_H_
-#define _RIPPLE_XMANAGER_METRICMSGSTOP_H_
+#ifndef _XMANAGER_METRICMSGSTOP_H_
+#define _XMANAGER_METRICMSGSTOP_H_
 
 /*
  * 处理 start 命令
@@ -8,15 +8,15 @@
  *  3、创建异步消息挂载到 xscsci 节点上
  *  4、执行初始化命令
 */
-extern bool ripple_xmanager_metricmsg_parsestop(ripple_xmanager_metric* xmetric,
-                                                ripple_netpoolentry* npoolentry,
-                                                ripple_netpacket* npacket);
+extern bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric,
+                                                netpoolentry* npoolentry,
+                                                netpacket* npacket);
 
 
 /*
  * 组装 start 返回消息
 */
-extern bool ripple_xmanager_metricmsg_assemblestop(ripple_xmanager_metric* xmetric,
-                                                   ripple_netpoolentry* npoolentry,
+extern bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
+                                                   netpoolentry* npoolentry,
                                                    dlist* dlmsgs);
 #endif

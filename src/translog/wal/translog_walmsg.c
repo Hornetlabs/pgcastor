@@ -1,16 +1,16 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
 #include "utils/dttime/dttimestamp.h"
-#include "utils/conn/ripple_conn.h"
-#include "utils/init/ripple_databaserecv.h"
-#include "translog/wal/ripple_translog_walmsg.h"
+#include "utils/conn/conn.h"
+#include "utils/init/databaserecv.h"
+#include "translog/wal/translog_walmsg.h"
 
 /*
  * 发送心跳包
 */
-bool ripple_translog_walmsg_sendkeepalivemsg(XLogRecPtr startpos, PGconn* conn)
+bool translog_walmsg_sendkeepalivemsg(XLogRecPtr startpos, PGconn* conn)
 {
     int msglen = 34;
     XLogRecPtr nlsn     = 0;
@@ -69,7 +69,7 @@ bool ripple_translog_walmsg_sendkeepalivemsg(XLogRecPtr startpos, PGconn* conn)
 }
 
 /* 发送结束标识 */
-bool ripple_translog_walmsg_senddone(PGconn* conn)
+bool translog_walmsg_senddone(PGconn* conn)
 {
     if (0 >= PQputCopyEnd(conn, NULL) || PQflush(conn))
     {
@@ -81,7 +81,7 @@ bool ripple_translog_walmsg_senddone(PGconn* conn)
 }
 
 /* 异步 io, 临时使用此方式, 后续再改进 */
-static bool ripple_translog_walmsg_poll(PGconn *conn, long timeoutms, int* perror)
+static bool translog_walmsg_poll(PGconn *conn, long timeoutms, int* perror)
 {
     int ret             = 0;
     fd_set input_mask;
@@ -90,7 +90,7 @@ static bool ripple_translog_walmsg_poll(PGconn *conn, long timeoutms, int* perro
     struct timeval timeout;
     struct timeval *timeoutptr;
 
-ripple_translog_recvwallog_poll_retry:
+translog_recvwallog_poll_retry:
     connsocket = PQsocket(conn);
     if (connsocket < 0)
     {
@@ -119,7 +119,7 @@ ripple_translog_recvwallog_poll_retry:
     {
         if (errno == EINTR)
         {
-            goto ripple_translog_recvwallog_poll_retry;
+            goto translog_recvwallog_poll_retry;
         }
         elog(RLOG_WARNING, "select() failed: %s", strerror(errno));
         return false;
@@ -131,12 +131,12 @@ ripple_translog_recvwallog_poll_retry:
     }
 
     /* 超时 */
-    *perror = RIPPLE_ERROR_TIMEOUT;
+    *perror = ERROR_TIMEOUT;
     return false;
 }
 
 /* 获取数据 */
-bool ripple_translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, int *recvlen)
+bool translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, int *recvlen)
 {
     long sleeptime          = 1000;
 
@@ -147,14 +147,14 @@ bool ripple_translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, in
         *buffer = NULL;
     }
 
-    *perror = RIPPLE_ERROR_SUCCESS;
+    *perror = ERROR_SUCCESS;
     *recvlen = PQgetCopyData(conn, buffer, 1);
     if (0 == *recvlen)
     {
         /* 没有数据, 那么需要等待数据 */
-        if(false == ripple_translog_walmsg_poll(conn, sleeptime, perror))
+        if(false == translog_walmsg_poll(conn, sleeptime, perror))
         {
-            if (RIPPLE_ERROR_TIMEOUT == *perror)
+            if (ERROR_TIMEOUT == *perror)
             {
                 return true;
             }
@@ -162,7 +162,7 @@ bool ripple_translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, in
             {
                 /* 非超时错误, 那么证明连接出问题了 */
                 elog(RLOG_WARNING, "recvwallog poll error");
-                *perror = RIPPLE_ERROR_REPLICATION;
+                *perror = ERROR_REPLICATION;
                 return false;
             }
         }
@@ -171,7 +171,7 @@ bool ripple_translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, in
         if (0 == PQconsumeInput(conn))
         {
             elog(RLOG_WARNING, "could not receive data from WAL stream: %s", PQerrorMessage(conn));
-            *perror = RIPPLE_ERROR_REPLICATION;
+            *perror = ERROR_REPLICATION;
             return false;
         }
 
@@ -180,7 +180,7 @@ bool ripple_translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, in
         if (0 == *recvlen)
         {
             /* 没有读取到足够的数据, 那么还需要再此读取 */
-            *perror = RIPPLE_ERROR_RETRY;
+            *perror = ERROR_RETRY;
             return false;
         }
     }
@@ -191,14 +191,14 @@ bool ripple_translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, in
          * 这个 -1 包含的含义如下:
          *  1、接收到了 'c' 消息
          *  2、接收到了流复制不感兴趣的消息, 比如: 'C'
-         *      所以在外面应该对 RIPPLE_ERROR_ENDREPLICATION 进行分类处理
+         *      所以在外面应该对 ERROR_ENDREPLICATION 进行分类处理
          */
-        *perror = RIPPLE_ERROR_ENDREPLICATION;
+        *perror = ERROR_ENDREPLICATION;
         return false;
     }
     else if (-2 == *recvlen)
     {
-        *perror = RIPPLE_ERROR_REPLICATION;
+        *perror = ERROR_REPLICATION;
         return false;
     }
     return true;

@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include "ripple_c.h"
+#include "app_c.h"
 #include "xscsci_tabcomplete.h"
 
 #define XSCSCI_WORD_BREAKS              " "

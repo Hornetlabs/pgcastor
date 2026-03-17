@@ -1,15 +1,15 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/guc/guc.h"
-#include "utils/conn/ripple_conn.h"
-#include "utils/init/ripple_databaserecv.h"
+#include "utils/conn/conn.h"
+#include "utils/init/databaserecv.h"
 
-ripple_checkpoint* ripple_databaserecv_checkpoint_get(PGconn* conn)
+checkpoint* databaserecv_checkpoint_get(PGconn* conn)
 {
     char *redolsn = NULL;
     char stmtsql[1024] = {'\0'};
     PGresult*    res = NULL;
-    ripple_checkpoint* checkpoint = NULL;
+    checkpoint* checkpoint_obj = NULL;
 
     uint32      tlid = 0;
     uint32      epoch = 0;
@@ -19,7 +19,7 @@ ripple_checkpoint* ripple_databaserecv_checkpoint_get(PGconn* conn)
 
     /*获取当前数据库的检查点信息*/
     sprintf(stmtsql, "SELECT redo_lsn, timeline_id, next_xid FROM pg_control_checkpoint();");
-    res =  ripple_conn_exec(conn, stmtsql);
+    res =  conn_exec(conn, stmtsql);
     if (PQnfields(res) != 3 && PQntuples(res) != 1)
     {
         PQfinish(conn);
@@ -27,12 +27,12 @@ ripple_checkpoint* ripple_databaserecv_checkpoint_get(PGconn* conn)
         elog(RLOG_ERROR, "failed get excute SQL result: %s", stmtsql);
     }
 
-    checkpoint = (ripple_checkpoint*)rmalloc0(sizeof(ripple_checkpoint));
-    if(NULL == checkpoint)
+    checkpoint_obj = (checkpoint*)rmalloc0(sizeof(checkpoint));
+    if(NULL == checkpoint_obj)
     {
         elog(RLOG_ERROR,"out of memory, %s", strerror(errno));
     }
-    rmemset0(checkpoint, 0, 0, sizeof(ripple_checkpoint));
+    rmemset0(checkpoint_obj, 0, 0, sizeof(checkpoint));
 
     /*获取执行结果，为字符串信息*/
     redolsn = PQgetvalue(res, 0, 0);
@@ -44,26 +44,26 @@ ripple_checkpoint* ripple_databaserecv_checkpoint_get(PGconn* conn)
     }
 
     /*组装redolsn信息*/
-    checkpoint->redolsn = ((uint64) hi) << 32 | lo;
+    checkpoint_obj->redolsn = ((uint64) hi) << 32 | lo;
 
     if (sscanf(PQgetvalue(res, 0, 1), "%u", &tlid) != 1)
     {
         elog(RLOG_ERROR," could not parse end position \"%s\"", PQgetvalue(res, 0, 1));
     }
-    checkpoint->tlid = (TimeLineID)tlid;
+    checkpoint_obj->tlid = (TimeLineID)tlid;
 
     if (sscanf(PQgetvalue(res, 0, 2), "%u:%u", &epoch, &nextfullxid) != 2)
     {
         elog(RLOG_ERROR," could not parse end position \"%s\"", PQgetvalue(res, 0, 2));
     }
-    checkpoint->nextfullxid = (TransactionId)nextfullxid;
+    checkpoint_obj->nextfullxid = (TransactionId)nextfullxid;
 
     PQclear(res);
-    return checkpoint;
+    return checkpoint_obj;
 
 }
 
-XLogRecPtr ripple_databaserecv_currentlsn_get(PGconn* conn)
+XLogRecPtr databaserecv_currentlsn_get(PGconn* conn)
 {
     char* lsn = NULL;
     XLogRecPtr currentlsn = 0;
@@ -73,7 +73,7 @@ XLogRecPtr ripple_databaserecv_currentlsn_get(PGconn* conn)
                 lo = 0;
 
     /*获取当前数据库currentlsn信息*/
-    res =  ripple_conn_exec(conn, "SELECT pg_current_wal_insert_lsn();");
+    res =  conn_exec(conn, "SELECT pg_current_wal_insert_lsn();");
     if (PQnfields(res) != 1 && PQntuples(res) != 1)
     {
         PQfinish(conn);
@@ -97,13 +97,13 @@ XLogRecPtr ripple_databaserecv_currentlsn_get(PGconn* conn)
     return currentlsn;
 }
 
-char* ripple_databaserecv_monetary_get(PGconn* conn)
+char* databaserecv_monetary_get(PGconn* conn)
 {
     char *monetary = NULL;
     PGresult *res = NULL;
 
     /*获取当前数据库currentlsn信息*/
-    res =  ripple_conn_exec(conn, "show lc_monetary");
+    res =  conn_exec(conn, "show lc_monetary");
     if (PQnfields(res) != 1 && PQntuples(res) != 1)
     {
         PQfinish(conn);
@@ -128,13 +128,13 @@ char* ripple_databaserecv_monetary_get(PGconn* conn)
     return monetary;
 }
 
-char* ripple_databaserecv_numeric_get(PGconn* conn)
+char* databaserecv_numeric_get(PGconn* conn)
 {
     char *numeric = NULL;
     PGresult *res = NULL;
 
     /*获取当前数据库currentlsn信息*/
-    res =  ripple_conn_exec(conn, "show lc_numeric");
+    res =  conn_exec(conn, "show lc_numeric");
     if (PQnfields(res) != 1 && PQntuples(res) != 1)
     {
         PQclear(res);
@@ -159,13 +159,13 @@ char* ripple_databaserecv_numeric_get(PGconn* conn)
     return numeric;
 }
 
-char* ripple_databaserecv_timezone_get(PGconn* conn)
+char* databaserecv_timezone_get(PGconn* conn)
 {
     char *timezone = NULL;
     PGresult *res = NULL;
 
     /*获取当前数据库currentlsn信息*/
-    res =  ripple_conn_exec(conn, "show timezone");
+    res =  conn_exec(conn, "show timezone");
     if (PQnfields(res) != 1 && PQntuples(res) != 1)
     {
         PQclear(res);
@@ -190,7 +190,7 @@ char* ripple_databaserecv_timezone_get(PGconn* conn)
     return timezone;
 }
 
-Oid ripple_databaserecv_database_get(PGconn* conn)
+Oid databaserecv_database_get(PGconn* conn)
 {
     Oid database = 0;
     PGresult *res = NULL;
@@ -199,7 +199,7 @@ Oid ripple_databaserecv_database_get(PGconn* conn)
     /* 获取数据库的标识 */
     rmemset1(stmtsql, 0, 0, 1024);
     sprintf(stmtsql, "SELECT oid FROM pg_database WHERE datname = current_database();");
-    res =  ripple_conn_exec(conn, stmtsql);
+    res =  conn_exec(conn, stmtsql);
     if (PQnfields(res) != 1 && PQntuples(res) != 1)
     {
         PQclear(res);
@@ -214,7 +214,7 @@ Oid ripple_databaserecv_database_get(PGconn* conn)
     return database;
 }
 
-char* ripple_databaserecv_orgencoding_get(PGconn* conn)
+char* databaserecv_orgencoding_get(PGconn* conn)
 {
     char* orgencoding = NULL;
     char    stmtsql[1024] = {'\0'};
@@ -223,7 +223,7 @@ char* ripple_databaserecv_orgencoding_get(PGconn* conn)
     /* 获取数据库的标识 */
     rmemset1(stmtsql, 0, 0, 1024);
     sprintf(stmtsql, "show server_encoding");
-    res =  ripple_conn_exec(conn, stmtsql);
+    res =  conn_exec(conn, stmtsql);
     if (PQnfields(res) != 1 && PQntuples(res) != 1)
     {
         PQclear(res);
@@ -245,7 +245,7 @@ char* ripple_databaserecv_orgencoding_get(PGconn* conn)
     return orgencoding;
 }
 
-TransactionId ripple_databaserecv_transactionid_get(PGconn* conn)
+TransactionId databaserecv_transactionid_get(PGconn* conn)
 {
     uint64 tid = 0;
     PGresult *res = NULL;
@@ -254,7 +254,7 @@ TransactionId ripple_databaserecv_transactionid_get(PGconn* conn)
     /* 获取数据库的标识 */
     rmemset1(stmtsql, 0, 0, 1024);
     sprintf(stmtsql, "select txid_current();");
-    res =  ripple_conn_exec(conn, stmtsql);
+    res =  conn_exec(conn, stmtsql);
     if (PQnfields(res) != 1 && PQntuples(res) != 1)
     {
         PQclear(res);
@@ -269,7 +269,7 @@ TransactionId ripple_databaserecv_transactionid_get(PGconn* conn)
     return (TransactionId)tid;
 }
 
-TimestampTz ripple_databaserecv_timestamp_get(PGconn* conn)
+TimestampTz databaserecv_timestamp_get(PGconn* conn)
 {
     int64 timestamp = 0;
     PGresult *res = NULL;
@@ -278,7 +278,7 @@ TimestampTz ripple_databaserecv_timestamp_get(PGconn* conn)
     /* 获取数据库的标识 */
     rmemset1(stmtsql, 0, 0, 1024);
     sprintf(stmtsql, "SELECT backend_start FROM pg_stat_activity ORDER BY backend_start ASC LIMIT 1;");
-    res =  ripple_conn_exec(conn, stmtsql);
+    res =  conn_exec(conn, stmtsql);
     if (PQnfields(res) != 1 && PQntuples(res) != 1)
     {
         PQclear(res);
@@ -293,34 +293,34 @@ TimestampTz ripple_databaserecv_timestamp_get(PGconn* conn)
 /*
  * 执行 checkpoint
 */
-void ripple_databaserecv_checkpoint(PGconn* conn)
+void databaserecv_checkpoint(PGconn* conn)
 {
     PGresult   *res = NULL;
-    char        stmt[RIPPLE_MAX_EXEC_SQL_LEN] = {'\0'};
+    char        stmt[MAX_EXEC_SQL_LEN] = {'\0'};
     if(NULL == conn)
     {
         return;
     }
 
-    snprintf(stmt, RIPPLE_MAX_EXEC_SQL_LEN, "CHECKPOINT;");
-    res =  ripple_conn_exec(conn, stmt);
+    snprintf(stmt, MAX_EXEC_SQL_LEN, "CHECKPOINT;");
+    res =  conn_exec(conn, stmt);
     PQclear(res);
 }
 
 /*
  * 3、创建触发器相关
 */
-bool ripple_databaserecv_trigger_set(PGconn* conn)
+bool databaserecv_trigger_set(PGconn* conn)
 {
     PGresult   *res = NULL;
-    char        stmt[RIPPLE_MAX_EXEC_SQL_LEN] = {'\0'};
+    char        stmt[MAX_EXEC_SQL_LEN] = {'\0'};
     if(NULL == conn)
     {
         return false;
     }
 
     /* 1、创建函数 */
-    snprintf(stmt, RIPPLE_MAX_EXEC_SQL_LEN, "CREATE OR REPLACE FUNCTION public.xsc_set_supplement() "
+    snprintf(stmt, MAX_EXEC_SQL_LEN, "CREATE OR REPLACE FUNCTION public.xsc_set_supplement() "
                                             "    RETURNS event_trigger  "
                                             "    AS $$                  "
                                             "   DECLARE                 "
@@ -339,7 +339,7 @@ bool ripple_databaserecv_trigger_set(PGconn* conn)
                                             "    END;                   "
                                             "    $$ LANGUAGE plpgsql;");
 
-    res =  ripple_conn_exec(conn, stmt);
+    res =  conn_exec(conn, stmt);
     if (NULL == res)
     {
         return false;
@@ -349,8 +349,8 @@ bool ripple_databaserecv_trigger_set(PGconn* conn)
 
     /* 2 创建触发器 */
     /* 查看触发器是否存在,不存在则创建 */
-    snprintf(stmt, RIPPLE_MAX_EXEC_SQL_LEN, "SELECT oid FROM pg_event_trigger WHERE evtname = 'xsc_set_supplement_trigger'");
-    res =  ripple_conn_exec(conn, stmt);
+    snprintf(stmt, MAX_EXEC_SQL_LEN, "SELECT oid FROM pg_event_trigger WHERE evtname = 'xsc_set_supplement_trigger'");
+    res =  conn_exec(conn, stmt);
     if (NULL == res)
     {
         return false;
@@ -360,11 +360,11 @@ bool ripple_databaserecv_trigger_set(PGconn* conn)
         PQclear(res);
 
         /* 创建触发器 1, 执行完CREATE TABL DDL后获取表信息 */
-        snprintf(stmt, RIPPLE_MAX_EXEC_SQL_LEN, "CREATE EVENT TRIGGER xsc_set_supplement_trigger                      "
+        snprintf(stmt, MAX_EXEC_SQL_LEN, "CREATE EVENT TRIGGER xsc_set_supplement_trigger                      "
                                                 "    ON DDL_COMMAND_END                                     "
                                                 "    WHEN TAG IN ('CREATE TABLE','CREATE TABLE AS')         "
                                                 "    EXECUTE FUNCTION public.xsc_set_supplement();          ");
-        res =  ripple_conn_exec(conn, stmt);
+        res =  conn_exec(conn, stmt);
         if (NULL == res)
         {
             return false;
@@ -378,17 +378,17 @@ bool ripple_databaserecv_trigger_set(PGconn* conn)
 /*
  * 2、创建同步表
 */
-bool ripple_databaserecv_synctable_set(PGconn* conn)
+bool databaserecv_synctable_set(PGconn* conn)
 {
     PGresult   *res = NULL;
-    char        stmt[RIPPLE_MAX_EXEC_SQL_LEN] = {'\0'};
+    char        stmt[MAX_EXEC_SQL_LEN] = {'\0'};
     if(NULL == conn)
     {
         return false;
     }
 
-    snprintf(stmt, RIPPLE_MAX_EXEC_SQL_LEN, "SELECT oid FROM pg_namespace WHERE nspname = '%s';", guc_getConfigOption(RIPPLE_CFG_KEY_CATALOGSCHEMA));
-    res =  ripple_conn_exec(conn, stmt);
+    snprintf(stmt, MAX_EXEC_SQL_LEN, "SELECT oid FROM pg_namespace WHERE nspname = '%s';", guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
+    res =  conn_exec(conn, stmt);
     if (NULL == res )
     {
         return false;
@@ -398,8 +398,8 @@ bool ripple_databaserecv_synctable_set(PGconn* conn)
     {
         PQclear(res);
         /* 创建schema */
-        snprintf(stmt, RIPPLE_MAX_EXEC_SQL_LEN, "CREATE SCHEMA %s", guc_getConfigOption(RIPPLE_CFG_KEY_CATALOGSCHEMA));
-        res =  ripple_conn_exec(conn, stmt);
+        snprintf(stmt, MAX_EXEC_SQL_LEN, "CREATE SCHEMA %s", guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
+        res =  conn_exec(conn, stmt);
         if (NULL == res )
         {
             return false;
@@ -408,8 +408,8 @@ bool ripple_databaserecv_synctable_set(PGconn* conn)
     PQclear(res);
 
     /* 对模式赋权 */
-    snprintf(stmt, RIPPLE_MAX_EXEC_SQL_LEN, "GRANT ALL ON SCHEMA %s TO PUBLIC ;", guc_getConfigOption(RIPPLE_CFG_KEY_CATALOGSCHEMA));
-    res =  ripple_conn_exec(conn, stmt);
+    snprintf(stmt, MAX_EXEC_SQL_LEN, "GRANT ALL ON SCHEMA %s TO PUBLIC ;", guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
+    res =  conn_exec(conn, stmt);
     if (NULL == res )
     {
         return false;
@@ -417,8 +417,8 @@ bool ripple_databaserecv_synctable_set(PGconn* conn)
     PQclear(res);
 
     /* 创建同步表 */
-    snprintf(stmt, RIPPLE_MAX_EXEC_SQL_LEN, "CREATE TABLE IF NOT EXISTS %s.ripple_sync_status (name CHAR(64) UNIQUE, type smallint, stat smallint, emit_fileid text, emit_offset text, rewind_fileid text, rewind_offset text, xid text, lsn text);", guc_getConfigOption(RIPPLE_CFG_KEY_CATALOGSCHEMA));
-    res =  ripple_conn_exec(conn, stmt);
+    snprintf(stmt, MAX_EXEC_SQL_LEN, "CREATE TABLE IF NOT EXISTS %s.sync_status (name CHAR(64) UNIQUE, type smallint, stat smallint, emit_fileid text, emit_offset text, rewind_fileid text, rewind_offset text, xid text, lsn text);", guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
+    res =  conn_exec(conn, stmt);
     if (NULL == res )
     {
         return false;
@@ -427,7 +427,7 @@ bool ripple_databaserecv_synctable_set(PGconn* conn)
     return true;
 }
 
-bool ripple_databaserecv_integrate_dbinit(void)
+bool databaserecv_integrate_dbinit(void)
 {
     const char* url = NULL;
     PGconn* conn = NULL;
@@ -436,7 +436,7 @@ bool ripple_databaserecv_integrate_dbinit(void)
     url = guc_getConfigOption("url");
 
     /*连接数据库*/
-    conn = ripple_conn_get(url);
+    conn = conn_get(url);
 
     /* 连接错误退出 */
     if(NULL == conn)
@@ -445,7 +445,7 @@ bool ripple_databaserecv_integrate_dbinit(void)
     }
 
     /* 创建同步表 */
-    if(!ripple_databaserecv_synctable_set(conn))
+    if(!databaserecv_synctable_set(conn))
     {
         return false;
     }
@@ -458,7 +458,7 @@ bool ripple_databaserecv_integrate_dbinit(void)
 }
 
 /* 执行 IDENTIFY_SYSTEM 并获取返回值 */
-bool ripple_databaserecv_identifysystem(PGconn* conn, TimeLineID* dbtli, XLogRecPtr* dblsn)
+bool databaserecv_identifysystem(PGconn* conn, TimeLineID* dbtli, XLogRecPtr* dblsn)
 {
     uint32 hi       = 0;
     uint32 lo       = 0;
@@ -500,7 +500,7 @@ bool ripple_databaserecv_identifysystem(PGconn* conn, TimeLineID* dbtli, XLogRec
 }
 
 /* 执行 SHOW wal_segment_size 并获取返回值 */
-bool ripple_databaserecv_showwalsegmentsize(PGconn* conn, uint32* segsize)
+bool databaserecv_showwalsegmentsize(PGconn* conn, uint32* segsize)
 {
     int xlogval         = 0;
     int multiplier      = 0;
@@ -550,7 +550,7 @@ bool ripple_databaserecv_showwalsegmentsize(PGconn* conn, uint32* segsize)
 }
 
 /* 获取 xlogblocksize */
-bool ripple_databaserecv_showwalblocksize(PGconn* conn, int* blksize)
+bool databaserecv_showwalblocksize(PGconn* conn, int* blksize)
 {
     PGresult* res       = NULL;
 
@@ -588,7 +588,7 @@ bool ripple_databaserecv_showwalblocksize(PGconn* conn, int* blksize)
 }
 
 /* 获取 server version */
-bool ripple_databaserecv_showserverversion(PGconn* conn, char** strversion)
+bool databaserecv_showserverversion(PGconn* conn, char** strversion)
 {
     int len = 0;
     PGresult* res       = NULL;
@@ -633,7 +633,7 @@ bool ripple_databaserecv_showserverversion(PGconn* conn, char** strversion)
 }
 
 /* 编译时是否开启 FDE */
-bool ripple_databaserecv_getconfigurefde(PGconn* conn, bool *fde)
+bool databaserecv_getconfigurefde(PGconn* conn, bool *fde)
 {
     char* configure     = NULL;
     PGresult* res       = NULL;
@@ -663,14 +663,14 @@ bool ripple_databaserecv_getconfigurefde(PGconn* conn, bool *fde)
 }
 
 /* 获取时间线文件数据 */
-bool ripple_databaserecv_timelinehistory(PGconn* conn, TimeLineID tli, char** pfilename, char** pcontent)
+bool databaserecv_timelinehistory(PGconn* conn, TimeLineID tli, char** pfilename, char** pcontent)
 {
     int len = 0;
     PGresult* res       = NULL;
-    char sqlcmd[RIPPLE_MAX_EXEC_SQL_LEN] = { 0 };
+    char sqlcmd[MAX_EXEC_SQL_LEN] = { 0 };
 
     /* 组装 timeline history 命令 */
-    snprintf(sqlcmd, RIPPLE_MAX_EXEC_SQL_LEN, "TIMELINE_HISTORY %u", tli);
+    snprintf(sqlcmd, MAX_EXEC_SQL_LEN, "TIMELINE_HISTORY %u", tli);
     res = PQexec(conn, sqlcmd);
     if (PGRES_TUPLES_OK != PQresultStatus(res))
     {
@@ -730,11 +730,11 @@ bool ripple_databaserecv_timelinehistory(PGconn* conn, TimeLineID tli, char** pf
 }
 
 /* 执行 start replication */
-bool ripple_databaserecv_startreplication(PGconn* conn, TimeLineID tli, XLogRecPtr startpos, char* slotname)
+bool databaserecv_startreplication(PGconn* conn, TimeLineID tli, XLogRecPtr startpos, char* slotname)
 {
     PGresult* res       = NULL;
     char sqlslot[128] = { 0 };
-    char sqlcmd[RIPPLE_MAX_EXEC_SQL_LEN] = { 0 };
+    char sqlcmd[MAX_EXEC_SQL_LEN] = { 0 };
 
     if (NULL == slotname || '\0' == slotname[0])
     {
@@ -747,7 +747,7 @@ bool ripple_databaserecv_startreplication(PGconn* conn, TimeLineID tli, XLogRecP
 
     /* 组装 start replication 命令 */
     snprintf(sqlcmd,
-             RIPPLE_MAX_EXEC_SQL_LEN,
+             MAX_EXEC_SQL_LEN,
              "START_REPLICATION %s%X/%X TIMELINE %u",
              sqlslot,
              (uint32) (startpos >> 32), (uint32) startpos,

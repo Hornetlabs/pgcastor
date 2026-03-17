@@ -1,7 +1,7 @@
-#ifndef _RIPPLE_MISC_STAT_H
-#define _RIPPLE_MISC_STAT_H
+#ifndef _MISC_STAT_H
+#define _MISC_STAT_H
 
-typedef struct RIPPLE_CAPTUREBASE
+typedef struct CAPTUREBASE
 {
     XLogRecPtr          redolsn;
     XLogRecPtr          restartlsn;
@@ -9,12 +9,12 @@ typedef struct RIPPLE_CAPTUREBASE
     TimeLineID          curtlid;
     uint64              fileid;
     uint64              fileoffset;
-} ripple_capturebase;
+} capturebase;
 
-void ripple_misc_stat_decodewrite(ripple_capturebase* base, int* pfd);
+void misc_stat_decodewrite(capturebase* base, int* pfd);
 
-void ripple_misc_capturestat_init(void);
+void misc_capturestat_init(void);
 
-void ripple_misc_stat_loaddecode(ripple_capturebase* decodebase);
+void misc_stat_loaddecode(capturebase* decodebase);
 
 #endif

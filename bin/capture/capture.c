@@ -3,15 +3,15 @@
  *
 */
 
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/guc/guc.h"
 #include "port/ipc/ipc.h"
 #include "port/file/fd.h"
-#include "utils/path/ripple_path.h"
+#include "utils/path/path.h"
 #include "utils/list/list_func.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "command/ripple_cmd.h"
+#include "command/cmd.h"
 
 static void
 help()
@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 {
     char* dbtype                    = NULL;
     char* dbversion                 = NULL;
-    ripple_optype optype            = RIPPLE_OPTYPE_NOP;
+    optype optype            = OPTYPE_NOP;
     const char* loglevel            = NULL;
     char* profilepath               = NULL;
     List* extra_config              = NULL;
@@ -48,33 +48,33 @@ int main(int argc, char **argv)
         if(strlen(argv[3]) == strlen("init")
             && 0 == strcasecmp(argv[3], "init"))
         {
-            optype = RIPPLE_OPTYPE_INIT;
+            optype = OPTYPE_INIT;
         }
         else if(strlen(argv[3]) == strlen("start")
                 && 0 == strcasecmp(argv[3], "start"))
         {
-            optype = RIPPLE_OPTYPE_START;
+            optype = OPTYPE_START;
         }
         else if(strlen(argv[3]) == strlen("stop")
                 && 0 == strcasecmp(argv[3], "stop"))
         {
-            optype = RIPPLE_OPTYPE_STOP;
+            optype = OPTYPE_STOP;
         }
         else if(strlen(argv[3]) == strlen("status")
                 && 0 == strcasecmp(argv[3], "status"))
         {
-            optype = RIPPLE_OPTYPE_STATUS;
+            optype = OPTYPE_STATUS;
         }
         else if(strlen(argv[3]) == strlen("reload")
                 && 0 == strcasecmp(argv[3], "reload"))
         {
-            optype = RIPPLE_OPTYPE_RELOAD;
+            optype = OPTYPE_RELOAD;
         }
         else if(strlen(argv[3]) == strlen("onlinerefresh")
                 && 0 == strcasecmp(argv[3], "onlinerefresh"))
         {
             int index_guc = 0;
-            optype = RIPPLE_OPTYPE_ONLINEREFRESH;
+            optype = OPTYPE_ONLINEREFRESH;
             for (index_guc = 4; index_guc < argc; index_guc++)
             {
                 extra_config = lappend(extra_config, rstrdup(argv[index_guc]));
@@ -102,11 +102,11 @@ int main(int argc, char **argv)
         }
     }
 
-    ripple_mem_init();
-    g_proctype = RIPPLE_PROC_TYPE_CAPTURE;
+    mem_init();
+    g_proctype = PROC_TYPE_CAPTURE;
 
     /* 保存配置文件路径绝对路径 */
-    profilepath = ripple_make_absolute_path(argv[2]);
+    profilepath = osal_make_absolute_path(argv[2]);
     rmemcpy1(g_profilepath, 0, profilepath, strlen(profilepath));
     rfree(profilepath);
 
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
     guc_debug();
 
     /* 设置 日志级别 */
-    loglevel = guc_getConfigOption(RIPPLE_CFG_KEY_LOG_LEVEL);
+    loglevel = guc_getConfigOption(CFG_KEY_LOG_LEVEL);
     if(NULL == loglevel)
     {
         elog(RLOG_WARNING, "unrecognized configuration parameter:%s", loglevel);
@@ -127,17 +127,17 @@ int main(int argc, char **argv)
     elog_seteloglevel(loglevel);
 
     /* 参数值校验 */
-    dbtype = guc_getConfigOption(RIPPLE_CFG_KEY_DBTYPE);
-    dbversion = guc_getConfigOption(RIPPLE_CFG_KEY_DBVERION);
+    dbtype = guc_getConfigOption(CFG_KEY_DBTYPE);
+    dbversion = guc_getConfigOption(CFG_KEY_DBVERION);
 
-    if(strlen(dbtype) == strlen(RIPPLE_DBTYPE_POSTGRES)
-        && 0 == strcmp(dbtype, RIPPLE_DBTYPE_POSTGRES))
+    if(strlen(dbtype) == strlen(DBTYPE_POSTGRES)
+        && 0 == strcmp(dbtype, DBTYPE_POSTGRES))
     {
         g_idbtype = XK_DATABASE_TYPE_POSTGRESQL;
-        if(strlen(dbversion) == strlen(RIPPLE_DBVERSION_POSTGRES_12)
-            && 0 == strcmp(dbversion, RIPPLE_DBVERSION_POSTGRES_12))
+        if(strlen(dbversion) == strlen(DBVERSION_POSTGRES_12)
+            && 0 == strcmp(dbversion, DBVERSION_POSTGRES_12))
         {
-            g_idbversion = RIPPLE_PGDBVERSION_12;
+            g_idbversion = PGDBVERSION_12;
         }
         else
         {
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
     }
 
     /* 执行 */
-    if (false == ripple_cmd(optype, extra_config))
+    if (false == cmd(optype, extra_config))
     {
         
         return 1;

@@ -1,8 +1,8 @@
-#ifndef _RIPPLE_FFTRAIL_TBMETADATA_H
-#define _RIPPLE_FFTRAIL_TBMETADATA_H
+#ifndef _FFTRAIL_TBMETADATA_H
+#define _FFTRAIL_TBMETADATA_H
 
 /* 表信息序列化 */
-bool ripple_fftrail_tbmetadata_serial(bool force,
+bool fftrail_tbmetadata_serial(bool force,
                                       Oid dbid,
                                       Oid tbid,
                                       FullTransactionId xid,
@@ -11,6 +11,6 @@ bool ripple_fftrail_tbmetadata_serial(bool force,
                                       void* state);
 
 /* 表信息反序列化 */
-bool ripple_fftrail_tbmetadata_deserial(void** data, void* state);
+bool fftrail_tbmetadata_deserial(void** data, void* state);
 
 #endif

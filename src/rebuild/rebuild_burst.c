@@ -1,29 +1,29 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/dlist/dlist.h"
 #include "utils/varstr/varstr.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
 #include "utils/string/stringinfo.h"
-#include "utils/algorithm/md5/ripple_md5.h"
-#include "stmts/ripple_txnstmt.h"
-#include "stmts/ripple_txnstmt_burst.h"
+#include "utils/algorithm/md5/md5.h"
+#include "stmts/txnstmt.h"
+#include "stmts/txnstmt_burst.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_txn.h"
-#include "catalog/ripple_catalog.h"
-#include "catalog/ripple_class.h"
-#include "catalog/ripple_index.h"
-#include "catalog/ripple_type.h"
-#include "catalog/ripple_attribute.h"
-#include "rebuild/ripple_rebuild_burst.h"
-#include "works/parserwork/wal/ripple_decode_heap_util.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/txn.h"
+#include "catalog/catalog.h"
+#include "catalog/class.h"
+#include "catalog/index.h"
+#include "catalog/type.h"
+#include "catalog/attribute.h"
+#include "rebuild/rebuild_burst.h"
+#include "works/parserwork/wal/decode_heap_util.h"
 
 /* burstcolumn 初始化 */
-ripple_rebuild_burstcolumn* ripple_rebuild_burstcolumn_init(int colcnt)
+rebuild_burstcolumn* rebuild_burstcolumn_init(int colcnt)
 {
-    ripple_rebuild_burstcolumn* burstcolumn = NULL;
+    rebuild_burstcolumn* burstcolumn = NULL;
 
     if (0 == colcnt)
     {
@@ -31,21 +31,21 @@ ripple_rebuild_burstcolumn* ripple_rebuild_burstcolumn_init(int colcnt)
         return NULL;
     }
 
-    burstcolumn = (ripple_rebuild_burstcolumn*)rmalloc0((sizeof(ripple_rebuild_burstcolumn) * colcnt));
+    burstcolumn = (rebuild_burstcolumn*)rmalloc0((sizeof(rebuild_burstcolumn) * colcnt));
     if (NULL == burstcolumn)
     {
         elog(RLOG_WARNING, "rebuild burstcolumn init oom");
         return NULL;
     }
-    rmemset0(burstcolumn, 0, '\0', (sizeof(ripple_rebuild_burstcolumn) * colcnt));
+    rmemset0(burstcolumn, 0, '\0', (sizeof(rebuild_burstcolumn) * colcnt));
 
     return burstcolumn;
 }
 
 /* burstrow 初始化 */
-ripple_rebuild_burstrow* ripple_rebuild_burstrow_init(int colcnt)
+rebuild_burstrow* rebuild_burstrow_init(int colcnt)
 {
-    ripple_rebuild_burstrow* burstrow = NULL;
+    rebuild_burstrow* burstrow = NULL;
 
     if (0 == colcnt)
     {
@@ -53,16 +53,16 @@ ripple_rebuild_burstrow* ripple_rebuild_burstrow_init(int colcnt)
         return NULL;
     }
 
-    burstrow = (ripple_rebuild_burstrow*)rmalloc0(sizeof(ripple_rebuild_burstrow));
+    burstrow = (rebuild_burstrow*)rmalloc0(sizeof(rebuild_burstrow));
     if (NULL == burstrow)
     {
         elog(RLOG_WARNING, "rebuild burstrow init oom");
         return NULL;
     }
-    rmemset0(burstrow, 0, '\0', sizeof(ripple_rebuild_burstrow));
+    rmemset0(burstrow, 0, '\0', sizeof(rebuild_burstrow));
 
-    burstrow->flag = RIPPLE_REBUILD_BURSTROWFLAG_NOP;
-    burstrow->op = RIPPLE_REBUILD_BURSTROWTYPE_INVALID;
+    burstrow->flag = REBUILD_BURSTROWFLAG_NOP;
+    burstrow->op = REBUILD_BURSTROWTYPE_INVALID;
     burstrow->missingcnt = 0;
     burstrow->row = NULL;
     burstrow->relatedrow = NULL;
@@ -81,17 +81,17 @@ ripple_rebuild_burstrow* ripple_rebuild_burstrow_init(int colcnt)
 }
 
 /* bursttable 初始化 */
-ripple_rebuild_bursttable* ripple_rebuild_bursttable_init(void)
+rebuild_bursttable* rebuild_bursttable_init(void)
 {
-    ripple_rebuild_bursttable* bursttable = NULL;
+    rebuild_bursttable* bursttable = NULL;
 
-    bursttable = (ripple_rebuild_bursttable*)rmalloc0(sizeof(ripple_rebuild_bursttable));
+    bursttable = (rebuild_bursttable*)rmalloc0(sizeof(rebuild_bursttable));
     if (NULL == bursttable)
     {
         elog(RLOG_WARNING, "rebuild bursttable init oom");
         return NULL;
     }
-    rmemset0(bursttable, 0, '\0', sizeof(ripple_rebuild_bursttable));
+    rmemset0(bursttable, 0, '\0', sizeof(rebuild_bursttable));
 
     bursttable->keycnt = 0;
     bursttable->no = 0;
@@ -104,40 +104,40 @@ ripple_rebuild_bursttable* ripple_rebuild_bursttable_init(void)
 }
 
 /* burstnode 初始化 */
-ripple_rebuild_burstnode* ripple_rebuild_burstnode_init(void)
+rebuild_burstnode* rebuild_burstnode_init(void)
 {
-    ripple_rebuild_burstnode* burstnode = NULL;
+    rebuild_burstnode* burstnode = NULL;
 
-    burstnode = (ripple_rebuild_burstnode*)rmalloc0(sizeof(ripple_rebuild_burstnode));
+    burstnode = (rebuild_burstnode*)rmalloc0(sizeof(rebuild_burstnode));
     if (NULL == burstnode)
     {
         elog(RLOG_WARNING, "rebuild burstnode init oom");
         return NULL;
     }
-    rmemset0(burstnode, 0, '\0', sizeof(ripple_rebuild_burstnode));
+    rmemset0(burstnode, 0, '\0', sizeof(rebuild_burstnode));
 
     burstnode->flag = 0;
-    burstnode->type = RIPPLE_REBUILD_BURSTNODETYPE_NOP;
+    burstnode->type = REBUILD_BURSTNODETYPE_NOP;
     burstnode->stmt = NULL;
     burstnode->dldeleterows = NULL;
     burstnode->dlinsertrows = NULL;
-    rmemset1(&burstnode->table, 0, 0, sizeof(ripple_rebuild_bursttable));
+    rmemset1(&burstnode->table, 0, 0, sizeof(rebuild_bursttable));
 
     return burstnode;
 }
 
 /* burst 初始化 */
-ripple_rebuild_burst* ripple_rebuild_burst_init(void)
+rebuild_burst* rebuild_burst_init(void)
 {
-    ripple_rebuild_burst* burst = NULL;
+    rebuild_burst* burst = NULL;
 
-    burst = (ripple_rebuild_burst*)rmalloc0(sizeof(ripple_rebuild_burst));
+    burst = (rebuild_burst*)rmalloc0(sizeof(rebuild_burst));
     if (NULL == burst)
     {
         elog(RLOG_WARNING, "rebuild burst init oom");
         return NULL;
     }
-    rmemset0(burst, 0, '\0', sizeof(ripple_rebuild_burst));
+    rmemset0(burst, 0, '\0', sizeof(rebuild_burst));
     
     burst->number = 0;
     burst->dlburstnodes = NULL;
@@ -147,7 +147,7 @@ ripple_rebuild_burst* ripple_rebuild_burst_init(void)
 }
 
 /* 计算MD5值和missingmap */
-static bool ripple_rebuild_burst_setmd5andmissing(ripple_rebuild_burstrow* row, xk_pg_parser_translog_tbcol_value* value)
+static bool rebuild_burst_setmd5andmissing(rebuild_burstrow* row, xk_pg_parser_translog_tbcol_value* value)
 {
     MD5_CTX md5;
     int colindex                                        = 0;
@@ -197,13 +197,13 @@ static bool ripple_rebuild_burst_setmd5andmissing(ripple_rebuild_burstrow* row, 
 }
 
 /* bursttable 比较函数 */
-int ripple_rebuild_bursttable_cmp(void* s1, void* s2)
+int rebuild_bursttable_cmp(void* s1, void* s2)
 {
-    ripple_rebuild_bursttable* table1 = NULL;
-    ripple_rebuild_bursttable* table2 = NULL;
+    rebuild_bursttable* table1 = NULL;
+    rebuild_bursttable* table2 = NULL;
 
-    table1 = (ripple_rebuild_bursttable*)s1;
-    table2 = (ripple_rebuild_bursttable*)s2;
+    table1 = (rebuild_bursttable*)s1;
+    table2 = (rebuild_bursttable*)s2;
 
     if (table1->oid != table2->oid)
     {
@@ -223,13 +223,13 @@ int ripple_rebuild_bursttable_cmp(void* s1, void* s2)
 }
 
 /* burstnode 与bursttable 比较函数 */
-int ripple_rebuild_burstnode_tablecmp(void* s1, void* s2)
+int rebuild_burstnode_tablecmp(void* s1, void* s2)
 {
-    ripple_rebuild_burstnode* node      = NULL;
-    ripple_rebuild_bursttable* table    = NULL;
+    rebuild_burstnode* node      = NULL;
+    rebuild_bursttable* table    = NULL;
 
-    table = (ripple_rebuild_bursttable*)s1;
-    node = (ripple_rebuild_burstnode*)s2;
+    table = (rebuild_bursttable*)s1;
+    node = (rebuild_burstnode*)s2;
 
     if (node->table.no != table->no)
     {
@@ -254,10 +254,10 @@ int ripple_rebuild_burstnode_tablecmp(void* s1, void* s2)
 }
 
 /* 判断某个列是否为约束列/主键列 */
-static bool ripple_rebuild_burst_colisconskey(ripple_rebuild_bursttable *table, char* colname)
+static bool rebuild_burst_colisconskey(rebuild_bursttable *table, char* colname)
 {
     int keyindex = 0;
-    ripple_rebuild_burstcolumn* key = NULL;
+    rebuild_burstcolumn* key = NULL;
     for (keyindex = 0; keyindex < table->keycnt; keyindex++)
     {
         key = &table->keys[keyindex];
@@ -271,7 +271,7 @@ static bool ripple_rebuild_burst_colisconskey(ripple_rebuild_bursttable *table, 
 }
 
 /* 根据typeid获取typename */
-static char* ripple_rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, char* colname)
+static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, char* colname)
 {
     bool find                                   = false;
     int typmod                                  = -1;
@@ -280,7 +280,7 @@ static char* ripple_rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typ
     xk_pg_sysdict_Form_pg_attribute attr        = NULL;
     StringInfoData result                       = {0};
 
-    type = (xk_pg_sysdict_Form_pg_type)ripple_type_getbyoid(typeoid, htype);
+    type = (xk_pg_sysdict_Form_pg_type)type_getbyoid(typeoid, htype);
     if (NULL == type)
     {
         elog(RLOG_WARNING, "cache lookup failed for type %u", typeoid);
@@ -410,9 +410,9 @@ static char* ripple_rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typ
 }
 
 /* 补全missing值 */
-static bool ripple_rebuild_burst_updatematchdata(ripple_rebuild_burstrow* insertrow,
-                                                 ripple_rebuild_burstrow* delrow,
-                                                 ripple_rebuild_burstrow* updaterow)
+static bool rebuild_burst_updatematchdata(rebuild_burstrow* insertrow,
+                                                 rebuild_burstrow* delrow,
+                                                 rebuild_burstrow* updaterow)
 {
     xk_pg_parser_translog_tbcol_values* insert          = NULL;
     xk_pg_parser_translog_tbcol_values* update          = NULL;
@@ -439,7 +439,7 @@ static bool ripple_rebuild_burst_updatematchdata(ripple_rebuild_burstrow* insert
         return false;
     }
 
-    if (RIPPLE_REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
+    if (REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
     {
         if (false == xk_pg_parser_trans_matchmissing(oupdatevalue, insertvalue, insert->m_valueCnt))
         {
@@ -451,12 +451,12 @@ static bool ripple_rebuild_burst_updatematchdata(ripple_rebuild_burstrow* insert
 }
 
 /* 判断约束列值是否被修改 */
-static void ripple_rebuild_burst_ischangeconskey(ripple_rebuild_burstnode* burstnode,
-                                                 ripple_rebuild_burstrow* updaterow)
+static void rebuild_burst_ischangeconskey(rebuild_burstnode* burstnode,
+                                                 rebuild_burstrow* updaterow)
 {
     int key                                             = 0;
     int colindex                                        = 0;
-    ripple_rebuild_burstcolumn* column                  = NULL;
+    rebuild_burstcolumn* column                  = NULL;
     xk_pg_parser_translog_tbcol_values* update          = NULL;
     xk_pg_parser_translog_tbcol_value* nupdatevalue     = NULL;
     xk_pg_parser_translog_tbcol_value* oupdatevalue     = NULL;
@@ -476,7 +476,7 @@ static void ripple_rebuild_burst_ischangeconskey(ripple_rebuild_burstnode* burst
         /* 发现被需改的约束列, 设置flage返回 */
         if (0 != strcmp((char*)nupdatevalue[key - 1].m_value, oupdatevalue[key - 1].m_value))
         {
-            updaterow->flag = RIPPLE_REBUILD_BURSTROWFLAG_CHANGECONSKEY;
+            updaterow->flag = REBUILD_BURSTROWFLAG_CHANGECONSKEY;
             break;
         }
     }
@@ -484,10 +484,10 @@ static void ripple_rebuild_burst_ischangeconskey(ripple_rebuild_burstnode* burst
 }
 
 /* 构建 burstnode table主键或唯一约束信息 */
-static bool ripple_rebuild_composekey(HTAB* hclass,
+static bool rebuild_composekey(HTAB* hclass,
                                       HTAB* hattrs,
                                       HTAB* hindex,
-                                      ripple_rebuild_burstnode* pburstnode)
+                                      rebuild_burstnode* pburstnode)
 {
     bool find                                   = false;
     uint32 indkey                               = 0;
@@ -497,12 +497,12 @@ static bool ripple_rebuild_composekey(HTAB* hclass,
     ListCell* indlc                             = NULL;
     ListCell* attrlc                            = NULL;
     xk_pg_sysdict_Form_pg_class class           = NULL;
-    ripple_catalog_index_value* indvalue        = NULL;
+    catalog_index_value* indvalue        = NULL;
     xk_pg_sysdict_Form_pg_index index           = NULL;
     xk_pg_sysdict_Form_pg_attribute attr        = NULL;
 
     /* 获取class */
-    class = (xk_pg_sysdict_Form_pg_class)ripple_class_getbyoid(pburstnode->table.oid, hclass);
+    class = (xk_pg_sysdict_Form_pg_class)class_getbyoid(pburstnode->table.oid, hclass);
 
     if (NULL == class)
     {
@@ -511,12 +511,12 @@ static bool ripple_rebuild_composekey(HTAB* hclass,
     }
 
     /* 获取index */
-    lindex = (List*)ripple_index_getbyoid(pburstnode->table.oid, hindex);
+    lindex = (List*)index_getbyoid(pburstnode->table.oid, hindex);
 
     /* 未获取index 设置为pbe模式 退出 */
     if (NULL == lindex || NULL == lindex->head)
     {
-        pburstnode->flag = RIPPLE_REBUILD_BURSTNODEFLAG_NOINDEX;
+        pburstnode->flag = REBUILD_BURSTNODEFLAG_NOINDEX;
         return true;
     }
 
@@ -524,19 +524,19 @@ static bool ripple_rebuild_composekey(HTAB* hclass,
     foreach(indlc, lindex)
     {
         find = false;
-        indvalue = (ripple_catalog_index_value*)lfirst(indlc);
+        indvalue = (catalog_index_value*)lfirst(indlc);
 
-        if (true == indvalue->ripple_index->indisreplident)
+        if (true == indvalue->index->indisreplident)
         {
             find = true;
-            index = indvalue->ripple_index;
+            index = indvalue->index;
             break;
         }
 
-        if (true == indvalue->ripple_index->indisprimary)
+        if (true == indvalue->index->indisprimary)
         {
             find = true;
-            index = indvalue->ripple_index;
+            index = indvalue->index;
             break;
         }
     }
@@ -544,11 +544,11 @@ static bool ripple_rebuild_composekey(HTAB* hclass,
     /* 未找到使用第一个索引 */
     if (false == find)
     {
-        indvalue = (ripple_catalog_index_value*)linitial(lindex);
-        index = indvalue->ripple_index;
+        indvalue = (catalog_index_value*)linitial(lindex);
+        index = indvalue->index;
     }
 
-    pburstnode->table.keys = ripple_rebuild_burstcolumn_init(index->indnatts);
+    pburstnode->table.keys = rebuild_burstcolumn_init(index->indnatts);
     if (NULL == pburstnode->table.keys)
     {
         elog(RLOG_WARNING, "ripple rebuild composekey pburstnode table.keys is null ");
@@ -557,7 +557,7 @@ static bool ripple_rebuild_composekey(HTAB* hclass,
     pburstnode->table.keycnt = index->indnatts;
 
     /* 获取attribute */
-    lattrs = (List*)ripple_attribute_getbyoid(pburstnode->table.oid, hattrs);
+    lattrs = (List*)attribute_getbyoid(pburstnode->table.oid, hattrs);
 
     if (NULL == lattrs || NULL == lattrs->head)
     {
@@ -589,7 +589,7 @@ static bool ripple_rebuild_composekey(HTAB* hclass,
             return false;
         }
     }
-    pburstnode->flag = RIPPLE_REBUILD_BURSTNODEFLAG_INDEX;
+    pburstnode->flag = REBUILD_BURSTNODEFLAG_INDEX;
 
     if (lindex)
     {
@@ -603,7 +603,7 @@ static bool ripple_rebuild_composekey(HTAB* hclass,
  * 入参: tbcolbase1源数据
  *       tbcolbase2目标数据
 */
-static void ripple_rebuild_burst_tbcolbasecopy(xk_pg_parser_translog_tbcolbase* tbcolbase1,
+static void rebuild_burst_tbcolbasecopy(xk_pg_parser_translog_tbcolbase* tbcolbase1,
                                                xk_pg_parser_translog_tbcolbase* tbcolbase2)
 {
     if (NULL == tbcolbase1 || NULL == tbcolbase2)
@@ -626,7 +626,7 @@ static void ripple_rebuild_burst_tbcolbasecopy(xk_pg_parser_translog_tbcolbase* 
  * 
  * 返回值：是否复制成功，value2复制结果
 */
-static bool ripple_rebuild_burst_tbcolvaluecopy(xk_pg_parser_translog_tbcol_value* value1,
+static bool rebuild_burst_tbcolvaluecopy(xk_pg_parser_translog_tbcol_value* value1,
                                                 xk_pg_parser_translog_tbcol_value** value2,
                                                 uint32 valuecnt)
 {
@@ -675,7 +675,7 @@ static bool ripple_rebuild_burst_tbcolvaluecopy(xk_pg_parser_translog_tbcol_valu
 }
 
 /* 从链表尾获取table */
-static void* ripple_rebuild_burst_gettable(dlist* dl, void* value, dlistvaluecmp valuecmp)
+static void* rebuild_burst_gettable(dlist* dl, void* value, dlistvaluecmp valuecmp)
 {
     dlistnode* dlnode = NULL;
     dlistnode* dlnodetmp = NULL;
@@ -699,20 +699,20 @@ static void* ripple_rebuild_burst_gettable(dlist* dl, void* value, dlistvaluecmp
 }
 
 /* 获取 burst node节点 */
-bool ripple_rebuild_burst_getnode(HTAB* hclass,
+bool rebuild_burst_getnode(HTAB* hclass,
                                   HTAB* hattrs,
                                   HTAB* hindex,
-                                  ripple_rebuild_burst* burst,
-                                  ripple_rebuild_burstnode** pburstnode,
-                                  ripple_rebuild_bursttable* bursttable)
+                                  rebuild_burst* burst,
+                                  rebuild_burstnode** pburstnode,
+                                  rebuild_bursttable* bursttable)
 {
-    ripple_rebuild_bursttable* dltable          = NULL;
-    ripple_rebuild_burstnode* tmpburstnode      = NULL;
+    rebuild_bursttable* dltable          = NULL;
+    rebuild_burstnode* tmpburstnode      = NULL;
 
-    dltable = (ripple_rebuild_bursttable*)ripple_rebuild_burst_gettable(burst->dlbursttable, bursttable, ripple_rebuild_bursttable_cmp);
+    dltable = (rebuild_bursttable*)rebuild_burst_gettable(burst->dlbursttable, bursttable, rebuild_bursttable_cmp);
     if (NULL == dltable)
     {
-        dltable = ripple_rebuild_bursttable_init();
+        dltable = rebuild_bursttable_init();
         if (NULL == dltable)
         {
             elog(RLOG_WARNING, "rebuild burst getnode bursttable init failed");
@@ -725,7 +725,7 @@ bool ripple_rebuild_burst_getnode(HTAB* hclass,
 
         burst->dlbursttable = dlist_put(burst->dlbursttable, dltable);
 
-        tmpburstnode = ripple_rebuild_burstnode_init();
+        tmpburstnode = rebuild_burstnode_init();
         tmpburstnode->table.no = dltable->no;
         tmpburstnode->table.oid = dltable->oid;
         tmpburstnode->table.schema = rstrdup(dltable->schema);
@@ -733,14 +733,14 @@ bool ripple_rebuild_burst_getnode(HTAB* hclass,
     }
     else
     {
-        tmpburstnode = (ripple_rebuild_burstnode*)dlist_get(burst->dlburstnodes, dltable, ripple_rebuild_burstnode_tablecmp);
+        tmpburstnode = (rebuild_burstnode*)dlist_get(burst->dlburstnodes, dltable, rebuild_burstnode_tablecmp);
         if (NULL != tmpburstnode)
         {
             *pburstnode = tmpburstnode;
             return true;
         }
 
-        tmpburstnode = ripple_rebuild_burstnode_init();
+        tmpburstnode = rebuild_burstnode_init();
         tmpburstnode->table.no = burst->number++;
         dltable->no = tmpburstnode->table.no;
         tmpburstnode->table.oid = dltable->oid;
@@ -749,10 +749,10 @@ bool ripple_rebuild_burst_getnode(HTAB* hclass,
     }
 
     /* 构建 burstnode->table.keys 索引信息 */
-    if (false == ripple_rebuild_composekey(hclass, hattrs, hindex, tmpburstnode))
+    if (false == rebuild_composekey(hclass, hattrs, hindex, tmpburstnode))
     {
         *pburstnode = NULL;
-        ripple_rebuild_burstnode_free(tmpburstnode);
+        rebuild_burstnode_free(tmpburstnode);
         elog(RLOG_WARNING, "rebuild burst getnode composekey failed");
         return false;
     }
@@ -773,13 +773,13 @@ bool ripple_rebuild_burst_getnode(HTAB* hclass,
  *            insertrow原update语句，
  * 
 */
-bool ripple_rebuild_burst_decomposeupdate(ripple_rebuild_burstnode* burstnode,
-                                          ripple_rebuild_burstrow** delrow,
-                                          ripple_rebuild_burstrow** insertrow,
+bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
+                                          rebuild_burstrow** delrow,
+                                          rebuild_burstrow** insertrow,
                                           void* rows)
 {
-    ripple_rebuild_burstrow* tmpdelrow              = NULL;
-    ripple_rebuild_burstrow* tmpinsertrow           = NULL;
+    rebuild_burstrow* tmpdelrow              = NULL;
+    rebuild_burstrow* tmpinsertrow           = NULL;
     xk_pg_parser_translog_tbcol_values* update      = NULL;
     xk_pg_parser_translog_tbcol_values* delete      = NULL;
 
@@ -792,7 +792,7 @@ bool ripple_rebuild_burst_decomposeupdate(ripple_rebuild_burstnode* burstnode,
         return false;
     }
 
-    tmpdelrow = ripple_rebuild_burstrow_init(update->m_valueCnt);
+    tmpdelrow = rebuild_burstrow_init(update->m_valueCnt);
     if (NULL == tmpdelrow)
     {
         elog(RLOG_WARNING, "rebuild burst decomposeupdate burstrow init failed");
@@ -809,7 +809,7 @@ bool ripple_rebuild_burst_decomposeupdate(ripple_rebuild_burstnode* burstnode,
     rmemset0(delete, 0, '\0', sizeof(xk_pg_parser_translog_tbcol_values));
 
     /* 复制表信息 */
-    ripple_rebuild_burst_tbcolbasecopy(&update->m_base, &delete->m_base);
+    rebuild_burst_tbcolbasecopy(&update->m_base, &delete->m_base);
 
     delete->m_base.m_dmltype = XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE;
     delete->m_haspkey = update->m_haspkey;
@@ -821,26 +821,26 @@ bool ripple_rebuild_burst_decomposeupdate(ripple_rebuild_burstnode* burstnode,
     delete->m_tuple = NULL;
 
     /* 复制before列内容 */
-    if (false == ripple_rebuild_burst_tbcolvaluecopy(update->m_old_values, &delete->m_old_values, update->m_valueCnt))
+    if (false == rebuild_burst_tbcolvaluecopy(update->m_old_values, &delete->m_old_values, update->m_valueCnt))
     {
         elog(RLOG_WARNING, "rebuild burst decomposeupdate copy before failed");
         heap_free_trans_result((xk_pg_parser_translog_tbcolbase*)delete);
         return false;
     }
     tmpdelrow->row = delete;
-    tmpdelrow->op = RIPPLE_REBUILD_BURSTROWTYPE_UPDATE;
+    tmpdelrow->op = REBUILD_BURSTROWTYPE_UPDATE;
 
     /* 设置del为需要删除 */
-    tmpdelrow->flag = RIPPLE_REBUILD_BURSTROWFLAG_REMOVEDELETE;
+    tmpdelrow->flag = REBUILD_BURSTROWFLAG_REMOVEDELETE;
 
-    if(false == ripple_rebuild_burst_setmd5andmissing(tmpdelrow, delete->m_old_values))
+    if(false == rebuild_burst_setmd5andmissing(tmpdelrow, delete->m_old_values))
     {
-        ripple_rebuild_burstrow_free(tmpdelrow);
+        rebuild_burstrow_free(tmpdelrow);
         elog(RLOG_WARNING, "rebuild burst decomposeupdate delete setmd5adnmissing failed");
         return false;
     }
 
-    tmpinsertrow = ripple_rebuild_burstrow_init(update->m_valueCnt);
+    tmpinsertrow = rebuild_burstrow_init(update->m_valueCnt);
     if (NULL == tmpinsertrow)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
@@ -849,18 +849,18 @@ bool ripple_rebuild_burst_decomposeupdate(ripple_rebuild_burstnode* burstnode,
 
     /* 区分insert和update产生的insert所以设置为update */
     tmpinsertrow->row = rows;
-    tmpinsertrow->op = RIPPLE_REBUILD_BURSTROWTYPE_UPDATE;
+    tmpinsertrow->op = REBUILD_BURSTROWTYPE_UPDATE;
 
-    if(false == ripple_rebuild_burst_setmd5andmissing(tmpinsertrow, update->m_new_values))
+    if(false == rebuild_burst_setmd5andmissing(tmpinsertrow, update->m_new_values))
     {
-        ripple_rebuild_burstrow_free(delrow);
-        ripple_rebuild_burstrow_free(tmpinsertrow);
+        rebuild_burstrow_free(delrow);
+        rebuild_burstrow_free(tmpinsertrow);
         elog(RLOG_WARNING, "rebuild burst decomposeupdate insert setmd5adnmissing failed");
         return false;
     }
 
     /* 设置主键或唯一约束列改变 */
-    ripple_rebuild_burst_ischangeconskey(burstnode, tmpinsertrow);
+    rebuild_burst_ischangeconskey(burstnode, tmpinsertrow);
 
     /* 互相关联 用于判断delete语句是否保存 */
     tmpdelrow->relatedrow = tmpinsertrow;
@@ -876,11 +876,11 @@ bool ripple_rebuild_burst_decomposeupdate(ripple_rebuild_burstnode* burstnode,
  * 合并 insert/delete 
  * 返回 true 说明合并成功, 返回 false 说明合并失败
 */
-bool ripple_rebuild_burst_mergeinsert(ripple_rebuild_burstnode* pburstnode, 
-                                      ripple_rebuild_burstrow* insertrow)
+bool rebuild_burst_mergeinsert(rebuild_burstnode* pburstnode, 
+                                      rebuild_burstrow* insertrow)
 {
     dlistnode* dlnode                       = NULL;
-    ripple_rebuild_burstrow* delrow         = NULL;
+    rebuild_burstrow* delrow         = NULL;
 
     /* 有missing值或delete链表为空退出 */
     if (insertrow->missingcnt > 0) 
@@ -896,7 +896,7 @@ bool ripple_rebuild_burst_mergeinsert(ripple_rebuild_burstnode* pburstnode,
     /* 查找与insert相同的delete */
     for (dlnode = pburstnode->dldeleterows->tail; NULL != dlnode; dlnode = dlnode->prev)
     {
-        delrow = (ripple_rebuild_burstrow*)dlnode->value;
+        delrow = (rebuild_burstrow*)dlnode->value;
 
         /* 有missing值继续 */
         if (delrow->missingcnt > 0)
@@ -917,46 +917,46 @@ bool ripple_rebuild_burst_mergeinsert(ripple_rebuild_burstnode* pburstnode,
              * 4. uinsert 1 和 udelete 2 合并 udelete 1要执行，uinsert 2 要变为正常insert
              *
             */
-            if (RIPPLE_REBUILD_BURSTROWTYPE_INSERT == insertrow->op)
+            if (REBUILD_BURSTROWTYPE_INSERT == insertrow->op)
             {
-                if (RIPPLE_REBUILD_BURSTROWTYPE_UPDATE == delrow->op
+                if (REBUILD_BURSTROWTYPE_UPDATE == delrow->op
                     && NULL != delrow->relatedrow)
                 {
-                    delrow->relatedrow->flag = RIPPLE_REBUILD_BURSTROWFLAG_NOP;
-                    delrow->relatedrow->op = RIPPLE_REBUILD_BURSTROWTYPE_INSERT;
+                    delrow->relatedrow->flag = REBUILD_BURSTROWFLAG_NOP;
+                    delrow->relatedrow->op = REBUILD_BURSTROWTYPE_INSERT;
                     delrow->relatedrow->relatedrow = NULL;
                     delrow->relatedrow = NULL;
                 }
             }
-            else if(RIPPLE_REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
+            else if(REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
             {
-                if (RIPPLE_REBUILD_BURSTROWTYPE_DELETE == delrow->op
+                if (REBUILD_BURSTROWTYPE_DELETE == delrow->op
                     && NULL != insertrow->relatedrow)
                 {
-                    insertrow->relatedrow->flag = RIPPLE_REBUILD_BURSTROWFLAG_NOP;
+                    insertrow->relatedrow->flag = REBUILD_BURSTROWFLAG_NOP;
                     insertrow->relatedrow->relatedrow = NULL;
                     insertrow->relatedrow = NULL;
                 }
-                else if (RIPPLE_REBUILD_BURSTROWTYPE_UPDATE == delrow->op)
+                else if (REBUILD_BURSTROWTYPE_UPDATE == delrow->op)
                 {
                     if (NULL != insertrow->relatedrow)
                     {
-                        insertrow->relatedrow->flag = RIPPLE_REBUILD_BURSTROWFLAG_NOP;
+                        insertrow->relatedrow->flag = REBUILD_BURSTROWFLAG_NOP;
                         insertrow->relatedrow->relatedrow = NULL;
                         insertrow->relatedrow = NULL;
                     }
 
                     if (NULL != delrow->relatedrow)
                     {
-                        delrow->relatedrow->flag = RIPPLE_REBUILD_BURSTROWFLAG_NOP;
-                        delrow->relatedrow->op = RIPPLE_REBUILD_BURSTROWTYPE_INSERT;
+                        delrow->relatedrow->flag = REBUILD_BURSTROWFLAG_NOP;
+                        delrow->relatedrow->op = REBUILD_BURSTROWTYPE_INSERT;
                         delrow->relatedrow->relatedrow = NULL;
                         delrow->relatedrow = NULL;
                     }
                 }
             }
-            ripple_rebuild_burstrow_free(insertrow);
-            pburstnode->dldeleterows = dlist_delete(pburstnode->dldeleterows, dlnode, ripple_rebuild_burstrow_free);
+            rebuild_burstrow_free(insertrow);
+            pburstnode->dldeleterows = dlist_delete(pburstnode->dldeleterows, dlnode, rebuild_burstrow_free);
             return true;
         }
     }
@@ -968,15 +968,15 @@ bool ripple_rebuild_burst_mergeinsert(ripple_rebuild_burstnode* pburstnode,
  * 合并 delete/insert
  * 返回 true 说明合并成功, 返回 false 说明合并失败
 */
-bool ripple_rebuild_burst_mergedelete(ripple_rebuild_burstnode* pburstnode, 
-                                      ripple_rebuild_burstrow* delrow)
+bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode, 
+                                      rebuild_burstrow* delrow)
 {
     int keycnt                                  = 0;
     int keyindex                                = 0;
     int key                                     = 0;
     dlistnode* dlnode                           = NULL;
-    ripple_rebuild_burstcolumn* keys            = NULL;
-    ripple_rebuild_burstrow* insertrow          = NULL;
+    rebuild_burstcolumn* keys            = NULL;
+    rebuild_burstrow* insertrow          = NULL;
     xk_pg_parser_translog_tbcol_values* del     = NULL;
     xk_pg_parser_translog_tbcol_values* insert  = NULL;
 
@@ -988,15 +988,15 @@ bool ripple_rebuild_burst_mergedelete(ripple_rebuild_burstnode* pburstnode,
     /* 查找与insert相同的delete */
     for (dlnode = pburstnode->dlinsertrows->tail; NULL != dlnode; dlnode = dlnode->prev)
     {
-        insertrow = (ripple_rebuild_burstrow*)dlnode->value;
+        insertrow = (rebuild_burstrow*)dlnode->value;
 
-        if (RIPPLE_REBUILD_BURSTNODEFLAG_NOINDEX == pburstnode->flag)
+        if (REBUILD_BURSTNODEFLAG_NOINDEX == pburstnode->flag)
         {
             /* 找到相同insert，链表中删除insert、释放delete 返回true */
             if (0 == memcmp(insertrow->md5, delrow->md5, 16))
             {
-                pburstnode->dlinsertrows= dlist_delete(pburstnode->dlinsertrows, dlnode, ripple_rebuild_burstrow_free);
-                ripple_rebuild_burstrow_free(delrow);
+                pburstnode->dlinsertrows= dlist_delete(pburstnode->dlinsertrows, dlnode, rebuild_burstrow_free);
+                rebuild_burstrow_free(delrow);
                 return true;
             }
         }
@@ -1026,17 +1026,17 @@ bool ripple_rebuild_burst_mergedelete(ripple_rebuild_burstnode* pburstnode,
                  * 需要保存update产生的delete语句
                  * 设置row->flage 为nop，置空delete的relatedrow
                  */
-                if (RIPPLE_REBUILD_BURSTROWTYPE_UPDATE == insertrow->op
+                if (REBUILD_BURSTROWTYPE_UPDATE == insertrow->op
                     && NULL != insertrow->relatedrow)
                 {
-                    insertrow->relatedrow->flag = RIPPLE_REBUILD_BURSTROWFLAG_NOP;
+                    insertrow->relatedrow->flag = REBUILD_BURSTROWFLAG_NOP;
                     insertrow->relatedrow->relatedrow = NULL;
                     insertrow->relatedrow = NULL;
                 }
                 
                 /* 合并成功移除insert，释放delrow */
-                pburstnode->dlinsertrows = dlist_delete(pburstnode->dlinsertrows, dlnode, ripple_rebuild_burstrow_free);
-                ripple_rebuild_burstrow_free(delrow);
+                pburstnode->dlinsertrows = dlist_delete(pburstnode->dlinsertrows, dlnode, rebuild_burstrow_free);
+                rebuild_burstrow_free(delrow);
                 return true;
             }
         }
@@ -1054,9 +1054,9 @@ bool ripple_rebuild_burst_mergedelete(ripple_rebuild_burstnode* pburstnode,
  *          ：in_updaterow合并成功返回匹配上的insertrow，不成功updaterow
  *          ：error false执行失败退出，true执行成功
 */
-bool ripple_rebuild_burst_updatemergedelete(ripple_rebuild_burstnode* burstnode,
-                                            ripple_rebuild_burstrow*  delrow,
-                                            ripple_rebuild_burstrow** in_updaterow,
+bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
+                                            rebuild_burstrow*  delrow,
+                                            rebuild_burstrow** in_updaterow,
                                             bool* error)
 {
     bool same                                           = true;
@@ -1064,9 +1064,9 @@ bool ripple_rebuild_burst_updatemergedelete(ripple_rebuild_burstnode* burstnode,
     int keyindex                                        = 0;
     int key                                             = 0;
     dlistnode* dlnode                                   = NULL;
-    ripple_rebuild_burstcolumn* keys                    = NULL;
-    ripple_rebuild_burstrow* insertrow                  = NULL;
-    ripple_rebuild_burstrow* updaterow                  = NULL;
+    rebuild_burstcolumn* keys                    = NULL;
+    rebuild_burstrow* insertrow                  = NULL;
+    rebuild_burstrow* updaterow                  = NULL;
     xk_pg_parser_translog_tbcol_values* del             = NULL;
     xk_pg_parser_translog_tbcol_values* insert          = NULL;
     xk_pg_parser_translog_tbcol_values* update          = NULL;
@@ -1085,10 +1085,10 @@ bool ripple_rebuild_burst_updatemergedelete(ripple_rebuild_burstnode* burstnode,
     for (dlnode = burstnode->dlinsertrows->tail; NULL != dlnode; dlnode = dlnode->prev)
     {
         same = false;
-        insertrow = (ripple_rebuild_burstrow*)dlnode->value;
+        insertrow = (rebuild_burstrow*)dlnode->value;
         insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
 
-        if (RIPPLE_REBUILD_BURSTNODEFLAG_NOINDEX == burstnode->flag)
+        if (REBUILD_BURSTNODEFLAG_NOINDEX == burstnode->flag)
         {
             /* 找到相同insert，链表中删除insert、释放delete 返回true */
             if (0 == memcmp(insertrow->md5, delrow->md5, 16))
@@ -1129,7 +1129,7 @@ bool ripple_rebuild_burst_updatemergedelete(ripple_rebuild_burstnode* burstnode,
     }
 
     /* 补全missing值 */
-    if(false == ripple_rebuild_burst_updatematchdata(insertrow,
+    if(false == rebuild_burst_updatematchdata(insertrow,
                                                      delrow,
                                                      updaterow))
     {
@@ -1138,8 +1138,8 @@ bool ripple_rebuild_burst_updatemergedelete(ripple_rebuild_burstnode* burstnode,
     }
 
     /* 将update after值替换到insert上 */
-    if (RIPPLE_REBUILD_BURSTROWTYPE_INSERT == insertrow->op
-        || RIPPLE_REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
+    if (REBUILD_BURSTROWTYPE_INSERT == insertrow->op
+        || REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
     {
         insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
         insertvalue = insert->m_new_values;
@@ -1162,15 +1162,15 @@ bool ripple_rebuild_burst_updatemergedelete(ripple_rebuild_burstnode* burstnode,
     }
 
     /* 计算MD5和missing */
-    if(false == ripple_rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
+    if(false == rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
     {
         elog(RLOG_WARNING, "rebuild burst updatemergedelete setmd5adnmissing failed");
         *error = true;
         return false;
     }
 
-    ripple_rebuild_burstrow_free(delrow);
-    ripple_rebuild_burstrow_free(updaterow);
+    rebuild_burstrow_free(delrow);
+    rebuild_burstrow_free(updaterow);
 
     /* 将匹配到的insert从链表中取出 */
     *in_updaterow = insertrow;
@@ -1181,13 +1181,13 @@ bool ripple_rebuild_burst_updatemergedelete(ripple_rebuild_burstnode* burstnode,
 }
 
 /* 对 txn 的insert内容重组为burst */
-static bool ripple_rebuild_burst_txn2bursts_insert(ripple_rebuild_burst* burst, 
-                                                   ripple_cache_sysdicts* sysdicts,
+static bool rebuild_burst_txn2bursts_insert(rebuild_burst* burst, 
+                                                   cache_sysdicts* sysdicts,
                                                    void* row)
 {
-    ripple_rebuild_bursttable table             = {0};
-    ripple_rebuild_burstrow* insertrow          = NULL;
-    ripple_rebuild_burstnode* burstnode         = NULL;
+    rebuild_bursttable table             = {0};
+    rebuild_burstrow* insertrow          = NULL;
+    rebuild_burstnode* burstnode         = NULL;
     xk_pg_parser_translog_tbcol_values* insert  = NULL;
 
     insert = (xk_pg_parser_translog_tbcol_values*)row;
@@ -1196,7 +1196,7 @@ static bool ripple_rebuild_burst_txn2bursts_insert(ripple_rebuild_burst* burst,
     table.schema = insert->m_base.m_schemaname;
     table.table = insert->m_base.m_tbname;
 
-    if (false == ripple_rebuild_burst_getnode(sysdicts->by_class,
+    if (false == rebuild_burst_getnode(sysdicts->by_class,
                                               sysdicts->by_attribute,
                                               sysdicts->by_index,
                                               burst,
@@ -1207,23 +1207,23 @@ static bool ripple_rebuild_burst_txn2bursts_insert(ripple_rebuild_burst* burst,
         return false;
     }
 
-    insertrow = ripple_rebuild_burstrow_init(insert->m_valueCnt);
+    insertrow = rebuild_burstrow_init(insert->m_valueCnt);
     if (NULL == insertrow)
     {
         elog(RLOG_WARNING, "rebuild burst txn2bursts insert burstrow init failed");
         return false;
     }
     insertrow->row = row;
-    insertrow->op = RIPPLE_REBUILD_BURSTROWTYPE_INSERT;
+    insertrow->op = REBUILD_BURSTROWTYPE_INSERT;
 
-    if(false == ripple_rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
+    if(false == rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
     {
-        ripple_rebuild_burstrow_free(insertrow);
+        rebuild_burstrow_free(insertrow);
         elog(RLOG_WARNING, "rebuild burst txn2bursts insert setmd5adnmissing failed");
         return false;
     }
 
-    if (false == ripple_rebuild_burst_mergeinsert(burstnode, insertrow))
+    if (false == rebuild_burst_mergeinsert(burstnode, insertrow))
     {
         burstnode->dlinsertrows = dlist_put(burstnode->dlinsertrows, insertrow);
     }
@@ -1232,13 +1232,13 @@ static bool ripple_rebuild_burst_txn2bursts_insert(ripple_rebuild_burst* burst,
 }
 
 /* 对 txn 的delete内容重组为burst */
-static bool ripple_rebuild_burst_txn2bursts_delete(ripple_rebuild_burst* burst, 
-                                                   ripple_cache_sysdicts* sysdicts,
+static bool rebuild_burst_txn2bursts_delete(rebuild_burst* burst, 
+                                                   cache_sysdicts* sysdicts,
                                                    void* row)
 {
-    ripple_rebuild_bursttable table             = {0};
-    ripple_rebuild_burstrow* delrow             = NULL;
-    ripple_rebuild_burstnode* burstnode         = NULL;
+    rebuild_bursttable table             = {0};
+    rebuild_burstrow* delrow             = NULL;
+    rebuild_burstnode* burstnode         = NULL;
     xk_pg_parser_translog_tbcol_values* delete  = NULL;
 
     delete = (xk_pg_parser_translog_tbcol_values*)row;
@@ -1248,7 +1248,7 @@ static bool ripple_rebuild_burst_txn2bursts_delete(ripple_rebuild_burst* burst,
     table.table = delete->m_base.m_tbname;
 
     /* 获取burstnode */
-    if (false == ripple_rebuild_burst_getnode(sysdicts->by_class,
+    if (false == rebuild_burst_getnode(sysdicts->by_class,
                                               sysdicts->by_attribute,
                                               sysdicts->by_index,
                                               burst,
@@ -1259,23 +1259,23 @@ static bool ripple_rebuild_burst_txn2bursts_delete(ripple_rebuild_burst* burst,
         return false;
     }
 
-    delrow = ripple_rebuild_burstrow_init(delete->m_valueCnt);
+    delrow = rebuild_burstrow_init(delete->m_valueCnt);
     if (NULL == delrow)
     {
         elog(RLOG_WARNING, "rebuild burst txn2bursts delete burstrow init failed");
         return false;
     }
     delrow->row = row;
-    delrow->op =RIPPLE_REBUILD_BURSTROWTYPE_DELETE;
+    delrow->op =REBUILD_BURSTROWTYPE_DELETE;
 
-    if(false == ripple_rebuild_burst_setmd5andmissing(delrow, delete->m_old_values))
+    if(false == rebuild_burst_setmd5andmissing(delrow, delete->m_old_values))
     {
-        ripple_rebuild_burstrow_free(delrow);
+        rebuild_burstrow_free(delrow);
         elog(RLOG_WARNING, "rebuild burst txn2bursts delete setmd5adnmissing failed");
         return false;
     }
 
-    if (false == ripple_rebuild_burst_mergedelete(burstnode, delrow))
+    if (false == rebuild_burst_mergedelete(burstnode, delrow))
     {
         burstnode->dldeleterows = dlist_put(burstnode->dldeleterows, delrow);
     }
@@ -1284,14 +1284,14 @@ static bool ripple_rebuild_burst_txn2bursts_delete(ripple_rebuild_burst* burst,
 }
 
 /* 对 txn 的multiinsert内容重组为burst */
-static bool ripple_rebuild_burst_txn2bursts_multiinsert(ripple_rebuild_burst* burst, 
-                                                        ripple_cache_sysdicts* sysdicts,
+static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst* burst, 
+                                                        cache_sysdicts* sysdicts,
                                                         void* row)
 {
     int rowindx                                         = 0;
-    ripple_rebuild_bursttable table                     = {0};
-    ripple_rebuild_burstrow* insertrow                  = NULL;
-    ripple_rebuild_burstnode* burstnode                 = NULL;
+    rebuild_bursttable table                     = {0};
+    rebuild_burstrow* insertrow                  = NULL;
+    rebuild_burstnode* burstnode                 = NULL;
     xk_pg_parser_translog_tbcol_value* value            = NULL;
     xk_pg_parser_translog_tbcol_values* insert          = NULL;
     xk_pg_parser_translog_tbcol_nvalues* multiinsert    = NULL;
@@ -1302,7 +1302,7 @@ static bool ripple_rebuild_burst_txn2bursts_multiinsert(ripple_rebuild_burst* bu
     table.schema = multiinsert->m_base.m_schemaname;
     table.table = multiinsert->m_base.m_tbname;
 
-    if (false == ripple_rebuild_burst_getnode(sysdicts->by_class,
+    if (false == rebuild_burst_getnode(sysdicts->by_class,
                                               sysdicts->by_attribute,
                                               sysdicts->by_index,
                                               burst,
@@ -1325,7 +1325,7 @@ static bool ripple_rebuild_burst_txn2bursts_multiinsert(ripple_rebuild_burst* bu
         }
         rmemset0(insert, 0, '\0', sizeof(xk_pg_parser_translog_tbcol_values));
 
-        ripple_rebuild_burst_tbcolbasecopy(&multiinsert->m_base, &insert->m_base);
+        rebuild_burst_tbcolbasecopy(&multiinsert->m_base, &insert->m_base);
         insert->m_base.m_dmltype = XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT;
         insert->m_haspkey = multiinsert->m_haspkey;
         insert->m_relid = multiinsert->m_relid;
@@ -1333,23 +1333,23 @@ static bool ripple_rebuild_burst_txn2bursts_multiinsert(ripple_rebuild_burst* bu
         insert->m_valueCnt = multiinsert->m_valueCnt;
         insert->m_new_values = value;
 
-        insertrow = ripple_rebuild_burstrow_init(insert->m_valueCnt);
+        insertrow = rebuild_burstrow_init(insert->m_valueCnt);
         if (NULL == insertrow)
         {
             elog(RLOG_WARNING, "rebuild burst txn2bursts multiinsert burstrow init failed");
             return false;
         }
         insertrow->row = insert;
-        insertrow->op = RIPPLE_REBUILD_BURSTROWTYPE_INSERT;
+        insertrow->op = REBUILD_BURSTROWTYPE_INSERT;
 
-        if(false == ripple_rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
+        if(false == rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
         {
-            ripple_rebuild_burstrow_free(insertrow);
+            rebuild_burstrow_free(insertrow);
             elog(RLOG_WARNING, "rebuild burst txn2bursts multiinsert setmd5adnmissing failed");
             return false;
         }
 
-        if (false == ripple_rebuild_burst_mergeinsert(burstnode, insertrow))
+        if (false == rebuild_burst_mergeinsert(burstnode, insertrow))
         {
             burstnode->dlinsertrows = dlist_put(burstnode->dlinsertrows, insertrow);
         }
@@ -1360,16 +1360,16 @@ static bool ripple_rebuild_burst_txn2bursts_multiinsert(ripple_rebuild_burst* bu
 }
 
 /* 对 txn 的update内容重组为burst */
-static bool ripple_rebuild_burst_txn2bursts_update(ripple_rebuild_burst* burst, 
-                                                   ripple_cache_sysdicts* sysdicts,
+static bool rebuild_burst_txn2bursts_update(rebuild_burst* burst, 
+                                                   cache_sysdicts* sysdicts,
                                                    void* row)
 {
     bool error                                  = false;
     bool mergeresult                            = false;
-    ripple_rebuild_bursttable table             = {0};
-    ripple_rebuild_burstrow* delrow             = NULL;
-    ripple_rebuild_burstrow* insertrow          = NULL;
-    ripple_rebuild_burstnode* burstnode         = NULL;
+    rebuild_bursttable table             = {0};
+    rebuild_burstrow* delrow             = NULL;
+    rebuild_burstrow* insertrow          = NULL;
+    rebuild_burstnode* burstnode         = NULL;
     xk_pg_parser_translog_tbcol_values* update  = NULL;
 
     update = (xk_pg_parser_translog_tbcol_values*)row;
@@ -1378,7 +1378,7 @@ static bool ripple_rebuild_burst_txn2bursts_update(ripple_rebuild_burst* burst,
     table.schema = update->m_base.m_schemaname;
     table.table = update->m_base.m_tbname;
 
-    if (false == ripple_rebuild_burst_getnode(sysdicts->by_class,
+    if (false == rebuild_burst_getnode(sysdicts->by_class,
                                               sysdicts->by_attribute,
                                               sysdicts->by_index,
                                               burst,
@@ -1390,7 +1390,7 @@ static bool ripple_rebuild_burst_txn2bursts_update(ripple_rebuild_burst* burst,
     }
 
     /* 拆分为delete和insert */
-    if(false == ripple_rebuild_burst_decomposeupdate(burstnode,
+    if(false == rebuild_burst_decomposeupdate(burstnode,
                                                      &delrow,
                                                      &insertrow,
                                                      row))
@@ -1400,7 +1400,7 @@ static bool ripple_rebuild_burst_txn2bursts_update(ripple_rebuild_burst* burst,
     }
 
     /* update的delete合并insert */
-    mergeresult = ripple_rebuild_burst_updatemergedelete(burstnode,
+    mergeresult = rebuild_burst_updatemergedelete(burstnode,
                                                          delrow,
                                                          &insertrow,
                                                          &error);
@@ -1419,7 +1419,7 @@ static bool ripple_rebuild_burst_txn2bursts_update(ripple_rebuild_burst* burst,
     }
 
     /* update的insert合并delete，合并失败加入链表 */
-    if (false == ripple_rebuild_burst_mergeinsert(burstnode, insertrow))
+    if (false == rebuild_burst_mergeinsert(burstnode, insertrow))
     {
         burstnode->dlinsertrows = dlist_put(burstnode->dlinsertrows, insertrow);
     }
@@ -1428,22 +1428,22 @@ static bool ripple_rebuild_burst_txn2bursts_update(ripple_rebuild_burst* burst,
 }
 
 /* txn 的内容重组为burst */
-bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_sysdicts* sysdicts, ripple_txn* txn)
+bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, txn* txn)
 {
     bool complete                               = false;
     ListCell* lc                                = NULL;
     ListCell* metadatalc                        = NULL;
     List* lststmt                               = NULL;
     dlistnode* dlnode                           = NULL;
-    ripple_rebuild_bursttable* table            = NULL;
-    ripple_rebuild_burstnode* burstnode         = NULL;
-    ripple_catalogdata *catalogdata             = NULL;
-    ripple_catalog_class_value* class           = NULL;
-    ripple_txnstmt_metadata* metadatastmt       = NULL;
+    rebuild_bursttable* table            = NULL;
+    rebuild_burstnode* burstnode         = NULL;
+    catalogdata *catalog_data             = NULL;
+    catalog_class_value* class           = NULL;
+    txnstmt_metadata* metadatastmt       = NULL;
     xk_pg_parser_translog_tbcolbase* tbcolbase  = NULL;
-    ripple_rebuild_bursttable dltable           = {0};
+    rebuild_bursttable dltable           = {0};
 
-    ripple_txnstmt* stmtnode = NULL;
+    txnstmt* stmtnode = NULL;
 
     if(NULL == txn->stmts)
     {
@@ -1455,9 +1455,9 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
     txn->stmts = NULL;
     foreach(lc, lststmt)
     {
-        stmtnode = (ripple_txnstmt*)lfirst(lc);
+        stmtnode = (txnstmt*)lfirst(lc);
 
-        if (RIPPLE_TXNSTMT_TYPE_DDL == stmtnode->type)
+        if (TXNSTMT_TYPE_DDL == stmtnode->type)
         {
             burst->number ++;
 
@@ -1466,11 +1466,11 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
             /* 所有表的 no 以 burst->number 为基础递增 分界线 */
             for (; NULL != dlnode; dlnode = dlnode->next)
             {
-                table = (ripple_rebuild_bursttable*)dlnode->value;
+                table = (rebuild_bursttable*)dlnode->value;
                 table->no = burst->number++;
             }
 
-            burstnode = ripple_rebuild_burstnode_init();
+            burstnode = rebuild_burstnode_init();
             if (NULL == burstnode)
             {
                 elog(RLOG_WARNING, "rebuild burst txn2bursts init burstnode failed");
@@ -1478,39 +1478,39 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
             }
 
             burstnode->table.no = burst->number++;
-            burstnode->type = RIPPLE_REBUILD_BURSTNODETYPE_OTHER;
+            burstnode->type = REBUILD_BURSTNODETYPE_OTHER;
             burstnode->stmt = stmtnode;
             burst->dlburstnodes = dlist_put(burst->dlburstnodes, burstnode);
         }
-        else if(RIPPLE_TXNSTMT_TYPE_METADATA == stmtnode->type)
+        else if(TXNSTMT_TYPE_METADATA == stmtnode->type)
         {
-            metadatastmt = (ripple_txnstmt_metadata*)stmtnode->stmt;
+            metadatastmt = (txnstmt_metadata*)stmtnode->stmt;
 
             complete = false;
             metadatalc = metadatastmt->begin;
             while(1)
             {
                 /* 应用系统表 */
-                catalogdata = (ripple_catalogdata*)lfirst(metadatalc);
-                ripple_cache_sysdicts_txnsysdicthisitem2cache(sysdicts, metadatalc);
+                catalog_data = (catalogdata*)lfirst(metadatalc);
+                cache_sysdicts_txnsysdicthisitem2cache(sysdicts, metadatalc);
 
-                if (RIPPLE_CATALOG_TYPE_CLASS == catalogdata->type)
+                if (CATALOG_TYPE_CLASS == catalog_data->type)
                 {
-                    ripple_cache_sysdicts_clearsysdicthisbyclass(sysdicts, metadatalc);
-                    class = (ripple_catalog_class_value*)catalogdata->catalog;
+                    cache_sysdicts_clearsysdicthisbyclass(sysdicts, metadatalc);
+                    class = (catalog_class_value*)catalog_data->catalog;
                     if (NULL == class)
                     {
-                        elog(RLOG_WARNING, "rebuild burst txn2bursts catalogdata->catalog is null");
+                        elog(RLOG_WARNING, "rebuild burst txn2bursts catalog_data->catalog is null");
                         return false;
                     }
-                    dltable.oid = class->ripple_class->oid;
-                    dltable.schema = class->ripple_class->nspname.data;
-                    dltable.table = class->ripple_class->relname.data;
+                    dltable.oid = class->class->oid;
+                    dltable.schema = class->class->nspname.data;
+                    dltable.table = class->class->relname.data;
 
-                    table = ripple_rebuild_burst_gettable(burst->dlbursttable, &dltable, ripple_rebuild_bursttable_cmp);
+                    table = rebuild_burst_gettable(burst->dlbursttable, &dltable, rebuild_bursttable_cmp);
                     if (NULL == table)
                     {
-                        table = ripple_rebuild_bursttable_init();
+                        table = rebuild_bursttable_init();
                         if (NULL == table)
                         {
                             elog(RLOG_WARNING, "rebuild burst txn2bursts init bursttable failed");
@@ -1523,7 +1523,7 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
                     }
 
                     table->no = burst->number++;
-                    burstnode = ripple_rebuild_burstnode_init();
+                    burstnode = rebuild_burstnode_init();
                     if (NULL == burstnode)
                     {
                         elog(RLOG_WARNING, "rebuild burst txn2bursts init burstnode failed");
@@ -1531,10 +1531,10 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
                     }
 
                     burstnode->table.no = table->no;
-                    burstnode->table.oid = class->ripple_class->oid;
-                    burstnode->table.schema = rstrdup(class->ripple_class->nspname.data);
-                    burstnode->table.table = rstrdup(class->ripple_class->relname.data);
-                    if (false == ripple_rebuild_composekey(sysdicts->by_class,
+                    burstnode->table.oid = class->class->oid;
+                    burstnode->table.schema = rstrdup(class->class->nspname.data);
+                    burstnode->table.table = rstrdup(class->class->relname.data);
+                    if (false == rebuild_composekey(sysdicts->by_class,
                                                            sysdicts->by_attribute,
                                                            sysdicts->by_index,
                                                            burstnode))
@@ -1542,23 +1542,23 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
                         elog(RLOG_WARNING, "rebuild burst txn2bursts composekey failed");
                         return false;
                     }
-                    burstnode->type = RIPPLE_REBUILD_BURSTNODETYPE_OTHER;
+                    burstnode->type = REBUILD_BURSTNODETYPE_OTHER;
                     burstnode->stmt = stmtnode;
                     burst->dlburstnodes = dlist_put(burst->dlburstnodes, burstnode);
                     /* 跳过当前node */
                     table->no = burst->number++;
                 }
-                else if (RIPPLE_CATALOG_TYPE_DATABASE == catalogdata->type)
+                else if (CATALOG_TYPE_DATABASE == catalog_data->type)
                 {
-                    ripple_catalog_database_value* database = NULL;
-                    database = (ripple_catalog_database_value*)catalogdata->catalog;
+                    catalog_database_value* database = NULL;
+                    database = (catalog_database_value*)catalog_data->catalog;
                     if (NULL == database)
                     {
-                        elog(RLOG_WARNING, "rebuild burst txn2bursts catalogdata->catalog is null");
+                        elog(RLOG_WARNING, "rebuild burst txn2bursts catalog_data->catalog is null");
                         return false;
                     }
 
-                    burstnode = ripple_rebuild_burstnode_init();
+                    burstnode = rebuild_burstnode_init();
                     if (NULL == burstnode)
                     {
                         elog(RLOG_WARNING, "rebuild burst txn2bursts init burstnode failed");
@@ -1566,7 +1566,7 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
                     }
 
                     burstnode->table.no = burst->number++;
-                    burstnode->type = RIPPLE_REBUILD_BURSTNODETYPE_OTHER;
+                    burstnode->type = REBUILD_BURSTNODETYPE_OTHER;
                     burstnode->stmt = stmtnode;
                     burst->dlburstnodes = dlist_put(burst->dlburstnodes, burstnode);
                 }
@@ -1585,12 +1585,12 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
                 }
             }
         }
-        else if(RIPPLE_TXNSTMT_TYPE_DML == stmtnode->type)
+        else if(TXNSTMT_TYPE_DML == stmtnode->type)
         {
             tbcolbase = (xk_pg_parser_translog_tbcolbase *)stmtnode->stmt;
             if(XK_PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
             {
-                if (false == ripple_rebuild_burst_txn2bursts_multiinsert(burst, sysdicts, stmtnode->stmt))
+                if (false == rebuild_burst_txn2bursts_multiinsert(burst, sysdicts, stmtnode->stmt))
                 {
                     elog(RLOG_WARNING, "rebuild burst txn2bursts multiinsert failed");
                     return false;
@@ -1599,7 +1599,7 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
             }
             else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_INSERT == tbcolbase->m_dmltype)
             {
-                if (false == ripple_rebuild_burst_txn2bursts_insert(burst, sysdicts, stmtnode->stmt))
+                if (false == rebuild_burst_txn2bursts_insert(burst, sysdicts, stmtnode->stmt))
                 {
                     elog(RLOG_WARNING, "rebuild burst txn2bursts insert failed");
                     return false;
@@ -1608,7 +1608,7 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
             }
             else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_DELETE == tbcolbase->m_dmltype)
             {
-                if (false == ripple_rebuild_burst_txn2bursts_delete(burst, sysdicts, stmtnode->stmt))
+                if (false == rebuild_burst_txn2bursts_delete(burst, sysdicts, stmtnode->stmt))
                 {
                     elog(RLOG_WARNING, "rebuild burst txn2bursts delete failed");
                     return false;
@@ -1617,7 +1617,7 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
             }
             else if(XK_PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == tbcolbase->m_dmltype)
             {
-                if (false == ripple_rebuild_burst_txn2bursts_update(burst, sysdicts, stmtnode->stmt))
+                if (false == rebuild_burst_txn2bursts_update(burst, sysdicts, stmtnode->stmt))
                 {
                     elog(RLOG_WARNING, "rebuild burst txn2bursts update failed");
                     return false;
@@ -1625,11 +1625,11 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
                 stmtnode->stmt = NULL;
             }
             /* stmtnode 释放 */
-            ripple_txnstmt_free(stmtnode);
+            txnstmt_free(stmtnode);
         }
         else
         {
-            burstnode = ripple_rebuild_burstnode_init();
+            burstnode = rebuild_burstnode_init();
             if (NULL == burstnode)
             {
                 elog(RLOG_WARNING, "rebuild burst txn2bursts init burstnode failed");
@@ -1637,7 +1637,7 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
             }
 
             burstnode->table.no = burst->number++;
-            burstnode->type = RIPPLE_REBUILD_BURSTNODETYPE_OTHER;
+            burstnode->type = REBUILD_BURSTNODETYPE_OTHER;
             burstnode->stmt = stmtnode;
             burst->dlburstnodes = dlist_put(burst->dlburstnodes, burstnode);
         }
@@ -1648,26 +1648,26 @@ bool ripple_rebuild_burst_txn2bursts(ripple_rebuild_burst* burst, ripple_cache_s
     return true;
 }
 
-/* ripple_rebuild_burstrow比较MD5值 */
-static int ripple_rebuild_burst_comparemd5(const void *r1, const void *r2)
+/* rebuild_burstrow比较MD5值 */
+static int rebuild_burst_comparemd5(const void *r1, const void *r2)
 {
-    ripple_rebuild_burstrow* row1 = NULL;
-    ripple_rebuild_burstrow* row2 = NULL;
+    rebuild_burstrow* row1 = NULL;
+    rebuild_burstrow* row2 = NULL;
 
-    row1 = *(ripple_rebuild_burstrow** )r1;
-    row2 = *(ripple_rebuild_burstrow** )r2;
+    row1 = *(rebuild_burstrow** )r1;
+    row2 = *(rebuild_burstrow** )r2;
 
     return memcmp(row1->md5, row2->md5, 16);
 }
 
-/* ripple_rebuild_burstrow比较missing值 */
-static int ripple_rebuild_burst_comparemissing(const void *r1, const void *r2)
+/* rebuild_burstrow比较missing值 */
+static int rebuild_burst_comparemissing(const void *r1, const void *r2)
 {
-    ripple_rebuild_burstrow* row1 = NULL;
-    ripple_rebuild_burstrow* row2 = NULL;
+    rebuild_burstrow* row1 = NULL;
+    rebuild_burstrow* row2 = NULL;
 
-    row1 = *(ripple_rebuild_burstrow** )r1;
-    row2 = *(ripple_rebuild_burstrow** )r2;
+    row1 = *(rebuild_burstrow** )r1;
+    row2 = *(rebuild_burstrow** )r2;
 
     /* 先按 missingcnt 排序 */
     if (row1->missingcnt < row2->missingcnt)
@@ -1685,7 +1685,7 @@ static int ripple_rebuild_burst_comparemissing(const void *r1, const void *r2)
 }
 
 /* 拼接pbe delete语句 */
-static bool ripple_rebuild_burst_assemblepbedelete(ripple_rebuild_burstnode* burstnode, ripple_txn* txn)
+static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* txn)
 {
     bool need_and                               = false;
     bool need_select                            = true;
@@ -1696,10 +1696,10 @@ static bool ripple_rebuild_burst_assemblepbedelete(ripple_rebuild_burstnode* bur
     uint8* md5                                  = NULL;
     StringInfo str                              = NULL;
     dlistnode* dlnode                           = NULL;
-    ripple_txnstmt* stmt                        = NULL;
-    ripple_txnstmt_burst* stmtburst             = NULL;
-    ripple_rebuild_burstrow* delrow             = NULL;
-    ripple_rebuild_burstrow** sortrow           = NULL;
+    txnstmt* stmt                        = NULL;
+    txnstmt_burst* stmtburst             = NULL;
+    rebuild_burstrow* delrow             = NULL;
+    rebuild_burstrow** sortrow           = NULL;
     xk_pg_parser_translog_tbcol_value* values   = NULL;
     xk_pg_parser_translog_tbcol_values* delete  = NULL;
 
@@ -1708,15 +1708,15 @@ static bool ripple_rebuild_burst_assemblepbedelete(ripple_rebuild_burstnode* bur
         return true;
     }
 
-    stmtburst = ripple_txnstmt_burst_init();
+    stmtburst = txnstmt_burst_init();
     if (NULL == stmtburst)
     {
         elog(RLOG_WARNING, "rebuild burst assemblepbedeletes stmtburst init failed");
         return false;
     }
-    stmtburst->optype = RIPPLE_REBUILD_BURSTROWTYPE_DELETE;
+    stmtburst->optype = REBUILD_BURSTROWTYPE_DELETE;
 
-    len = (sizeof(ripple_rebuild_burstrow*) * burstnode->dldeleterows->length);
+    len = (sizeof(rebuild_burstrow*) * burstnode->dldeleterows->length);
 
     sortrow = rmalloc0(len);
     if (NULL == sortrow)
@@ -1729,13 +1729,13 @@ static bool ripple_rebuild_burst_assemblepbedelete(ripple_rebuild_burstnode* bur
 
     for (dlnode = burstnode->dldeleterows->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        delrow = (ripple_rebuild_burstrow*)dlnode->value;
+        delrow = (rebuild_burstrow*)dlnode->value;
         sortrow[colindex] = delrow;
         colindex++;
     }
 
     /* 根据MD5分组排序 */
-    qsort(sortrow, burstnode->dldeleterows->length, sizeof(ripple_rebuild_burstrow*), ripple_rebuild_burst_comparemd5);
+    qsort(sortrow, burstnode->dldeleterows->length, sizeof(rebuild_burstrow*), rebuild_burst_comparemd5);
     
     str = makeStringInfo();
 
@@ -1811,8 +1811,8 @@ static bool ripple_rebuild_burst_assemblepbedelete(ripple_rebuild_burstnode* bur
     appendStringInfo(str, " LIMIT %lu)", rowcnt);
     appendStringInfo(str, ");");
 
-    /* 初始化 ripple_txnstmt */
-    stmt = ripple_txnstmt_init();
+    /* 初始化 txnstmt */
+    stmt = txnstmt_init();
     if(NULL == stmt)
     {
         elog(RLOG_WARNING, "rebuild burst assemblepbedeletes txnstmt init failed");
@@ -1821,7 +1821,7 @@ static bool ripple_rebuild_burst_assemblepbedelete(ripple_rebuild_burstnode* bur
         return false;
     }
     stmt->stmt = NULL;
-    stmt->type = RIPPLE_TXNSTMT_TYPE_BURST;
+    stmt->type = TXNSTMT_TYPE_BURST;
 
     stmtburst->batchcmd = (uint8 *)str->data;
     stmt->stmt = stmtburst;
@@ -1836,7 +1836,7 @@ static bool ripple_rebuild_burst_assemblepbedelete(ripple_rebuild_burstnode* bur
 }
 
 /* 拼接pbe insert语句 全列 */
-static bool ripple_rebuild_burst_assemblepbeinsert(ripple_rebuild_burstnode* burstnode, ripple_txn* txn)
+static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* txn)
 {
     bool need_comma                             = false;
     bool need_colname                           = true;
@@ -1844,9 +1844,9 @@ static bool ripple_rebuild_burst_assemblepbeinsert(ripple_rebuild_burstnode* bur
     StringInfo insertstr                        = NULL;
     StringInfo valuestr                         = NULL;
     dlistnode* dlnode                           = NULL;
-    ripple_txnstmt* stmt                        = NULL;
-    ripple_txnstmt_burst* stmtburst             = NULL;
-    ripple_rebuild_burstrow* insertrow          = NULL;
+    txnstmt* stmt                        = NULL;
+    txnstmt_burst* stmtburst             = NULL;
+    rebuild_burstrow* insertrow          = NULL;
     xk_pg_parser_translog_tbcol_value* values   = NULL;
     xk_pg_parser_translog_tbcol_values* insert  = NULL;
 
@@ -1855,13 +1855,13 @@ static bool ripple_rebuild_burst_assemblepbeinsert(ripple_rebuild_burstnode* bur
         return true;
     }
 
-    stmtburst = ripple_txnstmt_burst_init();
+    stmtburst = txnstmt_burst_init();
     if (NULL == stmtburst)
     {
         elog(RLOG_WARNING, "rebuild burst assemblepbeinsert stmtburst init failed");
         return false;
     }
-    stmtburst->optype = RIPPLE_REBUILD_BURSTROWTYPE_INSERT;
+    stmtburst->optype = REBUILD_BURSTROWTYPE_INSERT;
 
     insertstr = makeStringInfo();
     valuestr = makeStringInfo();
@@ -1871,7 +1871,7 @@ static bool ripple_rebuild_burst_assemblepbeinsert(ripple_rebuild_burstnode* bur
     need_colname = true;
     for (dlnode = burstnode->dlinsertrows->head; dlnode != NULL; dlnode = dlnode->next)
     {
-        insertrow = (ripple_rebuild_burstrow*)dlnode->value;
+        insertrow = (rebuild_burstrow*)dlnode->value;
         insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
 
         need_comma = false;
@@ -1940,8 +1940,8 @@ static bool ripple_rebuild_burst_assemblepbeinsert(ripple_rebuild_burstnode* bur
     appendStringInfo(valuestr, ";");
     
 
-    /* 初始化 ripple_txnstmt */
-    stmt = ripple_txnstmt_init();
+    /* 初始化 txnstmt */
+    stmt = txnstmt_init();
     if(NULL == stmt)
     {
         elog(RLOG_WARNING, "rebuild burst assemblepbeinsert stmt init failed");
@@ -1949,7 +1949,7 @@ static bool ripple_rebuild_burst_assemblepbeinsert(ripple_rebuild_burstnode* bur
         return false;
     }
     stmt->stmt = NULL;
-    stmt->type = RIPPLE_TXNSTMT_TYPE_BURST;
+    stmt->type = TXNSTMT_TYPE_BURST;
 
     appendStringInfo(insertstr, "%s", valuestr->data);
 
@@ -1965,7 +1965,7 @@ static bool ripple_rebuild_burst_assemblepbeinsert(ripple_rebuild_burstnode* bur
 }
 
 /* 拼接burst delete语句 主键 */
-static bool ripple_rebuild_burst_assembledelete(ripple_rebuild_burstnode* burstnode, ripple_txn* txn)
+static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
 {
     bool hasdelete                              = false;
     bool in_comma                               = false;
@@ -1973,10 +1973,10 @@ static bool ripple_rebuild_burst_assembledelete(ripple_rebuild_burstnode* burstn
     int colindex                                = 0;
     StringInfo str                              = NULL;
     dlistnode* dlnode                           = NULL;
-    ripple_txnstmt* stmt                        = NULL;
-    ripple_txnstmt_burst* stmtburst             = NULL;
-    ripple_rebuild_burstrow* delrow             = NULL;
-    ripple_rebuild_burstcolumn* column          = NULL;
+    txnstmt* stmt                        = NULL;
+    txnstmt_burst* stmtburst             = NULL;
+    rebuild_burstrow* delrow             = NULL;
+    rebuild_burstcolumn* column          = NULL;
     xk_pg_parser_translog_tbcol_value* values   = NULL;
     xk_pg_parser_translog_tbcol_values* delete  = NULL;
 
@@ -1985,7 +1985,7 @@ static bool ripple_rebuild_burst_assembledelete(ripple_rebuild_burstnode* burstn
         return true;
     }
 
-    stmtburst = ripple_txnstmt_burst_init();
+    stmtburst = txnstmt_burst_init();
     if (NULL == stmtburst)
     {
         elog(RLOG_WARNING, "rebuild burst assembledelete stmtburst init failed");
@@ -2014,9 +2014,9 @@ static bool ripple_rebuild_burst_assembledelete(ripple_rebuild_burstnode* burstn
     /* 拼接要删除的值 */
     for (dlnode = burstnode->dldeleterows->head; dlnode != NULL; dlnode = dlnode->next)
     {
-        delrow = (ripple_rebuild_burstrow*)dlnode->value;
+        delrow = (rebuild_burstrow*)dlnode->value;
         /* 需要移除不参与拼接 */
-        if (RIPPLE_REBUILD_BURSTROWFLAG_REMOVEDELETE == delrow->flag)
+        if (REBUILD_BURSTROWFLAG_REMOVEDELETE == delrow->flag)
         {
             continue;
         }
@@ -2079,14 +2079,14 @@ static bool ripple_rebuild_burst_assembledelete(ripple_rebuild_burstnode* burstn
     if (false == hasdelete)
     {
         deleteStringInfo(str);
-        ripple_txnstmt_burst_free(stmtburst);
+        txnstmt_burst_free(stmtburst);
         return true;
     }
     
     appendStringInfo(str, ");");
 
     /* 生成stmt */
-    stmt = ripple_txnstmt_init();
+    stmt = txnstmt_init();
     if(NULL == stmt)
     {
         elog(RLOG_WARNING, "rebuild burst assembledelete stmt init failed");
@@ -2094,7 +2094,7 @@ static bool ripple_rebuild_burst_assembledelete(ripple_rebuild_burstnode* burstn
         return false;
     }
     stmt->stmt = NULL;
-    stmt->type = RIPPLE_TXNSTMT_TYPE_BURST;
+    stmt->type = TXNSTMT_TYPE_BURST;
 
     stmtburst->batchcmd = (uint8 *)str->data;
     stmt->stmt = stmtburst;
@@ -2107,7 +2107,7 @@ static bool ripple_rebuild_burst_assembledelete(ripple_rebuild_burstnode* burstn
 }
 
 /* 拼接burst insert语句 临时表，全列，ON CONFLICT */
-static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts, ripple_rebuild_burstnode* burstnode, ripple_txn* txn)
+static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burstnode* burstnode, txn* txn)
 {
     bool first                                  = true;
     bool need_comma                             = false;
@@ -2129,15 +2129,15 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
     StringInfo insestrstr                       = NULL;
     StringInfo conflictstr                      = NULL;
     dlistnode* dlnode                           = NULL;
-    ripple_txnstmt* stmt                        = NULL;
-    ripple_txnstmt_burst* conskeyburst          = NULL;
-    ripple_txnstmt_burst* insertburst           = NULL;
-    ripple_txnstmt_burst* conflictburst         = NULL;
-    ripple_rebuild_burstcolumn* key             = NULL;
-    ripple_rebuild_burstrow** sortrow           = NULL;
-    ripple_rebuild_burstrow** tmprow            = NULL;
-    ripple_rebuild_burstrow* insertrow          = NULL;
-    ripple_rebuild_bursttable* table            = NULL;
+    txnstmt* stmt                        = NULL;
+    txnstmt_burst* conskeyburst          = NULL;
+    txnstmt_burst* insertburst           = NULL;
+    txnstmt_burst* conflictburst         = NULL;
+    rebuild_burstcolumn* key             = NULL;
+    rebuild_burstrow** sortrow           = NULL;
+    rebuild_burstrow** tmprow            = NULL;
+    rebuild_burstrow* insertrow          = NULL;
+    rebuild_bursttable* table            = NULL;
     xk_pg_parser_translog_tbcol_value* values   = NULL;
     xk_pg_parser_translog_tbcol_values* insert  = NULL;
 
@@ -2148,7 +2148,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
 
     table = &burstnode->table;
 
-    len = (sizeof(ripple_rebuild_burstrow*) * burstnode->dlinsertrows->length);
+    len = (sizeof(rebuild_burstrow*) * burstnode->dlinsertrows->length);
 
     sortrow = rmalloc0(len);
     if (NULL == sortrow)
@@ -2159,7 +2159,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
     rmemset0(sortrow, 0, 0, len);
 
     /* 获取attribute */
-    lattrs = (List*)ripple_attribute_getbyoid(burstnode->table.oid, sysdicts->by_attribute);
+    lattrs = (List*)attribute_getbyoid(burstnode->table.oid, sysdicts->by_attribute);
 
     if (NULL == lattrs || NULL == lattrs->head)
     {
@@ -2171,10 +2171,10 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
     /* 生成排序空间，筛选约束/主键修改的数据 */
     for (dlnode = burstnode->dlinsertrows->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        insertrow = (ripple_rebuild_burstrow*)dlnode->value;
+        insertrow = (rebuild_burstrow*)dlnode->value;
         insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
         /* 拼接约束修改的语句，临时表 */
-        if (RIPPLE_REBUILD_BURSTROWFLAG_CHANGECONSKEY == insertrow->flag)
+        if (REBUILD_BURSTROWFLAG_CHANGECONSKEY == insertrow->flag)
         {
             if (true == first)
             {
@@ -2183,7 +2183,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
                 valuestr = makeStringInfo();
                 updatestr = makeStringInfo();
 
-                conskeyburst = ripple_txnstmt_burst_init();
+                conskeyburst = txnstmt_burst_init();
                 if (NULL == conskeyburst)
                 {
                     deleteStringInfo(conskeystr);
@@ -2194,7 +2194,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
                     rfree(sortrow);
                     return false;
                 }
-                conskeyburst->optype = RIPPLE_REBUILD_BURSTROWTYPE_INSERT;
+                conskeyburst->optype = REBUILD_BURSTROWTYPE_INSERT;
 
                 appendStringInfo(conskeystr, "CREATE TEMP TABLE IF NOT EXISTS \"%s_burst\" (op text ", burstnode->table.table);
                 appendStringInfo(insestrstr, "INSERT INTO \"%s_burst\" (op",  burstnode->table.table);
@@ -2205,7 +2205,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
                 for (keyindex = 0; keyindex < table->keycnt; keyindex++)
                 {
                     key = &table->keys[keyindex];
-                    type = ripple_rebuild_burst_gettypename(lattrs, sysdicts->by_type, key->coltype, key->colname);
+                    type = rebuild_burst_gettypename(lattrs, sysdicts->by_type, key->coltype, key->colname);
                     if (NULL == type )
                     {
                         deleteStringInfo(conskeystr);
@@ -2238,7 +2238,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
                     {
                         continue;
                     }
-                    type = ripple_rebuild_burst_gettypename(lattrs, sysdicts->by_type, values->m_coltype, values->m_colName);
+                    type = rebuild_burst_gettypename(lattrs, sysdicts->by_type, values->m_coltype, values->m_colName);
                     if (NULL == type )
                     {
                         deleteStringInfo(conskeystr);
@@ -2276,7 +2276,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
                     }
 
                     /* 拼接临时表update语句 */
-                    if (true == ripple_rebuild_burst_colisconskey(table, values->m_colName))
+                    if (true == rebuild_burst_colisconskey(table, values->m_colName))
                     {
                         appendStringInfo(updatestr, "\"%s\" = b.\"%s\"", values->m_colName, values->m_colName);
                     }
@@ -2368,8 +2368,8 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
     /* 临时表方式stmt生成加入事务 */
     if (NULL != conskeystr && NULL != updatestr)
     {
-        /* 初始化 ripple_txnstmt */
-        stmt = ripple_txnstmt_init();
+        /* 初始化 txnstmt */
+        stmt = txnstmt_init();
         if(NULL == stmt)
         {
             elog(RLOG_WARNING, "rebuild burst assembleinsert stmt init failed");
@@ -2380,7 +2380,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
             return false;
         }
         stmt->stmt = NULL;
-        stmt->type = RIPPLE_TXNSTMT_TYPE_BURST;
+        stmt->type = TXNSTMT_TYPE_BURST;
         appendStringInfo(conskeystr, ";\n %s \n DROP TABLE \"%s_burst\" ", updatestr->data, burstnode->table.table);
 
         conskeyburst->batchcmd = (uint8 *)conskeystr->data;
@@ -2396,7 +2396,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
     
 
     /* 根据去除约束/主键修改后的数量重新申请排序空间，去掉多余空间 */
-    len = (sizeof(ripple_rebuild_burstrow*) * colcnt);
+    len = (sizeof(rebuild_burstrow*) * colcnt);
     tmprow = rmalloc0(len);
     if (NULL == tmprow)
     {
@@ -2409,7 +2409,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
     tmprow = NULL;
 
     /* 根据missingmap排序 */
-    qsort(sortrow, colcnt, sizeof(ripple_rebuild_burstrow*), ripple_rebuild_burst_comparemissing);
+    qsort(sortrow, colcnt, sizeof(rebuild_burstrow*), rebuild_burst_comparemissing);
 
     /* 设置初始missing值 */
     missingmapsize = 0;
@@ -2424,7 +2424,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
         insert = (xk_pg_parser_translog_tbcol_values*)insertrow->row;
 
         /* 原始insert语句直接插入 */
-        if (insertrow->op == RIPPLE_REBUILD_BURSTROWTYPE_INSERT)
+        if (insertrow->op == REBUILD_BURSTROWTYPE_INSERT)
         {
             if (true == first)
             {
@@ -2433,14 +2433,14 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
                 appendStringInfo(insestrstr, "INSERT INTO \"%s\".\"%s\" (", burstnode->table.schema, burstnode->table.table);
                 appendStringInfo(valuestr, "VALUES (");
 
-                insertburst = ripple_txnstmt_burst_init();
+                insertburst = txnstmt_burst_init();
                 if (NULL == insertburst)
                 {
                     elog(RLOG_WARNING, "rebuild burst assembleinsert insertburst init failed");
                     rfree(sortrow);
                     return false;
                 }
-                insertburst->optype = RIPPLE_REBUILD_BURSTROWTYPE_INSERT;
+                insertburst->optype = REBUILD_BURSTROWTYPE_INSERT;
 
                 need_comma = false; 
                 for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
@@ -2562,7 +2562,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
             if (NULL != conflictstr && NULL != valuestr)
             {
                 /* 将上一条语句加入txn */
-                stmt = ripple_txnstmt_init();
+                stmt = txnstmt_init();
                 if(NULL == stmt)
                 {
                     deleteStringInfo(valuestr);
@@ -2571,7 +2571,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
                     return false;
                 }
                 stmt->stmt = NULL;
-                stmt->type = RIPPLE_TXNSTMT_TYPE_BURST;
+                stmt->type = TXNSTMT_TYPE_BURST;
                 appendStringInfo(conflictstr, " %s", valuestr->data);
                 elog(RLOG_WARNING, "burst on  conflict: %s ", conflictstr->data);
                 deleteStringInfo(valuestr);
@@ -2589,13 +2589,13 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
             /* update生成的insert 以on conflict方式拼接 */
             conflictstr = makeStringInfo();
             valuestr = makeStringInfo();
-            conflictburst = ripple_txnstmt_burst_init();
+            conflictburst = txnstmt_burst_init();
             if (NULL == conflictburst)
             {
                 rfree(sortrow);
                 return false;
             }
-            conflictburst->optype = RIPPLE_REBUILD_BURSTROWTYPE_UPDATE;
+            conflictburst->optype = REBUILD_BURSTROWTYPE_UPDATE;
 
             appendStringInfo(conflictstr, "INSERT INTO \"%s\".\"%s\" (", burstnode->table.schema, burstnode->table.table);
             appendStringInfo(valuestr, "ON CONFLICT (");
@@ -2633,7 +2633,7 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
                 appendStringInfo(conflictstr, "\"%s\"", values->m_colName);
 
                 /* 拼接 DO UPDATE SET 语句 */
-                if (false == ripple_rebuild_burst_colisconskey(table, values->m_colName))
+                if (false == rebuild_burst_colisconskey(table, values->m_colName))
                 {
                     if (conskey_comma)
                     {
@@ -2698,14 +2698,14 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
     /* 将最后一条语句加入txn */
     if (NULL != conflictstr && NULL != valuestr)
     {
-        stmt = ripple_txnstmt_init();
+        stmt = txnstmt_init();
         if(NULL == stmt)
         {
             rfree(sortrow);
             return false;
         }
         stmt->stmt = NULL;
-        stmt->type = RIPPLE_TXNSTMT_TYPE_BURST;
+        stmt->type = TXNSTMT_TYPE_BURST;
         appendStringInfo(conflictstr, " %s", valuestr->data);
         deleteStringInfo(valuestr);
         valuestr = NULL;
@@ -2720,15 +2720,15 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
 
     if (NULL != insestrstr)
     {
-        /* 初始化 ripple_txnstmt */
-        stmt = ripple_txnstmt_init();
+        /* 初始化 txnstmt */
+        stmt = txnstmt_init();
         if(NULL == stmt)
         {
             rfree(sortrow);
             return false;
         }
         stmt->stmt = NULL;
-        stmt->type = RIPPLE_TXNSTMT_TYPE_BURST;
+        stmt->type = TXNSTMT_TYPE_BURST;
         
         appendStringInfo(insestrstr, ";");
         insertburst->batchcmd = (uint8 *)insestrstr->data;
@@ -2745,10 +2745,10 @@ static bool ripple_rebuild_burst_assembleinsert(ripple_cache_sysdicts *sysdicts,
 }
 
 /* burstnode 拼接语句 */
-bool ripple_rebuild_burst_bursts2stmt(ripple_rebuild_burst* burst, ripple_cache_sysdicts* sysdicts, ripple_txn* txn)
+bool rebuild_burst_bursts2stmt(rebuild_burst* burst, cache_sysdicts* sysdicts, txn* txn)
 {
     dlistnode* dlnode                       = NULL;
-    ripple_rebuild_burstnode* burstnode     = NULL;
+    rebuild_burstnode* burstnode     = NULL;
     if (true == dlist_isnull(burst->dlburstnodes))
     {
         return true;
@@ -2757,24 +2757,24 @@ bool ripple_rebuild_burst_bursts2stmt(ripple_rebuild_burst* burst, ripple_cache_
     /* 遍历burstnode */
     for (dlnode = burst->dlburstnodes->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        burstnode = (ripple_rebuild_burstnode*)dlnode->value;
+        burstnode = (rebuild_burstnode*)dlnode->value;
         /* meta/ddl直接加入事务 */
-        if (RIPPLE_REBUILD_BURSTNODETYPE_OTHER == burstnode->type)
+        if (REBUILD_BURSTNODETYPE_OTHER == burstnode->type)
         {
             txn->stmts = lappend(txn->stmts, burstnode->stmt);
             burstnode->stmt = NULL;
             continue;
         }
 
-        if (RIPPLE_REBUILD_BURSTNODEFLAG_NOINDEX == burstnode->flag)
+        if (REBUILD_BURSTNODEFLAG_NOINDEX == burstnode->flag)
         {
-            if (false == ripple_rebuild_burst_assemblepbedelete(burstnode, txn))
+            if (false == rebuild_burst_assemblepbedelete(burstnode, txn))
             {
                 elog(RLOG_WARNING, "rebuild burst assemblepbedelete failed");
                 return false;
             }
 
-            if (false == ripple_rebuild_burst_assemblepbeinsert(burstnode, txn))
+            if (false == rebuild_burst_assemblepbeinsert(burstnode, txn))
             {
                 elog(RLOG_WARNING, "rebuild burst assemblepbeinsert failed");
                 return false;
@@ -2782,13 +2782,13 @@ bool ripple_rebuild_burst_bursts2stmt(ripple_rebuild_burst* burst, ripple_cache_
         }
         else
         {
-            if (false == ripple_rebuild_burst_assembledelete(burstnode, txn))
+            if (false == rebuild_burst_assembledelete(burstnode, txn))
             {
                 elog(RLOG_WARNING, "rebuild burst assembledelete failed");
                 return false;
             }
 
-            if (false == ripple_rebuild_burst_assembleinsert(sysdicts, burstnode, txn))
+            if (false == rebuild_burst_assembleinsert(sysdicts, burstnode, txn))
             {
                 elog(RLOG_WARNING, "rebuild burst assembleinsert failed");
                 return false;
@@ -2799,10 +2799,10 @@ bool ripple_rebuild_burst_bursts2stmt(ripple_rebuild_burst* burst, ripple_cache_
 }
 
 /* burstcolumn 资源释放 */
-void ripple_rebuild_burstcolumn_free(ripple_rebuild_burstcolumn* burstcolumn, int colcnt)
+void rebuild_burstcolumn_free(rebuild_burstcolumn* burstcolumn, int colcnt)
 {
     int colindex                        = 0;
-    ripple_rebuild_burstcolumn column   = {'\0'};
+    rebuild_burstcolumn column   = {'\0'};
 
     if (NULL == burstcolumn)
     {
@@ -2824,16 +2824,16 @@ void ripple_rebuild_burstcolumn_free(ripple_rebuild_burstcolumn* burstcolumn, in
 }
 
 /* burstrow 资源释放 */
-void ripple_rebuild_burstrow_free(void* args)
+void rebuild_burstrow_free(void* args)
 {
-    ripple_rebuild_burstrow* burstrow = NULL;
+    rebuild_burstrow* burstrow = NULL;
 
     if (NULL == args)
     {
         return;
     }
 
-    burstrow = (ripple_rebuild_burstrow*)args;
+    burstrow = (rebuild_burstrow*)args;
 
     if (burstrow->missingmap)
     {
@@ -2852,16 +2852,16 @@ void ripple_rebuild_burstrow_free(void* args)
 }
 
 /* bursttable 资源释放 函数内不是放bursttable */
-void ripple_rebuild_bursttable_free(void* args)
+void rebuild_bursttable_free(void* args)
 {
-    ripple_rebuild_bursttable* bursttable = NULL;
+    rebuild_bursttable* bursttable = NULL;
 
     if (NULL == args)
     {
         return;
     }
 
-    bursttable = (ripple_rebuild_bursttable*)args;
+    bursttable = (rebuild_bursttable*)args;
 
     if (bursttable->schema)
     {
@@ -2875,23 +2875,23 @@ void ripple_rebuild_bursttable_free(void* args)
 
     if (bursttable->keys)
     {
-        ripple_rebuild_burstcolumn_free(bursttable->keys, bursttable->keycnt);
+        rebuild_burstcolumn_free(bursttable->keys, bursttable->keycnt);
     }
     rfree(bursttable);
     return;
 }
 
 /* burstnode 资源释放 */
-void ripple_rebuild_burstnode_free(void* args)
+void rebuild_burstnode_free(void* args)
 {
-    ripple_rebuild_burstnode* burstnode = NULL;
+    rebuild_burstnode* burstnode = NULL;
 
     if (NULL == args)
     {
         return;
     }
 
-    burstnode = (ripple_rebuild_burstnode*)args;
+    burstnode = (rebuild_burstnode*)args;
 
     if (burstnode->table.schema)
     {
@@ -2905,16 +2905,16 @@ void ripple_rebuild_burstnode_free(void* args)
 
     if (burstnode->table.keys)
     {
-        ripple_rebuild_burstcolumn_free(burstnode->table.keys, burstnode->table.keycnt);
+        rebuild_burstcolumn_free(burstnode->table.keys, burstnode->table.keycnt);
     }
     
-    dlist_free(burstnode->dldeleterows, ripple_rebuild_burstrow_free);
-    dlist_free(burstnode->dlinsertrows, ripple_rebuild_burstrow_free);
+    dlist_free(burstnode->dldeleterows, rebuild_burstrow_free);
+    dlist_free(burstnode->dlinsertrows, rebuild_burstrow_free);
 
     if (burstnode->stmt)
     {
         //todo 释放stmt
-        ripple_txnstmt_free(burstnode->stmt);
+        txnstmt_free(burstnode->stmt);
     }
 
     rfree(burstnode);
@@ -2922,19 +2922,19 @@ void ripple_rebuild_burstnode_free(void* args)
 }
 
 /* burst 资源释放 */
-void ripple_rebuild_burst_free(void* args)
+void rebuild_burst_free(void* args)
 {
-    ripple_rebuild_burst* burst = NULL;
+    rebuild_burst* burst = NULL;
 
     if (NULL == args)
     {
         return;
     }
 
-    burst = (ripple_rebuild_burst*)args;
+    burst = (rebuild_burst*)args;
     
-    dlist_free(burst->dlbursttable, ripple_rebuild_bursttable_free);
-    dlist_free(burst->dlburstnodes, ripple_rebuild_burstnode_free);
+    dlist_free(burst->dlbursttable, rebuild_bursttable_free);
+    dlist_free(burst->dlburstnodes, rebuild_burstnode_free);
 
     rfree(burst);
     return;

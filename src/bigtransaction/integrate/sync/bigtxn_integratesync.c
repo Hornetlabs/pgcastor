@@ -1,35 +1,35 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
-#include "port/thread/ripple_thread.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 #include "utils/dlist/dlist.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "threads/ripple_threads.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
-#include "stmts/ripple_txnstmt.h"
-#include "sync/ripple_sync.h"
-#include "bigtransaction/integrate/sync/ripple_bigtxn_integratesync.h"
+#include "threads/threads.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
+#include "stmts/txnstmt.h"
+#include "sync/sync.h"
+#include "bigtransaction/integrate/sync/bigtxn_integratesync.h"
 
 /* 错误处理，重新执行所有stmt */
-static bool ripple_bigtxn_integrateincsync_restart_applytxn(ripple_syncstate* syncstate, ripple_thrnode* thrnode, ripple_txn* cur_txn)
+static bool bigtxn_integrateincsync_restart_applytxn(syncstate* syncstate, thrnode* thrnode, txn* cur_txn)
 {
     if (0 == cur_txn->stmts->length)
     {
         return true;
     }
 
-    return ripple_syncstate_bigtxn_applytxn(syncstate, thrnode, (void*)cur_txn);
+    return syncstate_bigtxn_applytxn(syncstate, thrnode, (void*)cur_txn);
 }
 
 #if 0
 /* 删除状态表中增量数据 */
-static bool ripple_bigtxn_integrateincsync_delinc(ripple_bigtxn_integrateincsync* syncwork)
+static bool bigtxn_integrateincsync_delinc(bigtxn_integrateincsync* syncwork)
 {
     PGconn *conn            = NULL;
     PGresult *res           = NULL;
@@ -37,8 +37,8 @@ static bool ripple_bigtxn_integrateincsync_delinc(ripple_bigtxn_integrateincsync
 
     rmemset1(sql_exec, 0, '\0', 1024);
     sprintf(sql_exec, "DELETE FROM \"%s\".\"%s\" WHERE \"name\" = \'%s\';",
-                      guc_getConfigOption(RIPPLE_CFG_KEY_CATALOGSCHEMA),
-                      RIPPLE_SYNC_STATUSTABLE_NAME,
+                      guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+                      SYNC_STATUSTABLE_NAME,
                       syncwork->base.name);
     res = PQexec(syncwork->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
@@ -55,15 +55,15 @@ static bool ripple_bigtxn_integrateincsync_delinc(ripple_bigtxn_integrateincsync
 #endif
 
 /* 更新状态表refresh任务的状态 */
-static bool ripple_bigtxn_integrateincsync_updatasyncstatus(ripple_bigtxn_integrateincsync* syncwork, int16 stat)
+static bool bigtxn_integrateincsync_updatasyncstatus(bigtxn_integrateincsync* syncwork, int16 stat)
 {
     PGresult  *res          = NULL;
     char sql_exec[1024]     = {'\0'};
 
     rmemset1(sql_exec, 0, '\0', 1024);
     sprintf(sql_exec, "UPDATE %s.%s SET \"stat\" = %hd WHERE \"name\" = \'%s\' ",
-                      guc_getConfigOption(RIPPLE_CFG_KEY_CATALOGSCHEMA),
-                      RIPPLE_SYNC_STATUSTABLE_NAME,
+                      guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+                      SYNC_STATUSTABLE_NAME,
                       stat,
                       syncwork->base.name);
     res = PQexec(syncwork->base.conn, sql_exec);
@@ -78,64 +78,64 @@ static bool ripple_bigtxn_integrateincsync_updatasyncstatus(ripple_bigtxn_integr
     return true;
 }
 
-ripple_bigtxn_integrateincsync* ripple_bigtxn_integrateincsync_init(void)
+bigtxn_integrateincsync* bigtxn_integrateincsync_init(void)
 {
-    ripple_bigtxn_integrateincsync* syncworkstate = NULL;
+    bigtxn_integrateincsync* syncworkstate = NULL;
 
-    syncworkstate = (ripple_bigtxn_integrateincsync*)rmalloc0(sizeof(ripple_bigtxn_integrateincsync));
+    syncworkstate = (bigtxn_integrateincsync*)rmalloc0(sizeof(bigtxn_integrateincsync));
     if(NULL == syncworkstate)
     {
         elog(RLOG_WARNING, "out of memory");
         return NULL;
     }
-    rmemset0(syncworkstate, 0, '\0', sizeof(ripple_bigtxn_integrateincsync));
-    ripple_syncstate_reset((ripple_syncstate*) syncworkstate);
+    rmemset0(syncworkstate, 0, '\0', sizeof(bigtxn_integrateincsync));
+    syncstate_reset((syncstate*) syncworkstate);
 
     return syncworkstate;
 }
 
 /* 增量应用 */
-void *ripple_bigtxn_integrateincsync_main(void* args)
+void *bigtxn_integrateincsync_main(void* args)
 {
     int timeout                                         = 0;
-    ripple_txn* entry                                   = NULL;
-    ripple_txn* cur_txn                                 = NULL;
-    ripple_thrnode* thrnode                             = NULL;
-    ripple_syncstate* syncstate                         = NULL;
-    ripple_bigtxn_integrateincsync* syncwork            = NULL;
+    txn* entry                                   = NULL;
+    txn* cur_txn                                 = NULL;
+    thrnode* thr_node                             = NULL;
+    syncstate* sync_state                         = NULL;
+    bigtxn_integrateincsync* syncwork            = NULL;
 
-    thrnode = (ripple_thrnode*)args;
+    thr_node = (thrnode*)args;
 
-    syncwork = (ripple_bigtxn_integrateincsync*)thrnode->data;
+    syncwork = (bigtxn_integrateincsync*)thr_node->data;
 
-    syncstate = (ripple_syncstate*)syncwork;
+    sync_state = (syncstate*)syncwork;
 
     /* 查看状态 */
-    if(RIPPLE_THRNODE_STAT_STARTING != thrnode->stat)
+    if(THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "integrate bigtxn sync stat exception, expected state is RIPPLE_THRNODE_STAT_STARTING");
-        thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
-        ripple_pthread_exit(NULL);
+        elog(RLOG_WARNING, "integrate bigtxn sync stat exception, expected state is THRNODE_STAT_STARTING");
+        thr_node->stat = THRNODE_STAT_ABORT;
+        pthread_exit(NULL);
     }
 
     /* 设置为工作状态 */
-    thrnode->stat = RIPPLE_THRNODE_STAT_WORK;
+    thr_node->stat = THRNODE_STAT_WORK;
 
-    while (ripple_syncstate_conn(syncstate, thrnode))
+    while (syncstate_conn(sync_state, thr_node))
     {
         usleep(50000);
-        if(false == ripple_sync_txnbegin(syncstate))
+        if(false == sync_txnbegin(sync_state))
         {
             continue;
         }
 
-        if(false == ripple_syncstate_update_statustb(syncstate, NULL, false))
+        if(false == syncstate_update_statustb(sync_state, NULL, false))
         {
             continue;
         }
 
         /* 更新状态表状态，可以优先解析到并过滤 */
-        if (false == ripple_bigtxn_integrateincsync_updatasyncstatus(syncwork, 0))
+        if (false == bigtxn_integrateincsync_updatasyncstatus(syncwork, 0))
         {
             continue;
         }
@@ -143,30 +143,30 @@ void *ripple_bigtxn_integrateincsync_main(void* args)
         break;
     }
 
-    cur_txn = ripple_txn_init(InvalidFullTransactionId, InvalidXLogRecPtr, InvalidXLogRecPtr);
+    cur_txn = txn_init(InvalidFullTransactionId, InvalidXLogRecPtr, InvalidXLogRecPtr);
     if(NULL == cur_txn)
     {
         elog(RLOG_WARNING, "integrate bigtxn sync cur_txn out of memory ");
-        thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
-        ripple_pthread_exit(NULL);
+        thr_node->stat = THRNODE_STAT_ABORT;
+        pthread_exit(NULL);
     }
 
     while(1)
     {
         entry = NULL;
 
-        if(RIPPLE_THRNODE_STAT_TERM == thrnode->stat)
+        if(THRNODE_STAT_TERM == thr_node->stat)
         {
             /* 序列化/落盘 */
-            thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
+            thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
         /* 获取数据 */
-        entry = ripple_cache_txn_get(syncwork->rebuild2sync, &timeout);
+        entry = cache_txn_get(syncwork->rebuild2sync, &timeout);
         if(NULL == entry)
         {
-            if(RIPPLE_ERROR_TIMEOUT == timeout)
+            if(ERROR_TIMEOUT == timeout)
             {
                 /* 睡眠 10 毫秒 */
                 usleep(10000);
@@ -175,75 +175,75 @@ void *ripple_bigtxn_integrateincsync_main(void* args)
 
              /* 出错了 */
             elog(RLOG_WARNING, "cache_txn_get error");
-            thrnode->stat = RIPPLE_THRNODE_STAT_ABORT;
+            thr_node->stat = THRNODE_STAT_ABORT;
             break;
         }
 
         if(NULL != entry->stmts)
         {
-            while(false == ripple_syncstate_bigtxn_applytxn(syncstate, thrnode, (void*)entry))
+            while(false == syncstate_bigtxn_applytxn(sync_state, thr_node, (void*)entry))
             {
                 sleep(1);
-                ripple_syncstate_reset(syncstate);
-                while (ripple_syncstate_conn(syncstate, thrnode))
+                syncstate_reset(sync_state);
+                while (syncstate_conn(sync_state, thr_node))
                 {
                     usleep(50000);
-                    if(false == ripple_sync_txnbegin(syncstate))
+                    if(false == sync_txnbegin(sync_state))
                     {
                         continue;
                     }
 
-                    if(false == ripple_syncstate_update_statustb(syncstate, NULL, false))
+                    if(false == syncstate_update_statustb(sync_state, NULL, false))
                     {
                         continue;
                     }
 
                     /* 更新状态表状态，capture可以优先解析到并过滤 */
-                    if (false == ripple_bigtxn_integrateincsync_updatasyncstatus(syncwork, 1))
+                    if (false == bigtxn_integrateincsync_updatasyncstatus(syncwork, 1))
                     {
                         continue;
                     }
 
-                    if(false == ripple_bigtxn_integrateincsync_restart_applytxn(syncstate, thrnode, cur_txn))
+                    if(false == bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
                     {
                         continue;
                     }
                     break;
                 }
 
-                if(RIPPLE_THRNODE_STAT_TERM == thrnode->stat)
+                if(THRNODE_STAT_TERM == thr_node->stat)
                 {
-                    thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
-                    goto ripple_bigtxn_integrateincsync_main_exit;
+                    thr_node->stat = THRNODE_STAT_EXIT;
+                    goto bigtxn_integrateincsync_main_exit;
                 }
             }
         }
 
         if (true == entry->commit)
         {
-            while (false == ripple_bigtxn_integrateincsync_updatasyncstatus(syncwork, 1))
+            while (false == bigtxn_integrateincsync_updatasyncstatus(syncwork, 1))
             {
                 sleep(1);
-                ripple_syncstate_reset(syncstate);
-                while (ripple_syncstate_conn(syncstate, thrnode))
+                syncstate_reset(sync_state);
+                while (syncstate_conn(sync_state, thr_node))
                 {
-                    if(false == ripple_sync_txnbegin(syncstate))
+                    if(false == sync_txnbegin(sync_state))
                     {
                         continue;
                     }
 
-                    if(false == ripple_syncstate_update_statustb(syncstate, NULL, false))
+                    if(false == syncstate_update_statustb(sync_state, NULL, false))
                     {
                         continue;
                     }
 
                     /* 更新状态表状态，capture可以优先解析到并过滤 */
-                    if (false == ripple_bigtxn_integrateincsync_updatasyncstatus(syncwork, 0))
+                    if (false == bigtxn_integrateincsync_updatasyncstatus(syncwork, 0))
                     {
                         continue;
                     }
 
-                    if(false == ripple_bigtxn_integrateincsync_restart_applytxn(syncstate, thrnode, cur_txn))
+                    if(false == bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
                     {
                         continue;
                     }
@@ -251,36 +251,36 @@ void *ripple_bigtxn_integrateincsync_main(void* args)
                     break;
                 }
 
-                if(RIPPLE_THRNODE_STAT_TERM == thrnode->stat)
+                if(THRNODE_STAT_TERM == thr_node->stat)
                 {
-                    thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
-                    goto ripple_bigtxn_integrateincsync_main_exit;
+                    thr_node->stat = THRNODE_STAT_EXIT;
+                    goto bigtxn_integrateincsync_main_exit;
                 }
             }
 
-            while(false == ripple_sync_txncommit(syncstate, (void*)entry))
+            while(false == sync_txncommit(sync_state, (void*)entry))
             {
                 sleep(1);
-                ripple_syncstate_reset(syncstate);
-                while (ripple_syncstate_conn(syncstate, thrnode))
+                syncstate_reset(sync_state);
+                while (syncstate_conn(sync_state, thr_node))
                 {
-                    if(false == ripple_sync_txnbegin(syncstate))
+                    if(false == sync_txnbegin(sync_state))
                     {
                         continue;
                     }
 
-                    if(false == ripple_syncstate_update_statustb(syncstate, NULL, false))
+                    if(false == syncstate_update_statustb(sync_state, NULL, false))
                     {
                         continue;
                     }
 
                     /* 更新状态表状态，capture可以优先解析到并过滤 */
-                    if (false == ripple_bigtxn_integrateincsync_updatasyncstatus(syncwork, 0))
+                    if (false == bigtxn_integrateincsync_updatasyncstatus(syncwork, 0))
                     {
                         continue;
                     }
 
-                    if(false == ripple_bigtxn_integrateincsync_restart_applytxn(syncstate, thrnode, cur_txn))
+                    if(false == bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
                     {
                         continue;
                     }
@@ -288,17 +288,17 @@ void *ripple_bigtxn_integrateincsync_main(void* args)
                     break;
                 }
 
-                if(RIPPLE_THRNODE_STAT_TERM == thrnode->stat)
+                if(THRNODE_STAT_TERM == thr_node->stat)
                 {
-                    thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
-                    goto ripple_bigtxn_integrateincsync_main_exit;
+                    thr_node->stat = THRNODE_STAT_EXIT;
+                    goto bigtxn_integrateincsync_main_exit;
                 }
             }
-            // ripple_bigtxn_integrateincsync_delinc(syncwork);
+            // bigtxn_integrateincsync_delinc(syncwork);
             elog(RLOG_INFO, "bigtxn commit %lu", entry->xid);
 
-            thrnode->stat = RIPPLE_THRNODE_STAT_EXIT;
-            goto ripple_bigtxn_integrateincsync_main_exit;
+            thr_node->stat = THRNODE_STAT_EXIT;
+            goto bigtxn_integrateincsync_main_exit;
         }
 
         /* TODO entry 释放 */
@@ -308,28 +308,28 @@ void *ripple_bigtxn_integrateincsync_main(void* args)
             rfree(entry->stmts);
         }
         entry->stmts = NULL;
-        ripple_txn_free(entry);
+        txn_free(entry);
         rfree(entry);
     }
 /* 退出 */
-ripple_bigtxn_integrateincsync_main_exit:
+bigtxn_integrateincsync_main_exit:
 
-    ripple_txn_free(entry);
+    txn_free(entry);
     rfree(entry);
-    ripple_txn_free(cur_txn);
+    txn_free(cur_txn);
     rfree(cur_txn);
 
-    ripple_pthread_exit(NULL);
+    pthread_exit(NULL);
     return NULL;
 }
 
-void ripple_bigtxn_integrateincsync_free(void *args)
+void bigtxn_integrateincsync_free(void *args)
 {
-    ripple_bigtxn_integrateincsync* syncwork = NULL;
+    bigtxn_integrateincsync* syncwork = NULL;
 
-    syncwork = (ripple_bigtxn_integrateincsync*)args;
+    syncwork = (bigtxn_integrateincsync*)args;
 
-    ripple_syncstate_destroy((ripple_syncstate*) syncwork);
+    syncstate_destroy((syncstate*) syncwork);
 
     rfree(syncwork);
 

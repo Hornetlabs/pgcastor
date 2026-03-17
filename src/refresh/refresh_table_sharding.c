@@ -1,32 +1,32 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/guc/guc.h"
 #include "utils/string/stringinfo.h"
-#include "port/thread/ripple_thread.h"
-#include "queue/ripple_queue.h"
-#include "task/ripple_task_slot.h"
+#include "port/thread/thread.h"
+#include "queue/queue.h"
+#include "task/task_slot.h"
 #include "utils/list/list_func.h"
 #include "utils/hash/hash_search.h"
-#include "storage/ripple_file_buffer.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "refresh/ripple_refresh_table_sharding.h"
-#include "refresh/ripple_refresh_table_syncstats.h"
-#include "refresh/p2csharding/ripple_refresh_p2csharding.h"
+#include "storage/file_buffer.h"
+#include "refresh/refresh_tables.h"
+#include "refresh/refresh_table_sharding.h"
+#include "refresh/refresh_table_syncstats.h"
+#include "refresh/p2csharding/refresh_p2csharding.h"
 
-ripple_refresh_table_sharding *ripple_refresh_table_sharding_init(void)
+refresh_table_sharding *refresh_table_sharding_init(void)
 {
-    ripple_refresh_table_sharding *shard = NULL;
+    refresh_table_sharding *shard = NULL;
 
-    shard = rmalloc0(sizeof(ripple_refresh_table_sharding));
+    shard = rmalloc0(sizeof(refresh_table_sharding));
     if (!shard)
     {
         elog(RLOG_ERROR, "out of memory");
     }
-    rmemset0(shard, 0, 0, sizeof(ripple_refresh_table_sharding));
+    rmemset0(shard, 0, 0, sizeof(refresh_table_sharding));
 
     return shard;
 }
 
-void ripple_refresh_table_sharding_set_schema(ripple_refresh_table_sharding *shard, char *schema)
+void refresh_table_sharding_set_schema(refresh_table_sharding *shard, char *schema)
 {
     if (!shard || !schema)
     {
@@ -35,7 +35,7 @@ void ripple_refresh_table_sharding_set_schema(ripple_refresh_table_sharding *sha
     shard->schema = rstrdup(schema);
 }
 
-void ripple_refresh_table_sharding_set_table(ripple_refresh_table_sharding *shard, char *table)
+void refresh_table_sharding_set_table(refresh_table_sharding *shard, char *table)
 {
     if (!shard || !table)
     {
@@ -44,7 +44,7 @@ void ripple_refresh_table_sharding_set_table(ripple_refresh_table_sharding *shar
     shard->table = rstrdup(table);
 }
 
-void ripple_refresh_table_sharding_set_shardings(ripple_refresh_table_sharding *shard, int num)
+void refresh_table_sharding_set_shardings(refresh_table_sharding *shard, int num)
 {
     if (!shard)
     {
@@ -53,7 +53,7 @@ void ripple_refresh_table_sharding_set_shardings(ripple_refresh_table_sharding *
     shard->shardings = num;
 }
 
-void ripple_refresh_table_sharding_set_shardno(ripple_refresh_table_sharding *shard, int num)
+void refresh_table_sharding_set_shardno(refresh_table_sharding *shard, int num)
 {
     if (!shard)
     {
@@ -62,7 +62,7 @@ void ripple_refresh_table_sharding_set_shardno(ripple_refresh_table_sharding *sh
     shard->sharding_no = num;
 }
 
-void ripple_refresh_table_sharding_set_condition(ripple_refresh_table_sharding *shard, ripple_refresh_table_condition *cond)
+void refresh_table_sharding_set_condition(refresh_table_sharding *shard, refresh_table_condition *cond)
 {
     if (!shard)
     {
@@ -71,18 +71,18 @@ void ripple_refresh_table_sharding_set_condition(ripple_refresh_table_sharding *
     shard->sharding_condition = cond;
 }
 
-ripple_refresh_table_condition *ripple_refresh_table_sharding_condition_init(void)
+refresh_table_condition *refresh_table_sharding_condition_init(void)
 {
-    ripple_refresh_table_condition *cond = NULL;
+    refresh_table_condition *cond = NULL;
 
-    cond = rmalloc0(sizeof(ripple_refresh_table_condition));
+    cond = rmalloc0(sizeof(refresh_table_condition));
     cond->left_condition = 0;
     cond->right_condition = 0;
 
     return cond;
 }
 
-void ripple_refresh_table_sharding_get_info_from_filename(char *filename, ripple_refresh_table_sharding *table_shard)
+void refresh_table_sharding_get_info_from_filename(char *filename, refresh_table_sharding *table_shard)
 {
     char *ptr_left = filename;
     char *ptr_right = NULL;
@@ -117,7 +117,7 @@ void ripple_refresh_table_sharding_get_info_from_filename(char *filename, ripple
     table_shard->sharding_no = atoi(num_char);
 }
 
-void ripple_refresh_table_sharding_free(ripple_refresh_table_sharding *table_shard)
+void refresh_table_sharding_free(refresh_table_sharding *table_shard)
 {
     if (table_shard)
     {
@@ -140,13 +140,13 @@ void ripple_refresh_table_sharding_free(ripple_refresh_table_sharding *table_sha
     }
 }
 
-void ripple_refresh_table_sharding_queuefree(void* data)
+void refresh_table_sharding_queuefree(void* data)
 {
-    ripple_refresh_table_sharding *table_shard = NULL;
+    refresh_table_sharding *table_shard = NULL;
 
     if (data)
     {
-        table_shard = (ripple_refresh_table_sharding *)data;
+        table_shard = (refresh_table_sharding *)data;
         if (table_shard->schema)
         {
             rfree(table_shard->schema);

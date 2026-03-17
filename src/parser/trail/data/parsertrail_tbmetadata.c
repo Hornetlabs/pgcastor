@@ -1,22 +1,22 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_transcache.h"
-#include "catalog/ripple_catalog.h"
-#include "stmts/ripple_txnstmt.h"
-#include "storage/ripple_ff_detail.h"
-#include "storage/ripple_file_buffer.h"
-#include "storage/ripple_ffsmgr.h"
-#include "storage/trail/ripple_fftrail.h"
-#include "parser/trail/ripple_parsertrail.h"
-#include "parser/trail/data/ripple_parsertrail_tbmetadata.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/transcache.h"
+#include "catalog/catalog.h"
+#include "stmts/txnstmt.h"
+#include "storage/ff_detail.h"
+#include "storage/file_buffer.h"
+#include "storage/ffsmgr.h"
+#include "storage/trail/fftrail.h"
+#include "parser/trail/parsertrail.h"
+#include "parser/trail/data/parsertrail_tbmetadata.h"
 
 
 /*
@@ -24,7 +24,7 @@
  *
  * typmod = -1 表示没有 typmod
  */
-static int32 ripple_parsertrail_tbmetadata_gettypmod(ripple_ff_column* column)
+static int32 parsertrail_tbmetadata_gettypmod(ff_column* column)
 {
     Oid typid               = InvalidOid;
     int32 typmod            = -1;
@@ -100,26 +100,26 @@ static int32 ripple_parsertrail_tbmetadata_gettypmod(ripple_ff_column* column)
 }
 
 /* 将表数据加入到事务缓存中 */
-static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
-                                                ripple_ff_tbmetadata* fftbmd)
+static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail,
+                                                ff_tbmetadata* fftbmd)
 {
     /*
      * 存在则不处理，不存在则增加
      */
     bool found = false;
     uint16 index = 0;
-    ripple_catalog_type_value *typeentry = NULL;
-    ripple_catalog_class_value *classentry = NULL;
-    ripple_catalog_index_hash_entry *indexentry = NULL;
-    ripple_catalog_attribute_value* attrentry = NULL;
+    catalog_type_value *typeentry = NULL;
+    catalog_class_value *classentry = NULL;
+    catalog_index_hash_entry *indexentry = NULL;
+    catalog_attribute_value* attrentry = NULL;
     xk_pg_sysdict_Form_pg_attribute attribute = NULL;
-    ripple_catalog_index_value* index_value = NULL;
+    catalog_index_value* index_value = NULL;
 
     HASHCTL hctl = { 0 };
-    ripple_txn *cur_txn = parsertrail->lasttxn;
+    txn *cur_txn = parsertrail->lasttxn;
     bool add_txn = false;
-    ripple_txnstmt *stmt = NULL;
-    ripple_txnstmt_metadata *metadata = NULL;
+    txnstmt *stmt = NULL;
+    txnstmt_metadata *metadata = NULL;
     ListCell *sys_begin = NULL;
     ListCell *index_cell = NULL;
 
@@ -131,7 +131,7 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
         /* 创建 hash */
         rmemset1(&hctl, 0, 0, sizeof(hctl));
         hctl.keysize = sizeof(Oid);
-        hctl.entrysize = sizeof(ripple_catalog_class_value);
+        hctl.entrysize = sizeof(catalog_class_value);
         parsertrail->transcache->sysdicts->by_class = hash_create("decodehclass",
                                                         1024,
                                                         &hctl,
@@ -143,21 +143,21 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
     {
         /* 添加 */
         classentry->oid = fftbmd->oid;
-        classentry->ripple_class = (xk_pg_sysdict_Form_pg_class)rmalloc0(sizeof(xk_pg_parser_sysdict_pgclass));
-        if(NULL == classentry->ripple_class)
+        classentry->class = (xk_pg_sysdict_Form_pg_class)rmalloc0(sizeof(xk_pg_parser_sysdict_pgclass));
+        if(NULL == classentry->class)
         {
             elog(RLOG_WARNING, "out of memory");
             return false;
         }
-        rmemset0(classentry->ripple_class, 0, '\0', sizeof(xk_pg_parser_sysdict_pgclass));
-        classentry->ripple_class->oid = fftbmd->oid;
+        rmemset0(classentry->class, 0, '\0', sizeof(xk_pg_parser_sysdict_pgclass));
+        classentry->class->oid = fftbmd->oid;
     }
 
     /* 加入到 entry 中 */
-    rmemset1(classentry->ripple_class->nspname.data, 0, '\0', RIPPLE_NAMEDATALEN);
-    rmemset1(classentry->ripple_class->relname.data, 0, '\0', RIPPLE_NAMEDATALEN);
-    rmemcpy1(classentry->ripple_class->nspname.data, 0, fftbmd->schema, strlen(fftbmd->schema));
-    rmemcpy1(classentry->ripple_class->relname.data, 0, fftbmd->table, strlen(fftbmd->table));
+    rmemset1(classentry->class->nspname.data, 0, '\0', NAMEDATALEN);
+    rmemset1(classentry->class->relname.data, 0, '\0', NAMEDATALEN);
+    rmemcpy1(classentry->class->nspname.data, 0, fftbmd->schema, strlen(fftbmd->schema));
+    rmemcpy1(classentry->class->relname.data, 0, fftbmd->table, strlen(fftbmd->table));
 
     /* 表信息 */
     if(NULL == parsertrail->transcache->sysdicts->by_attribute)
@@ -165,7 +165,7 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
         /* 创建 hash */
         rmemset1(&hctl, 0, 0, sizeof(hctl));
         hctl.keysize = sizeof(Oid);
-        hctl.entrysize = sizeof(ripple_catalog_attribute_value);
+        hctl.entrysize = sizeof(catalog_attribute_value);
         parsertrail->transcache->sysdicts->by_attribute = hash_create("decodehclassattr",
                                                             2048,
                                                             &hctl,
@@ -178,7 +178,7 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
         /* 创建 hash */
         rmemset1(&hctl, 0, 0, sizeof(hctl));
         hctl.keysize = sizeof(Oid);
-        hctl.entrysize = sizeof(ripple_catalog_type_value);
+        hctl.entrysize = sizeof(catalog_type_value);
         parsertrail->transcache->sysdicts->by_type = hash_create("decodehtype",
                                                                  2048,
                                                                  &hctl,
@@ -216,17 +216,17 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
         if (false == found)
         {
             typeentry->oid = attribute->atttypid;
-            typeentry->ripple_type = (xk_pg_sysdict_Form_pg_type)rmalloc0(sizeof(xk_pg_parser_sysdict_pgtype));
-            if(NULL == typeentry->ripple_type)
+            typeentry->type = (xk_pg_sysdict_Form_pg_type)rmalloc0(sizeof(xk_pg_parser_sysdict_pgtype));
+            if(NULL == typeentry->type)
             {
                 elog(RLOG_WARNING, "out of memory");
                 return false;
             }
-            rmemset0(typeentry->ripple_type, 0, '\0', sizeof(xk_pg_parser_sysdict_pgtype));
-            typeentry->ripple_type->oid = attribute->atttypid;
-            rmemcpy1(typeentry->ripple_type->typname.data, 0, fftbmd->columns[index].typename, strlen(fftbmd->columns[index].typename));
+            rmemset0(typeentry->type, 0, '\0', sizeof(xk_pg_parser_sysdict_pgtype));
+            typeentry->type->oid = attribute->atttypid;
+            rmemcpy1(typeentry->type->typname.data, 0, fftbmd->columns[index].typename, strlen(fftbmd->columns[index].typename));
         }
-        attribute->atttypmod = ripple_parsertrail_tbmetadata_gettypmod(&fftbmd->columns[index]);
+        attribute->atttypmod = parsertrail_tbmetadata_gettypmod(&fftbmd->columns[index]);
         attribute->attnum = ++index;
         attrentry->attrs = lappend(attrentry->attrs, attribute);
     }
@@ -239,7 +239,7 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
         /* 创建 hash */
         rmemset1(&hctl, 0, 0, sizeof(hctl));
         hctl.keysize = sizeof(Oid);
-        hctl.entrysize = sizeof(ripple_catalog_index_hash_entry);
+        hctl.entrysize = sizeof(catalog_index_hash_entry);
         parsertrail->transcache->sysdicts->by_index = hash_create("decodehindex",
                                                         1024,
                                                         &hctl,
@@ -252,30 +252,30 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
     {
         /* 添加 */
         indexentry->oid = fftbmd->oid;
-        indexentry->ripple_index_list = NULL;
+        indexentry->index_list = NULL;
     }
     else
     {
-        if(NULL != indexentry->ripple_index_list)
+        if(NULL != indexentry->index_list)
         {
-            foreach(index_cell, indexentry->ripple_index_list)
+            foreach(index_cell, indexentry->index_list)
             {
-                index_value = (ripple_catalog_index_value*)lfirst(index_cell);
-                if (index_value->ripple_index)
+                index_value = (catalog_index_value*)lfirst(index_cell);
+                if (index_value->index)
                 {
-                    if (index_value->ripple_index->indkey)
+                    if (index_value->index->indkey)
                     {
-                        rfree(index_value->ripple_index->indkey);
+                        rfree(index_value->index->indkey);
                     }
-                    rfree(index_value->ripple_index);
+                    rfree(index_value->index);
                 }
                 rfree(index_value);
             }
-            list_free(indexentry->ripple_index_list);
+            list_free(indexentry->index_list);
         }
         index_cell = NULL;
         indexentry->oid = fftbmd->oid;
-        indexentry->ripple_index_list = NULL;
+        indexentry->index_list = NULL;
     }
 
     if (fftbmd->index)
@@ -283,26 +283,26 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
         foreach(index_cell, fftbmd->index)
         {
             bool isprimary = false;
-            ripple_ff_tbindex *metaindex = (ripple_ff_tbindex *) lfirst(index_cell);
+            ff_tbindex *metaindex = (ff_tbindex *) lfirst(index_cell);
 
             switch (metaindex->index_type)
             {
-                case RIPPLE_FF_TBINDEX_TYPE_PKEY:
+                case FF_TBINDEX_TYPE_PKEY:
                 {
                     isprimary = true;
                 }
-                case RIPPLE_FF_TBINDEX_TYPE_UNIQUE:
+                case FF_TBINDEX_TYPE_UNIQUE:
                 {
-                    ripple_catalog_index_value *indexvalue = NULL;
+                    catalog_index_value *indexvalue = NULL;
                     xk_pg_sysdict_Form_pg_index indexcatalog = NULL;
 
-                    indexvalue = rmalloc0(sizeof(ripple_catalog_index_value));
+                    indexvalue = rmalloc0(sizeof(catalog_index_value));
                     if (!indexvalue)
                     {
                         elog(RLOG_WARNING, "oom");
                         return false;
                     }
-                    rmemset0(indexvalue, 0, 0, sizeof(ripple_catalog_index_value));
+                    rmemset0(indexvalue, 0, 0, sizeof(catalog_index_value));
 
                     indexcatalog = rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
                     if (!indexcatalog)
@@ -328,9 +328,9 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
                     rmemcpy0(indexcatalog->indkey, 0, metaindex->index_key, sizeof(uint32) * metaindex->index_key_num);
 
                     indexvalue->oid = indexcatalog->indrelid;
-                    indexvalue->ripple_index = indexcatalog;
+                    indexvalue->index = indexcatalog;
 
-                    indexentry->ripple_index_list = lappend(indexentry->ripple_index_list, indexvalue);
+                    indexentry->index_list = lappend(indexentry->index_list, indexvalue);
                     break;
                 }
                 default:
@@ -347,8 +347,8 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
     {
         /* 不在事务内, 创建一个新的txn */
         add_txn = true;
-        cur_txn = ripple_txn_init(RIPPLE_FROZEN_TXNID, InvalidXLogRecPtr, InvalidXLogRecPtr);
-        cur_txn->type = RIPPLE_TXN_TYPE_METADATA;
+        cur_txn = txn_init(FROZEN_TXNID, InvalidXLogRecPtr, InvalidXLogRecPtr);
+        cur_txn->type = TXN_TYPE_METADATA;
     }
 
     /* 拼装sysdictHis */
@@ -356,20 +356,20 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
     {
         int index_attrs = 0;
         /* pg_class */
-        ripple_catalogdata *catalog_class = rmalloc0(sizeof(ripple_catalogdata));
-        ripple_catalog_class_value *class_value = rmalloc0(sizeof(ripple_catalog_class_value));
+        catalogdata *catalog_class = rmalloc0(sizeof(catalogdata));
+        catalog_class_value *class_value = rmalloc0(sizeof(catalog_class_value));
 
         /* pg_attribute */
-        rmemset0(catalog_class, 0, 0, sizeof(ripple_catalogdata));
-        rmemset0(class_value, 0, 0, sizeof(ripple_catalog_class_value));
+        rmemset0(catalog_class, 0, 0, sizeof(catalogdata));
+        rmemset0(class_value, 0, 0, sizeof(catalog_class_value));
 
         /* class catalogdata赋值 */
-        catalog_class->op = RIPPLE_CATALOG_OP_INSERT;
-        catalog_class->type = RIPPLE_CATALOG_TYPE_CLASS;
+        catalog_class->op = CATALOG_OP_INSERT;
+        catalog_class->type = CATALOG_TYPE_CLASS;
 
         /* class_value赋值 */
-        class_value->ripple_class = rmalloc0(sizeof(xk_pg_parser_sysdict_pgclass));
-        rmemset0(class_value->ripple_class, 0, 0, sizeof(xk_pg_parser_sysdict_pgclass));
+        class_value->class = rmalloc0(sizeof(xk_pg_parser_sysdict_pgclass));
+        rmemset0(class_value->class, 0, 0, sizeof(xk_pg_parser_sysdict_pgclass));
         class_value->oid = fftbmd->oid;
 
         /* 
@@ -380,10 +380,10 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
          * relname
          * nspname
          */
-        class_value->ripple_class->oid = fftbmd->oid;
-        class_value->ripple_class->relnatts = fftbmd->colcnt;
-        strcpy(class_value->ripple_class->relname.data, fftbmd->table);
-        strcpy(class_value->ripple_class->nspname.data, fftbmd->schema);
+        class_value->class->oid = fftbmd->oid;
+        class_value->class->relnatts = fftbmd->colcnt;
+        strcpy(class_value->class->relname.data, fftbmd->table);
+        strcpy(class_value->class->nspname.data, fftbmd->schema);
 
         catalog_class->catalog = (void *) class_value;
 
@@ -396,31 +396,31 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
         /* 遍历所有列 */
         for (index_attrs = 0; index_attrs < fftbmd->colcnt; index_attrs++)
         {
-            ripple_catalogdata *catalog_type = NULL;
-            ripple_catalog_type_value *type_value = NULL;
+            catalogdata *catalog_type = NULL;
+            catalog_type_value *type_value = NULL;
             xk_pg_sysdict_Form_pg_attribute attr = NULL;
-            ripple_catalogdata *catalog_attribute = NULL;
-            ripple_catalog_attribute_value *attribute_value = NULL;
+            catalogdata *catalog_attribute = NULL;
+            catalog_attribute_value *attribute_value = NULL;
 
-            catalog_attribute = rmalloc0(sizeof(ripple_catalogdata));
+            catalog_attribute = rmalloc0(sizeof(catalogdata));
             if(NULL == catalog_attribute)
             {
                 elog(RLOG_WARNING, "out of memory");
                 return false;
             }
-            rmemset0(catalog_attribute, 0, 0, sizeof(ripple_catalogdata));
+            rmemset0(catalog_attribute, 0, 0, sizeof(catalogdata));
 
             /* attribute catalogdata赋值 */
-            catalog_attribute->op = RIPPLE_CATALOG_OP_INSERT;
-            catalog_attribute->type = RIPPLE_CATALOG_TYPE_ATTRIBUTE;
+            catalog_attribute->op = CATALOG_OP_INSERT;
+            catalog_attribute->type = CATALOG_TYPE_ATTRIBUTE;
 
-            attribute_value = rmalloc0(sizeof(ripple_catalog_attribute_value));
+            attribute_value = rmalloc0(sizeof(catalog_attribute_value));
             if(NULL == attribute_value)
             {
                 elog(RLOG_WARNING, "out of memory");
                 return false;
             }
-            rmemset0(attribute_value, 0, 0, sizeof(ripple_catalog_attribute_value));
+            rmemset0(attribute_value, 0, 0, sizeof(catalog_attribute_value));
             attribute_value->attrelid = fftbmd->oid;
 
             attr = rmalloc0(sizeof(xk_pg_parser_sysdict_pgattributes));
@@ -443,7 +443,7 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
             attr->attnum = fftbmd->columns[index_attrs].num;
             attr->atttypid = fftbmd->columns[index_attrs].typid;
             strcpy(attr->attname.data, fftbmd->columns[index_attrs].column);
-            attr->atttypmod = ripple_parsertrail_tbmetadata_gettypmod(&fftbmd->columns[index_attrs]);
+            attr->atttypmod = parsertrail_tbmetadata_gettypmod(&fftbmd->columns[index_attrs]);
 
             /* attribute_value赋值 */
             attribute_value->attrs = lappend(attribute_value->attrs, attr);
@@ -453,36 +453,36 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
             cur_txn->sysdictHis = lappend(cur_txn->sysdictHis, catalog_attribute);
 
             /* 组装type */
-            catalog_type = rmalloc0(sizeof(ripple_catalogdata));
+            catalog_type = rmalloc0(sizeof(catalogdata));
             if(NULL == catalog_type)
             {
                 elog(RLOG_WARNING, "out of memory");
                 return false;
             }
-            rmemset0(catalog_type, 0, 0, sizeof(ripple_catalogdata));
+            rmemset0(catalog_type, 0, 0, sizeof(catalogdata));
 
             /* type catalogdata赋值 */
-            catalog_type->op = RIPPLE_CATALOG_OP_INSERT;
-            catalog_type->type = RIPPLE_CATALOG_TYPE_TYPE;
+            catalog_type->op = CATALOG_OP_INSERT;
+            catalog_type->type = CATALOG_TYPE_TYPE;
 
-            type_value = rmalloc0(sizeof(ripple_catalog_type_value));
+            type_value = rmalloc0(sizeof(catalog_type_value));
             if(NULL == type_value)
             {
                 elog(RLOG_WARNING, "out of memory");
                 return false;
             }
-            rmemset0(type_value, 0, 0, sizeof(ripple_catalog_type_value));
+            rmemset0(type_value, 0, 0, sizeof(catalog_type_value));
             type_value->oid = fftbmd->columns[index_attrs].typid;
 
-            type_value->ripple_type = rmalloc0(sizeof(xk_pg_parser_sysdict_pgtype));
-            if(NULL == type_value->ripple_type)
+            type_value->type = rmalloc0(sizeof(xk_pg_parser_sysdict_pgtype));
+            if(NULL == type_value->type)
             {
                 elog(RLOG_WARNING, "out of memory");
                 return false;
             }
-            rmemset0(type_value->ripple_type, 0, 0, sizeof(xk_pg_parser_sysdict_pgtype));
-            type_value->ripple_type->oid = fftbmd->columns[index_attrs].typid;
-            rmemcpy1(type_value->ripple_type->typname.data, 0, fftbmd->columns[index_attrs].typename, strlen(fftbmd->columns[index_attrs].typename));
+            rmemset0(type_value->type, 0, 0, sizeof(xk_pg_parser_sysdict_pgtype));
+            type_value->type->oid = fftbmd->columns[index_attrs].typid;
+            rmemcpy1(type_value->type->typname.data, 0, fftbmd->columns[index_attrs].typename, strlen(fftbmd->columns[index_attrs].typename));
             catalog_type->catalog = (void *) type_value;
 
             /* type 组装完毕, 附加到链表中 */
@@ -494,39 +494,39 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
             foreach(index_cell, fftbmd->index)
             {
                 bool isprimary = false;
-                ripple_ff_tbindex *metaindex = (ripple_ff_tbindex *) lfirst(index_cell);
-                ripple_catalogdata *catalogdata_index = NULL;
+                ff_tbindex *metaindex = (ff_tbindex *) lfirst(index_cell);
+                catalogdata *catalogdata_index = NULL;
 
-                catalogdata_index = rmalloc0(sizeof(ripple_catalogdata));
+                catalogdata_index = rmalloc0(sizeof(catalogdata));
                 if(NULL == catalogdata_index)
                 {
                     elog(RLOG_WARNING, "out of memory");
                     return false;
                 }
-                rmemset0(catalogdata_index, 0, 0, sizeof(ripple_catalogdata));
+                rmemset0(catalogdata_index, 0, 0, sizeof(catalogdata));
 
                 /* index catalogdata赋值 */
-                catalogdata_index->op = RIPPLE_CATALOG_OP_INSERT;
-                catalogdata_index->type = RIPPLE_CATALOG_TYPE_INDEX;
+                catalogdata_index->op = CATALOG_OP_INSERT;
+                catalogdata_index->type = CATALOG_TYPE_INDEX;
 
                 switch (metaindex->index_type)
                 {
-                    case RIPPLE_FF_TBINDEX_TYPE_PKEY:
+                    case FF_TBINDEX_TYPE_PKEY:
                     {
                         isprimary = true;
                     }
-                    case RIPPLE_FF_TBINDEX_TYPE_UNIQUE:
+                    case FF_TBINDEX_TYPE_UNIQUE:
                     {
-                        ripple_catalog_index_value *indexvalue = NULL;
+                        catalog_index_value *indexvalue = NULL;
                         xk_pg_sysdict_Form_pg_index indexcatalog = NULL;
 
-                        indexvalue = rmalloc0(sizeof(ripple_catalog_index_value));
+                        indexvalue = rmalloc0(sizeof(catalog_index_value));
                         if (!indexvalue)
                         {
                             elog(RLOG_WARNING, "oom");
                             return false;
                         }
-                        rmemset0(indexvalue, 0, 0, sizeof(ripple_catalog_index_value));
+                        rmemset0(indexvalue, 0, 0, sizeof(catalog_index_value));
 
                         indexcatalog = rmalloc0(sizeof(xk_pg_parser_sysdict_pgindex));
                         if (!indexcatalog)
@@ -552,7 +552,7 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
                         rmemcpy0(indexcatalog->indkey, 0, metaindex->index_key, sizeof(uint32) * metaindex->index_key_num);
 
                         indexvalue->oid = indexcatalog->indrelid;
-                        indexvalue->ripple_index = indexcatalog;
+                        indexvalue->index = indexcatalog;
 
                         catalogdata_index->catalog = indexvalue;
 
@@ -571,13 +571,13 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
 
     /* 创建METADATA stmt */
     /* 添加stmt, 作为系统表段标识 */
-    stmt = rmalloc0(sizeof(ripple_txnstmt));
-    metadata = rmalloc0(sizeof(ripple_txnstmt_metadata));
+    stmt = rmalloc0(sizeof(txnstmt));
+    metadata = rmalloc0(sizeof(txnstmt_metadata));
 
-    rmemset0(stmt, 0, 0, sizeof(ripple_txnstmt));
-    rmemset0(metadata, 0, 0, sizeof(ripple_txnstmt_metadata));
+    rmemset0(stmt, 0, 0, sizeof(txnstmt));
+    rmemset0(metadata, 0, 0, sizeof(txnstmt_metadata));
 
-    stmt->type = RIPPLE_TXNSTMT_TYPE_METADATA;
+    stmt->type = TXNSTMT_TYPE_METADATA;
 
     metadata->begin = sys_begin;
     metadata->end = list_tail(cur_txn->sysdictHis);
@@ -602,30 +602,30 @@ static bool ripple_parsertrail_tbmetadata2hash(ripple_parsertrail* parsertrail,
  * 数据库信息应用
  *  此处为独立的处理逻辑，函数流程到此说明前期的处理已经完成，在这只需要应用即可
 */
-bool ripple_parsertrail_tbmetadataapply(ripple_parsertrail* parsertrail, void* data)
+bool parsertrail_tbmetadataapply(parsertrail* parsertrail, void* data)
 {
     bool found = false;
     uint16 index = 0;
-    ripple_fftrail_table_deserialkey tbkey = { 0 };
-    ripple_ff_tbmetadata* fftbmd = NULL;
-    ripple_fftrail_privdata* privdata = NULL;
-    ripple_fftrail_table_deserialentry* deserialentry = NULL;
+    fftrail_table_deserialkey tbkey = { 0 };
+    ff_tbmetadata* fftbmd = NULL;
+    fftrail_privdata* privdata = NULL;
+    fftrail_table_deserialentry* deserialentry = NULL;
 
     if(NULL == data)
     {
         return true;
     }
 
-    fftbmd = (ripple_ff_tbmetadata*)data;
+    fftbmd = (ff_tbmetadata*)data;
     /* 查看是否发生了切换，发生切换那么需要清理缓存 */
-    if(RIPPLE_FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
+    if(FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
     {
         /* 交换 */
-        ripple_parsertrail_traildata_shiftfile(parsertrail);
+        parsertrail_traildata_shiftfile(parsertrail);
     }
 
     /* 像缓存中插入数据 */
-    if(false == ripple_parsertrail_tbmetadata2hash(parsertrail, fftbmd))
+    if(false == parsertrail_tbmetadata2hash(parsertrail, fftbmd))
     {
         elog(RLOG_WARNING, "parser trail table metadata error");
         return false;
@@ -693,17 +693,17 @@ bool ripple_parsertrail_tbmetadataapply(ripple_parsertrail* parsertrail, void* d
 /*
  * 数据库信息清理
  */
-void ripple_parsertrail_tbmetadataclean(ripple_parsertrail* parsertrail, void* data)
+void parsertrail_tbmetadataclean(parsertrail* parsertrail, void* data)
 {
-    ripple_ff_tbmetadata* fftbmd = NULL;
+    ff_tbmetadata* fftbmd = NULL;
 
     if(NULL == data)
     {
         return;
     }
 
-    fftbmd = (ripple_ff_tbmetadata*)data;
+    fftbmd = (ff_tbmetadata*)data;
 
     /* 内存释放 */
-    ripple_ff_tbmetadata_free(fftbmd);
+    ff_tbmetadata_free(fftbmd);
 }

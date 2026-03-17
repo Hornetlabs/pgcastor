@@ -13,7 +13,7 @@
  *-------------------------------------------------------------------------
  */
 
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "utils/hash/hash_search.h"
 #include "utils/hash/hash_utils.h"
 

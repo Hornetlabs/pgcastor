@@ -1,16 +1,16 @@
-#ifndef _RIPPLE_REFRESH_P2CSHARDING_H
-#define _RIPPLE_REFRESH_P2CSHARDING_H
+#ifndef _REFRESH_P2CSHARDING_H
+#define _REFRESH_P2CSHARDING_H
 
-typedef struct RIPPLE_TASK_REFRESH_P2CSHARDING
+typedef struct TASK_REFRESH_P2CSHARDING
 {
-    ripple_refresh_table_syncstats* syncstats;
-    ripple_queue*                   taskqueue;
-} ripple_task_refresh_p2csharding;
+    refresh_table_syncstats* syncstats;
+    queue*                   taskqueue;
+} task_refresh_p2csharding;
 
-extern ripple_task_refresh_p2csharding *ripple_refresh_p2csharding_init(void);
+extern task_refresh_p2csharding *refresh_p2csharding_init(void);
 
-void* ripple_refresh_p2csharding_main(void* args);
+void* refresh_p2csharding_main(void* args);
 
-void ripple_refresh_p2csharding_free(void* args);
+void refresh_p2csharding_free(void* args);
 
 #endif

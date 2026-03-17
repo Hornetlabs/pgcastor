@@ -1,8 +1,8 @@
-#ifndef _RIPPLE_METRIC_INTEGRATE_H
-#define _RIPPLE_METRIC_INTEGRATE_H
+#ifndef _METRIC_INTEGRATE_H
+#define _METRIC_INTEGRATE_H
 
 
-typedef struct RIPPLE_METRIC_INTEGRATE
+typedef struct METRIC_INTEGRATE
 {
     XLogRecPtr              loadlsn;
     XLogRecPtr              synclsn;
@@ -12,13 +12,13 @@ typedef struct RIPPLE_METRIC_INTEGRATE
     uint64                  synctrailstart;
     TimestampTz             loadtimestamp;
     TimestampTz             synctimestamp;
-} ripple_metric_integrate;
+} metric_integrate;
 
 
-void* ripple_metric_integrate_main(void *args);
+void* metric_integrate_main(void *args);
 
-ripple_metric_integrate* ripple_metric_integrate_init(void);
+metric_integrate* metric_integrate_init(void);
 
-void ripple_metric_integrate_destroy(void* args);
+void metric_integrate_destroy(void* args);
 
 #endif

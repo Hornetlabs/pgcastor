@@ -1,9 +1,9 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
-#include "utils/conn/ripple_conn.h"
+#include "utils/conn/conn.h"
 
 /* 连接数据库 */
-PGconn *ripple_conn_get(const char *conninfo) 
+PGconn *conn_get(const char *conninfo) 
 {
 	PGconn *conn = PQconnectdb(conninfo);
 
@@ -17,7 +17,7 @@ PGconn *ripple_conn_get(const char *conninfo)
 }
 
 /* 连接数据库/流复制 */
-PGconn* ripple_conn_getphysical(const char* conninfo, char* appname)
+PGconn* conn_getphysical(const char* conninfo, char* appname)
 {
     /* dbname/replication/fallback_app_name/host/user/port/password */
     int index                   = 0;
@@ -89,14 +89,14 @@ PGconn* ripple_conn_getphysical(const char* conninfo, char* appname)
     if(NULL == conn)
     {
         elog(RLOG_WARNING, "can not connect server %s", conninfo);
-        goto ripple_conn_getphysical_error;
+        goto conn_getphysical_error;
     }
 
     if (CONNECTION_OK != PQstatus(conn))
     {
         elog(RLOG_WARNING, "connect server %s error: %s", conninfo, PQerrorMessage(conn));
         PQfinish(conn);
-        goto ripple_conn_getphysical_error;
+        goto conn_getphysical_error;
     }
 
     rfree(values);
@@ -104,7 +104,7 @@ PGconn* ripple_conn_getphysical(const char* conninfo, char* appname)
     PQconninfoFree(connopts);
     return conn;
 
-ripple_conn_getphysical_error:
+conn_getphysical_error:
     rfree(values);
     rfree(keywords);
     PQconninfoFree(connopts);
@@ -112,13 +112,13 @@ ripple_conn_getphysical_error:
 }
 
 /* 关闭数据库 */
-void ripple_conn_close(PGconn *conn)
+void conn_close(PGconn *conn)
 {
 	PQfinish(conn);
 }
 
 /* 执行并获取结果 */
-PGresult *ripple_conn_exec(PGconn *conn, const char *query) 
+PGresult *conn_exec(PGconn *conn, const char *query) 
 {
 	PGresult *res = PQexec(conn, query);
 
@@ -133,7 +133,7 @@ PGresult *ripple_conn_exec(PGconn *conn, const char *query)
 }
 
 /* 开启事务 */
-bool ripple_conn_begin(PGconn* conn)
+bool conn_begin(PGconn* conn)
 {
 	PGresult *res = PQexec(conn, "BEGIN");
 
@@ -149,7 +149,7 @@ bool ripple_conn_begin(PGconn* conn)
 }
 
 /* 提交事务 */
-bool ripple_conn_commit(PGconn* conn)
+bool conn_commit(PGconn* conn)
 {
 	PGresult *res = PQexec(conn, "COMMIT");
 
@@ -165,7 +165,7 @@ bool ripple_conn_commit(PGconn* conn)
 }
 
 /* 回滚事务 */
-bool ripple_conn_rollback(PGconn* conn)
+bool conn_rollback(PGconn* conn)
 {
 	PGresult *res = PQexec(conn, "ROLLBACK");
 
@@ -181,12 +181,12 @@ bool ripple_conn_rollback(PGconn* conn)
 }
 
 /* 开启事务并设置事务隔离级别 */
-void ripple_conn_settxnisolationlevel(PGconn* conn, int level)
+void conn_settxnisolationlevel(PGconn* conn, int level)
 {
 	PGresult *res = NULL;
 	char	stmtsql[1024] = {'\0'};
 
-	res = ripple_conn_exec(conn,"begin");
+	res = conn_exec(conn,"begin");
 	if (NULL == res)
 	{
 		elog(RLOG_ERROR, "Execute begin failed");
@@ -198,16 +198,16 @@ void ripple_conn_settxnisolationlevel(PGconn* conn, int level)
 	rmemset1(stmtsql, 0, 0, 1024);
 	switch (level)
 	{
-		case RIPPLE_TXNISOLVL_READ_UNCOMMITTED:
+		case TXNISOLVL_READ_UNCOMMITTED:
 			sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;");
 			break;
-		case RIPPLE_TXNISOLVL_READ_COMMITTED:
+		case TXNISOLVL_READ_COMMITTED:
 			sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL READ COMMITTED;");
 			break;
-		case RIPPLE_TXNISOLVL_REPEATABLE_READ:
+		case TXNISOLVL_REPEATABLE_READ:
 			sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;");
 			break;
-		case RIPPLE_TXNISOLVL_SERIALIZABLE:
+		case TXNISOLVL_SERIALIZABLE:
 			sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;");
 			break;
 		
@@ -217,7 +217,7 @@ void ripple_conn_settxnisolationlevel(PGconn* conn, int level)
 			elog(RLOG_ERROR, "Invalid transaction isolation level");
 			break;
 	}
-	res = ripple_conn_exec(conn,stmtsql);
+	res = conn_exec(conn,stmtsql);
 	if (NULL == res)
 	{
 		elog(RLOG_ERROR, "Set transaction isolation level failed");

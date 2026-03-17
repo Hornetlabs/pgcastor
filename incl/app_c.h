@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_C_H
-#define _RIPPLE_C_H
+#ifndef APP_C_H
+#define APP_C_H
 
 #define NAMEDATALEN 64
 #define gettext_noop(x) (x)
@@ -55,18 +55,42 @@ typedef unsigned long int               uint64;
 #define INT64CONST(x)                   (x##L)
 #define UINT64CONST(x)                  (x##UL)
 
-#define RIPPLE_INT8_MIN                 (-0x7F-1)
-#define RIPPLE_INT8_MAX                 (0x7F)
-#define RIPPLE_UINT8_MAX                (0xFF)
-#define RIPPLE_INT16_MIN                (-0x7FFF-1)
-#define RIPPLE_INT16_MAX                (0x7FFF)
-#define RIPPLE_UINT16_MAX               (0xFFFF)
-#define RIPPLE_INT32_MIN                (-0x7FFFFFFF-1)
-#define RIPPLE_INT32_MAX                (0x7FFFFFFF)
-#define RIPPLE_UINT32_MAX               (0xFFFFFFFFU)
-#define RIPPLE_INT64_MIN                (-INT64CONST(0x7FFFFFFFFFFFFFFF) - 1)
-#define RIPPLE_INT64_MAX                INT64CONST(0x7FFFFFFFFFFFFFFF)
-#define RIPPLE_UINT64_MAX               UINT64CONST(0xFFFFFFFFFFFFFFFF)
+#ifndef INT8_MIN
+#define INT8_MIN                 (-0x7F-1)
+#endif
+#ifndef INT8_MAX
+#define INT8_MAX                 (0x7F)
+#endif
+#ifndef UINT8_MAX
+#define UINT8_MAX                (0xFF)
+#endif
+#ifndef INT16_MIN
+#define INT16_MIN                (-0x7FFF-1)
+#endif
+#ifndef INT16_MAX
+#define INT16_MAX                (0x7FFF)
+#endif
+#ifndef UINT16_MAX
+#define UINT16_MAX               (0xFFFF)
+#endif
+#ifndef INT32_MIN
+#define INT32_MIN                (-0x7FFFFFFF-1)
+#endif
+#ifndef INT32_MAX
+#define INT32_MAX                (0x7FFFFFFF)
+#endif
+#ifndef UINT32_MAX
+#define UINT32_MAX               (0xFFFFFFFFU)
+#endif
+#ifndef INT64_MIN
+#define INT64_MIN                (-INT64CONST(0x7FFFFFFFFFFFFFFF) - 1)
+#endif
+#ifndef INT64_MAX
+#define INT64_MAX                INT64CONST(0x7FFFFFFFFFFFFFFF)
+#endif
+#ifndef UINT64_MAX
+#define UINT64_MAX               UINT64CONST(0xFFFFFFFFFFFFFFFF)
+#endif
 
 typedef size_t                          Size;
 
@@ -178,14 +202,14 @@ typedef uint8 RmgrId;
 typedef uint32          pg_crc32c;
 typedef pg_crc32c       r_crc32c;
 
-typedef enum RIPPLE_RECPOS_TYPE
+typedef enum RECPOS_TYPE
 {
-    RIPPLE_RECPOS_TYPE_NOP = 0x00,
-    RIPPLE_RECPOS_TYPE_TRAIL,
-    RIPPLE_RECPOS_TYPE_WAL
-} ripple_recpos_type;
+    RECPOS_TYPE_NOP = 0x00,
+    RECPOS_TYPE_TRAIL,
+    RECPOS_TYPE_WAL
+} recpos_type;
 
-typedef union RIPPLE_RECPOS
+typedef union RECPOS
 {
     struct{
         int type;
@@ -198,7 +222,7 @@ typedef union RIPPLE_RECPOS
         uint64                  fileid;/* 文件 ID */
         uint64                  offset;/* 偏移量 */
     }trail;
-}ripple_recpos;
+}recpos;
 
 /*
  * TimeLineID (TLI) - identifies different database histories to prevent
@@ -357,15 +381,15 @@ typedef union RIPPLE_RECPOS
 #define Abs(x)			((x) >= 0 ? (x) : -(x))
 
 #if defined(WIN32) || defined(__CYGWIN__)
-#define RIPPLE_BINARY	O_BINARY
-#define RIPPLE_BINARY_A "ab"
-#define RIPPLE_BINARY_R "rb"
-#define RIPPLE_BINARY_W "wb"
+#define BINARY	O_BINARY
+#define BINARY_A "ab"
+#define BINARY_R "rb"
+#define BINARY_W "wb"
 #else
-#define RIPPLE_BINARY	0
-#define RIPPLE_BINARY_A "a"
-#define RIPPLE_BINARY_R "r"
-#define RIPPLE_BINARY_W "w"
+#define BINARY	0
+#define BINARY_A "a"
+#define BINARY_R "r"
+#define BINARY_W "w"
 #endif
 
 /* Get a bit mask of the bits set in non-long aligned addresses */
@@ -378,16 +402,16 @@ typedef union RIPPLE_RECPOS
 #define pg_attribute_printf(f,a) __attribute__((format(PG_PRINTF_ATTRIBUTE, f, a)))
 
 
-#define RIPPLE_CONCAT(x,y)                  x##y
+#define CONCAT(x,y)                  x##y
 
 /*-------------------align begin--------------------------------*/
-#define RIPPLE_MAXIMUM_ALIGNOF 8
+#define MAXIMUM_ALIGNOF 8
 
-#define RIPPLE_TYPEALIGN(ALIGNVAL,LEN)  \
+#define TYPEALIGN(ALIGNVAL,LEN)  \
     (((uintptr_t) (LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t) ((ALIGNVAL) - 1)))
 
 /* 8 字节对齐 */
-#define RIPPLE_MAXALIGN(LEN)            RIPPLE_TYPEALIGN(RIPPLE_MAXIMUM_ALIGNOF, (LEN))
+#define MAXALIGN(LEN)            TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
 
 /*-------------------align   end--------------------------------*/
 

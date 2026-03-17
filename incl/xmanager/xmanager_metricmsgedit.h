@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_XMANAGER_METRICMSGEDIT_H_
-#define _RIPPLE_XMANAGER_METRICMSGEDIT_H_
+#ifndef _XMANAGER_METRICMSGEDIT_H_
+#define _XMANAGER_METRICMSGEDIT_H_
 
 /*
  * 处理 edit 命令
@@ -8,8 +8,8 @@
  *  3、获取配置文件内容
  *  4、组装返回消息
 */
-extern bool ripple_xmanager_metricmsg_parseedit(ripple_xmanager_metric* xmetric,
-                                                 ripple_netpoolentry* npoolentry,
-                                                 ripple_netpacket* npacket);
+extern bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric,
+                                                 netpoolentry* npoolentry,
+                                                 netpacket* npacket);
 
 #endif

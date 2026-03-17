@@ -1,9 +1,9 @@
-#ifndef RIPPLE_DECODE_HEAP_H
-#define RIPPLE_DECODE_HEAP_H
+#ifndef DECODE_HEAP_H
+#define DECODE_HEAP_H
 
-extern void ripple_decode_heap(ripple_decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
-extern void ripple_heap_fpw_tuples(ripple_decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
-extern void ripple_heap_truncate(ripple_decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
+extern void decode_heap(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
+extern void heap_fpw_tuples(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
+extern void heap_truncate(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
 
-extern void ripple_decode_heap_emit(ripple_decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
+extern void decode_heap_emit(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
 #endif

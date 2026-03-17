@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_SINVAL_H
-#define _RIPPLE_SINVAL_H
+#ifndef _SINVAL_H
+#define _SINVAL_H
 
 typedef struct
 {

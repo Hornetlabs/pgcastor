@@ -1,60 +1,60 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
 #include "utils/hash/hash_search.h"
 #include "utils/hash/hash_utils.h"
-#include "misc/ripple_misc_stat.h"
+#include "misc/misc_stat.h"
 #include "common/xk_pg_parser_define.h"
 #include "common/xk_pg_parser_translog.h"
 #include "common/xk_pg_parser_errnodef.h"
-#include "cache/ripple_txn.h"
-#include "cache/ripple_cache_txn.h"
-#include "cache/ripple_cache_sysidcts.h"
-#include "cache/ripple_transcache.h"
-#include "catalog/ripple_catalog.h"
+#include "cache/txn.h"
+#include "cache/cache_txn.h"
+#include "cache/cache_sysidcts.h"
+#include "cache/transcache.h"
+#include "catalog/catalog.h"
 #include "utils/mpage/mpage.h"
-#include "queue/ripple_queue.h"
-#include "loadrecords/ripple_record.h"
-#include "loadrecords/ripple_loadpage.h"
-#include "loadrecords/ripple_loadpageam.h"
-#include "loadrecords/ripple_loadpagefromfile.h"
-#include "loadrecords/ripple_loadrecords.h"
-#include "loadrecords/ripple_loadwalrecords.h"
-#include "snapshot/ripple_snapshot.h"
-#include "works/parserwork/wal/ripple_rewind.h"
-#include "works/parserwork/wal/ripple_decode_relmap.h"
-#include "works/parserwork/wal/ripple_decode_checkpoint.h"
-#include "works/parserwork/wal/ripple_parserwork_decode.h"
-#include "works/parserwork/wal/ripple_decode_heap.h"
-#include "onlinerefresh/capture/parserwal/ripple_onlinerefresh_capture_decode.h"
-#include "onlinerefresh/capture/parserwal/ripple_onlinerefresh_capture_decode_xact.h"
-#include "onlinerefresh/capture/parserwal/ripple_onlinerefresh_capture_decode_heap.h"
+#include "queue/queue.h"
+#include "loadrecords/record.h"
+#include "loadrecords/loadpage.h"
+#include "loadrecords/loadpageam.h"
+#include "loadrecords/loadpagefromfile.h"
+#include "loadrecords/loadrecords.h"
+#include "loadrecords/loadwalrecords.h"
+#include "snapshot/snapshot.h"
+#include "works/parserwork/wal/rewind.h"
+#include "works/parserwork/wal/decode_relmap.h"
+#include "works/parserwork/wal/decode_checkpoint.h"
+#include "works/parserwork/wal/parserwork_decode.h"
+#include "works/parserwork/wal/decode_heap.h"
+#include "onlinerefresh/capture/parserwal/onlinerefresh_capture_decode.h"
+#include "onlinerefresh/capture/parserwal/onlinerefresh_capture_decode_xact.h"
+#include "onlinerefresh/capture/parserwal/onlinerefresh_capture_decode_heap.h"
 
-typedef void (*decode_prefunc_onlinerefresh)(ripple_decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
+typedef void (*decode_prefunc_onlinerefresh)(decodingcontext* decodingctx, xk_pg_parser_translog_pre_base* pbase);
 
-typedef struct RIPPLE_DECODE_PREMGR_ONLINEREFRESH
+typedef struct DECODE_PREMGR_ONLINEREFRESH
 {
     int                 type;
     char*               name;
     decode_prefunc_onlinerefresh      func;
-} ripple_decode_premgr_onlinerefresh;
+} decode_premgr_onlinerefresh;
 
-static ripple_decode_premgr_onlinerefresh m_decodepremgr_onlinerefresh[] =
+static decode_premgr_onlinerefresh m_decodepremgr_onlinerefresh[] =
 {
     { XK_PG_PARSER_TRANSLOG_INVALID,               "INVALID"        , NULL },
-    { XK_PG_PARSER_TRANSLOG_HEAP_INSERT,           "INSERT"         , ripple_onlinerefresh_decode_heap },
-    { XK_PG_PARSER_TRANSLOG_HEAP_UPDATE,           "UPDATE"         , ripple_onlinerefresh_decode_heap },
-    { XK_PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,       "HOT UPDATE"     , ripple_onlinerefresh_decode_heap },
-    { XK_PG_PARSER_TRANSLOG_HEAP_DELETE,           "DELETE"         , ripple_onlinerefresh_decode_heap },
-    { XK_PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,    "MULTI INSERT"   , ripple_onlinerefresh_decode_heap },
-    { XK_PG_PARSER_TRANSLOG_XACT_COMMIT,           "COMMIT"         , ripple_onlinerefresh_decode_xact_commit },
-    { XK_PG_PARSER_TRANSLOG_XACT_ABORT,            "ABORT"          , ripple_onlinerefresh_decode_xact_abort },
+    { XK_PG_PARSER_TRANSLOG_HEAP_INSERT,           "INSERT"         , onlinerefresh_decode_heap },
+    { XK_PG_PARSER_TRANSLOG_HEAP_UPDATE,           "UPDATE"         , onlinerefresh_decode_heap },
+    { XK_PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,       "HOT UPDATE"     , onlinerefresh_decode_heap },
+    { XK_PG_PARSER_TRANSLOG_HEAP_DELETE,           "DELETE"         , onlinerefresh_decode_heap },
+    { XK_PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,    "MULTI INSERT"   , onlinerefresh_decode_heap },
+    { XK_PG_PARSER_TRANSLOG_XACT_COMMIT,           "COMMIT"         , onlinerefresh_decode_xact_commit },
+    { XK_PG_PARSER_TRANSLOG_XACT_ABORT,            "ABORT"          , onlinerefresh_decode_xact_abort },
     { XK_PG_PARSER_TRANSLOG_XLOG_SWITCH,           "SWITCH"         , NULL },
-    { XK_PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,       "ONLINE"         , ripple_decode_chkpt },
-    { XK_PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,     "SHUTDOWN"       , ripple_decode_chkpt },
-    { XK_PG_PARSER_TRANSLOG_FPW_TUPLE,             "FPW_TUPLE"      , ripple_heap_fpw_tuples },
-    { XK_PG_PARSER_TRANSLOG_RELMAP,                "RELMAP"         , ripple_decode_relmap },
+    { XK_PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,       "ONLINE"         , decode_chkpt },
+    { XK_PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,     "SHUTDOWN"       , decode_chkpt },
+    { XK_PG_PARSER_TRANSLOG_FPW_TUPLE,             "FPW_TUPLE"      , heap_fpw_tuples },
+    { XK_PG_PARSER_TRANSLOG_RELMAP,                "RELMAP"         , decode_relmap },
     { XK_PG_PARSER_TRANSLOG_RUNNING_XACTS,         "RUNNING_XACTS"  , NULL },
     { XK_PG_PARSER_TRANSLOG_XLOG_RECOVERY,         "RECOVERY"       , NULL },
     { XK_PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE,   "COMMIT_PREPARE" , NULL },
@@ -65,11 +65,11 @@ static ripple_decode_premgr_onlinerefresh m_decodepremgr_onlinerefresh[] =
     {XK_PG_PARSER_TRANSLOG_SEQ,                    "SEQUENCE"       , NULL }
 };
 
-static int              m_precnt_onlinerefresh = (sizeof(m_decodepremgr_onlinerefresh))/(sizeof(ripple_decode_premgr_onlinerefresh));
+static int              m_precnt_onlinerefresh = (sizeof(m_decodepremgr_onlinerefresh))/(sizeof(decode_premgr_onlinerefresh));
 static XLogRecPtr       m_parserlsn = 0;
 
 
-void ripple_parserwork_waldecode_onlinerefresh(ripple_decodingcontext* decodingctx)
+void parserwork_waldecode_onlinerefresh(decodingcontext* decodingctx)
 {
     int32 rippleerrno = 0;
     xk_pg_parser_translog_pre_base* preparserresutl = NULL;

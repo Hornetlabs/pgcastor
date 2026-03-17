@@ -1,6 +1,6 @@
-#ifndef _RIPPLE_PARSERTRAIL_TXNBIGTXNBEGIN_H
-#define _RIPPLE_PARSERTRAIL_TXNBIGTXNBEGIN_H
+#ifndef _PARSERTRAIL_TXNBIGTXNBEGIN_H
+#define _PARSERTRAIL_TXNBIGTXNBEGIN_H
 
-bool ripple_parsertrail_txnbigtxnbeginapply(ripple_parsertrail* parsertrail, void* data);
+bool parsertrail_txnbigtxnbeginapply(parsertrail* parsertrail, void* data);
 
 #endif

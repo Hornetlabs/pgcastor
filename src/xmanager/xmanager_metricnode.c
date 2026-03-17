@@ -1,57 +1,57 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
-#include "port/net/ripple_net.h"
-#include "port/thread/ripple_thread.h"
+#include "port/net/net.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
-#include "queue/ripple_queue.h"
-#include "command/ripple_cmd.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netpool.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "xmanager/ripple_xmanager_metricasyncmsg.h"
-#include "xmanager/ripple_xmanager_metricnode.h"
-#include "xmanager/ripple_xmanager_metricxscscinode.h"
-#include "xmanager/ripple_xmanager_metriccapturenode.h"
-#include "xmanager/ripple_xmanager_metricintegratenode.h"
-#include "xmanager/ripple_xmanager_metric.h"
-#include "xmanager/ripple_xmanager_metricprogressnode.h"
+#include "queue/queue.h"
+#include "command/cmd.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netpool.h"
+#include "xmanager/xmanager_msg.h"
+#include "xmanager/xmanager_metricasyncmsg.h"
+#include "xmanager/xmanager_metricnode.h"
+#include "xmanager/xmanager_metricxscscinode.h"
+#include "xmanager/xmanager_metriccapturenode.h"
+#include "xmanager/xmanager_metricintegratenode.h"
+#include "xmanager/xmanager_metric.h"
+#include "xmanager/xmanager_metricprogressnode.h"
 
-typedef struct RIPPLE_XMANAGER_METRICNODEOP
+typedef struct XMANAGER_METRICNODEOP
 {
-    ripple_xmanager_metricnodetype                  type;
+    xmanager_metricnodetype                  type;
     char*                                           name;
     char*                                           desc;
-    ripple_xmanager_metricnode*                     (*init)(void);
-    bool                                            (*serial)(ripple_xmanager_metricnode* metricnode,
+    xmanager_metricnode*                     (*init)(void);
+    bool                                            (*serial)(xmanager_metricnode* metricnode,
                                                               uint8** blk,
                                                               int* blksize,
                                                               int* blkstart);
-    ripple_xmanager_metricnode*                     (*deserial)(uint8* blk,
+    xmanager_metricnode*                     (*deserial)(uint8* blk,
                                                                 int* blkstart);
     int                                             (*cmp)(void* s1, void* s2);
-    void                                            (*destroy)(ripple_xmanager_metricnode* xmetricnode);
-} ripple_xmanager_metricnodeop;
+    void                                            (*destroy)(xmanager_metricnode* xmetricnode);
+} xmanager_metricnodeop;
 
 
 /*----------------------------metricnode begin----------------------------*/
 
-void ripple_xmanager_metricnode_reset(ripple_xmanager_metricnode* metricnode)
+void xmanager_metricnode_reset(xmanager_metricnode* metricnode)
 {
-    metricnode->type = RIPPLE_XMANAGER_METRICNODETYPE_NOP;
+    metricnode->type = XMANAGER_METRICNODETYPE_NOP;
     metricnode->conf = NULL;
     metricnode->data = NULL;
     metricnode->traildir = NULL;
     metricnode->name = NULL;
     metricnode->remote = false;
-    metricnode->stat = RIPPLE_XMANAGER_METRICNODESTAT_NOP;
+    metricnode->stat = XMANAGER_METRICNODESTAT_NOP;
 }
 
 /* 计算 metricnode 所占用的内存 */
-int ripple_xmanager_metricnode_serialsize(ripple_xmanager_metricnode* metricnode)
+int xmanager_metricnode_serialsize(xmanager_metricnode* metricnode)
 {
     int len = 0;
     if (NULL == metricnode)
@@ -86,7 +86,7 @@ int ripple_xmanager_metricnode_serialsize(ripple_xmanager_metricnode* metricnode
 }
 
 /* 序列化 metricnode */
-void ripple_xmanager_metricnode_serial(ripple_xmanager_metricnode* metricnode,
+void xmanager_metricnode_serial(xmanager_metricnode* metricnode,
                                        uint8* blk,
                                        int* blkstart)
 {
@@ -110,9 +110,9 @@ void ripple_xmanager_metricnode_serial(ripple_xmanager_metricnode* metricnode,
 
     /* 状态 */
     ivalue = metricnode->stat;
-    if (RIPPLE_XMANAGER_METRICNODESTAT_ONLINE == ivalue)
+    if (XMANAGER_METRICNODESTAT_ONLINE == ivalue)
     {
-        ivalue = RIPPLE_XMANAGER_METRICNODESTAT_OFFLINE;
+        ivalue = XMANAGER_METRICNODESTAT_OFFLINE;
     }
 
     ivalue = r_hton32(ivalue);
@@ -204,7 +204,7 @@ void ripple_xmanager_metricnode_serial(ripple_xmanager_metricnode* metricnode,
 }
 
 /* 反序列化 */
-bool ripple_xmanager_metricnode_deserial(ripple_xmanager_metricnode* metricnode,
+bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode,
                                          uint8* blk,
                                          int* blkstart)
 {
@@ -337,10 +337,10 @@ bool ripple_xmanager_metricnode_deserial(ripple_xmanager_metricnode* metricnode,
     return true;
 }
 
-static ripple_xmanager_metricnodeop     m_xmetricnodeops[] =
+static xmanager_metricnodeop     m_xmetricnodeops[] =
 {
     {
-        RIPPLE_XMANAGER_METRICNODETYPE_NOP,
+        XMANAGER_METRICNODETYPE_NOP,
         "nop",
         "XManager Metric Node NOP",
         NULL,
@@ -350,27 +350,27 @@ static ripple_xmanager_metricnodeop     m_xmetricnodeops[] =
         NULL
     },
     {
-        RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE,
+        XMANAGER_METRICNODETYPE_CAPTURE,
         "capture",
         "XManager Metric Capture Node",
-        ripple_xmanager_metriccapturenode_init,
-        ripple_xmanager_metriccapturenode_serial,
-        ripple_xmanager_metriccapturenode_deserial,
+        xmanager_metriccapturenode_init,
+        xmanager_metriccapturenode_serial,
+        xmanager_metriccapturenode_deserial,
         NULL,
-        ripple_xmanager_metriccapturenode_destroy
+        xmanager_metriccapturenode_destroy
     },
     {
-        RIPPLE_XMANAGER_METRICNODETYPE_INTEGRATE,
+        XMANAGER_METRICNODETYPE_INTEGRATE,
         "integrate",
         "XManager Metric Integrate Node",
-        ripple_xmanager_metricintegratenode_init,
-        ripple_xmanager_metricintegratenode_serial,
-        ripple_xmanager_metricintegratenode_deserial,
+        xmanager_metricintegratenode_init,
+        xmanager_metricintegratenode_serial,
+        xmanager_metricintegratenode_deserial,
         NULL,
-        ripple_xmanager_metricintegratenode_destroy
+        xmanager_metricintegratenode_destroy
     },
     {
-        RIPPLE_XMANAGER_METRICNODETYPE_PGRECEIVELOG,
+        XMANAGER_METRICNODETYPE_PGRECEIVELOG,
         "pgreceivelog",
         "XManager Metric PGReceivelog Node",
         NULL,
@@ -380,17 +380,17 @@ static ripple_xmanager_metricnodeop     m_xmetricnodeops[] =
         NULL
     },
     {
-        RIPPLE_XMANAGER_METRICNODETYPE_PROCESS,
+        XMANAGER_METRICNODETYPE_PROCESS,
         "process",
         "XManager Metric Process Node",
-        ripple_xmanager_metricprogressnode_init,
-        ripple_xmanager_metricprogressnode_serial,
-        ripple_xmanager_metricprogressnode_deserial,
+        xmanager_metricprogressnode_init,
+        xmanager_metricprogressnode_serial,
+        xmanager_metricprogressnode_deserial,
         NULL,
-        ripple_xmanager_metricprogressnode_destroy
+        xmanager_metricprogressnode_destroy
     },
     {
-        RIPPLE_XMANAGER_METRICNODETYPE_ALL,
+        XMANAGER_METRICNODETYPE_ALL,
         "all",
         "XManager Metric ALL Node",
         NULL,
@@ -400,7 +400,7 @@ static ripple_xmanager_metricnodeop     m_xmetricnodeops[] =
         NULL
     },
     {
-        RIPPLE_XMANAGER_METRICNODETYPE_MANAGER,
+        XMANAGER_METRICNODETYPE_MANAGER,
         "manager",
         "XManager Metric Xmanager Node",
         NULL,
@@ -410,17 +410,17 @@ static ripple_xmanager_metricnodeop     m_xmetricnodeops[] =
         NULL
     },
     {
-        RIPPLE_XMANAGER_METRICNODETYPE_XSCSCI,
+        XMANAGER_METRICNODETYPE_XSCSCI,
         "xscsci",
         "XManager Metric XScsci Node",
-        ripple_xmanager_metricxscscinode_init,
+        xmanager_metricxscscinode_init,
         NULL,
         NULL,
-        ripple_xmanager_metricxscscinode_cmp,
-        ripple_xmanager_metricxscscinode_destroy
+        xmanager_metricxscscinode_cmp,
+        xmanager_metricxscscinode_destroy
     },
     {
-        RIPPLE_XMANAGER_METRICNODETYPE_MAX,
+        XMANAGER_METRICNODETYPE_MAX,
         "max",
         "XManager Metric Node Max",
         NULL,
@@ -431,7 +431,7 @@ static ripple_xmanager_metricnodeop     m_xmetricnodeops[] =
     }
 };
 
-ripple_xmanager_metricnode* ripple_xmanager_metricnode_init(ripple_xmanager_metricnodetype nodetype)
+xmanager_metricnode* xmanager_metricnode_init(xmanager_metricnodetype nodetype)
 {
     if (NULL == m_xmetricnodeops[nodetype].init)
     {
@@ -450,19 +450,19 @@ ripple_xmanager_metricnode* ripple_xmanager_metricnode_init(ripple_xmanager_metr
     return m_xmetricnodeops[nodetype].init();
 }
 
-char* ripple_xmanager_metricnode_getname(ripple_xmanager_metricnodetype nodetype)
+char* xmanager_metricnode_getname(xmanager_metricnodetype nodetype)
 {
     return m_xmetricnodeops[nodetype].name;
 }
 
 /* metricnode 比较函数 */
-int ripple_xmanager_metricnode_cmp(void* s1, void* s2)
+int xmanager_metricnode_cmp(void* s1, void* s2)
 {
-    ripple_xmanager_metricnode* mnode1 = NULL;
-    ripple_xmanager_metricnode* mnode2 = NULL;
+    xmanager_metricnode* mnode1 = NULL;
+    xmanager_metricnode* mnode2 = NULL;
 
-    mnode1 = (ripple_xmanager_metricnode*)s1;
-    mnode2 = (ripple_xmanager_metricnode*)s2;
+    mnode1 = (xmanager_metricnode*)s1;
+    mnode2 = (xmanager_metricnode*)s2;
 
     if (mnode1->type != mnode2->type)
     {
@@ -491,7 +491,7 @@ int ripple_xmanager_metricnode_cmp(void* s1, void* s2)
     return 0;
 }
 
-void ripple_xmanager_metricnode_destroy(ripple_xmanager_metricnode* metricnode)
+void xmanager_metricnode_destroy(xmanager_metricnode* metricnode)
 {
     if (NULL == metricnode)
     {
@@ -527,21 +527,21 @@ void ripple_xmanager_metricnode_destroy(ripple_xmanager_metricnode* metricnode)
     m_xmetricnodeops[metricnode->type].destroy(metricnode);
 }
 
-void ripple_xmanager_metricnode_destroyvoid(void* args)
+void xmanager_metricnode_destroyvoid(void* args)
 {
-    return ripple_xmanager_metricnode_destroy((ripple_xmanager_metricnode*)args);
+    return xmanager_metricnode_destroy((xmanager_metricnode*)args);
 }
 
 /* 将 metricnode 落盘 */
-void ripple_xmanager_metricnode_flush(dlist* dlmetricnodes)
+void xmanager_metricnode_flush(dlist* dlmetricnodes)
 {
     bool bfailed                            = false;
     int fd                                  = -1;
     int blkstart                            = 0;
-    int blksize                             = RIPPLE_XMANAGER_METRICNODEBLKSIZE;
+    int blksize                             = XMANAGER_METRICNODEBLKSIZE;
     uint8* blk                              = NULL;
     dlistnode* dlnode                       = NULL;
-    ripple_xmanager_metricnode* xmetricnode = NULL;
+    xmanager_metricnode* xmetricnode = NULL;
     char metricfile[]                       = "metric/xmetricnode.dat";
     char metricfiletmp[]                    = "metric/xmetricnode.dat.tmp";
 
@@ -552,8 +552,8 @@ void ripple_xmanager_metricnode_flush(dlist* dlmetricnodes)
 
     for (dlnode = dlmetricnodes->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        xmetricnode = (ripple_xmanager_metricnode*)dlnode->value;
-        if (RIPPLE_XMANAGER_METRICNODETYPE_PROCESS < xmetricnode->type)
+        xmetricnode = (xmanager_metricnode*)dlnode->value;
+        if (XMANAGER_METRICNODETYPE_PROCESS < xmetricnode->type)
         {
             continue;
         }
@@ -589,7 +589,7 @@ void ripple_xmanager_metricnode_flush(dlist* dlmetricnodes)
 
         if (-1 == fd)
         {
-            fd = FileOpen(metricfiletmp, O_RDWR | O_CREAT, g_file_create_mode);
+            fd = osal_file_open(metricfiletmp, O_RDWR | O_CREAT, g_file_create_mode);
             if (-1 == fd)
             {
                 bfailed = true;
@@ -599,7 +599,7 @@ void ripple_xmanager_metricnode_flush(dlist* dlmetricnodes)
         }
 
         /* 将数据落盘 */
-        if (blkstart != FileWrite(fd, (char*)blk, blkstart))
+        if (blkstart != osal_file_write(fd, (char*)blk, blkstart))
         {
             bfailed = true;
             elog(RLOG_WARNING, "write metric node to file error, %s", strerror(errno));
@@ -612,7 +612,7 @@ void ripple_xmanager_metricnode_flush(dlist* dlmetricnodes)
 
     if (-1 != fd)
     {
-        FileClose(fd);
+        osal_file_close(fd);
         fd = -1;
     }
 
@@ -627,12 +627,12 @@ void ripple_xmanager_metricnode_flush(dlist* dlmetricnodes)
     }
 
     /* 重命名 */
-    durable_rename(metricfiletmp, metricfile, RLOG_DEBUG);
+    osal_durable_rename(metricfiletmp, metricfile, RLOG_DEBUG);
     return;
 }
 
 /* 加载 metircnode.dat 文件 */
-bool ripple_xmanager_metricnode_load(dlist** pdlmetricnodes)
+bool xmanager_metricnode_load(dlist** pdlmetricnodes)
 {
     bool benlarge                           = false;
     int fd                                  = -1;
@@ -650,24 +650,24 @@ bool ripple_xmanager_metricnode_load(dlist** pdlmetricnodes)
     /* blk 中数据结束的位置 */
     int blkend                              = 0;
     /* blk 中的空间 */
-    int blksize                             = RIPPLE_XMANAGER_METRICNODEBLKSIZE;
+    int blksize                             = XMANAGER_METRICNODEBLKSIZE;
     uint8* blk                              = NULL;
     uint8* uptr                             = NULL;
     dlist* dlmetricnodes                    = NULL;
-    ripple_xmanager_metricnode* xmetricnode = NULL;
+    xmanager_metricnode* xmetricnode = NULL;
     char metricfile[]                       = "metric/xmetricnode.dat";
     
     /*
      * 查看文件是否存在, 文件不存在证明是首次
      */
-    if (false == FileExist(metricfile))
+    if (false == osal_file_exist(metricfile))
     {
         elog(RLOG_WARNING, "metric node file not exist, %s", metricfile);
         return true;
     }
 
     /* 打开文件获取文件大小 */
-    fd = FileOpen(metricfile, O_RDONLY, 0);
+    fd = osal_file_open(metricfile, O_RDONLY, 0);
     if (-1 == fd)
     {
         elog(RLOG_WARNING, "open file %s error, %s", metricfile, strerror(errno));
@@ -675,17 +675,17 @@ bool ripple_xmanager_metricnode_load(dlist** pdlmetricnodes)
     }
 
     /* 获取文件总长度 */
-    filesize = FileSize(fd);
+    filesize = osal_file_size(fd);
 
     /* 重置文件指针到头部 */
-    FileSeek(fd, 0);
+    osal_file_seek(fd, 0);
 
     /* 预先申请空间 */
     blk = rmalloc0(blksize);
     if (NULL == blk)
     {
         elog(RLOG_WARNING, "load metric file error, out of memory");
-        goto ripple_xmanager_metricnode_load_error;
+        goto xmanager_metricnode_load_error;
     }
     rmemset0(blk, 0, '\0', blksize);
 
@@ -719,16 +719,16 @@ bool ripple_xmanager_metricnode_load(dlist** pdlmetricnodes)
             if (NULL == uptr)
             {
                 elog(RLOG_WARNING, "realloc error, out of memory");
-                goto ripple_xmanager_metricnode_load_error;
+                goto xmanager_metricnode_load_error;
             }
             rmemset0(uptr, blkend, '\0', blksize - blkend);
             blk = uptr;
         }
 
-        if (rlen != FileRead(fd, (char*)(blk + blkend), rlen))
+        if (rlen != osal_file_read(fd, (char*)(blk + blkend), rlen))
         {
             elog(RLOG_WARNING, "read metricnode file error, %s", strerror(errno));
-            goto ripple_xmanager_metricnode_load_error;
+            goto xmanager_metricnode_load_error;
         }
 
         /* blk 中数据的总长度 */
@@ -790,7 +790,7 @@ bool ripple_xmanager_metricnode_load(dlist** pdlmetricnodes)
             if (NULL == m_xmetricnodeops[nodetype].deserial)
             {
                 elog(RLOG_WARNING, "%s unsupport deserial.", m_xmetricnodeops[nodetype].desc);
-                goto ripple_xmanager_metricnode_load_error;
+                goto xmanager_metricnode_load_error;
             }
 
             /* blkstart 需要跳过 4 字节的总长度 */
@@ -799,7 +799,7 @@ bool ripple_xmanager_metricnode_load(dlist** pdlmetricnodes)
             if (NULL == xmetricnode)
             {
                 elog(RLOG_WARNING, "%s deserial error.", m_xmetricnodeops[nodetype].desc);
-                goto ripple_xmanager_metricnode_load_error;
+                goto xmanager_metricnode_load_error;
             }
 
 
@@ -814,12 +814,12 @@ bool ripple_xmanager_metricnode_load(dlist** pdlmetricnodes)
 
     if (-1 != fd)
     {
-        FileClose(fd);
+        osal_file_close(fd);
     }
 
     *pdlmetricnodes = dlmetricnodes;
     return true;
-ripple_xmanager_metricnode_load_error:
+xmanager_metricnode_load_error:
 
     if (blk)
     {
@@ -828,45 +828,45 @@ ripple_xmanager_metricnode_load_error:
 
     if (-1 != fd)
     {
-        FileClose(fd);
+        osal_file_close(fd);
     }
 
-    dlist_free(dlmetricnodes, ripple_xmanager_metricnode_destroyvoid);
+    dlist_free(dlmetricnodes, xmanager_metricnode_destroyvoid);
     return false;
 }
 
 /*----------------------------metricnode   end----------------------------*/
 
 /* 初始化 */
-ripple_xmanager_metricregnode* ripple_xmanager_metricregnode_init(void)
+xmanager_metricregnode* xmanager_metricregnode_init(void)
 {
-    ripple_xmanager_metricregnode* mregnode = NULL;
+    xmanager_metricregnode* mregnode = NULL;
 
-    mregnode = rmalloc0(sizeof(ripple_xmanager_metricregnode));
+    mregnode = rmalloc0(sizeof(xmanager_metricregnode));
     if (NULL == mregnode)
     {
         elog(RLOG_WARNING, "metric ");
         return NULL;
     }
-    rmemset0(mregnode, 0, '\0', sizeof(ripple_xmanager_metricregnode));
+    rmemset0(mregnode, 0, '\0', sizeof(xmanager_metricregnode));
     mregnode->errcode = 0;
     mregnode->metricfd2node = NULL;
     mregnode->msg = NULL;
-    mregnode->nodetype = RIPPLE_XMANAGER_METRICNODETYPE_NOP;
+    mregnode->nodetype = XMANAGER_METRICNODETYPE_NOP;
     mregnode->result = 0;
-    mregnode->msgtype = RIPPLE_XMANAGER_MSG_NOP;
+    mregnode->msgtype = XMANAGER_MSG_NOP;
     return mregnode;
 }
 
 /* 释放 */
-void ripple_xmanager_metricregnode_destroy(ripple_xmanager_metricregnode* mregnode)
+void xmanager_metricregnode_destroy(xmanager_metricregnode* mregnode)
 {
     if (NULL == mregnode)
     {
         return;
     }
 
-    ripple_xmanager_metricfd2node_destroy(mregnode->metricfd2node);
+    xmanager_metricfd2node_destroy(mregnode->metricfd2node);
 
     if (NULL != mregnode->msg)
     {
@@ -876,11 +876,11 @@ void ripple_xmanager_metricregnode_destroy(ripple_xmanager_metricregnode* mregno
     rfree(mregnode);
 }
 
-ripple_xmanager_metricfd2node* ripple_xmanager_metricfd2node_init(void)
+xmanager_metricfd2node* xmanager_metricfd2node_init(void)
 {
-    ripple_xmanager_metricfd2node* fd2node = NULL;
+    xmanager_metricfd2node* fd2node = NULL;
 
-    fd2node = rmalloc0(sizeof(ripple_xmanager_metricfd2node));
+    fd2node = rmalloc0(sizeof(xmanager_metricfd2node));
     if (NULL == fd2node)
     {
         elog(RLOG_WARNING, "metricfd2node init out of memory");
@@ -892,14 +892,14 @@ ripple_xmanager_metricfd2node* ripple_xmanager_metricfd2node_init(void)
     return fd2node;
 }
 
-int ripple_xmanager_metricfd2node_cmp(void* s1, void* s2)
+int xmanager_metricfd2node_cmp(void* s1, void* s2)
 {
     int fd = -1;
-    ripple_xmanager_metricfd2node* fd2node = NULL;
+    xmanager_metricfd2node* fd2node = NULL;
 
     /* 比较 */
     fd = (int)((uintptr_t)s1);
-    fd2node =  (ripple_xmanager_metricfd2node*)s2;
+    fd2node =  (xmanager_metricfd2node*)s2;
     if (fd != fd2node->fd)
     {
         return 1;
@@ -908,18 +908,18 @@ int ripple_xmanager_metricfd2node_cmp(void* s1, void* s2)
 }
 
 /* 用 metricnode 进行比较 */
-int ripple_xmanager_metricfd2node_cmp2(void* s1, void* s2)
+int xmanager_metricfd2node_cmp2(void* s1, void* s2)
 {
-    ripple_xmanager_metricnode* metricnode = NULL;
-    ripple_xmanager_metricfd2node* fd2node = NULL;
+    xmanager_metricnode* metricnode = NULL;
+    xmanager_metricfd2node* fd2node = NULL;
 
-    metricnode = (ripple_xmanager_metricnode*)s1;
-    fd2node = (ripple_xmanager_metricfd2node*)s2;
+    metricnode = (xmanager_metricnode*)s1;
+    fd2node = (xmanager_metricfd2node*)s2;
 
-    return ripple_xmanager_metricnode_cmp(metricnode, fd2node->metricnode);
+    return xmanager_metricnode_cmp(metricnode, fd2node->metricnode);
 }
 
-void ripple_xmanager_metricfd2node_destroy(ripple_xmanager_metricfd2node* metricfd2node)
+void xmanager_metricfd2node_destroy(xmanager_metricfd2node* metricfd2node)
 {
     if (NULL == metricfd2node)
     {
@@ -930,7 +930,7 @@ void ripple_xmanager_metricfd2node_destroy(ripple_xmanager_metricfd2node* metric
     rfree(metricfd2node);
 }
 
-void ripple_xmanager_metricfd2node_destroyvoid(void* args)
+void xmanager_metricfd2node_destroyvoid(void* args)
 {
-    ripple_xmanager_metricfd2node_destroy((ripple_xmanager_metricfd2node*)args);
+    xmanager_metricfd2node_destroy((xmanager_metricfd2node*)args);
 }

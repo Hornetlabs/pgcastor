@@ -1,15 +1,15 @@
-#ifndef _RIPPLE_INCREMENT_INTEGRATESYNC_H
-#define _RIPPLE_INCREMENT_INTEGRATESYNC_H
+#ifndef _INCREMENT_INTEGRATESYNC_H
+#define _INCREMENT_INTEGRATESYNC_H
 
 
-typedef enum RIPPLE_INCREMENT_INTEGRATESYNC_STATE
+typedef enum INCREMENT_INTEGRATESYNC_STATE
 {
-    RIPPLE_INCREMENT_INTEGRATESYNC_STATE_NOP            = 0x00,
-    RIPPLE_INCREMENT_INTEGRATESYNC_STATE_IDLE           ,               /* sync获取不到事务为空闲状态 onlinrefresh启动时要等待sync为空闲状态（保证之前事务都完成） */
-    RIPPLE_INCREMENT_INTEGRATESYNC_STATE_WORK                           /* sync获取到事务为工作状态 工作状态不启动onlinerefresh */
-} ripple_increment_integratesync_state;
+    INCREMENT_INTEGRATESYNC_STATE_NOP            = 0x00,
+    INCREMENT_INTEGRATESYNC_STATE_IDLE           ,               /* sync获取不到事务为空闲状态 onlinrefresh启动时要等待sync为空闲状态（保证之前事务都完成） */
+    INCREMENT_INTEGRATESYNC_STATE_WORK                           /* sync获取到事务为工作状态 工作状态不启动onlinerefresh */
+} increment_integratesync_state;
 
-typedef struct RIPPLE_INCREMENT_INTEGRATESYNCSTATE_PRIVDATACALLBACK
+typedef struct INCREMENT_INTEGRATESYNCSTATE_PRIVDATACALLBACK
 {
     /* 设置 splittrail的fileid和工作状态 */
     void (*splittrail_fileid_emitoffse_set)(void* privdata, uint64 fileid, uint64 emitoffset);
@@ -32,24 +32,24 @@ typedef struct RIPPLE_INCREMENT_INTEGRATESYNCSTATE_PRIVDATACALLBACK
     /* 设置 rebuild 线程的 filterlsn */
     void (*integratestate_rebuildfilter_set)(void* privdata, XLogRecPtr lsn);
 
-} ripple_increment_integratesyncstate_privdatacallback;
+} increment_integratesyncstate_privdatacallback;
 
-typedef struct RIPPLE_INCREMENT_INTEGRATESYNCSTATE
+typedef struct INCREMENT_INTEGRATESYNCSTATE
 {
-    ripple_syncstate                                        base;
+    syncstate                                        base;
     int                                                     state;
     uint64                                                  lsn;
     uint64                                                  trailno;
-    ripple_recpos                                           rewind;
-    ripple_cache_txn*                                       rebuild2sync;
-    void*                                                   privdata;       /* 内容为: ripple_intergratestate*/
-    ripple_increment_integratesyncstate_privdatacallback    callback;
-}ripple_increment_integratesyncstate;
+    recpos                                           rewind;
+    cache_txn*                                       rebuild2sync;
+    void*                                                   privdata;       /* 内容为: intergratestate*/
+    increment_integratesyncstate_privdatacallback    callback;
+}increment_integratesyncstate;
 
-ripple_increment_integratesyncstate* ripple_increment_integratesync_init(void);
+increment_integratesyncstate* increment_integratesync_init(void);
 
-void ripple_increment_integratesync_destroy(ripple_increment_integratesyncstate* syncworkstate);
+void increment_integratesync_destroy(increment_integratesyncstate* syncworkstate);
 
-void* ripple_increment_integratesync_main(void *args);
+void* increment_integratesync_main(void *args);
 
 #endif

@@ -1,7 +1,7 @@
 %{
 
 /* LCOV_EXCL_START */
-#include "ripple_c.h"
+#include "app_c.h"
 #include "xsynch_exbufferdata.h"
 #include "xscsci_prescan_int.h"
 #include "xscsci_prescan.h"

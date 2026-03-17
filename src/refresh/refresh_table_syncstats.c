@@ -1,31 +1,31 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "libpq-fe.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
 #include "utils/string/stringinfo.h"
 #include "utils/hash/hash_search.h"
-#include "utils/conn/ripple_conn.h"
-#include "port/thread/ripple_thread.h"
-#include "queue/ripple_queue.h"
-#include "task/ripple_task_slot.h"
-#include "refresh/ripple_refresh_tables.h"
-#include "refresh/ripple_refresh_table_sharding.h"
-#include "refresh/ripple_refresh_table_syncstats.h"
+#include "utils/conn/conn.h"
+#include "port/thread/thread.h"
+#include "queue/queue.h"
+#include "task/task_slot.h"
+#include "refresh/refresh_tables.h"
+#include "refresh/refresh_table_sharding.h"
+#include "refresh/refresh_table_syncstats.h"
 
-ripple_refresh_table_syncstats* ripple_refresh_table_syncstats_init(void)
+refresh_table_syncstats* refresh_table_syncstats_init(void)
 {
-    ripple_refresh_table_syncstats* tablesyncstats = NULL;
+    refresh_table_syncstats* tablesyncstats = NULL;
 
-    tablesyncstats = (ripple_refresh_table_syncstats*)rmalloc0(sizeof(ripple_refresh_table_syncstats));
+    tablesyncstats = (refresh_table_syncstats*)rmalloc0(sizeof(refresh_table_syncstats));
     if (NULL == tablesyncstats)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return NULL;
     }
-    rmemset0(tablesyncstats, 0, '\0', sizeof(ripple_refresh_table_syncstats));
+    rmemset0(tablesyncstats, 0, '\0', sizeof(refresh_table_syncstats));
     
     /* 锁初始化 */
-    ripple_thread_mutex_init(&tablesyncstats->tablesynclock, NULL);
+    osal_thread_mutex_init(&tablesyncstats->tablesynclock, NULL);
     tablesyncstats->tablesyncall = NULL;
     tablesyncstats->tablesyncdone = NULL;
     tablesyncstats->tablesyncing = NULL;
@@ -33,7 +33,7 @@ ripple_refresh_table_syncstats* ripple_refresh_table_syncstats_init(void)
     return tablesyncstats;
 }
 
-bool ripple_refresh_table_syncstats_lock(ripple_refresh_table_syncstats* tablesyncstats)
+bool refresh_table_syncstats_lock(refresh_table_syncstats* tablesyncstats)
 {
     int iret = 0;
     if (NULL == tablesyncstats)
@@ -41,7 +41,7 @@ bool ripple_refresh_table_syncstats_lock(ripple_refresh_table_syncstats* tablesy
         return false;
     }
 
-    iret = ripple_thread_lock(&tablesyncstats->tablesynclock);
+    iret = osal_thread_lock(&tablesyncstats->tablesynclock);
     if(0 != iret)
     {
         elog(RLOG_ERROR, "get lock error:%s", strerror(errno));
@@ -50,7 +50,7 @@ bool ripple_refresh_table_syncstats_lock(ripple_refresh_table_syncstats* tablesy
     return true;
 }
 
-bool ripple_refresh_table_syncstats_unlock(ripple_refresh_table_syncstats* tablesyncstats)
+bool refresh_table_syncstats_unlock(refresh_table_syncstats* tablesyncstats)
 {
     int iret = 0;
     if ( NULL == tablesyncstats)
@@ -58,7 +58,7 @@ bool ripple_refresh_table_syncstats_unlock(ripple_refresh_table_syncstats* table
         return false;
     }
 
-    iret = ripple_thread_unlock(&tablesyncstats->tablesynclock);
+    iret = osal_thread_unlock(&tablesyncstats->tablesynclock);
     if(0 != iret)
     {
         elog(RLOG_ERROR, "unlock error:%s", strerror(errno));
@@ -67,9 +67,9 @@ bool ripple_refresh_table_syncstats_unlock(ripple_refresh_table_syncstats* table
     return true;
 }
 
-void ripple_refresh_table_syncstats_tablesyncing_set(ripple_refresh_tables* refreshtables, ripple_refresh_table_syncstats* tablesyncstats)
+void refresh_table_syncstats_tablesyncing_set(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats)
 {
-    ripple_refresh_table *cur_table = NULL;
+    refresh_table *cur_table = NULL;
 
     if (!refreshtables)
     {
@@ -86,17 +86,17 @@ void ripple_refresh_table_syncstats_tablesyncing_set(ripple_refresh_tables* refr
 
     cur_table = refreshtables->tables;
 
-    ripple_refresh_table_syncstats_lock(tablesyncstats);
+    refresh_table_syncstats_lock(tablesyncstats);
 
     while (cur_table)
     {
         // 创建一个新的同步状态节点
-        ripple_refresh_table_syncstat *new_syncstat = ripple_refresh_table_syncstat_init();
+        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
 
         // 复制表信息
-        ripple_refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
-        ripple_refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
-        ripple_refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
+        refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
+        refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
+        refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
         // 插入 tablesyncall
         new_syncstat->next = tablesyncstats->tablesyncing;
@@ -110,13 +110,13 @@ void ripple_refresh_table_syncstats_tablesyncing_set(ripple_refresh_tables* refr
         cur_table = cur_table->next;
     }
 
-    ripple_refresh_table_syncstats_unlock(tablesyncstats);
+    refresh_table_syncstats_unlock(tablesyncstats);
     return;
 }
 
-void ripple_refresh_table_syncstats_tablesyncall_set(ripple_refresh_tables* refreshtables, ripple_refresh_table_syncstats* tablesyncstats)
+void refresh_table_syncstats_tablesyncall_set(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats)
 {
-    ripple_refresh_table *cur_table = NULL;
+    refresh_table *cur_table = NULL;
 
     if (!refreshtables )
     {
@@ -133,17 +133,17 @@ void ripple_refresh_table_syncstats_tablesyncall_set(ripple_refresh_tables* refr
 
     cur_table = refreshtables->tables;
 
-    ripple_refresh_table_syncstats_lock(tablesyncstats);
+    refresh_table_syncstats_lock(tablesyncstats);
 
     while (cur_table)
     {
         // 创建一个新的同步状态节点
-        ripple_refresh_table_syncstat *new_syncstat = ripple_refresh_table_syncstat_init();
+        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
 
         // 复制表信息
-        ripple_refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
-        ripple_refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
-        ripple_refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
+        refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
+        refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
+        refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
         // 插入 tablesyncall
         new_syncstat->next = tablesyncstats->tablesyncall;
@@ -157,13 +157,13 @@ void ripple_refresh_table_syncstats_tablesyncall_set(ripple_refresh_tables* refr
         cur_table = cur_table->next;
     }
 
-    ripple_refresh_table_syncstats_unlock(tablesyncstats);
+    refresh_table_syncstats_unlock(tablesyncstats);
     return;
 }
 
-void ripple_refresh_table_syncstats_tablesyncing2tablesyncall(ripple_refresh_table_syncstats* tablesyncstats)
+void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* tablesyncstats)
 {
-    ripple_refresh_table_syncstat *cur_table = NULL;
+    refresh_table_syncstat *cur_table = NULL;
 
     if (NULL == tablesyncstats)
     {
@@ -179,19 +179,19 @@ void ripple_refresh_table_syncstats_tablesyncing2tablesyncall(ripple_refresh_tab
         return;
     }
 
-    ripple_refresh_table_syncstats_lock(tablesyncstats);
+    refresh_table_syncstats_lock(tablesyncstats);
 
     cur_table = tablesyncstats->tablesyncing;
 
     while (cur_table)
     {
         // 创建一个新的同步状态节点
-        ripple_refresh_table_syncstat *new_syncstat = ripple_refresh_table_syncstat_init();
+        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
 
         // 复制表信息
-        ripple_refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
-        ripple_refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
-        ripple_refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
+        refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
+        refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
+        refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
         // 插入 tablesyncall
         new_syncstat->next = tablesyncstats->tablesyncall;
@@ -205,21 +205,21 @@ void ripple_refresh_table_syncstats_tablesyncing2tablesyncall(ripple_refresh_tab
         cur_table = cur_table->next;
     }
 
-    ripple_refresh_table_syncstats_unlock(tablesyncstats);
+    refresh_table_syncstats_unlock(tablesyncstats);
     return;
 }
 
-bool ripple_refreshtablesyncstats_markstatdone(ripple_refresh_table_sharding* tablesharding, ripple_refresh_table_syncstats* tablesyncstats, char* refreshdir)
+bool refreshtablesyncstats_markstatdone(refresh_table_sharding* tablesharding, refresh_table_syncstats* tablesyncstats, char* refreshdir)
 {
     bool complete = false;
-    ripple_refresh_table_syncstat* current_table = NULL;
+    refresh_table_syncstat* current_table = NULL;
 
     if (!tablesharding || !tablesyncstats || !tablesyncstats->tablesyncing)
     {
         return false;
     }
 
-    ripple_refresh_table_syncstats_lock(tablesyncstats);
+    refresh_table_syncstats_lock(tablesyncstats);
     current_table = tablesyncstats->tablesyncing;
 
     /* 遍历complete目录生成任务 */
@@ -231,7 +231,7 @@ bool ripple_refreshtablesyncstats_markstatdone(ripple_refresh_table_sharding* ta
             if (0 != tablesharding->shardings)
             {
                 current_table->completecnt += 1;
-                current_table->stat[tablesharding->sharding_no - 1] = RIPPLE_REFRESH_TABLE_SYNCS_SHARD_STAT_DONE;
+                current_table->stat[tablesharding->sharding_no - 1] = REFRESH_TABLE_SYNCS_SHARD_STAT_DONE;
             }
 
             elog(RLOG_DEBUG, "refresh worker, queue: %s.%s %4d %4d, mark done",
@@ -265,16 +265,16 @@ bool ripple_refreshtablesyncstats_markstatdone(ripple_refresh_table_sharding* ta
                 }
                 tablesyncstats->tablesyncdone = current_table;
                 current_table->prev = NULL;
-                current_table->tablestat = RIPPLE_REFRESH_TABLE_STAT_DONE;
+                current_table->tablestat = REFRESH_TABLE_STAT_DONE;
                 complete = true;
             }
-            ripple_refresh_table_syncstats_write(current_table, refreshdir);
+            refresh_table_syncstats_write(current_table, refreshdir);
             break;
         }
         current_table = current_table->next;
     }
 
-    ripple_refresh_table_syncstats_unlock(tablesyncstats);
+    refresh_table_syncstats_unlock(tablesyncstats);
 
     /* 删除已完成的文件 */
     if (complete)
@@ -283,10 +283,10 @@ bool ripple_refreshtablesyncstats_markstatdone(ripple_refresh_table_sharding* ta
         path = makeStringInfo();
 
         appendStringInfo(path, "%s/%s/%s_%s", refreshdir,
-                                              RIPPLE_REFRESH_REFRESH,
+                                              REFRESH_REFRESH,
                                               tablesharding->schema,
                                               tablesharding->table);
-        if (!RemoveDir(path->data))
+        if (!osal_remove_dir(path->data))
         {
             elog(RLOG_ERROR, "can't remove dir: %s", path->data);
         }
@@ -296,19 +296,19 @@ bool ripple_refreshtablesyncstats_markstatdone(ripple_refresh_table_sharding* ta
     return true;
 }
 
-void ripple_refresh_table_syncstats_free(ripple_refresh_table_syncstats* tablesyncstats)
+void refresh_table_syncstats_free(refresh_table_syncstats* tablesyncstats)
 {
     if ( NULL == tablesyncstats)
     {
         return;
     }
-    ripple_refresh_table_syncstats_lock(tablesyncstats);
+    refresh_table_syncstats_lock(tablesyncstats);
 
-    ripple_refresh_table_syncstat_free(tablesyncstats->tablesyncall);
-    ripple_refresh_table_syncstat_free(tablesyncstats->tablesyncing);
-    ripple_refresh_table_syncstat_free(tablesyncstats->tablesyncdone);
+    refresh_table_syncstat_free(tablesyncstats->tablesyncall);
+    refresh_table_syncstat_free(tablesyncstats->tablesyncing);
+    refresh_table_syncstat_free(tablesyncstats->tablesyncdone);
 
-    ripple_refresh_table_syncstats_unlock(tablesyncstats);
+    refresh_table_syncstats_unlock(tablesyncstats);
 
    rfree(tablesyncstats);
    tablesyncstats = NULL;
@@ -316,13 +316,13 @@ void ripple_refresh_table_syncstats_free(ripple_refresh_table_syncstats* tablesy
    return;
 }
 
-bool ripple_refresh_table_check_in_syncing(ripple_refresh_table_syncstats* tablesyncstats,
-                                           ripple_refresh_table_sharding *table_shard,
-                                           ripple_refresh_table_syncstat **table_stat)
+bool refresh_table_check_in_syncing(refresh_table_syncstats* tablesyncstats,
+                                           refresh_table_sharding *table_shard,
+                                           refresh_table_syncstat **table_stat)
 {
-    ripple_refresh_table_syncstat *table = NULL;
+    refresh_table_syncstat *table = NULL;
 
-    ripple_refresh_table_syncstats_lock(tablesyncstats);
+    refresh_table_syncstats_lock(tablesyncstats);
     table = tablesyncstats->tablesyncing;
 
     /* 从 待同步/同步中 的链表中查找 */
@@ -339,37 +339,37 @@ bool ripple_refresh_table_check_in_syncing(ripple_refresh_table_syncstats* table
             if (!table->stat)
             {
                 /* 设置表同步状态*/
-                ripple_refresh_table_syncstats_unlock(tablesyncstats);
+                refresh_table_syncstats_unlock(tablesyncstats);
                 return false;
             }
 
             /* 存在状态值的情况下,  */
-            if (table->stat[table_shard->sharding_no - 1] == RIPPLE_REFRESH_TABLE_SYNCS_SHARD_STAT_INIT)
+            if (table->stat[table_shard->sharding_no - 1] == REFRESH_TABLE_SYNCS_SHARD_STAT_INIT)
             {
-                if (RIPPLE_REFRESH_TABLE_STAT_WAIT == table->tablestat)
+                if (REFRESH_TABLE_STAT_WAIT == table->tablestat)
                 {
-                    table->tablestat = RIPPLE_REFRESH_TABLE_STAT_SYNCING;
+                    table->tablestat = REFRESH_TABLE_STAT_SYNCING;
                 }
-                ripple_refresh_table_syncstats_unlock(tablesyncstats);
+                refresh_table_syncstats_unlock(tablesyncstats);
                 return false;
             }
             else
             {
-                ripple_refresh_table_syncstats_unlock(tablesyncstats);
+                refresh_table_syncstats_unlock(tablesyncstats);
                 return true;
             }
         }
     }
-    ripple_refresh_table_syncstats_unlock(tablesyncstats);
+    refresh_table_syncstats_unlock(tablesyncstats);
 
     return true;
 }
 
-bool ripple_refresh_table_syncstats_compare(ripple_refresh_table_syncstats* tablesA,
-                                           ripple_refresh_table_syncstats* tablesB)
+bool refresh_table_syncstats_compare(refresh_table_syncstats* tablesA,
+                                           refresh_table_syncstats* tablesB)
 {
-    ripple_refresh_table_syncstat *table = NULL;
-    ripple_refresh_table_syncstat *currenttable = NULL;
+    refresh_table_syncstat *table = NULL;
+    refresh_table_syncstat *currenttable = NULL;
 
     /* 从 待同步/同步中 的链表中查找 */
     for ( table = tablesA->tablesyncall; table != NULL; table = table->next)
@@ -388,12 +388,12 @@ bool ripple_refresh_table_syncstats_compare(ripple_refresh_table_syncstats* tabl
 }
 
 /* 在应用存量数据前根据tablesyncstats清理存量表 */
-bool ripple_refresh_table_syncstats_truncatetable_fromsyncstats(ripple_refresh_table_syncstats* tablesyncstats, void* in_conn)
+bool refresh_table_syncstats_truncatetable_fromsyncstats(refresh_table_syncstats* tablesyncstats, void* in_conn)
 {
     PGconn* conn = NULL;
     PGresult* res = NULL;
-    char stmtsql[RIPPLE_MAX_EXEC_SQL_LEN] = {'\0'};
-    ripple_refresh_table_syncstat *table = NULL;
+    char stmtsql[MAX_EXEC_SQL_LEN] = {'\0'};
+    refresh_table_syncstat *table = NULL;
 
     if(NULL == tablesyncstats || NULL == in_conn )
     {
@@ -407,13 +407,13 @@ bool ripple_refresh_table_syncstats_truncatetable_fromsyncstats(ripple_refresh_t
     for (table = tablesyncstats->tablesyncing; table != NULL; table = table->next)
     {
         /* 重启时已开始的表不清理 */
-        if (RIPPLE_REFRESH_TABLE_STAT_WAIT < table->tablestat)
+        if (REFRESH_TABLE_STAT_WAIT < table->tablestat)
         {
             continue;
         }
         
         /* 写入数据前先清空表 */
-        rmemset1(stmtsql, 0, 0, RIPPLE_MAX_EXEC_SQL_LEN);
+        rmemset1(stmtsql, 0, 0, MAX_EXEC_SQL_LEN);
         sprintf(stmtsql, "TRUNCATE TABLE \"%s\".\"%s\" ;", table->schema,
                                                    table->table);
 
@@ -430,7 +430,7 @@ bool ripple_refresh_table_syncstats_truncatetable_fromsyncstats(ripple_refresh_t
 }
 
 /* stats文件落盘到schema_table文件夹中 */
-bool ripple_refresh_table_syncstats_write(ripple_refresh_table_syncstat *stats, char *refresh_path)
+bool refresh_table_syncstats_write(refresh_table_syncstat *stats, char *refresh_path)
 {
     bool result = true;
     int fd = -1;
@@ -442,16 +442,16 @@ bool ripple_refresh_table_syncstats_write(ripple_refresh_table_syncstat *stats, 
 
     initStringInfo(&path);
 
-    appendStringInfo(&path, "%s/%s/%s_%s/%s", refresh_path, RIPPLE_REFRESH_REFRESH, stats->schema, stats->table, RIPPLE_REFRESH_STATS);
+    appendStringInfo(&path, "%s/%s/%s_%s/%s", refresh_path, REFRESH_REFRESH, stats->schema, stats->table, REFRESH_STATS);
 
-    fd = BasicOpenFile(path.data,
-                        O_RDWR | O_CREAT | RIPPLE_BINARY);
+    fd = osal_basic_open_file(path.data,
+                        O_RDWR | O_CREAT | BINARY);
 
     if (fd < 0)
     {
         elog(RLOG_WARNING, "can't openfile: %s, error: %s, please check!", path.data, strerror(errno));
         result = false;
-        goto ripple_refresh_table_syncstats_write_error;
+        goto refresh_table_syncstats_write_error;
     }
 
     /* sizeof(stats->cnt) + sizeof(stats->completecnt) + sizeof(stats->tablestat) + (stats->cnt * sizeof(int8_t)) */
@@ -461,8 +461,8 @@ bool ripple_refresh_table_syncstats_write(ripple_refresh_table_syncstat *stats, 
     {
         elog(RLOG_WARNING, "oom");
         result = false;
-        FileClose(fd);
-        goto ripple_refresh_table_syncstats_write_error;
+        osal_file_close(fd);
+        goto refresh_table_syncstats_write_error;
     }
     rmemset0(buffer, 0, 0, input_size);
 
@@ -483,26 +483,26 @@ bool ripple_refresh_table_syncstats_write(ripple_refresh_table_syncstat *stats, 
         put8bit((uint8_t **) &buffer, (uint8_t) stats->stat[index_stat]);
     }
 
-    if (FileWrite(fd, bufferbegin, input_size) != input_size)
+    if (osal_file_write(fd, bufferbegin, input_size) != input_size)
     {
         elog(RLOG_WARNING, "could not write to file %s, error: %s", path.data, strerror(errno));
-        FileClose(fd);
+        osal_file_close(fd);
         rfree(bufferbegin);
-        goto ripple_refresh_table_syncstats_write_error;
+        goto refresh_table_syncstats_write_error;
     }
 
-    if(0 != FileSync(fd))
+    if(0 != osal_file_sync(fd))
     {
         elog(RLOG_WARNING, "could not fsync file %s, error: %s", path.data, strerror(errno));
-        FileClose(fd);
+        osal_file_close(fd);
         rfree(bufferbegin);
-        goto ripple_refresh_table_syncstats_write_error;
+        goto refresh_table_syncstats_write_error;
     }
 
-    FileClose(fd);
+    osal_file_close(fd);
     rfree(bufferbegin);
 
-ripple_refresh_table_syncstats_write_error:
+refresh_table_syncstats_write_error:
     if (path.data)
     rfree(path.data);
 
@@ -510,7 +510,7 @@ ripple_refresh_table_syncstats_write_error:
 }
 
 /* 读取schema_table文件夹中的stats文件 */
-bool ripple_refresh_table_syncstats_read(ripple_refresh_table_syncstat *stats, char *refresh_path)
+bool refresh_table_syncstats_read(refresh_table_syncstat *stats, char *refresh_path)
 {
     bool result = true;
     int fd = -1;
@@ -524,16 +524,16 @@ bool ripple_refresh_table_syncstats_read(ripple_refresh_table_syncstat *stats, c
 
     initStringInfo(&path);
 
-    appendStringInfo(&path, "%s/%s_%s/%s", refresh_path, stats->schema, stats->table, RIPPLE_REFRESH_STATS);
+    appendStringInfo(&path, "%s/%s_%s/%s", refresh_path, stats->schema, stats->table, REFRESH_STATS);
 
-    fd = BasicOpenFile(path.data,
-                        O_RDONLY | RIPPLE_BINARY);
+    fd = osal_basic_open_file(path.data,
+                        O_RDONLY | BINARY);
 
     if (fd < 0)
     {
         elog(RLOG_WARNING, "can't openfile: %s, error: %s, please check!", path.data, strerror(errno));
         result = false;
-        goto ripple_refresh_table_syncstats_read_error;
+        goto refresh_table_syncstats_read_error;
     }
 
     /* 先获取sizeof(stats->cnt) + sizeof(stats->completecnt) + sizeof(stats->tablestat) */
@@ -543,18 +543,18 @@ bool ripple_refresh_table_syncstats_read(ripple_refresh_table_syncstat *stats, c
     {
         elog(RLOG_WARNING, "oom");
         result = false;
-        FileClose(fd);
-        goto ripple_refresh_table_syncstats_read_error;
+        osal_file_close(fd);
+        goto refresh_table_syncstats_read_error;
     }
     rmemset0(buffer, 0, 0, get_size);
     buffer_begin = buffer;
 
-    if (FileRead(fd, buffer, get_size) != get_size)
+    if (osal_file_read(fd, buffer, get_size) != get_size)
     {
         elog(RLOG_WARNING, "could not read file %s, error: %s", path.data, strerror(errno));
-        FileClose(fd);
+        osal_file_close(fd);
         rfree(buffer);
-        goto ripple_refresh_table_syncstats_read_error;
+        goto refresh_table_syncstats_read_error;
     }
 
     /* stats->cnt */
@@ -568,7 +568,7 @@ bool ripple_refresh_table_syncstats_read(ripple_refresh_table_syncstat *stats, c
 
     if (0 == stats->cnt && 0 == stats->completecnt)
     {
-        goto ripple_refresh_table_syncstats_read_error;
+        goto refresh_table_syncstats_read_error;
     }
 
     get_size = stats->cnt * sizeof(int8_t);
@@ -578,8 +578,8 @@ bool ripple_refresh_table_syncstats_read(ripple_refresh_table_syncstat *stats, c
         elog(RLOG_WARNING, "oom");
         result = false;
         rfree(buffer_begin);
-        FileClose(fd);
-        goto ripple_refresh_table_syncstats_read_error;
+        osal_file_close(fd);
+        goto refresh_table_syncstats_read_error;
     }
     rmemset0(buffer_stat, 0, 0, get_size);
     buffer_stat_begin = buffer_stat;
@@ -591,44 +591,44 @@ bool ripple_refresh_table_syncstats_read(ripple_refresh_table_syncstat *stats, c
         result = false;
         rfree(buffer_begin);
         rfree(buffer_stat_begin);
-        FileClose(fd);
-        goto ripple_refresh_table_syncstats_read_error;
+        osal_file_close(fd);
+        goto refresh_table_syncstats_read_error;
     }
     rmemset0(stats->stat, 0, 0, get_size);
 
-    if (FileRead(fd, buffer_stat, get_size) != get_size)
+    if (osal_file_read(fd, buffer_stat, get_size) != get_size)
     {
         elog(RLOG_WARNING, "could not read file %s, error: %s", path.data, strerror(errno));
-        FileClose(fd);
+        osal_file_close(fd);
         rfree(buffer_begin);
         rfree(buffer_stat_begin);
-        goto ripple_refresh_table_syncstats_read_error;
+        goto refresh_table_syncstats_read_error;
     }
 
     /* stats->stat */
     for (index_stat = 0; index_stat < stats->cnt; index_stat++)
     {
         stats->stat[index_stat] = (int8_t) get8bit((uint8_t **) &buffer_stat);
-        if (RIPPLE_REFRESH_TABLE_SYNCS_SHARD_STAT_SYNCING == stats->stat[index_stat])
+        if (REFRESH_TABLE_SYNCS_SHARD_STAT_SYNCING == stats->stat[index_stat])
         {
-            stats->stat[index_stat] = RIPPLE_REFRESH_TABLE_SYNCS_SHARD_STAT_INIT;
+            stats->stat[index_stat] = REFRESH_TABLE_SYNCS_SHARD_STAT_INIT;
         }
     }
 
-    FileClose(fd);
+    osal_file_close(fd);
     rfree(buffer_begin);
     rfree(buffer_stat_begin);
 
-ripple_refresh_table_syncstats_read_error:
+refresh_table_syncstats_read_error:
     if (path.data)
     rfree(path.data);
 
     return result;
 }
 
-void ripple_refresh_table_syncstats_tablesyncall_setfromfile(ripple_refresh_tables* refreshtables, ripple_refresh_table_syncstats* tablesyncstats, char* refresh_path)
+void refresh_table_syncstats_tablesyncall_setfromfile(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats, char* refresh_path)
 {
-    ripple_refresh_table *cur_table = NULL;
+    refresh_table *cur_table = NULL;
 
     if (!refreshtables )
     {
@@ -648,14 +648,14 @@ void ripple_refresh_table_syncstats_tablesyncall_setfromfile(ripple_refresh_tabl
     while (cur_table)
     {
         // 创建一个新的同步状态节点
-        ripple_refresh_table_syncstat *new_syncstat = ripple_refresh_table_syncstat_init();
+        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
 
         // 复制表信息
-        ripple_refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
-        ripple_refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
-        ripple_refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
+        refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
+        refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
+        refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
-        ripple_refresh_table_syncstats_read(new_syncstat, refresh_path);
+        refresh_table_syncstats_read(new_syncstat, refresh_path);
 
         // 插入 tablesyncall
         new_syncstat->next = tablesyncstats->tablesyncall;
@@ -671,9 +671,9 @@ void ripple_refresh_table_syncstats_tablesyncall_setfromfile(ripple_refresh_tabl
     return;
 }
 
-void ripple_refresh_table_syncstats_tablesyncing_setfromfile(ripple_refresh_tables* refreshtables, ripple_refresh_table_syncstats* tablesyncstats, char* refresh_path)
+void refresh_table_syncstats_tablesyncing_setfromfile(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats, char* refresh_path)
 {
-    ripple_refresh_table *cur_table = NULL;
+    refresh_table *cur_table = NULL;
 
     if (!refreshtables )
     {
@@ -693,14 +693,14 @@ void ripple_refresh_table_syncstats_tablesyncing_setfromfile(ripple_refresh_tabl
     while (cur_table)
     {
         // 创建一个新的同步状态节点
-        ripple_refresh_table_syncstat *new_syncstat = ripple_refresh_table_syncstat_init();
+        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
 
         // 复制表信息
-        ripple_refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
-        ripple_refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
-        ripple_refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
+        refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
+        refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
+        refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
-        ripple_refresh_table_syncstats_read(new_syncstat, refresh_path);
+        refresh_table_syncstats_read(new_syncstat, refresh_path);
 
         // 插入 tablesyncall
         new_syncstat->next = tablesyncstats->tablesyncing;
@@ -717,11 +717,11 @@ void ripple_refresh_table_syncstats_tablesyncing_setfromfile(ripple_refresh_tabl
 }
 
 /* 根据tablesyncing生成refreshtables */
-ripple_refresh_tables* ripple_refresh_table_syncstats_tablesyncing2tables(ripple_refresh_table_syncstats* tablesyncstats)
+refresh_tables* refresh_table_syncstats_tablesyncing2tables(refresh_table_syncstats* tablesyncstats)
 {
-    ripple_refresh_table* table                 = NULL;
-    ripple_refresh_tables* refreshtables        = NULL;
-    ripple_refresh_table_syncstat *cur_table    = NULL;
+    refresh_table* table                 = NULL;
+    refresh_tables* refreshtables        = NULL;
+    refresh_table_syncstat *cur_table    = NULL;
 
     if (NULL == tablesyncstats)
     {
@@ -737,10 +737,10 @@ ripple_refresh_tables* ripple_refresh_table_syncstats_tablesyncing2tables(ripple
         return refreshtables;
     }
 
-    ripple_refresh_table_syncstats_lock(tablesyncstats);
+    refresh_table_syncstats_lock(tablesyncstats);
 
     cur_table = tablesyncstats->tablesyncing;
-    refreshtables = ripple_refresh_tables_init();
+    refreshtables = refresh_tables_init();
     if (NULL == refreshtables)
     {
         elog(RLOG_WARNING, "tablesyncstats malloc refreshtables error");
@@ -750,19 +750,19 @@ ripple_refresh_tables* ripple_refresh_table_syncstats_tablesyncing2tables(ripple
     while (cur_table)
     {
         // 创建一个新的同步状态节点
-        ripple_refresh_table_syncstat *new_syncstat = ripple_refresh_table_syncstat_init();
+        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
 
         // 复制表信息
-        table = ripple_refresh_table_init();
+        table = refresh_table_init();
 
-        ripple_refresh_table_setschema(new_syncstat->schema, table);
-        ripple_refresh_table_settable(new_syncstat->table, table);
-        ripple_refresh_table_setoid(new_syncstat->oid, table);
-        ripple_refresh_tables_add(table, refreshtables);
+        refresh_table_setschema(new_syncstat->schema, table);
+        refresh_table_settable(new_syncstat->table, table);
+        refresh_table_setoid(new_syncstat->oid, table);
+        refresh_tables_add(table, refreshtables);
 
         cur_table = cur_table->next;
     }
 
-    ripple_refresh_table_syncstats_unlock(tablesyncstats);
+    refresh_table_syncstats_unlock(tablesyncstats);
     return refreshtables;
 }

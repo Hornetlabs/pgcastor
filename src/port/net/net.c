@@ -1,26 +1,26 @@
-#include "ripple_app_incl.h"
-#include "port/net/ripple_net.h"
+#include "app_incl.h"
+#include "port/net/net.h"
 
 /* 创建描述符 */
-rsocket ripple_socket(int domain, int type, int protocol)
+rsocket osal_socket(int domain, int type, int protocol)
 {
     return socket(domain, type, protocol);
 }
 
 /* 设置描述符的标识 */
-int ripple_setsockopt(rsocket sockfd, int level, int optname, const void* optval, socklen_t optlen)
+int osal_setsockopt(rsocket sockfd, int level, int optname, const void* optval, socklen_t optlen)
 {
     return setsockopt(sockfd, level, optname, optval, optlen);
 }
 
 /* 获取描述符的标识 */
-int ripple_getsockopt(rsocket sockfd, int level, int optname, void* optval, socklen_t* optlen)
+int osal_getsockopt(rsocket sockfd, int level, int optname, void* optval, socklen_t* optlen)
 {
     return getsockopt(sockfd, level, optname, optval, optlen);
 }
 
 /* 设置描述符阻塞/非阻塞 */
-bool ripple_setblock(rsocket sockfd)
+bool osal_setblock(rsocket sockfd)
 {
     /* 
      * 1、获取 描述符的状态
@@ -45,7 +45,7 @@ bool ripple_setblock(rsocket sockfd)
 }
 
 /* 设置为非阻塞模式 */
-bool ripple_setunblock(rsocket sockfd)
+bool osal_setunblock(rsocket sockfd)
 {
     /* 
      * 1、获取 描述符的状态
@@ -70,7 +70,7 @@ bool ripple_setunblock(rsocket sockfd)
 }
 
 /* 获取可用地址 */
-int ripple_getaddrinfo(const char* node,
+int osal_getaddrinfo(const char* node,
                         const char* service,
                         const struct addrinfo *hints,
                         struct addrinfo **res)
@@ -98,43 +98,43 @@ int ripple_getaddrinfo(const char* node,
 }
 
 /* bind */
-int ripple_bind(rsocket sockfd, struct sockaddr* my_addr, socklen_t addlen)
+int osal_bind(rsocket sockfd, struct sockaddr* my_addr, socklen_t addlen)
 {
     return bind(sockfd, my_addr, addlen);
 }
 
 /* listen */
-int ripple_listen(rsocket sockfd, int backlog)
+int osal_listen(rsocket sockfd, int backlog)
 {
     return listen(sockfd, backlog);
 }
 
 /* close */
-int ripple_close(rsocket sockfd)
+int osal_close(rsocket sockfd)
 {
     return close(sockfd);
 }
 
-/* accept 接收描述符 */
-rsocket ripple_accept(rsocket sockfd, struct sockaddr *addr, socklen_t *addrlen)
+/* osal_accept 接收描述符 */
+rsocket osal_accept(rsocket sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
     return accept(sockfd, addr, addrlen);
 }
 
 /* 获取描述符中记录的信息 */
-int ripple_getsockname(rsocket sockfd, struct sockaddr *addr, socklen_t *addrlen)
+int osal_getsockname(rsocket sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
     return getsockname(sockfd, addr, addrlen);
 }
 
 /* 事件 poll */
-int ripple_poll(struct pollfd* fds, nfds_t nfds, int timeout)
+int osal_poll(struct pollfd* fds, nfds_t nfds, int timeout)
 {
     return poll(fds, nfds, timeout);
 }
 
 /* 连接 */
-int ripple_connect(rsocket sockfd, const struct sockaddr *addr, socklen_t addrlen)
+int osal_connect(rsocket sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
     return connect(sockfd, addr, addrlen);
 }
@@ -142,13 +142,13 @@ int ripple_connect(rsocket sockfd, const struct sockaddr *addr, socklen_t addrle
 /*
  * free addr info
  * */
-static void ripple_freeaddrinfo(struct addrinfo *res)
+static void osal_rfreeaddrinfo(struct addrinfo *res)
 {
 	freeaddrinfo(res);
 }
 
 /* 读取数据 */
-bool ripple_net_read(rsocket sockfd, uint8 *buffer, int *amount)
+bool osal_net_read(rsocket sockfd, uint8 *buffer, int *amount)
 {
     int     rlen = 0;
     int     slen = 0;
@@ -183,7 +183,7 @@ bool ripple_net_read(rsocket sockfd, uint8 *buffer, int *amount)
 }
 
 /* 写数据 */
-bool ripple_net_write(rsocket sockfd, uint8 *buffer, int amount)
+bool osal_net_write(rsocket sockfd, uint8 *buffer, int amount)
 {
     int     rlen = 0;
     uint8*  uptr = NULL;
@@ -217,7 +217,7 @@ bool ripple_net_write(rsocket sockfd, uint8 *buffer, int amount)
 /*
  * 根据名称或ip地址获取地址
  * */
-bool ripple_host2sockaddr(struct sockaddr_in *addr,
+bool osal_host2sockaddr(struct sockaddr_in *addr,
                             const char *host,
                             const char *service,
                             int family,
@@ -240,10 +240,10 @@ bool ripple_host2sockaddr(struct sockaddr_in *addr,
         hints.ai_flags |= AI_PASSIVE;
     }
 
-    ret = ripple_getaddrinfo(host, service, &hints, &reshead);
+    ret = osal_getaddrinfo(host, service, &hints, &reshead);
     if(0 != ret)
     {
-        elog(RLOG_WARNING, "getaddrinfo error, %s", strerror(errno));
+        elog(RLOG_WARNING, "osal_getaddrinfo error, %s", strerror(errno));
         return false;
     }
 
@@ -254,11 +254,11 @@ bool ripple_host2sockaddr(struct sockaddr_in *addr,
             && sizeof(struct sockaddr_in) == res->ai_addrlen)
         {
             *addr= *((struct sockaddr_in *)(res->ai_addr));
-            ripple_freeaddrinfo(reshead);
+            osal_rfreeaddrinfo(reshead);
             return true;
         }
     }
 
-    ripple_freeaddrinfo(reshead);
+    osal_rfreeaddrinfo(reshead);
     return false;
 }

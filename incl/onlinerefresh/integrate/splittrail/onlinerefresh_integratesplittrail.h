@@ -1,15 +1,15 @@
-#ifndef _RIPPLE_ONLINEREFRESH_INTEGRATESPLITTRAIL_H
-#define _RIPPLE_ONLINEREFRESH_INTEGRATESPLITTRAIL_H
+#ifndef _ONLINEREFRESH_INTEGRATESPLITTRAIL_H
+#define _ONLINEREFRESH_INTEGRATESPLITTRAIL_H
 
-typedef struct RIPPLE_ONLINEREFRESH_INTEGRATESPLITTRAIL
+typedef struct ONLINEREFRESH_INTEGRATESPLITTRAIL
 {
-    ripple_increment_integratesplittrail*   splittrailctx;
-}ripple_onlinerefresh_integratesplittrail;
+    increment_integratesplittrail*   splittrailctx;
+}onlinerefresh_integratesplittrail;
 
-ripple_onlinerefresh_integratesplittrail* ripple_onlinerefresh_integratesplittrail_init(void);
+onlinerefresh_integratesplittrail* onlinerefresh_integratesplittrail_init(void);
 
-void *ripple_onlinerefresh_integratesplittrail_main(void *args);
+void *onlinerefresh_integratesplittrail_main(void *args);
 
-void ripple_onlinerefresh_integratesplittrail_free(void *args);
+void onlinerefresh_integratesplittrail_free(void *args);
 
 #endif

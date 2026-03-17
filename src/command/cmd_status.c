@@ -1,13 +1,13 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
-#include "misc/ripple_misc_lockfiles.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "metric/capture/ripple_metric_capture.h"
-#include "metric/integrate/ripple_metric_integrate.h"
-#include "command/ripple_cmd.h"
+#include "misc/misc_lockfiles.h"
+#include "net/netpacket/netpacket.h"
+#include "metric/capture/metric_capture.h"
+#include "metric/integrate/metric_integrate.h"
+#include "command/cmd.h"
 
 typedef bool (*procstatus)();
 
@@ -15,53 +15,53 @@ typedef bool (*procstatus)();
 
 typedef struct RPOC2STATUS
 {
-    ripple_proc_type    type;
+    proc_type    type;
     procstatus          func;
     procstatusprint     printfunc;
     char*               errmsg;
 } proc2status;
 
-static bool ripple_cmd_statuscapture(void);
-static bool ripple_cmd_statusintegrate(void);
+static bool cmd_statuscapture(void);
+static bool cmd_statusintegrate(void);
 
 static proc2status           m_typ2status[]=
 {
     {
-        RIPPLE_PROC_TYPE_NOP,
+        PROC_TYPE_NOP,
         NULL,
         NULL,
         "proc nop unsupport status"
     },
     {
-        RIPPLE_PROC_TYPE_CAPTURE,
-        ripple_cmd_statuscapture,
+        PROC_TYPE_CAPTURE,
+        cmd_statuscapture,
         NULL,
          "capture status error"
     },
     {
-        RIPPLE_PROC_TYPE_INTEGRATE,
-        ripple_cmd_statusintegrate,
+        PROC_TYPE_INTEGRATE,
+        cmd_statusintegrate,
         NULL,
          "tegrate status error"
     }
 };
 
 /* 获取状态信息 */
-bool ripple_cmd_statuscapture(void)
+bool cmd_statuscapture(void)
 {
     int fd = -1;
     long    ripplepid;
-    ripple_metric_capture mcapture = { 0 };
+    metric_capture mcapture = { 0 };
     
-    ripplepid = ripple_misc_lockfiles_getpid();
+    ripplepid = misc_lockfiles_getpid();
     if(0 == ripplepid)
     {
-        ripple_cmd_printmsg("Is ripple capture running?\n");
+        cmd_printmsg("Is ripple capture running?\n");
         return false;
     }
 
-    fd = BasicOpenFile(RIPPLE_CAPTURE_STATUS_FILE,
-                            O_RDWR | RIPPLE_BINARY);
+    fd = osal_basic_open_file(CAPTURE_STATUS_FILE,
+                            O_RDWR | BINARY);
 
     if(-1 == fd)
     {
@@ -69,9 +69,9 @@ bool ripple_cmd_statuscapture(void)
         exit(-1);
     }
 
-    FileRead(fd, (char*)&mcapture, sizeof(mcapture));
+    osal_file_read(fd, (char*)&mcapture, sizeof(mcapture));
 
-    FileClose(fd);
+    osal_file_close(fd);
 
     /* 输出内容 */
     printf("\n---------------RIPPLE PARSER INFO----------------\n");
@@ -91,21 +91,21 @@ bool ripple_cmd_statuscapture(void)
 }
 
 /* 获取状态信息 */
-bool ripple_cmd_statusintegrate(void)
+bool cmd_statusintegrate(void)
 {
     int fd = -1;
     long    ripplepid;
-    ripple_metric_integrate mintegrate = { 0 };
+    metric_integrate mintegrate = { 0 };
     
-    ripplepid = ripple_misc_lockfiles_getpid();
+    ripplepid = misc_lockfiles_getpid();
     if(0 == ripplepid)
     {
-        ripple_cmd_printmsg("Is ripple integrate running?\n");
+        cmd_printmsg("Is ripple integrate running?\n");
         return false;
     }
 
-    fd = BasicOpenFile(RIPPLE_INTEGRATE_STATUS_FILE,
-                            O_RDWR | RIPPLE_BINARY);
+    fd = osal_basic_open_file(INTEGRATE_STATUS_FILE,
+                            O_RDWR | BINARY);
 
     if(-1 == fd)
     {
@@ -113,9 +113,9 @@ bool ripple_cmd_statusintegrate(void)
         exit(-1);
     }
 
-    FileRead(fd, (char*)&mintegrate, sizeof(mintegrate));
+    osal_file_read(fd, (char*)&mintegrate, sizeof(mintegrate));
 
-    FileClose(fd);
+    osal_file_close(fd);
 
     /* 输出内容 */
     printf("\n---------------RIPPLE PARSER INFO----------------\n");
@@ -132,9 +132,9 @@ bool ripple_cmd_statusintegrate(void)
 }
 
 /* 状态命令 */
-bool ripple_cmd_status(void *extra_config)
+bool cmd_status(void *extra_config)
 {
-    RIPPLE_UNUSED(extra_config);
+    UNUSED(extra_config);
     if(NULL == m_typ2status[g_proctype].func)
     {
         elog(RLOG_WARNING, "%s", m_typ2status[g_proctype].errmsg);

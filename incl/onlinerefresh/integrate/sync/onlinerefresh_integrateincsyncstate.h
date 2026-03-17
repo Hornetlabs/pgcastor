@@ -1,17 +1,17 @@
-#ifndef _RIPPLE_ONLINEREFRESH_INTEGRATEINCSYNC_H
-#define _RIPPLE_ONLINEREFRESH_INTEGRATEINCSYNC_H
+#ifndef _ONLINEREFRESH_INTEGRATEINCSYNC_H
+#define _ONLINEREFRESH_INTEGRATEINCSYNC_H
 
-typedef struct RIPPLE_ONLINEREFRESH_INTEGRATEINCSYNC
+typedef struct ONLINEREFRESH_INTEGRATEINCSYNC
 {
-    ripple_syncstate                base;
-    ripple_cache_txn*               rebuild2sync;
-}ripple_onlinerefresh_integrateincsync;
+    syncstate                base;
+    cache_txn*               rebuild2sync;
+}onlinerefresh_integrateincsync;
 
-ripple_onlinerefresh_integrateincsync* ripple_onlinerefresh_integrateincsync_init(void);
+onlinerefresh_integrateincsync* onlinerefresh_integrateincsync_init(void);
 
-void *ripple_onlinerefresh_integrateincsync_main(void *args);
+void *onlinerefresh_integrateincsync_main(void *args);
 
-void ripple_onlinerefresh_integrateincsync_free(void *args);
+void onlinerefresh_integrateincsync_free(void *args);
 
 
 #endif

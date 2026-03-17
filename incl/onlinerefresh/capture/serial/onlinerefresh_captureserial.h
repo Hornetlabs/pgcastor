@@ -1,24 +1,24 @@
-#ifndef RIPPLE_ONLINEREFRESH_CAPTURESERIAL_H
-#define RIPPLE_ONLINEREFRESH_CAPTURESERIAL_H
+#ifndef ONLINEREFRESH_CAPTURESERIAL_H
+#define ONLINEREFRESH_CAPTURESERIAL_H
 
-typedef struct RIPPLE_TASK_ONLINEREFRESHCAPTURESERIAL_CALLBACK
+typedef struct TASK_ONLINEREFRESHCAPTURESERIAL_CALLBACK
 {
     /* capture 获取timeline */
     bool (*parserstat_curtlid_get)(void* privdata, TimeLineID* tlid);
 
-} ripple_onlinerefresh_captureserial_callback;
+} onlinerefresh_captureserial_callback;
 
-typedef struct RIPPLE_ONLINEREFRESH_CAPTURESERIAL
+typedef struct ONLINEREFRESH_CAPTURESERIAL
 {
-    ripple_serialstate*                                 serialstate;
-    ripple_cache_txn*                                   parser2serialtxns;
-    ripple_transcache*                                  dictcache;
+    serialstate*                                 serialstate;
+    cache_txn*                                   parser2serialtxns;
+    transcache*                                  dictcache;
     void*                                               privdata;
-    ripple_onlinerefresh_captureserial_callback         callback;
-} ripple_onlinerefresh_captureserial;
+    onlinerefresh_captureserial_callback         callback;
+} onlinerefresh_captureserial;
 
-extern ripple_onlinerefresh_captureserial *ripple_onlinerefresh_captureserial_init(void);
+extern onlinerefresh_captureserial *onlinerefresh_captureserial_init(void);
 
-extern void *ripple_onlinerefresh_captureserial_main(void *args);
-extern void ripple_onlinerefresh_captureserial_free(void *args);
+extern void *onlinerefresh_captureserial_main(void *args);
+extern void onlinerefresh_captureserial_free(void *args);
 #endif

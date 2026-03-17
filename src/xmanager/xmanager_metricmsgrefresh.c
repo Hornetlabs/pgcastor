@@ -1,47 +1,47 @@
-#include "ripple_app_incl.h"
+#include "app_incl.h"
 #include "port/file/fd.h"
-#include "port/net/ripple_net.h"
-#include "port/thread/ripple_thread.h"
+#include "port/net/net.h"
+#include "port/thread/thread.h"
 #include "utils/guc/guc.h"
 #include "utils/list/list_func.h"
 #include "utils/dlist/dlist.h"
-#include "utils/daemon/ripple_process.h"
-#include "command/ripple_cmd.h"
-#include "queue/ripple_queue.h"
-#include "net/netiomp/ripple_netiomp.h"
-#include "net/netiomp/ripple_netiomp_poll.h"
-#include "net/netpacket/ripple_netpacket.h"
-#include "net/ripple_netpool.h"
-#include "xmanager/ripple_xmanager_msg.h"
-#include "xmanager/ripple_xmanager_metricasyncmsg.h"
-#include "xmanager/ripple_xmanager_metricnode.h"
-#include "xmanager/ripple_xmanager_metricxscscinode.h"
-#include "xmanager/ripple_xmanager_metric.h"
-#include "xmanager/ripple_xmanager_metricmsgrefresh.h"
-#include "xmanager/ripple_xmanager_metricmsg.h"
+#include "utils/daemon/process.h"
+#include "command/cmd.h"
+#include "queue/queue.h"
+#include "net/netiomp/netiomp.h"
+#include "net/netiomp/netiomp_poll.h"
+#include "net/netpacket/netpacket.h"
+#include "net/netpool.h"
+#include "xmanager/xmanager_msg.h"
+#include "xmanager/xmanager_metricasyncmsg.h"
+#include "xmanager/xmanager_metricnode.h"
+#include "xmanager/xmanager_metricxscscinode.h"
+#include "xmanager/xmanager_metric.h"
+#include "xmanager/xmanager_metricmsgrefresh.h"
+#include "xmanager/xmanager_metricmsg.h"
 
 
 /* 组装 capture 的 refresh 消息 */
-static bool ripple_xmanager_metricmsg_assemblerefreshforcapture(ripple_xmanager_metric* xmetric,
-                                                                ripple_xmanager_metricnode* xmetricnode,
+static bool xmanager_metricmsg_assemblerefreshforcapture(xmanager_metric* xmetric,
+                                                                xmanager_metricnode* xmetricnode,
                                                                 int tableslen,
                                                                 uint8* tables)
 {
     int ivalue                                          = 0;
     int msglen                                          = 0;
     uint8* uptr                                         = NULL;
-    ripple_netpacket* npacket                           = NULL;
-    ripple_netpoolentry* npoolentry                     = NULL;
-    ripple_xmanager_metricfd2node* fd2node              = NULL;
+    netpacket* npacket                           = NULL;
+    netpoolentry* npoolentry                     = NULL;
+    xmanager_metricfd2node* fd2node              = NULL;
 
     /* 构建 onlinerefresh 消息 */
     fd2node = dlist_get(xmetric->fd2metricnodes,
                         xmetricnode,
-                        ripple_xmanager_metricfd2node_cmp2);
+                        xmanager_metricfd2node_cmp2);
 
     /* 获取 capture 节点的 netpoolentry */
     npoolentry = NULL;
-    npoolentry = ripple_netpool_getentrybyfd(xmetric->npool, fd2node->fd);
+    npoolentry = netpool_getentrybyfd(xmetric->npool, fd2node->fd);
     if (NULL == npoolentry)
     {
         elog(RLOG_WARNING, "can not get capture node");
@@ -57,7 +57,7 @@ static bool ripple_xmanager_metricmsg_assemblerefreshforcapture(ripple_xmanager_
     msglen += tableslen;
 
     /* 构建消息挂载到 npoolentry 上 */
-    npacket = ripple_netpacket_init();
+    npacket = netpacket_init();
     if (NULL == npacket)
     {
         elog(RLOG_WARNING, "assemble refresh to capture out of memory");
@@ -65,11 +65,11 @@ static bool ripple_xmanager_metricmsg_assemblerefreshforcapture(ripple_xmanager_
     }
 
     msglen += 1;
-    npacket->data = ripple_netpacket_data_init(msglen);
+    npacket->data = netpacket_data_init(msglen);
     if (NULL == npacket->data)
     {
         elog(RLOG_WARNING, "xmanager metric assemble refresh msg data, out of memory");
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return false;
     }
     msglen -= 1;
@@ -88,7 +88,7 @@ static bool ripple_xmanager_metricmsg_assemblerefreshforcapture(ripple_xmanager_
     uptr += 4;
 
     /* 类型 */
-    ivalue = RIPPLE_XMANAGER_MSG_CAPTUREREFRESH;
+    ivalue = XMANAGER_MSG_CAPTUREREFRESH;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -96,10 +96,10 @@ static bool ripple_xmanager_metricmsg_assemblerefreshforcapture(ripple_xmanager_
     rmemcpy1(uptr, 0, tables, tableslen);
 
     /* 将 netpacket 挂载到待发送队列中 */
-    if (false == ripple_queue_put(npoolentry->wpackets, (void*)npacket))
+    if (false == queue_put(npoolentry->wpackets, (void*)npacket))
     {
         elog(RLOG_WARNING, "xmanager metric assemble refresh msg to capture add message to queue error");
-        ripple_netpacket_destroy(npacket);
+        netpacket_destroy(npacket);
         return false;
     }
 
@@ -112,9 +112,9 @@ static bool ripple_xmanager_metricmsg_assemblerefreshforcapture(ripple_xmanager_
  *  2、将 refresh 消息转发到 capture
  *  3、创建异步消息挂载到 xscsci 节点上
 */
-bool ripple_xmanager_metricmsg_parserefresh(ripple_xmanager_metric* xmetric,
-                                            ripple_netpoolentry* npoolentry,
-                                            ripple_netpacket* npacket)
+bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric,
+                                            netpoolentry* npoolentry,
+                                            netpacket* npacket)
 {
     int errcode = 0;
     int ivalue = 0;
@@ -122,12 +122,12 @@ bool ripple_xmanager_metricmsg_parserefresh(ripple_xmanager_metric* xmetric,
 
     uint8* uptr                                         = NULL;
     char* jobname                                       = NULL;
-    ripple_xmanager_metricnode* pxmetricnode            = NULL;
-    ripple_xmanager_metricfd2node* fd2node              = NULL;
-    ripple_xmanager_metricasyncmsg* asyncmsg            = NULL;
-    ripple_xmanager_metricxscscinode* xmetricxscscinode = NULL;
+    xmanager_metricnode* pxmetricnode            = NULL;
+    xmanager_metricfd2node* fd2node              = NULL;
+    xmanager_metricasyncmsg* asyncmsg            = NULL;
+    xmanager_metricxscscinode* xmetricxscscinode = NULL;
     char errormsg[2048]                                 = { 0 };
-    ripple_xmanager_metricnode xmetricnode              = { 0 };
+    xmanager_metricnode xmetricnode              = { 0 };
 
     /* 获取作业类型 */
     uptr = npacket->data;
@@ -150,9 +150,9 @@ bool ripple_xmanager_metricmsg_parserefresh(ripple_xmanager_metric* xmetric,
     jobname = rmalloc0(ivalue);
     if (NULL == jobname)
     {
-        errcode = RIPPLE_ERROR_OOM;
+        errcode = ERROR_OOM;
         snprintf(errormsg, 2048, "ERROR: xmanager parse refresh command, out of memory.");
-        goto ripple_xmanager_metricmsg_parserefresh_error;
+        goto xmanager_metricmsg_parserefresh_error;
     }
     rmemset0(jobname, 0, '\0', ivalue);
     ivalue -= 1;
@@ -161,32 +161,32 @@ bool ripple_xmanager_metricmsg_parserefresh(ripple_xmanager_metric* xmetric,
     uptr += ivalue;
 
     /* 查看 node 是否存在 */
-    xmetricnode.type = RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE;
+    xmetricnode.type = XMANAGER_METRICNODETYPE_CAPTURE;
     xmetricnode.name = jobname;
 
-    pxmetricnode = dlist_get(xmetric->metricnodes, &xmetricnode, ripple_xmanager_metricnode_cmp);
+    pxmetricnode = dlist_get(xmetric->metricnodes, &xmetricnode, xmanager_metricnode_cmp);
     if (NULL == pxmetricnode)
     {
-        errcode = RIPPLE_ERROR_NOENT;
+        errcode = ERROR_NOENT;
         snprintf(errormsg, 2048, "ERROR: %s does not exist.", jobname);
-        goto ripple_xmanager_metricmsg_parserefresh_error;
+        goto xmanager_metricmsg_parserefresh_error;
     }
 
-    if (RIPPLE_XMANAGER_METRICNODESTAT_ONLINE != pxmetricnode->stat)
+    if (XMANAGER_METRICNODESTAT_ONLINE != pxmetricnode->stat)
     {
-        errcode = RIPPLE_ERROR_MSGCOMMAND;
+        errcode = ERROR_MSGCOMMAND;
         snprintf(errormsg, 2048, "ERROR: start %s first.", jobname);
-        goto ripple_xmanager_metricmsg_parserefresh_error;
+        goto xmanager_metricmsg_parserefresh_error;
     }
 
-    if (false == ripple_xmanager_metricmsg_assemblerefreshforcapture(xmetric,
+    if (false == xmanager_metricmsg_assemblerefreshforcapture(xmetric,
                                                                      pxmetricnode,
                                                                      msglen,
                                                                      uptr))
     {
-        errcode = RIPPLE_ERROR_MSGCOMMAND;
+        errcode = ERROR_MSGCOMMAND;
         snprintf(errormsg, 2048, "ERROR: assemble refresh message to capture error.");
-        goto ripple_xmanager_metricmsg_parserefresh_error;
+        goto xmanager_metricmsg_parserefresh_error;
     }
 
     /* 
@@ -197,21 +197,21 @@ bool ripple_xmanager_metricmsg_parserefresh(ripple_xmanager_metric* xmetric,
     /* 获取 xscsci 节点 */
     fd2node = dlist_get(xmetric->fd2metricnodes,
                         (void*)((uintptr_t)npoolentry->fd),
-                        ripple_xmanager_metricfd2node_cmp);
-    xmetricxscscinode = (ripple_xmanager_metricxscscinode*)fd2node->metricnode;
+                        xmanager_metricfd2node_cmp);
+    xmetricxscscinode = (xmanager_metricxscscinode*)fd2node->metricnode;
 
     /* 创建异步等待消息 */
-    asyncmsg = ripple_xmanager_metricasyncmsg_init();
+    asyncmsg = xmanager_metricasyncmsg_init();
     if (NULL == asyncmsg)
     {
-        errcode = RIPPLE_ERROR_OOM;
+        errcode = ERROR_OOM;
         snprintf(errormsg, 2048, "ERROR: %s", "xmanager refresh command, out of memory");
-        goto ripple_xmanager_metricmsg_parserefresh_error;
+        goto xmanager_metricmsg_parserefresh_error;
     }
 
     asyncmsg->errormsg = NULL;
-    asyncmsg->msgtype = RIPPLE_XMANAGER_MSG_REFRESHCMD;
-    asyncmsg->type = RIPPLE_XMANAGER_METRICNODETYPE_CAPTURE;
+    asyncmsg->msgtype = XMANAGER_MSG_REFRESHCMD;
+    asyncmsg->type = XMANAGER_METRICNODETYPE_CAPTURE;
     asyncmsg->name =jobname;
     jobname = NULL;
     asyncmsg->result = 0;
@@ -219,7 +219,7 @@ bool ripple_xmanager_metricmsg_parserefresh(ripple_xmanager_metric* xmetric,
     xmetricxscscinode->asyncmsgs->msgs =  dlist_put(xmetricxscscinode->asyncmsgs->msgs, asyncmsg);
     return true;
 
-ripple_xmanager_metricmsg_parserefresh_error:
+xmanager_metricmsg_parserefresh_error:
     if (NULL != jobname)
     {
         rfree(jobname);
@@ -227,13 +227,13 @@ ripple_xmanager_metricmsg_parserefresh_error:
 
     if (NULL != asyncmsg)
     {
-        ripple_xmanager_metricasyncmsg_destroy(asyncmsg);
+        xmanager_metricasyncmsg_destroy(asyncmsg);
     }
 
     elog(RLOG_WARNING, errormsg);
-    return ripple_xmanager_metricmsg_assembleerrormsg(xmetric,
+    return xmanager_metricmsg_assembleerrormsg(xmetric,
                                                       npoolentry->wpackets,
-                                                      RIPPLE_XMANAGER_MSG_REFRESHCMD,
+                                                      XMANAGER_MSG_REFRESHCMD,
                                                       errcode,
                                                       errormsg);
     return false;
@@ -243,11 +243,11 @@ ripple_xmanager_metricmsg_parserefresh_error:
 /*
  * 组装 refresh 返回消息
 */
-bool ripple_xmanager_metricmsg_assemblerefresh(ripple_xmanager_metric* xmetric,
-                                               ripple_netpoolentry* npoolentry,
+bool xmanager_metricmsg_assemblerefresh(xmanager_metric* xmetric,
+                                               netpoolentry* npoolentry,
                                                dlist* dlmsgs)
 {
-    ripple_xmanager_metricasyncmsg* xmetricasyncmsg     = NULL;
+    xmanager_metricasyncmsg* xmetricasyncmsg     = NULL;
     char errmsg[2048]                                 = { 0 };
 
     if (true == dlist_isnull(dlmsgs) || 1 < dlist_getcount(dlmsgs))
@@ -255,17 +255,17 @@ bool ripple_xmanager_metricmsg_assemblerefresh(ripple_xmanager_metric* xmetric,
         /* 组装错误消息 */
         elog(RLOG_WARNING, "metric msg assemble refresh too many async msgs.");
         snprintf(errmsg, 2048, "metric msg assemble refresh too many async msgs.");
-        return ripple_xmanager_metricmsg_assembleerrormsg(xmetric,
+        return xmanager_metricmsg_assembleerrormsg(xmetric,
                                                           npoolentry->wpackets,
-                                                          RIPPLE_XMANAGER_MSG_REFRESHCMD,
-                                                          RIPPLE_ERROR_MSGCOMMAND,
+                                                          XMANAGER_MSG_REFRESHCMD,
+                                                          ERROR_MSGCOMMAND,
                                                           errmsg);
     }
 
-    xmetricasyncmsg = (ripple_xmanager_metricasyncmsg*)dlmsgs->head->value;
-    return ripple_xmanager_metricmsg_assembleerrormsg(xmetric,
+    xmetricasyncmsg = (xmanager_metricasyncmsg*)dlmsgs->head->value;
+    return xmanager_metricmsg_assembleerrormsg(xmetric,
                                                       npoolentry->wpackets,
-                                                      RIPPLE_XMANAGER_MSG_REFRESHCMD,
+                                                      XMANAGER_MSG_REFRESHCMD,
                                                       xmetricasyncmsg->errcode,
                                                       xmetricasyncmsg->errormsg);
 }

@@ -1,5 +1,5 @@
-#ifndef _RIPPLE_DLIST_H
-#define _RIPPLE_DLIST_H
+#ifndef _DLIST_H
+#define _DLIST_H
 
 typedef int (*dlistvaluecmp)(void* vala, void* valb);
 
