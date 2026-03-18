@@ -1,0 +1,23 @@
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
+
+char* PG_Pacific_Guam[] = {(char*)"Rule	Guam	1959	only	-	Jun	27	2:00	1:00	D",
+                           (char*)"Rule	Guam	1961	only	-	Jan	29	2:00	0	S",
+                           (char*)"Rule	Guam	1967	only	-	Sep	 1	2:00	1:00	D",
+                           (char*)"Rule	Guam	1969	only	-	Jan	26	0:01	0	S",
+                           (char*)"Rule	Guam	1969	only	-	Jun	22	2:00	1:00	D",
+                           (char*)"Rule	Guam	1969	only	-	Aug	31	2:00	0	S",
+                           (char*)"Rule	Guam	1970	1971	-	Apr	lastSun	2:00	1:00	D",
+                           (char*)"Rule	Guam	1970	1971	-	Sep	Sun>=1	2:00	0	S",
+                           (char*)"Rule	Guam	1973	only	-	Dec	16	2:00	1:00	D",
+                           (char*)"Rule	Guam	1974	only	-	Feb	24	2:00	0	S",
+                           (char*)"Rule	Guam	1976	only	-	May	26	2:00	1:00	D",
+                           (char*)"Rule	Guam	1976	only	-	Aug	22	2:01	0	S",
+                           (char*)"Rule	Guam	1977	only	-	Apr	24	2:00	1:00	D",
+                           (char*)"Rule	Guam	1977	only	-	Aug	28	2:00	0	S",
+                           (char*)"Zone	Pacific/Guam	-14:21:00 -	LMT	1844 Dec 31",
+                           (char*)"			 9:39:00 -	LMT	1901        # Agana",
+                           (char*)"			10:00	-	GST	1941 Dec 10 # Guam",
+                           (char*)"			 9:00	-	JST	1944 Jul 31",
+                           (char*)"			10:00	Guam	G%sT	2000 Dec 23",
+                           (char*)"			10:00	-	ChST	# Chamorro Standard Time"};

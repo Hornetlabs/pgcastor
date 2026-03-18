@@ -1,0 +1,21 @@
+#include "pg_parser_os_incl.h"
+#include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
+
+char* PG_Antarctica_South_Pole[] = {
+    (char*)"Rule	NZ	1927	only	-	Nov	 6	2:00	1:00	S",
+    (char*)"Rule	NZ	1928	only	-	Mar	 4	2:00	0	M",
+    (char*)"Rule	NZ	1928	1933	-	Oct	Sun>=8	2:00	0:30	S",
+    (char*)"Rule	NZ	1929	1933	-	Mar	Sun>=15	2:00	0	M",
+    (char*)"Rule	NZ	1934	1940	-	Apr	lastSun	2:00	0	M",
+    (char*)"Rule	NZ	1934	1940	-	Sep	lastSun	2:00	0:30	S",
+    (char*)"Rule	NZ	1946	only	-	Jan	 1	0:00	0	S",
+    (char*)"Rule	NZ	1974	only	-	Nov	Sun>=1	2:00s	1:00	D",
+    (char*)"Rule	NZ	1975	only	-	Feb	lastSun	2:00s	0	S",
+    (char*)"Rule	NZ	1975	1988	-	Oct	lastSun	2:00s	1:00	D",
+    (char*)"Rule	NZ	1976	1989	-	Mar	Sun>=1	2:00s	0	S",
+    (char*)"Rule	NZ	1989	only	-	Oct	Sun>=8	2:00s	1:00	D",
+    (char*)"Rule	NZ	1990	2006	-	Oct	Sun>=1	2:00s	1:00	D",
+    (char*)"Rule	NZ	1990	2007	-	Mar	Sun>=15	2:00s	0	S",
+    (char*)"Rule	NZ	2007	max	-	Sep	lastSun	2:00s	1:00	D",
+    (char*)"Rule	NZ	2008	max	-	Apr	Sun>=1	2:00s	0	S",
+    (char*)"Link	Pacific/Auckland	Antarctica/South_Pole"};
