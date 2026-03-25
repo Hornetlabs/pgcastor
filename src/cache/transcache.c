@@ -49,19 +49,19 @@
 #include "works/parserwork/wal/onlinerefresh.h"
 #include "strategy/filter_dataset.h"
 /*
- * 事务是正在处理中的缓存。
- * 处理中的缓存设置为一个 hash 表，方便快速查找
- *  处理中的缓存在 ENTER/REMOVE/FIND 时都不需要加锁
-*/
+ * Transactions are caches that are being processed.
+ * Processing cache is set as a hash table for fast lookup
+ *  Processing cache does not need locking during ENTER/REMOVE/FIND
+ */
 
 static void transcache_dlist_append(decodingcontext* ctx, txn* txn)
 {
-    if(NULL == txn)
+    if (NULL == txn)
     {
         return;
     }
 
-    if(NULL == ctx->trans_cache->transdlist->head)
+    if (NULL == ctx->trans_cache->transdlist->head)
     {
         ctx->trans_cache->transdlist->head = txn;
         ctx->trans_cache->transdlist->tail = txn;
@@ -75,30 +75,24 @@ static void transcache_dlist_append(decodingcontext* ctx, txn* txn)
 }
 
 /*
- * 将事务在双向链表中删除
- * 参数:
- *  in_ctx          解析上下文
- *  txn             需要删除的事务
- *  brestart        出参,用于标识是否更新了 restartlsn
- *                      true        更新
- *                      false       未更新
- *  bconfirm        出参,用于标识是否更新了 confirmlsn
- *                      true        更新
- *                      false       未更新
- *  bset            入参，用于标识调用此函数时，是否需要更新 restartlsn 和 confirmlsn
- *                      true        需要更新
- *                      false       不需要更新
-*/
-void transcache_dlist_remove(void* in_ctx,
-                                    txn* txn,
-                                    bool* brestart,
-                                    XLogRecPtr* restartlsn,
-                                    bool* bconfirm,
-                                    XLogRecPtr* confirmlsn,
-                                    bool bset)
+ * Remove transaction from doubly linked list
+ * Parameters:
+ *  in_ctx          Parsing context
+ *  txn             Transaction to be removed
+ *  brestart        Output parameter, indicates whether restartlsn is updated
+ *                      true        Updated
+ *                      false       Not updated
+ *  bconfirm        Output parameter, indicates whether confirmlsn is updated
+ *                      true        Updated
+ *                      false       Not updated
+ *  bset            Input parameter, indicates whether to update restartlsn and confirmlsn when
+ * calling this function true        Need to update false       No need to update
+ */
+void transcache_dlist_remove(void* in_ctx, txn* txn, bool* brestart, XLogRecPtr* restartlsn,
+                             bool* bconfirm, XLogRecPtr* confirmlsn, bool bset)
 {
     decodingcontext* ctx = NULL;
-    if(NULL == txn)
+    if (NULL == txn)
     {
         return;
     }
@@ -107,29 +101,28 @@ void transcache_dlist_remove(void* in_ctx,
     *bconfirm = false;
     ctx = (decodingcontext*)in_ctx;
 
-    if(NULL == txn->prev)
+    if (NULL == txn->prev)
     {
-        /* 设置新的 restartlsn */
-        if(true == bset && txn->start.wal.lsn > ctx->base.restartlsn)
+        /* Set new restartlsn */
+        if (true == bset && txn->start.wal.lsn > ctx->base.restartlsn)
         {
             ctx->base.restartlsn = txn->start.wal.lsn;
             *brestart = true;
-            if(NULL != restartlsn)
+            if (NULL != restartlsn)
             {
                 *restartlsn = txn->start.wal.lsn;
             }
-            elog(RLOG_DEBUG, "restartlsn update by:xid:%lu, %X/%X",
-                            txn->xid,
-                            (uint32)(txn->start.wal.lsn >> 32), (uint32)(txn->start.wal.lsn));
+            elog(RLOG_DEBUG, "restartlsn update by:xid:%lu, %X/%X", txn->xid,
+                 (uint32)(txn->start.wal.lsn >> 32), (uint32)(txn->start.wal.lsn));
         }
 
-        if(NULL == txn->next)
+        if (NULL == txn->next)
         {
-            /* 空链表 */
-            if(true == *brestart)
+            /* Empty linked list */
+            if (true == *brestart)
             {
                 ctx->base.restartlsn = txn->end.wal.lsn;
-                if(NULL != restartlsn)
+                if (NULL != restartlsn)
                 {
                     *restartlsn = txn->end.wal.lsn;
                 }
@@ -146,7 +139,7 @@ void transcache_dlist_remove(void* in_ctx,
     }
     else
     {
-        if(NULL == txn->next)
+        if (NULL == txn->next)
         {
             ctx->trans_cache->transdlist->tail = txn->prev;
             txn->prev->next = NULL;
@@ -158,11 +151,11 @@ void transcache_dlist_remove(void* in_ctx,
         }
     }
 
-    if(true == bset && ctx->base.confirmedlsn < txn->end.wal.lsn)
+    if (true == bset && ctx->base.confirmedlsn < txn->end.wal.lsn)
     {
         ctx->base.confirmedlsn = txn->end.wal.lsn;
         *bconfirm = true;
-        if(NULL != confirmlsn)
+        if (NULL != confirmlsn)
         {
             *confirmlsn = txn->end.wal.lsn;
         }
@@ -172,15 +165,15 @@ void transcache_dlist_remove(void* in_ctx,
     txn->next = NULL;
 }
 
-txn *transcache_getTXNByXid(void* in_ctx, uint64_t xid)
+txn* transcache_getTXNByXid(void* in_ctx, uint64_t xid)
 {
-    bool find = false;
-    HTAB *tx_htab =  NULL;
+    bool             find = false;
+    HTAB*            tx_htab = NULL;
     decodingcontext* ctx = NULL;
-    txn *txn_entry = NULL;
+    txn*             txn_entry = NULL;
 
-    /* 无效事务，那么不需要放入到 hash 中维护 */
-    if(InvalidFullTransactionId == xid)
+    /* Invalid transaction, no need to maintain in hash */
+    if (InvalidFullTransactionId == xid)
     {
         return NULL;
     }
@@ -188,27 +181,27 @@ txn *transcache_getTXNByXid(void* in_ctx, uint64_t xid)
     ctx = (decodingcontext*)in_ctx;
     tx_htab = ctx->trans_cache->by_txns;
 
-    txn_entry = (txn *) hash_search(tx_htab, &xid, HASH_ENTER, &find);
+    txn_entry = (txn*)hash_search(tx_htab, &xid, HASH_ENTER, &find);
     if (!find)
     {
-        /* 第一次捕获该事务 */
+        /* First capture of this transaction */
         if (ctx->onlinerefresh)
         {
-            /* onlinerefresh节点不为空 */
-            dlistnode *dlnode = ctx->onlinerefresh->head;
-            onlinerefresh *olnode = NULL;
+            /* onlinerefresh node is not empty */
+            dlistnode*     dlnode = ctx->onlinerefresh->head;
+            onlinerefresh* olnode = NULL;
             for (; dlnode; dlnode = dlnode->next)
             {
-                olnode = (onlinerefresh *)dlnode->value;
+                olnode = (onlinerefresh*)dlnode->value;
                 if (!olnode->increment)
                 {
-                    /* 不需要增量时跳过 */
+                    /* Skip when incremental is not needed */
                     continue;
                 }
 
                 if (xid < olnode->snapshot->xmin)
                 {
-                    /* 无需加入xids */
+                    /* No need to add to xids */
                     continue;
                 }
                 if (xid > olnode->txid)
@@ -221,7 +214,7 @@ txn *transcache_getTXNByXid(void* in_ctx, uint64_t xid)
                 }
                 else
                 {
-                    /* 存在xmin = xmax的情况, 因此首先排除xid = xmin */
+                    /* There is a case where xmin = xmax, so first exclude xid = xmin */
                     if (xid != olnode->snapshot->xmin && xid >= olnode->snapshot->xmax)
                     {
                         onlinerefresh_xids_append(olnode, xid);
@@ -229,65 +222,64 @@ txn *transcache_getTXNByXid(void* in_ctx, uint64_t xid)
                 }
             }
         }
-        /* 初始化 */
+        /* Initialize */
         txn_initset(txn_entry, xid, ctx->decode_record->start.wal.lsn);
         TXN_SET_TRANS_INHASH(txn_entry->flag);
 
-        /* 将事务加入到双向链表中 */
+        /* Add transaction to doubly linked list */
         transcache_dlist_append(ctx, txn_entry);
     }
 
     return txn_entry;
 }
 
-txn *transcache_getTXNByXidFind(transcache* transcache, uint64_t xid)
+txn* transcache_getTXNByXidFind(transcache* transcache, uint64_t xid)
 {
-    txn *txn_entry = NULL;
-    txn_entry = (txn *) hash_search(transcache->by_txns, &xid, HASH_FIND, NULL);
+    txn* txn_entry = NULL;
+    txn_entry = (txn*)hash_search(transcache->by_txns, &xid, HASH_FIND, NULL);
     return txn_entry;
 }
 
-/* 删除 */
-/* 改入参 */
-void transcache_removeTXNByXid(transcache * in_transcache, uint64_t xid)
+/* Delete */
+/* Modify input parameters */
+void transcache_removeTXNByXid(transcache* in_transcache, uint64_t xid)
 {
     bool find = false;
-    txn *txn_entry = NULL;
+    txn* txn_entry = NULL;
 
     txn_entry = hash_search(in_transcache->by_txns, &xid, HASH_REMOVE, &find);
-    if(false == find)
+    if (false == find)
     {
         elog(RLOG_WARNING, "ripple logical error");
     }
     else
     {
         elog(RLOG_DEBUG, "txn lsn info :restart:%X/%X, confirm:%X/%X, redo:%X/%X,",
-                                (uint32)(txn_entry->restart.wal.lsn >> 32), (uint32)(txn_entry->restart.wal.lsn),
-                                (uint32)(txn_entry->confirm.wal.lsn >> 32), (uint32)(txn_entry->confirm.wal.lsn),
-                                (uint32)(txn_entry->redo.wal.lsn >> 32), (uint32)(txn_entry->redo.wal.lsn));
+             (uint32)(txn_entry->restart.wal.lsn >> 32), (uint32)(txn_entry->restart.wal.lsn),
+             (uint32)(txn_entry->confirm.wal.lsn >> 32), (uint32)(txn_entry->confirm.wal.lsn),
+             (uint32)(txn_entry->redo.wal.lsn >> 32), (uint32)(txn_entry->redo.wal.lsn));
         rmemset1(txn_entry, 0, '\0', sizeof(txn));
     }
-    //elog(RLOG_INFO, "remove txn, found:%d, xid:%lu", find, xid);
+    // elog(RLOG_INFO, "remove txn, found:%d, xid:%lu", find, xid);
     return;
 }
 
-/* 将事务中的 sysdict 转换后的结果放入到 sysdicthis 中 */
+/* Put converted sysdict results from transaction into sysdicthis */
 void transcache_sysdict2his(txn* txn)
 {
-    ListCell* lc = NULL;
-    txn_sysdict* sysdict = NULL;
-    catalogdata* catalogdata = NULL;
-    txnstmt *stmt = NULL;
-    bool first_foreach = true;
-    txnstmt_metadata *metadata = NULL;
+    ListCell*         lc = NULL;
+    txn_sysdict*      sysdict = NULL;
+    catalogdata*      catalogdata = NULL;
+    txnstmt*          stmt = NULL;
+    bool              first_foreach = true;
+    txnstmt_metadata* metadata = NULL;
 
-    if(NULL == txn
-        || NULL == txn->sysdict)
+    if (NULL == txn || NULL == txn->sysdict)
     {
         return;
     }
 
-    /* 添加stmt, 作为系统表段标识 */
+    /* Add stmt as system catalog segment identifier */
     stmt = rmalloc1(sizeof(txnstmt));
     rmemset0(stmt, 0, 0, sizeof(txnstmt));
     metadata = rmalloc1(sizeof(txnstmt_metadata));
@@ -295,33 +287,33 @@ void transcache_sysdict2his(txn* txn)
 
     stmt->type = TXNSTMT_TYPE_METADATA;
 
-    foreach(lc, txn->sysdict)
+    foreach (lc, txn->sysdict)
     {
         sysdict = (txn_sysdict*)lfirst(lc);
 
         catalogdata = catalog_colvalued2catalog(g_idbtype, g_idbversion, sysdict->colvalues);
-        if(NULL == catalogdata)
+        if (NULL == catalogdata)
         {
             continue;
         }
 
-        /* 设置事务startlsn，落盘字典表时过滤使用 */
+        /* Set transaction startlsn, used for filtering when flushing dictionary table */
         catalogdata->lsn.wal.lsn = txn->start.wal.lsn;
 
         txn->sysdictHis = lappend(txn->sysdictHis, catalogdata);
 
-        /* 第一次时执行, 此时链表的尾部就是开始 */
+        /* Execute on first time, when the tail of the list is the start */
         if (first_foreach)
         {
             first_foreach = false;
             metadata->begin = list_tail(txn->sysdictHis);
         }
     }
-    if(false == first_foreach)
+    if (false == first_foreach)
     {
-        /* 链表拼装完成后, 此时链表尾部就是结束 */
+        /* After linked list assembly complete, when the tail of the list is the end */
         metadata->end = list_tail(txn->sysdictHis);
-        stmt->stmt = (void *)metadata;
+        stmt->stmt = (void*)metadata;
         txn->stmts = lappend(txn->stmts, stmt);
     }
     else
@@ -331,7 +323,7 @@ void transcache_sysdict2his(txn* txn)
     }
 }
 
-/* 更新解析节点lsn信息* */
+/* Update parsing node lsn information * */
 bool transcache_refreshlsn(void* in_ctx, txn* txn)
 {
     decodingcontext* ctx = NULL;
@@ -343,25 +335,24 @@ bool transcache_refreshlsn(void* in_ctx, txn* txn)
     }
 
     ctx = (decodingcontext*)in_ctx;
-    
+
     if (TXN_CHECK_TRANS_INHASH(txn->flag))
     {
-        if(NULL == txn->prev)
+        if (NULL == txn->prev)
         {
-            /* 设置新的 restartlsn */
+            /* Set new restartlsn */
 
-            if(txn->start.wal.lsn > ctx->base.restartlsn)
+            if (txn->start.wal.lsn > ctx->base.restartlsn)
             {
                 ctx->base.restartlsn = txn->start.wal.lsn;
                 txn->restart.wal.lsn = txn->start.wal.lsn;
-                elog(RLOG_DEBUG, "restartlsn update by:xid:%lu, %X/%X",
-                                txn->xid,
-                                (uint32)(txn->start.wal.lsn >> 32), (uint32)(txn->start.wal.lsn));
+                elog(RLOG_DEBUG, "restartlsn update by:xid:%lu, %X/%X", txn->xid,
+                     (uint32)(txn->start.wal.lsn >> 32), (uint32)(txn->start.wal.lsn));
             }
 
             if (NULL == txn->next)
             {
-                if(txn->end.wal.lsn > ctx->base.restartlsn)
+                if (txn->end.wal.lsn > ctx->base.restartlsn)
                 {
                     ctx->base.restartlsn = txn->end.wal.lsn;
                 }
@@ -378,11 +369,11 @@ bool transcache_refreshlsn(void* in_ctx, txn* txn)
         ctx->base.confirmedlsn = txn->end.wal.lsn;
     }
 
-    if(txn->end.wal.lsn > ctx->base.confirmedlsn)
+    if (txn->end.wal.lsn > ctx->base.confirmedlsn)
     {
         ctx->base.confirmedlsn = txn->end.wal.lsn;
     }
-    
+
     fpwcache_calcredolsnbyrestartlsn(ctx->trans_cache, ctx->base.restartlsn, &(ctx->base.redolsn));
 
     txn->restart.wal.lsn = ctx->base.restartlsn;
@@ -390,13 +381,14 @@ bool transcache_refreshlsn(void* in_ctx, txn* txn)
     txn->redo.wal.lsn = ctx->base.redolsn;
     if (NULL != ctx->callback.setmetricsynclsn)
     {
-        ctx->callback.setmetricsynclsn(ctx->privdata, ctx->base.redolsn, ctx->base.restartlsn, ctx->base.confirmedlsn);
+        ctx->callback.setmetricsynclsn(ctx->privdata, ctx->base.redolsn, ctx->base.restartlsn,
+                                       ctx->base.confirmedlsn);
     }
 
     return true;
 }
 
-/* 在decodingcontext删除txn */
+/* Delete txn in decodingcontext */
 bool transcache_deletetxn(void* in_ctx, txn* txn)
 {
     decodingcontext* ctx = NULL;
@@ -409,10 +401,10 @@ bool transcache_deletetxn(void* in_ctx, txn* txn)
 
     ctx = (decodingcontext*)in_ctx;
 
-    /* 将事务在ctx->trans_cache->transdlist删除 */
-    if(NULL == txn->prev)
+    /* Remove transaction from ctx->trans_cache->transdlist */
+    if (NULL == txn->prev)
     {
-        if(NULL == txn->next)
+        if (NULL == txn->next)
         {
             ctx->trans_cache->transdlist->head = NULL;
             ctx->trans_cache->transdlist->tail = NULL;
@@ -425,7 +417,7 @@ bool transcache_deletetxn(void* in_ctx, txn* txn)
     }
     else
     {
-        if(NULL == txn->next)
+        if (NULL == txn->next)
         {
             ctx->trans_cache->transdlist->tail = txn->prev;
             txn->prev->next = NULL;
@@ -439,7 +431,7 @@ bool transcache_deletetxn(void* in_ctx, txn* txn)
     txn->prev = NULL;
     txn->next = NULL;
 
-    /* 将事务在哈希中删除 */
+    /* Remove transaction from hash */
     transcache_removeTXNByXid(ctx->trans_cache, txn->xid);
 
     return true;
@@ -447,42 +439,44 @@ bool transcache_deletetxn(void* in_ctx, txn* txn)
 
 void transcache_sysdict_free(txn* txn)
 {
-    ListCell *cell = NULL;
-    List *sysdict_List = txn->sysdict;
+    ListCell* cell = NULL;
+    List*     sysdict_List = txn->sysdict;
 
     if (!sysdict_List)
-        return;
-
-    foreach(cell, sysdict_List)
     {
-        txn_sysdict *dict = (txn_sysdict *) lfirst(cell);
+        return;
+    }
+
+    foreach (cell, sysdict_List)
+    {
+        txn_sysdict* dict = (txn_sysdict*)lfirst(cell);
         if (dict->convert_colvalues)
         {
             cache_sysdicts_catalogdatafreevoid(dict->convert_colvalues);
         }
-        heap_free_trans_result((pg_parser_translog_tbcolbase *)dict->colvalues);
+        heap_free_trans_result((pg_parser_translog_tbcolbase*)dict->colvalues);
         rfree(dict);
     }
     list_free(sysdict_List);
     txn->sysdict = NULL;
 }
 
-/* transcache 删除 */
+/* Delete transcache */
 void transcache_free(transcache* transcache)
 {
     HASH_SEQ_STATUS status;
-    ListCell* lc = NULL;
-    txn* txn = NULL;
+    ListCell*       lc = NULL;
+    txn*            txn = NULL;
     checkpointnode* chkptnode = NULL;
-    if(NULL == transcache)
+    if (NULL == transcache)
     {
         return;
     }
 
-    /* txn hash表释放 */
-    if(NULL != transcache->transdlist)
+    /* Release txn hash table */
+    if (NULL != transcache->transdlist)
     {
-        for(txn = transcache->transdlist->head; NULL != txn; txn = transcache->transdlist->head)
+        for (txn = transcache->transdlist->head; NULL != txn; txn = transcache->transdlist->head)
         {
             transcache->transdlist->head = txn->next;
 
@@ -491,28 +485,28 @@ void transcache_free(transcache* transcache)
         rfree(transcache->transdlist);
     }
 
-    if(NULL != transcache->by_txns)
+    if (NULL != transcache->by_txns)
     {
         hash_destroy(transcache->by_txns);
     }
 
-    /* hash表删除 */
-    /* class 表删除 */
-    if(NULL != transcache->sysdicts)
+    /* Delete hash table */
+    /* Delete class table */
+    if (NULL != transcache->sysdicts)
     {
-        /* relfilenode 缓存清理 */
-        if(NULL != transcache->sysdicts->by_relfilenode)
+        /* Clean up relfilenode cache */
+        if (NULL != transcache->sysdicts->by_relfilenode)
         {
             hash_destroy(transcache->sysdicts->by_relfilenode);
         }
 
-        if(NULL != transcache->sysdicts->by_class)
+        if (NULL != transcache->sysdicts->by_class)
         {
-            catalog_class_value *catalogclassentry;
-            hash_seq_init(&status,transcache->sysdicts->by_class);
+            catalog_class_value* catalogclassentry;
+            hash_seq_init(&status, transcache->sysdicts->by_class);
             while (NULL != (catalogclassentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogclassentry->class)
+                if (NULL != catalogclassentry->class)
                 {
                     rfree(catalogclassentry->class);
                 }
@@ -521,16 +515,16 @@ void transcache_free(transcache* transcache)
             hash_destroy(transcache->sysdicts->by_class);
         }
 
-        /* attributes 表删除 */
-        if(NULL != transcache->sysdicts->by_attribute)
+        /* Delete attributes table */
+        if (NULL != transcache->sysdicts->by_attribute)
         {
             catalog_attribute_value* catalogattrentry = NULL;
-            hash_seq_init(&status,transcache->sysdicts->by_attribute);
-            while(NULL != (catalogattrentry = hash_seq_search(&status)))
+            hash_seq_init(&status, transcache->sysdicts->by_attribute);
+            while (NULL != (catalogattrentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogattrentry->attrs)
+                if (NULL != catalogattrentry->attrs)
                 {
-                    foreach(lc, catalogattrentry->attrs)
+                    foreach (lc, catalogattrentry->attrs)
                     {
                         rfree(lfirst(lc));
                     }
@@ -541,14 +535,14 @@ void transcache_free(transcache* transcache)
             hash_destroy(transcache->sysdicts->by_attribute);
         }
 
-        /* type 表删除 */
-        if(NULL != transcache->sysdicts->by_type)
+        /* Delete type table */
+        if (NULL != transcache->sysdicts->by_type)
         {
             catalog_type_value* catalogtypeentry = NULL;
-            hash_seq_init(&status,transcache->sysdicts->by_type);
-            while(NULL != (catalogtypeentry = hash_seq_search(&status)))
+            hash_seq_init(&status, transcache->sysdicts->by_type);
+            while (NULL != (catalogtypeentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogtypeentry->type)
+                if (NULL != catalogtypeentry->type)
                 {
                     rfree(catalogtypeentry->type);
                 }
@@ -557,14 +551,14 @@ void transcache_free(transcache* transcache)
             hash_destroy(transcache->sysdicts->by_type);
         }
 
-        /* proc 表删除 */
-        if(NULL != transcache->sysdicts->by_proc)
+        /* Delete proc table */
+        if (NULL != transcache->sysdicts->by_proc)
         {
             catalog_proc_value* catalogprocentry = NULL;
-            hash_seq_init(&status,transcache->sysdicts->by_proc);
-            while(NULL != (catalogprocentry = hash_seq_search(&status)))
+            hash_seq_init(&status, transcache->sysdicts->by_proc);
+            while (NULL != (catalogprocentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogprocentry->proc)
+                if (NULL != catalogprocentry->proc)
                 {
                     rfree(catalogprocentry->proc);
                 }
@@ -573,21 +567,21 @@ void transcache_free(transcache* transcache)
             hash_destroy(transcache->sysdicts->by_proc);
         }
 
-        /* tablespace 表删除 */
-        if(NULL != transcache->sysdicts->by_tablespace)
+        /* Delete tablespace table */
+        if (NULL != transcache->sysdicts->by_tablespace)
         {
-            /* tablespace 表在当前程序中没有用到 */
+            /* tablespace table is not used in current program */
             hash_destroy(transcache->sysdicts->by_tablespace);
         }
 
-        /* namespace 表删除 */
-        if(NULL != transcache->sysdicts->by_namespace)
+        /* Delete namespace table */
+        if (NULL != transcache->sysdicts->by_namespace)
         {
             catalog_namespace_value* catalognamespaceentry = NULL;
-            hash_seq_init(&status,transcache->sysdicts->by_namespace);
-            while(NULL != (catalognamespaceentry = hash_seq_search(&status)))
+            hash_seq_init(&status, transcache->sysdicts->by_namespace);
+            while (NULL != (catalognamespaceentry = hash_seq_search(&status)))
             {
-                if(NULL != catalognamespaceentry->namespace)
+                if (NULL != catalognamespaceentry->namespace)
                 {
                     rfree(catalognamespaceentry->namespace);
                 }
@@ -595,14 +589,14 @@ void transcache_free(transcache* transcache)
             hash_destroy(transcache->sysdicts->by_namespace);
         }
 
-        /* range 表删除 */
-        if(NULL != transcache->sysdicts->by_range)
+        /* Delete range table */
+        if (NULL != transcache->sysdicts->by_range)
         {
             catalog_range_value* catalograngeentry = NULL;
-            hash_seq_init(&status,transcache->sysdicts->by_range);
-            while(NULL != (catalograngeentry = hash_seq_search(&status)))
+            hash_seq_init(&status, transcache->sysdicts->by_range);
+            while (NULL != (catalograngeentry = hash_seq_search(&status)))
             {
-                if(NULL != catalograngeentry->range)
+                if (NULL != catalograngeentry->range)
                 {
                     rfree(catalograngeentry->range);
                 }
@@ -610,16 +604,16 @@ void transcache_free(transcache* transcache)
             hash_destroy(transcache->sysdicts->by_range);
         }
 
-        /* enum 表删除 */
-        if(NULL != transcache->sysdicts->by_enum)
+        /* Delete enum table */
+        if (NULL != transcache->sysdicts->by_enum)
         {
             catalog_enum_value* catalogenumentry = NULL;
-            hash_seq_init(&status,transcache->sysdicts->by_enum);
-            while(NULL != (catalogenumentry = hash_seq_search(&status)))
+            hash_seq_init(&status, transcache->sysdicts->by_enum);
+            while (NULL != (catalogenumentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogenumentry->enums)
+                if (NULL != catalogenumentry->enums)
                 {
-                    foreach(lc, catalogenumentry->enums)
+                    foreach (lc, catalogenumentry->enums)
                     {
                         rfree(lfirst(lc));
                     }
@@ -630,14 +624,14 @@ void transcache_free(transcache* transcache)
             hash_destroy(transcache->sysdicts->by_enum);
         }
 
-        /* operator 表删除 */
-        if(NULL != transcache->sysdicts->by_operator)
+        /* Delete operator table */
+        if (NULL != transcache->sysdicts->by_operator)
         {
             catalog_operator_value* catalogoperatorentry = NULL;
-            hash_seq_init(&status,transcache->sysdicts->by_operator);
-            while(NULL != (catalogoperatorentry = hash_seq_search(&status)))
+            hash_seq_init(&status, transcache->sysdicts->by_operator);
+            while (NULL != (catalogoperatorentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogoperatorentry->operator)
+                if (NULL != catalogoperatorentry->operator)
                 {
                     rfree(catalogoperatorentry->operator);
                 }
@@ -647,13 +641,13 @@ void transcache_free(transcache* transcache)
         }
 
         /* by_authid */
-        if(NULL != transcache->sysdicts->by_authid)
+        if (NULL != transcache->sysdicts->by_authid)
         {
             catalog_authid_value* catalogauthidentry = NULL;
-            hash_seq_init(&status,transcache->sysdicts->by_authid);
-            while(NULL != (catalogauthidentry = hash_seq_search(&status)))
+            hash_seq_init(&status, transcache->sysdicts->by_authid);
+            while (NULL != (catalogauthidentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogauthidentry->authid)
+                if (NULL != catalogauthidentry->authid)
                 {
                     rfree(catalogauthidentry->authid);
                 }
@@ -662,13 +656,13 @@ void transcache_free(transcache* transcache)
             hash_destroy(transcache->sysdicts->by_authid);
         }
 
-        if(NULL != transcache->sysdicts->by_constraint)
+        if (NULL != transcache->sysdicts->by_constraint)
         {
-            catalog_constraint_value *catalogconentry;
-            hash_seq_init(&status,transcache->sysdicts->by_constraint);
+            catalog_constraint_value* catalogconentry;
+            hash_seq_init(&status, transcache->sysdicts->by_constraint);
             while (NULL != (catalogconentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogconentry->constraint)
+                if (NULL != catalogconentry->constraint)
                 {
                     if (0 != catalogconentry->constraint->conkeycnt)
                     {
@@ -682,13 +676,13 @@ void transcache_free(transcache* transcache)
         }
 
         /*by_database*/
-        if(NULL != transcache->sysdicts->by_database)
+        if (NULL != transcache->sysdicts->by_database)
         {
             catalog_database_value* catalogdatabaseentry = NULL;
-            hash_seq_init(&status,transcache->sysdicts->by_database);
-            while(NULL != (catalogdatabaseentry = hash_seq_search(&status)))
+            hash_seq_init(&status, transcache->sysdicts->by_database);
+            while (NULL != (catalogdatabaseentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogdatabaseentry->database)
+                if (NULL != catalogdatabaseentry->database)
                 {
                     rfree(catalogdatabaseentry->database);
                 }
@@ -698,23 +692,23 @@ void transcache_free(transcache* transcache)
         }
 
         /* by_datname2oid */
-        if(NULL != transcache->sysdicts->by_datname2oid)
+        if (NULL != transcache->sysdicts->by_datname2oid)
         {
             hash_destroy(transcache->sysdicts->by_datname2oid);
             transcache->sysdicts->by_datname2oid = NULL;
         }
 
         /* by_index */
-        if(NULL != transcache->sysdicts->by_index)
+        if (NULL != transcache->sysdicts->by_index)
         {
-            catalog_index_value* index = NULL;
+            catalog_index_value*      index = NULL;
             catalog_index_hash_entry* catalogindexentry = NULL;
             hash_seq_init(&status, transcache->sysdicts->by_index);
-            while(NULL != (catalogindexentry = hash_seq_search(&status)))
+            while (NULL != (catalogindexentry = hash_seq_search(&status)))
             {
-                if(NULL != catalogindexentry->index_list)
+                if (NULL != catalogindexentry->index_list)
                 {
-                    foreach(lc, catalogindexentry->index_list)
+                    foreach (lc, catalogindexentry->index_list)
                     {
                         index = (catalog_index_value*)lfirst(lc);
                         if (index->index)
@@ -752,14 +746,14 @@ void transcache_free(transcache* transcache)
         filter_dataset_listpairsfree(transcache->tableincludes);
     }
 
-    /* fpw 缓存清理 */
-    if(NULL != transcache->by_fpwtuples)
+    /* Clean up fpw cache */
+    if (NULL != transcache->by_fpwtuples)
     {
-        ReorderBufferFPWEntry *fpwentry = NULL;
-        hash_seq_init(&status,transcache->by_fpwtuples);
-        while(NULL != (fpwentry = hash_seq_search(&status)))
+        ReorderBufferFPWEntry* fpwentry = NULL;
+        hash_seq_init(&status, transcache->by_fpwtuples);
+        while (NULL != (fpwentry = hash_seq_search(&status)))
         {
-            if(NULL != fpwentry->data)
+            if (NULL != fpwentry->data)
             {
                 rfree(fpwentry->data);
             }
@@ -768,7 +762,7 @@ void transcache_free(transcache* transcache)
         hash_destroy(transcache->by_fpwtuples);
     }
 
-    if(NULL != transcache->fpwtupleslist)
+    if (NULL != transcache->fpwtupleslist)
     {
         list_free_deep(transcache->fpwtupleslist);
     }
@@ -785,10 +779,11 @@ void transcache_free(transcache* transcache)
         transcache->htxnfilterdataset = NULL;
     }
 
-    /* chkpt 释放 */
-    if(NULL != transcache->chkpts)
+    /* Release chkpt */
+    if (NULL != transcache->chkpts)
     {
-        for(chkptnode = transcache->chkpts->head; NULL != chkptnode; chkptnode = transcache->chkpts->head)
+        for (chkptnode = transcache->chkpts->head; NULL != chkptnode;
+             chkptnode = transcache->chkpts->head)
         {
             transcache->chkpts->head = chkptnode->next;
             rfree(chkptnode);
@@ -800,7 +795,7 @@ void transcache_free(transcache* transcache)
     }
 }
 
-/* 获取数据库的标识 */
+/* Get database identifier */
 Oid transcache_getdboid(void* in_transcache)
 {
     transcache* trans_cache = NULL;
@@ -809,7 +804,7 @@ Oid transcache_getdboid(void* in_transcache)
     return database_getdbid(trans_cache->sysdicts->by_database);
 }
 
-/* 获取数据库的名称 */
+/* Get database name */
 char* transcache_getdbname(Oid dbid, void* in_transcache)
 {
     transcache* trans_cache = NULL;
@@ -817,7 +812,7 @@ char* transcache_getdbname(Oid dbid, void* in_transcache)
     return database_getdbname(dbid, trans_cache->sysdicts->by_database);
 }
 
-/* 获取namespace数据 */
+/* Get namespace data */
 void* transcache_getnamespace(Oid oid, void* in_transcache)
 {
     transcache* trans_cache = NULL;
@@ -825,7 +820,7 @@ void* transcache_getnamespace(Oid oid, void* in_transcache)
     return namespace_getbyoid(oid, trans_cache->sysdicts->by_namespace);
 }
 
-/* 获取class数据 */
+/* Get class data */
 void* transcache_getclass(Oid oid, void* in_transcache)
 {
     transcache* trans_cache = NULL;
@@ -833,7 +828,7 @@ void* transcache_getclass(Oid oid, void* in_transcache)
     return class_getbyoid(oid, trans_cache->sysdicts->by_class);
 }
 
-/* 获取attribute数据 */
+/* Get attribute data */
 void* transcache_getattributes(Oid oid, void* in_transcache)
 {
     transcache* trans_cache = NULL;
@@ -841,7 +836,7 @@ void* transcache_getattributes(Oid oid, void* in_transcache)
     return attribute_getbyoid(oid, trans_cache->sysdicts->by_attribute);
 }
 
-/* 获取index链表 */
+/* Get index list */
 void* transcache_getindex(Oid oid, void* in_transcache)
 {
     transcache* trans_cache = NULL;
@@ -849,11 +844,10 @@ void* transcache_getindex(Oid oid, void* in_transcache)
     return index_getbyoid(oid, trans_cache->sysdicts->by_index);
 }
 
-/* 获取type数据 */
+/* Get type data */
 void* transcache_gettype(Oid oid, void* in_transcache)
 {
     transcache* trans_cache = NULL;
     trans_cache = (transcache*)in_transcache;
     return type_getbyoid(oid, trans_cache->sysdicts->by_type);
 }
-

@@ -1,19 +1,18 @@
 /*
  * All Copyright (c) 2024-2024, Byte Sync Development Group
  *
-*/
+ */
 
 #ifndef _PROCESS_H
 #define _PROCESS_H
 
-/* 关闭标准输入/输出 */
+/* Close standard input/output */
 void closestd(void);
 
-/* 设置为后台执行 */
+/* Set to background execution */
 void makedaemon(void);
 
-/* 执行后台命令 */
+/* Execute background command */
 bool execcommand(char* cmd, void* args, void (*childdestroy)(void* args));
 
 #endif
-

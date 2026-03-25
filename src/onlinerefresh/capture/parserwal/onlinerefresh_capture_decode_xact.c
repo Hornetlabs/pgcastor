@@ -53,62 +53,60 @@
 
 typedef struct xl_xact_parsed_commit
 {
-	TimestampTz xact_time;
-	uint32		xinfo;
+    TimestampTz xact_time;
+    uint32      xinfo;
 
-	Oid			dbId;			/* MyDatabaseId */
-	Oid			tsId;			/* MyDatabaseTableSpace */
+    Oid dbId; /* MyDatabaseId */
+    Oid tsId; /* MyDatabaseTableSpace */
 
-	int			nsubxacts;
-	TransactionId *subxacts;
+    int            nsubxacts;
+    TransactionId* subxacts;
 
-	int			nrels;
-	RelFileNode *xnodes;
+    int          nrels;
+    RelFileNode* xnodes;
 
-	int			nmsgs;
-	SharedInvalidationMessage *msgs;
+    int                        nmsgs;
+    SharedInvalidationMessage* msgs;
 
-	TransactionId twophase_xid; /* only for 2PC */
-	char		twophase_gid[GIDSIZE];	/* only for 2PC */
-	int			nabortrels;		/* only for 2PC */
-	RelFileNode *abortnodes;	/* only for 2PC */
+    TransactionId twophase_xid;          /* only for 2PC */
+    char          twophase_gid[GIDSIZE]; /* only for 2PC */
+    int           nabortrels;            /* only for 2PC */
+    RelFileNode*  abortnodes;            /* only for 2PC */
 
-	XLogRecPtr	origin_lsn;
-	TimestampTz origin_timestamp;
+    XLogRecPtr  origin_lsn;
+    TimestampTz origin_timestamp;
 } xl_xact_parsed_commit;
 
 typedef xl_xact_parsed_commit xl_xact_parsed_prepare;
 
-
 typedef struct xl_xact_parsed_abort
 {
-	TimestampTz xact_time;
-	uint32		xinfo;
+    TimestampTz xact_time;
+    uint32      xinfo;
 
-	Oid			dbId;			/* MyDatabaseId */
-	Oid			tsId;			/* MyDatabaseTableSpace */
+    Oid dbId; /* MyDatabaseId */
+    Oid tsId; /* MyDatabaseTableSpace */
 
-	int			nsubxacts;
-	TransactionId *subxacts;
+    int            nsubxacts;
+    TransactionId* subxacts;
 
-	int			nrels;
-	RelFileNode *xnodes;
+    int          nrels;
+    RelFileNode* xnodes;
 
-	TransactionId twophase_xid; /* only for 2PC */
-	char		twophase_gid[GIDSIZE];	/* only for 2PC */
+    TransactionId twophase_xid;          /* only for 2PC */
+    char          twophase_gid[GIDSIZE]; /* only for 2PC */
 
-	XLogRecPtr	origin_lsn;
-	TimestampTz origin_timestamp;
+    XLogRecPtr  origin_lsn;
+    TimestampTz origin_timestamp;
 } xl_xact_parsed_abort;
-
 
 static void decode_xact_appendsubtxn_obj(List** ptxnstmts, List** psysdicthis, txn* subtxn_obj)
 {
-    ListCell* lc = NULL;
-    txnstmt* stmt = NULL;
+    ListCell*    lc = NULL;
+    txnstmt*     stmt = NULL;
     catalogdata* catalog = NULL;
 
-    foreach(lc, subtxn_obj->stmts)
+    foreach (lc, subtxn_obj->stmts)
     {
         stmt = (txnstmt*)lfirst(lc);
         *ptxnstmts = lappend(*ptxnstmts, stmt);
@@ -116,7 +114,7 @@ static void decode_xact_appendsubtxn_obj(List** ptxnstmts, List** psysdicthis, t
     list_free(subtxn_obj->stmts);
     subtxn_obj->stmts = NULL;
 
-    foreach(lc, subtxn_obj->sysdictHis)
+    foreach (lc, subtxn_obj->sysdictHis)
     {
         catalog = (catalogdata*)lfirst(lc);
         *psysdicthis = lappend(*psysdicthis, catalog);
@@ -126,19 +124,18 @@ static void decode_xact_appendsubtxn_obj(List** ptxnstmts, List** psysdicthis, t
 }
 
 /*
- * 在 Commit 时, 将子事务中的内容 append 到主事务中
-*/
-static void decode_xact_buildcommittxn(decodingcontext* ctx,
-                                                pg_parser_translog_pre_trans* pretrans,
-                                                txn* in_txn)
+ * On Commit, append the contents of sub-transactions to the main transaction
+ */
+static void decode_xact_buildcommittxn(decodingcontext* ctx, pg_parser_translog_pre_trans* pretrans,
+                                       txn* in_txn)
 {
-    int index = 0;
-    List* txnstmts = NULL;
-    List* sysdicthis = NULL;
+    int                    index = 0;
+    List*                  txnstmts = NULL;
+    List*                  sysdicthis = NULL;
     xl_xact_parsed_commit* parsedcommit = NULL;
 
     parsedcommit = (xl_xact_parsed_commit*)pretrans->m_transdata;
-    if(0 == parsedcommit->nsubxacts)
+    if (0 == parsedcommit->nsubxacts)
     {
         return;
     }
@@ -149,41 +146,41 @@ static void decode_xact_buildcommittxn(decodingcontext* ctx,
     sysdicthis = in_txn->sysdictHis;
     in_txn->sysdictHis = NULL;
 
-    /* 遍历子事务放到合适的位置 */
-    for(index = 0; index < parsedcommit->nsubxacts; index++)
+    /* Traverse sub-transactions to the appropriate position */
+    for (index = 0; index < parsedcommit->nsubxacts; index++)
     {
-        bool brestart = false;
-        bool bconfirm = false;
-        txn* subtxn_obj = NULL;
+        bool          brestart = false;
+        bool          bconfirm = false;
+        txn*          subtxn_obj = NULL;
         TransactionId subxid = parsedcommit->subxacts[index];
 
-        /* 获取事务号，并获取存储的事务信息 */
+        /* Get transaction number, and get stored transaction information */
         subtxn_obj = transcache_getTXNByXidFind(ctx->trans_cache, subxid);
 
-        /* DDL 兑换 */
-        if(NULL != subtxn_obj->sysdict)
+        /* DDL conversion */
+        if (NULL != subtxn_obj->sysdict)
         {
-            /* 将 sysdict 转移到 sysdicthis 中 */
+            /* Transfer sysdict to sysdicthis */
             transcache_sysdict2his(subtxn_obj);
 
-            /* 释放 */
+            /* Release */
             transcache_sysdict_free(subtxn_obj);
         }
 
-        /* 将子事务的数据 append 到 主数据库中 */
-        if(NULL != subtxn_obj->stmts)
+        /* Append sub-transaction data to main transaction */
+        if (NULL != subtxn_obj->stmts)
         {
             in_txn->stmtsize += subtxn_obj->stmtsize;
         }
         decode_xact_appendsubtxn_obj(&txnstmts, &sysdicthis, subtxn_obj);
 
-        /* 将事务在事务链表中删除 */
+        /* Delete transaction from transaction linked list */
         transcache_dlist_remove((void*)ctx, subtxn_obj, &brestart, NULL, &bconfirm, NULL, false);
 
-        /* subtxn_obj 内存释放 */
+        /* subtxn_obj memory release */
         txn_free(subtxn_obj);
 
-        /* 将子事务在hash中删除 */
+        /* Delete sub-transaction from hash */
         transcache_removeTXNByXid(ctx->trans_cache, subtxn_obj->xid);
     }
 
@@ -193,8 +190,8 @@ static void decode_xact_buildcommittxn(decodingcontext* ctx,
 
 static void check_online_refresh_decode_xids(decodingcontext* ctx, TransactionId xid)
 {
-    dlistnode *dlnode_xid = NULL;
-    onlinerefresh_capture *olcapture = (onlinerefresh_capture *)ctx->privdata;
+    dlistnode*             dlnode_xid = NULL;
+    onlinerefresh_capture* olcapture = (onlinerefresh_capture*)ctx->privdata;
 
     if (!olcapture->xids)
     {
@@ -205,15 +202,15 @@ static void check_online_refresh_decode_xids(decodingcontext* ctx, TransactionId
 
     while (dlnode_xid)
     {
-        dlistnode *dlnode_next = NULL;
-        FullTransactionId *xid_p = (FullTransactionId *)dlnode_xid->value;
+        dlistnode*         dlnode_next = NULL;
+        FullTransactionId* xid_p = (FullTransactionId*)dlnode_xid->value;
 
         dlnode_next = dlnode_xid->next;
 
-        /* 判断是否在链表中 */
-        if (*xid_p == (FullTransactionId) xid)
+        /* Check if in linked list */
+        if (*xid_p == (FullTransactionId)xid)
         {
-            /* 在链表中, 删除 */
+            /* In linked list, delete */
             onlinerefresh_capture_xids_delete(olcapture, dlnode_xid);
         }
         dlnode_xid = dlnode_next;
@@ -221,12 +218,12 @@ static void check_online_refresh_decode_xids(decodingcontext* ctx, TransactionId
 
     if (onlinerefresh_capture_xids_isnull(olcapture))
     {
-        txn *end_txn = NULL;
+        txn* end_txn = NULL;
 
-        /* 构建onlinerefresh end事务 */
+        /* Build onlinerefresh end transaction */
         end_txn = parserwork_build_onlinerefresh_increment_end_txn(olcapture->no->data);
 
-        /* 事务添加到缓存 */
+        /* Add transaction to cache */
         cache_txn_add(ctx->parser2txns, end_txn);
 
         dlist_free(olcapture->xids, NULL);
@@ -234,94 +231,95 @@ static void check_online_refresh_decode_xids(decodingcontext* ctx, TransactionId
     }
 }
 
-/* 
- * commit 提交，处理逻辑如下
- *  1、首先 commit 时，要先根据提交的lsn与confirmlsn进行比较，当小于 confirmlsn 时说明此事务不需要处理，那么清理数据
- *      1.1 应用系统表数据
- * 
- *  2、将当前事务包含的子事务合并到主事务中
- * 
- * 
- * 在 PG 中的事务逻辑如下:
- *  主事务 xid
- *      savepoint   子事务 xid1
- *      savepoint   子事务 xid2，父事务  在逻辑上为 xid1,但是在 PG 中没有嵌套事务的逻辑，所以父事务为 xid
- * 
-*/
+/*
+ * commit submission, processing logic is as follows
+ *  1、First on commit, compare submitted lsn with confirmlsn, when less than confirmlsn
+ * indicates this transaction does not need processing, then clean up data 1.1 Apply system table
+ * data
+ *
+ *  2、Merge sub-transactions contained in the current transaction into the main transaction
+ *
+ *
+ * Transaction logic in PG is as follows:
+ *  Main transaction xid
+ *      savepoint   sub-transaction xid1
+ *      savepoint   sub-transaction xid2, parent transaction  logically is xid1, but in PG
+ * there is no nested transaction logic, so parent transaction is xid
+ *
+ */
 void onlinerefresh_decode_xact_commit(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
-    bool redo = false;
-    ListCell* lc = NULL;
-    txnstmt* stmt = NULL;
-    txn* txn_ptr = NULL;
-    txn* txn_copy_obj = NULL;
+    bool                          redo = false;
+    ListCell*                     lc = NULL;
+    txnstmt*                      stmt = NULL;
+    txn*                          txn_ptr = NULL;
+    txn*                          txn_copy_obj = NULL;
     pg_parser_translog_pre_trans* pretrans = NULL;
 
     pretrans = (pg_parser_translog_pre_trans*)pbase;
 
     /*
-     * 根据事务号获取事务链表
+     * Get transaction linked list by transaction number
      */
     txn_ptr = transcache_getTXNByXidFind(ctx->trans_cache, pretrans->m_base.m_xid);
-    /* 如果为空，那么说明不需要处理 */
-    if(NULL == txn_ptr)
+    /* If NULL, no processing needed */
+    if (NULL == txn_ptr)
     {
         check_online_refresh_decode_xids(ctx, pretrans->m_base.m_xid);
         return;
     }
 
-    /* 无需捕获的事物, 且没有sysdict或者sysdictHis则不需要处理, 删除事务返回即可 */
+    /* Transactions not needing capture, and without sysdict or sysdictHis do not need processing,
+     * just delete transaction and return */
     if (true == txn_ptr->filter && !txn_ptr->sysdict && !txn_ptr->sysdictHis)
     {
-        /* 将事务在transdlist、by_txns中删除 */
+        /* Delete transaction from transdlist, by_txns */
         check_online_refresh_decode_xids(ctx, pretrans->m_base.m_xid);
         transcache_deletetxn((void*)ctx, txn_ptr);
         return;
     }
 
     txn_ptr->end.wal.lsn = ctx->decode_record->end.wal.lsn;
-    elog(RLOG_DEBUG, "xid:%lu, startlsn:%X/%X, endlsn:%X/%X, confirmed_lsn:%X/%X",
-                    txn_ptr->xid,
-                    (uint32)(txn_ptr->start.wal.lsn >> 32), (uint32)(txn_ptr->start.wal.lsn),
-                    (uint32)(txn_ptr->end.wal.lsn >> 32), (uint32)(txn_ptr->end.wal.lsn),
-                    (uint32)(ctx->base.confirmedlsn >> 32), (uint32)(ctx->base.confirmedlsn));
+    elog(RLOG_DEBUG, "xid:%lu, startlsn:%X/%X, endlsn:%X/%X, confirmed_lsn:%X/%X", txn_ptr->xid,
+         (uint32)(txn_ptr->start.wal.lsn >> 32), (uint32)(txn_ptr->start.wal.lsn),
+         (uint32)(txn_ptr->end.wal.lsn >> 32), (uint32)(txn_ptr->end.wal.lsn),
+         (uint32)(ctx->base.confirmedlsn >> 32), (uint32)(ctx->base.confirmedlsn));
 
-    /* 查看是否处于 redo 中 */
-    if(txn_ptr->end.wal.lsn <= ctx->base.confirmedlsn)
+    /* Check if in redo state */
+    if (txn_ptr->end.wal.lsn <= ctx->base.confirmedlsn)
     {
         redo = true;
     }
 
-    if(NULL != txn_ptr->sysdict)
+    if (NULL != txn_ptr->sysdict)
     {
-        /* 将 sysdict 转移到 sysdicthis 中 */
+        /* Transfer sysdict to sysdicthis */
         transcache_sysdict2his(txn_ptr);
 
         transcache_sysdict_free(txn_ptr);
     }
 
-    /* 子事务处理 */
+    /* Sub-transaction processing */
     decode_xact_buildcommittxn(ctx, pretrans, txn_ptr);
 
-    /* sysdicthis 应用 */
+    /* sysdicthis apply */
     cache_sysdicts_txnsysdicthis2cache(ctx->trans_cache->sysdicts, txn_ptr->sysdictHis);
 
-    /* 更新同步数据集 */
+    /* Update sync dataset */
     filter_dataset_updatedatasets(ctx->trans_cache->addtablepattern,
-                                        ctx->trans_cache->sysdicts->by_namespace,
-                                        txn_ptr->sysdictHis,
-                                        ctx->trans_cache->hsyncdataset);
+                                  ctx->trans_cache->sysdicts->by_namespace, txn_ptr->sysdictHis,
+                                  ctx->trans_cache->hsyncdataset);
 
-    /* 符合过滤条件,那么将语句清理 */
-    if(decodingcontext_isstmtsfilter(txn_ptr->filter, redo))
+    /* If it meets filter conditions, then clean up the statements */
+    if (decodingcontext_isstmtsfilter(txn_ptr->filter, redo))
     {
         List* metalist = NULL;
-        foreach(lc, txn_ptr->stmts)
+        foreach (lc, txn_ptr->stmts)
         {
             stmt = (txnstmt*)lfirst(lc);
-            if(NULL != stmt->stmt && TXNSTMT_TYPE_METADATA != stmt->type)
+            if (NULL != stmt->stmt && TXNSTMT_TYPE_METADATA != stmt->type)
             {
-                /* 根据不同的类型,调用不同的释放函数 */
+                /* Call different release functions based on different types */
                 txnstmt_free(stmt);
             }
             else
@@ -333,16 +331,13 @@ void onlinerefresh_decode_xact_commit(decodingcontext* ctx, pg_parser_translog_p
         txn_ptr->stmts = metalist;
     }
 
-    /* 将事务写入到缓存中 */
+    /* Write transaction to cache */
     elog(RLOG_DEBUG, "stmtlen:%lu, startlsn:%X/%X, %lu, xid:%lu, walrec:%lu, parserrec:%lu",
-                        txn_ptr->stmtsize,
-                        (uint32)(txn_ptr->start.wal.lsn >> 32), (uint32)(txn_ptr->start.wal.lsn),
-                        txn_ptr->xid,
-                        txn_ptr->debugno,
-                        g_walrecno,
-                        g_parserecno);
+         txn_ptr->stmtsize, (uint32)(txn_ptr->start.wal.lsn >> 32),
+         (uint32)(txn_ptr->start.wal.lsn), txn_ptr->xid, txn_ptr->debugno, g_walrecno,
+         g_parserecno);
 
-    /* 检查最后一条最后一条语句的extra0并赋值 */
+    /* Check and assign extra0 of the last statement */
     if (NULL != (lc = list_tail(txn_ptr->stmts)))
     {
         stmt = (txnstmt*)lfirst(lc);
@@ -352,15 +347,15 @@ void onlinerefresh_decode_xact_commit(decodingcontext* ctx, pg_parser_translog_p
         }
     }
 
-    /* 根据事务startlsn/endlsn更新redo/restart/confirm lsn */
+    /* Update redo/restart/confirm lsn based on transaction startlsn/endlsn */
     transcache_refreshlsn((void*)ctx, txn_ptr);
 
     txn_ptr->endtimestamp = pretrans->m_time;
 
-    /* 复制一个事务加到缓存中 */
+    /* Copy a transaction and add to cache */
     txn_copy_obj = txn_copy(txn_ptr);
 
-    /* 将事务在transdlist、by_txns中删除 */
+    /* Delete transaction from transdlist, by_txns */
     transcache_deletetxn((void*)ctx, txn_ptr);
 
     txn_addcommit(txn_copy_obj);
@@ -369,32 +364,33 @@ void onlinerefresh_decode_xact_commit(decodingcontext* ctx, pg_parser_translog_p
     check_online_refresh_decode_xids(ctx, pretrans->m_base.m_xid);
 }
 
-/* 
- * 事务回滚
- *  当解析的 lsn < confirmlsn 时，此时释放资源即可
- *  当解析的 lsn > confirmlsn 时，那么需要将事务传递到 格式化 线程，用于向前推进 restartlsn
+/*
+ * Transaction rollback
+ *  When parsed lsn < confirmlsn, just release resources
+ *  When parsed lsn > confirmlsn, then need to pass transaction to formatting thread to advance
+ * restartlsn
  */
 void onlinerefresh_decode_xact_abort(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
-    bool brestart = false;
-    bool bconfirm = false;
-    int index = 0;
-    ListCell* lc = NULL;
-    txn* txn_ptr = NULL;
-    txn* txn_copy_obj = NULL;
-    xl_xact_parsed_abort* parsedabort = NULL;
+    bool                          brestart = false;
+    bool                          bconfirm = false;
+    int                           index = 0;
+    ListCell*                     lc = NULL;
+    txn*                          txn_ptr = NULL;
+    txn*                          txn_copy_obj = NULL;
+    xl_xact_parsed_abort*         parsedabort = NULL;
     pg_parser_translog_pre_trans* pretrans = NULL;
-    txn* subtxn_obj = NULL;
-    TransactionId subxid = 0;
+    txn*                          subtxn_obj = NULL;
+    TransactionId                 subxid = 0;
 
     pretrans = (pg_parser_translog_pre_trans*)pbase;
 
     /*
-     * 根据事务号获取事务链表
+     * Get transaction linked list by transaction number
      */
     txn_ptr = transcache_getTXNByXidFind(ctx->trans_cache, pretrans->m_base.m_xid);
-    /* 如果为空，那么说明不需要处理 */
-    if(NULL == txn_ptr)
+    /* If empty, then no processing is needed */
+    if (NULL == txn_ptr)
     {
         check_online_refresh_decode_xids(ctx, pretrans->m_base.m_xid);
         return;
@@ -402,50 +398,50 @@ void onlinerefresh_decode_xact_abort(decodingcontext* ctx, pg_parser_translog_pr
 
     txn_ptr->end.wal.lsn = ctx->decode_record->end.wal.lsn;
     parsedabort = (xl_xact_parsed_abort*)pretrans->m_transdata;
-    for(index = 0; index < parsedabort->nsubxacts; index++)
+    for (index = 0; index < parsedabort->nsubxacts; index++)
     {
         subxid = parsedabort->subxacts[index];
 
-        /* 获取事务号，并获取存储的事务信息 */
+        /* Get transaction number, and get stored transaction information */
         subtxn_obj = transcache_getTXNByXidFind(ctx->trans_cache, subxid);
-        if(NULL == subtxn_obj)
+        if (NULL == subtxn_obj)
         {
             continue;
         }
 
-        /* 系统表释放 */
+        /* System table release */
         transcache_sysdict_free(subtxn_obj);
 
-        /* 将事务在事务链表中删除 */
+        /* Delete transaction from transaction linked list */
         transcache_dlist_remove((void*)ctx, subtxn_obj, &brestart, NULL, &bconfirm, NULL, false);
 
-        /* subtxn_obj 内存释放 */
+        /* subtxn_obj memory release */
         txn_free(subtxn_obj);
 
-        /* 将子事务在hash中删除 */
+        /* Delete sub-transaction from hash */
         transcache_removeTXNByXid(ctx->trans_cache, subtxn_obj->xid);
     }
 
-    /* 系统表释放 */
+    /* System table release */
     transcache_sysdict_free(txn_ptr);
 
-    if(txn_ptr->end.wal.lsn <= ctx->base.confirmedlsn)
+    if (txn_ptr->end.wal.lsn <= ctx->base.confirmedlsn)
     {
-        /* txn 释放 */
-        /* 将事务在事务链表中删除 */
+        /* txn release */
+        /* Delete transaction from transaction linked list */
         transcache_dlist_remove((void*)ctx, txn_ptr, &brestart, NULL, &bconfirm, NULL, false);
 
-        /* txn 内存释放 */
+        /* txn memory release */
         txn_free(txn_ptr);
 
-        /* 将事务在hash中删除 */
+        /* Delete transaction from hash */
         transcache_removeTXNByXid(ctx->trans_cache, txn_ptr->xid);
 
         return;
     }
 
-    /* 将 txn_ptr->stmts 的内容释放掉 */
-    foreach(lc, txn_ptr->stmts)
+    /* Release the contents of txn_ptr->stmts */
+    foreach (lc, txn_ptr->stmts)
     {
         txnstmt* stmt = (txnstmt*)lfirst(lc);
         txnstmt_free(stmt);
@@ -453,18 +449,18 @@ void onlinerefresh_decode_xact_abort(decodingcontext* ctx, pg_parser_translog_pr
     list_free(txn_ptr->stmts);
     txn_ptr->stmts = NULL;
 
-    /* 根据事务startlsn/endlsn更新redo/restart/confirm lsn */
+    /* Update redo/restart/confirm lsn based on transaction startlsn/endlsn */
     transcache_refreshlsn((void*)ctx, txn_ptr);
 
     txn_ptr->endtimestamp = pretrans->m_time;
 
-    /* 复制一个事务加到缓存中 */
+    /* Copy a transaction and add to cache */
     txn_copy_obj = txn_copy(txn_ptr);
 
-    /* 将事务在transdlist、by_txns中删除 */
+    /* Delete transaction from transdlist, by_txns */
     transcache_deletetxn((void*)ctx, txn_ptr);
 
-    /* 放入到事务缓存中,让 write 线程处理 */
+    /* Put into transaction cache, let write thread process */
     cache_txn_add(ctx->parser2txns, txn_copy_obj);
 
     check_online_refresh_decode_xids(ctx, pretrans->m_base.m_xid);

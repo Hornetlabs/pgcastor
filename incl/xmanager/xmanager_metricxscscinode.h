@@ -3,9 +3,9 @@
 
 typedef struct XMANAGER_METRICXSCSCINODE
 {
-    xmanager_metricnode              base;
-    uint64                                  number;
-    xmanager_metricasyncmsgs*        asyncmsgs;
+    xmanager_metricnode       base;
+    uint64                    number;
+    xmanager_metricasyncmsgs* asyncmsgs;
 } xmanager_metricxscscinode;
 
 extern void xmanager_metricxscscinode_destroy(xmanager_metricnode* metricnode);

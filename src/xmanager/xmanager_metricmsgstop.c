@@ -20,24 +20,23 @@
 #include "xmanager/xmanager_metricmsgstop.h"
 #include "xmanager/xmanager_metricmsg.h"
 
-bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric,
-                                         netpoolentry* npoolentry,
-                                         netpacket* npacket)
+bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                  netpacket* npacket)
 {
-    int len                                             = 0;
-    int jobtype                                         = 0;
-    int errcode                                         = 0;
-    uint8* uptr                                         = NULL;
-    char* jobname                                       = NULL;
-    xmanager_metricnode* pxmetricnode            = NULL;
+    int                        len = 0;
+    int                        jobtype = 0;
+    int                        errcode = 0;
+    uint8*                     uptr = NULL;
+    char*                      jobname = NULL;
+    xmanager_metricnode*       pxmetricnode = NULL;
     xmanager_metricxscscinode* xmetricxscscinode = NULL;
-    xmanager_metricfd2node* fd2node              = NULL;
-    xmanager_metricasyncmsg* asyncmsg            = NULL;
-    xmanager_metricnode xmetricnode              = { 0 };
-    char errormsg[2048]                                 = { 0 };
-    char execcmd[1024]                                  = { 0 };
+    xmanager_metricfd2node*    fd2node = NULL;
+    xmanager_metricasyncmsg*   asyncmsg = NULL;
+    xmanager_metricnode        xmetricnode = {0};
+    char                       errormsg[2048] = {0};
+    char                       execcmd[1024] = {0};
 
-    /* 获取作业类型 */
+    /* Get job type */
     uptr = npacket->data;
 
     /* msglen + crc32 + commandtype */
@@ -51,13 +50,12 @@ bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric,
     if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 2048, 
-                 "ERROR: xmanager parse stop command, unsupport %s",
+        snprintf(errormsg, 2048, "ERROR: xmanager parse stop command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parsestop_error;
     }
 
-    /* 获取 jobname */
+    /* Get jobname */
     rmemcpy1(&len, 0, uptr, 4);
     len = r_ntoh32(len);
     uptr += 4;
@@ -74,7 +72,7 @@ bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric,
     len -= 1;
     rmemcpy0(jobname, 0, uptr, len);
 
-    /* 查看节点是否存在 */
+    /* Check if node exists */
     xmetricnode.type = jobtype;
     xmetricnode.name = jobname;
 
@@ -95,24 +93,22 @@ bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric,
     else if (XMANAGER_METRICNODESTAT_INIT == pxmetricnode->stat)
     {
         errcode = ERROR_MSGCOMMAND;
-        snprintf(errormsg, 2048,
-                 " %s not init, use init command init %s node.",
-                 jobname, xmanager_metricnode_getname(jobtype));
+        snprintf(errormsg, 2048, " %s not init, use init command init %s node.", jobname,
+                 xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parsestop_error;
     }
 
-    /* 
-     * 创建异步消息
-     *  1、获取 xscsci 节点
-     *  2、创建异步等待消息
+    /*
+     * Create async message
+     *  1、Get xscsci node
+     *  2、Create async wait message
      */
-    /* 获取 xscsci 节点 */
-    fd2node = dlist_get(xmetric->fd2metricnodes,
-                        (void*)((uintptr_t)npoolentry->fd),
+    /* Get xscsci node */
+    fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
                         xmanager_metricfd2node_cmp);
     xmetricxscscinode = (xmanager_metricxscscinode*)fd2node->metricnode;
 
-    /* 创建异步等待消息 */
+    /* Create async wait message */
     asyncmsg = xmanager_metricasyncmsg_init();
     if (NULL == asyncmsg)
     {
@@ -124,30 +120,23 @@ bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric,
     asyncmsg->errormsg = NULL;
     asyncmsg->msgtype = XMANAGER_MSG_STOPCMD;
     asyncmsg->type = jobtype;
-    asyncmsg->name =jobname;
+    asyncmsg->name = jobname;
     jobname = NULL;
     asyncmsg->result = 0;
 
-    /* 执行 start 命令 execcmd */
+    /* Execute start command execcmd */
     if (XMANAGER_METRICNODETYPE_PGRECEIVELOG == jobtype)
     {
-        snprintf(execcmd,
-                 1024,
-                 "%s/bin/pgreceivelog/receivelog -f %s stop",
-                 xmetric->xsynchpath,
+        snprintf(execcmd, 1024, "%s/bin/pgreceivelog/receivelog -f %s stop", xmetric->xsynchpath,
                  pxmetricnode->conf);
     }
     else
     {
-        snprintf(execcmd,
-                 1024,
-                 "%s/bin/%s -f %s stop",
-                 xmetric->xsynchpath,
-                 xmanager_metricnode_getname(jobtype),
-                 pxmetricnode->conf);
+        snprintf(execcmd, 1024, "%s/bin/%s -f %s stop", xmetric->xsynchpath,
+                 xmanager_metricnode_getname(jobtype), pxmetricnode->conf);
     }
 
-    /* 执行 execcmd 命令 */
+    /* Execute execcmd command */
     if (false == execcommand(execcmd, xmetric->privdata, xmetric->privdatadestroy))
     {
         errcode = ERROR_MSGCOMMAND;
@@ -156,8 +145,8 @@ bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parsestop_error;
     }
 
-    /* 将消息挂载到异步消息队列中 */
-    xmetricxscscinode->asyncmsgs->msgs =  dlist_put(xmetricxscscinode->asyncmsgs->msgs, asyncmsg);
+    /* Mount message to async message queue */
+    xmetricxscscinode->asyncmsgs->msgs = dlist_put(xmetricxscscinode->asyncmsgs->msgs, asyncmsg);
     return true;
 
 xmanager_metricmsg_parsestop_error:
@@ -173,53 +162,45 @@ xmanager_metricmsg_parsestop_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_STOPCMD,
-                                                      errcode,
-                                                      errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_STOPCMD,
+                                               errcode, errormsg);
 }
 
-
 /*
- * 组装 start 返回消息
-*/
-bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
-                                            netpoolentry* npoolentry,
-                                            dlist* dlmsgs)
+ * Assemble start response message
+ */
+bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                     dlist* dlmsgs)
 {
-    uint8 u8value                                       = 0;
-    uint16 u16value                                     = 0;
-    int rowlen                                          = 0;
-    int ivalue                                          = 0;
-    int msglen                                          = 0;
-    uint8* uptr                                         = NULL;
-    uint8* rowuptr                                      = NULL;
-    dlistnode* dlnode                                   = NULL;
-    netpacket* npacket                           = NULL;
-    xmanager_metricasyncmsg* xmetricasyncmsg     = NULL;
-    char errormsg[2048]                                 = { 0 };
+    uint8                    u8value = 0;
+    uint16                   u16value = 0;
+    int                      rowlen = 0;
+    int                      ivalue = 0;
+    int                      msglen = 0;
+    uint8*                   uptr = NULL;
+    uint8*                   rowuptr = NULL;
+    dlistnode*               dlnode = NULL;
+    netpacket*               npacket = NULL;
+    xmanager_metricasyncmsg* xmetricasyncmsg = NULL;
+    char                     errormsg[2048] = {0};
     if (true == dlist_isnull(dlmsgs) || 1 < dlist_getcount(dlmsgs))
     {
-        /* 组装错误消息 */
+        /* Assemble error message */
         elog(RLOG_WARNING, "metric msg assemble stop too many async msgs.");
         snprintf(errormsg, 2048, "metric msg assemble stop too many async msgs.");
-        return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                          npoolentry->wpackets,
-                                                          XMANAGER_MSG_STOPCMD,
-                                                          ERROR_MSGCOMMAND,
-                                                          errormsg);
+        return xmanager_metricmsg_assembleerrormsg(
+            xmetric, npoolentry->wpackets, XMANAGER_MSG_STOPCMD, ERROR_MSGCOMMAND, errormsg);
     }
 
-    /* 总长度 + crc32 + type + flag + rowcnt */
+    /* Total length + crc32 + type + flag + rowcnt */
     msglen = 4 + 4 + 4 + 1 + 4;
 
     /*
-     * 第一行内容
+     * First row content
      *  jobtypelen     jobtype      jobnamelen     jobname     resultlen    result
      *      4        jobtypelen         4        jobnamelen      4        resultlen
      */
-    /* rowlen, 列总长度 */
+    /* Row length, total column length */
     msglen += 4;
 
     /* jobtypelen */
@@ -240,37 +221,37 @@ bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
     /* result */
     msglen += strlen("result");
 
-    /* 获取长度 */
+    /* Get length */
     for (dlnode = dlmsgs->head; NULL != dlnode; dlnode = dlnode->next)
     {
         xmetricasyncmsg = (xmanager_metricasyncmsg*)dlnode->value;
 
         rowlen = 0;
         /* jobtype + jobnamelen + jobname */
-        /* rowlen 总长度 */
+        /* rowlen Total length */
         rowlen = 4;
 
-        /* nullmapcnt */
+        /* nullmap count */
         rowlen += 2;
 
         /* nullmap */
         rowlen += 1;
 
-        /*-----------第一列------------*/
+        /*-----------Column 1------------*/
         /* jobtypelen */
         rowlen += 4;
 
         /* jobtype */
         rowlen += strlen(xmanager_metricnode_getname(xmetricasyncmsg->type));
 
-        /*-----------第二列------------*/
+        /*-----------Column 2------------*/
         /* jobnamelen */
         rowlen += 4;
 
         /* jobname */
         rowlen += strlen(xmetricasyncmsg->name);
 
-        /*-----------第三列------------*/
+        /*-----------Column 3------------*/
         /* resultlen */
         rowlen += 4;
 
@@ -287,7 +268,7 @@ bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
         msglen += rowlen;
     }
 
-    /* 申请空间 */
+    /* Allocate space */
     npacket = netpacket_init();
     if (NULL == npacket)
     {
@@ -305,10 +286,10 @@ bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
     msglen -= 1;
     npacket->used = msglen;
 
-    /* 组装数据 */
+    /* Assemble data */
     uptr = npacket->data;
 
-    /* 数据总长度 */
+    /* Total data length */
     ivalue = msglen;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
@@ -317,13 +298,13 @@ bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
     /* crc32 */
     uptr += 4;
 
-    /* 类型 */
+    /* Type */
     ivalue = XMANAGER_MSG_STOPCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
 
-    /* 类型成功标识 */
+    /* Type success flag */
     u8value = 0;
     rmemcpy1(uptr, 0, &u8value, 1);
     uptr += 1;
@@ -335,8 +316,8 @@ bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
 
-    /* 
-     * 首行内容是列的描述,均为字符串
+    /*
+     * First row content is column description, all strings
      *  jobtype
      *  jobname
      *  result
@@ -344,7 +325,7 @@ bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
     rowlen = 0;
     rowuptr = uptr;
 
-    /* 先偏移 rowlen 的长度 */
+    /* Offset Row length length first */
     rowlen = 4;
     uptr += 4;
 
@@ -387,33 +368,33 @@ bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
     uptr += ivalue;
     rowlen += ivalue;
 
-    /* 行总长度 */
+    /* Total row length */
     rowlen = r_hton32(rowlen);
     rmemcpy1(rowuptr, 0, &rowlen, 4);
 
-    /* 组装数据 */
+    /* Assemble data */
     for (dlnode = dlmsgs->head; NULL != dlnode; dlnode = dlnode->next)
     {
         xmetricasyncmsg = (xmanager_metricasyncmsg*)dlnode->value;
         rowuptr = uptr;
         rowlen = 0;
-        /* 先跳过总长度 */
+        /* Skip total length first */
         uptr += 4;
         rowlen = 4;
 
-        /* 空列map的个数 */
+        /* Null column map count */
         u16value = 1;
         u16value = r_hton16(u16value);
         rmemcpy1(uptr, 0, &u16value, 2);
         uptr += 2;
         rowlen += 2;
 
-        /* 空列 map */
+        /* Null column map */
         uptr += 1;
         rowlen += 1;
 
-        /*-----------第一列-----------------*/
-        /* jobtype 长度 */
+        /*-----------Column 1-----------------*/
+        /* jobtype length */
         ivalue = strlen(xmanager_metricnode_getname(xmetricasyncmsg->type));
         ivalue = r_hton32(ivalue);
         rmemcpy1(uptr, 0, &ivalue, 4);
@@ -426,8 +407,8 @@ bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
         uptr += ivalue;
         rowlen += ivalue;
 
-        /*-----------第二列-----------------*/
-        /* jobname 长度 */
+        /*-----------Column 2-----------------*/
+        /* jobname length */
         ivalue = strlen(xmetricasyncmsg->name);
         ivalue = r_hton32(ivalue);
         rmemcpy1(uptr, 0, &ivalue, 4);
@@ -440,8 +421,8 @@ bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
         uptr += ivalue;
         rowlen += ivalue;
 
-        /*-----------第三列-----------------*/
-        /* result 长度 */
+        /*-----------Column 3-----------------*/
+        /* result length */
         if (0 == xmetricasyncmsg->result)
         {
             ivalue = strlen("SUCCESS");
@@ -469,12 +450,12 @@ bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
         uptr += ivalue;
         rowlen += ivalue;
 
-        /* 填充行长度 */
+        /* Fill row length */
         rowlen = r_hton32(rowlen);
         rmemcpy1(rowuptr, 0, &rowlen, 4);
     }
 
-    /* 将 netpacket 挂载到待发送队列中 */
+    /* Mount netpacket to send queue */
     if (false == queue_put(npoolentry->wpackets, (void*)npacket))
     {
         elog(RLOG_WARNING, "xmanager metric assemble start msg add message to queue error");

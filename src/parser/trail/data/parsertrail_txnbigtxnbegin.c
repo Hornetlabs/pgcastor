@@ -18,43 +18,43 @@
 #include "parser/trail/parsertrail.h"
 #include "parser/trail/data/parsertrail_txnbigtxnbegin.h"
 
-static void parsertrail_txnbigtxnbegin2hash(parsertrail* parsertrail,
-                                                        ff_txndata* txndata)
+static void parsertrail_txnbigtxnbegin2hash(parsertrail* parsertrail, ff_txndata* txndata)
 {
-    /* 
-     * 1、查看事务是否存在，不存在则创建，存在则append
-     * 2、返回
+    /*
+     * 1. Check if the transaction exists, create if not, append if exists
+     * 2. Return
      */
     txnstmt* rstmt = NULL;
-    record* record_obj = NULL;
+    record*  record_obj = NULL;
 
     rstmt = (txnstmt*)txndata->data;
 
     elog(RLOG_DEBUG, "txnbigtxn begin:%lu", txndata->header.transid);
 
-    /* 查看类型 */
-    if(FF_DATA_TRANSIND_START == (FF_DATA_TRANSIND_START & txndata->header.transind))
+    /* Check the type */
+    if (FF_DATA_TRANSIND_START == (FF_DATA_TRANSIND_START & txndata->header.transind))
     {
-        /* 在hash中查看是否存在，不存在则添加 */
-        HTAB *tx_htab = parsertrail->transcache->by_txns;
-        txn *txn_entry = NULL;
-        bool find = false;
+        /* Check if exists in hash, add if not found */
+        HTAB*             tx_htab = parsertrail->transcache->by_txns;
+        txn*              txn_entry = NULL;
+        bool              find = false;
         FullTransactionId xid = txndata->header.transid;
 
-        /* 查找哈希 */
-        txn_entry = (txn *) hash_search(tx_htab, &xid, HASH_ENTER, &find);
+        /* Search hash */
+        txn_entry = (txn*)hash_search(tx_htab, &xid, HASH_ENTER, &find);
         if (!find)
         {
-            /* 初始化 */
+            /* Initialize */
             txn_initset(txn_entry, xid, InvalidXLogRecPtr);
         }
         else
         {
-            /* 添加abandon */
-            elog(RLOG_WARNING, "txnbigtxn begin the same transaction in hash:%lu", txndata->header.transid);
+            /* Add abandon */
+            elog(RLOG_WARNING, "txnbigtxn begin the same transaction in hash:%lu",
+                 txndata->header.transid);
         }
 
-        /* 标识为大事务 */
+        /* Mark as big transaction */
         TXN_SET_BIGTXN(txn_entry->flag);
         txn_entry->type = TXN_TYPE_BIGTXN_BEGIN;
         parsertrail->lasttxn = txn_entry;
@@ -73,27 +73,25 @@ static void parsertrail_txnbigtxnbegin2hash(parsertrail* parsertrail,
     return;
 }
 
-
 bool parsertrail_txnbigtxnbeginapply(parsertrail* parsertrail, void* data)
 {
     ff_txndata* txndata = NULL;
 
-    if(NULL == data)
+    if (NULL == data)
     {
         return true;
     }
 
-    /* 将数据放入到缓存当中 */
+    /* Put data into cache */
     txndata = (ff_txndata*)data;
     parsertrail_txnbigtxnbegin2hash(parsertrail, txndata);
 
-    /* 查看是否发生了切换，发生切换那么需要清理缓存 */
-    if(FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
+    /* Check if file switch occurred, if so need to clean up cache */
+    if (FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
     {
-        /* 交换 */
+        /* Swap */
         parsertrail_traildata_shiftfile(parsertrail);
     }
 
     return true;
-
 }

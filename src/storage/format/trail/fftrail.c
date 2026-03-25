@@ -23,75 +23,46 @@
 #include "parser/trail/head/parsertrail_head.h"
 #include "parser/trail/data/parsertrail_dbmetadata.h"
 
-
 typedef bool (*serialtoken)(void* data, void* state);
 
 typedef bool (*deserialtoken)(void** data, void* state);
 
 typedef struct TRAIL_GROUP
 {
-    int8            groupid;                        /* group id                     */
-    char*           desc;                           /* 描述                          */
-    serialtoken     serialfunc;                     /* 将 结构体中的数据序列化到缓存中   */
-    deserialtoken   deserialfunc;                   /* 将 缓存中的数据反序列化到结构体   */
+    int8          groupid;      /* group id                     */
+    char*         desc;         /* Description                          */
+    serialtoken   serialfunc;   /* Serialize struct data to buffer   */
+    deserialtoken deserialfunc; /* Deserialize buffer data to struct   */
 } trail_group;
 
-static trail_group           m_trailgroups[] = 
-{
-    {
-        FFTRAIL_GROUPTYPE_NOP,
-        "trail nop",
-        NULL,
-        NULL
-    },
-    {
-        FFTRAIL_GROUPTYPE_FHEADER,
-        "trail file header",
-        fftrail_head_serail,
-        fftrail_head_deserail
-    },
-    {
-        FFTRAIL_GROUPTYPE_DATA,
-        "trail file data",
-        fftrail_data_serail,
-        fftrail_data_deserail
-    },
-    {
-        FFTRAIL_GROUPTYPE_RESET,
-        "trail file reset",
-        fftrail_reset_serail,
-        fftrail_reset_deserail
-    },
-    {
-        FFTRAIL_GROUPTYPE_FTAIL,
-        "trail file tail",
-        fftrail_tail_serail,
-        fftrail_tail_deserail
-    }
-};
+static trail_group m_trailgroups[] = {
+    {FFTRAIL_GROUPTYPE_NOP, "trail nop", NULL, NULL},
+    {FFTRAIL_GROUPTYPE_FHEADER, "trail file header", fftrail_head_serail, fftrail_head_deserail},
+    {FFTRAIL_GROUPTYPE_DATA, "trail file data", fftrail_data_serail, fftrail_data_deserail},
+    {FFTRAIL_GROUPTYPE_RESET, "trail file reset", fftrail_reset_serail, fftrail_reset_deserail},
+    {FFTRAIL_GROUPTYPE_FTAIL, "trail file tail", fftrail_tail_serail, fftrail_tail_deserail}};
 
-/* 校验数据是否完整 */
-/* 校验头部完整 */
+/* Validate data integrity */
+/* Validate header integrity */
 static bool fftrail_validfhead(uint8* header)
 {
-    uint8   tokenid = FFTRAIL_GROUPTYPE_NOP;
-    uint8   tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
-    uint32  tokenlen = 0;
-    uint32  tfmagic = 0;
+    uint8  tokenid = FFTRAIL_GROUPTYPE_NOP;
+    uint8  tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
+    uint32 tokenlen = 0;
+    uint32 tfmagic = 0;
 
     uint8* uptr = NULL;
-    uint8*  tokendata = NULL;
+    uint8* tokendata = NULL;
 
-    /* 解析头信息 */
+    /* Parse header info */
     uptr = header;
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(FFTRAIL_GROUPTYPE_FHEADER != tokenid
-        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    if (FFTRAIL_GROUPTYPE_FHEADER != tokenid || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         return false;
     }
 
-    /* 查看最后的四字节内容是否为 magic */
+    /* Check if last four bytes are magic */
     uptr = header;
 
     tokenlen -= TOKENHDRSIZE;
@@ -99,96 +70,91 @@ static bool fftrail_validfhead(uint8* header)
 
     tokendata += tokenlen;
 
-    /* 魔数 */
+    /* Magic number */
     tfmagic = CONCAT(get, 32bit)(&tokendata);
-    if(tfmagic != FTRAIL_MAGIC)
+    if (tfmagic != FTRAIL_MAGIC)
     {
-        /* 大概率是没有刷盘完成 */
+        /* Most likely flush not completed */
         return false;
     }
 
     return true;
 }
 
-/* 校验数据完整 */
+/* Validate data integrity */
 static bool fftrail_validdata(int compatibility, uint8* data)
 {
     /*
-     * 1、获取完整的 record 数据
-     * 2、在头部中获取 reclength
-     * 3、获取 record 尾部
-    */
-    uint8   tokenid = FFTRAIL_GROUPTYPE_NOP;
-    uint8   tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
-    int     headlen = 0;
-    uint16  reclength = 0;
-    uint32  tokenlen = 0;
+     * 1. Get complete record data
+     * 2. Get reclength from header
+     * 3. Get record tail
+     */
+    uint8    tokenid = FFTRAIL_GROUPTYPE_NOP;
+    uint8    tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
+    int      headlen = 0;
+    uint16   reclength = 0;
+    uint32   tokenlen = 0;
     r_crc32c crc32 = 0;
     r_crc32c crc32rec = 0;
 
-    uint8*  uptr = NULL;
-    uint8*  crcuptr = NULL;
-    uint8*  tokendata = NULL;
+    uint8* uptr = NULL;
+    uint8* crcuptr = NULL;
+    uint8* tokendata = NULL;
 
-    /* 获取 record 数据 */
+    /* Get record data */
     uptr = data;
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(FFTRAIL_GROUPTYPE_DATA != tokenid
-        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    if (FFTRAIL_GROUPTYPE_DATA != tokenid || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         elog(RLOG_WARNING, "1");
         return false;
     }
 
-    /* 偏移 group 头部长度 */
+    /* Offset group header length */
     crcuptr = uptr = tokendata;
     reclength = fftrail_data_getreclengthfromhead(compatibility, uptr);
-    if(0 == reclength)
+    if (0 == reclength)
     {
         elog(RLOG_WARNING, "2");
         return false;
     }
 
-    /* 偏移 record 内容 */
+    /* Offset record content */
     headlen = fftrail_data_headlen(0);
     uptr += headlen;
 
-    /* 换算 crc */
+    /* Calculate crc */
     headlen -= (TOKENHDRSIZE + 4);
     INIT_CRC32C(crc32);
     COMP_CRC32C(crc32, crcuptr, headlen);
 
-    /* 获取记录中的 crc */
+    /* Get crc from record */
     crcuptr += headlen;
     FTRAIL_BUFFER2TOKEN(get, crcuptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(TRAIL_TOKENDATAHDR_ID_CRC32 != tokenid
-        || FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
+    if (TRAIL_TOKENDATAHDR_ID_CRC32 != tokenid || FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
     {
         elog(RLOG_WARNING, "invalid record, hope TRAIL_TOKENDATAHDR_ID_CRC32:%u, got:%u",
-                            TRAIL_TOKENDATAHDR_ID_CRC32,
-                            tokenid);
+             TRAIL_TOKENDATAHDR_ID_CRC32, tokenid);
         return false;
     }
     crc32rec = CONCAT(get, 32bit)(&tokendata);
 
-    /* 换算数据的 crc32 */
+    /* Calculate data crc32 */
     COMP_CRC32C(crc32, uptr, reclength);
     FIN_CRC32C(crc32);
 
     if (!EQ_CRC32C(crc32rec, crc32))
     {
-        elog(RLOG_WARNING, "trail record crc error, crc in record %08X, calc crc:%08X",
-                            crc32rec,
-                            crc32);
+        elog(RLOG_WARNING, "trail record crc error, crc in record %08X, calc crc:%08X", crc32rec,
+             crc32);
         return false;
     }
 
-    /* 获取 rectail 信息 */
+    /* Get rectail info */
     uptr += reclength;
 
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(TRAIL_TOKENDATA_RECTAIL != tokenid
-        || FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
+    if (TRAIL_TOKENDATA_RECTAIL != tokenid || FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
     {
         elog(RLOG_WARNING, "4,reclength:%u", reclength);
         return false;
@@ -197,37 +163,36 @@ static bool fftrail_validdata(int compatibility, uint8* data)
     return true;
 }
 
-/* 校验文件RESET完整 */
+/* Validate file RESET integrity */
 static bool fftrail_validreset(int compatibility, uint64 fileid, uint8* tail)
 {
-    uint8   tokenid = FFTRAIL_GROUPTYPE_NOP;
-    uint8   tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
-    uint32  tokenlen = 0;
-    uint64  nfileid = 0;
-    uint8*  uptr = NULL;
-    uint8*  tokendata = NULL;
+    uint8  tokenid = FFTRAIL_GROUPTYPE_NOP;
+    uint8  tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
+    uint32 tokenlen = 0;
+    uint64 nfileid = 0;
+    uint8* uptr = NULL;
+    uint8* tokendata = NULL;
 
-    /* 获取 record 数据 */
+    /* Get record data */
     uptr = tail;
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(FFTRAIL_GROUPTYPE_RESET != tokenid
-        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    if (FFTRAIL_GROUPTYPE_RESET != tokenid || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         return false;
     }
 
-    /* 根据版本校验长度 */
-    if(tokenlen != fftrail_resetlen(compatibility))
+    /* Validate length by version */
+    if (tokenlen != fftrail_resetlen(compatibility))
     {
         return false;
     }
 
-    /* 获取内容 */
+    /* Get content */
     uptr = tokendata;
     uptr += TOKENHDRSIZE;
 
     nfileid = CONCAT(get, 64bit)(&uptr);
-    if((fileid + 1) != nfileid)
+    if ((fileid + 1) != nfileid)
     {
         return false;
     }
@@ -235,37 +200,36 @@ static bool fftrail_validreset(int compatibility, uint64 fileid, uint8* tail)
     return true;
 }
 
-/* 校验文件尾部完整 */
+/* Validate file tail integrity */
 static bool fftrail_validftail(int compatibility, uint64 fileid, uint8* tail)
 {
-    uint8   tokenid = FFTRAIL_GROUPTYPE_NOP;
-    uint8   tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
-    uint32  tokenlen = 0;
-    uint64  nfileid = 0;
-    uint8*  uptr = NULL;
-    uint8*  tokendata = NULL;
+    uint8  tokenid = FFTRAIL_GROUPTYPE_NOP;
+    uint8  tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
+    uint32 tokenlen = 0;
+    uint64 nfileid = 0;
+    uint8* uptr = NULL;
+    uint8* tokendata = NULL;
 
-    /* 获取 record 数据 */
+    /* Get record data */
     uptr = tail;
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(FFTRAIL_GROUPTYPE_FTAIL != tokenid
-        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    if (FFTRAIL_GROUPTYPE_FTAIL != tokenid || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         return false;
     }
 
-    /* 根据版本校验长度 */
-    if(tokenlen != fftrail_taillen(compatibility))
+    /* Validate length by version */
+    if (tokenlen != fftrail_taillen(compatibility))
     {
         return false;
     }
 
-    /* 获取内容 */
+    /* Get content */
     uptr = tokendata;
     uptr += TOKENHDRSIZE;
 
     nfileid = CONCAT(get, 64bit)(&uptr);
-    if((fileid + 1) != nfileid)
+    if ((fileid + 1) != nfileid)
     {
         return false;
     }
@@ -273,9 +237,10 @@ static bool fftrail_validftail(int compatibility, uint64 fileid, uint8* tail)
     return true;
 }
 
-bool fftrail_validrecord(ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record)
+bool fftrail_validrecord(ff_cxt_type type, void* state, uint8 infotype, uint64 fileid,
+                         uint8* record)
 {
-    bool result = false;
+    bool          result = false;
     ffsmgr_state* ffstate = NULL;
     ffstate = (ffsmgr_state*)state;
 
@@ -283,7 +248,7 @@ bool fftrail_validrecord(ff_cxt_type type, void* state, uint8 infotype, uint64 f
     {
         return result;
     }
-    
+
     switch (type)
     {
         case FFTRAIL_GROUPTYPE_FHEADER:
@@ -306,91 +271,91 @@ bool fftrail_validrecord(ff_cxt_type type, void* state, uint8 infotype, uint64 f
 }
 
 /*
- * 序列化 
- * 在写数据之前检测是否需要切换 block
- *  需要切换 block，则执行切换操作
- * 
- * 返回值:
- *  false           没有切换
- *  true            切换
+ * Serialization
+ * Check if block switch is needed before writing data
+ *  If block switch is needed, execute switch operation
+ *
+ * Return value:
+ *  false           no switch
+ *  true            switched
  */
 bool fftrail_serialpreshiftblock(void* state)
 {
-    bool shiftfile = false;
-    int minsize = 0;
-    int timeout = 0;
+    bool   shiftfile = false;
+    int    minsize = 0;
+    int    timeout = 0;
     uint64 freespc = 0;
 
-    file_buffer* fbuffer = NULL;                 /* 缓存信息 */
-    file_buffer* tmpfbuffer = NULL;              /* 缓存信息 */
+    file_buffer*  fbuffer = NULL;    /* Cache info */
+    file_buffer*  tmpfbuffer = NULL; /* Cache info */
     ffsmgr_state* ffstate = NULL;
-    ff_fileinfo* finfo = NULL;                   /* 文件信息 */
-    ff_fileinfo* tmpfinfo = NULL;
+    ff_fileinfo*  finfo = NULL; /* File info */
+    ff_fileinfo*  tmpfinfo = NULL;
     file_buffers* txn2filebuffer = NULL;
 
-    /* 获取表序列化所需的信息 */
+    /* Get info needed for table serialization */
     ffstate = (ffsmgr_state*)state;
 
-    /* 获取file_buffers */
+    /* Get file_buffers */
     txn2filebuffer = ffstate->callback.getfilebuffer(ffstate->privdata);
 
     /*
-     * 查看空间是否满足最小要求，不满足则切换 buffer
-     *  1、token 需要的大小
-     *  2、file tail 需要的大小
+     * Check if space meets minimum requirement, switch buffer if not
+     *  1. Size required by token
+     *  2. Size required by file tail
      */
-    /* 根据 bufid 获取 fbuffer */
+    /* Get fbuffer by bufid */
     fbuffer = file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
     finfo = (ff_fileinfo*)fbuffer->privdata;
 
-    /* 查看 fbuffer 中的 start 是否为0,若为0,那么初始化文件 */
-    if(1 == finfo->blknum && 0 == fbuffer->start)
+    /* Check if fbuffer start is 0, if so, initialize file */
+    if (1 == finfo->blknum && 0 == fbuffer->start)
     {
-        /* 初始化文件头部信息 */
+        /* Initialize file header info */
         fftrail_fileinit(state);
     }
 
     /*
-     * 查看空间是否满足最小要求，不满足则切换 buffer
-     *  1、token 需要的大小
-     *  2、file tail 需要的大小
+     * Check if space meets minimum requirement, switch buffer if not
+     *  1. Size required by token
+     *  2. Size required by file tail
      */
     minsize = fftrail_data_tokenminsize(ffstate->compatibility);
 
-    /* file tail 需要的大小 */
-    if(finfo->blknum == ffstate->maxbufid)
+    /* Size required for file tail */
+    if (finfo->blknum == ffstate->maxbufid)
     {
         shiftfile = true;
         minsize += fftrail_taillen(ffstate->compatibility);
     }
 
-    /* 查看剩余空间 */
+    /* Check remaining space */
     freespc = (fbuffer->maxsize - fbuffer->start);
 
-    if(freespc > minsize)
+    if (freespc > minsize)
     {
         return false;
     }
 
-    /* 切换 buffer */
-    if(true == shiftfile)
+    /* Switch buffer */
+    if (true == shiftfile)
     {
-        /* 添加尾部信息 */
-        ff_tail fftail = { 0 };                  /* tail 信息 */
+        /* Add tail info */
+        ff_tail fftail = {0}; /* tail info */
         fftail.nexttrailno = (finfo->fileid + 1);
         ffstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_FTAIL, &fftail, ffstate);
 
-        /* 缓存清理 */
+        /* Cache cleanup */
         fftrail_invalidprivdata(FFSMGR_IF_OPTYPE_SERIAL, ffstate->fdata->ffdata);
     }
 
-    /* 获取缓存 */
-    while(1)
+    /* Get cache */
+    while (1)
     {
         ffstate->bufid = file_buffer_get(txn2filebuffer, &timeout);
-        if(INVALID_BUFFERID == ffstate->bufid)
+        if (INVALID_BUFFERID == ffstate->bufid)
         {
-            if(ERROR_TIMEOUT == timeout)
+            if (ERROR_TIMEOUT == timeout)
             {
                 usleep(10000);
                 continue;
@@ -401,12 +366,12 @@ bool fftrail_serialpreshiftblock(void* state)
         break;
     }
 
-    /* 获取对应的 buffer */
+    /* Get corresponding buffer */
     tmpfbuffer = file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
-    if(NULL == tmpfbuffer->privdata)
+    if (NULL == tmpfbuffer->privdata)
     {
         tmpfinfo = (ff_fileinfo*)rmalloc1(sizeof(ff_fileinfo));
-        if(NULL == tmpfinfo)
+        if (NULL == tmpfinfo)
         {
             elog(RLOG_ERROR, "out of memory");
         }
@@ -423,22 +388,22 @@ bool fftrail_serialpreshiftblock(void* state)
     tmpfinfo->fileid = (true == shiftfile ? (finfo->fileid + 1) : finfo->fileid);
     tmpfinfo->blknum = (true == shiftfile ? 1 : (finfo->blknum + 1));
 
-    /* 将 buffer 写入到待刷新缓存中 */
+    /* Write buffer to pending flush cache */
     rmemcpy1(&tmpfbuffer->extra, 0, &fbuffer->extra, sizeof(file_buffer_extra));
     file_buffer_waitflush_add(txn2filebuffer, fbuffer);
 
-    /* 重置 tmpfbuffer 中的 信息 */
+    /* Reset info in tmpfbuffer */
     tmpfbuffer->flag = FILE_BUFFER_FLAG_DATA;
 
     finfo = NULL;
     fbuffer = NULL;
 
-    /* 重置 */
+    /* Reset */
     finfo = tmpfinfo;
     fbuffer = tmpfbuffer;
-    if(true == shiftfile)
+    if (true == shiftfile)
     {
-        /* 初始化文件信息 */
+        /* Initialize file info */
         fftrail_fileinit(ffstate);
         ffstate->status = FFSMGR_STATUS_SHIFTFILE;
     }
@@ -447,51 +412,51 @@ bool fftrail_serialpreshiftblock(void* state)
 
 bool fftrail_serialshiffile(void* state)
 {
-    int timeout = 0;
-    ff_tail fftail = { 0 };                      /* tail 信息 */
-    file_buffer* fbuffer = NULL;                 /* 缓存信息 */
-    file_buffer* tmpfbuffer = NULL;              /* 缓存信息 */
+    int           timeout = 0;
+    ff_tail       fftail = {0};      /* tail info */
+    file_buffer*  fbuffer = NULL;    /* Cache info */
+    file_buffer*  tmpfbuffer = NULL; /* Cache info */
     ffsmgr_state* ffstate = NULL;
-    ff_fileinfo* finfo = NULL;                   /* 文件信息 */
-    ff_fileinfo* tmpfinfo = NULL;
+    ff_fileinfo*  finfo = NULL; /* File info */
+    ff_fileinfo*  tmpfinfo = NULL;
     file_buffers* txn2filebuffer = NULL;
 
-    /* 获取表序列化所需的信息 */
+    /* Get info needed for table serialization */
     ffstate = (ffsmgr_state*)state;
 
-    /* 获取file_buffers */
+    /* Get file_buffers */
     txn2filebuffer = ffstate->callback.getfilebuffer(ffstate->privdata);
 
     /*
-     * 查看空间是否满足最小要求，不满足则切换 buffer
-     *  1、token 需要的大小
-     *  2、file tail 需要的大小
+     * Check if space meets minimum requirement, switch buffer if not
+     *  1. Size required by token
+     *  2. Size required by file tail
      */
-    /* 根据 bufid 获取 fbuffer */
+    /* Get fbuffer by bufid */
     fbuffer = file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
     finfo = (ff_fileinfo*)fbuffer->privdata;
 
-    /* 查看 fbuffer 中的 start 是否为0,若为0,那么初始化文件 */
-    if(1 == finfo->blknum && 0 == fbuffer->start)
+    /* Check if fbuffer start is 0, if so, initialize file */
+    if (1 == finfo->blknum && 0 == fbuffer->start)
     {
-        /* 初始化文件头部信息 */
+        /* Initialize file header info */
         fftrail_fileinit(state);
     }
 
-    /* 添加尾部信息 */
+    /* Add tail info */
     fftail.nexttrailno = (finfo->fileid + 1);
     ffstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_FTAIL, &fftail, ffstate);
 
-    /* 缓存清理 */
+    /* Cache cleanup */
     fftrail_invalidprivdata(FFSMGR_IF_OPTYPE_SERIAL, ffstate->fdata->ffdata);
 
-    /* 获取缓存 */
-    while(1)
+    /* Get cache */
+    while (1)
     {
         ffstate->bufid = file_buffer_get(txn2filebuffer, &timeout);
-        if(INVALID_BUFFERID == ffstate->bufid)
+        if (INVALID_BUFFERID == ffstate->bufid)
         {
-            if(ERROR_TIMEOUT == timeout)
+            if (ERROR_TIMEOUT == timeout)
             {
                 usleep(10000);
                 continue;
@@ -502,12 +467,12 @@ bool fftrail_serialshiffile(void* state)
         break;
     }
 
-    /* 获取对应的 buffer */
+    /* Get corresponding buffer */
     tmpfbuffer = file_buffer_getbybufid(txn2filebuffer, ffstate->bufid);
-    if(NULL == tmpfbuffer->privdata)
+    if (NULL == tmpfbuffer->privdata)
     {
         tmpfinfo = (ff_fileinfo*)rmalloc1(sizeof(ff_fileinfo));
-        if(NULL == tmpfinfo)
+        if (NULL == tmpfinfo)
         {
             elog(RLOG_ERROR, "out of memory");
         }
@@ -524,27 +489,25 @@ bool fftrail_serialshiffile(void* state)
     tmpfinfo->fileid = finfo->fileid + 1;
     tmpfinfo->blknum = 1;
 
-    /* 将 buffer 写入到待刷新缓存中 */
+    /* Write buffer to pending flush cache */
     rmemcpy1(&tmpfbuffer->extra, 0, &fbuffer->extra, sizeof(file_buffer_extra));
     file_buffer_waitflush_add(txn2filebuffer, fbuffer);
     finfo = NULL;
     fbuffer = NULL;
 
-    /* 重置 tmpfbuffer 中的 信息 */
+    /* Reset info in tmpfbuffer */
     tmpfbuffer->flag = FILE_BUFFER_FLAG_DATA;
 
-    /* 初始化文件信息 */
+    /* Initialize file info */
     fftrail_fileinit(ffstate);
     ffstate->status = FFSMGR_STATUS_USED;
 
     return true;
 }
 
-/* 将具体的数据加入到buffer中 */
-uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype,
-                                            uint16  tdatalen,
-                                            uint8*  tdata,
-                                            uint8*  buffer)
+/* Add specific data to buffer */
+uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype, uint16 tdatalen, uint8* tdata,
+                           uint8* buffer)
 {
     uint8* _uptr_ = NULL;
 
@@ -556,7 +519,7 @@ uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype,
             CONCAT(put, 8bit)(&_uptr_, *((uint8*)tdata));
             break;
         case FTRAIL_TOKENDATATYPE_SMALLINT:
-            CONCAT(put,16bit)(&_uptr_, *((uint16*)tdata));
+            CONCAT(put, 16bit)(&_uptr_, *((uint16*)tdata));
             break;
         case FTRAIL_TOKENDATATYPE_INT:
             CONCAT(put, 32bit)(&_uptr_, *((uint32*)tdata));
@@ -575,11 +538,9 @@ uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype,
     return _uptr_;
 }
 
-/* 将具体的数据从buffer写入到 data 中 */
-uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype,
-                                            uint64  tdatalen,
-                                            uint8*  tdata,
-                                            uint8*  buffer)
+/* Write specific data from buffer to data */
+uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype, uint64 tdatalen, uint8* tdata,
+                           uint8* buffer)
 {
     uint8* _uptr_ = NULL;
 
@@ -610,29 +571,24 @@ uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype,
     return _uptr_;
 }
 
-
-/* 
- * 将数据按照 token 序列化到缓存中
- * 参数说明:
- * 入参:
- *      fhdr             函数头部标识
+/*
+ * Serialize data to cache by token
+ * Parameter description:
+ * Input parameters:
+ *      fhdr             Function header identifier
  *      tid              tokenid
  *      tinfo            tokeninfo
- *      tdtype           tokendatatype,取值参考: ftrail_tokendatatype
- *      tdatalen         数据长度
- *      tdata            数据
- * 出参:
- *      tlen             加上 token 的总长度
- *      buffer           token 的内容保存到该缓存中，返回新的地址空间
+ *      tdtype           tokendatatype, see: ftrail_tokendatatype
+ *      tdatalen         Data length
+ *      tdata            Data
+ * Output parameters:
+ *      tlen             Total length including token
+ *      buffer           Token content saved to this cache, return new address space
  */
-uint8* fftrail_token2buffer(uint8 tid, uint8 tinfo,
-                                    ftrail_tokendatatype tdtype,
-                                    uint16  tdatalen,
-                                    uint8*  tdata,
-                                    uint32* tlen,
-                                    uint8*  buffer)
+uint8* fftrail_token2buffer(uint8 tid, uint8 tinfo, ftrail_tokendatatype tdtype, uint16 tdatalen,
+                            uint8* tdata, uint32* tlen, uint8* buffer)
 {
-    uint32  _tokenlen_ = 0;
+    uint32 _tokenlen_ = 0;
     uint8* uptr = NULL;
 
     uptr = buffer;
@@ -641,86 +597,86 @@ uint8* fftrail_token2buffer(uint8 tid, uint8 tinfo,
 
     FTRAIL_TOKENHDR2BUFFER(put, tid, tinfo, _tokenlen_, uptr)
 
-    /* 组装数据 */
+    /* Assemble data */
     uptr = fftrail_body2buffer(tdtype, tdatalen, tdata, uptr);
     *tlen += _tokenlen_;
     return uptr;
 }
 
 /*
- * 尾部长度是固定的
-*/
+ * Tail length is fixed
+ */
 int fftrail_taillen(int compatibility)
 {
     /*
-     * 文件尾部根据不同的版本长度不同，但是必须为 8 的整数
-    */
-   /*
-    * 2024.10.15
-    * v2.0 中的长度内容:
-    *   groupid                 1字节
-    *   tokeninfo               1字节
-    *   datalen                 4字节
-    *   data                    8+6字节----下个文件的编号
-    */
+     * File tail length varies by version, but must be multiple of 8
+     */
+    /*
+     * 2024.10.15
+     * v2.0 length content:
+     *   groupid                 1 byte
+     *   tokeninfo               1 byte
+     *   datalen                 4 bytes
+     *   data                    8+6 bytes----next file number
+     */
     return 24;
 }
 
 /*
- * RESET长度是固定的
-*/
+ * RESET length is fixed
+ */
 int fftrail_resetlen(int compatibility)
 {
     /*
-     * 文件RESET根据不同的版本长度不同，但是必须为 8 的整数
-    */
-   /*
-    * 2024.10.15
-    * v2.0 中的长度内容:
-    *   groupid                 1字节
-    *   tokeninfo               1字节
-    *   datalen                 4字节
-    *   data                    8+6字节----下个文件的编号
-    */
+     * File RESET length varies by version, but must be multiple of 8
+     */
+    /*
+     * 2024.10.15
+     * v2.0 length content:
+     *   groupid                 1 byte
+     *   tokeninfo               1 byte
+     *   datalen                 4 bytes
+     *   data                    8+6 bytes----next file number
+     */
     return 24;
 }
 
-
 /*
- * 文件头部信息初始化
-*/
+ * File header info initialization
+ */
 void fftrail_fileinit(void* state)
 {
-    /* 添加文件头信息 */
-    bool                found = false;
-    Oid                 dbid = 0;
-    char*               dbname = 0;
-    file_buffer* fbuffer = NULL;
-    ffsmgr_state* ffstate = NULL;
-    ff_header* ffheader = NULL;              /* trail 文件头结构 */
-    ff_dbmetadata* ffdbmd = NULL;            /* 数据库信息       */
-    ff_fileinfo* finfo = NULL;
-    fftrail_privdata* ffprivdata = NULL;
+    /* Add file header info */
+    bool                          found = false;
+    Oid                           dbid = 0;
+    char*                         dbname = 0;
+    file_buffer*                  fbuffer = NULL;
+    ffsmgr_state*                 ffstate = NULL;
+    ff_header*                    ffheader = NULL; /* trail file header struct */
+    ff_dbmetadata*                ffdbmd = NULL;   /* Database info */
+    ff_fileinfo*                  finfo = NULL;
+    fftrail_privdata*             ffprivdata = NULL;
     fftrail_database_serialentry* dbserialentry = NULL;
 
-    /* 获取初始化信息 */
+    /* Get initialization info */
     ffstate = (ffsmgr_state*)state;
     ffprivdata = (fftrail_privdata*)ffstate->fdata->ffdata;
-    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer =
+        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     finfo = (ff_fileinfo*)fbuffer->privdata;
 
     ffstate->recptr = fbuffer->data + fbuffer->start;
-    /* 文件开头，增加文件头和 dbmetadata 信息 */
+    /* At file start, add file header and dbmetadata info */
     ffheader = ffsmgr_headinit(ffstate->compatibility, InvalidFullTransactionId, finfo->fileid);
 
-    /* 添加lsn信息 */
+    /* Add lsn info */
     ffheader->redolsn = fbuffer->extra.chkpoint.redolsn.wal.lsn;
     ffheader->confirmlsn = fbuffer->extra.rewind.confirmlsn.wal.lsn;
     ffheader->restartlsn = fbuffer->extra.rewind.restartlsn.wal.lsn;
 
     ffstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_FHEADER, ffheader, ffstate);
 
-    if(NULL != ffheader->filename)
+    if (NULL != ffheader->filename)
     {
         rfree(ffheader->filename);
     }
@@ -728,12 +684,12 @@ void fftrail_fileinit(void* state)
     rfree(ffheader);
     ffheader = NULL;
 
-    /* 添加 dbmetadata 信息 */
-    /* 查看是否存在 */
+    /* Add dbmetadata info */
+    /* Check if exists */
     dbid = ffstate->callback.getdboid(ffstate->privdata);
     dbname = ffstate->callback.getdbname(ffstate->privdata, dbid);
 
-    if(NULL != ffstate->callback.setdboid)
+    if (NULL != ffstate->callback.setdboid)
     {
         ffstate->callback.setdboid(ffstate->privdata, dbid);
         ffstate->callback.setdboid = NULL;
@@ -742,9 +698,9 @@ void fftrail_fileinit(void* state)
     ffdbmd = ffsmgr_dbmetadatainit(dbname);
     ffdbmd->oid = dbid;
     dbserialentry = hash_search(ffprivdata->databases, &dbid, HASH_ENTER, &found);
-    if(false == found)
+    if (false == found)
     {
-        /* 向 hash 中加入数据 */
+        /* Add data to hash */
         dbserialentry->no = ffprivdata->dbnum++;
         dbserialentry->oid = dbid;
         rmemcpy1(dbserialentry->database, 0, ffdbmd->dbname, strlen(ffdbmd->dbname));
@@ -759,42 +715,42 @@ void fftrail_fileinit(void* state)
 }
 
 /*
- * 文件中的私有变量缓存清理
+ * Private variable cache cleanup in file
  * optype
- *  标识hash类型
+ *  Identify hash type
  */
 void fftrail_invalidprivdata(int optype, void* privdata)
 {
-    ListCell* lc = NULL;
+    ListCell*         lc = NULL;
     fftrail_privdata* ffprivdata = NULL;
 
-    if(NULL == privdata)
+    if (NULL == privdata)
     {
         return;
     }
 
-    /* 清理缓存 */
+    /* Clean cache */
     ffprivdata = (fftrail_privdata*)privdata;
     ffprivdata->dbnum = 0;
     ffprivdata->tbnum = 0;
 
-    /* 遍历删除表 */
-    foreach(lc, ffprivdata->tbentrys)
+    /* Iterate and delete tables */
+    foreach (lc, ffprivdata->tbentrys)
     {
-        fftrail_table_serialentry* tbserialentry = NULL;
+        fftrail_table_serialentry*   tbserialentry = NULL;
         fftrail_table_deserialentry* tbdeserialentry = NULL;
-        if(optype == FFSMGR_IF_OPTYPE_SERIAL)
+        if (optype == FFSMGR_IF_OPTYPE_SERIAL)
         {
             tbserialentry = (fftrail_table_serialentry*)lfirst(lc);
             hash_search(ffprivdata->tables, &tbserialentry->key, HASH_REMOVE, NULL);
         }
-        else if(optype == FFSMGR_IF_OPTYPE_DESERIAL)
+        else if (optype == FFSMGR_IF_OPTYPE_DESERIAL)
         {
             tbdeserialentry = (fftrail_table_deserialentry*)lfirst(lc);
             hash_search(ffprivdata->tables, &tbdeserialentry->key, HASH_REMOVE, NULL);
 
-            /* 释放 columns */
-            if(NULL != tbdeserialentry->columns)
+            /* Free columns */
+            if (NULL != tbdeserialentry->columns)
             {
                 rfree(tbdeserialentry->columns);
                 tbdeserialentry->columns = NULL;
@@ -804,18 +760,18 @@ void fftrail_invalidprivdata(int optype, void* privdata)
     list_free(ffprivdata->tbentrys);
     ffprivdata->tbentrys = NULL;
 
-    /* 遍历删除数据库 */
-    foreach(lc, ffprivdata->dbentrys)
+    /* Iterate and delete databases */
+    foreach (lc, ffprivdata->dbentrys)
     {
-        fftrail_database_serialentry* dbserialentry = NULL;
+        fftrail_database_serialentry*   dbserialentry = NULL;
         fftrail_database_deserialentry* dbdeserialentry = NULL;
 
-        if(optype == FFSMGR_IF_OPTYPE_SERIAL)
+        if (optype == FFSMGR_IF_OPTYPE_SERIAL)
         {
             dbserialentry = (fftrail_database_serialentry*)lfirst(lc);
             hash_search(ffprivdata->databases, &dbserialentry->oid, HASH_REMOVE, NULL);
         }
-        else if(optype == FFSMGR_IF_OPTYPE_DESERIAL)
+        else if (optype == FFSMGR_IF_OPTYPE_DESERIAL)
         {
             dbdeserialentry = (fftrail_database_deserialentry*)lfirst(lc);
             hash_search(ffprivdata->databases, &dbdeserialentry->no, HASH_REMOVE, NULL);
@@ -825,16 +781,15 @@ void fftrail_invalidprivdata(int optype, void* privdata)
     ffprivdata->dbentrys = NULL;
 }
 
-
 /*
- * 文件中的私有变量缓存清理
+ * Private variable cache cleanup in file
  * optype
- *  标识hash类型
+ *  Identify hash type
  */
 static void fftrail_freeprivdata(int optype, void* privdata)
 {
     fftrail_privdata* ffprivdata = NULL;
-    if(NULL == privdata)
+    if (NULL == privdata)
     {
         return;
     }
@@ -842,57 +797,56 @@ static void fftrail_freeprivdata(int optype, void* privdata)
     fftrail_invalidprivdata(optype, privdata);
     ffprivdata = (fftrail_privdata*)privdata;
 
-    if(NULL != ffprivdata->tables)
+    if (NULL != ffprivdata->tables)
     {
         hash_destroy(ffprivdata->tables);
         ffprivdata->tables = NULL;
     }
 
-    if(NULL != ffprivdata->databases)
+    if (NULL != ffprivdata->databases)
     {
         hash_destroy(ffprivdata->databases);
         ffprivdata->databases = NULL;
     }
 }
 
-
-/* 数据序列化到 buffer */
+/* Serialize data to buffer */
 bool fftrail_serial(ff_cxt_type type, void* data, void* state)
 {
     return m_trailgroups[type].serialfunc(data, state);
 }
 
-/* 数据反序列化到 data */
+/* Deserialize data to data */
 bool fftrail_deserial(ff_cxt_type type, void** data, void* state)
 {
     return m_trailgroups[type].deserialfunc(data, state);
 }
 
-/* 初始化 */
+/* Initialization */
 bool fftrail_init(int optype, void* state)
 {
-    HASHCTL hashCtl = {'\0'};
+    HASHCTL           hashCtl = {'\0'};
     fftrail_privdata* privdata = NULL;
-    ffsmgr_state* ffstate = (ffsmgr_state*)state;
+    ffsmgr_state*     ffstate = (ffsmgr_state*)state;
 
-    /* 证明已经初始化过了，那么无需再次初始化 */
-    if(NULL != ffstate->fdata)
+    /* Already initialized, no need to initialize again */
+    if (NULL != ffstate->fdata)
     {
         return true;
     }
 
-    /* 初始化 fdata 结构 */
+    /* Initialize fdata struct */
     ffstate->fdata = (ffsmgr_fdata*)rmalloc1(sizeof(ffsmgr_fdata));
-    if(NULL == ffstate->fdata)
+    if (NULL == ffstate->fdata)
     {
         elog(RLOG_WARNING, "out of memory");
         return false;
     }
     rmemset0(ffstate->fdata, 0, '\0', sizeof(ffsmgr_fdata));
 
-    /* 初始化具体的结构 */
-    privdata =(fftrail_privdata*)rmalloc1(sizeof(fftrail_privdata));
-    if(NULL == privdata)
+    /* Initialize specific struct */
+    privdata = (fftrail_privdata*)rmalloc1(sizeof(fftrail_privdata));
+    if (NULL == privdata)
     {
         elog(RLOG_WARNING, "out of memory");
         return false;
@@ -905,68 +859,64 @@ bool fftrail_init(int optype, void* state)
     privdata->dbnum = 0;
     privdata->tbnum = 0;
 
-    /* 内容信息 */
+    /* Content info */
     ffstate->fdata->ffdata = privdata;
 
-    /* 初始化表和数据库信息 */
-    /* 表信息 */
-    if(optype == FFSMGR_IF_OPTYPE_SERIAL)
+    /* Initialize table and database info */
+    /* Table info */
+    if (optype == FFSMGR_IF_OPTYPE_SERIAL)
     {
         hashCtl.keysize = sizeof(fftrail_table_serialkey);
         hashCtl.entrysize = sizeof(fftrail_table_serialentry);
     }
-    else if(optype == FFSMGR_IF_OPTYPE_DESERIAL)
+    else if (optype == FFSMGR_IF_OPTYPE_DESERIAL)
     {
         hashCtl.keysize = sizeof(fftrail_table_deserialkey);
         hashCtl.entrysize = sizeof(fftrail_table_deserialentry);
     }
-    privdata->tables = hash_create("fftrail_privdata_tables",
-                                    128,
-                                    &hashCtl,
-                                    HASH_ELEM | HASH_BLOBS);
+    privdata->tables =
+        hash_create("fftrail_privdata_tables", 128, &hashCtl, HASH_ELEM | HASH_BLOBS);
 
-    /* 数据库信息 */
-    if(optype == FFSMGR_IF_OPTYPE_SERIAL)
+    /* Database info */
+    if (optype == FFSMGR_IF_OPTYPE_SERIAL)
     {
         hashCtl.keysize = sizeof(Oid);
         hashCtl.entrysize = sizeof(fftrail_database_serialentry);
     }
-    else if(optype == FFSMGR_IF_OPTYPE_DESERIAL)
+    else if (optype == FFSMGR_IF_OPTYPE_DESERIAL)
     {
         hashCtl.keysize = sizeof(uint32);
         hashCtl.entrysize = sizeof(fftrail_database_deserialentry);
     }
-    privdata->databases = hash_create("fftrail_privdata_databases",
-                                    128,
-                                    &hashCtl,
-                                    HASH_ELEM | HASH_BLOBS);
+    privdata->databases =
+        hash_create("fftrail_privdata_databases", 128, &hashCtl, HASH_ELEM | HASH_BLOBS);
 
     return true;
 }
 
-/* 内容释放 */
+/* Content release */
 void fftrail_free(int optype, void* state)
 {
     ffsmgr_state* ffstate = (ffsmgr_state*)state;
 
-    if(NULL == state)
+    if (NULL == state)
     {
         return;
     }
 
-    if(NULL == ffstate->fdata)
+    if (NULL == ffstate->fdata)
     {
-        /* fdata 内容释放 */
+        /* fdata content release */
         return;
     }
 
-    /* ffdata 内容释放 */
+    /* ffdata content release */
     fftrail_freeprivdata(optype, ffstate->fdata->ffdata);
     rfree(ffstate->fdata->ffdata);
     ffstate->fdata->ffdata = NULL;
 
-    /* ffdata2 内容释放 */
-    if(FFSMGR_IF_OPTYPE_DESERIAL == optype && NULL != ffstate->fdata->ffdata2)
+    /* ffdata2 content release */
+    if (FFSMGR_IF_OPTYPE_DESERIAL == optype && NULL != ffstate->fdata->ffdata2)
     {
         fftrail_freeprivdata(optype, ffstate->fdata->ffdata2);
         rfree(ffstate->fdata->ffdata2);
@@ -975,92 +925,91 @@ void fftrail_free(int optype, void* state)
     ffstate->fdata = NULL;
 }
 
-/* 获取record 中记录的 subtype */
+/* Get subtype from record */
 bool fftrail_getrecordsubtype(void* state, uint8* record, uint16* subtype)
 {
     ffsmgr_state* ffstate = NULL;
 
     ffstate = (ffsmgr_state*)state;
 
-    /* 跳过token部分 */
+    /* Skip token part */
     record += TOKENHDRSIZE;
     *subtype = fftrail_data_getsubtypefromhead(ffstate->compatibility, record);
 
     return true;
 }
 
-/* 获取 record 头中记录的长度 */
+/* Get length from record header */
 uint64 fftrail_getrecordlsn(void* state, uint8* record)
 {
     ffsmgr_state* ffstate = NULL;
 
     ffstate = (ffsmgr_state*)state;
 
-    /* 跳过token部分 */
+    /* Skip token part */
     record += TOKENHDRSIZE;
     return fftrail_data_getorgposfromhead(ffstate->compatibility, record);
 }
 
-/* 获取真实数据基于 record 的偏移 */
+/* Get offset of real data based on record */
 uint16 fftrail_getrecorddataoffset(int compatibility)
 {
     uint16 dataoffset = 0;
 
-    /* 跳过token部分 */
+    /* Skip token part */
     dataoffset = fftrail_data_getrecorddataoffset(compatibility);
     dataoffset += TOKENHDRSIZE;
 
     return dataoffset;
 }
 
-/* 获取 total length */
+/* Get total length */
 uint64 fftrail_getrecordtotallength(void* state, uint8* record)
 {
     ffsmgr_state* ffstate = NULL;
 
     ffstate = (ffsmgr_state*)state;
 
-    /* 跳过token部分 */
+    /* Skip token part */
     record += TOKENHDRSIZE;
     return fftrail_data_gettotallengthfromhead(ffstate->compatibility, record);
 }
 
-/* 获取 record length */
+/* Get record length */
 uint16 fftrail_getrecordlength(void* state, uint8* record)
 {
     ffsmgr_state* ffstate = NULL;
 
     ffstate = (ffsmgr_state*)state;
 
-    /* 跳过token部分 */
+    /* Skip token part */
     record += TOKENHDRSIZE;
     return fftrail_data_getreclengthfromhead(ffstate->compatibility, record);
 }
 
-/* 设置 record length */
+/* Set record length */
 void fftrail_setrecordlength(void* state, uint8* record, uint16 reclength)
 {
     ffsmgr_state* ffstate = NULL;
 
     ffstate = (ffsmgr_state*)state;
 
-    /* 跳过token部分 */
+    /* Skip token part */
     record += TOKENHDRSIZE;
 
     fftrail_data_setreclengthonhead(ffstate->compatibility, record, reclength);
 }
 
-
-/* 获取record 中记录的 grouptype */
+/* Get grouptype from record */
 void fftrail_getrecordgrouptype(void* state, uint8* record, uint8* grouptype)
 {
-        /* 调用反序列化接口，解析数据 */
-    uint8   tokenid = FFTRAIL_GROUPTYPE_NOP;
-    uint8   tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
-    uint32  tokenlen = 0;
+    /* Call deserialization interface, parse data */
+    uint8  tokenid = FFTRAIL_GROUPTYPE_NOP;
+    uint8  tokeninfo = FFTRAIL_INFOTYPE_TOKEN;
+    uint32 tokenlen = 0;
 
-    uint8*  uptr = NULL;
-    uint8*  tokendata = NULL;
+    uint8* uptr = NULL;
+    uint8* tokendata = NULL;
 
     UNUSED(tokendata);
     UNUSED(tokeninfo);
@@ -1069,21 +1018,19 @@ void fftrail_getrecordgrouptype(void* state, uint8* record, uint8* grouptype)
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
 
     *grouptype = tokenid;
-    return ;
-
+    return;
 }
 
-/* 获取record 中记录的 grouptype */
+/* Get grouptype from record */
 bool fftrail_isrecordtransstart(void* state, uint8* record)
 {
     ffsmgr_state* ffstate = NULL;
 
     ffstate = (ffsmgr_state*)state;
     return fftrail_data_deserail_check_transind_start(record, ffstate->compatibility);
-
 }
 
-/* 获取 tokenminsize */
+/* Get tokenminsize */
 int fftrail_gettokenminsize(int compatibility)
 {
     return fftrail_data_tokenminsize(compatibility);

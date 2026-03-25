@@ -3,9 +3,9 @@
 
 typedef struct ONLINEREFRESH_CAPTURELOADRECORD
 {
-    splitwalcontext *splitwalctx;
+    splitwalcontext* splitwalctx;
 } onlinerefresh_captureloadrecord;
 
-extern onlinerefresh_captureloadrecord *onlinerefresh_captureloadrecord_init(void);
+extern onlinerefresh_captureloadrecord* onlinerefresh_captureloadrecord_init(void);
 
 #endif

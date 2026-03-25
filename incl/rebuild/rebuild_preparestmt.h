@@ -3,10 +3,10 @@
 
 typedef struct REBUILD_PREPARESTMT
 {
-    uint64                          number;                                 /* prepareno        */
-    char                            *preparesql;                            /* 预解析语句  key   */
-    char                            stmtname[NAMEDATALEN];           /* stmtname   value */
-}rebuild_preparestmt;
+    uint64 number;                /* prepareno        */
+    char*  preparesql;            /* Pre-parsed statement key   */
+    char   stmtname[NAMEDATALEN]; /* stmtname   value */
+} rebuild_preparestmt;
 
 rebuild_preparestmt* rebuild_preparestmt_init(void);
 

@@ -22,30 +22,32 @@
 #include "loadrecords/loadtrailrecords.h"
 #include "increment/integrate/split/increment_integratesplittrail.h"
 
-
-/* 设置 integrate 拆分线程的状态 */
+/* Set the state of the integrate split thread */
 void increment_integratesplittrail_state_set(increment_integratesplittrail* splittrail, int state)
 {
     splittrail->state = state;
 }
 
 /*
-  * 入参说明:
-  *    fileid 设置为 loadtrail->fileid, loadtrail->offset 设置为 0
-  *    emitoffset 设置为 emitoffset
-  */
-void increment_integratesplittrail_emit_set(increment_integratesplittrail* splittrail, uint64 fileid, uint64 emitoffset)
+ * Parameter description:
+ *    fileid set to loadtrail->fileid, loadtrail->offset set to 0
+ *    emitoffset set to emitoffset
+ */
+void increment_integratesplittrail_emit_set(increment_integratesplittrail* splittrail,
+                                            uint64 fileid, uint64 emitoffset)
 {
-    /* 重置过滤的起点 */
+    /* Reset filtering start point */
     splittrail->loadrecords->fileid = fileid;
     splittrail->loadrecords->foffset = 0;
     splittrail->emitoffset = emitoffset;
 
-    /* 重置解析的起点和过滤的起点 */
-    loadtrailrecords_setloadposition(splittrail->loadrecords, splittrail->loadrecords->fileid, splittrail->loadrecords->foffset);
+    /* Reset parsing and filtering start points */
+    loadtrailrecords_setloadposition(splittrail->loadrecords, splittrail->loadrecords->fileid,
+                                     splittrail->loadrecords->foffset);
 }
 
-static bool increment_integratesplittrail_state_checkandset(increment_integratesplittrail* splittrail)
+static bool increment_integratesplittrail_state_checkandset(
+    increment_integratesplittrail* splittrail)
 {
     if (INTEGRATE_STATUS_SPLIT_WORKING == splittrail->state)
     {
@@ -54,20 +56,20 @@ static bool increment_integratesplittrail_state_checkandset(increment_integrates
     return false;
 }
 
-/* 初始化信息,包含设置 loadtrail中的基础信息 */
+/* Initialize info, including setting basic info in loadtrail */
 increment_integratesplittrail* increment_integratesplittrail_init(void)
 {
-    char* cdata = NULL;
+    char*                          cdata = NULL;
     increment_integratesplittrail* splittrail = NULL;
 
     splittrail = (increment_integratesplittrail*)rmalloc1(sizeof(increment_integratesplittrail));
-    if(NULL == splittrail)
+    if (NULL == splittrail)
     {
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(splittrail, 0, '\0', sizeof(increment_integratesplittrail));
 
-    /* 根据配置文件设置 loadtrail信息 */
+    /* Set loadtrail info based on config file */
     splittrail->capturedata = rmalloc0(MAXPGPATH);
     if (NULL == splittrail->capturedata)
     {
@@ -78,43 +80,43 @@ increment_integratesplittrail* increment_integratesplittrail_init(void)
     cdata = guc_getConfigOption(CFG_KEY_TRAIL_DIR);
     snprintf(splittrail->capturedata, MAXPGPATH, "%s/%s", cdata, STORAGE_TRAIL_DIR);
 
-    /*------------------------load record 模块初始化 begin---------------------------*/
+    /*------------------------load record module initialization begin---------------------------*/
     splittrail->loadrecords = loadtrailrecords_init();
-    if(NULL == splittrail->loadrecords)
+    if (NULL == splittrail->loadrecords)
     {
         elog(RLOG_WARNING, "integrate increment load records error");
         return NULL;
     }
 
-    if(false == loadtrailrecords_setloadpageroutine(splittrail->loadrecords, LOADPAGE_TYPE_FILE))
+    if (false == loadtrailrecords_setloadpageroutine(splittrail->loadrecords, LOADPAGE_TYPE_FILE))
     {
         elog(RLOG_WARNING, "integrate increment set load page error");
         return NULL;
     }
 
-    if(false == loadtrailrecords_setloadsource(splittrail->loadrecords, splittrail->capturedata))
+    if (false == loadtrailrecords_setloadsource(splittrail->loadrecords, splittrail->capturedata))
     {
         elog(RLOG_WARNING, "integrate increment set capture data error");
         return NULL;
     }
     loadtrailrecords_setloadposition(splittrail->loadrecords, 0, 0);
-    /*------------------------load record 模块初始化   end---------------------------*/
+    /*------------------------load record module initialization   end---------------------------*/
 
-    /* 设置状态为等待设置 */
+    /* Set state to waiting for set */
     increment_integratesplittrail_state_set(splittrail, INTEGRATE_STATUS_SPLIT_WAITSET);
     splittrail->filter = true;
     return splittrail;
 }
 
-/* 将 records 加入到队列中 */
+/* Add records to queue */
 static bool increment_integratesplitrail_addrecords2queue(increment_integratesplittrail* splittrail)
 {
-    /* 加入到队列中 */
-    while(INTEGRATE_STATUS_SPLIT_WORKING == splittrail->state)
+    /* Add to queue */
+    while (INTEGRATE_STATUS_SPLIT_WORKING == splittrail->state)
     {
-        if(false == queue_put(splittrail->recordscache, splittrail->loadrecords->records))
+        if (false == queue_put(splittrail->recordscache, splittrail->loadrecords->records))
         {
-            if(ERROR_QUEUE_FULL == splittrail->recordscache->error)
+            if (ERROR_QUEUE_FULL == splittrail->recordscache->error)
             {
                 usleep(50000);
                 continue;
@@ -129,66 +131,69 @@ static bool increment_integratesplitrail_addrecords2queue(increment_integratespl
     return false;
 }
 
-/* 处理主入口 */
+/* Main processing entry */
 void* increment_integratesplitrail_main(void* args)
 {
-    uint64 fileid                                           = 0;
-    thrnode* thr_node                                 = NULL;
-    increment_integratesplittrail* splittrail        = NULL;
+    uint64                         fileid = 0;
+    thrnode*                       thr_node = NULL;
+    increment_integratesplittrail* splittrail = NULL;
 
     thr_node = (thrnode*)args;
-    /* 入参转换 */
+    /* Parameter conversion */
     splittrail = (increment_integratesplittrail*)thr_node->data;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "increment integrate splittrail exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "increment integrate splittrail exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
-    while(true)
+    while (true)
     {
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
-            /* 序列化/落盘 */
+            /* Serialize/flush to disk */
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
         if (!increment_integratesplittrail_state_checkandset(splittrail))
         {
-            /* 睡眠 10 毫秒 */
+            /* Sleep 10 milliseconds */
             usleep(10000);
             continue;
         }
 
-        /* 加载records */
-        /* 预保留 fileid, 在 loadrecords 时, 会自动切换文件 */
+        /* Load records */
+        /* Pre-reserve fileid, file will auto-switch during loadrecords */
         fileid = splittrail->loadrecords->fileid;
-        if(false == loadtrailrecords_load(splittrail->loadrecords))
+        if (false == loadtrailrecords_load(splittrail->loadrecords))
         {
             elog(RLOG_WARNING, "load trail records error");
             thr_node->stat = THRNODE_STAT_ABORT;
             break;
         }
 
-        splittrail->callback.setmetricloadtrailno(splittrail->privdata, splittrail->loadrecords->fileid);
-        splittrail->callback.setmetricloadtrailstart(splittrail->privdata, splittrail->loadrecords->foffset);
+        splittrail->callback.setmetricloadtrailno(splittrail->privdata,
+                                                  splittrail->loadrecords->fileid);
+        splittrail->callback.setmetricloadtrailstart(splittrail->privdata,
+                                                     splittrail->loadrecords->foffset);
 
-        if(true == dlist_isnull(splittrail->loadrecords->records))
+        if (true == dlist_isnull(splittrail->loadrecords->records))
         {
-            /* 
-             * 没有读取到数据, 追上了最新的, 所以需要重新读取该块
+            /*
+             * No data read, caught up to latest, so need to re-read this block
              */
-            /* 需要退出，等待 thr_node->stat 变为 TERM 后退出*/
-            if(THRNODE_STAT_TERM != thr_node->stat)
+            /* Need to exit, wait for thr_node->stat to become TERM then exit*/
+            if (THRNODE_STAT_TERM != thr_node->stat)
             {
-                /* 睡眠 10 毫秒 */
+                /* Sleep 10 milliseconds */
                 usleep(10000);
                 continue;
             }
@@ -196,11 +201,11 @@ void* increment_integratesplitrail_main(void* args)
             break;
         }
 
-        /* 是否需要过滤, 不需要过滤则加入到队列中 */
-        if(false == splittrail->filter)
+        /* Whether filtering is needed, if not needed then add to queue */
+        if (false == splittrail->filter)
         {
-            /* 加入到队列中 */
-            if(false == increment_integratesplitrail_addrecords2queue(splittrail))
+            /* Add to queue */
+            if (false == increment_integratesplitrail_addrecords2queue(splittrail))
             {
                 elog(RLOG_WARNING, "integrate add records 2 queue error");
                 thr_node->stat = THRNODE_STAT_ABORT;
@@ -209,21 +214,22 @@ void* increment_integratesplitrail_main(void* args)
             continue;
         }
 
-        if(false == loadtrailrecords_filterremainmetadata(splittrail->loadrecords, fileid, splittrail->emitoffset))
+        if (false == loadtrailrecords_filterremainmetadata(splittrail->loadrecords, fileid,
+                                                           splittrail->emitoffset))
         {
             splittrail->filter = false;
         }
 
-        if(true == dlist_isnull(splittrail->loadrecords->records))
+        if (true == dlist_isnull(splittrail->loadrecords->records))
         {
-            /* 
-             * 数据全部被过滤，继续获取数据
+            /*
+             * All data filtered out, continue to get data
              */
             continue;
         }
 
-        /* 加入到队列中 */
-        if(false == increment_integratesplitrail_addrecords2queue(splittrail))
+        /* Add to queue */
+        if (false == increment_integratesplitrail_addrecords2queue(splittrail))
         {
             elog(RLOG_WARNING, "integrate add records 2 queue error");
             thr_node->stat = THRNODE_STAT_ABORT;

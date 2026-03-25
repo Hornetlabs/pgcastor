@@ -4,14 +4,14 @@
 static dlist* dlist_init(void)
 {
     dlist* dl = rmalloc0(sizeof(dlist));
-    if(NULL == dl)
+    if (NULL == dl)
     {
         elog(RLOG_WARNING, "dlist init error, out of memory.");
         return NULL;
     }
     rmemset0(dl, 0, '\0', sizeof(dlist));
     dl->head = NULL;
-    dl->tail =NULL;
+    dl->tail = NULL;
     dl->length = 0;
     return dl;
 }
@@ -19,7 +19,7 @@ static dlist* dlist_init(void)
 static dlistnode* dlist_node_init(void)
 {
     dlistnode* dlnode = rmalloc0(sizeof(dlistnode));
-    if(NULL == dlnode)
+    if (NULL == dlnode)
     {
         elog(RLOG_WARNING, "out of memory.");
         return NULL;
@@ -33,26 +33,26 @@ static dlistnode* dlist_node_init(void)
 
 void dlist_setfree(dlist* dl, dlistvaluefree valuefree)
 {
-    if(NULL == dl)
+    if (NULL == dl)
     {
         return;
     }
     dl->free = valuefree;
 }
 
-/* 
- * 将dlnode释放
- * 入参:
- *  valuefree   value的释放函数,可为空, 为空时，不释放 dlistnode->value 值
+/*
+ * Free dlnode
+ * Input:
+ *  valuefree   value free function, can be NULL, when NULL, does not free dlistnode->value
  */
 void dlist_node_free(dlistnode* dlnode, dlistvaluefree valuefree)
 {
-    if(NULL == dlnode)
+    if (NULL == dlnode)
     {
         return;
     }
 
-    if(NULL != valuefree)
+    if (NULL != valuefree)
     {
         valuefree(dlnode->value);
     }
@@ -60,13 +60,13 @@ void dlist_node_free(dlistnode* dlnode, dlistvaluefree valuefree)
 }
 
 /*
- * 将 value 值放到链表的尾部
- * 当 dl 为空时会先生成新的链表
-*/
+ * Put value at the tail of the linked list
+ * When dl is empty, a new list will be created first
+ */
 dlist* dlist_put(dlist* dl, void* value)
 {
     dlistnode* dlnode = NULL;
-    if(NULL == dl)
+    if (NULL == dl)
     {
         dl = dlist_init();
     }
@@ -74,7 +74,7 @@ dlist* dlist_put(dlist* dl, void* value)
     dlnode = dlist_node_init();
     dlnode->value = value;
 
-    if(NULL == dl->head)
+    if (NULL == dl->head)
     {
         dl->head = dlnode;
     }
@@ -89,15 +89,15 @@ dlist* dlist_put(dlist* dl, void* value)
 }
 
 /*
- * 在头部添加节点
-*/
+ * Add node at head
+ */
 dlist* dlist_puthead(dlist* dl, void* value)
 {
     dlistnode* dlnode = NULL;
-    if(NULL == dl)
+    if (NULL == dl)
     {
         dl = dlist_init();
-        if(NULL == dl)
+        if (NULL == dl)
         {
             elog(RLOG_WARNING, "put value 2 dlist head error");
             return NULL;
@@ -105,16 +105,16 @@ dlist* dlist_puthead(dlist* dl, void* value)
     }
 
     dlnode = dlist_node_init();
-    if(NULL == dlnode)
+    if (NULL == dlnode)
     {
         elog(RLOG_WARNING, "put value 2 dlist head error, init dlist node");
         return NULL;
     }
     dlnode->value = value;
 
-    /* head 为空 */
+    /* head is empty */
     dlnode->next = dl->head;
-    if(NULL == dl->head)
+    if (NULL == dl->head)
     {
         dl->tail = dlnode;
     }
@@ -128,20 +128,20 @@ dlist* dlist_puthead(dlist* dl, void* value)
     return dl;
 }
 
-/* 根据值获取, 不在链表中移除 */
+/* Get by value, not removed from the linked list */
 void* dlist_get(dlist* dl, void* value, dlistvaluecmp valuecmp)
 {
     dlistnode* dlnode = NULL;
     dlistnode* dlnodetmp = NULL;
-    if(NULL == dl)
+    if (NULL == dl)
     {
         return NULL;
     }
 
-    for(dlnode = dl->head; NULL != dlnode; dlnode = dlnodetmp)
+    for (dlnode = dl->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
-        if(0 != valuecmp(value, dlnode->value))
+        if (0 != valuecmp(value, dlnode->value))
         {
             continue;
         }
@@ -153,20 +153,20 @@ void* dlist_get(dlist* dl, void* value, dlistvaluecmp valuecmp)
 }
 
 /*
- * 在链表头部获取node,并将节点在链表中移除
-*/
+ * Get node from the head of the linked list, and remove the node from the list
+ */
 void* dlist_getvalue(dlist* dl)
 {
-    void* value = NULL;
+    void*      value = NULL;
     dlistnode* dlnode = NULL;
-    if(NULL == dl || NULL == dl->head)
+    if (NULL == dl || NULL == dl->head)
     {
         return NULL;
     }
 
     dlnode = dl->head;
     dl->head = dlnode->next;
-    if(NULL == dlnode->next)
+    if (NULL == dlnode->next)
     {
         dl->tail = NULL;
     }
@@ -181,23 +181,23 @@ void* dlist_getvalue(dlist* dl)
     return value;
 }
 
-/* 
- * 将dlnode节点在dlist中移除并释放dlnode
- * 入参:
- *  dl          链表
- *  value       匹配的值
- *  valuecmp    值匹配函数
- *  valuefree   value的释放函数,可为空, 为空时，不释放 dlistnode->value 值
+/*
+ * Remove dlnode from dlist and free dlnode
+ * Input:
+ *  dl          linked list
+ *  value       value to match
+ *  valuecmp    value match function
+ *  valuefree   value free function, can be NULL, when NULL, does not free dlistnode->value
  */
 dlist* dlist_delete(dlist* dl, dlistnode* dlnode, dlistvaluefree valuefree)
 {
-    if(NULL == dl || NULL == dlnode)
+    if (NULL == dl || NULL == dlnode)
     {
         return NULL;
     }
 
-    /* 在链表中移除 */
-    if(NULL != dlnode->prev)
+    /* Remove from list */
+    if (NULL != dlnode->prev)
     {
         dlnode->prev->next = dlnode->next;
     }
@@ -206,7 +206,7 @@ dlist* dlist_delete(dlist* dl, dlistnode* dlnode, dlistvaluefree valuefree)
         dl->head = dlnode->next;
     }
 
-    if(NULL != dlnode->next)
+    if (NULL != dlnode->next)
     {
         dlnode->next->prev = dlnode->prev;
     }
@@ -220,27 +220,27 @@ dlist* dlist_delete(dlist* dl, dlistnode* dlnode, dlistvaluefree valuefree)
     return dl;
 }
 
-/* 
- * 根据值匹配dlist中的node节点并释放dlnode
- * 入参:
- *  dl          链表
- *  value       匹配的值
- *  valuecmp    值匹配函数
- *  valuefree   value的释放函数,可为空, 为空时，不释放 dlistnode->value 值
+/*
+ * Match node in dlist by value and free dlnode
+ * Input:
+ *  dl          linked list
+ *  value       value to match
+ *  valuecmp    value match function
+ *  valuefree   value free function, can be NULL, when NULL, does not free dlistnode->value
  */
 dlist* dlist_deletebyvalue(dlist* dl, void* value, dlistvaluecmp valuecmp, dlistvaluefree valuefree)
 {
     dlistnode* dlnode = NULL;
     dlistnode* dlnodetmp = NULL;
-    if(NULL == dl)
+    if (NULL == dl)
     {
         return NULL;
     }
 
-    for(dlnode = dl->head; NULL != dlnode; dlnode = dlnodetmp)
+    for (dlnode = dl->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
-        if(0 != valuecmp(value, dlnode->value))
+        if (0 != valuecmp(value, dlnode->value))
         {
             continue;
         }
@@ -251,28 +251,28 @@ dlist* dlist_deletebyvalue(dlist* dl, void* value, dlistvaluecmp valuecmp, dlist
     return dl;
 }
 
-
-/* 
- * 根据值匹配dlist中的node节点并释放dlnode/仅删除第一个匹配的
- * 入参:
- *  dl          链表
- *  value       匹配的值
- *  valuecmp    值匹配函数
- *  valuefree   value的释放函数,可为空, 为空时，不释放 dlistnode->value 值
+/*
+ * Match node in dlist by value and free dlnode/delete only first match
+ * Input:
+ *  dl          linked list
+ *  value       value to match
+ *  valuecmp    value match function
+ *  valuefree   value free function, can be NULL, when NULL, does not free dlistnode->value
  */
-dlist* dlist_deletebyvaluefirstmatch(dlist* dl, void* value, dlistvaluecmp valuecmp, dlistvaluefree valuefree)
+dlist* dlist_deletebyvaluefirstmatch(dlist* dl, void* value, dlistvaluecmp valuecmp,
+                                     dlistvaluefree valuefree)
 {
     dlistnode* dlnode = NULL;
     dlistnode* dlnodetmp = NULL;
-    if(NULL == dl)
+    if (NULL == dl)
     {
         return NULL;
     }
 
-    for(dlnode = dl->head; NULL != dlnode; dlnode = dlnodetmp)
+    for (dlnode = dl->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
-        if(0 != valuecmp(value, dlnode->value))
+        if (0 != valuecmp(value, dlnode->value))
         {
             continue;
         }
@@ -285,8 +285,8 @@ dlist* dlist_deletebyvaluefirstmatch(dlist* dl, void* value, dlistvaluecmp value
 }
 
 /*
- * 检测该值是否已经在 dlist 中存在,并返回 value
-*/
+ * Check if the value already exists in dlist and return value
+ */
 void* dlist_isexist(dlist* dl, void* value, dlistvaluecmp valuecmp)
 {
     dlistnode* dlnode = NULL;
@@ -310,19 +310,18 @@ void* dlist_isexist(dlist* dl, void* value, dlistvaluecmp valuecmp)
     return NULL;
 }
 
-
 /*
- * 将指定的节点转移到头部
-*/
+ * Move the specified node to the head
+ */
 dlist* dlist_putnode2head(dlist* dl, dlistnode* dlnode)
 {
-    if(NULL == dl || NULL == dlnode)
+    if (NULL == dl || NULL == dlnode)
     {
         return NULL;
     }
 
-    /* 在链表中移除 */
-    if(NULL != dlnode->prev)
+    /* remove from linked list */
+    if (NULL != dlnode->prev)
     {
         dlnode->prev->next = dlnode->next;
     }
@@ -331,7 +330,7 @@ dlist* dlist_putnode2head(dlist* dl, dlistnode* dlnode)
         dl->head = dlnode->next;
     }
 
-    if(NULL != dlnode->next)
+    if (NULL != dlnode->next)
     {
         dlnode->next->prev = dlnode->prev;
     }
@@ -340,12 +339,12 @@ dlist* dlist_putnode2head(dlist* dl, dlistnode* dlnode)
         dl->tail = dlnode->prev;
     }
 
-    /* 放入到链表头上 */
+    /* put at the head of linked list */
     dlnode->next = dlnode->prev = NULL;
     dlnode->next = dl->head;
-    if(NULL == dl->head)
+    if (NULL == dl->head)
     {
-        /* 只有一个节点 */
+        /* only one node */
         dl->tail = dlnode;
     }
     else
@@ -357,21 +356,21 @@ dlist* dlist_putnode2head(dlist* dl, dlistnode* dlnode)
     return dl;
 }
 
-/* 
- * 释放 dlist
- * 入参:
- *  valuefree   value的释放函数,可为空, 为空时，不释放 dlistnode->value 值
+/*
+ * Free dlist
+ * Input:
+ *  valuefree   value free function, can be NULL, when NULL, does not free dlistnode->value
  */
 void dlist_free(dlist* dl, dlistvaluefree valuefree)
 {
     dlistnode* dlnode = NULL;
-    if(NULL == dl)
+    if (NULL == dl)
     {
         return;
     }
 
-    /* 遍历释放节点 */
-    for(dlnode = dl->head; NULL != dlnode; dlnode = dl->head)
+    /* traverse and free nodes */
+    for (dlnode = dl->head; NULL != dlnode; dlnode = dl->head)
     {
         dl->head = dlnode->next;
         dlist_node_free(dlnode, valuefree == NULL ? dl->free : valuefree);
@@ -379,10 +378,10 @@ void dlist_free(dlist* dl, dlistvaluefree valuefree)
     rfree(dl);
 }
 
-/* 
- * 释放 dlist
- * 入参:
- *  valuefree   value的释放函数,可为空, 为空时，不释放 dlistnode->value 值
+/*
+ * Free dlist
+ * Input:
+ *  valuefree   value free function, can be NULL, when NULL, does not free dlistnode->value
  */
 void dlist_freevoid(void* args)
 {
@@ -393,8 +392,8 @@ void dlist_freevoid(void* args)
 }
 
 /*
- * 查看队列是否为空
-*/
+ * Check if queue is empty
+ */
 bool dlist_isnull(dlist* dl)
 {
     if (NULL == dl)
@@ -410,33 +409,32 @@ bool dlist_isnull(dlist* dl)
 }
 
 /*
- * 获取个数
-*/
+ * Get count
+ */
 uint64 dlist_getcount(dlist* dl)
 {
     return dl->length;
 }
 
-
-/* 
- * 将两个链表合并为一个链表
- *  将 dl2 放在 dl1 的后面, 并将原链表清理掉
+/*
+ * Merge two linked lists into one
+ *  Put dl2 after dl1, and free the original list
  */
 dlist* dlist_concat(dlist* dl1, dlist* dl2)
 {
-    if(true == dlist_isnull(dl1))
+    if (true == dlist_isnull(dl1))
     {
         dlist_free(dl1, NULL);
         return dl2;
     }
 
-    if(true == dlist_isnull(dl2))
+    if (true == dlist_isnull(dl2))
     {
         dlist_free(dl2, NULL);
         return dl1;
     }
 
-    /* 两个链表串起来 */
+    /* connect two lists together */
     dl2->head->prev = dl1->tail;
     dl1->tail->next = dl2->head;
     dl1->tail = dl2->tail;
@@ -449,32 +447,32 @@ dlist* dlist_concat(dlist* dl1, dlist* dl2)
     return dl1;
 }
 
-/* 将 dlist 和 dlnode 链连接起来 */
+/* Connect dlist and dlnode chain together */
 bool dlist_append(dlist** pdl, dlistnode* dlnode)
 {
-    dlist* dl = NULL;
+    dlist*     dl = NULL;
     dlistnode* dlnodenext = NULL;
-    if(NULL == dlnode)
+    if (NULL == dlnode)
     {
         return true;
     }
     dl = *pdl;
 
-    if(NULL == dl)
+    if (NULL == dl)
     {
         dl = dlist_init();
-        if(NULL == dl)
+        if (NULL == dl)
         {
             elog(RLOG_WARNING, "dlist append error, out of memory");
             return false;
         }
     }
 
-    for(dlnodenext = dlnode; NULL != dlnode; dlnode = dlnodenext)
+    for (dlnodenext = dlnode; NULL != dlnode; dlnode = dlnodenext)
     {
         dlnodenext = dlnode->next;
         dl->length++;
-        if(NULL == dl->head)
+        if (NULL == dl->head)
         {
             dl->head = dlnode;
             dl->tail = dlnode;
@@ -492,19 +490,19 @@ bool dlist_append(dlist** pdl, dlistnode* dlnode)
 }
 
 /*
- * 将 dlist truncate 掉,但是不删除
-*/
+ * Truncate dlist, but not delete
+ */
 dlist* dlist_truncate(dlist* dl, dlistnode* dlnode)
 {
-    uint64 dlnodelength = 0;
+    uint64     dlnodelength = 0;
     dlistnode* dlnodetmp = NULL;
-    if(NULL == dlnode)
+    if (NULL == dlnode)
     {
         return dl;
     }
 
-    /* 头部节点 */
-    if(dl->head == dlnode)
+    /* head node */
+    if (dl->head == dlnode)
     {
         dl->head = NULL;
         dl->tail = NULL;
@@ -513,7 +511,7 @@ dlist* dlist_truncate(dlist* dl, dlistnode* dlnode)
     }
 
     dlnodetmp = dlnode;
-    while(dlnodetmp)
+    while (dlnodetmp)
     {
         dlnodelength++;
         dlnodetmp = dlnodetmp->next;

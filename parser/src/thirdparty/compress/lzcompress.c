@@ -3,19 +3,19 @@
 #include "pg_parser_app_incl.h"
 #include "thirdparty/compress/pg_parser_thirdparty_lzcompress.h"
 
-#define pg_parser_thirdparty_Min(x, y)       ((x) < (y) ? (x) : (y))
+#define pg_parser_thirdparty_Min(x, y) ((x) < (y) ? (x) : (y))
 
-int32_t pg_parser_lz_decompress(const char *source, int32_t slen, char *dest,
-                int32_t rawsize, bool check_complete)
+int32_t pg_parser_lz_decompress(const char* source, int32_t slen, char* dest, int32_t rawsize,
+                                bool check_complete)
 {
-    const unsigned char *sp;
-    const unsigned char *srcend;
-    unsigned char *dp;
-    unsigned char *destend;
+    const unsigned char* sp;
+    const unsigned char* srcend;
+    unsigned char*       dp;
+    unsigned char*       destend;
 
-    sp = (const unsigned char *) source;
-    srcend = ((const unsigned char *) source) + slen;
-    dp = (unsigned char *) dest;
+    sp = (const unsigned char*)source;
+    srcend = ((const unsigned char*)source) + slen;
+    dp = (unsigned char*)dest;
     destend = dp + rawsize;
 
     while (sp < srcend && dp < destend)
@@ -25,11 +25,10 @@ int32_t pg_parser_lz_decompress(const char *source, int32_t slen, char *dest,
          * remain in the compressed input).
          */
         unsigned char ctrl = *sp++;
-        int32_t            ctrlc;
+        int32_t       ctrlc;
 
         for (ctrlc = 0; ctrlc < 8 && sp < srcend && dp < destend; ctrlc++)
         {
-
             if (ctrl & 1)
             {
                 /*
@@ -39,14 +38,16 @@ int32_t pg_parser_lz_decompress(const char *source, int32_t slen, char *dest,
                  * coded as 18, another extension tag byte tells how much
                  * longer the match really was (0-255).
                  */
-                int32_t        len;
-                int32_t        off;
+                int32_t len;
+                int32_t off;
 
                 len = (sp[0] & 0x0f) + 3;
                 off = ((sp[0] & 0xf0) << 4) | sp[1];
                 sp += 2;
                 if (len == 18)
+                {
                     len += *sp++;
+                }
 
                 /*
                  * Now we copy the bytes specified by the tag from OUTPUT to
@@ -83,28 +84,27 @@ int32_t pg_parser_lz_decompress(const char *source, int32_t slen, char *dest,
      * hit a stop, so we don't test them.
      */
     if (check_complete && (dp != destend || sp != srcend))
+    {
         return -1;
+    }
 
     /*
      * That's it.
      */
-    return (char *) dp - dest;
+    return (char*)dp - dest;
 }
 
 #define unlikely(x) __builtin_expect((x) != 0, 0)
-int32_t pg_parser_pg14_pglz_decompress(const char *source,
-                                          int32_t slen,
-                                          char *dest,
-                                          int32_t rawsize,
-                                          bool check_complete)
+int32_t pg_parser_pg14_pglz_decompress(const char* source, int32_t slen, char* dest,
+                                       int32_t rawsize, bool check_complete)
 {
-    const unsigned char *sp;
-    const unsigned char *srcend;
-    unsigned char *dp;
-    unsigned char *destend;
-    sp = (const unsigned char *) source;
-    srcend = ((const unsigned char *) source) + slen;
-    dp = (unsigned char *) dest;
+    const unsigned char* sp;
+    const unsigned char* srcend;
+    unsigned char*       dp;
+    unsigned char*       destend;
+    sp = (const unsigned char*)source;
+    srcend = ((const unsigned char*)source) + slen;
+    dp = (unsigned char*)dest;
     destend = dp + rawsize;
     while (sp < srcend && dp < destend)
     {
@@ -113,7 +113,7 @@ int32_t pg_parser_pg14_pglz_decompress(const char *source,
          * remain in the compressed input).
          */
         unsigned char ctrl = *sp++;
-        int            ctrlc;
+        int           ctrlc;
         for (ctrlc = 0; ctrlc < 8 && sp < srcend && dp < destend; ctrlc++)
         {
             if (ctrl & 1)
@@ -133,7 +133,9 @@ int32_t pg_parser_pg14_pglz_decompress(const char *source,
                 off = ((sp[0] & 0xf0) << 4) | sp[1];
                 sp += 2;
                 if (len == 18)
+                {
                     len += *sp++;
+                }
                 /*
                  * Check for corrupt data: if we fell off the end of the
                  * source, or if we obtained off = 0, or if off is more than
@@ -143,9 +145,10 @@ int32_t pg_parser_pg14_pglz_decompress(const char *source,
                  * limit on off prevents accessing outside the buffer
                  * boundaries.)
                  */
-                if (unlikely(sp > srcend || off == 0 ||
-                             off > (dp - (unsigned char *) dest)))
+                if (unlikely(sp > srcend || off == 0 || off > (dp - (unsigned char*)dest)))
+                {
                     return -1;
+                }
                 /*
                  * Don't emit more data than requested.
                  */
@@ -215,9 +218,11 @@ int32_t pg_parser_pg14_pglz_decompress(const char *source,
      * If requested, check we decompressed the right amount.
      */
     if (check_complete && (dp != destend || sp != srcend))
+    {
         return -1;
+    }
     /*
      * That's it.
      */
-    return (char *) dp - dest;
+    return (char*)dp - dest;
 }

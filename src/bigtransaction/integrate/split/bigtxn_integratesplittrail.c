@@ -18,17 +18,16 @@
 #include "increment/integrate/split/increment_integratesplittrail.h"
 #include "bigtransaction/integrate/split/bigtxn_integratesplittrail.h"
 
-
-/* 将 records 加入到队列中 */
+/* Add records to queue */
 static bool bigtxn_integratesplittrail_addrecords2queue(increment_integratesplittrail* splittrail,
-                                                               thrnode* thrnode)
+                                                        thrnode*                       thrnode)
 {
-    /* 加入到队列中 */
-    while(THRNODE_STAT_WORK == thrnode->stat)
+    /* Add to queue */
+    while (THRNODE_STAT_WORK == thrnode->stat)
     {
-        if(false == queue_put(splittrail->recordscache, splittrail->loadrecords->records))
+        if (false == queue_put(splittrail->recordscache, splittrail->loadrecords->records))
         {
-            if(ERROR_QUEUE_FULL == splittrail->recordscache->error)
+            if (ERROR_QUEUE_FULL == splittrail->recordscache->error)
             {
                 usleep(50000);
                 continue;
@@ -43,13 +42,13 @@ static bool bigtxn_integratesplittrail_addrecords2queue(increment_integratesplit
     return false;
 }
 
-/* 逻辑读取主线程 */
+/* Logical read main thread */
 bigtxn_integratesplittrail* bigtxn_integratesplittrail_init(void)
 {
     bigtxn_integratesplittrail* stctx = NULL;
 
     stctx = (bigtxn_integratesplittrail*)rmalloc0(sizeof(bigtxn_integratesplittrail));
-    if(NULL == stctx)
+    if (NULL == stctx)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return NULL;
@@ -61,14 +60,13 @@ bigtxn_integratesplittrail* bigtxn_integratesplittrail_init(void)
     return stctx;
 }
 
-
-/* 逻辑读取主线程 */
-void *bigtxn_integratesplittrail_main(void* args)
+/* Logical read main thread */
+void* bigtxn_integratesplittrail_main(void* args)
 {
-    uint64 fileid                                       = 0;
-    thrnode* thr_node                             = NULL;
-    increment_integratesplittrail* stctx         = NULL;
-    bigtxn_integratesplittrail* bigtxn_stctx     = NULL;
+    uint64                         fileid = 0;
+    thrnode*                       thr_node = NULL;
+    increment_integratesplittrail* stctx = NULL;
+    bigtxn_integratesplittrail*    bigtxn_stctx = NULL;
 
     thr_node = (thrnode*)args;
 
@@ -76,51 +74,55 @@ void *bigtxn_integratesplittrail_main(void* args)
 
     stctx = bigtxn_stctx->splittrailctx;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "integrate bigtxn splittrail stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "integrate bigtxn splittrail stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
-    while(1)
+    while (1)
     {
         /*
-         * 1、打开文件，打开文件时，遇到的场景， 文件不存在，那么等待文件存在，在等待文件的过程中也要检测是否接收到了退出的信号
-         * 2、检测是否接收到退出的信号，接收到，那么退出
-         * 3、根据 blockid 换算偏移量，根据此内容读取数据
-        */
-        /* 打开文件 */
-        if(THRNODE_STAT_TERM == thr_node->stat)
+         * 1. Open file. When opening file, encountered scenarios:
+         *    File does not exist, then wait for file to exist. While waiting for file, also need to
+         * check if exit signal received.
+         * 2. Check if exit signal received, if received then exit.
+         * 3. Calculate offset based on blockid, read data based on this content.
+         */
+        /* Open file */
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
-            /* 序列化/落盘 */
+            /* Serialization/flush to disk */
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
         fileid = stctx->loadrecords->fileid;
 
-        if(false == loadtrailrecords_load(stctx->loadrecords))
+        if (false == loadtrailrecords_load(stctx->loadrecords))
         {
             elog(RLOG_WARNING, "bigtxn load trail records error");
             thr_node->stat = THRNODE_STAT_ABORT;
             break;
         }
 
-        if(true == dlist_isnull(stctx->loadrecords->records))
+        if (true == dlist_isnull(stctx->loadrecords->records))
         {
-            /* 
-             * 没有读取到数据, 追上了最新的, 所以需要重新读取该块
+            /*
+             * No data read, caught up to latest, so need to re-read this block
              */
-            /* 需要退出，等待 thr_node->stat 变为 TERM 后退出*/
-            if(THRNODE_STAT_TERM != thr_node->stat)
+            /* Need to exit, wait for thr_node->stat to become TERM then exit */
+            if (THRNODE_STAT_TERM != thr_node->stat)
             {
-                /* 睡眠 10 毫秒 */
+                /* Sleep 10 milliseconds */
                 usleep(10000);
-                /* 重启重复发送文件会rename文件，需要关闭文件描述符 */
+                /* Restarting repeated file sending will rename file, need to close file descriptor
+                 */
                 loadtrailrecords_fileclose(stctx->loadrecords);
                 continue;
             }
@@ -128,11 +130,11 @@ void *bigtxn_integratesplittrail_main(void* args)
             break;
         }
 
-        /* 是否需要过滤, 不需要过滤则加入到队列中 */
-        if(false == stctx->filter)
+        /* Whether filtering is needed, if not needed then add to queue */
+        if (false == stctx->filter)
         {
-            /* 加入到队列中 */
-            if(false == bigtxn_integratesplittrail_addrecords2queue(stctx, thr_node))
+            /* Add to queue */
+            if (false == bigtxn_integratesplittrail_addrecords2queue(stctx, thr_node))
             {
                 elog(RLOG_WARNING, "integrate bigtxn add records 2 queue error");
                 thr_node->stat = THRNODE_STAT_ABORT;
@@ -141,33 +143,34 @@ void *bigtxn_integratesplittrail_main(void* args)
             continue;
         }
 
-        if(false == loadtrailrecords_filterremainmetadata(stctx->loadrecords, fileid, stctx->emitoffset))
+        if (false ==
+            loadtrailrecords_filterremainmetadata(stctx->loadrecords, fileid, stctx->emitoffset))
         {
             stctx->filter = false;
         }
 
-        if(true == dlist_isnull(stctx->loadrecords->records))
+        if (true == dlist_isnull(stctx->loadrecords->records))
         {
-            /* 
-             * 没有读取到数据, 追上了最新的, 所以需要重新读取该块
+            /*
+             * No data read, caught up to latest, so need to re-read this block
              */
             continue;
         }
 
-        /* 加入到队列中 */
-        if(false == bigtxn_integratesplittrail_addrecords2queue(stctx, thr_node))
+        /* Add to queue */
+        if (false == bigtxn_integratesplittrail_addrecords2queue(stctx, thr_node))
         {
             elog(RLOG_WARNING, "integrate bigtxn add records 2 queue error");
             break;
         }
-        /* TODO chkpoint 逻辑 */
+        /* TODO checkpoint logic */
     }
 
     pthread_exit(NULL);
     return NULL;
 }
 
-void bigtxn_integratesplittrail_free(void *args)
+void bigtxn_integratesplittrail_free(void* args)
 {
     bigtxn_integratesplittrail* stctx = NULL;
 

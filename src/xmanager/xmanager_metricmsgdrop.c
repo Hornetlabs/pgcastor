@@ -14,31 +14,30 @@
 #include "xmanager/xmanager_metricprogressnode.h"
 
 /*
- * 处理 drop 命令
- *  1、jobtype 需要小于 PROCESS
- *  2、校验 job 是否已经存在
- *  3、检验是否在运行中
- *  4、删除data和conf文件
- *  5、返回成功消息
-*/
-bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
-                                          netpoolentry* npoolentry,
-                                          netpacket* npacket)
+ * Handle drop command
+ *1. jobtype must be less than PROCESS
+ *2. Verify job already exists
+ *  3、Check if running
+ *4. Delete data and conf files
+ *5. Return success message
+ */
+bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                  netpacket* npacket)
 {
-    int len                                                 = 0;
-    int jobtype                                             = 0;
-    int errcode                                             = 0;
-    uint8* uptr                                             = NULL;
-    char* jobname                                           = NULL;
-    dlistnode* dlnode                                       = NULL;
-    xmanager_metricnode* pxmetricnode                = NULL;
-    xmanager_metricnode* tmpxmetricnode              = NULL;
+    int                          len = 0;
+    int                          jobtype = 0;
+    int                          errcode = 0;
+    uint8*                       uptr = NULL;
+    char*                        jobname = NULL;
+    dlistnode*                   dlnode = NULL;
+    xmanager_metricnode*         pxmetricnode = NULL;
+    xmanager_metricnode*         tmpxmetricnode = NULL;
     xmanager_metricprogressnode* xmetricprogressnode = NULL;
-    xmanager_metricnode xmetricnode                  = { 0 };
-    char errormsg[2048]                                     = { 0 };
-    char execcmd[1024]                                      = { 0 };
+    xmanager_metricnode          xmetricnode = {0};
+    char                         errormsg[2048] = {0};
+    char                         execcmd[1024] = {0};
 
-    /* 获取作业类型 */
+    /* Get job type */
     uptr = npacket->data;
 
     /* msglen + crc32 + commandtype */
@@ -52,13 +51,12 @@ bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
     if (XMANAGER_METRICNODETYPE_PROCESS < jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 2048, 
-                 "ERROR: xmanager parse drop command, unsupport %s",
+        snprintf(errormsg, 2048, "ERROR: xmanager parse drop command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parsedrop_error;
     }
 
-    /* 获取 jobname */
+    /* Get jobname */
     rmemcpy1(&len, 0, uptr, 4);
     len = r_ntoh32(len);
     uptr += 4;
@@ -75,7 +73,7 @@ bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
     len -= 1;
     rmemcpy0(jobname, 0, uptr, len);
 
-    /* 查看节点是否存在 */
+    /* Check if node exists */
     xmetricnode.type = jobtype;
     xmetricnode.name = jobname;
 
@@ -89,63 +87,60 @@ bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
 
     if (XMANAGER_METRICNODETYPE_PROCESS > jobtype)
     {
-        /* 检验是否在运行中，在运行中返回错误信息提示停止 */
+        /* Check if running, return error to stop */
         if (XMANAGER_METRICNODESTAT_ONLINE == pxmetricnode->stat)
         {
             errcode = ERROR_MSGCOMMAND;
-            snprintf(errormsg, 2048, "ERROR: %s is running, Please execute the stop command.", jobname);
+            snprintf(errormsg, 2048, "ERROR: %s is running, Please execute the stop command.",
+                     jobname);
             goto xmanager_metricmsg_parsedrop_error;
         }
 
         for (dlnode = xmetric->metricnodes->head; NULL != dlnode; dlnode = dlnode->next)
         {
             tmpxmetricnode = (xmanager_metricnode*)dlnode->value;
-            /* 检查要删除的metricnode是否在progress中 */
+            /* Check if metricnode to delete is in progress */
             if (XMANAGER_METRICNODETYPE_PROCESS == tmpxmetricnode->type)
             {
                 xmetricprogressnode = (xmanager_metricprogressnode*)tmpxmetricnode;
                 if (false == dlist_isnull(xmetricprogressnode->progressjop))
                 {
-                    if (NULL != dlist_isexist(xmetricprogressnode->progressjop, pxmetricnode, xmanager_metricnode_cmp))
+                    if (NULL != dlist_isexist(xmetricprogressnode->progressjop, pxmetricnode,
+                                              xmanager_metricnode_cmp))
                     {
                         errcode = ERROR_MSGEXIST;
-                        snprintf(errormsg, 2048, "ERROR: progress job %s is running, Please execute the altre remove command", pxmetricnode->name);
+                        snprintf(errormsg, 2048,
+                                 "ERROR: progress job %s is running, Please execute the altre "
+                                 "remove command",
+                                 pxmetricnode->name);
                         goto xmanager_metricmsg_parsedrop_error;
                     }
                 }
             }
         }
-        /* 删除文件 */
+        /* Delete file */
         if (NULL != pxmetricnode->data && NULL != pxmetricnode->conf)
         {
-            snprintf(execcmd,
-                    1024,
-                    "rm -rf %s/* ; rm -rf %s ;" ,
-                    pxmetricnode->data,
-                    pxmetricnode->conf);
+            snprintf(execcmd, 1024, "rm -rf %s/* ; rm -rf %s ;", pxmetricnode->data,
+                     pxmetricnode->conf);
         }
         else if (NULL == pxmetricnode->data && NULL != pxmetricnode->conf)
         {
-            snprintf(execcmd,
-                    1024,
-                    "rm -rf %s ;" ,
-                    pxmetricnode->conf);
+            snprintf(execcmd, 1024, "rm -rf %s ;", pxmetricnode->conf);
         }
         else if (NULL != pxmetricnode->data && NULL == pxmetricnode->conf)
         {
-            snprintf(execcmd,
-                    1024,
-                    "rm -rf %s/* ;" ,
-                    pxmetricnode->data);
+            snprintf(execcmd, 1024, "rm -rf %s/* ;", pxmetricnode->data);
         }
         else
         {
             errcode = ERROR_NOENT;
-            snprintf(errormsg, 2048, "%s", "ERROR: xmanager recv drop command, data and conf is null");
+            snprintf(errormsg, 2048, "%s",
+                     "ERROR: xmanager recv drop command, data and conf is null");
             goto xmanager_metricmsg_parsedrop_error;
         }
 
-        /* 执行 execcmd 命令 */
+        /* Execute execcmd command */
         if (false == execcommand(execcmd, xmetric->privdata, xmetric->privdatadestroy))
         {
             errcode = ERROR_MSGCOMMAND;
@@ -154,11 +149,10 @@ bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
         }
     }
 
-    /* metricnode 节点在链表中移除 */
-    xmetric->metricnodes = dlist_deletebyvalue(xmetric->metricnodes,
-                                               &xmetricnode,
-                                               xmanager_metricnode_cmp,
-                                               xmanager_metricnode_destroyvoid);
+    /* Remove metricnode from list */
+    xmetric->metricnodes =
+        dlist_deletebyvalue(xmetric->metricnodes, &xmetricnode, xmanager_metricnode_cmp,
+                            xmanager_metricnode_destroyvoid);
 
     xmanager_metricnode_flush(xmetric->metricnodes);
 
@@ -177,10 +171,6 @@ xmanager_metricmsg_parsedrop_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_DROPCMD,
-                                                      errcode,
-                                                      errormsg);
-
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_DROPCMD,
+                                               errcode, errormsg);
 }

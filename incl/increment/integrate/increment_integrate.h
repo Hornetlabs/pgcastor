@@ -3,34 +3,34 @@
 
 typedef struct INCREMENT_INTEGRATE
 {
-    uint64                                  persistno;
-    char                                    padding[CACHELINE_SIZE];
-    increment_integratesplittrail*   splittrailctx;
-    char                                    padding1[CACHELINE_SIZE];
-    queue*                           recordscache;
-    char                                    padding2[CACHELINE_SIZE];
-    increment_integrateparsertrail*  decodingctx;
-    char                                    padding3[CACHELINE_SIZE];
-    increment_integraterebuild*      rebuild;
-    char                                    padding4[CACHELINE_SIZE];
-    cache_txn*                       parser2rebuild;
-    char                                    padding5[CACHELINE_SIZE];
-    cache_txn*                       rebuild2sync;
-    char                                    padding6[CACHELINE_SIZE];
-    increment_integratesyncstate*    syncworkstate;
-    char                                    padding7[CACHELINE_SIZE];
-    pthread_mutex_t                         onlinerefreshlock;
-    dlist*                                  onlinerefresh;                              /* onlinerefresh_integrate */
-    char                                    padding8[CACHELINE_SIZE];
-    pthread_mutex_t                         refreshlock;
-    List*                                   refresh;
-    char                                    padding9[CACHELINE_SIZE];
-    pthread_mutex_t                         bigtxnlock;
-    dlist*                                  bigtxnmgr;                                  /* bigtxn_integratemanager */
-    char                                    padding10[CACHELINE_SIZE];
-    threads*                         threads;                                    /* 线程管理 */
-    char                                    padding11[CACHELINE_SIZE];
-    metric_integrate*                integratestate;
+    uint64                          persistno;
+    char                            padding[CACHELINE_SIZE];
+    increment_integratesplittrail*  splittrailctx;
+    char                            padding1[CACHELINE_SIZE];
+    queue*                          recordscache;
+    char                            padding2[CACHELINE_SIZE];
+    increment_integrateparsertrail* decodingctx;
+    char                            padding3[CACHELINE_SIZE];
+    increment_integraterebuild*     rebuild;
+    char                            padding4[CACHELINE_SIZE];
+    cache_txn*                      parser2rebuild;
+    char                            padding5[CACHELINE_SIZE];
+    cache_txn*                      rebuild2sync;
+    char                            padding6[CACHELINE_SIZE];
+    increment_integratesyncstate*   syncworkstate;
+    char                            padding7[CACHELINE_SIZE];
+    pthread_mutex_t                 onlinerefreshlock;
+    dlist*                          onlinerefresh; /* onlinerefresh_integrate */
+    char                            padding8[CACHELINE_SIZE];
+    pthread_mutex_t                 refreshlock;
+    List*                           refresh;
+    char                            padding9[CACHELINE_SIZE];
+    pthread_mutex_t                 bigtxnlock;
+    dlist*                          bigtxnmgr; /* bigtxn_integratemanager */
+    char                            padding10[CACHELINE_SIZE];
+    threads*                        threads; /* Thread management */
+    char                            padding11[CACHELINE_SIZE];
+    metric_integrate*               integratestate;
 } increment_integrate;
 
 increment_integrate* increment_integrate_init(void);

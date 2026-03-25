@@ -5,13 +5,13 @@
 #include "loadrecords/loadpageam.h"
 #include "loadrecords/loadpagefromfile.h"
 
-/* 初始化 */
+/* Initialize */
 loadpage* loadpagefromfile_init(void)
 {
     loadpagefromfile* lpff = NULL;
 
     lpff = rmalloc0(sizeof(loadpagefromfile));
-    if(NULL == lpff)
+    if (NULL == lpff)
     {
         elog(RLOG_WARNING, "load page from file init error");
         return NULL;
@@ -28,7 +28,7 @@ loadpage* loadpagefromfile_init(void)
     return (loadpage*)lpff;
 }
 
-/* 设置文件的存储路径 */
+/* Set file storage directory */
 bool loadpagefromfile_setfdir(loadpage* loadpage, char* fsource)
 {
     loadpagefromfile* lpff = NULL;
@@ -47,7 +47,7 @@ void loadpagefromfile_settype(loadpage* loadpage, int type)
     lpff->filetype = type;
 }
 
-/* 设置解析的起点 */
+/* Set parsing start position */
 void loadpagefromfile_setstartpos(loadpage* loadpage, recpos pos)
 {
     loadpagefromfile* lpff = NULL;
@@ -56,36 +56,36 @@ void loadpagefromfile_setstartpos(loadpage* loadpage, recpos pos)
 
     if (RECPOS_TYPE_WAL == pos.wal.type)
     {
-        /* foffset存放lsn */
+        /* foffset stores LSN */
         lpff->foffset = pos.wal.lsn;
 
-        /* fileno存放timeline */
+        /* fileno stores timeline */
         lpff->fileno = pos.wal.timeline;
     }
     else
     {
-        /* 目前很多地方的type没改, 所以NOP和TRAIL都认为是TRAIL */
+        /* currently many places haven't changed type, so NOP and TRAIL are both treated as TRAIL */
         lpff->foffset = pos.trail.offset;
-        if(pos.trail.fileid == lpff->fileno)
+        if (pos.trail.fileid == lpff->fileno)
         {
             return;
         }
         lpff->fileno = pos.trail.fileid;
     }
 
-    if(-1 != lpff->fd)
+    if (-1 != lpff->fd)
     {
         osal_file_close(lpff->fd);
         lpff->fd = -1;
     }
 }
 
-/* 加载页 */
+/* Load page */
 bool loadpagefromfile_loadpage(loadpage* loadpage, mpage* mp)
 {
-    int     rlen = 0;
-    uint32  blkoffset = 0;
-    uint64  foffset = 0;
+    int               rlen = 0;
+    uint32            blkoffset = 0;
+    uint64            foffset = 0;
     loadpagefromfile* lpff = NULL;
 
     lpff = (loadpagefromfile*)loadpage;
@@ -97,23 +97,20 @@ bool loadpagefromfile_loadpage(loadpage* loadpage, mpage* mp)
         if (LOADPAGEFROMFILE_TYPE_WAL == lpff->filetype)
         {
             uint64_t sendSegNo = (lpff->foffset) / (lpff->loadpage.filesize);
-            snprintf(lpff->fpath, ABSPATH, "%s/%08X%08X%08X", lpff->fdir,
-                                                                     (uint32) lpff->fileno,
-                                                                     (uint32) ((sendSegNo) / ((0x100000000UL) / (lpff->loadpage.filesize))),
-                                                                     (uint32) ((sendSegNo) % ((0x100000000UL) / (lpff->loadpage.filesize))));
+            snprintf(lpff->fpath, ABSPATH, "%s/%08X%08X%08X", lpff->fdir, (uint32)lpff->fileno,
+                     (uint32)((sendSegNo) / ((0x100000000UL) / (lpff->loadpage.filesize))),
+                     (uint32)((sendSegNo) % ((0x100000000UL) / (lpff->loadpage.filesize))));
         }
         else
         {
-            snprintf(lpff->fpath, ABSPATH, "%s/%016lX",
-                                                        lpff->fdir,
-                                                        lpff->fileno);
+            snprintf(lpff->fpath, ABSPATH, "%s/%016lX", lpff->fdir, lpff->fileno);
         }
 
-        /* 在磁盘中加载数据 */
+        /* load data from disk */
         lpff->fd = osal_basic_open_file(lpff->fpath, O_RDONLY | BINARY);
         if (lpff->fd < 0)
         {
-            if(ENOENT == errno)
+            if (ENOENT == errno)
             {
                 lpff->loadpage.error = ERROR_NOENT;
                 return false;
@@ -124,10 +121,10 @@ bool loadpagefromfile_loadpage(loadpage* loadpage, mpage* mp)
         }
     }
 
-    if(NULL == mp->data)
+    if (NULL == mp->data)
     {
         mp->data = rmalloc0(lpff->loadpage.blksize);
-        if(NULL == mp->data)
+        if (NULL == mp->data)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
             lpff->loadpage.error = ERROR_OOM;
@@ -138,20 +135,20 @@ bool loadpagefromfile_loadpage(loadpage* loadpage, mpage* mp)
     rmemset0(mp->data, 0, '\0', mp->size);
     mp->doffset = 0;
 
-    /* 读取数据 */
-    rlen = lpff->loadpage.blksize ;
+    /* read data */
+    rlen = lpff->loadpage.blksize;
     blkoffset = 0;
 
-    /* 每次读取一个块, 在块的开头读取 */
+    /* read one block at a time, starting at beginning of block */
     foffset = lpff->foffset;
 
     if (LOADPAGEFROMFILE_TYPE_WAL == lpff->filetype)
     {
-        /* 读取wal先单独计算lsn到文件开始的偏移 */
+        /* for wal, first calculate offset from lsn to file start */
         foffset = (foffset & LOADPAGEBLKSIZEMASK(lpff->loadpage.filesize));
     }
 
-    /* 计算块开始的偏移 */
+    /* calculate block start offset */
     foffset -= (foffset & LOADPAGEBLKSIZEMASK(lpff->loadpage.blksize));
 
     while (0 != rlen)
@@ -175,13 +172,13 @@ void loadpagefromfile_close(loadpage* loadpage)
 {
     loadpagefromfile* lpff = NULL;
 
-    if(NULL == loadpage)
+    if (NULL == loadpage)
     {
         return;
     }
 
     lpff = (loadpagefromfile*)loadpage;
-    if(-1 != lpff->fd)
+    if (-1 != lpff->fd)
     {
         osal_file_close(lpff->fd);
         lpff->fd = -1;
@@ -190,18 +187,18 @@ void loadpagefromfile_close(loadpage* loadpage)
     return;
 }
 
-/* 释放 */
+/* Free */
 void loadpagefromfile_free(loadpage* loadpage)
 {
     loadpagefromfile* lpff = NULL;
 
-    if(NULL == loadpage)
+    if (NULL == loadpage)
     {
         return;
     }
 
     lpff = (loadpagefromfile*)loadpage;
-    if(-1 != lpff->fd)
+    if (-1 != lpff->fd)
     {
         osal_file_close(lpff->fd);
         lpff->fd = -1;
@@ -209,5 +206,3 @@ void loadpagefromfile_free(loadpage* loadpage)
 
     rfree(lpff);
 }
-
-

@@ -1,7 +1,7 @@
 /**
  * @file                pg_parser_zones_other_all.h
  * @author              ByteSynch
- * @brief               定义所有顶层时区的名称
+ * @brief               Define all top-level timezone names
  * @version             0.1
  * @date                2023-09-18
  *

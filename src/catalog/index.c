@@ -25,17 +25,17 @@ static void index_dict_index_free(pg_sysdict_Form_pg_index index)
         {
             rfree(index->indkey);
         }
-        rfree(index); 
+        rfree(index);
     }
 }
 
-static uint32 *index_make_key_from_vector(char *vector_str, int32 natt)
+static uint32* index_make_key_from_vector(char* vector_str, int32 natt)
 {
-    uint32 *result = NULL;
-    int index_col = 0;
-    char temp_convert[12] = {'\0'};
-    char *left = vector_str;
-    char *right = left;
+    uint32* result = NULL;
+    int     index_col = 0;
+    char    temp_convert[12] = {'\0'};
+    char*   left = vector_str;
+    char*   right = left;
 
     result = rmalloc0(natt * sizeof(int32));
     rmemset0(result, 0, 0, natt * sizeof(int32));
@@ -59,8 +59,8 @@ static uint32 *index_make_key_from_vector(char *vector_str, int32 natt)
 
         if (result[index_col] == 0)
         {
-            /* 异常情况, index索引列可能为表达式 */
-            //todo liuzihe error
+            /* Abnormal case, index column may be an expression */
+            // todo liuzihe error
         }
 
         rmemset1(temp_convert, 0, 0, 12);
@@ -70,21 +70,21 @@ static uint32 *index_make_key_from_vector(char *vector_str, int32 natt)
     return result;
 }
 
-/* 生成系统字典 pg_index */
-void index_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
+/* Generate pg_index system dictionary */
+void index_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
 {
-    int index_row;
-    int index_col;
-    int max_raw;
-    bool find;
-    char sql_exec[MAX_EXEC_SQL_LEN];
-    PGresult* res;
-    pg_sysdict_Form_pg_index catalog_index;
-    catalog_index_value *idx_val;
-    HASHCTL index_hash_ctl;
-    catalog_index_hash_entry *index_entry;
-    
-    /* 初始化变量 */
+    int                       index_row;
+    int                       index_col;
+    int                       max_raw;
+    bool                      find;
+    char                      sql_exec[MAX_EXEC_SQL_LEN];
+    PGresult*                 res;
+    pg_sysdict_Form_pg_index  catalog_index;
+    catalog_index_value*      idx_val;
+    HASHCTL                   index_hash_ctl;
+    catalog_index_hash_entry* index_entry;
+
+    /* Initialize variables */
     index_row = 0;
     index_col = 0;
     max_raw = 0;
@@ -96,24 +96,25 @@ void index_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     rmemset1(&index_hash_ctl, 0, '\0', sizeof(index_hash_ctl));
     index_entry = NULL;
 
-    /* hash初始化 */
+    /* Hash initialization */
     index_hash_ctl.keysize = sizeof(Oid);
     index_hash_ctl.entrysize = sizeof(catalog_index_hash_entry);
-    sysdicts->by_index = hash_create("catalog_sysdict_index", 2048, &index_hash_ctl,
-                        HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_index =
+        hash_create("catalog_sysdict_index", 2048, &index_hash_ctl, HASH_ELEM | HASH_BLOBS);
 
-    /* 排除非普通表的索引 */
-    sprintf(sql_exec, "SELECT ind.indrelid, "
-                      "ind.indexrelid, "
-                      "ind.indisprimary, "
-                      "ind.indisreplident, "
-                      "ind.indnatts, "
-                      "ind.indkey "
-                      "FROM pg_index ind "
-                      "LEFT JOIN pg_class rel "
-                      "ON ind.indrelid = rel.oid "
-                      "WHERE ind.indrelid >= 16384 and rel.relkind = 'r' and ind.indisunique = TRUE "
-                      "ORDER BY ind.indrelid;");
+    /* Exclude indexes of non-regular tables */
+    sprintf(sql_exec,
+            "SELECT ind.indrelid, "
+            "ind.indexrelid, "
+            "ind.indisprimary, "
+            "ind.indisreplident, "
+            "ind.indnatts, "
+            "ind.indkey "
+            "FROM pg_index ind "
+            "LEFT JOIN pg_class rel "
+            "ON ind.indrelid = rel.oid "
+            "WHERE ind.indrelid >= 16384 and rel.relkind = 'r' and ind.indisunique = TRUE "
+            "ORDER BY ind.indrelid;");
 
     res = conn_exec(conn, sql_exec);
     if (NULL == res)
@@ -122,13 +123,13 @@ void index_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     }
 
     max_raw = PQntuples(res);
-    /* 遍历结果 */
+    /* Traverse results */
     for (index_row = 0; index_row < max_raw; index_row++)
     {
         index_col = 0;
 
         catalog_index = (pg_sysdict_Form_pg_index)rmalloc0(sizeof(pg_parser_sysdict_pgindex));
-        if(NULL == catalog_index)
+        if (NULL == catalog_index)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
@@ -141,19 +142,22 @@ void index_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
         sscanf(PQgetvalue(res, index_row, index_col++), "%u", &catalog_index->indexrelid);
 
         /* indisprimary */
-        catalog_index->indisprimary = (((char *)PQgetvalue(res, index_row, index_col++))[0]) == 't' ? true : false;
+        catalog_index->indisprimary =
+            (((char*)PQgetvalue(res, index_row, index_col++))[0]) == 't' ? true : false;
 
         /* indisreplident */
-        catalog_index->indisreplident = (((char *)PQgetvalue(res, index_row, index_col++))[0]) == 't' ? true : false;
+        catalog_index->indisreplident =
+            (((char*)PQgetvalue(res, index_row, index_col++))[0]) == 't' ? true : false;
 
         /* indnatts */
         sscanf(PQgetvalue(res, index_row, index_col++), "%d", &catalog_index->indnatts);
 
         /* indkey */
-        catalog_index->indkey = index_make_key_from_vector(PQgetvalue(res, index_row, index_col++), catalog_index->indnatts);
+        catalog_index->indkey = index_make_key_from_vector(PQgetvalue(res, index_row, index_col++),
+                                                           catalog_index->indnatts);
 
-        idx_val = (catalog_index_value *)rmalloc0(sizeof(catalog_index_value));
-        if(NULL == idx_val)
+        idx_val = (catalog_index_value*)rmalloc0(sizeof(catalog_index_value));
+        if (NULL == idx_val)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
@@ -162,35 +166,35 @@ void index_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
         idx_val->oid = catalog_index->indrelid;
         idx_val->index = catalog_index;
 
-        /* 赋值结束, 根据indrelid查找哈希 */
+        /* Assignment complete, look up hash by indrelid */
         index_entry = hash_search(sysdicts->by_index, &catalog_index->indrelid, HASH_ENTER, &find);
         if (!find)
         {
-            /* 第一次需要初始化 */
+            /* First time needs initialization */
             index_entry->oid = catalog_index->indrelid;
             index_entry->index_list = NULL;
         }
         index_entry->index_list = lappend(index_entry->index_list, idx_val);
     }
 
-    /* 结束, 清理 */
+    /* End, cleanup */
     PQclear(res);
 }
 
 /* colvalue2index */
 catalogdata* index_colvalue2index(void* in_colvalue)
 {
-    catalogdata* catalog_data = NULL;
-    catalog_index_value* index_value = NULL;
-    pg_sysdict_Form_pg_index pgindex = NULL;
+    catalogdata*                    catalog_data = NULL;
+    catalog_index_value*            index_value = NULL;
+    pg_sysdict_Form_pg_index        pgindex = NULL;
     pg_parser_translog_tbcol_value* colvalue = NULL;
-    uint32_t temp_oid = InvalidOid;
-    bool unique = false;
-    char *temp_key = NULL;
+    uint32_t                        temp_oid = INVALIDOID;
+    bool                            unique = false;
+    char*                           temp_key = NULL;
 
     colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
-    /* 首先检查 indrelid 和 indisunique */
+    /* First check indrelid and indisunique */
     temp_oid = (uint32)atoi((char*)((colvalue + 1)->m_value));
     unique = ((char*)((colvalue + 4)->m_value))[0] == 't' ? true : false;
 
@@ -199,16 +203,16 @@ catalogdata* index_colvalue2index(void* in_colvalue)
         return NULL;
     }
 
-    /* 值转换 */
+    /* Value conversion */
     catalog_data = (catalogdata*)rmalloc1(sizeof(catalogdata));
-    if(NULL == catalog_data)
+    if (NULL == catalog_data)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
     rmemset0(catalog_data, 0, '\0', sizeof(catalogdata));
 
     index_value = (catalog_index_value*)rmalloc1(sizeof(catalog_index_value));
-    if(NULL == index_value)
+    if (NULL == index_value)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -218,7 +222,7 @@ catalogdata* index_colvalue2index(void* in_colvalue)
     catalog_data->type = CATALOG_TYPE_INDEX;
 
     pgindex = (pg_sysdict_Form_pg_index)rmalloc1(sizeof(pg_parser_sysdict_pgindex));
-    if(NULL == pgindex)
+    if (NULL == pgindex)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -236,7 +240,7 @@ catalogdata* index_colvalue2index(void* in_colvalue)
     pgindex->indisprimary = ((char*)((colvalue + 5)->m_value))[0] == 't' ? true : false;
 
     /* indisreplident 13 */
-    pgindex->indisreplident= ((char*)((colvalue + 13)->m_value))[0] == 't' ? true : false;
+    pgindex->indisreplident = ((char*)((colvalue + 13)->m_value))[0] == 't' ? true : false;
 
     /* indnatts 2 */
     sscanf((char*)((colvalue + 2)->m_value), "%d", &pgindex->indnatts);
@@ -248,19 +252,19 @@ catalogdata* index_colvalue2index(void* in_colvalue)
     return catalog_data;
 }
 
-static bool check_index_catalog_data_in_list(List *index_list, catalog_index_value* new_index_value)
+static bool check_index_catalog_data_in_list(List* index_list, catalog_index_value* new_index_value)
 {
-    ListCell *cell = NULL;
-    bool find = false;
+    ListCell* cell = NULL;
+    bool      find = false;
 
     if (!index_list)
     {
         return find;
     }
 
-    foreach(cell, index_list)
+    foreach (cell, index_list)
     {
-        catalog_index_value* index_value = (catalog_index_value*)lfirst(cell);
+        catalog_index_value*     index_value = (catalog_index_value*)lfirst(cell);
         pg_sysdict_Form_pg_index dict_index = index_value->index;
         if (dict_index->indexrelid == new_index_value->index->indexrelid)
         {
@@ -271,10 +275,11 @@ static bool check_index_catalog_data_in_list(List *index_list, catalog_index_val
     return find;
 }
 
-static bool update_index_catalog_data_in_lsit(List *index_list, catalog_index_value* new_index_value)
+static bool update_index_catalog_data_in_lsit(List*                index_list,
+                                              catalog_index_value* new_index_value)
 {
-    ListCell *cell = NULL;
-    bool find = false;
+    ListCell* cell = NULL;
+    bool      find = false;
 
     if (!index_list)
     {
@@ -283,35 +288,37 @@ static bool update_index_catalog_data_in_lsit(List *index_list, catalog_index_va
 
     cell = list_head(index_list);
 
-    /* 遍历链表, 查找记录 */
+    /* Traverse linked list to find record */
     while (cell)
     {
-        ListCell *next_cell = cell->next;
-        catalog_index_value* index_value = (catalog_index_value*)lfirst(cell);
+        ListCell*                next_cell = cell->next;
+        catalog_index_value*     index_value = (catalog_index_value*)lfirst(cell);
         pg_sysdict_Form_pg_index dict_index = index_value->index;
 
-        /* 查找指定的index记录 */
+        /* Find the specified index record */
         if (dict_index->indexrelid == new_index_value->index->indexrelid)
         {
             uint32 old_natt = dict_index->indnatts;
 
-            /* 判断键值是否变更 */
+            /* Check if key values have changed */
             if (old_natt != new_index_value->index->indnatts)
             {
                 if (dict_index->indkey)
                 {
                     rfree(dict_index->indkey);
                     dict_index->indkey = rmalloc0(sizeof(uint32) * dict_index->indnatts);
-                    if(NULL == dict_index->indkey)
+                    if (NULL == dict_index->indkey)
                     {
                         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
                     }
                 }
-                rmemcpy0(dict_index->indkey, 0, new_index_value->index->indkey, sizeof(uint32) * new_index_value->index->indnatts);
+                rmemcpy0(dict_index->indkey, 0, new_index_value->index->indkey,
+                         sizeof(uint32) * new_index_value->index->indnatts);
             }
 
-            /* 重新赋值 */
-            rmemcpy0(dict_index, 0, new_index_value->index, offsetof(pg_parser_sysdict_pgindex, indkey));
+            /* Reassign */
+            rmemcpy0(dict_index, 0, new_index_value->index,
+                     offsetof(pg_parser_sysdict_pgindex, indkey));
             find = true;
             break;
         }
@@ -323,30 +330,29 @@ static bool update_index_catalog_data_in_lsit(List *index_list, catalog_index_va
 /* catalogdata2transcache */
 void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata)
 {
-    bool found = false;
-    catalog_index_value* new_index_value = NULL;
+    bool                      found = false;
+    catalog_index_value*      new_index_value = NULL;
     catalog_index_hash_entry* indexInHash = NULL;
 
-    if(NULL == catalogdata || NULL == catalogdata->catalog)
+    if (NULL == catalogdata || NULL == catalogdata->catalog)
     {
         return;
     }
 
     new_index_value = (catalog_index_value*)catalogdata->catalog;
     elog(RLOG_DEBUG, "op:%d, newindex, indrelid:%u, primary:%s, isreplident:%s, keynum:%d",
-                    catalogdata->op,
-                    new_index_value->index->indexrelid,
-                    new_index_value->index->indisprimary ? "true" : "false",
-                    new_index_value->index->indisreplident ? "true" : "false",
-                    new_index_value->index->indnatts);
+         catalogdata->op, new_index_value->index->indexrelid,
+         new_index_value->index->indisprimary ? "true" : "false",
+         new_index_value->index->indisreplident ? "true" : "false",
+         new_index_value->index->indnatts);
 
-    if(CATALOG_OP_INSERT == catalogdata->op)
+    if (CATALOG_OP_INSERT == catalogdata->op)
     {
-        catalog_index_value* index_value = NULL;
+        catalog_index_value*     index_value = NULL;
         pg_sysdict_Form_pg_index dict_index = NULL;
 
         indexInHash = hash_search(sysdicts->by_index, &new_index_value->oid, HASH_ENTER, &found);
-        if(false == found)
+        if (false == found)
         {
             indexInHash->index_list = NULL;
         }
@@ -354,23 +360,24 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
 
         if (!check_index_catalog_data_in_list(indexInHash->index_list, new_index_value))
         {
-            /* 申请空间，并赋值 */
+            /* Allocate space and assign */
             dict_index = (pg_sysdict_Form_pg_index)rmalloc0(sizeof(pg_parser_sysdict_pgindex));
-            if(NULL == dict_index)
+            if (NULL == dict_index)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
             rmemcpy0(dict_index, 0, new_index_value->index, sizeof(pg_parser_sysdict_pgindex));
 
             dict_index->indkey = rmalloc0(sizeof(uint32) * dict_index->indnatts);
-            if(NULL == dict_index->indkey)
+            if (NULL == dict_index->indkey)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemcpy0(dict_index->indkey, 0, new_index_value->index->indkey, sizeof(uint32) * dict_index->indnatts);
+            rmemcpy0(dict_index->indkey, 0, new_index_value->index->indkey,
+                     sizeof(uint32) * dict_index->indnatts);
 
-            index_value = (catalog_index_value *)rmalloc0(sizeof(catalog_index_value));
-            if(NULL == index_value)
+            index_value = (catalog_index_value*)rmalloc0(sizeof(catalog_index_value));
+            if (NULL == index_value)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
@@ -378,39 +385,40 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
             index_value->oid = new_index_value->oid;
             index_value->index = dict_index;
 
-            /* 添加到链表中 */
+            /* Add to linked list */
             indexInHash->index_list = lappend(indexInHash->index_list, index_value);
         }
         else
         {
             elog(RLOG_DEBUG, "index r:%u,i:%u find in index hash list, do update",
-                                new_index_value->index->indrelid, new_index_value->index->indexrelid);
+                 new_index_value->index->indrelid, new_index_value->index->indexrelid);
             update_index_catalog_data_in_lsit(indexInHash->index_list, new_index_value);
         }
     }
-    else if(CATALOG_OP_DELETE == catalogdata->op)
+    else if (CATALOG_OP_DELETE == catalogdata->op)
     {
         indexInHash = hash_search(sysdicts->by_index, &new_index_value->oid, HASH_FIND, NULL);
 
-        if(NULL != indexInHash)
+        if (NULL != indexInHash)
         {
-            if(NULL != indexInHash->index_list)
+            if (NULL != indexInHash->index_list)
             {
-                ListCell *cell = list_head(indexInHash->index_list);
-                ListCell *cell_prev = NULL;
-                /* 遍历链表, 查找记录 */
+                ListCell* cell = list_head(indexInHash->index_list);
+                ListCell* cell_prev = NULL;
+                /* Traverse linked list to find record */
                 while (cell)
                 {
-                    ListCell *next_cell = cell->next;
-                    catalog_index_value* index_value = (catalog_index_value*)lfirst(cell);
+                    ListCell*                next_cell = cell->next;
+                    catalog_index_value*     index_value = (catalog_index_value*)lfirst(cell);
                     pg_sysdict_Form_pg_index dict_index = index_value->index;
 
-                    /* 查找指定的index记录 */
+                    /* Find the specified index record */
                     if (dict_index->indexrelid == new_index_value->index->indexrelid)
                     {
                         index_dict_index_free(dict_index);
                         rfree(index_value);
-                        indexInHash->index_list = list_delete_cell(indexInHash->index_list, cell, cell_prev);
+                        indexInHash->index_list =
+                            list_delete_cell(indexInHash->index_list, cell, cell_prev);
                         break;
                     }
                     else
@@ -421,7 +429,7 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
                     cell = next_cell;
                 }
 
-                /* 检查链表是否为空, 为空时从哈希中删除这条记录 */
+                /* Check if linked list is empty, delete record from hash if empty */
                 if (!indexInHash->index_list)
                 {
                     hash_search(sysdicts->by_index, &new_index_value->oid, HASH_REMOVE, NULL);
@@ -434,20 +442,20 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
             }
         }
     }
-    else if(CATALOG_OP_UPDATE == catalogdata->op)
+    else if (CATALOG_OP_UPDATE == catalogdata->op)
     {
         indexInHash = hash_search(sysdicts->by_index, &new_index_value->oid, HASH_FIND, &found);
-        if(NULL == indexInHash || NULL == (indexInHash->index_list))
+        if (NULL == indexInHash || NULL == (indexInHash->index_list))
         {
             elog(RLOG_WARNING, "index r:%u,i:%u can not fond in index hash",
-                                new_index_value->index->indrelid, new_index_value->index->indexrelid);
+                 new_index_value->index->indrelid, new_index_value->index->indexrelid);
             return;
         }
 
         if (!update_index_catalog_data_in_lsit(indexInHash->index_list, new_index_value))
         {
             elog(RLOG_WARNING, "index r:%u,i:%u can not fond in index hash list",
-                                new_index_value->index->indrelid, new_index_value->index->indexrelid);
+                 new_index_value->index->indrelid, new_index_value->index->indexrelid);
             return;
         }
     }
@@ -460,13 +468,13 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
 void index_catalogdatafree(catalogdata* catalogdata)
 {
     catalog_index_value* catalog = NULL;
-    if(NULL == catalogdata)
+    if (NULL == catalogdata)
     {
         return;
     }
 
-    /* catalog 内存释放 */
-    if(NULL != catalogdata->catalog)
+    /* Catalog memory release */
+    if (NULL != catalogdata->catalog)
     {
         catalog = (catalog_index_value*)catalogdata->catalog;
         index_dict_index_free(catalog->index);
@@ -475,13 +483,13 @@ void index_catalogdatafree(catalogdata* catalogdata)
     rfree(catalogdata);
 }
 
-/* 根据oid获取pg_index链表 */
+/* Get pg_index linked list by oid */
 void* index_getbyoid(Oid oid, HTAB* by_index)
 {
-    bool found = false;
-    catalog_index_hash_entry *indexentry = NULL;
+    bool                      found = false;
+    catalog_index_hash_entry* indexentry = NULL;
     indexentry = hash_search(by_index, &oid, HASH_FIND, &found);
-    if(false == found)
+    if (false == found)
     {
         return NULL;
     }
@@ -490,24 +498,23 @@ void* index_getbyoid(Oid oid, HTAB* by_index)
     return (void*)list_copy(indexentry->index_list);
 }
 
-void indexcache_write(HTAB* indexcache, uint64 *offset, sysdict_header_array* array)
+void indexcache_write(HTAB* indexcache, uint64* offset, sysdict_header_array* array)
 {
-    int     fd;
-    uint64 page_num = 0;
-    uint64 page_offset = PAGE_HEADER_SIZE;
-    HASH_SEQ_STATUS status;
-    char buffer[FILE_BLK_SIZE];
-    pg_sysdict_Form_pg_index index = NULL;
-    catalog_index_hash_entry *index_entry = NULL;
-    catalog_index_value *index_value = NULL;
+    int                       fd;
+    uint64                    page_num = 0;
+    uint64                    page_offset = PAGE_HEADER_SIZE;
+    HASH_SEQ_STATUS           status;
+    char                      buffer[FILE_BLK_SIZE];
+    pg_sysdict_Form_pg_index  index = NULL;
+    catalog_index_hash_entry* index_entry = NULL;
+    catalog_index_value*      index_value = NULL;
 
     array[CATALOG_TYPE_INDEX - 1].type = CATALOG_TYPE_INDEX;
     array[CATALOG_TYPE_INDEX - 1].offset = *offset;
     page_num = *offset;
 
     rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
-    fd = osal_basic_open_file(SYSDICTS_TMP_FILE,
-                        O_RDWR | O_CREAT | BINARY);
+    fd = osal_basic_open_file(SYSDICTS_TMP_FILE, O_RDWR | O_CREAT | BINARY);
 
     if (fd < 0)
     {
@@ -517,9 +524,9 @@ void indexcache_write(HTAB* indexcache, uint64 *offset, sysdict_header_array* ar
     hash_seq_init(&status, indexcache);
     while ((index_entry = hash_seq_search(&status)) != NULL)
     {
-        ListCell *cell = NULL;
+        ListCell* cell = NULL;
 
-        foreach(cell, index_entry->index_list)
+        foreach (cell, index_entry->index_list)
         {
             uint32 fix_len = 0;
             uint32 varlena_len = 0;
@@ -530,10 +537,11 @@ void indexcache_write(HTAB* indexcache, uint64 *offset, sysdict_header_array* ar
             fix_len = offsetof(pg_parser_sysdict_pgindex, indkey);
             varlena_len = sizeof(uint32) * index->indnatts;
 
-            if(page_offset + fix_len + varlena_len > FILE_BLK_SIZE)
+            if (page_offset + fix_len + varlena_len > FILE_BLK_SIZE)
             {
                 rmemcpy1(buffer, 0, &page_offset, PAGE_HEADER_SIZE);
-                if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+                if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE)
+                {
                     elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
                     osal_file_close(fd);
                     return;
@@ -555,7 +563,8 @@ void indexcache_write(HTAB* indexcache, uint64 *offset, sysdict_header_array* ar
     {
         rmemcpy1(buffer, 0, &page_offset, PAGE_HEADER_SIZE);
 
-        if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+        if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE)
+        {
             elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
             osal_file_close(fd);
             return;
@@ -564,12 +573,12 @@ void indexcache_write(HTAB* indexcache, uint64 *offset, sysdict_header_array* ar
         *offset += FILE_BLK_SIZE;
     }
 
-    if(0 != osal_file_sync(fd))
+    if (0 != osal_file_sync(fd))
     {
         elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_TMP_FILE);
     }
 
-    if(osal_file_close(fd))
+    if (osal_file_close(fd))
     {
         elog(RLOG_ERROR, "could not close file %s", SYSDICTS_TMP_FILE);
     }
@@ -581,32 +590,30 @@ void indexcache_write(HTAB* indexcache, uint64 *offset, sysdict_header_array* ar
 
 HTAB* indexcache_load(sysdict_header_array* array)
 {
-    int r = 0;
-    int fd = -1;
-    HTAB* indexhtab;
+    int     r = 0;
+    int     fd = -1;
+    HTAB*   indexhtab;
     HASHCTL hash_ctl;
-    bool found = false;
-    uint32 datasize = 0;
-    uint64 offset = 0;
-    uint64 fileoffset = 0;
+    bool    found = false;
+    uint32  datasize = 0;
+    uint64  offset = 0;
+    uint64  fileoffset = 0;
 
-    char buffer[FILE_BLK_SIZE];
-    pg_sysdict_Form_pg_index index;
-    catalog_index_hash_entry *entry = NULL;
+    char                      buffer[FILE_BLK_SIZE];
+    pg_sysdict_Form_pg_index  index;
+    catalog_index_hash_entry* entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(uint32_t);
     hash_ctl.entrysize = sizeof(catalog_index_value);
-    indexhtab = hash_create("catalog_index_value", 2048, &hash_ctl,
-                                 HASH_ELEM | HASH_BLOBS);
+    indexhtab = hash_create("catalog_index_value", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     if (array[CATALOG_TYPE_INDEX - 1].len == array[CATALOG_TYPE_INDEX - 1].offset)
     {
         return indexhtab;
     }
 
-    fd = osal_basic_open_file(SYSDICTS_FILE,
-                        O_RDWR | BINARY);
+    fd = osal_basic_open_file(SYSDICTS_FILE, O_RDWR | BINARY);
 
     if (fd < 0)
     {
@@ -614,17 +621,17 @@ HTAB* indexcache_load(sysdict_header_array* array)
     }
 
     fileoffset = array[CATALOG_TYPE_INDEX - 1].offset;
-    while ((r = osal_file_pread(fd, buffer, FILE_BLK_SIZE, fileoffset)) > 0) 
+    while ((r = osal_file_pread(fd, buffer, FILE_BLK_SIZE, fileoffset)) > 0)
     {
         rmemcpy1(&datasize, 0, buffer, PAGE_HEADER_SIZE);
         offset = PAGE_HEADER_SIZE;
 
         while (offset < datasize)
         {
-            catalog_index_value *index_value = NULL;
+            catalog_index_value* index_value = NULL;
 
             index = (pg_sysdict_Form_pg_index)rmalloc0(sizeof(pg_parser_sysdict_pgindex));
-            if(NULL == index)
+            if (NULL == index)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
@@ -634,7 +641,7 @@ HTAB* indexcache_load(sysdict_header_array* array)
             offset += offsetof(pg_parser_sysdict_pgindex, indkey);
 
             index->indkey = rmalloc0(sizeof(uint32) * index->indnatts);
-            if(NULL == index->indkey)
+            if (NULL == index->indkey)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
@@ -644,7 +651,7 @@ HTAB* indexcache_load(sysdict_header_array* array)
             offset += sizeof(uint32) * index->indnatts;
 
             index_value = rmalloc0(sizeof(catalog_index_value));
-            if(NULL == index_value)
+            if (NULL == index_value)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
@@ -653,7 +660,7 @@ HTAB* indexcache_load(sysdict_header_array* array)
             index_value->index = index;
 
             entry = hash_search(indexhtab, &index->indrelid, HASH_ENTER, &found);
-            if(!found)
+            if (!found)
             {
                 entry->oid = index->indrelid;
                 entry->index_list = NULL;
@@ -662,7 +669,7 @@ HTAB* indexcache_load(sysdict_header_array* array)
 
             if (fileoffset + offset == array[CATALOG_TYPE_INDEX - 1].len)
             {
-                if(osal_file_close(fd))
+                if (osal_file_close(fd))
                 {
                     elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
                 }
@@ -672,7 +679,7 @@ HTAB* indexcache_load(sysdict_header_array* array)
         fileoffset += FILE_BLK_SIZE;
     }
 
-    if(osal_file_close(fd))
+    if (osal_file_close(fd))
     {
         elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
     }

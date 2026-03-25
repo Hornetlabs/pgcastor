@@ -32,12 +32,12 @@
 #include "onlinerefresh/integrate/onlinerefresh_integrate.h"
 #include "increment/integrate/rebuild/increment_integraterebuild.h"
 
-/* 初始化 */
+/* Initialization */
 increment_integraterebuild* increment_integraterebuild_init(void)
 {
-    char* burst = NULL;
+    char*                       burst = NULL;
     increment_integraterebuild* rebuild_obj = rmalloc0(sizeof(increment_integraterebuild));
-    if(NULL == rebuild_obj)
+    if (NULL == rebuild_obj)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return NULL;
@@ -51,7 +51,7 @@ increment_integraterebuild* increment_integraterebuild_init(void)
     rebuild_obj->mergetxn = (0 == guc_getConfigOptionInt(CFG_KEY_MERGETXN)) ? false : true;
     rebuild_obj->txbundlesize = guc_getConfigOptionInt(CFG_KEY_TXBUNDLESIZE);
 
-    /* 设置integrate_method */
+    /* Set integrate_method */
     burst = guc_getConfigOption(CFG_KEY_INTEGRATE_METHOD);
     if (burst != NULL && '\0' != burst[0] && 0 == strcmp(burst, "burst"))
     {
@@ -68,16 +68,16 @@ increment_integraterebuild* increment_integraterebuild_init(void)
 
 static bool increment_integraterebuild_canwork(increment_integraterebuild* rebuild)
 {
-    if(rebuild->stat == INCREMENT_INTEGRATEREBUILD_STAT_WORK)
+    if (rebuild->stat == INCREMENT_INTEGRATEREBUILD_STAT_WORK)
     {
         return true;
     }
-    else if(rebuild->stat == INCREMENT_INTEGRATEREBUILD_STAT_READY)
+    else if (rebuild->stat == INCREMENT_INTEGRATEREBUILD_STAT_READY)
     {
         rebuild->stat = INCREMENT_INTEGRATEREBUILD_STAT_WORK;
         return true;
     }
-    else if(rebuild->stat == INCREMENT_INTEGRATEREBUILD_STAT_WAITTERM)
+    else if (rebuild->stat == INCREMENT_INTEGRATEREBUILD_STAT_WAITTERM)
     {
         cache_txn_clean(rebuild->parser2rebuild);
         return false;
@@ -85,22 +85,23 @@ static bool increment_integraterebuild_canwork(increment_integraterebuild* rebui
     return false;
 }
 
-static txn* increment_integraterebuild_updatesynctabletxn_set(increment_integraterebuild* rebuild_obj, txn* txn_obj)
+static txn* increment_integraterebuild_updatesynctabletxn_set(
+    increment_integraterebuild* rebuild_obj, txn* txn_obj)
 {
-    txn* cur_txn = NULL;
-    txnstmt* stmtnode = NULL;
+    txn*                     cur_txn = NULL;
+    txnstmt*                 stmtnode = NULL;
     txnstmt_updatesynctable* updatesynctable = NULL;
 
     cur_txn = txn_init(txn_obj->xid, txn_obj->start.wal.lsn, InvalidXLogRecPtr);
-    if(NULL == cur_txn)
+    if (NULL == cur_txn)
     {
         elog(RLOG_WARNING, "cur_txn out of memory, %s", strerror(errno));
         return NULL;
     }
 
-    /* 申请空间 */
+    /* Allocate space */
     stmtnode = txnstmt_init();
-    if(NULL == stmtnode)
+    if (NULL == stmtnode)
     {
         rfree(cur_txn);
         elog(RLOG_WARNING, "stmtnode out of memory, %s", strerror(errno));
@@ -108,7 +109,7 @@ static txn* increment_integraterebuild_updatesynctabletxn_set(increment_integrat
     }
     rmemset0(stmtnode, 0, '\0', sizeof(txnstmt));
 
-    updatesynctable =  txnstmt_updatesynctable_init();
+    updatesynctable = txnstmt_updatesynctable_init();
     if (NULL == updatesynctable)
     {
         rfree(cur_txn);
@@ -128,15 +129,16 @@ static txn* increment_integraterebuild_updatesynctabletxn_set(increment_integrat
     return cur_txn;
 }
 
-static bool increment_integraterebuild_updaterewindstmt_set(increment_integraterebuild* rebuild_obj, txn* txn_obj)
+static bool increment_integraterebuild_updaterewindstmt_set(increment_integraterebuild* rebuild_obj,
+                                                            txn*                        txn_obj)
 {
-    recpos pos = {{'\0'}};
-    txnstmt* stmtnode = NULL;
+    recpos                pos = {{'\0'}};
+    txnstmt*              stmtnode = NULL;
     txnstmt_updaterewind* updaterewind = NULL;
 
-    /* 申请空间 */
+    /* Allocate space */
     stmtnode = txnstmt_init();
-    if(NULL == stmtnode)
+    if (NULL == stmtnode)
     {
         return false;
     }
@@ -163,45 +165,51 @@ static bool increment_integraterebuild_updaterewindstmt_set(increment_integrater
     return true;
 }
 
-/* 清理放弃掉的onlinerefresh对应过滤集 */
-static void increment_integraterebuild_delonlinerefresdataset(increment_integraterebuild* rebuild_obj, thrnode* thr_node, void* abandon)
+/* Clean up filter sets corresponding to abandoned onlinerefresh */
+static void increment_integraterebuild_delonlinerefresdataset(
+    increment_integraterebuild* rebuild_obj, thrnode* thr_node, void* abandon)
 {
-    List* luuid                                         = NULL;
-    ListCell* lc                                        = NULL;
-    uuid_t* uuid                                 = NULL;
-    onlinerefresh_integratedatasetnode *endnode  = NULL;
+    List*                               luuid = NULL;
+    ListCell*                           lc = NULL;
+    uuid_t*                             uuid = NULL;
+    onlinerefresh_integratedatasetnode* endnode = NULL;
 
     if (NULL == abandon)
     {
         return;
     }
-    
+
     luuid = (List*)abandon;
 
-    foreach(lc, luuid)
+    foreach (lc, luuid)
     {
-
         uuid = (uuid_t*)lfirst(lc);
 
-        endnode = onlinerefresh_integratedataset_number_get(rebuild_obj->onlinerefreshdataset, uuid->data);
+        endnode = onlinerefresh_integratedataset_number_get(rebuild_obj->onlinerefreshdataset,
+                                                            uuid->data);
         while (true)
         {
-            if(THRNODE_STAT_TERM == thr_node->stat)
+            if (THRNODE_STAT_TERM == thr_node->stat)
             {
                 return;
             }
 
-            /* 等待onlinerefresh结束 */
+            /* Wait for onlinerefresh to finish */
             if (rebuild_obj->callback.isonlinerefreshdone(rebuild_obj->privdata, uuid->data))
             {
-                onlinerefresh_persist_statesetbyuuid(rebuild_obj->olpersist, 
-                                                            &endnode->onlinerefreshno, 
-                                                            ONLINEREFRESH_PERSISTNODE_STAT_DONE);
-                /* onlinerefresh结束清理persist的存量表 */
-                onlinerefresh_persist_removerefreshtbsbyuuid(rebuild_obj->olpersist, &endnode->onlinerefreshno);
-                onlinerefresh_persist_electionrewindbyuuid(rebuild_obj->olpersist, &endnode->onlinerefreshno);
-                onlinerefresh_integratefilterdataset_delete(rebuild_obj->honlinerefreshfilterdataset, endnode->refreshtables, endnode->txid);
-                onlinerefresh_integratedataset_delete(rebuild_obj->onlinerefreshdataset, uuid->data);
+                onlinerefresh_persist_statesetbyuuid(rebuild_obj->olpersist,
+                                                     &endnode->onlinerefreshno,
+                                                     ONLINEREFRESH_PERSISTNODE_STAT_DONE);
+                /* Clean up persist existing tables after onlinerefresh ends */
+                onlinerefresh_persist_removerefreshtbsbyuuid(rebuild_obj->olpersist,
+                                                             &endnode->onlinerefreshno);
+                onlinerefresh_persist_electionrewindbyuuid(rebuild_obj->olpersist,
+                                                           &endnode->onlinerefreshno);
+                onlinerefresh_integratefilterdataset_delete(
+                    rebuild_obj->honlinerefreshfilterdataset, endnode->refreshtables,
+                    endnode->txid);
+                onlinerefresh_integratedataset_delete(rebuild_obj->onlinerefreshdataset,
+                                                      uuid->data);
                 break;
             }
             usleep(50000);
@@ -209,47 +217,47 @@ static void increment_integraterebuild_delonlinerefresdataset(increment_integrat
     }
     return;
 }
-/* 新增大事务 */
-static void  increment_integraterebuild_addbigtxnpersist(increment_integraterebuild* rebuild_obj,
-                                                                txn* txn_obj)
+/* Add big transaction */
+static void increment_integraterebuild_addbigtxnpersist(increment_integraterebuild* rebuild_obj,
+                                                        txn*                        txn_obj)
 {
-    bool exist                                  = false;
-    recpos pos                           = {{'\0'}};
-    dlistnode *dnode                            = NULL;
-    dlistnode* dlnodenext                       = NULL;
-    bigtxn_persist *persist              = NULL;
-    bigtxn_persistnode *persistnode      = NULL;
+    bool                exist = false;
+    recpos              pos = {{'\0'}};
+    dlistnode*          dnode = NULL;
+    dlistnode*          dlnodenext = NULL;
+    bigtxn_persist*     persist = NULL;
+    bigtxn_persistnode* persistnode = NULL;
 
     persist = rebuild_obj->txnpersist;
 
-    /* 确保存在 */
+    /* Ensure existence */
     dnode = persist->dpersistnodes ? persist->dpersistnodes->head : NULL;
 
     pos.trail.fileid = txn_obj->segno;
     pos.trail.offset = txn_obj->end.trail.offset;
 
-    /* 遍历persist, 检查是否有相同事务 */
+    /* Iterate through persist, check if same transaction exists */
     for (; dnode; dnode = dlnodenext)
     {
         dlnodenext = dnode->next;
-        persistnode = (bigtxn_persistnode *)dnode->value;
+        persistnode = (bigtxn_persistnode*)dnode->value;
 
-        /* 是否存在事务号相同的大事务 */
+        /* Check if a big transaction with the same transaction ID exists */
         if (txn_obj->xid == persistnode->xid)
         {
-            /* 存在 */
+            /* Exists */
             exist = true;
             bigtxn_persistnode_set_begin(persistnode, &pos);
             bigtxn_persistnode_set_xid(persistnode, txn_obj->xid);
         }
     }
 
-    /* 遍历结束, 判断是否存在, 只有不存在时才需要新增 */
+    /* After iteration, check if exists, only add if not exists */
     if (!exist)
     {
-        bigtxn_persistnode *pernode = NULL;
+        bigtxn_persistnode* pernode = NULL;
 
-        /* 构建persist node并初始化 */
+        /* Build persist node and initialize */
         pernode = bigtxn_persist_node_init();
         bigtxn_persistnode_set_begin(pernode, &pos);
         bigtxn_persistnode_set_xid(pernode, txn_obj->xid);
@@ -259,42 +267,42 @@ static void  increment_integraterebuild_addbigtxnpersist(increment_integraterebu
     }
 }
 
-/* 新增onlinerefresh persist */
-static void  increment_integraterebuild_addonlinerefreshpersist(increment_integraterebuild* rebuild_obj,
-                                                                       onlinerefresh_integrate *olrintegrate)
+/* Add onlinerefresh persist */
+static void increment_integraterebuild_addonlinerefreshpersist(
+    increment_integraterebuild* rebuild_obj, onlinerefresh_integrate* olrintegrate)
 {
-    bool exist                                  = false;
-    dlistnode *dnode                            = NULL;
-    dlistnode* dlnodenext                       = NULL;
-    onlinerefresh_persist *persist              = NULL;
-    onlinerefresh_persistnode *persistnode      = NULL;
+    bool                       exist = false;
+    dlistnode*                 dnode = NULL;
+    dlistnode*                 dlnodenext = NULL;
+    onlinerefresh_persist*     persist = NULL;
+    onlinerefresh_persistnode* persistnode = NULL;
 
     persist = rebuild_obj->olpersist;
 
-    /* 确保存在 */
+    /* Ensure existence */
     dnode = persist->dpersistnodes ? persist->dpersistnodes->head : NULL;
 
-    /* 遍历persist, 检查是否有相同事务 */
+    /* Iterate through persist, check if same transaction exists */
     for (; dnode; dnode = dlnodenext)
     {
         dlnodenext = dnode->next;
-        persistnode = (onlinerefresh_persistnode *)dnode->value;
+        persistnode = (onlinerefresh_persistnode*)dnode->value;
 
-        /* 是否存在事务号相同的大事务 */
+        /* Check if a big transaction with the same transaction ID exists */
         if (0 == memcmp(olrintegrate->no.data, persistnode->uuid.data, UUID_LEN))
         {
-            /* 存在 */
+            /* Exists */
             exist = true;
             onlinerefresh_persistnode_beginset(persistnode, olrintegrate->begin);
         }
     }
 
-    /* 遍历结束, 判断是否存在, 只有不存在时才需要新增 */
+    /* After iteration, check if exists, only add if not exists */
     if (!exist)
     {
-        onlinerefresh_persistnode *pernode = NULL;
+        onlinerefresh_persistnode* pernode = NULL;
 
-        /* 构建persist node并初始化 */
+        /* Build persist node and initialize */
         pernode = onlinerefresh_persistnode_init();
         onlinerefresh_persistnode_statset(pernode, ONLINEREFRESH_PERSISTNODE_STAT_INIT);
         onlinerefresh_persistnode_uuidset(pernode, &olrintegrate->no);
@@ -303,7 +311,7 @@ static void  increment_integraterebuild_addonlinerefreshpersist(increment_integr
         onlinerefresh_persistnode_txidset(pernode, olrintegrate->txid);
 
         pernode->refreshtbs = olrintegrate->tablesyncstats;
-        if(true == dlist_isnull(persist->dpersistnodes))
+        if (true == dlist_isnull(persist->dpersistnodes))
         {
             persist->rewind.trail.fileid = olrintegrate->begin.trail.fileid;
             persist->rewind.trail.offset = olrintegrate->begin.trail.offset;
@@ -315,7 +323,7 @@ static void  increment_integraterebuild_addonlinerefreshpersist(increment_integr
 
 static bool increment_integraterebuild_isspecialtxn(txn* txn_obj)
 {
-    if(NULL == txn_obj->stmts)
+    if (NULL == txn_obj->stmts)
     {
         return true;
     }
@@ -332,17 +340,17 @@ static bool increment_integraterebuild_isspecialtxn(txn* txn_obj)
 }
 
 /*
- * 根据rebuild->burst选择重组事务方式
- * 
- * 返回值：true成功，false失败
-*/
+ * Choose transaction rebuild method based on rebuild->burst
+ *
+ * Return value: true success, false failure
+ */
 static bool increment_integraterebuild_rebuildtxn(increment_integraterebuild* rebuild_obj,
-                                                         txn *txn_obj)
+                                                  txn*                        txn_obj)
 {
     if (true == rebuild_obj->burst)
     {
-        /* 重组 */
-        if(false == rebuild_txnburst((rebuild*)rebuild_obj, txn_obj))
+        /* Rebuild */
+        if (false == rebuild_txnburst((rebuild*)rebuild_obj, txn_obj))
         {
             elog(RLOG_WARNING, "increment_integraterebuild_txnburst error");
             return false;
@@ -350,8 +358,8 @@ static bool increment_integraterebuild_rebuildtxn(increment_integraterebuild* re
     }
     else
     {
-        /* 重组 */
-        if(false == rebuild_prepared((rebuild*)rebuild_obj, txn_obj))
+        /* Rebuild */
+        if (false == rebuild_prepared((rebuild*)rebuild_obj, txn_obj))
         {
             elog(RLOG_WARNING, "increment_integraterebuild_prepared error");
             return false;
@@ -362,23 +370,23 @@ static bool increment_integraterebuild_rebuildtxn(increment_integraterebuild* re
 }
 
 /*
- * integate rebuild应用系统表，应用时先清理index和attribute
-*/
-static void increment_integraterebuild_transcatalog2transcache(increment_integraterebuild* rebuild_obj,
-                                                                      txn* txn_obj)
+ * integate rebuild applies system catalog, cleans up index and attribute before applying
+ */
+static void increment_integraterebuild_transcatalog2transcache(
+    increment_integraterebuild* rebuild_obj, txn* txn_obj)
 {
-    bool equal                              = false;
-    ListCell* stmtlc                        = NULL;
-    ListCell* catraloglc                    = NULL;
-    txnstmt* stmtnode                = NULL;
-    txnstmt_metadata* metadatastmt   = NULL;
+    bool              equal = false;
+    ListCell*         stmtlc = NULL;
+    ListCell*         catraloglc = NULL;
+    txnstmt*          stmtnode = NULL;
+    txnstmt_metadata* metadatastmt = NULL;
 
-    if(NULL == txn_obj->stmts)
+    if (NULL == txn_obj->stmts)
     {
         return;
     }
 
-    foreach(stmtlc, txn_obj->stmts)
+    foreach (stmtlc, txn_obj->stmts)
     {
         stmtnode = (txnstmt*)lfirst(stmtlc);
 
@@ -386,24 +394,24 @@ static void increment_integraterebuild_transcatalog2transcache(increment_integra
         {
             metadatastmt = (txnstmt_metadata*)stmtnode->stmt;
             catraloglc = metadatastmt->begin;
-            /* 根基class->oid清理之前的index和attribute */
+            /* Clean up previous index and attribute based on class->oid */
             cache_sysdicts_clearsysdicthisbyclass(rebuild_obj->rebuild.sysdicts, catraloglc);
 
-            while(1)
+            while (1)
             {
-                /* 应用到系统表中 */
-                cache_sysdicts_txnsysdicthisitem2cache(rebuild_obj->rebuild.sysdicts, (void*)catraloglc);
+                /* Apply to system catalog */
+                cache_sysdicts_txnsysdicthisitem2cache(rebuild_obj->rebuild.sysdicts,
+                                                       (void*)catraloglc);
 
-                /* 只有一个 */
-                if(catraloglc == metadatastmt->end
-                   || true == equal)
+                /* Only one */
+                if (catraloglc == metadatastmt->end || true == equal)
                 {
                     break;
                 }
 
-                /* 校验是否到达最后一个 */
+                /* Check if reached the last one */
                 catraloglc = catraloglc->next;
-                if(catraloglc == metadatastmt->end)
+                if (catraloglc == metadatastmt->end)
                 {
                     equal = true;
                 }
@@ -413,21 +421,19 @@ static void increment_integraterebuild_transcatalog2transcache(increment_integra
     return;
 }
 
-/* 只有在大事务异常退出和term信号返回false */
+/* Only returns false on big transaction abnormal exit and term signal */
 static bool increment_integraterebuild_specialtxn(increment_integraterebuild* rebuild_obj,
-                                                         thrnode* thr_node,
-                                                         txn* txn_obj,
-                                                         txn** ntxn,
-                                                         int* txbundlesize)
+                                                  thrnode* thr_node, txn* txn_obj, txn** ntxn,
+                                                  int* txbundlesize)
 {
-    recpos pos = {{'\0'}};
-    txn* cur_txn = NULL;
-    txnstmt* stmtnode = NULL;
-    txnstmt_onlinerefresh* onlinerefresh = NULL;
-    onlinerefresh_integratedatasetnode *datasetnode = NULL;
-    onlinerefresh_integratedatasetnode *endnode = NULL;
+    recpos                              pos = {{'\0'}};
+    txn*                                cur_txn = NULL;
+    txnstmt*                            stmtnode = NULL;
+    txnstmt_onlinerefresh*              onlinerefresh = NULL;
+    onlinerefresh_integratedatasetnode* datasetnode = NULL;
+    onlinerefresh_integratedatasetnode* endnode = NULL;
 
-    if(NULL == txn_obj->stmts)
+    if (NULL == txn_obj->stmts)
     {
         return true;
     }
@@ -440,7 +446,7 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
         cur_txn = NULL;
         while (true)
         {
-            if(THRNODE_STAT_TERM == thr_node->stat)
+            if (THRNODE_STAT_TERM == thr_node->stat)
             {
                 return false;
             }
@@ -451,60 +457,61 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
             }
             usleep(50000);
         }
-        /* 更新状态表信息不包含rewind信息 */
+        /* Update status table info, does not include rewind info */
         cur_txn = increment_integraterebuild_updatesynctabletxn_set(rebuild_obj, txn_obj);
         if (cur_txn)
         {
             cur_txn->segno = 1;
             cur_txn->end.trail.offset = 0;
-            /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+            /* Rewind info is not stored in transaction, calculated rewind is passed to apply thread
+             * via stmt */
             increment_integraterebuild_updaterewindstmt_set(rebuild_obj, cur_txn);
             cache_txn_add(rebuild_obj->rebuild2sync, cur_txn);
             cur_txn = NULL;
         }
-        
     }
     else if (TXNSTMT_TYPE_ONLINEREFRESH_BEGIN == stmtnode->type)
     {
         if (NULL != *ntxn)
         {
-            if(false == increment_integraterebuild_rebuildtxn(rebuild_obj, *ntxn))
+            if (false == increment_integraterebuild_rebuildtxn(rebuild_obj, *ntxn))
             {
                 elog(RLOG_WARNING, "increment integraterebuild specialtxn rebuildtxn error");
                 return false;
             }
-            /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+            /* Rewind info is not stored in transaction, calculated rewind is passed to apply thread
+             * via stmt */
             increment_integraterebuild_updaterewindstmt_set(rebuild_obj, *ntxn);
             cache_txn_add(rebuild_obj->rebuild2sync, *ntxn);
             *ntxn = NULL;
             *txbundlesize = 0;
         }
-        //转换类型
+        // Convert type
         onlinerefresh = (txnstmt_onlinerefresh*)stmtnode->stmt;
 
-        /* 等待缓存内事务应用完成 */
-        while(true)
+        /* Wait for cached transactions to finish applying */
+        while (true)
         {
-            if(THRNODE_STAT_TERM == thr_node->stat)
+            if (THRNODE_STAT_TERM == thr_node->stat)
             {
                 return false;
             }
 
-            if (txn_obj->segno == rebuild_obj->olpersist->rewind.trail.fileid
-                && txn_obj->end.trail.offset == rebuild_obj->olpersist->rewind.trail.offset)
+            if (txn_obj->segno == rebuild_obj->olpersist->rewind.trail.fileid &&
+                txn_obj->end.trail.offset == rebuild_obj->olpersist->rewind.trail.offset)
             {
                 break;
             }
 
-            /* 缓存应用完成且sync线程空闲 */
-            if (cache_txn_isnull(rebuild_obj->rebuild2sync)
-                && true == rebuild_obj->callback.issyncidle(rebuild_obj->privdata))
+            /* Cache apply complete and sync thread idle */
+            if (cache_txn_isnull(rebuild_obj->rebuild2sync) &&
+                true == rebuild_obj->callback.issyncidle(rebuild_obj->privdata))
             {
-                refresh_tables* tables = NULL;
+                refresh_tables*          tables = NULL;
                 refresh_table_syncstats* tablesyncstats = NULL;
-                onlinerefresh_integrate *integrateolrefresh = NULL;
+                onlinerefresh_integrate* integrateolrefresh = NULL;
 
-                /* 注册onlinerefresh节点 */
+                /* Register onlinerefresh node */
                 tables = refresh_tables_copy(onlinerefresh->refreshtables);
 
                 tablesyncstats = refresh_table_syncstats_init();
@@ -532,31 +539,34 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
 
         while (true)
         {
-            if(THRNODE_STAT_TERM == thr_node->stat)
+            if (THRNODE_STAT_TERM == thr_node->stat)
             {
                 return false;
             }
-            /* 等待onlinerefresh存量结束 */
-            if (true == rebuild_obj->callback.isolrrefreshdone(rebuild_obj->privdata, onlinerefresh->no->data))
+            /* Wait for existing onlinerefresh stock to finish */
+            if (true == rebuild_obj->callback.isolrrefreshdone(rebuild_obj->privdata,
+                                                               onlinerefresh->no->data))
             {
                 break;
             }
             usleep(50000);
         }
 
-        /* 创建onlinerefresh过滤数据集 */
-        onlinerefresh_integratefilterdataset_add(rebuild_obj->honlinerefreshfilterdataset, onlinerefresh->refreshtables, onlinerefresh->txid);
+        /* Create onlinerefresh filter dataset */
+        onlinerefresh_integratefilterdataset_add(rebuild_obj->honlinerefreshfilterdataset,
+                                                 onlinerefresh->refreshtables, onlinerefresh->txid);
         datasetnode = onlinerefresh_integratedatasetnode_init();
         onlinerefresh_integratedatasetnode_no_set(datasetnode, onlinerefresh->no->data);
         onlinerefresh_integratedatasetnode_txid_set(datasetnode, onlinerefresh->txid);
-        onlinerefresh_integratedatasetnode_refreshtables_set(datasetnode, onlinerefresh->refreshtables);
+        onlinerefresh_integratedatasetnode_refreshtables_set(datasetnode,
+                                                             onlinerefresh->refreshtables);
         onlinerefresh_integratedataset_add(rebuild_obj->onlinerefreshdataset, datasetnode);
     }
     else if (TXNSTMT_TYPE_ONLINEREFRESH_END == stmtnode->type)
     {
         if (NULL != *ntxn)
         {
-            if(false == increment_integraterebuild_rebuildtxn(rebuild_obj, *ntxn))
+            if (false == increment_integraterebuild_rebuildtxn(rebuild_obj, *ntxn))
             {
                 elog(RLOG_WARNING, "increment integraterebuild specialtxn rebuildtxn error");
                 return false;
@@ -566,26 +576,33 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
             *txbundlesize = 0;
         }
         elog(RLOG_DEBUG, "get TXNSTMT_TYPE_ONLINEREFRESH_END");
-        /* 获取onlinerefresh编号 */
-        endnode = onlinerefresh_integratedataset_number_get(rebuild_obj->onlinerefreshdataset, stmtnode->stmt);
+        /* Get onlinerefresh number */
+        endnode = onlinerefresh_integratedataset_number_get(rebuild_obj->onlinerefreshdataset,
+                                                            stmtnode->stmt);
 
         while (true)
         {
-            if(THRNODE_STAT_TERM == thr_node->stat)
+            if (THRNODE_STAT_TERM == thr_node->stat)
             {
                 return false;
             }
-            /* 等待onlinerefresh结束 */
-            if (rebuild_obj->callback.isonlinerefreshdone(rebuild_obj->privdata, endnode->onlinerefreshno.data))
+            /* Wait for onlinerefresh to finish */
+            if (rebuild_obj->callback.isonlinerefreshdone(rebuild_obj->privdata,
+                                                          endnode->onlinerefreshno.data))
             {
-                onlinerefresh_persist_statesetbyuuid(rebuild_obj->olpersist, 
-                                                            &endnode->onlinerefreshno, 
-                                                            ONLINEREFRESH_PERSISTNODE_STAT_DONE);
-                /* onlinerefresh结束清理persist的存量表 */
-                onlinerefresh_persist_removerefreshtbsbyuuid(rebuild_obj->olpersist, &endnode->onlinerefreshno);
-                onlinerefresh_persist_electionrewindbyuuid(rebuild_obj->olpersist, &endnode->onlinerefreshno);
-                onlinerefresh_integratefilterdataset_delete(rebuild_obj->honlinerefreshfilterdataset, endnode->refreshtables, endnode->txid);
-                onlinerefresh_integratedataset_delete(rebuild_obj->onlinerefreshdataset, stmtnode->stmt);
+                onlinerefresh_persist_statesetbyuuid(rebuild_obj->olpersist,
+                                                     &endnode->onlinerefreshno,
+                                                     ONLINEREFRESH_PERSISTNODE_STAT_DONE);
+                /* Clean up persist existing tables after onlinerefresh ends */
+                onlinerefresh_persist_removerefreshtbsbyuuid(rebuild_obj->olpersist,
+                                                             &endnode->onlinerefreshno);
+                onlinerefresh_persist_electionrewindbyuuid(rebuild_obj->olpersist,
+                                                           &endnode->onlinerefreshno);
+                onlinerefresh_integratefilterdataset_delete(
+                    rebuild_obj->honlinerefreshfilterdataset, endnode->refreshtables,
+                    endnode->txid);
+                onlinerefresh_integratedataset_delete(rebuild_obj->onlinerefreshdataset,
+                                                      stmtnode->stmt);
                 rebuild_obj->callback.setonlinerefreshfree(rebuild_obj->privdata, stmtnode->stmt);
                 break;
             }
@@ -595,7 +612,8 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
         cur_txn = increment_integraterebuild_updatesynctabletxn_set(rebuild_obj, txn_obj);
         if (cur_txn)
         {
-            /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+            /* Rewind info is not stored in transaction, calculated rewind is passed to apply thread
+             * via stmt */
             increment_integraterebuild_updaterewindstmt_set(rebuild_obj, cur_txn);
             cache_txn_add(rebuild_obj->rebuild2sync, cur_txn);
             cur_txn = NULL;
@@ -605,19 +623,19 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
     {
         if (NULL != *ntxn)
         {
-            if(false == increment_integraterebuild_rebuildtxn(rebuild_obj, *ntxn))
+            if (false == increment_integraterebuild_rebuildtxn(rebuild_obj, *ntxn))
             {
                 elog(RLOG_WARNING, "increment integraterebuild specialtxn rebuildtxn error");
                 return false;
             }
-            /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+            /* Rewind info is not stored in transaction, calculated rewind is passed to apply thread
+             * via stmt */
             increment_integraterebuild_updaterewindstmt_set(rebuild_obj, *ntxn);
             cache_txn_add(rebuild_obj->rebuild2sync, *ntxn);
             *ntxn = NULL;
             *txbundlesize = 0;
         }
         bigtxn_integratepersist_cleannotdone(rebuild_obj->txnpersist);
-
     }
     else if (TXNSTMT_TYPE_ABANDON == stmtnode->type)
     {
@@ -628,48 +646,52 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
     }
     else if (TXNSTMT_TYPE_BIGTXN_BEGIN == stmtnode->type)
     {
-        //todo,删除persist，大事务接收到end启动，不完成不会更新rewind点，只要不结束必然会启动大事务
+        // todo: delete persist, big transaction starts when receiving end, won't update rewind
+        // point until complete, will always start big transaction if not ended
         increment_integraterebuild_addbigtxnpersist(rebuild_obj, txn_obj);
     }
     else if (TXNSTMT_TYPE_BIGTXN_END == stmtnode->type)
     {
-        bigtxn_end_stmt *end_stmt = NULL;
-        bigtxn_integratemanager *bigtxn = NULL;
+        bigtxn_end_stmt*         end_stmt = NULL;
+        bigtxn_integratemanager* bigtxn = NULL;
         if (NULL != *ntxn)
         {
-            if(false == increment_integraterebuild_rebuildtxn(rebuild_obj, *ntxn))
+            if (false == increment_integraterebuild_rebuildtxn(rebuild_obj, *ntxn))
             {
                 elog(RLOG_WARNING, "increment integraterebuild specialtxn rebuildtxn error");
                 return false;
             }
-            /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+            /* Rewind info is not stored in transaction, calculated rewind is passed to apply thread
+             * via stmt */
             increment_integraterebuild_updaterewindstmt_set(rebuild_obj, *ntxn);
             cache_txn_add(rebuild_obj->rebuild2sync, *ntxn);
             *ntxn = NULL;
             *txbundlesize = 0;
         }
-        end_stmt = (bigtxn_end_stmt *)stmtnode->stmt;
-        /* 等待缓存内事务应用完成 */
-        while(true)
+        end_stmt = (bigtxn_end_stmt*)stmtnode->stmt;
+        /* Wait for cached transactions to finish applying */
+        while (true)
         {
-            if(THRNODE_STAT_TERM == thr_node->stat)
+            if (THRNODE_STAT_TERM == thr_node->stat)
             {
                 return false;
             }
 
-            /* 缓存应用完成且sync线程空闲 */
-            if (cache_txn_isnull(rebuild_obj->rebuild2sync)
-                && true == rebuild_obj->callback.issyncidle(rebuild_obj->privdata))
+            /* Cache apply complete and sync thread idle */
+            if (cache_txn_isnull(rebuild_obj->rebuild2sync) &&
+                true == rebuild_obj->callback.issyncidle(rebuild_obj->privdata))
             {
                 if (true == end_stmt->commit)
                 {
                     bigtxn = bigtxn_integratemanager_init();
                     bigtxn->xid = end_stmt->xid;
-                    /* 复制onlinerefresh过滤集用于大事务内部过滤 */
-                    bigtxn->honlinerefreshfilterdataset = onlinerefresh_integratefilterdataset_copy(rebuild_obj->honlinerefreshfilterdataset);
+                    /* Copy onlinerefresh filter set for big transaction internal filtering */
+                    bigtxn->honlinerefreshfilterdataset = onlinerefresh_integratefilterdataset_copy(
+                        rebuild_obj->honlinerefreshfilterdataset);
                     if (false == dlist_isnull(rebuild_obj->onlinerefreshdataset->onlinerefresh))
                     {
-                        bigtxn->onlinerefreshdataset = onlinerefresh_integratedataset_copy(rebuild_obj->onlinerefreshdataset);
+                        bigtxn->onlinerefreshdataset =
+                            onlinerefresh_integratedataset_copy(rebuild_obj->onlinerefreshdataset);
                     }
                     bigtxn_integratemanager_stat_set(bigtxn, BIGTXN_INTEGRATEMANAGER_STAT_INIT);
                     rebuild_obj->callback.addbigtxn(rebuild_obj->privdata, (void*)bigtxn);
@@ -683,17 +705,19 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
         {
             while (true)
             {
-                if(THRNODE_STAT_TERM == thr_node->stat)
+                if (THRNODE_STAT_TERM == thr_node->stat)
                 {
                     return false;
                 }
 
-                if (true == rebuild_obj->callback.isbigtxnsigterm(rebuild_obj->privdata, end_stmt->xid))
+                if (true ==
+                    rebuild_obj->callback.isbigtxnsigterm(rebuild_obj->privdata, end_stmt->xid))
                 {
                     return false;
                 }
 
-                if (true == rebuild_obj->callback.isbigtxndown(rebuild_obj->privdata, end_stmt->xid))
+                if (true ==
+                    rebuild_obj->callback.isbigtxndown(rebuild_obj->privdata, end_stmt->xid))
                 {
                     break;
                 }
@@ -707,7 +731,8 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
         if (cur_txn)
         {
             cur_txn->xid = end_stmt->xid;
-            /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+            /* Rewind info is not stored in transaction, calculated rewind is passed to apply thread
+             * via stmt */
             increment_integraterebuild_updaterewindstmt_set(rebuild_obj, cur_txn);
             cache_txn_add(rebuild_obj->rebuild2sync, cur_txn);
             cur_txn = NULL;
@@ -721,64 +746,64 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
     return true;
 }
 
-
-/* 工作 */
+/* Work */
 void* increment_integraterebuild_main(void* args)
 {
-    bool find                                                           = false;
-    int timeout                                                         = 0;
-    int txbundlesize                                                    = 0;
-    Oid relid                                                           = InvalidOid;
-    ListCell* filterlc                                                  = NULL;
-    txn* txns                                                    = NULL;
-    txn* ntxn                                                    = NULL;
-    txn* txnnode                                                 = NULL;
-    thrnode* thr_node                                             = NULL;
-    txnstmt* stmtnode                                            = NULL;
-    increment_integraterebuild* rebuild_obj                          = NULL;
-    pg_parser_translog_tbcol_values* values                          = NULL;
-    pg_parser_translog_tbcolbase* tbcolbase                          = NULL;
-    pg_parser_translog_tbcol_nvalues* nvalues                        = NULL;
-    onlinerefresh_integratedatasetnode *node                     = NULL;
-    onlinerefresh_integratefilterdataset* filterdatasetentry     = NULL;
+    bool                                  find = false;
+    int                                   timeout = 0;
+    int                                   txbundlesize = 0;
+    Oid                                   relid = INVALIDOID;
+    ListCell*                             filterlc = NULL;
+    txn*                                  txns = NULL;
+    txn*                                  ntxn = NULL;
+    txn*                                  txnnode = NULL;
+    thrnode*                              thr_node = NULL;
+    txnstmt*                              stmtnode = NULL;
+    increment_integraterebuild*           rebuild_obj = NULL;
+    pg_parser_translog_tbcol_values*      values = NULL;
+    pg_parser_translog_tbcolbase*         tbcolbase = NULL;
+    pg_parser_translog_tbcol_nvalues*     nvalues = NULL;
+    onlinerefresh_integratedatasetnode*   node = NULL;
+    onlinerefresh_integratefilterdataset* filterdatasetentry = NULL;
 
     thr_node = (thrnode*)args;
-    /* 入参转换 */
-    rebuild_obj = (increment_integraterebuild* )thr_node->data;
+    /* Parameter conversion */
+    rebuild_obj = (increment_integraterebuild*)thr_node->data;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "increment integrate rebuild exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "increment integrate rebuild exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
-    while(1)
+    while (1)
     {
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
-            /* 序列化/落盘 */
+            /* Serialize/flush to disk */
             thr_node->stat = THRNODE_STAT_EXIT;
             cache_txn_clean(rebuild_obj->parser2rebuild);
             break;
         }
 
-        if(false == increment_integraterebuild_canwork(rebuild_obj))
+        if (false == increment_integraterebuild_canwork(rebuild_obj))
         {
             usleep(50000);
             continue;
         }
 
-        /* 在缓存中获取数据 */
+        /* Get data from cache */
         txns = cache_txn_getbatch(rebuild_obj->parser2rebuild, &timeout);
-        if(NULL == txns)
+        if (NULL == txns)
         {
-            /* 超时,再次获取 */
-            if(ERROR_TIMEOUT == timeout)
+            /* Timeout, retry */
+            if (ERROR_TIMEOUT == timeout)
             {
                 usleep(10000);
                 continue;
@@ -789,16 +814,17 @@ void* increment_integraterebuild_main(void* args)
             break;
         }
 
-        /* 遍历 txns 并重组语句 */
-        for(txnnode = txns; NULL != txnnode; txnnode = txns)
+        /* Iterate through txns and rebuild statements */
+        for (txnnode = txns; NULL != txnnode; txnnode = txns)
         {
-            /* special 用于标记指定事务: refresh/onlinerefreshbegin/onlinerefreshend */
+            /* special used to mark specified transactions:
+             * refresh/onlinerefreshbegin/onlinerefreshend */
             txns = txnnode->cachenext;
 
-            /* 过滤事务 */
-            if(txnnode->confirm.wal.lsn <= rebuild_obj->filterlsn)
+            /* Filter transactions */
+            if (txnnode->confirm.wal.lsn <= rebuild_obj->filterlsn)
             {
-                /* 应用系统表数据 */
+                /* Apply system catalog data */
                 increment_integraterebuild_transcatalog2transcache(rebuild_obj, txnnode);
                 txn_free(txnnode);
                 rfree(txnnode);
@@ -809,17 +835,14 @@ void* increment_integraterebuild_main(void* args)
                 rebuild_obj->filterlsn = txnnode->confirm.wal.lsn;
             }
 
-            /* 用于处理指定事务: refresh/onlinerefreshbegin/onlinerefreshend */
+            /* Used to handle specified transactions: refresh/onlinerefreshbegin/onlinerefreshend */
             if (true == increment_integraterebuild_isspecialtxn(txnnode))
             {
-
-                if(false == increment_integraterebuild_specialtxn(rebuild_obj,
-                                                                        thr_node,
-                                                                        txnnode,
-                                                                        &ntxn,
-                                                                        &txbundlesize))
+                if (false == increment_integraterebuild_specialtxn(rebuild_obj, thr_node, txnnode,
+                                                                   &ntxn, &txbundlesize))
                 {
-                    /* term退出或其他独立线程退出，返回上层while循环等待term */
+                    /* term exit or other independent thread exit, return to upper while loop
+                     * waiting for term */
                     rebuild_obj->stat = INCREMENT_INTEGRATEREBUILD_STAT_WAITTERM;
                     elog(RLOG_WARNING, "Received term or other independent thread exit");
                     break;
@@ -835,11 +858,11 @@ void* increment_integraterebuild_main(void* args)
 
             if (false == dlist_isnull(rebuild_obj->onlinerefreshdataset->onlinerefresh))
             {
-                /* 过滤onlinerefresh中应用过的数据 */
+                /* Filter data already applied in onlinerefresh */
                 List* tmpstmt = NULL;
                 stmtnode = NULL;
                 find = false;
-                foreach(filterlc, txnnode->stmts)
+                foreach (filterlc, txnnode->stmts)
                 {
                     stmtnode = (txnstmt*)lfirst(filterlc);
                     if (stmtnode->type != TXNSTMT_TYPE_DML)
@@ -848,36 +871,39 @@ void* increment_integraterebuild_main(void* args)
                         continue;
                     }
 
-                    tbcolbase = (pg_parser_translog_tbcolbase *)stmtnode->stmt;
-            
-                    if(PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
+                    tbcolbase = (pg_parser_translog_tbcolbase*)stmtnode->stmt;
+
+                    if (PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
                     {
-                        nvalues = (pg_parser_translog_tbcol_nvalues *)stmtnode->stmt;
+                        nvalues = (pg_parser_translog_tbcol_nvalues*)stmtnode->stmt;
                         relid = nvalues->m_relid;
                     }
                     else
                     {
-                        values = (pg_parser_translog_tbcol_values *)stmtnode->stmt;
+                        values = (pg_parser_translog_tbcol_values*)stmtnode->stmt;
                         relid = values->m_relid;
                     }
 
-                    filterdatasetentry = hash_search(rebuild_obj->honlinerefreshfilterdataset, &relid, HASH_FIND, &find);
-                    if(false == find)
+                    filterdatasetentry = hash_search(rebuild_obj->honlinerefreshfilterdataset,
+                                                     &relid, HASH_FIND, &find);
+                    if (false == find)
                     {
                         tmpstmt = lappend(tmpstmt, stmtnode);
                         continue;
                     }
 
-                    if(txnnode->xid < filterdatasetentry->txid)
+                    if (txnnode->xid < filterdatasetentry->txid)
                     {
                         txnstmt_free(stmtnode);
                         continue;
                     }
 
-                    node = onlinerefresh_integratedataset_txid_get(rebuild_obj->onlinerefreshdataset, filterdatasetentry->txid);
-                    while(false == rebuild_obj->callback.isonlinerefreshdone(rebuild_obj->privdata, node->onlinerefreshno.data))
+                    node = onlinerefresh_integratedataset_txid_get(
+                        rebuild_obj->onlinerefreshdataset, filterdatasetentry->txid);
+                    while (false == rebuild_obj->callback.isonlinerefreshdone(
+                                        rebuild_obj->privdata, node->onlinerefreshno.data))
                     {
-                        if(THRNODE_STAT_TERM == thr_node->stat)
+                        if (THRNODE_STAT_TERM == thr_node->stat)
                         {
                             thr_node->stat = THRNODE_STAT_EXIT;
                             pthread_exit(NULL);
@@ -894,21 +920,25 @@ void* increment_integraterebuild_main(void* args)
                 txnnode->stmts = tmpstmt;
                 tmpstmt = NULL;
 
-                /* 无需处理 todo更新状态表 */
-                if(NULL == txnnode->stmts)
+                /* No processing needed, todo update status table */
+                if (NULL == txnnode->stmts)
                 {
                     txn* cur_txn = NULL;
-                    cur_txn = increment_integraterebuild_updatesynctabletxn_set(rebuild_obj, txnnode);
+                    cur_txn =
+                        increment_integraterebuild_updatesynctabletxn_set(rebuild_obj, txnnode);
                     if (cur_txn)
                     {
-                        /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+                        /* Rewind info is not stored in transaction, calculated rewind is passed to
+                         * apply thread via stmt
+                         */
                         increment_integraterebuild_updaterewindstmt_set(rebuild_obj, cur_txn);
                         cache_txn_add(rebuild_obj->rebuild2sync, cur_txn);
                         cur_txn = NULL;
                     }
                     else
                     {
-                        elog(RLOG_WARNING, "increment_integraterebuild_updatesynctabletxn_set error");
+                        elog(RLOG_WARNING,
+                             "increment_integraterebuild_updatesynctabletxn_set error");
                         thr_node->stat = THRNODE_STAT_ABORT;
                         break;
                     }
@@ -918,29 +948,30 @@ void* increment_integraterebuild_main(void* args)
                 }
             }
 
-            if(NULL == txnnode->stmts)
+            if (NULL == txnnode->stmts)
             {
                 txn_free(txnnode);
                 rfree(txnnode);
                 continue;
             }
 
-            /* 不执行事务合并 */
+            /* Do not execute transaction merging */
             if (false == rebuild_obj->mergetxn)
             {
-                /* 将事务放入到缓存中 */
+                /* Put transaction into cache */
                 if (txnnode->end.wal.lsn != InvalidXLogRecPtr)
                 {
                     rebuild_obj->filterlsn = txnnode->end.wal.lsn;
                 }
 
-                if(false == increment_integraterebuild_rebuildtxn(rebuild_obj, txnnode))
+                if (false == increment_integraterebuild_rebuildtxn(rebuild_obj, txnnode))
                 {
                     thr_node->stat = THRNODE_STAT_ABORT;
                     break;
                 }
 
-                /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+                /* Rewind info is not stored in transaction, calculated rewind is passed to apply
+                 * thread via stmt */
                 increment_integraterebuild_updaterewindstmt_set(rebuild_obj, txnnode);
                 cache_txn_add(rebuild_obj->rebuild2sync, txnnode);
                 continue;
@@ -950,45 +981,48 @@ void* increment_integraterebuild_main(void* args)
             {
                 if (NULL != ntxn)
                 {
-                    if(false == increment_integraterebuild_rebuildtxn(rebuild_obj, ntxn))
+                    if (false == increment_integraterebuild_rebuildtxn(rebuild_obj, ntxn))
                     {
                         thr_node->stat = THRNODE_STAT_ABORT;
                         break;
                     }
-                    /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+                    /* Rewind info is not stored in transaction, calculated rewind is passed to
+                     * apply thread via stmt */
                     increment_integraterebuild_updaterewindstmt_set(rebuild_obj, ntxn);
                     cache_txn_add(rebuild_obj->rebuild2sync, ntxn);
                     ntxn = NULL;
                     txbundlesize = 0;
                 }
 
-                if(false == increment_integraterebuild_rebuildtxn(rebuild_obj, txnnode))
+                if (false == increment_integraterebuild_rebuildtxn(rebuild_obj, txnnode))
                 {
                     thr_node->stat = THRNODE_STAT_ABORT;
                     break;
                 }
 
-                /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+                /* Rewind info is not stored in transaction, calculated rewind is passed to apply
+                 * thread via stmt */
                 increment_integraterebuild_updaterewindstmt_set(rebuild_obj, txnnode);
                 cache_txn_add(rebuild_obj->rebuild2sync, txnnode);
                 continue;
             }
 
-            /* 合并事务处理 */
-            /* 若为空,那么申请空间 */
-            if(NULL == ntxn)
+            /* Merge transaction processing */
+            /* If empty, allocate space */
+            if (NULL == ntxn)
             {
                 ntxn = (txn*)rmalloc0(sizeof(txn));
-                if(NULL == ntxn)
+                if (NULL == ntxn)
                 {
-                    elog(RLOG_WARNING, "integrate rebuild txn init out of memory, %s", strerror(errno));
+                    elog(RLOG_WARNING, "integrate rebuild txn init out of memory, %s",
+                         strerror(errno));
                     thr_node->stat = THRNODE_STAT_ABORT;
                     break;
                 }
                 rmemset0(ntxn, 0, '\0', sizeof(txn));
             }
 
-            /* 复制事务信息 */
+            /* Copy transaction info */
             ntxn->xid = txnnode->xid;
             ntxn->segno = txnnode->segno;
             ntxn->debugno = txnnode->debugno;
@@ -1000,19 +1034,18 @@ void* increment_integraterebuild_main(void* args)
             ntxn->endtimestamp = txnnode->endtimestamp;
             txbundlesize += txnnode->stmts->length;
 
-            /* 将 sysdictHis 加入到新事务中 */
+            /* Add sysdictHis to new transaction */
             if (NULL != ntxn->sysdictHis || NULL != txnnode->sysdictHis)
             {
                 ntxn->sysdictHis = list_concat(ntxn->sysdictHis, txnnode->sysdictHis);
-                if (ntxn->sysdictHis != txnnode->sysdictHis
-                    && NULL != txnnode->sysdictHis)
+                if (ntxn->sysdictHis != txnnode->sysdictHis && NULL != txnnode->sysdictHis)
                 {
                     rfree(txnnode->sysdictHis);
                 }
                 txnnode->sysdictHis = NULL;
             }
 
-            /* 将 stmts 加入到新事务中 */
+            /* Add stmts to new transaction */
             ntxn->stmts = list_concat(ntxn->stmts, txnnode->stmts);
             if (ntxn->stmts != txnnode->stmts)
             {
@@ -1020,24 +1053,25 @@ void* increment_integraterebuild_main(void* args)
             }
             txnnode->stmts = NULL;
 
-            /* entry 释放 */
+            /* Free entry */
             txn_free(txnnode);
             rfree(txnnode);
 
-            /* 最后一个事务或超出合并事务的大小 */
-            if(NULL != txns && NULL != txns->stmts
-                && ((txbundlesize + txns->stmts->length) < rebuild_obj->txbundlesize))
+            /* Last transaction or exceeds merged transaction size */
+            if (NULL != txns && NULL != txns->stmts &&
+                ((txbundlesize + txns->stmts->length) < rebuild_obj->txbundlesize))
             {
                 continue;
             }
 
-            if(false == increment_integraterebuild_rebuildtxn(rebuild_obj, ntxn))
+            if (false == increment_integraterebuild_rebuildtxn(rebuild_obj, ntxn))
             {
                 thr_node->stat = THRNODE_STAT_ABORT;
                 break;
             }
 
-            /* 事务中不存储rewind信息，以stmt将计算后的rewind传递到应用线程更新rewind信息 */
+            /* Rewind info is not stored in transaction, calculated rewind is passed to apply thread
+             * via stmt */
             increment_integraterebuild_updaterewindstmt_set(rebuild_obj, ntxn);
             cache_txn_add(rebuild_obj->rebuild2sync, ntxn);
             ntxn = NULL;
@@ -1058,8 +1092,8 @@ void increment_integraterebuild_free(increment_integraterebuild* rebuild_obj)
 
     rebuild_obj->parser2rebuild = NULL;
     rebuild_obj->rebuild2sync = NULL;
-    
-    rebuild_destroy((rebuild *)rebuild_obj);
+
+    rebuild_destroy((rebuild*)rebuild_obj);
 
     if (rebuild_obj->honlinerefreshfilterdataset)
     {
@@ -1068,7 +1102,8 @@ void increment_integraterebuild_free(increment_integraterebuild* rebuild_obj)
 
     if (rebuild_obj->onlinerefreshdataset)
     {
-        dlist_free(rebuild_obj->onlinerefreshdataset->onlinerefresh, onlinerefresh_integratedataset_free);
+        dlist_free(rebuild_obj->onlinerefreshdataset->onlinerefresh,
+                   onlinerefresh_integratedataset_free);
         rfree(rebuild_obj->onlinerefreshdataset);
     }
 
@@ -1076,7 +1111,6 @@ void increment_integraterebuild_free(increment_integraterebuild* rebuild_obj)
     {
         onlinerefresh_persist_free(rebuild_obj->olpersist);
     }
-    
 
     if (rebuild_obj->txnpersist)
     {

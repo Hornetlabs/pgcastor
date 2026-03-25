@@ -6,12 +6,14 @@
 
 #include "thirdparty/common/pg_parser_thirdparty_builtins.h"
 
-int strtoint(const char *pg_parser__restrict str, char **pg_parser__restrict endptr, int base)
+int strtoint(const char* pg_parser__restrict str, char** pg_parser__restrict endptr, int base)
 {
-    long        val;
+    long val;
 
     val = strtol(str, endptr, base);
-    if (val != (int) val)
+    if (val != (int)val)
+    {
         errno = ERANGE;
-    return (int) val;
+    }
+    return (int)val;
 }

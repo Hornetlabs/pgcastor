@@ -2,12 +2,12 @@
 #include "port/thread/thread.h"
 #include "queue/queue.h"
 
-/* 初始化队列中的每个item */
+/* initialize each item in queue */
 static queueitem* queueitem_init(void)
 {
     queueitem* queue_item = NULL;
     queue_item = (queueitem*)rmalloc0(sizeof(queueitem));
-    if(NULL == queue_item)
+    if (NULL == queue_item)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return false;
@@ -21,31 +21,30 @@ static queueitem* queueitem_init(void)
 }
 
 /*
- * 队列Item释放
- *  * 入参:
- *  datafree   data的释放函数,可为空, 为空时，不释放 queueitem->data 值
-*/
+ * free queue item
+ *  * parameters:
+ *  datafree   data free function, may be NULL; if NULL, queueitem->data is not freed
+ */
 void queueitem_free(queueitem* queueitem, queuedatafree datafree)
 {
-    if(NULL == queueitem)
+    if (NULL == queueitem)
     {
         return;
     }
 
-    if(NULL != datafree)
+    if (NULL != datafree)
     {
         datafree(queueitem->data);
     }
     rfree(queueitem);
 }
 
-
-/* 队列初始化 */
+/* initialize queue */
 queue* queue_init(void)
 {
     queue* queue_ptr = NULL;
     queue_ptr = (queue*)rmalloc0(sizeof(queue));
-    if(NULL == queue_ptr)
+    if (NULL == queue_ptr)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return NULL;
@@ -57,9 +56,9 @@ queue* queue_init(void)
     queue_ptr->tail = NULL;
     queue_ptr->waits = 0;
 
-    /* 初始化锁信息 */
+    /* initialize lock */
     osal_thread_mutex_init(&queue_ptr->lock, NULL);
-    if(0 != osal_thread_cond_init(&queue_ptr->cond, NULL))
+    if (0 != osal_thread_cond_init(&queue_ptr->cond, NULL))
     {
         elog(RLOG_WARNING, "can not init queue cond, %s", strerror(errno));
         return NULL;
@@ -68,24 +67,24 @@ queue* queue_init(void)
     return queue_ptr;
 }
 
-/* 设置 max */
+/* set max */
 void queue_setmax(queue* queue, uint64 max)
 {
     queue->max = max;
 }
 
 /*
- * 在队列头部加入
-*/
+ * add to queue head
+ */
 bool queue_puthead(queue* queue, void* data)
 {
-    int iret = 0;
+    int        iret = 0;
     queueitem* qitem = NULL;
 
     queue->error = ERROR_SUCCESS;
-    if(0 < queue->max)
+    if (0 < queue->max)
     {
-        if(queue->cnt > queue->max)
+        if (queue->cnt > queue->max)
         {
             queue->error = ERROR_QUEUE_FULL;
             return false;
@@ -93,16 +92,16 @@ bool queue_puthead(queue* queue, void* data)
     }
 
     qitem = queueitem_init();
-    if(NULL == qitem)
+    if (NULL == qitem)
     {
         elog(RLOG_WARNING, "queue put item init error");
         return false;
     }
     qitem->data = data;
 
-    /* 加入到链表中 */
+    /* add to linked list */
     iret = osal_thread_lock(&queue->lock);
-    if(0 != iret)
+    if (0 != iret)
     {
         elog(RLOG_WARNING, "get lock error:%s", strerror(errno));
         return false;
@@ -118,7 +117,7 @@ bool queue_puthead(queue* queue, void* data)
     }
     queue->head = qitem;
     queue->cnt++;
-    if(0 < queue->waits)
+    if (0 < queue->waits)
     {
         osal_thread_cond_signal(&queue->cond);
     }
@@ -127,19 +126,19 @@ bool queue_puthead(queue* queue, void* data)
     return true;
 }
 
-/* 
- * 像队列中添加数据
- *  data 需要放入到队列中的数据
+/*
+ * add data to queue
+ *  data: data to add to queue
  */
 bool queue_put(queue* queue, void* data)
 {
-    int iret = 0;
+    int        iret = 0;
     queueitem* qitem = NULL;
 
     queue->error = ERROR_SUCCESS;
-    if(0 < queue->max)
+    if (0 < queue->max)
     {
-        if(queue->cnt > queue->max)
+        if (queue->cnt > queue->max)
         {
             queue->error = ERROR_QUEUE_FULL;
             return false;
@@ -147,16 +146,16 @@ bool queue_put(queue* queue, void* data)
     }
 
     qitem = queueitem_init();
-    if(NULL == qitem)
+    if (NULL == qitem)
     {
         elog(RLOG_WARNING, "queue put item init error");
         return false;
     }
     qitem->data = data;
 
-    /* 加入到链表中 */
+    /* add to linked list */
     iret = osal_thread_lock(&queue->lock);
-    if(0 != iret)
+    if (0 != iret)
     {
         elog(RLOG_WARNING, "get lock error:%s", strerror(errno));
         return false;
@@ -172,7 +171,7 @@ bool queue_put(queue* queue, void* data)
     }
     queue->tail = qitem;
     queue->cnt++;
-    if(0 < queue->waits)
+    if (0 < queue->waits)
     {
         osal_thread_cond_signal(&queue->cond);
     }
@@ -181,22 +180,22 @@ bool queue_put(queue* queue, void* data)
     return true;
 }
 
-/* 批量获取 */
+/* batch get */
 queueitem* queue_trygetbatch(queue* queue)
 {
-    int iret = 0;
+    int        iret = 0;
     queueitem* qitem = NULL;
 
-    while(1)
+    while (1)
     {
         iret = osal_thread_lock(&queue->lock);
-        if(0 != iret)
+        if (0 != iret)
         {
             elog(RLOG_WARNING, "get lock error:%s", strerror(errno));
             break;
         }
 
-        if(NULL == queue->head)
+        if (NULL == queue->head)
         {
             osal_thread_unlock(&queue->lock);
             break;
@@ -207,7 +206,7 @@ queueitem* queue_trygetbatch(queue* queue)
         queue->tail = NULL;
         queue->cnt = 0;
 
-        /* 解锁 */
+        /* unlock */
         osal_thread_unlock(&queue->lock);
         return qitem;
     }
@@ -215,36 +214,37 @@ queueitem* queue_trygetbatch(queue* queue)
     return NULL;
 }
 
-/* 
- * 在队列中获取数据
- *  返回为空时, 需要判断是否为超时
+/*
+ * get data from queue
+ *  returns NULL on timeout
  */
 void* queue_tryget(queue* queue)
 {
-    void* data = NULL;
+    void*      data = NULL;
     queueitem* qitem = NULL;
 
-    while(1)
+    while (1)
     {
         osal_thread_lock(&queue->lock);
 
-        if(NULL == queue->head)
+        if (NULL == queue->head)
         {
             osal_thread_unlock(&(queue->lock));
-            return NULL;;
+            return NULL;
+            ;
         }
 
-        /* 获取数据 */
+        /* get data */
         qitem = queue->head;
         queue->head = qitem->next;
         qitem->next = NULL;
 
-        if(NULL == queue->head)
+        if (NULL == queue->head)
         {
             queue->tail = NULL;
         }
         queue->cnt--;
-        /* 解锁 */
+        /* unlock */
         osal_thread_unlock(&queue->lock);
 
         data = qitem->data;
@@ -256,49 +256,49 @@ void* queue_tryget(queue* queue)
     return NULL;
 }
 
-/* 
- * 在队列中获取数据
- *  返回为空时, 需要判断是否为超时
+/*
+ * get data from queue
+ *  returns NULL on timeout
  */
 void* queue_get(queue* queue, int* timeout)
 {
-    int iret = 0;
-    void* data = NULL;
-    queueitem* qitem = NULL;
-    struct timespec ts = { 0 };
+    int             iret = 0;
+    void*           data = NULL;
+    queueitem*      qitem = NULL;
+    struct timespec ts = {0};
 
-    if(NULL != timeout)
+    if (NULL != timeout)
     {
         *timeout = ERROR_SUCCESS;
     }
 
-    while(1)
+    while (1)
     {
         iret = osal_thread_lock(&queue->lock);
-        if(0 != iret)
+        if (0 != iret)
         {
             elog(RLOG_WARNING, "get lock error:%s", strerror(errno));
             return NULL;
         }
 
-        if(NULL == queue->head)
+        if (NULL == queue->head)
         {
-            /* 需要等待 */
-            /* 设置超时时间 */
+            /* need to wait */
+            /* set timeout */
             clock_gettime(CLOCK_REALTIME, &ts);
             ts.tv_sec += 1;
 
-            /* 设置标识，告知有线程等待 */
+            /* set flag to indicate thread is waiting */
             queue->waits++;
             iret = osal_thread_cond_timewait(&queue->cond, &queue->lock, &ts);
-            if(0 != iret)
+            if (0 != iret)
             {
-                if(iret == ETIMEDOUT)
+                if (iret == ETIMEDOUT)
                 {
                     queue->waits--;
                     osal_thread_unlock(&(queue->lock));
 
-                    if(NULL != timeout)
+                    if (NULL != timeout)
                     {
                         *timeout = ERROR_TIMEOUT;
                     }
@@ -314,19 +314,19 @@ void* queue_get(queue* queue, int* timeout)
             continue;
         }
 
-        /* 获取数据 */
+        /* get data */
         qitem = queue->head;
         queue->head = qitem->next;
         qitem->next = NULL;
 
-        if(NULL == queue->head)
+        if (NULL == queue->head)
         {
             queue->tail = NULL;
         }
         queue->cnt--;
-        /* 解锁 */
+        /* unlock */
         iret = osal_thread_unlock(&queue->lock);
-        if(0 != iret)
+        if (0 != iret)
         {
             elog(RLOG_WARNING, "unlock error:%s", strerror(errno));
             return NULL;
@@ -341,12 +341,12 @@ void* queue_get(queue* queue, int* timeout)
     return NULL;
 }
 
-/* 判断对列是否为空 */
+/* check if queue is empty */
 bool queue_isnull(queue* queue)
 {
     bool result = false;
 
-    if(NULL == queue->head)
+    if (NULL == queue->head)
     {
         result = true;
     }
@@ -354,17 +354,17 @@ bool queue_isnull(queue* queue)
     return result;
 }
 
-/* 清理队列中的内容 */
+/* clear queue contents */
 void queue_clear(queue* queue, queuedatafree datafree)
 {
     queueitem* qitem = NULL;
-    if(NULL == queue)
+    if (NULL == queue)
     {
         return;
     }
     osal_thread_lock(&queue->lock);
 
-    for(qitem = queue->head; NULL != qitem; qitem = queue->head)
+    for (qitem = queue->head; NULL != qitem; qitem = queue->head)
     {
         queue->head = qitem->next;
         queueitem_free(qitem, datafree);
@@ -379,17 +379,17 @@ void queue_clear(queue* queue, queuedatafree datafree)
 }
 
 /*
- * 队列释放
- *  * 入参:
- *  datafree   data的释放函数,可为空, 为空时，不释放 queueitem->data 值
-*/
+ * destroy queue
+ *  * parameters:
+ *  datafree   data free function, may be NULL; if NULL, queueitem->data is not freed
+ */
 void queue_destroy(queue* queue, queuedatafree datafree)
 {
     queueitem* qitem = NULL;
 
     elog(RLOG_DEBUG, "queue_destroy");
 
-    if(NULL == queue)
+    if (NULL == queue)
     {
         return;
     }
@@ -397,7 +397,7 @@ void queue_destroy(queue* queue, queuedatafree datafree)
     osal_thread_mutex_destroy(&queue->lock);
     osal_thread_cond_destroy(&queue->cond);
 
-    for(qitem = queue->head; NULL != qitem; qitem = queue->head)
+    for (qitem = queue->head; NULL != qitem; qitem = queue->head)
     {
         queue->head = qitem->next;
         queueitem_free(qitem, datafree);
@@ -405,4 +405,3 @@ void queue_destroy(queue* queue, queuedatafree datafree)
 
     rfree(queue);
 }
-

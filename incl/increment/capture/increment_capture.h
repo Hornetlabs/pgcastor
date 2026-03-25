@@ -5,35 +5,35 @@ typedef void (*increment_callback)(decodingcontext* ctx);
 
 typedef struct INCREMENT_CAPTURE
 {
-    uint64                                  persistno;
-    char                                    padding[CACHELINE_SIZE];
-    splitwalcontext*                 splitwalctx;
-    char                                    padding1[CACHELINE_SIZE];
-    queue*                           recordsqueue;
-    char                                    padding2[CACHELINE_SIZE];
-    decodingcontext*                 decodingctx;
-    char                                    padding3[CACHELINE_SIZE];
-    cache_txn*                       parser2serialtxns;
-    char                                    padding4[CACHELINE_SIZE];
-    increment_captureserialstate*    serialstate;
-    char                                    padding5[CACHELINE_SIZE];
-    file_buffers*                    txn2filebuffer;
-    char                                    padding6[CACHELINE_SIZE];
-    increment_captureflush*          writestate;
-    char                                    padding7[CACHELINE_SIZE];
-    pthread_mutex_t                         olrefreshlock;
-    dlist*                                  olrefreshing;
-    /* 待做 onlinerefresh 的表 */
-    dlist*                                  olrefreshtables;
-    char                                    padding8[CACHELINE_SIZE];
-    metric_capture*                  metric;
-    char                                    padding9[CACHELINE_SIZE];
-    bigtxn_captureserial*            bigtxnserialstate;
-    char                                    padding10[CACHELINE_SIZE];
-    increment_captureflush*          bigtxnwritestate;
-    char                                    padding11[CACHELINE_SIZE];
-    threads*                         threads;                                /* 线程管理 */
-    char                                    padding12[CACHELINE_SIZE];
+    uint64                        persistno;
+    char                          padding[CACHELINE_SIZE];
+    splitwalcontext*              splitwalctx;
+    char                          padding1[CACHELINE_SIZE];
+    queue*                        recordsqueue;
+    char                          padding2[CACHELINE_SIZE];
+    decodingcontext*              decodingctx;
+    char                          padding3[CACHELINE_SIZE];
+    cache_txn*                    parser2serialtxns;
+    char                          padding4[CACHELINE_SIZE];
+    increment_captureserialstate* serialstate;
+    char                          padding5[CACHELINE_SIZE];
+    file_buffers*                 txn2filebuffer;
+    char                          padding6[CACHELINE_SIZE];
+    increment_captureflush*       writestate;
+    char                          padding7[CACHELINE_SIZE];
+    pthread_mutex_t               olrefreshlock;
+    dlist*                        olrefreshing;
+    /* Tables to do onlinerefresh */
+    dlist*                  olrefreshtables;
+    char                    padding8[CACHELINE_SIZE];
+    metric_capture*         metric;
+    char                    padding9[CACHELINE_SIZE];
+    bigtxn_captureserial*   bigtxnserialstate;
+    char                    padding10[CACHELINE_SIZE];
+    increment_captureflush* bigtxnwritestate;
+    char                    padding11[CACHELINE_SIZE];
+    threads*                threads; /* Thread management */
+    char                    padding12[CACHELINE_SIZE];
 } increment_capture;
 
 void increment_capture_parserwal_rewindingstat_setemiting(void* privdata);

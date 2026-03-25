@@ -13,96 +13,75 @@
 #include "translog/wal/translog_recvpglog.h"
 #include "translog/wal/translog_walam.h"
 
-/*----------------------------------版本路由器PG begin---------------------*/
+/*----------------------------------version router PG begin---------------------*/
 
-/* PG12 版本处理 */
-static translog_recvlog_amroutine m_pg12routine =
-{
-    .version        = TRANSLOG_RECVLOG_PGVERSION_12,
-    .desc           = "PG12",
-    .msgop          = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication
-};
+/* PG12 version handler */
+static translog_recvlog_amroutine m_pg12routine = {
+    .version = TRANSLOG_RECVLOG_PGVERSION_12,
+    .desc = "PG12",
+    .msgop = translog_recvpglog_msgop,
+    .endreplication = translog_recvpglog_endreplication};
 
-/* PG13 版本处理 */
-static translog_recvlog_amroutine m_pg13routine =
-{
-    .version        = TRANSLOG_RECVLOG_PGVERSION_13,
-    .desc           = "PG13",
-    .msgop          = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication
-};
+/* PG13 version handler */
+static translog_recvlog_amroutine m_pg13routine = {
+    .version = TRANSLOG_RECVLOG_PGVERSION_13,
+    .desc = "PG13",
+    .msgop = translog_recvpglog_msgop,
+    .endreplication = translog_recvpglog_endreplication};
 
-/* PG14 版本处理 */
-static translog_recvlog_amroutine m_pg14routine =
-{
-    .version        = TRANSLOG_RECVLOG_PGVERSION_14,
-    .desc           = "PG14",
-    .msgop          = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication
-};
+/* PG14 version handler */
+static translog_recvlog_amroutine m_pg14routine = {
+    .version = TRANSLOG_RECVLOG_PGVERSION_14,
+    .desc = "PG14",
+    .msgop = translog_recvpglog_msgop,
+    .endreplication = translog_recvpglog_endreplication};
 
-/* PG15 版本处理 */
-static translog_recvlog_amroutine m_pg15routine =
-{
-    .version        = TRANSLOG_RECVLOG_PGVERSION_15,
-    .desc           = "PG15",
-    .msgop          = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication
-};
+/* PG15 version handler */
+static translog_recvlog_amroutine m_pg15routine = {
+    .version = TRANSLOG_RECVLOG_PGVERSION_15,
+    .desc = "PG15",
+    .msgop = translog_recvpglog_msgop,
+    .endreplication = translog_recvpglog_endreplication};
 
-/* PG16 版本处理 */
-static translog_recvlog_amroutine m_pg16routine =
-{
-    .version        = TRANSLOG_RECVLOG_PGVERSION_16,
-    .desc           = "PG16",
-    .msgop          = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication
-};
+/* PG16 version handler */
+static translog_recvlog_amroutine m_pg16routine = {
+    .version = TRANSLOG_RECVLOG_PGVERSION_16,
+    .desc = "PG16",
+    .msgop = translog_recvpglog_msgop,
+    .endreplication = translog_recvpglog_endreplication};
 
-/* PG17 版本处理 */
-static translog_recvlog_amroutine m_pg17routine =
-{
-    .version        = TRANSLOG_RECVLOG_PGVERSION_17,
-    .desc           = "PG17",
-    .msgop          = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication
-};
+/* PG17 version handler */
+static translog_recvlog_amroutine m_pg17routine = {
+    .version = TRANSLOG_RECVLOG_PGVERSION_17,
+    .desc = "PG17",
+    .msgop = translog_recvpglog_msgop,
+    .endreplication = translog_recvpglog_endreplication};
 
-/* PG18 版本处理 */
-static translog_recvlog_amroutine m_pg18routine =
-{
-    .version        = TRANSLOG_RECVLOG_PGVERSION_18,
-    .desc           = "PG18",
-    .msgop          = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication
-};
+/* PG18 version handler */
+static translog_recvlog_amroutine m_pg18routine = {
+    .version = TRANSLOG_RECVLOG_PGVERSION_18,
+    .desc = "PG18",
+    .msgop = translog_recvpglog_msgop,
+    .endreplication = translog_recvpglog_endreplication};
 
-/*----------------------------------版本路由器PG   end---------------------*/
+/*----------------------------------version router PG   end---------------------*/
 
-/*----------------------------------数据库版本 begin-----------------------*/
-static translog_recvlog_dbtyperoutine m_pgtyperoutine[] =
-{
-    {
-        .type               = TRANSLOG_RECVLOG_DBTYPE_NOP,
-        .desc               = "NOP",
-        .getdbversion       = NULL,
-        .getconfigurefde    = NULL
-    },
-    {
-        .type               = TRANSLOG_RECVLOG_DBTYPE_PG,
-        .desc               = "Postgres",
-        .getdbversion       = translog_recvpglog_getpgversion,
-        .getconfigurefde    = NULL
-    }
-};
+/*----------------------------------database version begin-----------------------*/
+static translog_recvlog_dbtyperoutine m_pgtyperoutine[] = {
+    {.type = TRANSLOG_RECVLOG_DBTYPE_NOP,
+     .desc = "NOP",
+     .getdbversion = NULL,
+     .getconfigurefde = NULL},
+    {.type = TRANSLOG_RECVLOG_DBTYPE_PG,
+     .desc = "Postgres",
+     .getdbversion = translog_recvpglog_getpgversion,
+     .getconfigurefde = NULL}};
 
-/*----------------------------------数据库版本   end-----------------------*/
+/*----------------------------------database version   end-----------------------*/
 
-/* 根据数据库类型获取数据库版本 */
-bool translog_recvlog_getdbversion(translog_recvlog_dbtype type,
-                                          PGconn* conn,
-                                          translog_recvlog_dbversion* dbversion)
+/* get database version by database type */
+bool translog_recvlog_getdbversion(translog_recvlog_dbtype type, PGconn* conn,
+                                   translog_recvlog_dbversion* dbversion)
 {
     if (TRANSLOG_RECVLOG_DBTYPE_MAX <= type)
     {
@@ -112,17 +91,16 @@ bool translog_recvlog_getdbversion(translog_recvlog_dbtype type,
 
     if (NULL == m_pgtyperoutine[type].getdbversion)
     {
-        elog(RLOG_WARNING, "%s database unsupport get database version", m_pgtyperoutine[type].desc);
+        elog(RLOG_WARNING, "%s database unsupport get database version",
+             m_pgtyperoutine[type].desc);
         return false;
     }
 
     return m_pgtyperoutine[type].getdbversion(conn, dbversion);
 }
 
-/* 根据数据库类型获取数据库版本 */
-bool translog_recvlog_getconfigurefde(translog_recvlog_dbtype type,
-                                             char* conninfo,
-                                             bool* fde)
+/* get database version by database type */
+bool translog_recvlog_getconfigurefde(translog_recvlog_dbtype type, char* conninfo, bool* fde)
 {
     if (TRANSLOG_RECVLOG_DBTYPE_MAX <= type)
     {
@@ -139,7 +117,7 @@ bool translog_recvlog_getconfigurefde(translog_recvlog_dbtype type,
     return m_pgtyperoutine[type].getconfigurefde(conninfo, fde);
 }
 
-/* 设置处理方法 */
+/* set processing method */
 translog_recvlog_amroutine* translog_recvlog_getroutine(translog_recvlog_dbversion dbversion)
 {
     switch (dbversion)
@@ -165,4 +143,3 @@ translog_recvlog_amroutine* translog_recvlog_getroutine(translog_recvlog_dbversi
 
     return NULL;
 }
-

@@ -10,18 +10,19 @@ typedef enum splitwork_wal_status
 
 // typedef struct SPLITWAL_INCOMPLETERECORD
 // {
-//     uint32      len;                /* 保存原始长度 */
-//     uint32      incomplete_len;     /* 已存储长度 */
-//     XLogRecPtr  startlsn;           /* 起始lsn, wal文件开始第一条不完整record记为record结束lsn */
-//     char       *record;             /* record数据 */
+//     uint32      len;                /* Save original length */
+//     uint32      incomplete_len;     /* Stored length */
+//     XLogRecPtr  startlsn;           /* Starting lsn, first incomplete record at wal file start is
+//     recorded as record end lsn */ char       *record;             /* record data */
 // }splitwal_incompleteRecord;
 
 // typedef struct SPLITWAL_PAGEBUFFER
 // {
-//     uint32              size;                   /* block大小 */
-//     XLogRecPtr          startptr;               /* block开始的lsn */
-//     char               *buf;                    /* 数据 */
-//     splitwal_incompleteRecord   *incomplete;             /* (若存在) block最后一条不完整record */
+//     uint32              size;                   /* block size */
+//     XLogRecPtr          startptr;               /* lsn where block starts */
+//     char               *buf;                    /* Data */
+//     splitwal_incompleteRecord   *incomplete;             /* (If exists) Last incomplete record of
+//     block */
 // }splitwal_pageBuffer;
 
 typedef struct TimeLine2lsn
@@ -32,57 +33,59 @@ typedef struct TimeLine2lsn
 
 typedef struct timelineMAP
 {
-    uint32_t    size;
-    List       *map; /* 保存TimeLine2lsn */
+    uint32_t size;
+    List*    map; /* Save TimeLine2lsn */
 } timelineMAP;
 
 // typedef struct SPLITWAL_WALREADCTL
 // {
-//     bool        wait;           /* 等待标记 */
-//     bool        change;         /* 状态改变标记 */
+//     bool        wait;           /* Wait flag */
+//     bool        change;         /* Status change flag */
 //     bool        need_decrypt;
-//     int         status;         /* 状态信息, rewind或者normal */
-//     int         fd;             /* 文件描述符 */
-//     TimeLineID  timeline;       /* 时间线 */
-//     char       *inpath;         /* wal文件夹路径 */
-//     XLogRecPtr  change_startptr; /* 状态切换后开始的lsn */
-//     XLogRecPtr  startptr;       /* 开始的lsn */
-//     XLogRecPtr  endptr;         /* 结束的lsn */
-//     uint32      blcksz;         /* wal文件的block大小 */
-//     uint32      walsz;          /* wal文件大小 */
-//     XLogRecPtr  prev;           /* 最后一条已划分record的lsn */
+//     int         status;         /* Status information, rewind or normal */
+//     int         fd;             /* File descriptor */
+//     TimeLineID  timeline;       /* Timeline */
+//     char       *inpath;         /* wal folder path */
+//     XLogRecPtr  change_startptr; /* Starting lsn after state switch */
+//     XLogRecPtr  startptr;       /* Starting lsn */
+//     XLogRecPtr  endptr;         /* Ending lsn */
+//     uint32      blcksz;         /* Block size of wal file */
+//     uint32      walsz;          /* wal file size */
+//     XLogRecPtr  prev;           /* lsn of last divided record */
 //     XLogSegNo sendSegNo;
 //     uint32 sendOff;
-//     splitwal_incompleteRecord *seg_first_incomplete;      /* (若存在) 当前文件第一条不完整record* */
-//     splitwal_incompleteRecord *seg_first_incomplete_next; /* (若存在) 下一个wal文件第一条不完整record*/
+//     splitwal_incompleteRecord *seg_first_incomplete;      /* (If exists) First incomplete record
+//     of current file*
+//     */ splitwal_incompleteRecord *seg_first_incomplete_next; /* (If exists)
+//     First incomplete record of next wal file*/
 // } splitwal_WalReadCtl;
 
 typedef struct SPLITWALCTX_PRIVDATACALLBACK
 {
-    /* 设置parser状态为emiting */
+    /* Set parser status to emiting */
     void (*parserwal_rewindstat_setemiting)(void* privdata);
 
-    /* 设置capturestate的拆分到的lsn */
+    /* Set capturestate split lsn */
     void (*capturestate_loadlsn_set)(void* privdata, XLogRecPtr splitls);
 
 } splitwalctx_privdatacallback;
 
 typedef struct SPLITWALCONTEXT
 {
-    void                   *privdata;       /* increment_capture */
-    bool                    change;         /* 状态改变标记 */
-    int                     status;         /* 状态信息, rewind或者normal */
-    XLogRecPtr              change_startptr;/* 状态切换后开始的lsn */
-    queue           *recordqueue;    /* 划分好的record缓存 */
-    loadwalrecords  *loadrecords;    /* 读取records的控制器 */
-    XLogRecPtr              rewind_start;   /* rewind起点 */
-    splitwalctx_privdatacallback	callback;
+    void*                        privdata;        /* increment_capture */
+    bool                         change;          /* Status change flag */
+    int                          status;          /* Status information, rewind or normal */
+    XLogRecPtr                   change_startptr; /* Starting lsn after state switch */
+    queue*                       recordqueue;     /* Divided record cache */
+    loadwalrecords*              loadrecords;     /* Controller for reading records */
+    XLogRecPtr                   rewind_start;    /* rewind starting point */
+    splitwalctx_privdatacallback callback;
 } splitwalcontext;
 
-extern void* splitwork_wal_main(void *args);
-extern splitwalcontext *splitwal_init(void);
-extern void splitwal_destroy(splitwalcontext *split_wal_ctx);
-extern void *onlinerefresh_captureloadrecord_main(void *args);
-extern void onlinerefresh_captureloadrecord_free(void* args);
+extern void*            splitwork_wal_main(void* args);
+extern splitwalcontext* splitwal_init(void);
+extern void             splitwal_destroy(splitwalcontext* split_wal_ctx);
+extern void*            onlinerefresh_captureloadrecord_main(void* args);
+extern void             onlinerefresh_captureloadrecord_free(void* args);
 
 #endif

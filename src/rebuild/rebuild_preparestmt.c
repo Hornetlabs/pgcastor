@@ -1,13 +1,13 @@
 #include "app_incl.h"
 #include "rebuild/rebuild_preparestmt.h"
 
-/* 预解析初始化节点 */
+/* Prepared statement initialization node */
 rebuild_preparestmt* rebuild_preparestmt_init(void)
 {
     rebuild_preparestmt* preparestmt = NULL;
 
     preparestmt = rmalloc0(sizeof(rebuild_preparestmt));
-    if(NULL == preparestmt)
+    if (NULL == preparestmt)
     {
         elog(RLOG_WARNING, "rebuild preparestmt init error");
         return NULL;
@@ -17,10 +17,10 @@ rebuild_preparestmt* rebuild_preparestmt_init(void)
     return preparestmt;
 }
 
-/* 预解析比较 */
+/* Prepared statement comparison */
 int rebuild_preparestmt_cmp(void* v1, void* v2)
 {
-    int iret = 0;
+    int                  iret = 0;
     rebuild_preparestmt* t1 = NULL;
     rebuild_preparestmt* t2 = NULL;
 
@@ -28,11 +28,11 @@ int rebuild_preparestmt_cmp(void* v1, void* v2)
     t2 = (rebuild_preparestmt*)v2;
 
     iret = strcmp(t1->preparesql, t2->preparesql);
-    if(0 == iret)
+    if (0 == iret)
     {
         return 0;
     }
-    else if(0 > iret)
+    else if (0 > iret)
     {
         return -1;
     }
@@ -44,12 +44,12 @@ int rebuild_preparestmt_cmp(void* v1, void* v2)
     return 0;
 }
 
-/* 预解析释放 */
+/* Prepared statement free */
 void rebuild_preparestmt_free(void* argv)
 {
     rebuild_preparestmt* preparestmt = NULL;
 
-    if(NULL == argv)
+    if (NULL == argv)
     {
         return;
     }
@@ -63,7 +63,7 @@ void rebuild_preparestmt_free(void* argv)
     rfree(preparestmt);
 }
 
-/* 预解析调试 */
+/* Prepared statement debug */
 void rebuild_preparestmt_debug(void* v1)
 {
     rebuild_preparestmt* preparestmt = NULL;

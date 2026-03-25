@@ -16,8 +16,9 @@
 #include "sync/sync.h"
 #include "bigtransaction/integrate/sync/bigtxn_integratesync.h"
 
-/* 错误处理，重新执行所有stmt */
-static bool bigtxn_integrateincsync_restart_applytxn(syncstate* syncstate, thrnode* thrnode, txn* cur_txn)
+/* Error handling, re-execute all stmt */
+static bool bigtxn_integrateincsync_restart_applytxn(syncstate* syncstate, thrnode* thrnode,
+                                                     txn* cur_txn)
 {
     if (0 == cur_txn->stmts->length)
     {
@@ -28,7 +29,7 @@ static bool bigtxn_integrateincsync_restart_applytxn(syncstate* syncstate, thrno
 }
 
 #if 0
-/* 删除状态表中增量数据 */
+/* Delete incremental data from status table */
 static bool bigtxn_integrateincsync_delinc(bigtxn_integrateincsync* syncwork)
 {
     PGconn *conn            = NULL;
@@ -54,22 +55,21 @@ static bool bigtxn_integrateincsync_delinc(bigtxn_integrateincsync* syncwork)
 }
 #endif
 
-/* 更新状态表refresh任务的状态 */
+/* Update refresh task status in status table */
 static bool bigtxn_integrateincsync_updatasyncstatus(bigtxn_integrateincsync* syncwork, int16 stat)
 {
-    PGresult  *res          = NULL;
-    char sql_exec[1024]     = {'\0'};
+    PGresult* res = NULL;
+    char      sql_exec[1024] = {'\0'};
 
     rmemset1(sql_exec, 0, '\0', 1024);
     sprintf(sql_exec, "UPDATE %s.%s SET \"stat\" = %hd WHERE \"name\" = \'%s\' ",
-                      guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
-                      SYNC_STATUSTABLE_NAME,
-                      stat,
-                      syncwork->base.name);
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), SYNC_STATUSTABLE_NAME, stat,
+            syncwork->base.name);
     res = PQexec(syncwork->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING,"Failed to update status table in: %s", PQerrorMessage(syncwork->base.conn));
+        elog(RLOG_WARNING, "Failed to update status table in: %s",
+             PQerrorMessage(syncwork->base.conn));
         PQclear(res);
         return false;
     }
@@ -83,26 +83,26 @@ bigtxn_integrateincsync* bigtxn_integrateincsync_init(void)
     bigtxn_integrateincsync* syncworkstate = NULL;
 
     syncworkstate = (bigtxn_integrateincsync*)rmalloc0(sizeof(bigtxn_integrateincsync));
-    if(NULL == syncworkstate)
+    if (NULL == syncworkstate)
     {
         elog(RLOG_WARNING, "out of memory");
         return NULL;
     }
     rmemset0(syncworkstate, 0, '\0', sizeof(bigtxn_integrateincsync));
-    syncstate_reset((syncstate*) syncworkstate);
+    syncstate_reset((syncstate*)syncworkstate);
 
     return syncworkstate;
 }
 
-/* 增量应用 */
-void *bigtxn_integrateincsync_main(void* args)
+/* Incremental apply */
+void* bigtxn_integrateincsync_main(void* args)
 {
-    int timeout                                         = 0;
-    txn* entry                                   = NULL;
-    txn* cur_txn                                 = NULL;
-    thrnode* thr_node                             = NULL;
-    syncstate* sync_state                         = NULL;
-    bigtxn_integrateincsync* syncwork            = NULL;
+    int                      timeout = 0;
+    txn*                     entry = NULL;
+    txn*                     cur_txn = NULL;
+    thrnode*                 thr_node = NULL;
+    syncstate*               sync_state = NULL;
+    bigtxn_integrateincsync* syncwork = NULL;
 
     thr_node = (thrnode*)args;
 
@@ -110,31 +110,32 @@ void *bigtxn_integrateincsync_main(void* args)
 
     sync_state = (syncstate*)syncwork;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "integrate bigtxn sync stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "integrate bigtxn sync stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
     while (syncstate_conn(sync_state, thr_node))
     {
         usleep(50000);
-        if(false == sync_txnbegin(sync_state))
+        if (false == sync_txnbegin(sync_state))
         {
             continue;
         }
 
-        if(false == syncstate_update_statustb(sync_state, NULL, false))
+        if (false == syncstate_update_statustb(sync_state, NULL, false))
         {
             continue;
         }
 
-        /* 更新状态表状态，可以优先解析到并过滤 */
+        /* Update status table status, can be parsed and filtered first */
         if (false == bigtxn_integrateincsync_updatasyncstatus(syncwork, 0))
         {
             continue;
@@ -144,74 +145,75 @@ void *bigtxn_integrateincsync_main(void* args)
     }
 
     cur_txn = txn_init(InvalidFullTransactionId, InvalidXLogRecPtr, InvalidXLogRecPtr);
-    if(NULL == cur_txn)
+    if (NULL == cur_txn)
     {
         elog(RLOG_WARNING, "integrate bigtxn sync cur_txn out of memory ");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    while(1)
+    while (1)
     {
         entry = NULL;
 
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
-            /* 序列化/落盘 */
+            /* Serialization/flush to disk */
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
-        /* 获取数据 */
+        /* Get data */
         entry = cache_txn_get(syncwork->rebuild2sync, &timeout);
-        if(NULL == entry)
+        if (NULL == entry)
         {
-            if(ERROR_TIMEOUT == timeout)
+            if (ERROR_TIMEOUT == timeout)
             {
-                /* 睡眠 10 毫秒 */
+                /* Sleep 10 milliseconds */
                 usleep(10000);
                 continue;
             }
 
-             /* 出错了 */
+            /* Error occurred */
             elog(RLOG_WARNING, "cache_txn_get error");
             thr_node->stat = THRNODE_STAT_ABORT;
             break;
         }
 
-        if(NULL != entry->stmts)
+        if (NULL != entry->stmts)
         {
-            while(false == syncstate_bigtxn_applytxn(sync_state, thr_node, (void*)entry))
+            while (false == syncstate_bigtxn_applytxn(sync_state, thr_node, (void*)entry))
             {
                 sleep(1);
                 syncstate_reset(sync_state);
                 while (syncstate_conn(sync_state, thr_node))
                 {
                     usleep(50000);
-                    if(false == sync_txnbegin(sync_state))
+                    if (false == sync_txnbegin(sync_state))
                     {
                         continue;
                     }
 
-                    if(false == syncstate_update_statustb(sync_state, NULL, false))
+                    if (false == syncstate_update_statustb(sync_state, NULL, false))
                     {
                         continue;
                     }
 
-                    /* 更新状态表状态，capture可以优先解析到并过滤 */
+                    /* Update status table status, capture can be parsed and filtered first */
                     if (false == bigtxn_integrateincsync_updatasyncstatus(syncwork, 1))
                     {
                         continue;
                     }
 
-                    if(false == bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
+                    if (false ==
+                        bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
                     {
                         continue;
                     }
                     break;
                 }
 
-                if(THRNODE_STAT_TERM == thr_node->stat)
+                if (THRNODE_STAT_TERM == thr_node->stat)
                 {
                     thr_node->stat = THRNODE_STAT_EXIT;
                     goto bigtxn_integrateincsync_main_exit;
@@ -227,23 +229,24 @@ void *bigtxn_integrateincsync_main(void* args)
                 syncstate_reset(sync_state);
                 while (syncstate_conn(sync_state, thr_node))
                 {
-                    if(false == sync_txnbegin(sync_state))
+                    if (false == sync_txnbegin(sync_state))
                     {
                         continue;
                     }
 
-                    if(false == syncstate_update_statustb(sync_state, NULL, false))
+                    if (false == syncstate_update_statustb(sync_state, NULL, false))
                     {
                         continue;
                     }
 
-                    /* 更新状态表状态，capture可以优先解析到并过滤 */
+                    /* Update status table status, capture can be parsed and filtered first */
                     if (false == bigtxn_integrateincsync_updatasyncstatus(syncwork, 0))
                     {
                         continue;
                     }
 
-                    if(false == bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
+                    if (false ==
+                        bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
                     {
                         continue;
                     }
@@ -251,36 +254,37 @@ void *bigtxn_integrateincsync_main(void* args)
                     break;
                 }
 
-                if(THRNODE_STAT_TERM == thr_node->stat)
+                if (THRNODE_STAT_TERM == thr_node->stat)
                 {
                     thr_node->stat = THRNODE_STAT_EXIT;
                     goto bigtxn_integrateincsync_main_exit;
                 }
             }
 
-            while(false == sync_txncommit(sync_state, (void*)entry))
+            while (false == sync_txncommit(sync_state, (void*)entry))
             {
                 sleep(1);
                 syncstate_reset(sync_state);
                 while (syncstate_conn(sync_state, thr_node))
                 {
-                    if(false == sync_txnbegin(sync_state))
+                    if (false == sync_txnbegin(sync_state))
                     {
                         continue;
                     }
 
-                    if(false == syncstate_update_statustb(sync_state, NULL, false))
+                    if (false == syncstate_update_statustb(sync_state, NULL, false))
                     {
                         continue;
                     }
 
-                    /* 更新状态表状态，capture可以优先解析到并过滤 */
+                    /* Update status table status, capture can be parsed and filtered first */
                     if (false == bigtxn_integrateincsync_updatasyncstatus(syncwork, 0))
                     {
                         continue;
                     }
 
-                    if(false == bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
+                    if (false ==
+                        bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
                     {
                         continue;
                     }
@@ -288,7 +292,7 @@ void *bigtxn_integrateincsync_main(void* args)
                     break;
                 }
 
-                if(THRNODE_STAT_TERM == thr_node->stat)
+                if (THRNODE_STAT_TERM == thr_node->stat)
                 {
                     thr_node->stat = THRNODE_STAT_EXIT;
                     goto bigtxn_integrateincsync_main_exit;
@@ -301,7 +305,7 @@ void *bigtxn_integrateincsync_main(void* args)
             goto bigtxn_integrateincsync_main_exit;
         }
 
-        /* TODO entry 释放 */
+        /* TODO release entry */
         cur_txn->stmts = list_concat(cur_txn->stmts, entry->stmts);
         if (cur_txn->stmts != entry->stmts)
         {
@@ -311,7 +315,7 @@ void *bigtxn_integrateincsync_main(void* args)
         txn_free(entry);
         rfree(entry);
     }
-/* 退出 */
+/* Exit */
 bigtxn_integrateincsync_main_exit:
 
     txn_free(entry);
@@ -323,14 +327,13 @@ bigtxn_integrateincsync_main_exit:
     return NULL;
 }
 
-void bigtxn_integrateincsync_free(void *args)
+void bigtxn_integrateincsync_free(void* args)
 {
     bigtxn_integrateincsync* syncwork = NULL;
 
     syncwork = (bigtxn_integrateincsync*)args;
 
-    syncstate_destroy((syncstate*) syncwork);
+    syncstate_destroy((syncstate*)syncwork);
 
     rfree(syncwork);
-
 }

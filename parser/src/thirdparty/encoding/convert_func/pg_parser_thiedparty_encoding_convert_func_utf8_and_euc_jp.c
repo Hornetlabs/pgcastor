@@ -17,7 +17,6 @@
 #include "./unicode_map/euc_jp_to_utf8.map"
 #include "./unicode_map/utf8_to_euc_jp.map"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -28,32 +27,24 @@
  * ) returns VOID;
  * ----------
  */
-void euc_jp_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void euc_jp_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(EUC_JP, UTF8);
 
-    LocalToUtf(src, len, dest,
-               &euc_jp_to_unicode_tree,
-               NULL, 0,
-               NULL,
-               EUC_JP);
+    LocalToUtf(src, len, dest, &euc_jp_to_unicode_tree, NULL, 0, NULL, EUC_JP);
 }
 
-void utf8_to_euc_jp(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_euc_jp(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, EUC_JP);
 
-    UtfToLocal(src, len, dest,
-               &euc_jp_from_unicode_tree,
-               NULL, 0,
-               NULL,
-               EUC_JP);
+    UtfToLocal(src, len, dest, &euc_jp_from_unicode_tree, NULL, 0, NULL, EUC_JP);
 }

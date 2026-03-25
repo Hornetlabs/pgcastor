@@ -32,39 +32,38 @@
 #include "storage/trail/data/fftrail_txnonlinerefreshabandon.h"
 #include "storage/trail/data/fftrail_txncommit.h"
 
-
-/* 数据库信息序列化 */
+/* Transaction data serialization */
 bool fftrail_txn_serial(void* data, void* state)
 {
-    ff_txndata*  txndata = NULL;
-    txnstmt* rstmt = NULL;                      /* 需要写入 trail 文件的内容 */
+    ff_txndata*                   txndata = NULL;
+    txnstmt*                      rstmt = NULL; /* Content to write to trail file */
     pg_parser_translog_tbcolbase* tbcolbase = NULL;
 
     txndata = (ff_txndata*)data;
     rstmt = (txnstmt*)txndata->data;
 
-    /* 根据 type 的类型写入不同的数据 */
+    /* Write different data based on type */
     if (rstmt->type == TXNSTMT_TYPE_DDL)
     {
-        /* 数据落盘 */
+        /* Data persistence */
         fftrail_txnddl_serial(data, state);
         return true;
     }
     else if (rstmt->type == TXNSTMT_TYPE_METADATA)
     {
-        /* 遍历设置将相关的系统表设置为无效，并应用到全局中 */
+        /* Traverse to set relevant system tables to invalid and apply to global */
         fftrail_txnmetadata(data, state);
         return true;
     }
     else if (rstmt->type == TXNSTMT_TYPE_SHIFTFILE)
     {
-        /* 将lsn信息写入buffer */
+        /* Write lsn info to buffer */
         fftrail_txnshiftfile(data, state);
         return true;
     }
     else if (rstmt->type == TXNSTMT_TYPE_REFRESH)
     {
-        /* 将refreshtables落盘 */
+        /* Write refreshtables to disk */
         fftrail_txnrefresh_serial(data, state);
         return true;
     }

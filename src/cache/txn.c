@@ -10,16 +10,16 @@
 #include "cache/txn.h"
 #include "cache/transcache.h"
 
-void txn_initset(txn *tx_entry, FullTransactionId xid, XLogRecPtr startlsn)
+void txn_initset(txn* tx_entry, FullTransactionId xid, XLogRecPtr startlsn)
 {
-    if(NULL == tx_entry)
+    if (NULL == tx_entry)
     {
         return;
     }
     rmemset1(tx_entry, 0, 0, sizeof(txn));
     tx_entry->xid = xid;
     tx_entry->flag = TXN_FLAG_NORMAL;
-    /* 初始化时, stmtsize = 4 */
+    /* When initialized, stmtsize = 4 */
     tx_entry->stmtsize = 4;
     tx_entry->start.wal.lsn = startlsn;
     tx_entry->next = NULL;
@@ -28,13 +28,13 @@ void txn_initset(txn *tx_entry, FullTransactionId xid, XLogRecPtr startlsn)
     tx_entry->filter = false;
 }
 
-/* 生成一个没有 xid 的事务 */
+/* Generate a transaction without xid */
 txn* txn_init(FullTransactionId xid, XLogRecPtr startlsn, XLogRecPtr endlsn)
 {
-    txn *txn_obj = NULL;
+    txn* txn_obj = NULL;
 
     txn_obj = (txn*)rmalloc0(sizeof(txn));
-    if(NULL == txn_obj)
+    if (NULL == txn_obj)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return NULL;
@@ -47,13 +47,12 @@ txn* txn_init(FullTransactionId xid, XLogRecPtr startlsn, XLogRecPtr endlsn)
     return txn_obj;
 }
 
-
 txn* txn_copy(txn* txn_src)
 {
     txn* new_txn = NULL;
 
     new_txn = (txn*)rmalloc0(sizeof(txn));
-    if(NULL == new_txn)
+    if (NULL == new_txn)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         return NULL;
@@ -64,11 +63,11 @@ txn* txn_copy(txn* txn_src)
     return new_txn;
 }
 
-/* 添加事务提交*/
+/* Add transaction commit */
 bool txn_addcommit(txn* txn)
 {
-    txnstmt* txnstmt     = NULL;
-    commit_stmt* commit  = NULL;
+    txnstmt*     txnstmt = NULL;
+    commit_stmt* commit = NULL;
 
     txnstmt = txnstmt_init();
     if (NULL == txnstmt)
@@ -92,11 +91,10 @@ bool txn_addcommit(txn* txn)
     return true;
 }
 
-
-/* 大事务开始 */
-txn *txn_initbigtxn(FullTransactionId xid)
+/* Big transaction start */
+txn* txn_initbigtxn(FullTransactionId xid)
 {
-    txn *bigtxnbegin = NULL;
+    txn* bigtxnbegin = NULL;
 
     bigtxnbegin = txn_init(xid, InvalidXLogRecPtr, InvalidXLogRecPtr);
     if (NULL == bigtxnbegin)
@@ -107,10 +105,10 @@ txn *txn_initbigtxn(FullTransactionId xid)
     return bigtxnbegin;
 }
 
-/* 放弃掉的事务 */
-txn *txn_initabandon(txn *txninhash)
+/* Abandoned transaction */
+txn* txn_initabandon(txn* txninhash)
 {
-    txn *abandon = NULL;
+    txn*     abandon = NULL;
     txnstmt* txnstmt = NULL;
 
     abandon = txn_init(txninhash->xid, InvalidXLogRecPtr, InvalidXLogRecPtr);
@@ -127,7 +125,7 @@ txn *txn_initabandon(txn *txninhash)
     abandon->confirm.wal.lsn = MAX_LSN;
     abandon->end.trail.offset = txninhash->end.trail.offset;
     txnstmt = txnstmt_init();
-    if(NULL == txnstmt)
+    if (NULL == txnstmt)
     {
         elog(RLOG_WARNING, "init abandon txn error");
         return false;
@@ -137,27 +135,27 @@ txn *txn_initabandon(txn *txninhash)
     return abandon;
 }
 
-/* 删除事务缓存 */
+/* Delete transaction cache */
 void txn_free(txn* txn)
 {
-    ListCell* lc = NULL;
-    txnstmt* stmt = NULL;
+    ListCell*       lc = NULL;
+    txnstmt*        stmt = NULL;
     HASH_SEQ_STATUS status;
-    if(NULL == txn)
+    if (NULL == txn)
     {
         return;
     }
 
-    if(NULL != txn->toast_hash)
+    if (NULL != txn->toast_hash)
     {
-        chunk_data *chunk = NULL;
+        chunk_data*        chunk = NULL;
         toast_cache_entry* toastentry = NULL;
         hash_seq_init(&status, txn->toast_hash);
         while (NULL != (toastentry = hash_seq_search(&status)))
         {
-            foreach(lc, toastentry->chunk_list)
+            foreach (lc, toastentry->chunk_list)
             {
-                chunk = (chunk_data *)lfirst(lc);
+                chunk = (chunk_data*)lfirst(lc);
                 if (chunk->chunk_data)
                 {
                     rfree(chunk->chunk_data);
@@ -175,14 +173,14 @@ void txn_free(txn* txn)
         hash_destroy(txn->oidmap);
     }
 
-    if(NULL != txn->sysdict)
+    if (NULL != txn->sysdict)
     {
-        /* 删除 sysdict */
+        /* Delete sysdict */
         transcache_sysdict_free(txn);
         txn->sysdict = NULL;
     }
 
-    if(NULL != txn->sysdictHis)
+    if (NULL != txn->sysdictHis)
     {
         cache_sysdicts_txnsysdicthisfree(txn->sysdictHis);
         list_free(txn->sysdictHis);
@@ -195,7 +193,7 @@ void txn_free(txn* txn)
         txn->hsyncdataset = NULL;
     }
 
-    foreach(lc, txn->stmts)
+    foreach (lc, txn->stmts)
     {
         stmt = (txnstmt*)lfirst(lc);
         txnstmt_free(stmt);
@@ -208,7 +206,7 @@ void txn_freevoid(void* args)
 {
     txn* txn_obj = NULL;
 
-    if(NULL == args)
+    if (NULL == args)
     {
         return;
     }

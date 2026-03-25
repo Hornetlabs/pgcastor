@@ -29,59 +29,54 @@
 #include "works/parserwork/wal/decode_seq.h"
 #include "common/pg_parser_common_utils.h"
 
-/* 通过dboid判断是否需要捕获 */
+/* Check if capture is needed based on dboid */
 static bool heap_check_dboid(uint32_t dboid, uint32_t capture_dboid)
 {
     if (dboid && dboid != capture_dboid)
+    {
         return false;
+    }
     return true;
 }
 
-void decode_seq(decodingcontext *ctx, pg_parser_translog_pre_base *pbase)
+void decode_seq(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
-    pg_parser_translog_pre_seq *seq = NULL;
-    txn *txn = NULL;
-    Oid seq_oid = InvalidOid;
-    pg_sysdict_Form_pg_class class = NULL;
+    pg_parser_translog_pre_seq*  seq = NULL;
+    txn*                         txn = NULL;
+    Oid                          seq_oid = INVALIDOID;
+    pg_sysdict_Form_pg_class     class = NULL;
     pg_sysdict_Form_pg_namespace nsp = NULL;
-    StringInfo alter_seq_restart_stmt = NULL;
-    txnstmt *stmt =  NULL;
-    txnstmt_ddl *dstmt = NULL;
-    char *seq_name = NULL;
-    char *seq_nspname = NULL;
+    StringInfo                   alter_seq_restart_stmt = NULL;
+    txnstmt*                     stmt = NULL;
+    txnstmt_ddl*                 dstmt = NULL;
+    char*                        seq_name = NULL;
+    char*                        seq_nspname = NULL;
 
-    seq = (pg_parser_translog_pre_seq *) pbase;
+    seq = (pg_parser_translog_pre_seq*)pbase;
 
     if (!heap_check_dboid(seq->m_dboid, ctx->database))
     {
         return;
     }
 
-    //获取当前事务的信息
+    // Get current transaction info
     txn = transcache_getTXNByXid((void*)ctx, pbase->m_xid);
     seq_oid = catalog_get_oid_by_relfilenode(ctx->trans_cache->sysdicts->by_relfilenode,
-                                                    txn->sysdictHis,
-                                                    txn->sysdict,
-                                                    seq->m_dboid,
-                                                    seq->m_tbspcoid,
-                                                    seq->m_relfilenode,
-                                                    true);
+                                             txn->sysdictHis, txn->sysdict, seq->m_dboid,
+                                             seq->m_tbspcoid, seq->m_relfilenode, true);
 
-    /* 从缓存中查找系统表记录 */
-    class = (pg_sysdict_Form_pg_class) catalog_get_class_sysdict(ctx->trans_cache->sysdicts->by_class,
-                                                                           txn->sysdict,
-                                                                           txn->sysdictHis,
-                                                                           seq_oid);
+    /* Find system catalog record from cache */
+    class = (pg_sysdict_Form_pg_class)catalog_get_class_sysdict(
+        ctx->trans_cache->sysdicts->by_class, txn->sysdict, txn->sysdictHis, seq_oid);
     if (!class)
     {
         elog(RLOG_ERROR, "can't find sequence by oid: %u", seq_oid);
     }
 
-    /* 从缓存中查找系统表记录 */
-    nsp = (pg_parser_sysdict_pgnamespace *) catalog_get_namespace_sysdict(ctx->trans_cache->sysdicts->by_namespace,
-                                                                           txn->sysdict,
-                                                                           txn->sysdictHis,
-                                                                           class->relnamespace);
+    /* Find system catalog record from cache */
+    nsp = (pg_parser_sysdict_pgnamespace*)catalog_get_namespace_sysdict(
+        ctx->trans_cache->sysdicts->by_namespace, txn->sysdict, txn->sysdictHis,
+        class->relnamespace);
 
     if (!nsp)
     {
@@ -93,9 +88,8 @@ void decode_seq(decodingcontext *ctx, pg_parser_translog_pre_base *pbase)
 
     alter_seq_restart_stmt = makeStringInfo();
 
-    appendStringInfo(alter_seq_restart_stmt, "ALTER SEQUENCE \"%s\".\"%s\" RESTART WITH %ld;", seq_nspname,
-                                                                                           seq_name,
-                                                                                           seq->m_last_value);
+    appendStringInfo(alter_seq_restart_stmt, "ALTER SEQUENCE \"%s\".\"%s\" RESTART WITH %ld;",
+                     seq_nspname, seq_name, seq->m_last_value);
 
     stmt = rmalloc0(sizeof(txnstmt));
     if (!stmt)

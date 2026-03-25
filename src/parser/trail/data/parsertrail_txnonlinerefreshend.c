@@ -17,20 +17,19 @@
 #include "parser/trail/parsertrail.h"
 #include "parser/trail/data/parsertrail_txnonlinerefreshend.h"
 
-/* 将表数据加入到事务缓存中 */
-bool parsertrail_txnonlinerefreshendapply(parsertrail* parsertrail,
-                                                            void* data)
+/* Add table data to transaction cache */
+bool parsertrail_txnonlinerefreshendapply(parsertrail* parsertrail, void* data)
 {
-    FullTransactionId xid                   = InvalidFullTransactionId;
-    txn* cur_txn                     = NULL;
-    txnstmt* stmt                    = NULL;
-    record* record_obj                   = NULL;
-    ff_txndata* txndata              = NULL;
-    fftrail_privdata* privdata       = NULL;
+    FullTransactionId xid = InvalidFullTransactionId;
+    txn*              cur_txn = NULL;
+    txnstmt*          stmt = NULL;
+    record*           record_obj = NULL;
+    ff_txndata*       txndata = NULL;
+    fftrail_privdata* privdata = NULL;
 
     UNUSED(privdata);
 
-    if(NULL == data)
+    if (NULL == data)
     {
         return true;
     }
@@ -41,11 +40,11 @@ bool parsertrail_txnonlinerefreshendapply(parsertrail* parsertrail,
 
     stmt = (txnstmt*)txndata->data;
 
-    /* 接收到事务结束标识 */
+    /* Received transaction end marker */
     elog(RLOG_DEBUG, "txn nonlinerefreshen apply, xid:%lu", txndata->header.transid);
 
     cur_txn = txn_init(xid, InvalidXLogRecPtr, InvalidXLogRecPtr);
-    if(NULL == cur_txn)
+    if (NULL == cur_txn)
     {
         elog(RLOG_WARNING, "onlinefresh end init txn error");
         return false;
@@ -57,7 +56,7 @@ bool parsertrail_txnonlinerefreshendapply(parsertrail* parsertrail,
     cur_txn->start.wal.lsn = stmt->extra0.wal.lsn;
     cur_txn->confirm.wal.lsn = stmt->extra0.wal.lsn;
 
-    /* 设置segno */
+    /* Set segno */
     record_obj = (record*)(parsertrail->ffsmgrstate->fdata->extradata);
     cur_txn->end.trail.offset = record_obj->end.trail.offset;
     cur_txn->segno = record_obj->end.trail.fileid;
@@ -70,10 +69,10 @@ bool parsertrail_txnonlinerefreshendapply(parsertrail* parsertrail,
 
     elog(RLOG_DEBUG, "then end of transaction:%lu", txndata->header.transid);
 
-    /* 查看是否发生了切换，发生切换那么需要清理缓存 */
-    if(FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
+    /* Check if file switch occurred, if so need to cleanup cache */
+    if (FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
     {
-        /* 交换 */
+        /* Swap */
         parsertrail_traildata_shiftfile(parsertrail);
     }
 

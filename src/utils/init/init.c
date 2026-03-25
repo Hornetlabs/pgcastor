@@ -17,12 +17,12 @@ typedef void (*procinit)();
 
 typedef struct RPOC2INIT
 {
-    proc_type    type;
-    bool                (*init)();
-    char*               errmsg;
+    proc_type type;
+    bool (*init)();
+    char* errmsg;
 } proc2init;
 
-/* capture 初始化 */
+/* capture initialization */
 static bool init_capture(void)
 {
     char* wdata = NULL;
@@ -33,25 +33,25 @@ static bool init_capture(void)
         return false;
     }
 
-    /* 切换工作目录 */
+    /* Change working directory */
     chdir(wdata);
 
-    /* 创建control文件 */
+    /* Create control file */
     misc_controldata_init();
 
-    /* 创建状态文件 */
+    /* Create status file */
     misc_capturestat_init();
 
     return true;
 }
 
-/* integrate 初始化 */
+/* integrate initialization */
 static bool init_integrate(void)
 {
     /*
-     * 1、获取执行目录，初始化执行目录信息
-     * 2、切换工作目录
-    */
+     * 1. Get execution directory, initialize execution directory info
+     * 2. Change working directory
+     */
     char* wdata = NULL;
 
     wdata = guc_getdata();
@@ -60,19 +60,19 @@ static bool init_integrate(void)
         return false;
     }
 
-    /* 切换工作目录 */
+    /* Change working directory */
     chdir(wdata);
 
     return true;
 }
 
-/* integrate 初始化 */
+/* xmanager initialization */
 static bool init_xmanager(void)
 {
     /*
-     * 1、获取执行目录，初始化执行目录信息
-     * 2、切换工作目录
-    */
+     * 1. Get execution directory, initialize execution directory info
+     * 2. Change working directory
+     */
     char* wdata = NULL;
 
     wdata = guc_getdata();
@@ -81,24 +81,21 @@ static bool init_xmanager(void)
         return false;
     }
 
-    /* 切换工作目录 */
+    /* Change working directory */
     chdir(wdata);
 
     return true;
 }
 
-static proc2init    m_typ2init[] =
-{
-    { PROC_TYPE_NOP,             NULL,                   "proc nop unsupport init"},
-    { PROC_TYPE_CAPTURE,         init_capture,    "capture init error" },
-    { PROC_TYPE_INTEGRATE,       init_integrate,  "integrate init error" },
-    { PROC_TYPE_PGRECEIVEWAL,    NULL,                   "pg receive log init error" },
-    { PROC_TYPE_XMANAGER,        init_xmanager,   "xmanager init error" }
-};
+static proc2init m_typ2init[] = {{PROC_TYPE_NOP, NULL, "proc nop unsupport init"},
+                                 {PROC_TYPE_CAPTURE, init_capture, "capture init error"},
+                                 {PROC_TYPE_INTEGRATE, init_integrate, "integrate init error"},
+                                 {PROC_TYPE_PGRECEIVEWAL, NULL, "pg receive log init error"},
+                                 {PROC_TYPE_XMANAGER, init_xmanager, "xmanager init error"}};
 
 bool init(void)
 {
-    if(NULL == m_typ2init[g_proctype].init)
+    if (NULL == m_typ2init[g_proctype].init)
     {
         elog(RLOG_WARNING, "%s", m_typ2init[g_proctype].errmsg);
         return false;

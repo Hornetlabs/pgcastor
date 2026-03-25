@@ -7,48 +7,46 @@
 #include "trans/ddlstmt/pg_parser_trans_ddlstmt_transfunc.h"
 #include "sysdict/pg_parser_sysdict_getinfo.h"
 
-void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl,
-                                               pg_parser_translog_systb2dll_record *current_record,
-                                               pg_parser_ddlstate *ddlstate,
-                                               int32_t *pg_parser_errno)
+void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                     pg_parser_translog_systb2dll_record* current_record,
+                                     pg_parser_ddlstate* ddlstate, int32_t* pg_parser_errno)
 {
-    pg_parser_translog_tbcol_values *record_trans = current_record->m_record;
-    /* TODO 捕获所有的 DDL 语句信息。
-     * 在现有模式下，如若遭遇 DDL 解析异常，那么一定是因为 current_record->m_tbtype 判断语句的
-     * else if 分支中的调用造成的，
-     * 主要的原因在于没能完全覆盖所有的 DDL 类型。
+    pg_parser_translog_tbcol_values* record_trans = current_record->m_record;
+    /* TODO Capture all DDL statement information.
+     * In current mode, if DDL parsing exception is encountered, it must be because of
+     * current_record->m_tbtypejudgment statement else if branch call, The main reason is that not
+     * all DDL types are fully covered.
      */
 
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_CLASS, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_CLASS,
+                                   pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
     {
         /*
-         * 每当我们在数据库中执行一条 CREATE 操作时，都会向 pg_class 表中插入一条数据，
-         * 而这就是解析所有这些 DDL 语句的起点，
-         * 其中主要的 RELKIND 类型如下（具体内容详见 src/backend/catalog/pg_class_d.h）：
+         * Whenever we execute a CREATE operation in the database, a record is inserted into
+         * pg_class table, and this is the starting point for parsing all these DDL statements, The
+         * main RELKIND types are as follows (see src/backend/catalog/pg_class_d.h for details):
          *        RELKIND_RELATION    'r'        ordinary table
          *        RELKIND_INDEX       'i'        secondary index
          *        RELKIND_SEQUENCE    'S'        sequence object
          *        RELKIND_VIEW        'v'        view
          *        RELKIND_MATVIEW     'm'        materialized view
          */
-        char *relkind = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("relkind",
-                                                               record_trans->m_new_values,
-                                                               record_trans->m_valueCnt,
-                                                               relkind);
-        
+        char* relkind = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
+            "relkind", record_trans->m_new_values, record_trans->m_valueCnt, relkind);
+
         if (PG_SYSDICT_RELKIND_TOASTVALUE == relkind[0])
         {
             /*
-             * 如果命令空间为 PG_TOAST_NAMESPACE，则表明接下来出现的 DDL 语句为：
-             *    1. 创建名为 pg_toast.pg_toast_oid 的表；
-             *    2. 创建名为 pg_toast.pg_toast_oid_index 的索引；
-             * 这两者是不需要获取并同步的。
+             * If namespace is PG_TOAST_NAMESPACE, it indicates the following DDL statements are:
+             *    1. Create table named pg_toast.pg_toast_oid;
+             *    2. Create index named pg_toast.pg_toast_oid_index;
+             * These two do not need to be obtained and synchronized.
              */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: capture toast, ignore begin \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                 "DEBUG, DDL PARSER: capture toast, ignore begin \n");
             ddlstate->m_ddlKind = PG_PARSER_DDL_TOAST_ESCAPE;
             if (!pg_parser_ddl_get_pg_class_info(ddlstate, record_trans, true))
             {
@@ -57,11 +55,11 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl
             }
             ddlstate->m_inddl = true;
         }
-        //todo rewrite(这里永远不会走到)
+        // todo rewrite (this will never be reached)
         else if (PG_SYSDICT_RELKIND_RELATION == relkind[0])
         {
             /*
-             * 若 DDL 语句为 CREATE TABLE，则对应的 pg_class 类型为 'r'
+             * If DDL statement is CREATE TABLE, then corresponding pg_class type is 'r'
              */
             ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_CREATE;
             if (!pg_parser_ddl_get_pg_class_info(ddlstate, record_trans, true))
@@ -71,17 +69,19 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl
             }
             ddlstate->m_inddl = true;
         }
-        /* todo rewrite 在修改捕获create type后, 这里永远不会走到 */
+        /* todo rewrite After modifying capture create type, this will never be reached */
         else if (PG_SYSDICT_RELKIND_SEQUENCE == relkind[0])
         {
             /*
-             * 若创建表时，指定的类型为 serial 时，那么 PG 在 WAL 日志中存储时会分成以下两步：
-             * 1、首先创建一个 sequence，命名规则为 tableName_columnName_seq；
-             * 2、创建表，并将相应的 columnName 的值设为 nextval('tableName_columnName_seq')；
-             * 是故，在解析带有 serial 类型的 DDL 语句时，需要将这条语句拆分成两条。
+             * If the specified type is serial when creating table, then PG will store in WAL log in
+             * the following two steps:
+             * 1. First create a sequence with naming rule tableName_columnName_seq;
+             * 2. Create table and set corresponding columnName value to
+             * nextval('tableName_columnName_seq')； Therefore, when parsing DDL statements with
+             * serial type, this statement needs to be split into two.
              */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: capture create sequence begin \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                 "DEBUG, DDL PARSER: capture create sequence begin \n");
             ddlstate->m_ddlKind = PG_PARSER_DDL_SEQUENCE_CREATE;
             if (!pg_parser_ddl_get_pg_class_info(ddlstate, record_trans, true))
             {
@@ -90,17 +90,19 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl
             }
             ddlstate->m_inddl = true;
         }
-        else if (PG_SYSDICT_RELKIND_INDEX == relkind[0]
-              || PG_SYSDICT_RELKIND_PARTITIONED_INDEX == relkind[0])
+        else if (PG_SYSDICT_RELKIND_INDEX == relkind[0] ||
+                 PG_SYSDICT_RELKIND_PARTITIONED_INDEX == relkind[0])
         {
             /*
-             * 若创建表时，指定某字段为主键，那么 PG 在 WAL 日志中存储时会分成以下两步：
-             * 1、首先创建表；
-             * 2、创建索引，命名规则为 tableName_pkey；
-             * 是故，在解析带有 PRIMARY KEY (column_name) 的 DDL 语句时，需要拆分成两条。
+             * If a field is specified as primary key when creating table, then PG will store in WAL
+             * log in the following two steps:
+             * 1. First create table;
+             * 2. Create index with naming rule tableName_pkey;
+             * Therefore, when parsing DDL statements with PRIMARY KEY (column_name), it needs to be
+             * split into two.
              */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: capture create index begin \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                 "DEBUG, DDL PARSER: capture create index begin \n");
             ddlstate->m_ddlKind = PG_PARSER_DDL_INDEX_CREATE;
             if (!pg_parser_ddl_get_pg_class_info(ddlstate, record_trans, true))
             {
@@ -112,12 +114,12 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl
         else if (PG_SYSDICT_RELKIND_VIEW == relkind[0])
         {
             /*
-             * 若创建视图时，PG 在 WAL 日志中存储时会分成以下两步：
-             * 1、往 pg_class 中插入视图信息；
-             * 2、记录视图所引用的所有字段。
+             * When creating view, PG will store in WAL log in the following two steps:
+             * 1. Insert view information into pg_class;
+             * 2. Record all fields referenced by the view.
              */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: capture create view begin \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                 "DEBUG, DDL PARSER: capture create view begin \n");
             ddlstate->m_ddlKind = PG_PARSER_DDL_VIEW_CREATE;
             if (!pg_parser_ddl_get_pg_class_info(ddlstate, record_trans, true))
             {
@@ -129,24 +131,26 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl
         else
         {
             /*
-             * 没能捕获入口。
+             * Failed to capture entry.
              */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: no ddl stmt capture \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                 "DEBUG, DDL PARSER: no ddl stmt capture \n");
             ddlstate->m_inddl = false;
         }
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_ATTRIBUTE, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_ATTRIBUTE,
+                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
     {
         /*
-         * 向表中添加字段, 一次只能添加一列, 因此该record的下一条语句一定是一个update class操作
-         * text/varchar在WAL日志中会额外的插入两条记录，分别为：
-         *     1、创建 pg_toast.pg_toast_OID_index 索引；
-         *     2、创建 pg_toast.pg_toast_OID 表；
-         * 这两条记录是不需要解析的, 跳过。
+         * Add field to table, only one column can be added at a time, so the next statement of this
+         * record must be an update class operation text/varchar will insert two additional records
+         * in WAL log, respectively:
+         *     1. Create pg_toast.pg_toast_OID_index index;
+         *     2. Create pg_toast.pg_toast_OID table;
+         * These two records do not need parsing, skip.
          */
-        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: capture alter table add column begin \n");
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                             "DEBUG, DDL PARSER: capture alter table add column begin \n");
         if (!pg_parser_ddl_get_attribute_info(ddlstate, record_trans, true))
         {
             *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_ATTRIBUTE_LIST;
@@ -156,73 +160,72 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl
         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_ALTER_ADD_COLUMN;
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_ATTRDEF, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_ATTRDEF,
+                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
     {
         /*
-         * 在创建带有默认值的表时，PG 在 WAL 日志中的记录顺序如下：
-         *     1、插入 pg_attrdef；
-         *     2、更新 pg_attribute 中的对应字段；
-         *     3、向 pg_depend 表中插入一条数据；
+         * When creating table with default values, PG records in WAL log in the following order:
+         *     1. Insert pg_attrdef;
+         *     2. Update corresponding field in pg_attribute;
+         *     3. Insert a record into pg_depend table;
          *     (objid = pg_attrdef.oid, classid = AttrDefaultRelationId)
          */
         uint32_t m_reloid;
-        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: capture alter table add default begin \n");
-        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("adrelid",
-                                                         record_trans->m_new_values,
-                                                         record_trans->m_valueCnt,
-                                                         ddlstate->m_reloid_char);
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                             "DEBUG, DDL PARSER: capture alter table add default begin \n");
+        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
+            "adrelid", record_trans->m_new_values, record_trans->m_valueCnt,
+            ddlstate->m_reloid_char);
         m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_ALTER_COLUMN_DEFAULT;
         ddlstate->m_reloid = m_reloid;
         ddlstate->m_att_def = record_trans;
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_NAMESPACE, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_NAMESPACE,
+                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
     {
         /*
-         * 向 pg_namespace 表中插入一条数据，视为create schema (create namespace)。
-         * WAL 日志中的记录顺序如下：
-         *     1、插入 pg_namespace；
-         *  2、提交 commit；（没有插入 pg_depend 的操作。）
+         * Insert a record into pg_namespace table, regarded as create schema (create namespace).
+         * The order of records in WAL log is as follows:
+         *     1. Insert pg_namespace;
+         *  2. Commit; (No operation to insert pg_depend.)
          */
-        char *temp_str = NULL;
-        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: capture create schema begin \n");
+        char* temp_str = NULL;
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                             "DEBUG, DDL PARSER: capture create schema begin \n");
         ddlstate->m_ddlKind = PG_PARSER_DDL_NAMESPACE_CREATE;
-        ddlstate->m_nspname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("nspname",
-                                                                   record_trans->m_new_values,
-                                                                   record_trans->m_valueCnt,
-                                                                   ddlstate->m_nspname);
-        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("nspowner",
-                                                                   record_trans->m_new_values,
-                                                                   record_trans->m_valueCnt,
-                                                                   temp_str);
+        ddlstate->m_nspname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
+            "nspname", record_trans->m_new_values, record_trans->m_valueCnt, ddlstate->m_nspname);
+        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
+            "nspowner", record_trans->m_new_values, record_trans->m_valueCnt, temp_str);
         ddlstate->m_owner = (uint32_t)strtoul(temp_str, NULL, 10);
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_CONSTRAINT, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_CONSTRAINT,
+                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
     {
         /*
-         * 向 pg_constraint 表中插入一条数据，视为创建新的外键。
+         * Insert a record into pg_constraint table, regarded as creating a new foreign key.
          */
-        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: capture alter table add foreign key begin \n");
-        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("oid",
-                                                         record_trans->m_new_values,
-                                                         record_trans->m_valueCnt,
-                                                         ddlstate->m_reloid_char);
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                             "DEBUG, DDL PARSER: capture alter table add foreign key begin \n");
+        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
+            "oid", record_trans->m_new_values, record_trans->m_valueCnt, ddlstate->m_reloid_char);
         ddlstate->m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_ALTER_ADD_CONSTRAINT_FOREIGN;
         ddlstate->m_constraint = record_trans;
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_DATABASE, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))    {
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_DATABASE,
+                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    {
         /*
-         * 向 pg_database 表中插入一条数据，视为创建新的数据库，无需解析，跳过
+         * Insert a record into pg_database table, regarded as creating a new database, no parsing
+         * needed, skip
          */
-        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: capture create database begin \n");
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                             "DEBUG, DDL PARSER: capture create database begin \n");
         ddlstate->m_ddlKind = PG_PARSER_DDL_DATABASE_CREATE;
         ddlstate->m_inddl = true;
     }
@@ -231,7 +234,7 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl
     {
 
         /*
-         * 向 pg_proc 表中插入一条数据，视为创建一个函数或者存储过程。
+         * Insert a record into pg_proc table, regarded as creating a function or stored procedure.
          */
         ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
                                                          record_trans->m_new_values,
@@ -243,12 +246,12 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl
         ddlstate->m_inddl = true;
     }
 #endif
-//todo trigger
+// todo trigger
 #if 0
     else if (!strcmp(PG_SYSDICT_PG_TRIGGER_NAME, ddl_char_tolower(record_trans->m_base.m_tbname)))
     {
         /*
-         * 向 pg_trigger 表中插入一条数据，视为创建一个触发器。
+         * Insert a record into pg_trigger table, regarded as creating a trigger.
          */
 
         ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
@@ -261,24 +264,21 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl
         ddlstate->m_inddl = true;
     }
 #endif
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_TYPE, pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_TYPE,
+                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
     {
         /*
-         * 向 pg_type 表中插入一条数据，视为创建一个类型 create type
-         * 我们这里需要获取namespace名称和oid
+         * Insert a record into pg_type table, regarded as creating a type create type
+         * We need to get namespace name and oid here
          */
-        char *temp_oid = NULL;
-        char *temp_nspoid = NULL;
-        temp_oid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("oid",
-                                                          record_trans->m_new_values,
-                                                          record_trans->m_valueCnt,
-                                                          temp_oid);
-        temp_nspoid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("typnamespace",
-                                                                record_trans->m_new_values,
-                                                                record_trans->m_valueCnt,
-                                                                temp_nspoid);
-        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, 
-                                   "DEBUG, DDL PARSER: capture create type begin \n");
+        char* temp_oid = NULL;
+        char* temp_nspoid = NULL;
+        temp_oid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("oid", record_trans->m_new_values,
+                                                                record_trans->m_valueCnt, temp_oid);
+        temp_nspoid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
+            "typnamespace", record_trans->m_new_values, record_trans->m_valueCnt, temp_nspoid);
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                             "DEBUG, DDL PARSER: capture create type begin \n");
         ddlstate->m_ddlKind = PG_PARSER_DDL_TYPE_CREATE;
 
         ddlstate->m_reloid_char = temp_oid;
@@ -286,10 +286,9 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl *pg_parser_ddl
 
         ddlstate->m_nspname_oid_char = temp_nspoid;
 
-        ddlstate->m_type_domain = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("typbasetype",
-                                                            record_trans->m_new_values,
-                                                            record_trans->m_valueCnt,
-                                                            ddlstate->m_type_domain);
+        ddlstate->m_type_domain = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
+            "typbasetype", record_trans->m_new_values, record_trans->m_valueCnt,
+            ddlstate->m_type_domain);
         ddlstate->m_type_item = record_trans;
         ddlstate->m_inddl = true;
     }

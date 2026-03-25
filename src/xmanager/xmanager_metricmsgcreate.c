@@ -18,24 +18,23 @@
 #include "xmanager/xmanager_metricmsg.h"
 #include "xmanager/xmanager_metricprogressnode.h"
 
-static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
-                                                                char* dstpath,
-                                                                char* jobname)
+static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath, char* dstpath,
+                                                         char* jobname)
 {
-    bool bvalue         = false;
-    int keylen          = 0;
-    int keystart        = 0;
-    int fd              = 0;
-    int filesize        = 0;
-    int fileoffset      = 0;
-    int dfilesize       = 0;
-    int dfileoffset     = 0;
-    char* filedata      = NULL;
-    char* dfiledata     = NULL;
+    bool  bvalue = false;
+    int   keylen = 0;
+    int   keystart = 0;
+    int   fd = 0;
+    int   filesize = 0;
+    int   fileoffset = 0;
+    int   dfilesize = 0;
+    int   dfileoffset = 0;
+    char* filedata = NULL;
+    char* dfiledata = NULL;
 
-    /* 
-     * 读取文件
-     * 找到 jobname 并替换为正确的名称 
+    /*
+     * Read file
+     * Find jobname and replace with correct name
      */
     fd = osal_file_open(srcpath, O_RDONLY, 0);
     if (-1 == fd)
@@ -63,10 +62,10 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
     rmemset0(filedata, 0, '\0', filesize);
     filesize -= 1;
 
-    /* 重新设置到文件头部*/
+    /* Reset to file head */
     osal_file_seek(fd, 0);
 
-    /* 读取文件 */
+    /* Read file */
     if (filesize != osal_file_read(fd, filedata, filesize))
     {
         rfree(filedata);
@@ -87,18 +86,16 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
         return false;
     }
 
-    /* 替换 jobname */
+    /* Replace jobname */
     while (fileoffset < filesize)
     {
         bvalue = true;
-        /* 行头部复制 */
-        while (' ' == filedata[fileoffset]
-            || '\t' == filedata[fileoffset]
-            || '\f' == filedata[fileoffset]
-            || '\r' == filedata[fileoffset]
-            || '\n' == filedata[fileoffset])
+        /* Copy line header */
+        while (' ' == filedata[fileoffset] || '\t' == filedata[fileoffset] ||
+               '\f' == filedata[fileoffset] || '\r' == filedata[fileoffset] ||
+               '\n' == filedata[fileoffset])
         {
-            /* 空行及空格等内容复制 */
+            /* Copy empty lines and spaces */
             dfiledata[dfileoffset] = filedata[fileoffset];
             dfileoffset++;
             fileoffset++;
@@ -112,18 +109,18 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
 
         if ('#' == filedata[fileoffset])
         {
-            /* 注释行, 复制到行尾部 */
-            /* 复制 # 符号 */
+            /* Comment line, copy to end of line */
+            /* Copy # symbol */
             dfiledata[dfileoffset] = filedata[fileoffset];
             dfileoffset++;
             fileoffset++;
 
-            /* 复制到尾部 */
+            /* Copy to end */
             while (1)
             {
                 if ('\r' == filedata[fileoffset])
                 {
-                    /* 遇到了行尾部, 复制 '\r' */
+                    /* Encountered line ending, copy '\r' */
                     dfiledata[dfileoffset] = filedata[fileoffset];
                     dfileoffset++;
                     fileoffset++;
@@ -131,20 +128,20 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
                     {
                         if ('\n' == filedata[fileoffset])
                         {
-                            /* windows */
+                            /* Windows */
                             dfiledata[dfileoffset] = filedata[fileoffset];
                             dfileoffset++;
                             fileoffset++;
                         }
                         else
                         {
-                            /* macos 不做处理 */
+                            /* macOS - no action needed */
                             ;
                         }
                     }
                     else
                     {
-                        /* 解析到了尾部, 也是 macos */
+                        /* Reached end, also macOS */
                         ;
                     }
 
@@ -152,7 +149,7 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
                 }
                 else if ('\n' == filedata[fileoffset])
                 {
-                    /* linux 行尾 */
+                    /* Linux line ending */
                     dfiledata[dfileoffset] = filedata[fileoffset];
                     dfileoffset++;
                     fileoffset++;
@@ -166,9 +163,9 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
             continue;
         }
 
-        /* 获取 key */
+        /* Get key */
         keystart = fileoffset;
-        while (' ' != filedata[fileoffset]&& '\t' != filedata[fileoffset])
+        while (' ' != filedata[fileoffset] && '\t' != filedata[fileoffset])
         {
             dfiledata[dfileoffset] = filedata[fileoffset];
             dfileoffset++;
@@ -176,13 +173,12 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
             continue;
         }
 
-        /* 计算 key 长度 */
+        /* Calculate key length */
         keylen = fileoffset - keystart;
 
-        /* key 和 '=' 之间的空格 */
-        while (' ' == filedata[fileoffset]
-               || '\t' == filedata[fileoffset]
-               || '\f' == filedata[fileoffset])
+        /* Space between key and '=' */
+        while (' ' == filedata[fileoffset] || '\t' == filedata[fileoffset] ||
+               '\f' == filedata[fileoffset])
         {
             dfiledata[dfileoffset] = filedata[fileoffset];
             dfileoffset++;
@@ -190,24 +186,24 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
             continue;
         }
 
-        /* 不是 ‘=’ 那么配置有问题 */
+        /* If not '=', config is invalid */
         if ('=' != filedata[fileoffset])
         {
-            /* 配置有问题 */
+            /* Invalid config */
             rfree(filedata);
             rfree(dfiledata);
             elog(RLOG_WARNING, "%s config error", srcpath);
             return false;
         }
 
-        /* '=' 构建 */
+        /* Build '=' */
         dfiledata[dfileoffset] = filedata[fileoffset];
         dfileoffset++;
         fileoffset++;
 
-        if (keylen == strlen("jobname") && 0 == strncasecmp(filedata +keystart, "jobname", keylen))
+        if (keylen == strlen("jobname") && 0 == strncasecmp(filedata + keystart, "jobname", keylen))
         {
-            /* jobname 替换 */
+            /* Replace jobname */
             dfiledata[dfileoffset] = ' ';
             dfileoffset++;
             rmemcpy1(dfiledata, dfileoffset, jobname, strlen(jobname));
@@ -215,21 +211,20 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
             dfiledata[dfileoffset] = ' ';
             dfileoffset++;
 
-            /* 不需要 value */
+            /* No value needed */
             bvalue = false;
         }
         else
         {
-            /* '=' 附加 */
+            /* Append '=' */
             dfiledata[dfileoffset] = filedata[fileoffset];
             fileoffset++;
             dfileoffset++;
         }
 
-        /* '=' 之后的空格 */
-        while (' ' == filedata[fileoffset]
-               || '\t' == filedata[fileoffset]
-               || '\f' == filedata[fileoffset])
+        /* Space after '=' */
+        while (' ' == filedata[fileoffset] || '\t' == filedata[fileoffset] ||
+               '\f' == filedata[fileoffset])
         {
             if (false == bvalue)
             {
@@ -245,14 +240,14 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
 
         if ('\r' == filedata[fileoffset] || '\n' == filedata[fileoffset])
         {
-            /* 配置有误 */
+            /* Config error */
             rfree(filedata);
             rfree(dfiledata);
             elog(RLOG_WARNING, "%s config error", srcpath);
             return false;
         }
 
-        /* value 值 */
+        /* Value */
         while ('\r' != filedata[fileoffset] && '\n' != filedata[fileoffset])
         {
             if (false == bvalue)
@@ -267,12 +262,12 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
             continue;
         }
 
-        /* 换行处理 */
+        /* Newline handling */
         if ('\r' == filedata[fileoffset])
         {
-            /* 
-             * Windows 使用 \r\n 为换行符
-             * 早期 MacOS 使用 \r
+            /*
+             * Windows uses \r\n as newline
+             * Early MacOS uses \r
              */
             dfiledata[dfileoffset] = filedata[fileoffset];
             dfileoffset++;
@@ -288,21 +283,21 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
                 }
                 else
                 {
-                    /* macos 不做处理 */
+                    /* macOS - no action needed */
                     ;
                 }
             }
         }
         else if ('\n' == filedata[fileoffset])
         {
-            /* linux */
+            /* Linux */
             dfiledata[dfileoffset] = filedata[fileoffset];
             dfileoffset++;
             fileoffset++;
         }
         else
         {
-            /* 配置有误 */
+            /* Config error */
             rfree(filedata);
             rfree(dfiledata);
             elog(RLOG_WARNING, "%s config error", srcpath);
@@ -311,7 +306,7 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
     }
 
     rfree(filedata);
-    /* 打开目标文件 */
+    /* Open target file */
     fd = osal_file_open(dstpath, O_RDWR | O_CREAT, g_file_create_mode);
     if (-1 == fd)
     {
@@ -334,18 +329,17 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
 }
 
 static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
-                                                         netpoolentry* npoolentry,
-                                                         uint8* uptr,
-                                                         char* jobname)
+                                                  netpoolentry* npoolentry, uint8* uptr,
+                                                  char* jobname)
 {
-    int len                                                 = 0;
-    int jobcnt                                              = 0;
-    int jobtype                                             = 0;
-    int idx_jobcnt                                          = 0;
-    char* name                                              = NULL;
-    xmanager_metricnode* pxmetricnode                = NULL;
-    xmanager_metricnode* jobxmetricnode              = NULL;
-    xmanager_metricnode xmetricnode                  = { 0 };
+    int                          len = 0;
+    int                          jobcnt = 0;
+    int                          jobtype = 0;
+    int                          idx_jobcnt = 0;
+    char*                        name = NULL;
+    xmanager_metricnode*         pxmetricnode = NULL;
+    xmanager_metricnode*         jobxmetricnode = NULL;
+    xmanager_metricnode          xmetricnode = {0};
     xmanager_metricprogressnode* xmetricprogressnode = NULL;
 
     xmetricprogressnode = (xmanager_metricprogressnode*)xmanager_metricprogressnode_init();
@@ -371,7 +365,8 @@ static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
 
         if (XMANAGER_METRICNODETYPE_INTEGRATE < jobtype)
         {
-            elog(RLOG_WARNING, "xmanager recv create progress command, need jobtype less then HGRECEIVELOG");
+            elog(RLOG_WARNING,
+                 "xmanager recv create progress command, need jobtype less then HGRECEIVELOG");
             xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
             return false;
         }
@@ -394,19 +389,20 @@ static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
         rmemcpy0(name, 0, uptr, len);
         uptr += len;
 
-        /* 查看是否存在 */
+        /* Check if it already exists */
         xmetricnode.type = jobtype;
         xmetricnode.name = name;
 
         pxmetricnode = dlist_get(xmetric->metricnodes, &xmetricnode, xmanager_metricnode_cmp);
         if (NULL == pxmetricnode)
         {
-            elog(RLOG_WARNING, "xmanager recv create progress command, not find %d.%s", jobtype, name);
+            elog(RLOG_WARNING, "xmanager recv create progress command, not find %d.%s", jobtype,
+                 name);
             xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
             return false;
         }
 
-        /* 创建新的 metricnode */
+        /* Create new metricnode */
         jobxmetricnode = xmanager_metricnode_init(jobtype);
         if (NULL == jobxmetricnode)
         {
@@ -420,44 +416,44 @@ static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
         name = NULL;
         pxmetricnode = NULL;
 
-        xmetricprogressnode->progressjop = dlist_put(xmetricprogressnode->progressjop, jobxmetricnode);
+        xmetricprogressnode->progressjop =
+            dlist_put(xmetricprogressnode->progressjop, jobxmetricnode);
         jobxmetricnode = NULL;
     }
 
-    /* 设置为初始化状态 */
+    /* Set to initialized state */
     xmetricprogressnode->base.stat = XMANAGER_METRICNODESTAT_ONLINE;
 
-    /* 将 xmetricnode 加入到链表中 */
+    /* Add xmetricnode to the linked list */
     xmetric->metricnodes = dlist_put(xmetric->metricnodes, (void*)&xmetricprogressnode->base);
 
-    /* 将 metricnode 落盘 */
+    /* Persist metricnode to disk */
     xmanager_metricnode_flush(xmetric->metricnodes);
     return true;
 }
 
 /*
- * 处理 create 命令
- *  1、jobtype 需要小于 ALL
- *  2、校验 job 是否已经存在
- *  3、将 job 加入到 xmetric->metricnodes 中
-*/
-bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
-                                           netpoolentry* npoolentry,
-                                           netpacket* npacket)
+ * Process create command
+ *  1. jobtype must be less than ALL
+ *  2. Verify if job already exists
+ *  3. Add job to xmetric->metricnodes
+ */
+bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                    netpacket* npacket)
 {
-    /* 错误码 */
-    int errcode                                         = 0;
-    int len                                             = 0;
-    int jobtype                                         = 0;
-    uint8* uptr                                         = NULL;
-    char* jobname                                       = NULL;
-    xmanager_metricnode* pxmetricnode            = NULL;
-    xmanager_metricnode xmetricnode              = { 0 };
-    char errormsg[512]                                  = { 0 };
-    char srcpath[1024]                                  = { 0 };
-    char dstpath[1024]                                  = { 0 };
+    /* Error code */
+    int                  errcode = 0;
+    int                  len = 0;
+    int                  jobtype = 0;
+    uint8*               uptr = NULL;
+    char*                jobname = NULL;
+    xmanager_metricnode* pxmetricnode = NULL;
+    xmanager_metricnode  xmetricnode = {0};
+    char                 errormsg[512] = {0};
+    char                 srcpath[1024] = {0};
+    char                 dstpath[1024] = {0};
 
-    /* 获取作业类型 */
+    /* Get job type */
     uptr = npacket->data;
 
     /* msglen + crc32 + commandtype */
@@ -492,7 +488,7 @@ bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
     rmemcpy0(jobname, 0, uptr, len);
     uptr += len;
 
-    /* 查看是否存在 */
+    /* Check if it already exists */
     xmetricnode.type = jobtype;
     xmetricnode.name = jobname;
 
@@ -505,10 +501,7 @@ bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
 
     if (XMANAGER_METRICNODETYPE_PROCESS == jobtype)
     {
-        if (false == xmanager_metricmsg_parsecreateprocess(xmetric,
-                                                                  npoolentry,
-                                                                  uptr,
-                                                                  jobname))
+        if (false == xmanager_metricmsg_parsecreateprocess(xmetric, npoolentry, uptr, jobname))
         {
             snprintf(errormsg, 512, "xmanager create process command error ");
             errcode = ERROR_MSGCOMMAND;
@@ -517,19 +510,12 @@ bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
         return xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_CREATECMD);
     }
 
-    /* 生成新的配置文件 */
-    snprintf(srcpath,
-             1024,
-             "%s/sample/%s.cfg.sample",
-             xmetric->configpath,
+    /* Generate new configuration file */
+    snprintf(srcpath, 1024, "%s/sample/%s.cfg.sample", xmetric->configpath,
              xmanager_metricnode_getname(jobtype));
 
-    snprintf(dstpath,
-             1024,
-             "%s/%s_%s.cfg",
-             xmetric->configpath,
-             xmanager_metricnode_getname(jobtype),
-             jobname);
+    snprintf(dstpath, 1024, "%s/%s_%s.cfg", xmetric->configpath,
+             xmanager_metricnode_getname(jobtype), jobname);
 
     if (false == xmanager_metricmsg_parsecreateinplacejobname(srcpath, dstpath, jobname))
     {
@@ -538,7 +524,7 @@ bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parsecreate_error;
     }
 
-    /* 创建新的 metricnode */
+    /* Create new metricnode */
     pxmetricnode = xmanager_metricnode_init(jobtype);
     if (NULL == pxmetricnode)
     {
@@ -550,7 +536,7 @@ bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
     pxmetricnode->name = jobname;
     jobname = NULL;
 
-    /* 设置 config 信息 */
+    /* Set config information */
     len = strlen(dstpath);
     len += 1;
 
@@ -565,16 +551,16 @@ bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
     len -= 1;
     rmemcpy0(pxmetricnode->conf, 0, dstpath, len);
 
-    /* 设置为初始化状态 */
+    /* Set to initialized state */
     pxmetricnode->stat = XMANAGER_METRICNODESTAT_INIT;
 
-    /* 将 xmetricnode 加入到链表中 */
+    /* Add xmetricnode to the linked list */
     xmetric->metricnodes = dlist_put(xmetric->metricnodes, pxmetricnode);
 
-    /* 将 metricnode 落盘 */
+    /* Persist metricnode to disk */
     xmanager_metricnode_flush(xmetric->metricnodes);
 
-    /* 构建返回消息 */
+    /* Build response message */
     return xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_CREATECMD);
 
 xmanager_metricmsg_parsecreate_error:
@@ -590,9 +576,6 @@ xmanager_metricmsg_parsecreate_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_CREATECMD,
-                                                      errcode,
-                                                      errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
+                                               XMANAGER_MSG_CREATECMD, errcode, errormsg);
 }

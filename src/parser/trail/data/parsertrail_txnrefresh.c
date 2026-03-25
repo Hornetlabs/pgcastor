@@ -24,23 +24,22 @@
 #include "refresh/integrate/refresh_integrate.h"
 #include "increment/integrate/parser/increment_integrateparsertrail.h"
 
-static bool parsertrail_txnrefresh2cache(parsertrail* parsertrail,
-                                                ff_txndata* txndata)
+static bool parsertrail_txnrefresh2cache(parsertrail* parsertrail, ff_txndata* txndata)
 {
-    /* 
-     * 1、查看事务是否存在，不存在则创建，存在则append
-     * 2、返回
+    /*
+     * 1. Check if the transaction exists, create if not, append if exists
+     * 2. Return
      */
-    txn* cur_txn                             = NULL;
-    txnstmt* rstmt                           = NULL;
-    record* record_obj                           = NULL;
-    refresh_table* table                     = NULL;
-    refresh_tables* refreshstmt              = NULL;
-    FullTransactionId xid                           = txndata->header.transid;
+    txn*              cur_txn = NULL;
+    txnstmt*          rstmt = NULL;
+    record*           record_obj = NULL;
+    refresh_table*    table = NULL;
+    refresh_tables*   refreshstmt = NULL;
+    FullTransactionId xid = txndata->header.transid;
 
     rstmt = (txnstmt*)txndata->data;
     cur_txn = txn_init(xid, InvalidXLogRecPtr, InvalidXLogRecPtr);
-    if(NULL == cur_txn)
+    if (NULL == cur_txn)
     {
         elog(RLOG_WARNING, "out of memory");
         return false;
@@ -50,7 +49,7 @@ static bool parsertrail_txnrefresh2cache(parsertrail* parsertrail,
     cur_txn->start.wal.lsn = rstmt->extra0.wal.lsn;
     cur_txn->confirm.wal.lsn = rstmt->extra0.wal.lsn;
 
-    /* 设置segno */
+    /* Set segno */
     record_obj = (record*)(parsertrail->ffsmgrstate->fdata->extradata);
     cur_txn->end.trail.offset = record_obj->end.trail.offset;
     cur_txn->segno = record_obj->end.trail.fileid;
@@ -59,15 +58,15 @@ static bool parsertrail_txnrefresh2cache(parsertrail* parsertrail,
 
     refreshstmt = (refresh_tables*)rstmt->stmt;
     table = refreshstmt->tables;
-    
+
     cur_txn->stmts = lappend(cur_txn->stmts, rstmt);
     cur_txn->stmtsize += rstmt->len;
     parsertrail->transcache->totalsize += rstmt->len;
 
-    /* 输出内容 */
-    if(RLOG_DEBUG == g_loglevel)
+    /* Output content */
+    if (RLOG_DEBUG == g_loglevel)
     {
-        while(NULL != table)
+        while (NULL != table)
         {
             elog(RLOG_DEBUG, "refresh is %s.%s", table->schema, table->table);
             table = table->next;
@@ -79,25 +78,25 @@ static bool parsertrail_txnrefresh2cache(parsertrail* parsertrail,
     return true;
 }
 
-/* 将表数据加入到事务缓存中 */
+/* Add table data to transaction cache */
 bool parsertrail_txnrefreshapply(parsertrail* parsertrail, void* data)
 {
     ff_txndata* txndata = NULL;
 
-    if(NULL == data)
+    if (NULL == data)
     {
         return true;
     }
 
     txndata = (ff_txndata*)data;
 
-    /* 将数据放入到缓存当中 */
+    /* Put data into cache */
     parsertrail_txnrefresh2cache(parsertrail, txndata);
 
-    /* 查看是否发生了切换，发生切换那么需要清理缓存 */
-    if(FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
+    /* Check if file switch occurred, if so need to cleanup cache */
+    if (FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
     {
-        /* 交换 */
+        /* Swap */
         parsertrail_traildata_shiftfile(parsertrail);
     }
 

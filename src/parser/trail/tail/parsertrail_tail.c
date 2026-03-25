@@ -15,25 +15,25 @@
 #include "parser/trail/parsertrail.h"
 #include "parser/trail/tail/parsertrail_tail.h"
 
-/* 
- * Trail 尾部应用
+/*
+ * Trail tail application
  */
-bool parsertrail_trailtailapply( parsertrail* parsertrail, void* data)
+bool parsertrail_trailtailapply(parsertrail* parsertrail, void* data)
 {
-    /* 数据清理 */
+    /* Data cleanup */
     fftrail_invalidprivdata(FFSMGR_IF_OPTYPE_DESERIAL, parsertrail->ffsmgrstate->fdata->ffdata);
 
     return true;
 }
 
-/* 
- * 清理数据
+/*
+ * Clean data
  */
-void parsertrail_trailtailclean( parsertrail* parsertrail, void* data)
+void parsertrail_trailtailclean(parsertrail* parsertrail, void* data)
 {
     UNUSED(parsertrail);
 
-    /* 释放data */
+    /* Free data */
     if (data)
     {
         rfree(data);

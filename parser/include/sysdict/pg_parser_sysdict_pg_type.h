@@ -7,52 +7,50 @@
 
 typedef struct PG_PARSER_SYSDICT_PGTYPE
 {
-    uint32_t                    oid;
-    pg_parser_NameData       typname;
-    int16_t                     typlen;
-    bool                        typbyval;
-    char                        typtype;
-    char                        typdelim;
-    uint32_t                    typelem;
-    uint32_t                    typoutput;
-    uint32_t                    typrelid;
-    char                        typalign;
-    char                        typstorage;
+    uint32_t           oid;
+    pg_parser_NameData typname;
+    int16_t            typlen;
+    bool               typbyval;
+    char               typtype;
+    char               typdelim;
+    uint32_t           typelem;
+    uint32_t           typoutput;
+    uint32_t           typrelid;
+    char               typalign;
+    char               typstorage;
 } pg_parser_sysdict_pgtype;
 
-typedef pg_parser_sysdict_pgtype *pg_sysdict_Form_pg_type;
+typedef pg_parser_sysdict_pgtype* pg_sysdict_Form_pg_type;
 
-#define  PG_SYSDICT_TYPTYPE_BASE             'b' /* base type (ordinary scalar type) */
-#define  PG_SYSDICT_TYPTYPE_COMPOSITE        'c' /* composite (e.g., table's rowtype) */
-#define  PG_SYSDICT_TYPTYPE_DOMAIN           'd' /* domain over another type */
-#define  PG_SYSDICT_TYPTYPE_ENUM             'e' /* enumerated type */
-#define  PG_SYSDICT_TYPTYPE_PSEUDO           'p' /* pseudo-type */
-#define  PG_SYSDICT_TYPTYPE_RANGE            'r' /* range type */
-#define  PG_SYSDICT_TYPTYPE_NULL             'n' /* 指空类型, 自行添加, 非pg原生 */
+#define PG_SYSDICT_TYPTYPE_BASE 'b'      /* base type (ordinary scalar type) */
+#define PG_SYSDICT_TYPTYPE_COMPOSITE 'c' /* composite (e.g., table's rowtype) */
+#define PG_SYSDICT_TYPTYPE_DOMAIN 'd'    /* domain over another type */
+#define PG_SYSDICT_TYPTYPE_ENUM 'e'      /* enumerated type */
+#define PG_SYSDICT_TYPTYPE_PSEUDO 'p'    /* pseudo-type */
+#define PG_SYSDICT_TYPTYPE_RANGE 'r'     /* range type */
+#define PG_SYSDICT_TYPTYPE_NULL 'n'      /* Null type, self-added, not native to pg */
 
-#define  PG_SYSDICT_TYPCATEGORY_INVALID      '\0'    /* not an allowed category */
-#define  PG_SYSDICT_TYPCATEGORY_ARRAY        'A'
-#define  PG_SYSDICT_TYPCATEGORY_BOOLEAN      'B'
-#define  PG_SYSDICT_TYPCATEGORY_COMPOSITE    'C'
-#define  PG_SYSDICT_TYPCATEGORY_DATETIME     'D'
-#define  PG_SYSDICT_TYPCATEGORY_ENUM         'E'
-#define  PG_SYSDICT_TYPCATEGORY_GEOMETRIC    'G'
-#define  PG_SYSDICT_TYPCATEGORY_NETWORK      'I' /* think INET */
-#define  PG_SYSDICT_TYPCATEGORY_NUMERIC      'N'
-#define  PG_SYSDICT_TYPCATEGORY_PSEUDOTYPE   'P'
-#define  PG_SYSDICT_TYPCATEGORY_RANGE        'R'
-#define  PG_SYSDICT_TYPCATEGORY_STRING       'S'
-#define  PG_SYSDICT_TYPCATEGORY_TIMESPAN     'T'
-#define  PG_SYSDICT_TYPCATEGORY_USER         'U'
-#define  PG_SYSDICT_TYPCATEGORY_BITSTRING    'V' /* er ... "varbit"? */
-#define  PG_SYSDICT_TYPCATEGORY_UNKNOWN      'X'
+#define PG_SYSDICT_TYPCATEGORY_INVALID '\0' /* not an allowed category */
+#define PG_SYSDICT_TYPCATEGORY_ARRAY 'A'
+#define PG_SYSDICT_TYPCATEGORY_BOOLEAN 'B'
+#define PG_SYSDICT_TYPCATEGORY_COMPOSITE 'C'
+#define PG_SYSDICT_TYPCATEGORY_DATETIME 'D'
+#define PG_SYSDICT_TYPCATEGORY_ENUM 'E'
+#define PG_SYSDICT_TYPCATEGORY_GEOMETRIC 'G'
+#define PG_SYSDICT_TYPCATEGORY_NETWORK 'I' /* think INET */
+#define PG_SYSDICT_TYPCATEGORY_NUMERIC 'N'
+#define PG_SYSDICT_TYPCATEGORY_PSEUDOTYPE 'P'
+#define PG_SYSDICT_TYPCATEGORY_RANGE 'R'
+#define PG_SYSDICT_TYPCATEGORY_STRING 'S'
+#define PG_SYSDICT_TYPCATEGORY_TIMESPAN 'T'
+#define PG_SYSDICT_TYPCATEGORY_USER 'U'
+#define PG_SYSDICT_TYPCATEGORY_BITSTRING 'V' /* er ... "varbit"? */
+#define PG_SYSDICT_TYPCATEGORY_UNKNOWN 'X'
 
 /* Is a type OID a polymorphic pseudotype?    (Beware of multiple evaluation) */
-#define IsPolymorphicType(typid)  \
-    ((typid) == PG_SYSDICT_ANYELEMENTOID || \
-     (typid) == PG_SYSDICT_ANYARRAYOID || \
-     (typid) == PG_SYSDICT_ANYNONARRAYOID || \
-     (typid) == PG_SYSDICT_ANYENUMOID || \
+#define IsPolymorphicType(typid)                                                 \
+    ((typid) == PG_SYSDICT_ANYELEMENTOID || (typid) == PG_SYSDICT_ANYARRAYOID || \
+     (typid) == PG_SYSDICT_ANYNONARRAYOID || (typid) == PG_SYSDICT_ANYENUMOID || \
      (typid) == PG_SYSDICT_ANYRANGEOID)
 
 #define PG_SYSDICT_BOOLOID 16

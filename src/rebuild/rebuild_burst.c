@@ -20,7 +20,7 @@
 #include "rebuild/rebuild_burst.h"
 #include "works/parserwork/wal/decode_heap_util.h"
 
-/* burstcolumn 初始化 */
+/* burstcolumn initialization */
 rebuild_burstcolumn* rebuild_burstcolumn_init(int colcnt)
 {
     rebuild_burstcolumn* burstcolumn = NULL;
@@ -42,7 +42,7 @@ rebuild_burstcolumn* rebuild_burstcolumn_init(int colcnt)
     return burstcolumn;
 }
 
-/* burstrow 初始化 */
+/* burstrow initialization */
 rebuild_burstrow* rebuild_burstrow_init(int colcnt)
 {
     rebuild_burstrow* burstrow = NULL;
@@ -76,11 +76,11 @@ rebuild_burstrow* rebuild_burstrow_init(int colcnt)
         return NULL;
     }
     rmemset0(burstrow->missingmap, 0, 0, burstrow->missingmapsize);
-    
+
     return burstrow;
 }
 
-/* bursttable 初始化 */
+/* bursttable initialization */
 rebuild_bursttable* rebuild_bursttable_init(void)
 {
     rebuild_bursttable* bursttable = NULL;
@@ -95,7 +95,7 @@ rebuild_bursttable* rebuild_bursttable_init(void)
 
     bursttable->keycnt = 0;
     bursttable->no = 0;
-    bursttable->oid = InvalidOid;
+    bursttable->oid = INVALIDOID;
     bursttable->schema = NULL;
     bursttable->table = NULL;
     bursttable->keys = NULL;
@@ -103,7 +103,7 @@ rebuild_bursttable* rebuild_bursttable_init(void)
     return bursttable;
 }
 
-/* burstnode 初始化 */
+/* burstnode initialization */
 rebuild_burstnode* rebuild_burstnode_init(void)
 {
     rebuild_burstnode* burstnode = NULL;
@@ -126,7 +126,7 @@ rebuild_burstnode* rebuild_burstnode_init(void)
     return burstnode;
 }
 
-/* burst 初始化 */
+/* burst initialization */
 rebuild_burst* rebuild_burst_init(void)
 {
     rebuild_burst* burst = NULL;
@@ -138,7 +138,7 @@ rebuild_burst* rebuild_burst_init(void)
         return NULL;
     }
     rmemset0(burst, 0, '\0', sizeof(rebuild_burst));
-    
+
     burst->number = 0;
     burst->dlburstnodes = NULL;
     burst->dlbursttable = NULL;
@@ -146,20 +146,21 @@ rebuild_burst* rebuild_burst_init(void)
     return burst;
 }
 
-/* 计算MD5值和missingmap */
-static bool rebuild_burst_setmd5andmissing(rebuild_burstrow* row, pg_parser_translog_tbcol_value* value)
+/* MD5sum and missingmap */
+static bool rebuild_burst_setmd5andmissing(rebuild_burstrow*               row,
+                                           pg_parser_translog_tbcol_value* value)
 {
-    MD5_CTX md5;
-    int colindex                                        = 0;
-    varstr* vstr                                        = NULL;
-    pg_parser_translog_tbcol_values* colvalues       = NULL;
+    MD5_CTX                          md5;
+    int                              colindex = 0;
+    varstr*                          vstr = NULL;
+    pg_parser_translog_tbcol_values* colvalues = NULL;
 
     colvalues = (pg_parser_translog_tbcol_values*)row->row;
 
     vstr = varstr_init(256);
     if (NULL == vstr)
     {
-        elog(RLOG_WARNING,"rebuild burst setmd5adnmissing init varstr oom");
+        elog(RLOG_WARNING, "rebuild burst setmd5adnmissing init varstr oom");
         return false;
     }
 
@@ -187,8 +188,8 @@ static bool rebuild_burst_setmd5andmissing(rebuild_burstrow* row, pg_parser_tran
     if (0 == row->missingcnt)
     {
         MD5Init(&md5);
-        MD5Update(&md5, (uint8_t *)vstr->data, vstr->start);
-        MD5Final((uint8_t *)row->md5, &md5);
+        MD5Update(&md5, (uint8_t*)vstr->data, vstr->start);
+        MD5Final((uint8_t*)row->md5, &md5);
     }
 
     varstr_free(vstr);
@@ -196,7 +197,7 @@ static bool rebuild_burst_setmd5andmissing(rebuild_burstrow* row, pg_parser_tran
     return true;
 }
 
-/* bursttable 比较函数 */
+/* bursttable compare function */
 int rebuild_bursttable_cmp(void* s1, void* s2)
 {
     rebuild_bursttable* table1 = NULL;
@@ -222,11 +223,11 @@ int rebuild_bursttable_cmp(void* s1, void* s2)
     return 0;
 }
 
-/* burstnode 与bursttable 比较函数 */
+/* burstnode and bursttable compare function */
 int rebuild_burstnode_tablecmp(void* s1, void* s2)
 {
-    rebuild_burstnode* node      = NULL;
-    rebuild_bursttable* table    = NULL;
+    rebuild_burstnode*  node = NULL;
+    rebuild_bursttable* table = NULL;
 
     table = (rebuild_bursttable*)s1;
     node = (rebuild_burstnode*)s2;
@@ -253,10 +254,10 @@ int rebuild_burstnode_tablecmp(void* s1, void* s2)
     return 0;
 }
 
-/* 判断某个列是否为约束列/主键列 */
-static bool rebuild_burst_colisconskey(rebuild_bursttable *table, char* colname)
+/* Check column is a constraint column or primary key column */
+static bool rebuild_burst_colisconskey(rebuild_bursttable* table, char* colname)
 {
-    int keyindex = 0;
+    int                  keyindex = 0;
     rebuild_burstcolumn* key = NULL;
     for (keyindex = 0; keyindex < table->keycnt; keyindex++)
     {
@@ -270,15 +271,15 @@ static bool rebuild_burst_colisconskey(rebuild_bursttable *table, char* colname)
     return false;
 }
 
-/* 根据typeid获取typename */
+/* Get typename by typeid */
 static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, char* colname)
 {
-    bool find                                   = false;
-    int typmod                                  = -1;
-    ListCell* attrlc                            = NULL;
-    pg_sysdict_Form_pg_type type             = NULL;
-    pg_sysdict_Form_pg_attribute attr        = NULL;
-    StringInfoData result                       = {0};
+    bool                         find = false;
+    int                          typmod = -1;
+    ListCell*                    attrlc = NULL;
+    pg_sysdict_Form_pg_type      type = NULL;
+    pg_sysdict_Form_pg_attribute attr = NULL;
+    StringInfoData               result = {0};
 
     type = (pg_sysdict_Form_pg_type)type_getbyoid(typeoid, htype);
     if (NULL == type)
@@ -287,7 +288,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
         return NULL;
     }
 
-    foreach(attrlc, lattrs)
+    foreach (attrlc, lattrs)
     {
         attr = (pg_sysdict_Form_pg_attribute)lfirst(attrlc);
         if (0 == strcmp(colname, attr->attname.data))
@@ -306,7 +307,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
 
     initStringInfo(&result);
 
-    /* 计算类型长度和精度 */
+    /* Get lenth scale precision */
     switch (typeoid)
     {
         case PG_SYSDICT_BITOID:
@@ -357,8 +358,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
             }
             else
             {
-                appendStringInfo(&result, "numeric(%d, %d)",
-                                 ((typmod - VARHDRSZ) >> 16) & 0xffff,
+                appendStringInfo(&result, "numeric(%d, %d)", ((typmod - VARHDRSZ) >> 16) & 0xffff,
                                  (typmod - VARHDRSZ) & 0xffff);
             }
             break;
@@ -409,18 +409,18 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
     return result.data;
 }
 
-/* 补全missing值 */
-static bool rebuild_burst_updatematchdata(rebuild_burstrow* insertrow,
-                                                 rebuild_burstrow* delrow,
-                                                 rebuild_burstrow* updaterow)
+/* fix missing value */
+static bool rebuild_burst_updatematchdata(rebuild_burstrow* insertrow, rebuild_burstrow* delrow,
+                                          rebuild_burstrow* updaterow)
 {
-    pg_parser_translog_tbcol_values* insert          = NULL;
-    pg_parser_translog_tbcol_values* update          = NULL;
-    pg_parser_translog_tbcol_value* insertvalue      = NULL;
-    pg_parser_translog_tbcol_value* nupdatevalue     = NULL;
-    pg_parser_translog_tbcol_value* oupdatevalue     = NULL;
+    pg_parser_translog_tbcol_values* insert = NULL;
+    pg_parser_translog_tbcol_values* update = NULL;
+    pg_parser_translog_tbcol_value*  insertvalue = NULL;
+    pg_parser_translog_tbcol_value*  nupdatevalue = NULL;
+    pg_parser_translog_tbcol_value*  oupdatevalue = NULL;
 
-    /*  update的before和after都没有missing值 直接返回 */
+    /*
+     * If there are no missing values in before or after value of the update, return directly */
     if (0 == updaterow->missingcnt && 0 == delrow->missingcnt)
     {
         return true;
@@ -432,7 +432,7 @@ static bool rebuild_burst_updatematchdata(rebuild_burstrow* insertrow,
     oupdatevalue = update->m_old_values;
     nupdatevalue = update->m_new_values;
 
-    /* 匹配上的insert 补全 update拆出的insert值 */
+    /* Matched insert completes the update split insert value */
     if (false == pg_parser_trans_matchmissing(nupdatevalue, insertvalue, insert->m_valueCnt))
     {
         elog(RLOG_WARNING, "rebuild burst updatematchdata insert/delete failed");
@@ -450,16 +450,15 @@ static bool rebuild_burst_updatematchdata(rebuild_burstrow* insertrow,
     return true;
 }
 
-/* 判断约束列值是否被修改 */
-static void rebuild_burst_ischangeconskey(rebuild_burstnode* burstnode,
-                                                 rebuild_burstrow* updaterow)
+/* Check if constraint column values are modified */
+static void rebuild_burst_ischangeconskey(rebuild_burstnode* burstnode, rebuild_burstrow* updaterow)
 {
-    int key                                             = 0;
-    int colindex                                        = 0;
-    rebuild_burstcolumn* column                  = NULL;
-    pg_parser_translog_tbcol_values* update          = NULL;
-    pg_parser_translog_tbcol_value* nupdatevalue     = NULL;
-    pg_parser_translog_tbcol_value* oupdatevalue     = NULL;
+    int                              key = 0;
+    int                              colindex = 0;
+    rebuild_burstcolumn*             column = NULL;
+    pg_parser_translog_tbcol_values* update = NULL;
+    pg_parser_translog_tbcol_value*  nupdatevalue = NULL;
+    pg_parser_translog_tbcol_value*  oupdatevalue = NULL;
 
     update = (pg_parser_translog_tbcol_values*)updaterow->row;
 
@@ -468,12 +467,12 @@ static void rebuild_burst_ischangeconskey(rebuild_burstnode* burstnode,
 
     column = burstnode->table.keys;
 
-    /* 根据table.keys判断约束列是否被修改 */
+    /* Check if constraint columns are modified based on table.keys */
     for (colindex = 0; colindex < burstnode->table.keycnt; colindex++)
     {
         key = column[colindex].colno;
 
-        /* 发现被需改的约束列, 设置flage返回 */
+        /* Found modified constraint column, set flag and return */
         if (0 != strcmp((char*)nupdatevalue[key - 1].m_value, oupdatevalue[key - 1].m_value))
         {
             updaterow->flag = REBUILD_BURSTROWFLAG_CHANGECONSKEY;
@@ -483,45 +482,44 @@ static void rebuild_burst_ischangeconskey(rebuild_burstnode* burstnode,
     return;
 }
 
-/* 构建 burstnode table主键或唯一约束信息 */
-static bool rebuild_composekey(HTAB* hclass,
-                                      HTAB* hattrs,
-                                      HTAB* hindex,
-                                      rebuild_burstnode* pburstnode)
+/* Build burstnode table primary key or unique constraint information */
+static bool rebuild_composekey(HTAB* hclass, HTAB* hattrs, HTAB* hindex,
+                               rebuild_burstnode* pburstnode)
 {
-    bool find                                   = false;
-    uint32 indkey                               = 0;
-    int64 keycntindex                           = 0;
-    List* lindex                                = NULL;
-    List* lattrs                                = NULL;
-    ListCell* indlc                             = NULL;
-    ListCell* attrlc                            = NULL;
-    pg_sysdict_Form_pg_class class           = NULL;
-    catalog_index_value* indvalue        = NULL;
-    pg_sysdict_Form_pg_index index           = NULL;
-    pg_sysdict_Form_pg_attribute attr        = NULL;
+    bool                         find = false;
+    uint32                       indkey = 0;
+    int64                        keycntindex = 0;
+    List*                        lindex = NULL;
+    List*                        lattrs = NULL;
+    ListCell*                    indlc = NULL;
+    ListCell*                    attrlc = NULL;
+    pg_sysdict_Form_pg_class     class = NULL;
+    catalog_index_value*         indvalue = NULL;
+    pg_sysdict_Form_pg_index     index = NULL;
+    pg_sysdict_Form_pg_attribute attr = NULL;
 
-    /* 获取class */
+    /* Get class */
     class = (pg_sysdict_Form_pg_class)class_getbyoid(pburstnode->table.oid, hclass);
 
     if (NULL == class)
     {
-        elog(RLOG_WARNING, "ripple rebuild composekey not find class by %lu", pburstnode->table.oid);
+        elog(RLOG_WARNING, "ripple rebuild composekey not find class by %lu",
+             pburstnode->table.oid);
         return false;
     }
 
-    /* 获取index */
+    /* Get index */
     lindex = (List*)index_getbyoid(pburstnode->table.oid, hindex);
 
-    /* 未获取index 设置为pbe模式 退出 */
+    /* Index not found, set to pbe mode and exit */
     if (NULL == lindex || NULL == lindex->head)
     {
         pburstnode->flag = REBUILD_BURSTNODEFLAG_NOINDEX;
         return true;
     }
 
-    /* 筛选replident/primary索引，未找到使用第一个索引 */
-    foreach(indlc, lindex)
+    /* Filter replident/primary index, use first index if not found */
+    foreach (indlc, lindex)
     {
         find = false;
         indvalue = (catalog_index_value*)lfirst(indlc);
@@ -541,7 +539,7 @@ static bool rebuild_composekey(HTAB* hclass,
         }
     }
 
-    /* 未找到使用第一个索引 */
+    /* Not found, use first index */
     if (false == find)
     {
         indvalue = (catalog_index_value*)linitial(lindex);
@@ -556,21 +554,22 @@ static bool rebuild_composekey(HTAB* hclass,
     }
     pburstnode->table.keycnt = index->indnatts;
 
-    /* 获取attribute */
+    /* Get attributes */
     lattrs = (List*)attribute_getbyoid(pburstnode->table.oid, hattrs);
 
     if (NULL == lattrs || NULL == lattrs->head)
     {
-        elog(RLOG_WARNING, "ripple rebuild composekey not find attribute by %lu", pburstnode->table.oid);
+        elog(RLOG_WARNING, "ripple rebuild composekey not find attribute by %lu",
+             pburstnode->table.oid);
         return false;
     }
-    
-    /* 填充 table.keys*/
+
+    /* Fill table.keys*/
     for (keycntindex = 0; keycntindex < index->indnatts; keycntindex++)
     {
         indkey = index->indkey[keycntindex];
         find = false;
-        foreach(attrlc, lattrs)
+        foreach (attrlc, lattrs)
         {
             attr = (pg_sysdict_Form_pg_attribute)lfirst(attrlc);
             if (indkey == attr->attnum)
@@ -599,18 +598,18 @@ static bool rebuild_composekey(HTAB* hclass,
 }
 
 /*
- * 复制tbcolbase
- * 入参: tbcolbase1源数据
- *       tbcolbase2目标数据
-*/
+ * Copy tbcolbase
+ * Parameters: tbcolbase1 source data
+ *             tbcolbase2 target data
+ */
 static void rebuild_burst_tbcolbasecopy(pg_parser_translog_tbcolbase* tbcolbase1,
-                                               pg_parser_translog_tbcolbase* tbcolbase2)
+                                        pg_parser_translog_tbcolbase* tbcolbase2)
 {
     if (NULL == tbcolbase1 || NULL == tbcolbase2)
     {
         return;
     }
-    
+
     tbcolbase2->m_type = tbcolbase1->m_type;
     tbcolbase2->m_dmltype = tbcolbase1->m_dmltype;
     tbcolbase2->m_originid = tbcolbase1->m_originid;
@@ -621,18 +620,17 @@ static void rebuild_burst_tbcolbasecopy(pg_parser_translog_tbcolbase* tbcolbase1
 }
 
 /*
- * 复制tbcolbase
- * 入参: value1源数据
- * 
- * 返回值：是否复制成功，value2复制结果
-*/
-static bool rebuild_burst_tbcolvaluecopy(pg_parser_translog_tbcol_value* value1,
-                                                pg_parser_translog_tbcol_value** value2,
-                                                uint32 valuecnt)
+ * Copy tbcolbase
+ * Parameters: value1 source data
+ *
+ * Return value: Whether copy succeeded, value2 copy result
+ */
+static bool rebuild_burst_tbcolvaluecopy(pg_parser_translog_tbcol_value*  value1,
+                                         pg_parser_translog_tbcol_value** value2, uint32 valuecnt)
 {
-    int len                                     = 0;
-    int colindex                                = 0;
-    pg_parser_translog_tbcol_value* value    = NULL;
+    int                             len = 0;
+    int                             colindex = 0;
+    pg_parser_translog_tbcol_value* value = NULL;
 
     if (NULL == value1)
     {
@@ -650,7 +648,7 @@ static bool rebuild_burst_tbcolvaluecopy(pg_parser_translog_tbcol_value* value1,
     rmemset0(value, 0, 0, len);
 
     for (colindex = 0; colindex < valuecnt; colindex++)
-    {        
+    {
         value[colindex].m_freeFlag = value1[colindex].m_freeFlag;
         value[colindex].m_info = value1[colindex].m_info;
         value[colindex].m_coltype = value1[colindex].m_coltype;
@@ -666,28 +664,29 @@ static bool rebuild_burst_tbcolvaluecopy(pg_parser_translog_tbcol_value* value1,
                 return false;
             }
             rmemset0(value[colindex].m_value, 0, 0, value[colindex].m_valueLen + 1);
-            rmemcpy0(value[colindex].m_value, 0, value1[colindex].m_value, value1[colindex].m_valueLen);
+            rmemcpy0(value[colindex].m_value, 0, value1[colindex].m_value,
+                     value1[colindex].m_valueLen);
         }
     }
-    
+
     *value2 = value;
     return true;
 }
 
-/* 从链表尾获取table */
+/* Get table from list tail */
 static void* rebuild_burst_gettable(dlist* dl, void* value, dlistvaluecmp valuecmp)
 {
     dlistnode* dlnode = NULL;
     dlistnode* dlnodetmp = NULL;
-    if(NULL == dl)
+    if (NULL == dl)
     {
         return NULL;
     }
 
-    for(dlnode = dl->tail; NULL != dlnode; dlnode = dlnodetmp)
+    for (dlnode = dl->tail; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->prev;
-        if(0 != valuecmp(value, dlnode->value))
+        if (0 != valuecmp(value, dlnode->value))
         {
             continue;
         }
@@ -698,18 +697,15 @@ static void* rebuild_burst_gettable(dlist* dl, void* value, dlistvaluecmp valuec
     return NULL;
 }
 
-/* 获取 burst node节点 */
-bool rebuild_burst_getnode(HTAB* hclass,
-                                  HTAB* hattrs,
-                                  HTAB* hindex,
-                                  rebuild_burst* burst,
-                                  rebuild_burstnode** pburstnode,
-                                  rebuild_bursttable* bursttable)
+/* Get burst node */
+bool rebuild_burst_getnode(HTAB* hclass, HTAB* hattrs, HTAB* hindex, rebuild_burst* burst,
+                           rebuild_burstnode** pburstnode, rebuild_bursttable* bursttable)
 {
-    rebuild_bursttable* dltable          = NULL;
-    rebuild_burstnode* tmpburstnode      = NULL;
+    rebuild_bursttable* dltable = NULL;
+    rebuild_burstnode*  tmpburstnode = NULL;
 
-    dltable = (rebuild_bursttable*)rebuild_burst_gettable(burst->dlbursttable, bursttable, rebuild_bursttable_cmp);
+    dltable = (rebuild_bursttable*)rebuild_burst_gettable(burst->dlbursttable, bursttable,
+                                                          rebuild_bursttable_cmp);
     if (NULL == dltable)
     {
         dltable = rebuild_bursttable_init();
@@ -733,7 +729,8 @@ bool rebuild_burst_getnode(HTAB* hclass,
     }
     else
     {
-        tmpburstnode = (rebuild_burstnode*)dlist_get(burst->dlburstnodes, dltable, rebuild_burstnode_tablecmp);
+        tmpburstnode =
+            (rebuild_burstnode*)dlist_get(burst->dlburstnodes, dltable, rebuild_burstnode_tablecmp);
         if (NULL != tmpburstnode)
         {
             *pburstnode = tmpburstnode;
@@ -748,7 +745,7 @@ bool rebuild_burst_getnode(HTAB* hclass,
         tmpburstnode->table.table = rstrdup(dltable->table);
     }
 
-    /* 构建 burstnode->table.keys 索引信息 */
+    /* Build burstnode->table.keys index information */
     if (false == rebuild_composekey(hclass, hattrs, hindex, tmpburstnode))
     {
         *pburstnode = NULL;
@@ -764,29 +761,28 @@ bool rebuild_burst_getnode(HTAB* hclass,
 }
 
 /*
- * 拆分 update 为 insert/delete
- * 设置
- * 入参： burstnode table对应node, rows -- update源数据
- * 
- * 返回值说明: bool true拆分成功，false拆分失败
- *            delrow 拆分出的delete语句，
- *            insertrow原update语句，
- * 
-*/
-bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
-                                          rebuild_burstrow** delrow,
-                                          rebuild_burstrow** insertrow,
-                                          void* rows)
+ * Split update into insert/delete
+ * Settings
+ * Parameters: burstnode table corresponding node, rows -- update source data
+ *
+ * Return value: bool true split succeeded, false split failed
+ *              delrow split delete statement
+ *              insertrow original update statement
+ *
+ */
+bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode, rebuild_burstrow** delrow,
+                                   rebuild_burstrow** insertrow, void* rows)
 {
-    rebuild_burstrow* tmpdelrow              = NULL;
-    rebuild_burstrow* tmpinsertrow           = NULL;
-    pg_parser_translog_tbcol_values* update      = NULL;
-    pg_parser_translog_tbcol_values* delete      = NULL;
+    rebuild_burstrow*                tmpdelrow = NULL;
+    rebuild_burstrow*                tmpinsertrow = NULL;
+    pg_parser_translog_tbcol_values* update = NULL;
+    pg_parser_translog_tbcol_values* delete = NULL;
 
     update = (pg_parser_translog_tbcol_values*)rows;
 
-    /* update 新旧值missing值互补 */
-    if (false == pg_parser_trans_matchmissing(update->m_new_values, update->m_old_values, update->m_valueCnt))
+    /* Update old and new value missing values complement each other */
+    if (false == pg_parser_trans_matchmissing(update->m_new_values, update->m_old_values,
+                                              update->m_valueCnt))
     {
         elog(RLOG_WARNING, "rebuild burst decomposeupdate match missing failed");
         return false;
@@ -799,16 +795,16 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
         return false;
     }
 
-    /* 申请delete value空间 */
+    /* Allocate delete value space */
     delete = (pg_parser_translog_tbcol_values*)rmalloc0(sizeof(pg_parser_translog_tbcol_values));
-    if(NULL == delete)
+    if (NULL == delete)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return false;
     }
     rmemset0(delete, 0, '\0', sizeof(pg_parser_translog_tbcol_values));
 
-    /* 复制表信息 */
+    /* Copy table information */
     rebuild_burst_tbcolbasecopy(&update->m_base, &delete->m_base);
 
     delete->m_base.m_dmltype = PG_PARSER_TRANSLOG_DMLTYPE_DELETE;
@@ -820,8 +816,9 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
     delete->m_new_values = NULL;
     delete->m_tuple = NULL;
 
-    /* 复制before列内容 */
-    if (false == rebuild_burst_tbcolvaluecopy(update->m_old_values, &delete->m_old_values, update->m_valueCnt))
+    /* Copy before column content */
+    if (false == rebuild_burst_tbcolvaluecopy(update->m_old_values, &delete->m_old_values,
+                                              update->m_valueCnt))
     {
         elog(RLOG_WARNING, "rebuild burst decomposeupdate copy before failed");
         heap_free_trans_result((pg_parser_translog_tbcolbase*)delete);
@@ -830,10 +827,10 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
     tmpdelrow->row = delete;
     tmpdelrow->op = REBUILD_BURSTROWTYPE_UPDATE;
 
-    /* 设置del为需要删除 */
+    /* Set del to need deletion */
     tmpdelrow->flag = REBUILD_BURSTROWFLAG_REMOVEDELETE;
 
-    if(false == rebuild_burst_setmd5andmissing(tmpdelrow, delete->m_old_values))
+    if (false == rebuild_burst_setmd5andmissing(tmpdelrow, delete->m_old_values))
     {
         rebuild_burstrow_free(tmpdelrow);
         elog(RLOG_WARNING, "rebuild burst decomposeupdate delete setmd5adnmissing failed");
@@ -847,11 +844,11 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
         return false;
     }
 
-    /* 区分insert和update产生的insert所以设置为update */
+    /* Distinguish insert from update, so set to update */
     tmpinsertrow->row = rows;
     tmpinsertrow->op = REBUILD_BURSTROWTYPE_UPDATE;
 
-    if(false == rebuild_burst_setmd5andmissing(tmpinsertrow, update->m_new_values))
+    if (false == rebuild_burst_setmd5andmissing(tmpinsertrow, update->m_new_values))
     {
         rebuild_burstrow_free(delrow);
         rebuild_burstrow_free(tmpinsertrow);
@@ -859,10 +856,10 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
         return false;
     }
 
-    /* 设置主键或唯一约束列改变 */
+    /* Set primary key or unique constraint column changed */
     rebuild_burst_ischangeconskey(burstnode, tmpinsertrow);
 
-    /* 互相关联 用于判断delete语句是否保存 */
+    /* Mutually linked, used to determine if delete statement should be saved */
     tmpdelrow->relatedrow = tmpinsertrow;
     tmpinsertrow->relatedrow = tmpdelrow;
 
@@ -872,55 +869,54 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
     return true;
 }
 
-/* 
- * 合并 insert/delete 
- * 返回 true 说明合并成功, 返回 false 说明合并失败
-*/
-bool rebuild_burst_mergeinsert(rebuild_burstnode* pburstnode, 
-                                      rebuild_burstrow* insertrow)
+/*
+ * Merge insert/delete
+ * Return true means merge succeeded, return false means merge failed
+ */
+bool rebuild_burst_mergeinsert(rebuild_burstnode* pburstnode, rebuild_burstrow* insertrow)
 {
-    dlistnode* dlnode                       = NULL;
-    rebuild_burstrow* delrow         = NULL;
+    dlistnode*        dlnode = NULL;
+    rebuild_burstrow* delrow = NULL;
 
-    /* 有missing值或delete链表为空退出 */
-    if (insertrow->missingcnt > 0) 
+    /* Exit if has missing value or delete list is empty */
+    if (insertrow->missingcnt > 0)
     {
         return false;
     }
 
-    if(true == dlist_isnull(pburstnode->dldeleterows))
+    if (true == dlist_isnull(pburstnode->dldeleterows))
     {
         return false;
     }
 
-    /* 查找与insert相同的delete */
+    /* Find delete matching the insert */
     for (dlnode = pburstnode->dldeleterows->tail; NULL != dlnode; dlnode = dlnode->prev)
     {
         delrow = (rebuild_burstrow*)dlnode->value;
 
-        /* 有missing值继续 */
+        /* Continue if has missing value */
         if (delrow->missingcnt > 0)
         {
             continue;
         }
 
-        /* 找到相同delete，链表中删除delete、释放insert 返回true */
+        /* Found same delete, delete from list, free insert, return true */
         if (0 == memcmp(insertrow->md5, delrow->md5, 16))
         {
-            /* 
-             * insert/delete合并分为多种情况
-             * 1. insert和udelete合并 当udelete存在关联行时（u 1->2、i 1）
-             *     需要将关联行（uinsert）设置为正常的insert及未修改主键
-             * 2. insert 和 delete 以及udelete不存在关联行时 直接合并
-             * 3. uinsert 和 delete合并，当uinsert存在关联列（udelete）时（d 1 , u 2->1）
-             *     需要将关联列（udelete）falg设置为正常（执行）
-             * 4. uinsert 1 和 udelete 2 合并 udelete 1要执行，uinsert 2 要变为正常insert
+            /*
+             * Insert/delete merge has multiple cases:
+             * 1. insert merges with udelete - when udelete has related row (u 1->2, i 1)
+             *     Need to set the related row (uinsert) to normal insert and unchanged primary key
+             * 2. When insert and delete and udelete have no related rows - directly merge
+             * 3. uinsert merges with delete - when uinsert has related column (udelete) (d 1, u
+             * 2->1) Need to set the related column (udelete) flag to normal (execute)
+             * 4. uinsert 1 merges with udelete 2 - udelete 1 should execute, uinsert 2 becomes
+             * normal insert
              *
-            */
+             */
             if (REBUILD_BURSTROWTYPE_INSERT == insertrow->op)
             {
-                if (REBUILD_BURSTROWTYPE_UPDATE == delrow->op
-                    && NULL != delrow->relatedrow)
+                if (REBUILD_BURSTROWTYPE_UPDATE == delrow->op && NULL != delrow->relatedrow)
                 {
                     delrow->relatedrow->flag = REBUILD_BURSTROWFLAG_NOP;
                     delrow->relatedrow->op = REBUILD_BURSTROWTYPE_INSERT;
@@ -928,10 +924,9 @@ bool rebuild_burst_mergeinsert(rebuild_burstnode* pburstnode,
                     delrow->relatedrow = NULL;
                 }
             }
-            else if(REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
+            else if (REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
             {
-                if (REBUILD_BURSTROWTYPE_DELETE == delrow->op
-                    && NULL != insertrow->relatedrow)
+                if (REBUILD_BURSTROWTYPE_DELETE == delrow->op && NULL != insertrow->relatedrow)
                 {
                     insertrow->relatedrow->flag = REBUILD_BURSTROWFLAG_NOP;
                     insertrow->relatedrow->relatedrow = NULL;
@@ -956,7 +951,8 @@ bool rebuild_burst_mergeinsert(rebuild_burstnode* pburstnode,
                 }
             }
             rebuild_burstrow_free(insertrow);
-            pburstnode->dldeleterows = dlist_delete(pburstnode->dldeleterows, dlnode, rebuild_burstrow_free);
+            pburstnode->dldeleterows =
+                dlist_delete(pburstnode->dldeleterows, dlnode, rebuild_burstrow_free);
             return true;
         }
     }
@@ -964,38 +960,38 @@ bool rebuild_burst_mergeinsert(rebuild_burstnode* pburstnode,
     return false;
 }
 
-/* 
- * 合并 delete/insert
- * 返回 true 说明合并成功, 返回 false 说明合并失败
-*/
-bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode, 
-                                      rebuild_burstrow* delrow)
+/*
+ * Merge delete/insert
+ * Return true means merge succeeded, return false means merge failed
+ */
+bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode, rebuild_burstrow* delrow)
 {
-    int keycnt                                  = 0;
-    int keyindex                                = 0;
-    int key                                     = 0;
-    dlistnode* dlnode                           = NULL;
-    rebuild_burstcolumn* keys            = NULL;
-    rebuild_burstrow* insertrow          = NULL;
-    pg_parser_translog_tbcol_values* del     = NULL;
-    pg_parser_translog_tbcol_values* insert  = NULL;
+    int                              keycnt = 0;
+    int                              keyindex = 0;
+    int                              key = 0;
+    dlistnode*                       dlnode = NULL;
+    rebuild_burstcolumn*             keys = NULL;
+    rebuild_burstrow*                insertrow = NULL;
+    pg_parser_translog_tbcol_values* del = NULL;
+    pg_parser_translog_tbcol_values* insert = NULL;
 
-    if(true == dlist_isnull(pburstnode->dlinsertrows))
+    if (true == dlist_isnull(pburstnode->dlinsertrows))
     {
         return false;
     }
 
-    /* 查找与insert相同的delete */
+    /* Find delete same as insert */
     for (dlnode = pburstnode->dlinsertrows->tail; NULL != dlnode; dlnode = dlnode->prev)
     {
         insertrow = (rebuild_burstrow*)dlnode->value;
 
         if (REBUILD_BURSTNODEFLAG_NOINDEX == pburstnode->flag)
         {
-            /* 找到相同insert，链表中删除insert、释放delete 返回true */
+            /* Found same insert, delete from list, free delete, return true */
             if (0 == memcmp(insertrow->md5, delrow->md5, 16))
             {
-                pburstnode->dlinsertrows= dlist_delete(pburstnode->dlinsertrows, dlnode, rebuild_burstrow_free);
+                pburstnode->dlinsertrows =
+                    dlist_delete(pburstnode->dlinsertrows, dlnode, rebuild_burstrow_free);
                 rebuild_burstrow_free(delrow);
                 return true;
             }
@@ -1008,11 +1004,12 @@ bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode,
             del = (pg_parser_translog_tbcol_values*)delrow->row;
             insert = (pg_parser_translog_tbcol_values*)insertrow->row;
 
-            /* 比较约束列值是否相同 */
+            /* Compare if constraint column values are the same */
             for (keyindex = 0; keyindex < keycnt; keyindex++)
             {
                 key = keys[keyindex].colno;
-                if (0 != strcmp(del->m_old_values[key - 1].m_value, insert->m_new_values[key - 1].m_value))
+                if (0 != strcmp(del->m_old_values[key - 1].m_value,
+                                insert->m_new_values[key - 1].m_value))
                 {
                     same = false;
                     break;
@@ -1021,21 +1018,9 @@ bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode,
 
             if (true == same)
             {
-                /* 
-                 * update产生的insert语句与正常delete可以合并
-                 * 需要保存update产生的delete语句
-                 * 设置row->flage 为nop，置空delete的relatedrow
-                 */
-                if (REBUILD_BURSTROWTYPE_UPDATE == insertrow->op
-                    && NULL != insertrow->relatedrow)
-                {
-                    insertrow->relatedrow->flag = REBUILD_BURSTROWFLAG_NOP;
-                    insertrow->relatedrow->relatedrow = NULL;
-                    insertrow->relatedrow = NULL;
-                }
-                
-                /* 合并成功移除insert，释放delrow */
-                pburstnode->dlinsertrows = dlist_delete(pburstnode->dlinsertrows, dlnode, rebuild_burstrow_free);
+                /* Merge succeeded, remove insert, free delrow */
+                pburstnode->dlinsertrows =
+                    dlist_delete(pburstnode->dlinsertrows, dlnode, rebuild_burstrow_free);
                 rebuild_burstrow_free(delrow);
                 return true;
             }
@@ -1045,43 +1030,40 @@ bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode,
     return false;
 }
 
-
 /*
- * update合并 delete/insert
- * 参数说明: delrow update拆分出的befor值
- * 
- * 返回值说明: 返回 true 说明合并成功, 返回 false 说明合并失败
- *          ：in_updaterow合并成功返回匹配上的insertrow，不成功updaterow
- *          ：error false执行失败退出，true执行成功
-*/
-bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
-                                            rebuild_burstrow*  delrow,
-                                            rebuild_burstrow** in_updaterow,
-                                            bool* error)
+ * Update merge delete/insert
+ * Parameters: delrow update split before value
+ *
+ * Return value: Return true means merge succeeded, return false means merge failed
+ *            in_updaterow returns matched insertrow on success, updaterow on failure
+ *            error false means execution failed and exit, true means execution succeeded
+ */
+bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode, rebuild_burstrow* delrow,
+                                     rebuild_burstrow** in_updaterow, bool* error)
 {
-    bool same                                           = true;
-    int keycnt                                          = 0;
-    int keyindex                                        = 0;
-    int key                                             = 0;
-    dlistnode* dlnode                                   = NULL;
-    rebuild_burstcolumn* keys                    = NULL;
-    rebuild_burstrow* insertrow                  = NULL;
-    rebuild_burstrow* updaterow                  = NULL;
-    pg_parser_translog_tbcol_values* del             = NULL;
-    pg_parser_translog_tbcol_values* insert          = NULL;
-    pg_parser_translog_tbcol_values* update          = NULL;
-    pg_parser_translog_tbcol_value* insertvalue      = NULL;
+    bool                             same = true;
+    int                              keycnt = 0;
+    int                              keyindex = 0;
+    int                              key = 0;
+    dlistnode*                       dlnode = NULL;
+    rebuild_burstcolumn*             keys = NULL;
+    rebuild_burstrow*                insertrow = NULL;
+    rebuild_burstrow*                updaterow = NULL;
+    pg_parser_translog_tbcol_values* del = NULL;
+    pg_parser_translog_tbcol_values* insert = NULL;
+    pg_parser_translog_tbcol_values* update = NULL;
+    pg_parser_translog_tbcol_value*  insertvalue = NULL;
 
     updaterow = *in_updaterow;
 
-    if(true == dlist_isnull(burstnode->dlinsertrows))
+    if (true == dlist_isnull(burstnode->dlinsertrows))
     {
         return false;
     }
 
     update = (pg_parser_translog_tbcol_values*)updaterow->row;
 
-    /* 查找与insert相同的delete */
+    /* Find delete same as insert */
     for (dlnode = burstnode->dlinsertrows->tail; NULL != dlnode; dlnode = dlnode->prev)
     {
         same = false;
@@ -1090,7 +1072,7 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
 
         if (REBUILD_BURSTNODEFLAG_NOINDEX == burstnode->flag)
         {
-            /* 找到相同insert，链表中删除insert、释放delete 返回true */
+            /* Found same insert, delete from list, free delete, return true */
             if (0 == memcmp(insertrow->md5, delrow->md5, 16))
             {
                 same = true;
@@ -1104,11 +1086,12 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
             keys = burstnode->table.keys;
             del = (pg_parser_translog_tbcol_values*)delrow->row;
 
-            /* 比较约束列值是否相同 */
+            /* Compare if constraint column values are the same */
             for (keyindex = 0; keyindex < keycnt; keyindex++)
             {
                 key = keys[keyindex].colno;
-                if (0 != strcmp(del->m_old_values[key - 1].m_value, insert->m_new_values[key - 1].m_value))
+                if (0 != strcmp(del->m_old_values[key - 1].m_value,
+                                insert->m_new_values[key - 1].m_value))
                 {
                     same = false;
                     break;
@@ -1122,24 +1105,22 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
         }
     }
 
-    /* 没有找到与delete匹配的insert 直接返回 */
+    /* No matching insert found for delete, return directly */
     if (false == same)
     {
         return false;
     }
 
-    /* 补全missing值 */
-    if(false == rebuild_burst_updatematchdata(insertrow,
-                                                     delrow,
-                                                     updaterow))
+    /* Complete missing values */
+    if (false == rebuild_burst_updatematchdata(insertrow, delrow, updaterow))
     {
         elog(RLOG_WARNING, "rebuild burst updatemergedelete update matchdata failed");
         return false;
     }
 
-    /* 将update after值替换到insert上 */
-    if (REBUILD_BURSTROWTYPE_INSERT == insertrow->op
-        || REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
+    /* Replace insert values with UPDATE after values */
+    if (REBUILD_BURSTROWTYPE_INSERT == insertrow->op ||
+        REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
     {
         insert = (pg_parser_translog_tbcol_values*)insertrow->row;
         insertvalue = insert->m_new_values;
@@ -1147,7 +1128,7 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
         insert->m_new_values = update->m_new_values;
         update->m_new_values = insertvalue;
 
-        /* 只断开update->insert的关联row */
+        /* Only disconnect update->insert related row */
         if (NULL != insertrow->relatedrow)
         {
             insertrow->relatedrow->relatedrow = NULL;
@@ -1156,13 +1137,14 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
     }
     else
     {
-        elog(RLOG_WARNING, "rebuild burst updatemergedelete Invalid operation type:%d", insertrow->op);
+        elog(RLOG_WARNING, "rebuild burst updatemergedelete Invalid operation type:%d",
+             insertrow->op);
         *error = true;
         return false;
     }
 
-    /* 计算MD5和missing */
-    if(false == rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
+    /* Calculate MD5 and missing */
+    if (false == rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
     {
         elog(RLOG_WARNING, "rebuild burst updatemergedelete setmd5adnmissing failed");
         *error = true;
@@ -1172,7 +1154,7 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
     rebuild_burstrow_free(delrow);
     rebuild_burstrow_free(updaterow);
 
-    /* 将匹配到的insert从链表中取出 */
+    /* Remove matched insert from the list */
     *in_updaterow = insertrow;
     dlnode->value = NULL;
     burstnode->dlinsertrows = dlist_delete(burstnode->dlinsertrows, dlnode, NULL);
@@ -1180,15 +1162,14 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
     return true;
 }
 
-/* 对 txn 的insert内容重组为burst */
-static bool rebuild_burst_txn2bursts_insert(rebuild_burst* burst, 
-                                                   cache_sysdicts* sysdicts,
-                                                   void* row)
+/* Reorganize txn INSERT content into burst */
+static bool rebuild_burst_txn2bursts_insert(rebuild_burst* burst, cache_sysdicts* sysdicts,
+                                            void* row)
 {
-    rebuild_bursttable table             = {0};
-    rebuild_burstrow* insertrow          = NULL;
-    rebuild_burstnode* burstnode         = NULL;
-    pg_parser_translog_tbcol_values* insert  = NULL;
+    rebuild_bursttable               table = {0};
+    rebuild_burstrow*                insertrow = NULL;
+    rebuild_burstnode*               burstnode = NULL;
+    pg_parser_translog_tbcol_values* insert = NULL;
 
     insert = (pg_parser_translog_tbcol_values*)row;
 
@@ -1196,12 +1177,8 @@ static bool rebuild_burst_txn2bursts_insert(rebuild_burst* burst,
     table.schema = insert->m_base.m_schemaname;
     table.table = insert->m_base.m_tbname;
 
-    if (false == rebuild_burst_getnode(sysdicts->by_class,
-                                              sysdicts->by_attribute,
-                                              sysdicts->by_index,
-                                              burst,
-                                              &burstnode,
-                                              &table))
+    if (false == rebuild_burst_getnode(sysdicts->by_class, sysdicts->by_attribute,
+                                       sysdicts->by_index, burst, &burstnode, &table))
     {
         elog(RLOG_WARNING, "rebuild burst txn2bursts insert getnode failed");
         return false;
@@ -1216,7 +1193,7 @@ static bool rebuild_burst_txn2bursts_insert(rebuild_burst* burst,
     insertrow->row = row;
     insertrow->op = REBUILD_BURSTROWTYPE_INSERT;
 
-    if(false == rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
+    if (false == rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
     {
         rebuild_burstrow_free(insertrow);
         elog(RLOG_WARNING, "rebuild burst txn2bursts insert setmd5adnmissing failed");
@@ -1231,15 +1208,14 @@ static bool rebuild_burst_txn2bursts_insert(rebuild_burst* burst,
     return true;
 }
 
-/* 对 txn 的delete内容重组为burst */
-static bool rebuild_burst_txn2bursts_delete(rebuild_burst* burst, 
-                                                   cache_sysdicts* sysdicts,
-                                                   void* row)
+/* Reorganize txn DELETE content into burst */
+static bool rebuild_burst_txn2bursts_delete(rebuild_burst* burst, cache_sysdicts* sysdicts,
+                                            void* row)
 {
-    rebuild_bursttable table             = {0};
-    rebuild_burstrow* delrow             = NULL;
-    rebuild_burstnode* burstnode         = NULL;
-    pg_parser_translog_tbcol_values* delete  = NULL;
+    rebuild_bursttable               table = {0};
+    rebuild_burstrow*                delrow = NULL;
+    rebuild_burstnode*               burstnode = NULL;
+    pg_parser_translog_tbcol_values* delete = NULL;
 
     delete = (pg_parser_translog_tbcol_values*)row;
 
@@ -1247,13 +1223,9 @@ static bool rebuild_burst_txn2bursts_delete(rebuild_burst* burst,
     table.schema = delete->m_base.m_schemaname;
     table.table = delete->m_base.m_tbname;
 
-    /* 获取burstnode */
-    if (false == rebuild_burst_getnode(sysdicts->by_class,
-                                              sysdicts->by_attribute,
-                                              sysdicts->by_index,
-                                              burst,
-                                              &burstnode,
-                                              &table))
+    /* Get burstnode */
+    if (false == rebuild_burst_getnode(sysdicts->by_class, sysdicts->by_attribute,
+                                       sysdicts->by_index, burst, &burstnode, &table))
     {
         elog(RLOG_WARNING, "rebuild burst txn2bursts delete getnode failed");
         return false;
@@ -1266,9 +1238,9 @@ static bool rebuild_burst_txn2bursts_delete(rebuild_burst* burst,
         return false;
     }
     delrow->row = row;
-    delrow->op =REBUILD_BURSTROWTYPE_DELETE;
+    delrow->op = REBUILD_BURSTROWTYPE_DELETE;
 
-    if(false == rebuild_burst_setmd5andmissing(delrow, delete->m_old_values))
+    if (false == rebuild_burst_setmd5andmissing(delrow, delete->m_old_values))
     {
         rebuild_burstrow_free(delrow);
         elog(RLOG_WARNING, "rebuild burst txn2bursts delete setmd5adnmissing failed");
@@ -1283,18 +1255,17 @@ static bool rebuild_burst_txn2bursts_delete(rebuild_burst* burst,
     return true;
 }
 
-/* 对 txn 的multiinsert内容重组为burst */
-static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst* burst, 
-                                                        cache_sysdicts* sysdicts,
-                                                        void* row)
+/* Reorganize txn MULTIINSERT content into burst */
+static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst* burst, cache_sysdicts* sysdicts,
+                                                 void* row)
 {
-    int rowindx                                         = 0;
-    rebuild_bursttable table                     = {0};
-    rebuild_burstrow* insertrow                  = NULL;
-    rebuild_burstnode* burstnode                 = NULL;
-    pg_parser_translog_tbcol_value* value            = NULL;
-    pg_parser_translog_tbcol_values* insert          = NULL;
-    pg_parser_translog_tbcol_nvalues* multiinsert    = NULL;
+    int                               rowindx = 0;
+    rebuild_bursttable                table = {0};
+    rebuild_burstrow*                 insertrow = NULL;
+    rebuild_burstnode*                burstnode = NULL;
+    pg_parser_translog_tbcol_value*   value = NULL;
+    pg_parser_translog_tbcol_values*  insert = NULL;
+    pg_parser_translog_tbcol_nvalues* multiinsert = NULL;
 
     multiinsert = (pg_parser_translog_tbcol_nvalues*)row;
 
@@ -1302,12 +1273,8 @@ static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst* burst,
     table.schema = multiinsert->m_base.m_schemaname;
     table.table = multiinsert->m_base.m_tbname;
 
-    if (false == rebuild_burst_getnode(sysdicts->by_class,
-                                              sysdicts->by_attribute,
-                                              sysdicts->by_index,
-                                              burst,
-                                              &burstnode,
-                                              &table))
+    if (false == rebuild_burst_getnode(sysdicts->by_class, sysdicts->by_attribute,
+                                       sysdicts->by_index, burst, &burstnode, &table))
     {
         elog(RLOG_WARNING, "rebuild burst txn2bursts multiinsert getnode failed");
         return false;
@@ -1316,9 +1283,10 @@ static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst* burst,
     for (rowindx = 0; rowindx < multiinsert->m_rowCnt; rowindx++)
     {
         value = multiinsert->m_rows[rowindx].m_new_values;
-        /* 拆分为多条insert */
-        insert = (pg_parser_translog_tbcol_values*)rmalloc0(sizeof(pg_parser_translog_tbcol_values));
-        if(NULL == insert)
+        /* Split into multiple inserts */
+        insert =
+            (pg_parser_translog_tbcol_values*)rmalloc0(sizeof(pg_parser_translog_tbcol_values));
+        if (NULL == insert)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
             return false;
@@ -1342,7 +1310,7 @@ static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst* burst,
         insertrow->row = insert;
         insertrow->op = REBUILD_BURSTROWTYPE_INSERT;
 
-        if(false == rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
+        if (false == rebuild_burst_setmd5andmissing(insertrow, insert->m_new_values))
         {
             rebuild_burstrow_free(insertrow);
             elog(RLOG_WARNING, "rebuild burst txn2bursts multiinsert setmd5adnmissing failed");
@@ -1359,18 +1327,17 @@ static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst* burst,
     return true;
 }
 
-/* 对 txn 的update内容重组为burst */
-static bool rebuild_burst_txn2bursts_update(rebuild_burst* burst, 
-                                                   cache_sysdicts* sysdicts,
-                                                   void* row)
+/* Reorganize txn UPDATE content into burst */
+static bool rebuild_burst_txn2bursts_update(rebuild_burst* burst, cache_sysdicts* sysdicts,
+                                            void* row)
 {
-    bool error                                  = false;
-    bool mergeresult                            = false;
-    rebuild_bursttable table             = {0};
-    rebuild_burstrow* delrow             = NULL;
-    rebuild_burstrow* insertrow          = NULL;
-    rebuild_burstnode* burstnode         = NULL;
-    pg_parser_translog_tbcol_values* update  = NULL;
+    bool                             error = false;
+    bool                             mergeresult = false;
+    rebuild_bursttable               table = {0};
+    rebuild_burstrow*                delrow = NULL;
+    rebuild_burstrow*                insertrow = NULL;
+    rebuild_burstnode*               burstnode = NULL;
+    pg_parser_translog_tbcol_values* update = NULL;
 
     update = (pg_parser_translog_tbcol_values*)row;
 
@@ -1378,47 +1345,44 @@ static bool rebuild_burst_txn2bursts_update(rebuild_burst* burst,
     table.schema = update->m_base.m_schemaname;
     table.table = update->m_base.m_tbname;
 
-    if (false == rebuild_burst_getnode(sysdicts->by_class,
-                                              sysdicts->by_attribute,
-                                              sysdicts->by_index,
-                                              burst,
-                                              &burstnode,
-                                              &table))
+    if (false == rebuild_burst_getnode(sysdicts->by_class, sysdicts->by_attribute,
+                                       sysdicts->by_index, burst, &burstnode, &table))
     {
         elog(RLOG_WARNING, "rebuild burst txn2bursts update getnode failed");
         return false;
     }
 
-    /* 拆分为delete和insert */
-    if(false == rebuild_burst_decomposeupdate(burstnode,
-                                                     &delrow,
-                                                     &insertrow,
-                                                     row))
+    /* Decompose into delete and insert */
+    if (false == rebuild_burst_decomposeupdate(burstnode, &delrow, &insertrow, row))
     {
         elog(RLOG_WARNING, "rebuild burst txn2bursts update decomposeupdate failed");
         return false;
     }
 
-    /* update的delete合并insert */
-    mergeresult = rebuild_burst_updatemergedelete(burstnode,
-                                                         delrow,
-                                                         &insertrow,
-                                                         &error);
+    /* UPDATE's delete merges with insert */
+    mergeresult = rebuild_burst_updatemergedelete(burstnode, delrow, &insertrow, &error);
+    if (true == error)
+    {
+        rebuild_burstrow_free(delrow);
+        rebuild_burstrow_free(insertrow);
+        elog(RLOG_WARNING, "rebuild burst txn2bursts update mergedelete error");
+        return false;
+    }
 
-    /* update的delete合并insert合并失败有错误直接退出 */
-    if(true == error)
+    /* UPDATE's delete merges with insert - if merge fails with error, exit directly */
+    if (true == error)
     {
         elog(RLOG_WARNING, "rebuild burst txn2bursts update mergedelete failed");
         return false;
     }
 
-    /* update的delete合并insert，没有找到匹配的insert，将delete加入链表 */
+    /* UPDATE's delete merges with insert - if no matching insert found, add delete to list */
     if (false == mergeresult)
     {
         burstnode->dldeleterows = dlist_put(burstnode->dldeleterows, delrow);
     }
 
-    /* update的insert合并delete，合并失败加入链表 */
+    /* UPDATE's insert merges with delete - if merge fails, add to list */
     if (false == rebuild_burst_mergeinsert(burstnode, insertrow))
     {
         burstnode->dlinsertrows = dlist_put(burstnode->dlinsertrows, insertrow);
@@ -1427,43 +1391,43 @@ static bool rebuild_burst_txn2bursts_update(rebuild_burst* burst,
     return true;
 }
 
-/* txn 的内容重组为burst */
+/* Reorganize txn content into bursts */
 bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, txn* txn)
 {
-    bool complete                               = false;
-    ListCell* lc                                = NULL;
-    ListCell* metadatalc                        = NULL;
-    List* lststmt                               = NULL;
-    dlistnode* dlnode                           = NULL;
-    rebuild_bursttable* table            = NULL;
-    rebuild_burstnode* burstnode         = NULL;
-    catalogdata *catalog_data             = NULL;
-    catalog_class_value* class           = NULL;
-    txnstmt_metadata* metadatastmt       = NULL;
-    pg_parser_translog_tbcolbase* tbcolbase  = NULL;
-    rebuild_bursttable dltable           = {0};
+    bool                          complete = false;
+    ListCell*                     lc = NULL;
+    ListCell*                     metadatalc = NULL;
+    List*                         lststmt = NULL;
+    dlistnode*                    dlnode = NULL;
+    rebuild_bursttable*           table = NULL;
+    rebuild_burstnode*            burstnode = NULL;
+    catalogdata*                  catalog_data = NULL;
+    catalog_class_value*          class = NULL;
+    txnstmt_metadata*             metadatastmt = NULL;
+    pg_parser_translog_tbcolbase* tbcolbase = NULL;
+    rebuild_bursttable            dltable = {0};
 
     txnstmt* stmtnode = NULL;
 
-    if(NULL == txn->stmts)
+    if (NULL == txn->stmts)
     {
         return true;
     }
 
-    /* 重组 */
+    /* Reorganize */
     lststmt = txn->stmts;
     txn->stmts = NULL;
-    foreach(lc, lststmt)
+    foreach (lc, lststmt)
     {
         stmtnode = (txnstmt*)lfirst(lc);
 
         if (TXNSTMT_TYPE_DDL == stmtnode->type)
         {
-            burst->number ++;
+            burst->number++;
 
             dlnode = (burst->dlbursttable == NULL) ? NULL : burst->dlbursttable->head;
 
-            /* 所有表的 no 以 burst->number 为基础递增 分界线 */
+            /* All tables' no increment based on burst->number as boundary */
             for (; NULL != dlnode; dlnode = dlnode->next)
             {
                 table = (rebuild_bursttable*)dlnode->value;
@@ -1482,15 +1446,15 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
             burstnode->stmt = stmtnode;
             burst->dlburstnodes = dlist_put(burst->dlburstnodes, burstnode);
         }
-        else if(TXNSTMT_TYPE_METADATA == stmtnode->type)
+        else if (TXNSTMT_TYPE_METADATA == stmtnode->type)
         {
             metadatastmt = (txnstmt_metadata*)stmtnode->stmt;
 
             complete = false;
             metadatalc = metadatastmt->begin;
-            while(1)
+            while (1)
             {
-                /* 应用系统表 */
+                /* Apply system catalog */
                 catalog_data = (catalogdata*)lfirst(metadatalc);
                 cache_sysdicts_txnsysdicthisitem2cache(sysdicts, metadatalc);
 
@@ -1500,14 +1464,16 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                     class = (catalog_class_value*)catalog_data->catalog;
                     if (NULL == class)
                     {
-                        elog(RLOG_WARNING, "rebuild burst txn2bursts catalog_data->catalog is null");
+                        elog(RLOG_WARNING,
+                             "rebuild burst txn2bursts catalog_data->catalog is null");
                         return false;
                     }
                     dltable.oid = class->class->oid;
                     dltable.schema = class->class->nspname.data;
                     dltable.table = class->class->relname.data;
 
-                    table = rebuild_burst_gettable(burst->dlbursttable, &dltable, rebuild_bursttable_cmp);
+                    table = rebuild_burst_gettable(burst->dlbursttable, &dltable,
+                                                   rebuild_bursttable_cmp);
                     if (NULL == table)
                     {
                         table = rebuild_bursttable_init();
@@ -1534,10 +1500,8 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                     burstnode->table.oid = class->class->oid;
                     burstnode->table.schema = rstrdup(class->class->nspname.data);
                     burstnode->table.table = rstrdup(class->class->relname.data);
-                    if (false == rebuild_composekey(sysdicts->by_class,
-                                                           sysdicts->by_attribute,
-                                                           sysdicts->by_index,
-                                                           burstnode))
+                    if (false == rebuild_composekey(sysdicts->by_class, sysdicts->by_attribute,
+                                                    sysdicts->by_index, burstnode))
                     {
                         elog(RLOG_WARNING, "rebuild burst txn2bursts composekey failed");
                         return false;
@@ -1545,7 +1509,7 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                     burstnode->type = REBUILD_BURSTNODETYPE_OTHER;
                     burstnode->stmt = stmtnode;
                     burst->dlburstnodes = dlist_put(burst->dlburstnodes, burstnode);
-                    /* 跳过当前node */
+                    /* Skip current node */
                     table->no = burst->number++;
                 }
                 else if (CATALOG_TYPE_DATABASE == catalog_data->type)
@@ -1554,7 +1518,8 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                     database = (catalog_database_value*)catalog_data->catalog;
                     if (NULL == database)
                     {
-                        elog(RLOG_WARNING, "rebuild burst txn2bursts catalog_data->catalog is null");
+                        elog(RLOG_WARNING,
+                             "rebuild burst txn2bursts catalog_data->catalog is null");
                         return false;
                     }
 
@@ -1571,33 +1536,31 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                     burst->dlburstnodes = dlist_put(burst->dlburstnodes, burstnode);
                 }
 
-                /* 只有一个 */
-                if(metadatalc == metadatastmt->end
-                    || true == complete)
+                /* Only one */
+                if (metadatalc == metadatastmt->end || true == complete)
                 {
                     break;
                 }
-                /* 校验是否到达最后一个 */
+                /* Check if reached the last one */
                 metadatalc = metadatalc->next;
-                if(metadatalc == metadatastmt->end)
+                if (metadatalc == metadatastmt->end)
                 {
                     complete = true;
                 }
             }
         }
-        else if(TXNSTMT_TYPE_DML == stmtnode->type)
+        else if (TXNSTMT_TYPE_DML == stmtnode->type)
         {
-            tbcolbase = (pg_parser_translog_tbcolbase *)stmtnode->stmt;
-            if(PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
+            tbcolbase = (pg_parser_translog_tbcolbase*)stmtnode->stmt;
+            if (PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
             {
                 if (false == rebuild_burst_txn2bursts_multiinsert(burst, sysdicts, stmtnode->stmt))
                 {
                     elog(RLOG_WARNING, "rebuild burst txn2bursts multiinsert failed");
                     return false;
                 }
-                
             }
-            else if(PG_PARSER_TRANSLOG_DMLTYPE_INSERT == tbcolbase->m_dmltype)
+            else if (PG_PARSER_TRANSLOG_DMLTYPE_INSERT == tbcolbase->m_dmltype)
             {
                 if (false == rebuild_burst_txn2bursts_insert(burst, sysdicts, stmtnode->stmt))
                 {
@@ -1606,7 +1569,7 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                 }
                 stmtnode->stmt = NULL;
             }
-            else if(PG_PARSER_TRANSLOG_DMLTYPE_DELETE == tbcolbase->m_dmltype)
+            else if (PG_PARSER_TRANSLOG_DMLTYPE_DELETE == tbcolbase->m_dmltype)
             {
                 if (false == rebuild_burst_txn2bursts_delete(burst, sysdicts, stmtnode->stmt))
                 {
@@ -1615,7 +1578,7 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                 }
                 stmtnode->stmt = NULL;
             }
-            else if(PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == tbcolbase->m_dmltype)
+            else if (PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == tbcolbase->m_dmltype)
             {
                 if (false == rebuild_burst_txn2bursts_update(burst, sysdicts, stmtnode->stmt))
                 {
@@ -1624,7 +1587,7 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                 }
                 stmtnode->stmt = NULL;
             }
-            /* stmtnode 释放 */
+            /* Free stmtnode */
             txnstmt_free(stmtnode);
         }
         else
@@ -1648,28 +1611,28 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
     return true;
 }
 
-/* rebuild_burstrow比较MD5值 */
-static int rebuild_burst_comparemd5(const void *r1, const void *r2)
+/* Compare MD5 values for rebuild_burstrow */
+static int rebuild_burst_comparemd5(const void* r1, const void* r2)
 {
     rebuild_burstrow* row1 = NULL;
     rebuild_burstrow* row2 = NULL;
 
-    row1 = *(rebuild_burstrow** )r1;
-    row2 = *(rebuild_burstrow** )r2;
+    row1 = *(rebuild_burstrow**)r1;
+    row2 = *(rebuild_burstrow**)r2;
 
     return memcmp(row1->md5, row2->md5, 16);
 }
 
-/* rebuild_burstrow比较missing值 */
-static int rebuild_burst_comparemissing(const void *r1, const void *r2)
+/* Compare missing values for rebuild_burstrow */
+static int rebuild_burst_comparemissing(const void* r1, const void* r2)
 {
     rebuild_burstrow* row1 = NULL;
     rebuild_burstrow* row2 = NULL;
 
-    row1 = *(rebuild_burstrow** )r1;
-    row2 = *(rebuild_burstrow** )r2;
+    row1 = *(rebuild_burstrow**)r1;
+    row2 = *(rebuild_burstrow**)r2;
 
-    /* 先按 missingcnt 排序 */
+    /* Sort by missingcnt first */
     if (row1->missingcnt < row2->missingcnt)
     {
         return -1;
@@ -1680,28 +1643,28 @@ static int rebuild_burst_comparemissing(const void *r1, const void *r2)
         return 1;
     }
 
-    /*  missingcnt 相同，再按 missingmap 排序 */
+    /* If missingcnt is the same, sort by missingmap */
     return memcmp(row1->missingmap, row2->missingmap, row1->missingmapsize);
 }
 
-/* 拼接pbe delete语句 */
+/* Assemble PBE DELETE statement */
 static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* txn)
 {
-    bool need_and                               = false;
-    bool need_select                            = true;
-    int colindex                                = 0;
-    int sortindex                               = 0;
-    uint64 rowcnt                               = 0;
-    uint64 len                                  = 0;
-    uint8* md5                                  = NULL;
-    StringInfo str                              = NULL;
-    dlistnode* dlnode                           = NULL;
-    txnstmt* stmt                        = NULL;
-    txnstmt_burst* stmtburst             = NULL;
-    rebuild_burstrow* delrow             = NULL;
-    rebuild_burstrow** sortrow           = NULL;
-    pg_parser_translog_tbcol_value* values   = NULL;
-    pg_parser_translog_tbcol_values* delete  = NULL;
+    bool                             need_and = false;
+    bool                             need_select = true;
+    int                              colindex = 0;
+    int                              sortindex = 0;
+    uint64                           rowcnt = 0;
+    uint64                           len = 0;
+    uint8*                           md5 = NULL;
+    StringInfo                       str = NULL;
+    dlistnode*                       dlnode = NULL;
+    txnstmt*                         stmt = NULL;
+    txnstmt_burst*                   stmtburst = NULL;
+    rebuild_burstrow*                delrow = NULL;
+    rebuild_burstrow**               sortrow = NULL;
+    pg_parser_translog_tbcol_value*  values = NULL;
+    pg_parser_translog_tbcol_values* delete = NULL;
 
     if (true == dlist_isnull(burstnode->dldeleterows))
     {
@@ -1734,19 +1697,21 @@ static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* t
         colindex++;
     }
 
-    /* 根据MD5分组排序 */
-    qsort(sortrow, burstnode->dldeleterows->length, sizeof(rebuild_burstrow*), rebuild_burst_comparemd5);
-    
+    /* Sort by MD5 grouping */
+    qsort(sortrow, burstnode->dldeleterows->length, sizeof(rebuild_burstrow*),
+          rebuild_burst_comparemd5);
+
     str = makeStringInfo();
 
-    appendStringInfo(str, "DELETE FROM \"%s\".\"%s\" WHERE CTID IN (", burstnode->table.schema, burstnode->table.table);
+    appendStringInfo(str, "DELETE FROM \"%s\".\"%s\" WHERE CTID IN (", burstnode->table.schema,
+                     burstnode->table.table);
 
     md5 = sortrow[0]->md5;
     for (sortindex = 0; sortindex < burstnode->dldeleterows->length; sortindex++)
     {
         delrow = sortrow[sortindex];
         delete = (pg_parser_translog_tbcol_values*)delrow->row;
-        /* 当列被drop或可能为空时, 不设置该列的值 */
+        /* When column is dropped or may be null, do not set the column value */
         if (0 != memcmp(md5, delrow->md5, 16))
         {
             appendStringInfo(str, " LIMIT %lu)", rowcnt);
@@ -1758,14 +1723,14 @@ static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* t
 
         if (true == need_select)
         {
-            appendStringInfo(str, "(SELECT CTID FROM \"%s\".\"%s\" WHERE ", burstnode->table.schema, burstnode->table.table);
+            appendStringInfo(str, "(SELECT CTID FROM \"%s\".\"%s\" WHERE ", burstnode->table.schema,
+                             burstnode->table.table);
             need_and = false;
             for (colindex = 0; colindex < delete->m_valueCnt; colindex++)
             {
                 values = &delete->m_old_values[colindex];
-                if (INFO_COL_MAY_NULL == values->m_info 
-                    || INFO_COL_IS_DROPED == values->m_info
-                    || INFO_COL_IS_CUSTOM == values->m_info)
+                if (INFO_COL_MAY_NULL == values->m_info || INFO_COL_IS_DROPED == values->m_info ||
+                    INFO_COL_IS_CUSTOM == values->m_info)
                 {
                     continue;
                 }
@@ -1781,7 +1746,7 @@ static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* t
                 }
                 else if (values->m_info == INFO_NOTHING)
                 {
-                    char *temp_str = strSpecialCharReplace((char *)values->m_value);
+                    char* temp_str = strSpecialCharReplace((char*)values->m_value);
                     if (need_and)
                     {
                         appendStringInfo(str, " AND ");
@@ -1795,7 +1760,7 @@ static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* t
                     }
                     else
                     {
-                        appendStringInfo(str, "'%s'", (char *)values->m_value);
+                        appendStringInfo(str, "'%s'", (char*)values->m_value);
                     }
 
                     need_and = true;
@@ -1811,9 +1776,9 @@ static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* t
     appendStringInfo(str, " LIMIT %lu)", rowcnt);
     appendStringInfo(str, ");");
 
-    /* 初始化 txnstmt */
+    /* Initialize txnstmt */
     stmt = txnstmt_init();
-    if(NULL == stmt)
+    if (NULL == stmt)
     {
         elog(RLOG_WARNING, "rebuild burst assemblepbedeletes txnstmt init failed");
         rfree(stmtburst);
@@ -1823,7 +1788,7 @@ static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* t
     stmt->stmt = NULL;
     stmt->type = TXNSTMT_TYPE_BURST;
 
-    stmtburst->batchcmd = (uint8 *)str->data;
+    stmtburst->batchcmd = (uint8*)str->data;
     stmt->stmt = stmtburst;
     txn->stmts = lappend(txn->stmts, stmt);
     stmt = NULL;
@@ -1832,23 +1797,22 @@ static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* t
 
     rfree(sortrow);
     return true;
-    
 }
 
-/* 拼接pbe insert语句 全列 */
+/* Assemble PBE INSERT statement (all columns) */
 static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* txn)
 {
-    bool need_comma                             = false;
-    bool need_colname                           = true;
-    int colindex                                = 0;
-    StringInfo insertstr                        = NULL;
-    StringInfo valuestr                         = NULL;
-    dlistnode* dlnode                           = NULL;
-    txnstmt* stmt                        = NULL;
-    txnstmt_burst* stmtburst             = NULL;
-    rebuild_burstrow* insertrow          = NULL;
-    pg_parser_translog_tbcol_value* values   = NULL;
-    pg_parser_translog_tbcol_values* insert  = NULL;
+    bool                             need_comma = false;
+    bool                             need_colname = true;
+    int                              colindex = 0;
+    StringInfo                       insertstr = NULL;
+    StringInfo                       valuestr = NULL;
+    dlistnode*                       dlnode = NULL;
+    txnstmt*                         stmt = NULL;
+    txnstmt_burst*                   stmtburst = NULL;
+    rebuild_burstrow*                insertrow = NULL;
+    pg_parser_translog_tbcol_value*  values = NULL;
+    pg_parser_translog_tbcol_values* insert = NULL;
 
     if (true == dlist_isnull(burstnode->dlinsertrows))
     {
@@ -1866,7 +1830,8 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
     insertstr = makeStringInfo();
     valuestr = makeStringInfo();
 
-    appendStringInfo(insertstr, "INSERT INTO \"%s\".\"%s\" (", burstnode->table.schema, burstnode->table.table);
+    appendStringInfo(insertstr, "INSERT INTO \"%s\".\"%s\" (", burstnode->table.schema,
+                     burstnode->table.table);
 
     need_colname = true;
     for (dlnode = burstnode->dlinsertrows->head; dlnode != NULL; dlnode = dlnode->next)
@@ -1879,9 +1844,8 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
         for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
         {
             values = &insert->m_new_values[colindex];
-            /* 当列被drop或可能为空时, 不设置该列的值 */
-            if (INFO_COL_MAY_NULL == values->m_info 
-                || INFO_COL_IS_DROPED == values->m_info)
+            /* When column is dropped or may be null, do not set the column value */
+            if (INFO_COL_MAY_NULL == values->m_info || INFO_COL_IS_DROPED == values->m_info)
             {
                 continue;
             }
@@ -1894,7 +1858,6 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
                 }
                 appendStringInfo(insertstr, "\"%s\"", values->m_colName);
             }
-            
 
             if (INFO_COL_IS_NULL == values->m_info)
             {
@@ -1907,7 +1870,7 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
             }
             else
             {
-                char *temp_str = strSpecialCharReplace((char *)values->m_value);
+                char* temp_str = strSpecialCharReplace((char*)values->m_value);
                 if (need_comma)
                 {
                     appendStringInfo(valuestr, ", ");
@@ -1919,7 +1882,7 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
                 }
                 else
                 {
-                    appendStringInfo(valuestr, "'%s'", (char *)values->m_value);
+                    appendStringInfo(valuestr, "'%s'", (char*)values->m_value);
                 }
                 need_comma = true;
             }
@@ -1935,14 +1898,13 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
         stmtburst->rows = dlist_put(stmtburst->rows, insert);
         insertrow->row = NULL;
     }
-    
+
     appendStringInfo(insertstr, ") VALUES ");
     appendStringInfo(valuestr, ";");
-    
 
-    /* 初始化 txnstmt */
+    /* Initialize txnstmt */
     stmt = txnstmt_init();
-    if(NULL == stmt)
+    if (NULL == stmt)
     {
         elog(RLOG_WARNING, "rebuild burst assemblepbeinsert stmt init failed");
         rfree(stmtburst);
@@ -1953,7 +1915,7 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
 
     appendStringInfo(insertstr, "%s", valuestr->data);
 
-    stmtburst->batchcmd = (uint8 *)insertstr->data;
+    stmtburst->batchcmd = (uint8*)insertstr->data;
     stmt->stmt = stmtburst;
     txn->stmts = lappend(txn->stmts, stmt);
     stmt = NULL;
@@ -1964,21 +1926,21 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
     return true;
 }
 
-/* 拼接burst delete语句 主键 */
+/* Assemble burst DELETE statement (primary key) */
 static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
 {
-    bool hasdelete                              = false;
-    bool in_comma                               = false;
-    bool need_comma                             = false;
-    int colindex                                = 0;
-    StringInfo str                              = NULL;
-    dlistnode* dlnode                           = NULL;
-    txnstmt* stmt                        = NULL;
-    txnstmt_burst* stmtburst             = NULL;
-    rebuild_burstrow* delrow             = NULL;
-    rebuild_burstcolumn* column          = NULL;
-    pg_parser_translog_tbcol_value* values   = NULL;
-    pg_parser_translog_tbcol_values* delete  = NULL;
+    bool                             hasdelete = false;
+    bool                             in_comma = false;
+    bool                             need_comma = false;
+    int                              colindex = 0;
+    StringInfo                       str = NULL;
+    dlistnode*                       dlnode = NULL;
+    txnstmt*                         stmt = NULL;
+    txnstmt_burst*                   stmtburst = NULL;
+    rebuild_burstrow*                delrow = NULL;
+    rebuild_burstcolumn*             column = NULL;
+    pg_parser_translog_tbcol_value*  values = NULL;
+    pg_parser_translog_tbcol_values* delete = NULL;
 
     if (true == dlist_isnull(burstnode->dldeleterows))
     {
@@ -1995,9 +1957,10 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
 
     str = makeStringInfo();
 
-    appendStringInfo(str, "DELETE FROM \"%s\".\"%s\" WHERE (", burstnode->table.schema, burstnode->table.table);
+    appendStringInfo(str, "DELETE FROM \"%s\".\"%s\" WHERE (", burstnode->table.schema,
+                     burstnode->table.table);
 
-    /* 拼接约束信息 */
+    /* Assemble constraint information */
     for (colindex = 0; colindex < burstnode->table.keycnt; colindex++)
     {
         column = &burstnode->table.keys[colindex];
@@ -2011,11 +1974,11 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
     appendStringInfo(str, ") IN (");
 
     in_comma = false;
-    /* 拼接要删除的值 */
+    /* Assemble values to delete */
     for (dlnode = burstnode->dldeleterows->head; dlnode != NULL; dlnode = dlnode->next)
     {
         delrow = (rebuild_burstrow*)dlnode->value;
-        /* 需要移除不参与拼接 */
+        /* Need to remove from assembly */
         if (REBUILD_BURSTROWFLAG_REMOVEDELETE == delrow->flag)
         {
             continue;
@@ -2026,17 +1989,16 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
         {
             appendStringInfo(str, ",");
         }
-        
+
         need_comma = false;
         appendStringInfo(str, "(");
         for (colindex = 0; colindex < burstnode->table.keycnt; colindex++)
         {
             column = &burstnode->table.keys[colindex];
             values = &delete->m_old_values[column->colno - 1];
-            /* 当列被drop或可能为空时, 不设置该列的值 */
-            if (INFO_COL_MAY_NULL == values->m_info
-                || INFO_COL_IS_DROPED == values->m_info
-                || INFO_COL_IS_CUSTOM == values->m_info)
+            /* When column is dropped or may be null, do not set the column value */
+            if (INFO_COL_MAY_NULL == values->m_info || INFO_COL_IS_DROPED == values->m_info ||
+                INFO_COL_IS_CUSTOM == values->m_info)
             {
                 continue;
             }
@@ -2051,7 +2013,7 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
             }
             else
             {
-                char *temp_str = strSpecialCharReplace((char *)values->m_value);
+                char* temp_str = strSpecialCharReplace((char*)values->m_value);
                 if (need_comma)
                 {
                     appendStringInfo(str, ", ");
@@ -2063,7 +2025,7 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
                 }
                 else
                 {
-                    appendStringInfo(str, "'%s'", (char *)values->m_value);
+                    appendStringInfo(str, "'%s'", (char*)values->m_value);
                 }
             }
             need_comma = true;
@@ -2082,12 +2044,12 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
         txnstmt_burst_free(stmtburst);
         return true;
     }
-    
+
     appendStringInfo(str, ");");
 
-    /* 生成stmt */
+    /* Generate stmt */
     stmt = txnstmt_init();
-    if(NULL == stmt)
+    if (NULL == stmt)
     {
         elog(RLOG_WARNING, "rebuild burst assembledelete stmt init failed");
         rfree(stmtburst);
@@ -2096,7 +2058,7 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
     stmt->stmt = NULL;
     stmt->type = TXNSTMT_TYPE_BURST;
 
-    stmtburst->batchcmd = (uint8 *)str->data;
+    stmtburst->batchcmd = (uint8*)str->data;
     stmt->stmt = stmtburst;
     txn->stmts = lappend(txn->stmts, stmt);
     stmt = NULL;
@@ -2106,40 +2068,41 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
     return true;
 }
 
-/* 拼接burst insert语句 临时表，全列，ON CONFLICT */
-static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burstnode* burstnode, txn* txn)
+/* Assemble burst INSERT statement - temp table, all columns, ON CONFLICT */
+static bool rebuild_burst_assembleinsert(cache_sysdicts* sysdicts, rebuild_burstnode* burstnode,
+                                         txn* txn)
 {
-    bool first                                  = true;
-    bool need_comma                             = false;
-    bool conskey_comma                          = false;
-    bool missing_comma                          = false;
-    int colcnt                                  = 0;
-    int colindex                                = 0;
-    int keyindex                                = 0;
-    int missingmapsize                          = 0;
-    int missingcnt                              = 0;
-    int sortindex                               = 0;
-    uint64 len                                  = 0;
-    uint8* missingmap                           = NULL;
-    char* type                                  = NULL;
-    List* lattrs                                = NULL;
-    StringInfo conskeystr                       = NULL;
-    StringInfo valuestr                         = NULL;
-    StringInfo updatestr                        = NULL;
-    StringInfo insestrstr                       = NULL;
-    StringInfo conflictstr                      = NULL;
-    dlistnode* dlnode                           = NULL;
-    txnstmt* stmt                        = NULL;
-    txnstmt_burst* conskeyburst          = NULL;
-    txnstmt_burst* insertburst           = NULL;
-    txnstmt_burst* conflictburst         = NULL;
-    rebuild_burstcolumn* key             = NULL;
-    rebuild_burstrow** sortrow           = NULL;
-    rebuild_burstrow** tmprow            = NULL;
-    rebuild_burstrow* insertrow          = NULL;
-    rebuild_bursttable* table            = NULL;
-    pg_parser_translog_tbcol_value* values   = NULL;
-    pg_parser_translog_tbcol_values* insert  = NULL;
+    bool                             first = true;
+    bool                             need_comma = false;
+    bool                             conskey_comma = false;
+    bool                             missing_comma = false;
+    int                              colcnt = 0;
+    int                              colindex = 0;
+    int                              keyindex = 0;
+    int                              missingmapsize = 0;
+    int                              missingcnt = 0;
+    int                              sortindex = 0;
+    uint64                           len = 0;
+    uint8*                           missingmap = NULL;
+    char*                            type = NULL;
+    List*                            lattrs = NULL;
+    StringInfo                       conskeystr = NULL;
+    StringInfo                       valuestr = NULL;
+    StringInfo                       updatestr = NULL;
+    StringInfo                       insestrstr = NULL;
+    StringInfo                       conflictstr = NULL;
+    dlistnode*                       dlnode = NULL;
+    txnstmt*                         stmt = NULL;
+    txnstmt_burst*                   conskeyburst = NULL;
+    txnstmt_burst*                   insertburst = NULL;
+    txnstmt_burst*                   conflictburst = NULL;
+    rebuild_burstcolumn*             key = NULL;
+    rebuild_burstrow**               sortrow = NULL;
+    rebuild_burstrow**               tmprow = NULL;
+    rebuild_burstrow*                insertrow = NULL;
+    rebuild_bursttable*              table = NULL;
+    pg_parser_translog_tbcol_value*  values = NULL;
+    pg_parser_translog_tbcol_values* insert = NULL;
 
     if (true == dlist_isnull(burstnode->dlinsertrows))
     {
@@ -2158,22 +2121,23 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
     }
     rmemset0(sortrow, 0, 0, len);
 
-    /* 获取attribute */
+    /* Get attributes */
     lattrs = (List*)attribute_getbyoid(burstnode->table.oid, sysdicts->by_attribute);
 
     if (NULL == lattrs || NULL == lattrs->head)
     {
-        elog(RLOG_WARNING, "ripple burst assembleinsert not find attribute by %lu", burstnode->table.oid);
+        elog(RLOG_WARNING, "ripple burst assembleinsert not find attribute by %lu",
+             burstnode->table.oid);
         rfree(sortrow);
         return false;
     }
 
-    /* 生成排序空间，筛选约束/主键修改的数据 */
+    /* Generate sort space, filter constraint/primary key modified data */
     for (dlnode = burstnode->dlinsertrows->head; NULL != dlnode; dlnode = dlnode->next)
     {
         insertrow = (rebuild_burstrow*)dlnode->value;
         insert = (pg_parser_translog_tbcol_values*)insertrow->row;
-        /* 拼接约束修改的语句，临时表 */
+        /* Assemble constraint modification statement, temp table */
         if (REBUILD_BURSTROWFLAG_CHANGECONSKEY == insertrow->flag)
         {
             if (true == first)
@@ -2196,17 +2160,22 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                 }
                 conskeyburst->optype = REBUILD_BURSTROWTYPE_INSERT;
 
-                appendStringInfo(conskeystr, "CREATE TEMP TABLE IF NOT EXISTS \"%s_burst\" (op text ", burstnode->table.table);
-                appendStringInfo(insestrstr, "INSERT INTO \"%s_burst\" (op",  burstnode->table.table);
+                appendStringInfo(conskeystr,
+                                 "CREATE TEMP TABLE IF NOT EXISTS \"%s_burst\" (op text ",
+                                 burstnode->table.table);
+                appendStringInfo(insestrstr, "INSERT INTO \"%s_burst\" (op",
+                                 burstnode->table.table);
                 appendStringInfo(valuestr, "VALUES ('update' ");
-                appendStringInfo(updatestr, "UPDATE \"%s\".\"%s\" SET ", burstnode->table.schema, burstnode->table.table);
+                appendStringInfo(updatestr, "UPDATE \"%s\".\"%s\" SET ", burstnode->table.schema,
+                                 burstnode->table.table);
 
-                /* 拼接临时表主键列 */
+                /* Assemble temp table primary key columns */
                 for (keyindex = 0; keyindex < table->keycnt; keyindex++)
                 {
                     key = &table->keys[keyindex];
-                    type = rebuild_burst_gettypename(lattrs, sysdicts->by_type, key->coltype, key->colname);
-                    if (NULL == type )
+                    type = rebuild_burst_gettypename(lattrs, sysdicts->by_type, key->coltype,
+                                                     key->colname);
+                    if (NULL == type)
                     {
                         deleteStringInfo(conskeystr);
                         deleteStringInfo(insestrstr);
@@ -2223,23 +2192,25 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                     appendStringInfo(insestrstr, "\"%s_before\"", key->colname);
 
                     appendStringInfo(valuestr, ", ");
-                    appendStringInfo(valuestr, "'%s'", (char*)insert->m_old_values[key->colno - 1].m_value);
+                    appendStringInfo(valuestr, "'%s'",
+                                     (char*)insert->m_old_values[key->colno - 1].m_value);
                     rfree(type);
                     type = NULL;
                 }
 
-                /* 拼接临时表其他列及missing标识列 */
+                /* Assemble temp table other columns and missing flag columns */
                 need_comma = false;
                 for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
                 {
                     values = &insert->m_new_values[colindex];
-                    if (INFO_COL_IS_DROPED == values->m_info
-                        || INFO_COL_IS_CUSTOM == values->m_info)
+                    if (INFO_COL_IS_DROPED == values->m_info ||
+                        INFO_COL_IS_CUSTOM == values->m_info)
                     {
                         continue;
                     }
-                    type = rebuild_burst_gettypename(lattrs, sysdicts->by_type, values->m_coltype, values->m_colName);
-                    if (NULL == type )
+                    type = rebuild_burst_gettypename(lattrs, sysdicts->by_type, values->m_coltype,
+                                                     values->m_colName);
+                    if (NULL == type)
                     {
                         deleteStringInfo(conskeystr);
                         deleteStringInfo(insestrstr);
@@ -2254,12 +2225,15 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                     }
 
                     appendStringInfo(conskeystr, ", ");
-                    appendStringInfo(conskeystr, "\"%s\" %s, \"%s_%s_missing\" char", values->m_colName, type, burstnode->table.table, values->m_colName);
+                    appendStringInfo(conskeystr, "\"%s\" %s, \"%s_%s_missing\" char",
+                                     values->m_colName, type, burstnode->table.table,
+                                     values->m_colName);
                     rfree(type);
                     type = NULL;
 
                     appendStringInfo(insestrstr, ", ");
-                    appendStringInfo(insestrstr, "\"%s\", \"%s_%s_missing\"", values->m_colName, burstnode->table.table, values->m_colName);
+                    appendStringInfo(insestrstr, "\"%s\", \"%s_%s_missing\"", values->m_colName,
+                                     burstnode->table.table, values->m_colName);
 
                     appendStringInfo(valuestr, ", ");
                     if (INFO_COL_MAY_NULL == values->m_info)
@@ -2275,38 +2249,37 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                         appendStringInfo(valuestr, "'%s', 'f'", (char*)values->m_value);
                     }
 
-                    /* 拼接临时表update语句 */
+                    /* Assemble temp table update statement */
                     if (true == rebuild_burst_colisconskey(table, values->m_colName))
                     {
-                        appendStringInfo(updatestr, "\"%s\" = b.\"%s\"", values->m_colName, values->m_colName);
+                        appendStringInfo(updatestr, "\"%s\" = b.\"%s\"", values->m_colName,
+                                         values->m_colName);
                     }
                     else
                     {
-                        appendStringInfo(updatestr, "\"%s\" = CASE WHEN \"%s_%s_missing\" = 'f' THEN b.\"%s\" ELSE \"%s\".\"%s\".\"%s\" END", 
-                                                    values->m_colName, 
-                                                    burstnode->table.table,
-                                                    values->m_colName,
-                                                    values->m_colName,
-                                                    burstnode->table.schema,
-                                                    burstnode->table.table,
-                                                    values->m_colName);
+                        appendStringInfo(updatestr,
+                                         "\"%s\" = CASE WHEN \"%s_%s_missing\" = 'f' THEN b.\"%s\" "
+                                         "ELSE \"%s\".\"%s\".\"%s\" END",
+                                         values->m_colName, burstnode->table.table,
+                                         values->m_colName, values->m_colName,
+                                         burstnode->table.schema, burstnode->table.table,
+                                         values->m_colName);
                     }
                     need_comma = true;
                 }
-                appendStringInfo(conskeystr, ");\nTRUNCATE TABLE \"%s_burst\";\n", burstnode->table.table);
+                appendStringInfo(conskeystr, ");\nTRUNCATE TABLE \"%s_burst\";\n",
+                                 burstnode->table.table);
                 appendStringInfo(insestrstr, ")");
                 appendStringInfo(valuestr, ")");
 
-                /* 拼接临时表update的where条件 */
+                /* Assemble temp table UPDATE WHERE condition */
                 appendStringInfo(updatestr, " FROM \"%s_burst\" b WHERE", burstnode->table.table);
                 for (keyindex = 0; keyindex < table->keycnt; keyindex++)
                 {
                     key = &table->keys[keyindex];
-                    appendStringInfo(updatestr, " \"%s\".\"%s\".\"%s\" = b.\"%s_before\" AND", 
-                                                burstnode->table.schema,
-                                                burstnode->table.table,
-                                                key->colname,
-                                                key->colname);
+                    appendStringInfo(updatestr, " \"%s\".\"%s\".\"%s\" = b.\"%s_before\" AND",
+                                     burstnode->table.schema, burstnode->table.table, key->colname,
+                                     key->colname);
                 }
                 appendStringInfo(updatestr, " b.op = 'update';");
                 appendStringInfo(conskeystr, "%s %s", insestrstr->data, valuestr->data);
@@ -2319,7 +2292,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                 continue;
             }
 
-            /* 拼接临时表内填充的值 */
+            /* Assemble temp table update WHERE condition */
             need_comma = false;
             appendStringInfo(conskeystr, ", ('update' ");
             for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
@@ -2329,15 +2302,16 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                 {
                     key = &table->keys[keyindex];
                     appendStringInfo(conskeystr, ", ");
-                    appendStringInfo(conskeystr, "'%s'", (char*)insert->m_old_values[key->colno - 1].m_value);
+                    appendStringInfo(conskeystr, "'%s'",
+                                     (char*)insert->m_old_values[key->colno - 1].m_value);
                     need_comma = true;
                 }
 
                 for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
                 {
                     values = &insert->m_new_values[colindex];
-                    if (INFO_COL_IS_DROPED == values->m_info
-                        || INFO_COL_IS_CUSTOM == values->m_info)
+                    if (INFO_COL_IS_DROPED == values->m_info ||
+                        INFO_COL_IS_CUSTOM == values->m_info)
                     {
                         continue;
                     }
@@ -2365,12 +2339,12 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
         colcnt++;
     }
 
-    /* 临时表方式stmt生成加入事务 */
+    /* Generate stmt using temp table method and add to transaction */
     if (NULL != conskeystr && NULL != updatestr)
     {
-        /* 初始化 txnstmt */
+        /* Initialize txnstmt */
         stmt = txnstmt_init();
-        if(NULL == stmt)
+        if (NULL == stmt)
         {
             elog(RLOG_WARNING, "rebuild burst assembleinsert stmt init failed");
             rfree(conskeyburst);
@@ -2381,9 +2355,10 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
         }
         stmt->stmt = NULL;
         stmt->type = TXNSTMT_TYPE_BURST;
-        appendStringInfo(conskeystr, ";\n %s \n DROP TABLE \"%s_burst\" ", updatestr->data, burstnode->table.table);
+        appendStringInfo(conskeystr, ";\n %s \n DROP TABLE \"%s_burst\" ", updatestr->data,
+                         burstnode->table.table);
 
-        conskeyburst->batchcmd = (uint8 *)conskeystr->data;
+        conskeyburst->batchcmd = (uint8*)conskeystr->data;
         conskeystr->data = NULL;
         deleteStringInfo(conskeystr);
         deleteStringInfo(updatestr);
@@ -2393,9 +2368,8 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
         txn->stmts = lappend(txn->stmts, (void*)stmt);
         stmt = NULL;
     }
-    
 
-    /* 根据去除约束/主键修改后的数量重新申请排序空间，去掉多余空间 */
+    /* Reallocate sort space based on count after removing constraint/primary key modifications */
     len = (sizeof(rebuild_burstrow*) * colcnt);
     tmprow = rmalloc0(len);
     if (NULL == tmprow)
@@ -2408,29 +2382,30 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
     sortrow = tmprow;
     tmprow = NULL;
 
-    /* 根据missingmap排序 */
+    /* Sort by missingmap */
     qsort(sortrow, colcnt, sizeof(rebuild_burstrow*), rebuild_burst_comparemissing);
 
-    /* 设置初始missing值 */
+    /* Set initial missing value */
     missingmapsize = 0;
     missingcnt = -1;
     missingmap = NULL;
 
-    /* 根据排序好的数据，构建insert语句 */
+    /* Build INSERT statement based on sorted data */
     first = true;
     for (sortindex = 0; sortindex < colcnt; sortindex++)
     {
         insertrow = sortrow[sortindex];
         insert = (pg_parser_translog_tbcol_values*)insertrow->row;
 
-        /* 原始insert语句直接插入 */
+        /* Original insert statement inserted directly */
         if (insertrow->op == REBUILD_BURSTROWTYPE_INSERT)
         {
             if (true == first)
             {
                 insestrstr = makeStringInfo();
                 valuestr = makeStringInfo();
-                appendStringInfo(insestrstr, "INSERT INTO \"%s\".\"%s\" (", burstnode->table.schema, burstnode->table.table);
+                appendStringInfo(insestrstr, "INSERT INTO \"%s\".\"%s\" (", burstnode->table.schema,
+                                 burstnode->table.table);
                 appendStringInfo(valuestr, "VALUES (");
 
                 insertburst = txnstmt_burst_init();
@@ -2442,14 +2417,14 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                 }
                 insertburst->optype = REBUILD_BURSTROWTYPE_INSERT;
 
-                need_comma = false; 
+                need_comma = false;
                 for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
                 {
                     values = &insert->m_new_values[colindex];
-                    /* 不处理的类型 */
-                    if (INFO_COL_MAY_NULL == values->m_info
-                        || INFO_COL_IS_DROPED == values->m_info
-                        || INFO_COL_IS_CUSTOM == values->m_info)
+                    /* Types not processed */
+                    if (INFO_COL_MAY_NULL == values->m_info ||
+                        INFO_COL_IS_DROPED == values->m_info ||
+                        INFO_COL_IS_CUSTOM == values->m_info)
                     {
                         continue;
                     }
@@ -2467,7 +2442,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                     }
                     else if (values->m_info == INFO_NOTHING)
                     {
-                        char *temp_str = strSpecialCharReplace((char *)values->m_value);
+                        char* temp_str = strSpecialCharReplace((char*)values->m_value);
 
                         appendStringInfo(insestrstr, "\"%s\"", values->m_colName);
                         if (temp_str)
@@ -2477,7 +2452,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                         }
                         else
                         {
-                            appendStringInfo(valuestr, "'%s'", (char *)values->m_value);
+                            appendStringInfo(valuestr, "'%s'", (char*)values->m_value);
                         }
                     }
                     else
@@ -2506,9 +2481,8 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
             for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
             {
                 values = &insert->m_new_values[colindex];
-                if (INFO_COL_MAY_NULL == values->m_info 
-                    || INFO_COL_IS_DROPED == values->m_info
-                    || INFO_COL_IS_CUSTOM == values->m_info)
+                if (INFO_COL_MAY_NULL == values->m_info || INFO_COL_IS_DROPED == values->m_info ||
+                    INFO_COL_IS_CUSTOM == values->m_info)
                 {
                     continue;
                 }
@@ -2524,7 +2498,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                 }
                 else if (values->m_info == INFO_NOTHING)
                 {
-                    char *temp_str = strSpecialCharReplace((char *)values->m_value);
+                    char* temp_str = strSpecialCharReplace((char*)values->m_value);
                     if (temp_str)
                     {
                         appendStringInfo(insestrstr, "'%s'", temp_str);
@@ -2532,7 +2506,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                     }
                     else
                     {
-                        appendStringInfo(insestrstr, "'%s'", (char *)values->m_value);
+                        appendStringInfo(insestrstr, "'%s'", (char*)values->m_value);
                     }
                 }
                 else
@@ -2547,23 +2521,23 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                 need_comma = true;
             }
             appendStringInfo(insestrstr, ")");
-            
+
             insertburst->rows = dlist_put(insertburst->rows, insertrow->row);
             insertrow->row = NULL;
             continue;
         }
 
-        /* update生成的insert on conflict方式插入 */
-        if (missingcnt != insertrow->missingcnt
-            || memcmp(missingmap, insertrow->missingmap, missingmapsize))
+        /* INSERT from UPDATE inserted via ON CONFLICT */
+        if (missingcnt != insertrow->missingcnt ||
+            memcmp(missingmap, insertrow->missingmap, missingmapsize))
         {
-            /* massingmap切换重新生成语句 */
+            /* Missingmap changed, regenerate statement */
             missing_comma = false;
             if (NULL != conflictstr && NULL != valuestr)
             {
-                /* 将上一条语句加入txn */
+                /* Add previous statement to txn */
                 stmt = txnstmt_init();
-                if(NULL == stmt)
+                if (NULL == stmt)
                 {
                     deleteStringInfo(valuestr);
                     deleteStringInfo(conflictstr);
@@ -2576,7 +2550,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                 elog(RLOG_WARNING, "burst on  conflict: %s ", conflictstr->data);
                 deleteStringInfo(valuestr);
                 valuestr = NULL;
-                conflictburst->batchcmd = (uint8 *)conflictstr->data;
+                conflictburst->batchcmd = (uint8*)conflictstr->data;
                 conflictstr->data = NULL;
                 deleteStringInfo(conflictstr);
                 conflictstr = NULL;
@@ -2586,7 +2560,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                 conflictburst = NULL;
             }
 
-            /* update生成的insert 以on conflict方式拼接 */
+            /* Assemble INSERT from UPDATE via ON CONFLICT */
             conflictstr = makeStringInfo();
             valuestr = makeStringInfo();
             conflictburst = txnstmt_burst_init();
@@ -2597,10 +2571,11 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
             }
             conflictburst->optype = REBUILD_BURSTROWTYPE_UPDATE;
 
-            appendStringInfo(conflictstr, "INSERT INTO \"%s\".\"%s\" (", burstnode->table.schema, burstnode->table.table);
+            appendStringInfo(conflictstr, "INSERT INTO \"%s\".\"%s\" (", burstnode->table.schema,
+                             burstnode->table.table);
             appendStringInfo(valuestr, "ON CONFLICT (");
 
-            /* 拼接ON CONFLICT (id，...) */
+            /* Assemble ON CONFLICT (id, ...) */
             need_comma = false;
             for (keyindex = 0; keyindex < table->keycnt; keyindex++)
             {
@@ -2615,13 +2590,12 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
             appendStringInfo(valuestr, ") DO UPDATE SET ");
 
             need_comma = false;
-            /* 拼接列名 */
+            /* Assemble column names */
             for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
             {
                 values = &insert->m_new_values[colindex];
-                if (INFO_COL_IS_DROPED == values->m_info
-                    || INFO_COL_IS_CUSTOM == values->m_info
-                    || INFO_COL_MAY_NULL == values->m_info)
+                if (INFO_COL_IS_DROPED == values->m_info || INFO_COL_IS_CUSTOM == values->m_info ||
+                    INFO_COL_MAY_NULL == values->m_info)
                 {
                     continue;
                 }
@@ -2632,7 +2606,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                 }
                 appendStringInfo(conflictstr, "\"%s\"", values->m_colName);
 
-                /* 拼接 DO UPDATE SET 语句 */
+                /* Assemble DO UPDATE SET statement */
                 if (false == rebuild_burst_colisconskey(table, values->m_colName))
                 {
                     if (conskey_comma)
@@ -2640,7 +2614,8 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
                         appendStringInfo(valuestr, ", ");
                     }
 
-                    appendStringInfo(valuestr, "\"%s\" = EXCLUDED.\"%s\" ", values->m_colName, values->m_colName);
+                    appendStringInfo(valuestr, "\"%s\" = EXCLUDED.\"%s\" ", values->m_colName,
+                                     values->m_colName);
                     conskey_comma = true;
                 }
                 need_comma = true;
@@ -2660,14 +2635,13 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
 
         appendStringInfo(conflictstr, "(");
         need_comma = false;
-        
-        /* 拼接列值 */
+
+        /* Assemble column values */
         for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
         {
             values = &insert->m_new_values[colindex];
-            if (INFO_COL_IS_DROPED == values->m_info
-                || INFO_COL_IS_CUSTOM == values->m_info
-                || INFO_COL_MAY_NULL == values->m_info)
+            if (INFO_COL_IS_DROPED == values->m_info || INFO_COL_IS_CUSTOM == values->m_info ||
+                INFO_COL_MAY_NULL == values->m_info)
             {
                 continue;
             }
@@ -2675,7 +2649,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
             {
                 appendStringInfo(conflictstr, ", ");
             }
-            
+
             if (INFO_COL_IS_NULL == values->m_info)
             {
                 appendStringInfo(conflictstr, "NULL");
@@ -2694,12 +2668,11 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
         insertrow->row = NULL;
     }
 
-
-    /* 将最后一条语句加入txn */
+    /* Add last statement to txn */
     if (NULL != conflictstr && NULL != valuestr)
     {
         stmt = txnstmt_init();
-        if(NULL == stmt)
+        if (NULL == stmt)
         {
             rfree(sortrow);
             return false;
@@ -2709,7 +2682,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
         appendStringInfo(conflictstr, " %s", valuestr->data);
         deleteStringInfo(valuestr);
         valuestr = NULL;
-        conflictburst->batchcmd = (uint8 *)conflictstr->data;
+        conflictburst->batchcmd = (uint8*)conflictstr->data;
         conflictstr->data = NULL;
         deleteStringInfo(conflictstr);
         stmt->stmt = conflictburst;
@@ -2720,18 +2693,18 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
 
     if (NULL != insestrstr)
     {
-        /* 初始化 txnstmt */
+        /* Initialize txnstmt */
         stmt = txnstmt_init();
-        if(NULL == stmt)
+        if (NULL == stmt)
         {
             rfree(sortrow);
             return false;
         }
         stmt->stmt = NULL;
         stmt->type = TXNSTMT_TYPE_BURST;
-        
+
         appendStringInfo(insestrstr, ";");
-        insertburst->batchcmd = (uint8 *)insestrstr->data;
+        insertburst->batchcmd = (uint8*)insestrstr->data;
         insestrstr->data = NULL;
         deleteStringInfo(insestrstr);
         stmt->stmt = insertburst;
@@ -2744,21 +2717,21 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts *sysdicts, rebuild_burst
     return true;
 }
 
-/* burstnode 拼接语句 */
+/* Assemble statements from burstnode */
 bool rebuild_burst_bursts2stmt(rebuild_burst* burst, cache_sysdicts* sysdicts, txn* txn)
 {
-    dlistnode* dlnode                       = NULL;
-    rebuild_burstnode* burstnode     = NULL;
+    dlistnode*         dlnode = NULL;
+    rebuild_burstnode* burstnode = NULL;
     if (true == dlist_isnull(burst->dlburstnodes))
     {
         return true;
     }
 
-    /* 遍历burstnode */
+    /* Iterate through burstnode */
     for (dlnode = burst->dlburstnodes->head; NULL != dlnode; dlnode = dlnode->next)
     {
         burstnode = (rebuild_burstnode*)dlnode->value;
-        /* meta/ddl直接加入事务 */
+        /* meta/ddl added directly to transaction */
         if (REBUILD_BURSTNODETYPE_OTHER == burstnode->type)
         {
             txn->stmts = lappend(txn->stmts, burstnode->stmt);
@@ -2798,11 +2771,11 @@ bool rebuild_burst_bursts2stmt(rebuild_burst* burst, cache_sysdicts* sysdicts, t
     return true;
 }
 
-/* burstcolumn 资源释放 */
+/* Free burstcolumn resources */
 void rebuild_burstcolumn_free(rebuild_burstcolumn* burstcolumn, int colcnt)
 {
-    int colindex                        = 0;
-    rebuild_burstcolumn column   = {'\0'};
+    int                 colindex = 0;
+    rebuild_burstcolumn column = {'\0'};
 
     if (NULL == burstcolumn)
     {
@@ -2823,7 +2796,7 @@ void rebuild_burstcolumn_free(rebuild_burstcolumn* burstcolumn, int colcnt)
     return;
 }
 
-/* burstrow 资源释放 */
+/* Free burstrow resources */
 void rebuild_burstrow_free(void* args)
 {
     rebuild_burstrow* burstrow = NULL;
@@ -2842,16 +2815,14 @@ void rebuild_burstrow_free(void* args)
 
     if (burstrow->row)
     {
-        //todo 释放row
         heap_free_trans_result((pg_parser_translog_tbcolbase*)burstrow->row);
-        
     }
 
     rfree(burstrow);
     return;
 }
 
-/* bursttable 资源释放 函数内不是放bursttable */
+/* Free bursttable resources - does not free bursttable within function */
 void rebuild_bursttable_free(void* args)
 {
     rebuild_bursttable* bursttable = NULL;
@@ -2881,7 +2852,7 @@ void rebuild_bursttable_free(void* args)
     return;
 }
 
-/* burstnode 资源释放 */
+/* Free burstnode resources */
 void rebuild_burstnode_free(void* args)
 {
     rebuild_burstnode* burstnode = NULL;
@@ -2907,13 +2878,12 @@ void rebuild_burstnode_free(void* args)
     {
         rebuild_burstcolumn_free(burstnode->table.keys, burstnode->table.keycnt);
     }
-    
+
     dlist_free(burstnode->dldeleterows, rebuild_burstrow_free);
     dlist_free(burstnode->dlinsertrows, rebuild_burstrow_free);
 
     if (burstnode->stmt)
     {
-        //todo 释放stmt
         txnstmt_free(burstnode->stmt);
     }
 
@@ -2921,7 +2891,7 @@ void rebuild_burstnode_free(void* args)
     return;
 }
 
-/* burst 资源释放 */
+/* Free burst resources */
 void rebuild_burst_free(void* args)
 {
     rebuild_burst* burst = NULL;
@@ -2932,7 +2902,7 @@ void rebuild_burst_free(void* args)
     }
 
     burst = (rebuild_burst*)args;
-    
+
     dlist_free(burst->dlbursttable, rebuild_bursttable_free);
     dlist_free(burst->dlburstnodes, rebuild_burstnode_free);
 

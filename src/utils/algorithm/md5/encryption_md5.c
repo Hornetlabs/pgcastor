@@ -69,146 +69,29 @@
 
 /* Integer part of 4294967296 times abs(sin(i)), where i is in radians. */
 static const uint32_t T[65] = {
-    0,
-    0xd76aa478,
-    0xe8c7b756,
-    0x242070db,
-    0xc1bdceee,
-    0xf57c0faf,
-    0x4787c62a,
-    0xa8304613,
-    0xfd469501,
-    0x698098d8,
-    0x8b44f7af,
-    0xffff5bb1,
-    0x895cd7be,
-    0x6b901122,
-    0xfd987193,
-    0xa679438e,
+    0,          0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613,
+    0xfd469501, 0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e,
     0x49b40821,
 
-    0xf61e2562,
-    0xc040b340,
-    0x265e5a51,
-    0xe9b6c7aa,
-    0xd62f105d,
-    0x2441453,
-    0xd8a1e681,
-    0xe7d3fbc8,
-    0x21e1cde6,
-    0xc33707d6,
-    0xf4d50d87,
-    0x455a14ed,
-    0xa9e3e905,
-    0xfcefa3f8,
-    0x676f02d9,
-    0x8d2a4c8a,
+    0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x2441453,  0xd8a1e681, 0xe7d3fbc8,
+    0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed, 0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
 
-    0xfffa3942,
-    0x8771f681,
-    0x6d9d6122,
-    0xfde5380c,
-    0xa4beea44,
-    0x4bdecfa9,
-    0xf6bb4b60,
-    0xbebfbc70,
-    0x289b7ec6,
-    0xeaa127fa,
-    0xd4ef3085,
-    0x4881d05,
-    0xd9d4d039,
-    0xe6db99e5,
-    0x1fa27cf8,
-    0xc4ac5665,
+    0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c, 0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
+    0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x4881d05,  0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
 
-    0xf4292244,
-    0x432aff97,
-    0xab9423a7,
-    0xfc93a039,
-    0x655b59c3,
-    0x8f0ccc92,
-    0xffeff47d,
-    0x85845dd1,
-    0x6fa87e4f,
-    0xfe2ce6e0,
-    0xa3014314,
-    0x4e0811a1,
-    0xf7537e82,
-    0xbd3af235,
-    0x2ad7d2bb,
-    0xeb86d391,
+    0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039, 0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
+    0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
 };
 
 static const uint8_t md5_paddat[MD5_BUFLEN] = {
-    0x80,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
+    0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-static void md5_calc(uint8_t *, md5_ctxt *);
+static void md5_calc(uint8_t*, md5_ctxt*);
 
-void md5_init(md5_ctxt *ctxt)
+void md5_init(md5_ctxt* ctxt)
 {
     ctxt->md5_n = 0;
     ctxt->md5_i = 0;
@@ -219,10 +102,9 @@ void md5_init(md5_ctxt *ctxt)
     memset(ctxt->md5_buf, 0, sizeof(ctxt->md5_buf));
 }
 
-void md5_loop(md5_ctxt *ctxt, const uint8_t *input, unsigned len)
+void md5_loop(md5_ctxt* ctxt, const uint8_t* input, unsigned len)
 {
-    unsigned int gap,
-        i;
+    unsigned int gap, i;
 
     ctxt->md5_n += len * 8; /* byte to bit */
     gap = MD5_BUFLEN - ctxt->md5_i;
@@ -233,7 +115,9 @@ void md5_loop(md5_ctxt *ctxt, const uint8_t *input, unsigned len)
         md5_calc(ctxt->md5_buf, ctxt);
 
         for (i = gap; i + MD5_BUFLEN <= len; i += MD5_BUFLEN)
-            md5_calc((uint8_t *)(input + i), ctxt);
+        {
+            md5_calc((uint8_t*)(input + i), ctxt);
+        }
 
         ctxt->md5_i = len - i;
         memmove(ctxt->md5_buf, input + i, ctxt->md5_i);
@@ -245,7 +129,7 @@ void md5_loop(md5_ctxt *ctxt, const uint8_t *input, unsigned len)
     }
 }
 
-void md5_pad(md5_ctxt *ctxt)
+void md5_pad(md5_ctxt* ctxt)
 {
     unsigned int gap;
 
@@ -253,16 +137,14 @@ void md5_pad(md5_ctxt *ctxt)
     gap = MD5_BUFLEN - ctxt->md5_i;
     if (gap > 8)
     {
-        memmove(ctxt->md5_buf + ctxt->md5_i, md5_paddat,
-                gap - sizeof(ctxt->md5_n));
+        memmove(ctxt->md5_buf + ctxt->md5_i, md5_paddat, gap - sizeof(ctxt->md5_n));
     }
     else
     {
         /* including gap == 8 */
         memmove(ctxt->md5_buf + ctxt->md5_i, md5_paddat, gap);
         md5_calc(ctxt->md5_buf, ctxt);
-        memmove(ctxt->md5_buf, md5_paddat + gap,
-                MD5_BUFLEN - sizeof(ctxt->md5_n));
+        memmove(ctxt->md5_buf, md5_paddat + gap, MD5_BUFLEN - sizeof(ctxt->md5_n));
     }
 
     /* 8 byte word */
@@ -282,7 +164,7 @@ void md5_pad(md5_ctxt *ctxt)
     md5_calc(ctxt->md5_buf, ctxt);
 }
 
-void md5_result(uint8_t *digest, md5_ctxt *ctxt)
+void md5_result(uint8_t* digest, md5_ctxt* ctxt)
 {
     /* 4 byte words */
 #ifndef WORDS_BIGENDIAN
@@ -311,8 +193,7 @@ void md5_result(uint8_t *digest, md5_ctxt *ctxt)
 static uint32_t X[16];
 #endif
 
-static void
-md5_calc(uint8_t *b64, md5_ctxt *ctxt)
+static void md5_calc(uint8_t* b64, md5_ctxt* ctxt)
 {
     uint32_t A = ctxt->md5_sta;
     uint32_t B = ctxt->md5_stb;
@@ -320,11 +201,11 @@ md5_calc(uint8_t *b64, md5_ctxt *ctxt)
     uint32_t D = ctxt->md5_std;
 
 #ifndef WORDS_BIGENDIAN
-    uint32_t *X = (uint32_t *)b64;
+    uint32_t* X = (uint32_t*)b64;
 #else
     /* 4 byte words */
     /* what a brute force but fast! */
-    uint8_t *y = (uint8_t *)X;
+    uint8_t* y = (uint8_t*)X;
 
     y[0] = b64[3];
     y[1] = b64[2];

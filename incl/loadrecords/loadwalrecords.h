@@ -10,28 +10,30 @@ typedef enum LOADWALRECORDS_STATUS
 
 typedef struct LOADWALRECORDS
 {
-    loadrecords      loadrecords;
+    loadrecords loadrecords;
 
-    /* wal 文件版本 */
-    bool        need_decrypt;   /* 需要解密 */
-    TimeLineID  timeline;       /* 时间线 */
-    XLogRecPtr  block_startptr; /* block开始的lsn */
-    XLogRecPtr  startptr;       /* 开始的lsn */
-    XLogRecPtr  endptr;         /* 结束的lsn */
-    XLogRecPtr  prev;           /* 最后一条已划分record的lsn */
+    /* wal file version */
+    bool       need_decrypt;   /* Need decryption */
+    TimeLineID timeline;       /* Timeline */
+    XLogRecPtr block_startptr; /* lsn where block starts */
+    XLogRecPtr startptr;       /* Starting lsn */
+    XLogRecPtr endptr;         /* Ending lsn */
+    XLogRecPtr prev;           /* lsn of last divided record */
 
-    mpage*      page;           /* 读取缓冲区 */
+    mpage* page; /* Read buffer */
 
-    recordcross*     page_last_record_incomplete;    /* (若存在) 解析到的页的最后一条不完整record* */
-    recordcross*     seg_first_incomplete;           /* (若存在) 当前文件第一条不完整record* */
-    recordcross*     seg_first_incomplete_next;      /* (若存在) 下一个wal文件第一条不完整record*/
+    recordcross*
+        page_last_record_incomplete;   /* (If exists) Last incomplete record of parsed page* */
+    recordcross* seg_first_incomplete; /* (If exists) First incomplete record of current file* */
+    recordcross*
+        seg_first_incomplete_next; /* (If exists) First incomplete record of next wal file*/
 
-    dlist*                  records;  /* 划分完的完整record链表 */
+    dlist*           records; /* Linked list of divided complete records */
     loadpage*        loadpage;
     loadpageroutine* loadpageroutine;
 } loadwalrecords;
 
-/* 初始化 */
+/* Initialize */
 extern loadwalrecords* loadwalrecords_init(void);
 
 extern void loadwalrecords_free(loadwalrecords* loadrecords);
@@ -40,8 +42,8 @@ extern bool loadwalrecords_load(loadwalrecords* loadrecords);
 
 extern void loadwalrecords_clean(loadwalrecords* loadrecords);
 
-extern bool loadwalrecords_merge_seg_last_record(loadwalrecords *rctl);
+extern bool loadwalrecords_merge_seg_last_record(loadwalrecords* rctl);
 
-extern bool loadwalrecords_checkend(XLogRecPtr cur, loadwalrecords *rctl);
+extern bool loadwalrecords_checkend(XLogRecPtr cur, loadwalrecords* rctl);
 
 #endif

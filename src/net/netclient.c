@@ -12,8 +12,7 @@
 #include "net/netpacket/netpacket.h"
 #include "net/netclient.h"
 
-
-/* 重置状态、超时时间、关闭描述符、清理packets内存、设置 iompbase和iompops等 */
+/* Reset status, timeout, close descriptor, clean packets memory, set iompbase and iompops etc */
 void netclient_reset(netclient* netclient)
 {
     netclient->protocoltype = NETCLIENT_PROTOCOLTYPE_IPTCP;
@@ -41,32 +40,31 @@ void netclient_setprotocoltype(netclient* netclient, netclient_protocoltype prot
     netclient->protocoltype = protocoltype;
 }
 
-
-/* 设置netclient timeout */
+/* Set netclient timeout */
 void netclient_settimeout(netclient* netclient, int timeout)
 {
     if (NULL == netclient)
     {
         return;
     }
-    
+
     netclient->timeout = timeout;
     return;
 }
 
-/* 设置netclient hbtimeout*/
+/* Set netclient hbtimeout*/
 void netclient_sethbtimeout(netclient* netclient, int hbtimeout)
 {
     if (NULL == netclient)
     {
         return;
     }
-    
+
     netclient->hbtimeout = hbtimeout;
     return;
 }
 
-/* 设置netclient svrhost */
+/* Set netclient svrhost */
 void netclient_setsvrhost(netclient* netclient, char* host)
 {
     if (NULL == netclient)
@@ -83,7 +81,7 @@ void netclient_setsvrhost(netclient* netclient, char* host)
     return;
 }
 
-/* 设置netclient svrport */
+/* Set netclient svrport */
 void netclient_setsvrport(netclient* netclient, char* port)
 {
     if (NULL == netclient)
@@ -100,23 +98,23 @@ void netclient_setsvrport(netclient* netclient, char* port)
     return;
 }
 
-/* 连接服务端 */
+/* Connect to server */
 bool netclient_conn(netclient* netclient)
 {
-    bool bret = false;
-    int iret = 0;
-    int yes = 1;
-    int domain = AF_INET;
-    int addrlen = 0;
-    int keep_alive = 0;
-    int idle = 0;
-    int interval = 0;
-    int count = 0;
-    int timeout = 0;
-    struct sockaddr* connaddr = NULL;
+    bool               bret = false;
+    int                iret = 0;
+    int                yes = 1;
+    int                domain = AF_INET;
+    int                addrlen = 0;
+    int                keep_alive = 0;
+    int                idle = 0;
+    int                interval = 0;
+    int                count = 0;
+    int                timeout = 0;
+    struct sockaddr*   connaddr = NULL;
     struct sockaddr_in addrin;
     struct sockaddr_un addrun;
-    char unixdoamin[512] = { 0 };
+    char               unixdoamin[512] = {0};
 
     keep_alive = guc_getConfigOptionInt(CFG_KEY_TCP_KEEPALIVE);
     idle = guc_getConfigOptionInt(CFG_KEY_TCP_KEEPALIVES_IDLE);
@@ -124,18 +122,13 @@ bool netclient_conn(netclient* netclient)
     count = guc_getConfigOptionInt(CFG_KEY_TCP_KEEPALIVES_COUNT);
     timeout = guc_getConfigOptionInt(CFG_KEY_TCP_USER_TIMEOUT);
 
-    /* 获取host对应的地址 */
+    /* Get address corresponding to host */
     rmemset1(&addrin, 0, 0, sizeof(struct sockaddr_in));
 
     if (NETCLIENT_PROTOCOLTYPE_IPTCP == netclient->protocoltype)
     {
-        bret = osal_host2sockaddr(&addrin,
-                                    netclient->svrhost,
-                                    netclient->svrport,
-                                    domain,
-                                    SOCK_STREAM,
-                                    IPPROTO_TCP,
-                                    1);
+        bret = osal_host2sockaddr(&addrin, netclient->svrhost, netclient->svrport, domain,
+                                  SOCK_STREAM, IPPROTO_TCP, 1);
         if (false == bret)
         {
             elog(RLOG_WARNING, "can not get addr info, %s", strerror(errno));
@@ -147,7 +140,8 @@ bool netclient_conn(netclient* netclient)
     else if (NETCLIENT_PROTOCOLTYPE_UNIXDOMAIN == netclient->protocoltype)
     {
         domain = AF_LOCAL;
-        snprintf(unixdoamin, 512, "%s/%s%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX, netclient->svrport);
+        snprintf(unixdoamin, 512, "%s/%s%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX,
+                 netclient->svrport);
         if (sizeof(addrun.sun_path) <= strlen(unixdoamin))
         {
             elog(RLOG_WARNING, "unix domain dir too long, %s", strerror(errno));
@@ -160,43 +154,41 @@ bool netclient_conn(netclient* netclient)
         addrlen = sizeof(struct sockaddr_un);
     }
 
-    /* 创建TCP描述符 */
+    /* Create TCP descriptor */
     netclient->fd = osal_socket(domain, SOCK_STREAM, 0);
     if (-1 == netclient->fd)
     {
         return false;
     }
 
-    /* 禁用 TCP_NODELAY */
+    /* Disable TCP_NODELAY */
     osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(int));
 
-    /* 设置为 非阻塞模式 */
+    /* Set to non-blocking mode */
     osal_setunblock(netclient->fd);
 
     if (keep_alive)
     {
-        osal_setsockopt(netclient->fd, SOL_SOCKET, SO_KEEPALIVE,
-                                        (char *) &keep_alive, sizeof(keep_alive));
+        osal_setsockopt(netclient->fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&keep_alive,
+                        sizeof(keep_alive));
 
-        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPIDLE,
-                    (char *) &idle, sizeof(idle));
+        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&idle, sizeof(idle));
 
-        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPINTVL,
-                    (char *) &interval, sizeof(interval));
+        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPINTVL, (char*)&interval,
+                        sizeof(interval));
 
-        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPCNT,
-                    (char *) &count, sizeof(count));
+        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPCNT, (char*)&count, sizeof(count));
 
-        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_USER_TIMEOUT,
-                    (char *) &timeout, sizeof(timeout));
+        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_USER_TIMEOUT, (char*)&timeout,
+                        sizeof(timeout));
     }
 
-    /* 连接目标端 */
+    /* Connect to target */
     iret = osal_connect(netclient->fd, (struct sockaddr*)connaddr, addrlen);
     if (-1 == iret)
     {
-        /* 查看当前的状态是否为连接中 */
-        if(errno == EINPROGRESS)
+        /* Check if current status is connecting */
+        if (errno == EINPROGRESS)
         {
             netclient->status = NETCLIENTCONN_STATUS_INPROCESS;
             return true;
@@ -213,19 +205,19 @@ bool netclient_conn(netclient* netclient)
     return true;
 }
 
-/* 用于查看是否连接上目标端, 当状态为 INPROCESS 时,检测是否可以转化状态为 CONNECTED */
+/* Used to check if connected to target, when status is INPROCESS, check if can convert to CONNECTED
+ */
 bool netclient_isconnect(netclient* netclient)
 {
-    uint16 flag = POLLOUT;
-    int iret = 0;
-    int value = 0;
-    int timeout = 0;
+    uint16    flag = POLLOUT;
+    int       iret = 0;
+    int       value = 0;
+    int       timeout = 0;
     socklen_t len = sizeof(int);
 
-    while(1)
+    while (1)
     {
-
-        if(true == g_gotsigterm)
+        if (true == g_gotsigterm)
         {
             return false;
         }
@@ -236,10 +228,10 @@ bool netclient_isconnect(netclient* netclient)
         timeout = netclient->base->timeout;
         netclient->base->timeout = 10000;
         iret = netclient->ops->iomp(netclient->base);
-        if(-1 == iret)
+        if (-1 == iret)
         {
-            /* 查看错误是否为信号引起的，若为信号引起那么继续监测 */
-            if(errno == EINTR)
+            /* Check if error is caused by signal, if so continue monitoring */
+            if (errno == EINTR)
             {
                 continue;
             }
@@ -249,10 +241,10 @@ bool netclient_isconnect(netclient* netclient)
             return false;
         }
 
-        /* 检测状态，查看是否连接正常 */
-        if(0 == iret)
+        /* Check status, see if connection is normal */
+        if (0 == iret)
         {
-            /* 超时了，关闭描述符 */
+            /* Timeout, close descriptor */
             elog(RLOG_WARNING, "connect timeout");
             osal_file_close(netclient->fd);
             netclient->fd = -1;
@@ -261,16 +253,16 @@ bool netclient_isconnect(netclient* netclient)
         netclient->base->timeout = timeout;
 
         iret = osal_getsockopt(netclient->fd, SOL_SOCKET, SO_ERROR, &value, &len);
-        if(-1 == iret)
+        if (-1 == iret)
         {
-            /* 关闭连接 */
+            /* Close connection */
             elog(RLOG_WARNING, "osal_getsockopt error, %s", strerror(errno));
             osal_file_close(netclient->fd);
             netclient->fd = -1;
             return false;
         }
 
-        if(0 != value)
+        if (0 != value)
         {
             elog(RLOG_WARNING, "osal_getsockopt value error, %s", strerror(value));
             osal_file_close(netclient->fd);
@@ -285,31 +277,31 @@ bool netclient_isconnect(netclient* netclient)
     return true;
 }
 
-/* 
- * 尝试连接服务端
+/*
+ * Try to connect to server
  *  conn
  *  sleep(1)
  *  is conn ?
- * 
- *  true    连接上
- *  false   未连接上
+ *
+ *  true    Connected
+ *  false   Not connected
  */
 bool netclient_tryconn(netclient* netclient)
 {
-    /* 连接目标端 */
+    /* Connect to target */
     if (false == netclient_conn(netclient))
     {
         netclient->status = NETCLIENTCONN_STATUS_NOP;
         return false;
     }
 
-    /* 查看当前的状态是否为 INPROCESS */
+    /* Check if current status is INPROCESS */
     if (NETCLIENTCONN_STATUS_INPROCESS == netclient->status)
     {
-        /* 查看描述符的状态，有错误那么重置状态 */
+        /* Check descriptor status, reset status if there is error */
         if (false == netclient_isconnect(netclient))
         {
-            /* 连接失败 */
+            /* Connection failed */
             elog(RLOG_WARNING, "connect timeout error, %s", strerror(errno));
             netclient->status = NETCLIENTCONN_STATUS_NOP;
             return false;
@@ -318,16 +310,16 @@ bool netclient_tryconn(netclient* netclient)
     return true;
 }
 
-/* 接收数据 */
+/* Receive data */
 static bool netclient_recv(netclient* netclient)
 {
-    bool bhead                  = false;
-    int rlen                    = 0;
-    int readlen                 = 0;
-    int msglen                  = 0;
-    uint8* cptr                 = NULL;
-    netpacket* npacket   = NULL;
-    uint8 hdr[8]                 = { 0 };
+    bool       bhead = false;
+    int        rlen = 0;
+    int        readlen = 0;
+    int        msglen = 0;
+    uint8*     cptr = NULL;
+    netpacket* npacket = NULL;
+    uint8      hdr[8] = {0};
 
     if (NULL == netclient)
     {
@@ -335,11 +327,11 @@ static bool netclient_recv(netclient* netclient)
     }
 
     /*
-     * 1、在读队列中获取最后一包
-     *  1.1 完整的 packet, 申请一个新的 packet 挂载到 读队列 中
-     *  1.2 不完整的 packet, 使用该 packet
-     * 2、队列为空
-     *  申请一个新 packet 挂载到 读队列中
+     * 1、Get last packet from read queue
+     *  1.1 Complete packet, apply for a new packet and mount to read queue
+     *  1.2 Incomplete packet, use this packet
+     * 2、Queue is empty
+     *  Apply for a new packet and mount to read queue
      */
     if (false == queue_isnull(netclient->rpackets))
     {
@@ -370,7 +362,7 @@ static bool netclient_recv(netclient* netclient)
     }
     else
     {
-        /* 读取数据 */
+        /* Read data */
         rlen = readlen = npacket->used - npacket->offset;
         cptr = npacket->data + npacket->offset;
     }
@@ -402,19 +394,18 @@ static bool netclient_recv(netclient* netclient)
     return true;
 }
 
-
-/* 发送数据 */
+/* Send data */
 static bool netclient_send(netclient* netclient)
 {
-    /* 
-     * 发送数据
-     *  1、在队列中获取待发送的包
-     *  2、发送数据
+    /*
+     * Send data
+     *  1、Get packet to send from queue
+     *  2、Send data
      */
-    int timeout                 = 0;
-    int sendlen                 = 0;
-    uint8* cptr                 = NULL;
-    netpacket* npacket   = NULL;
+    int        timeout = 0;
+    int        sendlen = 0;
+    uint8*     cptr = NULL;
+    netpacket* npacket = NULL;
     if (NULL == netclient)
     {
         return true;
@@ -445,19 +436,15 @@ static bool netclient_send(netclient* netclient)
     return true;
 }
 
-
-/* 创建连接并发送数据 */
-bool netclient_senddata(netclient_protocoltype ptype,
-                               char* host,
-                               char* port,
-                               uint8* data,
-                               int datalen)
+/* Create connection and send data */
+bool netclient_senddata(netclient_protocoltype ptype, char* host, char* port, uint8* data,
+                        int datalen)
 {
-    bool bret                               = true;
-    int intervaltimeout                     = 0;
-    int interval                            = 10000;
-    netpacket* npacket               = NULL;
-    netclient netclient              = { 0 };
+    bool       bret = true;
+    int        intervaltimeout = 0;
+    int        interval = 10000;
+    netpacket* npacket = NULL;
+    netclient  netclient = {0};
 
     netclient.fd = -1;
     netclient.base = NULL;
@@ -470,17 +457,17 @@ bool netclient_senddata(netclient_protocoltype ptype,
     }
     sprintf(netclient.svrport, "%s", port);
 
-    /* 设置使用的网络模型 */
+    /* Set network model to use */
     netclient.ops = netiomp_init(NETIOMP_TYPE_POLL);
 
-    /* 申请 base 信息，用于后续的描述符处理 */
+    /* Apply for base information for subsequent descriptor processing */
     if (false == netclient.ops->create(&netclient.base))
     {
         bret = false;
         goto netclient_senddata_done;
     }
 
-    /* 设置类型 */
+    /* Set type */
     netclient_setprotocoltype(&netclient, ptype);
     netclient_sethbtimeout(&netclient, NET_HBTIME);
     netclient_settimeout(&netclient, 0);
@@ -494,7 +481,7 @@ bool netclient_senddata(netclient_protocoltype ptype,
         goto netclient_senddata_done;
     }
 
-    /* 组建包 */
+    /* Build packet */
     netclient.rpackets = queue_init();
     if (NULL == netclient.rpackets)
     {
@@ -519,7 +506,7 @@ bool netclient_senddata(netclient_protocoltype ptype,
     npacket->used = datalen;
     npacket->offset = 0;
 
-    /* 连接 xmanager */
+    /* Connect to xmanager */
     if (false == netclient_tryconn(&netclient))
     {
         bret = false;
@@ -570,18 +557,18 @@ netclient_senddata_done:
     return bret;
 }
 
-/* 创建监听事件并等待事件触发,处理触发的事件 */
+/* Create listen event and wait for event trigger, process triggered event */
 bool netclient_desc(netclient* netclient)
 {
     int iret = 0;
-    int event = 0;                                  /* 事件类型 */
-    int revent = 0;                                 /* 触发的事件 */
+    int event = 0;  /* Event type */
+    int revent = 0; /* Triggered event */
 
-    /* 消息中记录的数据长度,默认设置为头长度 */
+    /* Data length recorded in message, default set to header length */
     uint32 msglen = NETMSG_TYPE_HDR_SIZE;
 
-    uint8 head[NETMSG_TYPE_HDR_SIZE] = { 0 };
-    uint8* ruptr = NULL;
+    uint8      head[NETMSG_TYPE_HDR_SIZE] = {0};
+    uint8*     ruptr = NULL;
     netpacket* netpacket = NULL;
 
     /* FOR DEBUG BEGIN */
@@ -591,63 +578,63 @@ bool netclient_desc(netclient* netclient)
 
     /* FOR DEBUG END */
 
-    /* 获取数据 */
-    /* 
-    * 1、创建监听事件
-    * 2、检测监听事件是否触发
-    * 3、根据不同的协议类型走不同的处理逻辑
-    */
-    /* 重置事件监听 */
+    /* Get data */
+    /*
+     * 1、Create listen event
+     * 2、Check if listen event triggered
+     * 3、Different processing logic based on different protocol types
+     */
+    /* Reset event listening */
     netclient->ops->reset(netclient->base);
     event |= POLLIN;
 
     if (false == netclient_wpacketisnull(netclient))
     {
-        /* 重置事件监听 */
+        /* Reset event listening */
         event |= POLLOUT;
     }
 
-    /* 添加监听事件 */
+    /* Add listen event */
     netclient->pos = netclient->ops->add(netclient->base, netclient->fd, event);
 
-    /* 调用iomp端口 */
+    /* Call iomp port */
     iret = netclient->ops->iomp(netclient->base);
-    if(-1 == iret)
+    if (-1 == iret)
     {
-        if(errno == EINTR)
+        if (errno == EINTR)
         {
             return true;
         }
         return false;
     }
 
-    if(0 == iret)
+    if (0 == iret)
     {
-        /* 超时了, 累加hbtime和timeout 那么继续 */
+        /* Timeout, accumulate hbtime and timeout then continue */
         netclient->timeout += netclient->base->timeout;
         netclient->hbtimeout += netclient->base->timeout;
         return true;
     }
 
-    /* 有消息触发，那么看看触发的事件类型 */
+    /* Message triggered, check triggered event type */
     revent = netclient->ops->getevent(netclient->base, netclient->pos);
 
-    /* 是否有数据需要读 */
-    if(POLLIN == (revent&POLLIN))
+    /* Whether there is data to read */
+    if (POLLIN == (revent & POLLIN))
     {
-        /* 读取数据并处理 */
-        /* 重置计数器 */
+        /* Read data and process */
+        /* Reset counter */
         netclient->timeout = 0;
 
         if (netclient_rpacketisnull(netclient))
         {
             uint32 msgtype = 0;
-            /* 取所有数据 */
+            /* Get all data */
             ruptr = head;
-            if(false == osal_net_read(netclient->fd, ruptr, (int*)&msglen))
+            if (false == osal_net_read(netclient->fd, ruptr, (int*)&msglen))
             {
-                /* 读取数据失败,退出 */
-                if(0 == msglen)
+                /* Read data failed, exit */
+                if (0 == msglen)
                 {
                     elog(RLOG_WARNING, "osal_close sock, %s", strerror(errno));
                 }
@@ -658,7 +645,7 @@ bool netclient_desc(netclient* netclient)
                 return false;
             }
 
-            /* 换算长度并获取 */
+            /* Convert length and get */
             msgtype = CONCAT(get, 32bit)(&ruptr);
             msglen = CONCAT(get, 32bit)(&ruptr);
 
@@ -683,11 +670,11 @@ bool netclient_desc(netclient* netclient)
             {
                 ruptr = netpacket->data + NETMSG_TYPE_HDR_SIZE;
 
-                /* 取所有数据 */
-                if(false == osal_net_read(netclient->fd, ruptr, (int*)&msglen))
+                /* Get all data */
+                if (false == osal_net_read(netclient->fd, ruptr, (int*)&msglen))
                 {
-                    /* 读取数据失败,退出 */
-                    if(0 == msglen)
+                    /* Read data failed, exit */
+                    if (0 == msglen)
                     {
                         elog(RLOG_WARNING, "osal_close sock");
                     }
@@ -698,17 +685,16 @@ bool netclient_desc(netclient* netclient)
                     netpacket_destroy(netpacket);
                     return false;
                 }
-                
             }
             netclient->callback(netclient, netpacket);
             netpacket_destroy(netpacket);
         }
     }
 
-    if(POLLOUT == (POLLOUT&revent))
+    if (POLLOUT == (POLLOUT & revent))
     {
-        /* 查看是否触发 */
-        /* 查看是否有数据需要写 */
+        /* Check if triggered */
+        /* Check if there is data to write */
 
         netpacket = queue_get(netclient->wpackets, NULL);
         if (NULL == netpacket)
@@ -716,7 +702,7 @@ bool netclient_desc(netclient* netclient)
             return true;
         }
 
-        /* 发送数据 */
+        /* Send data */
         /* FOR DEBUG BEGIN */
         uptr = netpacket->data;
         debugmsgtype = get32bit(&uptr);
@@ -724,9 +710,9 @@ bool netclient_desc(netclient* netclient)
         elog(RLOG_DEBUG, "send msgtype:%u, msglen:%u", debugmsgtype, debugmsglen);
         /* FOR DEBUG END */
 
-        if(false == osal_net_write(netclient->fd, netpacket->data, netpacket->used))
+        if (false == osal_net_write(netclient->fd, netpacket->data, netpacket->used))
         {
-            /* 发送数据失败，关闭连接 */
+            /* Send data failed, close connection */
             elog(RLOG_WARNING, "write data 2 error, %s", strerror(errno));
             netpacket_destroy(netpacket);
             return false;
@@ -735,50 +721,50 @@ bool netclient_desc(netclient* netclient)
         netpacket = NULL;
     }
 
-    if((POLLIN != (revent&POLLIN)) && (POLLOUT != (POLLOUT&revent)))
+    if ((POLLIN != (revent & POLLIN)) && (POLLOUT != (POLLOUT & revent)))
     {
         elog(RLOG_WARNING, "unknown event, %d", revent);
         return false;
     }
 
     return true;
-
 }
 
 /*
- * 创建监听事件并等待事件触发, 接收或发送数据,仅接收或发送, 不做业务处理
-*/
+ * Create listen event and wait for event trigger, receive or send data, only receive or send, no
+ * business processing
+ */
 bool netclient_desc2(netclient* netclient)
 {
     int iret = 0;
-    int event = 0;                                  /* 事件类型 */
-    int revent = 0;                                 /* 触发的事件 */
+    int event = 0;  /* Event type */
+    int revent = 0; /* Triggered event */
 
-    /* 获取数据 */
-    /* 
-    * 1、创建监听事件
-    * 2、检测监听事件是否触发
-    * 3、根据不同的协议类型走不同的处理逻辑
-    */
-    /* 重置事件监听 */
+    /* Get data */
+    /*
+     * 1、Create listen event
+     * 2、Check if listen event triggered
+     * 3、Different processing logic based on different protocol types
+     */
+    /* Reset event listening */
     netclient->ops->reset(netclient->base);
 
-    /* 创建监听事件 */
+    /* Create listen event */
     event |= POLLIN;
     if (false == netclient_wpacketisnull(netclient))
     {
-        /* 写事件 */
+        /* Write event */
         event |= POLLOUT;
     }
 
-    /* 添加监听事件 */
+    /* Add listen event */
     netclient->pos = netclient->ops->add(netclient->base, netclient->fd, event);
 
-    /* 调用iomp端口 */
+    /* Call iomp port */
     iret = netclient->ops->iomp(netclient->base);
-    if(-1 == iret)
+    if (-1 == iret)
     {
-        if(errno == EINTR)
+        if (errno == EINTR)
         {
             return true;
         }
@@ -786,24 +772,24 @@ bool netclient_desc2(netclient* netclient)
         return false;
     }
 
-    if(0 == iret)
+    if (0 == iret)
     {
-        /* 超时了, 累加hbtime和timeout 那么继续 */
+        /* Timeout, accumulate hbtime and timeout then continue */
         netclient->hbtimeout += netclient->base->timeout;
         return true;
     }
 
-    /* 有消息触发，那么看看触发的事件类型 */
+    /* Message triggered, check triggered event type */
     revent = netclient->ops->getevent(netclient->base, netclient->pos);
     if (0 == revent)
     {
-        /* 没有事件触发 */
+        /* No event triggered */
         return true;
     }
 
-    if (POLLIN == (revent&POLLIN))
+    if (POLLIN == (revent & POLLIN))
     {
-        /* 接收数据 */
+        /* Receive data */
         if (false == netclient_recv(netclient))
         {
             elog(RLOG_WARNING, "net pool recv error");
@@ -811,9 +797,9 @@ bool netclient_desc2(netclient* netclient)
         }
     }
 
-    if (POLLOUT == (revent&POLLOUT))
+    if (POLLOUT == (revent & POLLOUT))
     {
-        /* 发送数据 */
+        /* Send data */
         if (false == netclient_send(netclient))
         {
             elog(RLOG_WARNING, "net pool send error");
@@ -821,8 +807,7 @@ bool netclient_desc2(netclient* netclient)
         }
     }
 
-    if (POLLHUP == revent
-        || POLLERR == revent)
+    if (POLLHUP == revent || POLLERR == revent)
     {
         elog(RLOG_WARNING, "iomp pollhup/pollerr error, %s", strerror(errno));
         return false;
@@ -830,7 +815,6 @@ bool netclient_desc2(netclient* netclient)
 
     return true;
 }
-
 
 bool netclient_addwpacket(netclient* netclient, void* packet)
 {
@@ -846,7 +830,7 @@ bool netclient_wpacketisnull(netclient* netclient)
 {
     bool result = false;
 
-    if(NULL == netclient->wpackets->head)
+    if (NULL == netclient->wpackets->head)
     {
         result = true;
     }
@@ -858,7 +842,7 @@ bool netclient_rpacketisnull(netclient* netclient)
 {
     bool result = false;
 
-    if(NULL == netclient->rpackets->head)
+    if (NULL == netclient->rpackets->head)
     {
         result = true;
     }
@@ -866,11 +850,11 @@ bool netclient_rpacketisnull(netclient* netclient)
     return result;
 }
 
-/*  回调函数处理接收到的信息 */
+/*  Callback function to process received information */
 bool netclient_default_packets_handler(void* netclient_ptr, netpacket* netpacket)
 {
-    uint8* uptr = NULL;
-    uint32 msgtype = NETMSG_TYPE_NOP;
+    uint8*     uptr = NULL;
+    uint32     msgtype = NETMSG_TYPE_NOP;
     netclient* client_state = NULL;
     client_state = (netclient*)netclient_ptr;
 
@@ -878,28 +862,27 @@ bool netclient_default_packets_handler(void* netclient_ptr, netpacket* netpacket
 
     msgtype = CONCAT(get, 32bit)(&uptr);
 
-    if(false == netmsg((void*)client_state, msgtype, netpacket->data))
+    if (false == netmsg((void*)client_state, msgtype, netpacket->data))
     {
         client_state->status = NETCLIENTCONN_STATUS_NOP;
         return false;
     }
 
     return true;
-
 }
 
 /*
- * 清理描述符/队列
- * 设置连接状态为未连接
-*/
+ * Clean up descriptor/queue
+ * Set connection status to not connected
+ */
 void netclient_clear(netclient* netclient)
 {
-    if(NULL == netclient)
+    if (NULL == netclient)
     {
         return;
     }
 
-    if(-1 != netclient->fd)
+    if (-1 != netclient->fd)
     {
         elog(RLOG_WARNING, "netclient->fd:%d", netclient->fd);
         osal_close(netclient->fd);
@@ -918,22 +901,22 @@ void netclient_clear(netclient* netclient)
     }
 }
 
-/* 资源回收 */
+/* Resource cleanup */
 void netclient_destroy(netclient* netclient)
 {
-    if(NULL == netclient)
+    if (NULL == netclient)
     {
         return;
     }
 
-    if(-1 != netclient->fd)
+    if (-1 != netclient->fd)
     {
         elog(RLOG_WARNING, "netclient->fd:%d", netclient->fd);
         osal_close(netclient->fd);
         netclient->fd = -1;
     }
 
-    if(NULL != netclient->base)
+    if (NULL != netclient->base)
     {
         netclient->ops->free(netclient->base);
         netclient->base = NULL;

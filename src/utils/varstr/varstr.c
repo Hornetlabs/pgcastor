@@ -1,24 +1,24 @@
 #include "app_incl.h"
 #include "utils/varstr/varstr.h"
 
-/* 初始化 */
+/* Initialization */
 varstr* varstr_init(uint64 len)
 {
     varstr* vstr = NULL;
 
     vstr = rmalloc0(sizeof(varstr));
-    if(NULL == vstr)
+    if (NULL == vstr)
     {
         return NULL;
     }
     rmemset0(vstr, 0, '\0', sizeof(varstr));
 
-    /* 内容申请 */
+    /* Allocate content */
     vstr->start = 0;
     vstr->size = len;
     len += 1;
     vstr->data = rmalloc0(len);
-    if(NULL == vstr->data)
+    if (NULL == vstr->data)
     {
         rfree(vstr);
         return NULL;
@@ -28,7 +28,7 @@ varstr* varstr_init(uint64 len)
     return vstr;
 }
 
-/* 重置 */
+/* Reset */
 bool varstr_reset(varstr* vstr)
 {
     uint64 len = 0;
@@ -43,7 +43,7 @@ bool varstr_reset(varstr* vstr)
     if (NULL == vstr->data)
     {
         vstr->data = rmalloc0(len);
-        if(NULL == vstr->data)
+        if (NULL == vstr->data)
         {
             return false;
         }
@@ -54,16 +54,16 @@ bool varstr_reset(varstr* vstr)
     return true;
 }
 
-/* 
- * 扩容
- *  不做长度和入参检测
-*/
+/*
+ * Expand
+ *  No length and input parameter validation
+ */
 bool varstr_enlarge(varstr* vstr, uint64 needed)
 {
-    uint64 newlen           = 0;
-    char* newdata           = NULL;
+    uint64 newlen = 0;
+    char*  newdata = NULL;
 
-    /* 需要的空间 */
+    /* Space required */
     needed += vstr->start + 1;
     if (needed <= vstr->size)
     {
@@ -76,10 +76,10 @@ bool varstr_enlarge(varstr* vstr, uint64 needed)
         newlen = 2 * newlen;
     }
 
-    newdata = (char *) rrealloc0(vstr->data, newlen + 1);
+    newdata = (char*)rrealloc0(vstr->data, newlen + 1);
     if (newdata != NULL)
     {
-        vstr->data = (uint8_t *)newdata;
+        vstr->data = (uint8_t*)newdata;
         vstr->size = newlen;
         return true;
     }
@@ -87,12 +87,9 @@ bool varstr_enlarge(varstr* vstr, uint64 needed)
     return false;
 }
 
-static bool varstr_appendva(varstr* vstr,
-                            const char *fmt,
-                            bool* enlargememory,
-                            va_list args)
+static bool varstr_appendva(varstr* vstr, const char* fmt, bool* enlargememory, va_list args)
 {
-    int nprinted;
+    int    nprinted;
     size_t avail;
     size_t needed;
 
@@ -100,8 +97,8 @@ static bool varstr_appendva(varstr* vstr,
     if (vstr->size > vstr->start + 16)
     {
         avail = vstr->size - vstr->start;
-        nprinted = vsnprintf((char *)vstr->data + vstr->start, avail, fmt, args);
-        if ((size_t) nprinted < avail)
+        nprinted = vsnprintf((char*)vstr->data + vstr->start, avail, fmt, args);
+        if ((size_t)nprinted < avail)
         {
             vstr->start += nprinted;
             return true;
@@ -124,14 +121,14 @@ static bool varstr_appendva(varstr* vstr,
     return false;
 }
 
-/* 添加内容 */
-bool varstr_append(varstr* vstr, const char *fmt,...)
+/* Add content */
+bool varstr_append(varstr* vstr, const char* fmt, ...)
 {
-    bool done           = false;
-    bool enlargememory  = true;
-    int save_errno      = errno;
+    bool    done = false;
+    bool    enlargememory = true;
+    int     save_errno = errno;
     va_list args;
-    
+
     do
     {
         errno = save_errno;
@@ -148,8 +145,8 @@ bool varstr_append(varstr* vstr, const char *fmt,...)
     return true;
 }
 
-/* 添加字符串 */
-bool varstr_appendbinary(varstr* vstr, const char *data, uint64 datalen)
+/* Add string */
+bool varstr_appendbinary(varstr* vstr, const char* data, uint64 datalen)
 {
     if (false == varstr_enlarge(vstr, datalen))
     {
@@ -161,21 +158,21 @@ bool varstr_appendbinary(varstr* vstr, const char *data, uint64 datalen)
     vstr->start += datalen;
 
     /*
-        * Keep a trailing null in place, even though it's probably useless for
-        * binary data...
-        */
+     * Keep a trailing null in place, even though it's probably useless for
+     * binary data...
+     */
     vstr->data[vstr->start] = '\0';
 
     return true;
 }
 
-/* 合并字符串 */
-bool varstr_appendstr(varstr* vstr, const char *data)
+/* Concatenate strings */
+bool varstr_appendstr(varstr* vstr, const char* data)
 {
     return varstr_appendbinary(vstr, data, strlen(data));
 }
 
-/* 添加字符 */
+/* Add character */
 bool varstr_appendchar(varstr* vstr, char ch)
 {
     if (false == varstr_enlarge(vstr, 1))
@@ -189,15 +186,15 @@ bool varstr_appendchar(varstr* vstr, char ch)
     return true;
 }
 
-/* 释放 */
+/* Free */
 void varstr_free(varstr* vstr)
 {
-    if(NULL == vstr)
+    if (NULL == vstr)
     {
         return;
     }
-    
-    if(NULL != vstr->data)
+
+    if (NULL != vstr->data)
     {
         rfree(vstr->data);
     }

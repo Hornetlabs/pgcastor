@@ -3,8 +3,8 @@
 
 typedef struct XSCISCISTAT
 {
-    char*           xsynchhome;
-    xsynchconn*     conn;
+    char*       xsynchhome;
+    xsynchconn* conn;
 } xsciscistat;
 
 #endif

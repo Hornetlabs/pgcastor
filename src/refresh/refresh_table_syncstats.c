@@ -23,8 +23,8 @@ refresh_table_syncstats* refresh_table_syncstats_init(void)
         return NULL;
     }
     rmemset0(tablesyncstats, 0, '\0', sizeof(refresh_table_syncstats));
-    
-    /* 锁初始化 */
+
+    /* lock initialization */
     osal_thread_mutex_init(&tablesyncstats->tablesynclock, NULL);
     tablesyncstats->tablesyncall = NULL;
     tablesyncstats->tablesyncdone = NULL;
@@ -42,7 +42,7 @@ bool refresh_table_syncstats_lock(refresh_table_syncstats* tablesyncstats)
     }
 
     iret = osal_thread_lock(&tablesyncstats->tablesynclock);
-    if(0 != iret)
+    if (0 != iret)
     {
         elog(RLOG_ERROR, "get lock error:%s", strerror(errno));
     }
@@ -53,13 +53,13 @@ bool refresh_table_syncstats_lock(refresh_table_syncstats* tablesyncstats)
 bool refresh_table_syncstats_unlock(refresh_table_syncstats* tablesyncstats)
 {
     int iret = 0;
-    if ( NULL == tablesyncstats)
+    if (NULL == tablesyncstats)
     {
         return false;
     }
 
     iret = osal_thread_unlock(&tablesyncstats->tablesynclock);
-    if(0 != iret)
+    if (0 != iret)
     {
         elog(RLOG_ERROR, "unlock error:%s", strerror(errno));
     }
@@ -67,9 +67,10 @@ bool refresh_table_syncstats_unlock(refresh_table_syncstats* tablesyncstats)
     return true;
 }
 
-void refresh_table_syncstats_tablesyncing_set(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats)
+void refresh_table_syncstats_tablesyncing_set(refresh_tables*          refreshtables,
+                                              refresh_table_syncstats* tablesyncstats)
 {
-    refresh_table *cur_table = NULL;
+    refresh_table* cur_table = NULL;
 
     if (!refreshtables)
     {
@@ -78,7 +79,7 @@ void refresh_table_syncstats_tablesyncing_set(refresh_tables* refreshtables, ref
         return;
     }
 
-    if ( !tablesyncstats || 0 == refreshtables->cnt)
+    if (!tablesyncstats || 0 == refreshtables->cnt)
     {
         tablesyncstats->tablesyncing = NULL;
         return;
@@ -90,15 +91,15 @@ void refresh_table_syncstats_tablesyncing_set(refresh_tables* refreshtables, ref
 
     while (cur_table)
     {
-        // 创建一个新的同步状态节点
-        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
+        // create a new sync status node
+        refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // 复制表信息
+        // copy table information
         refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
         refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
         refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
-        // 插入 tablesyncall
+        // insert into tablesyncall
         new_syncstat->next = tablesyncstats->tablesyncing;
         if (tablesyncstats->tablesyncing)
         {
@@ -114,18 +115,19 @@ void refresh_table_syncstats_tablesyncing_set(refresh_tables* refreshtables, ref
     return;
 }
 
-void refresh_table_syncstats_tablesyncall_set(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats)
+void refresh_table_syncstats_tablesyncall_set(refresh_tables*          refreshtables,
+                                              refresh_table_syncstats* tablesyncstats)
 {
-    refresh_table *cur_table = NULL;
+    refresh_table* cur_table = NULL;
 
-    if (!refreshtables )
+    if (!refreshtables)
     {
         elog(RLOG_WARNING, "refreshtables is NULL");
         tablesyncstats->tablesyncall = NULL;
         return;
     }
 
-    if ( !tablesyncstats || 0 == refreshtables->cnt)
+    if (!tablesyncstats || 0 == refreshtables->cnt)
     {
         tablesyncstats->tablesyncall = NULL;
         return;
@@ -137,15 +139,15 @@ void refresh_table_syncstats_tablesyncall_set(refresh_tables* refreshtables, ref
 
     while (cur_table)
     {
-        // 创建一个新的同步状态节点
-        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
+        // create a new sync status node
+        refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // 复制表信息
+        // copy table information
         refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
         refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
         refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
-        // 插入 tablesyncall
+        // insert into tablesyncall
         new_syncstat->next = tablesyncstats->tablesyncall;
         if (tablesyncstats->tablesyncall)
         {
@@ -163,7 +165,7 @@ void refresh_table_syncstats_tablesyncall_set(refresh_tables* refreshtables, ref
 
 void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* tablesyncstats)
 {
-    refresh_table_syncstat *cur_table = NULL;
+    refresh_table_syncstat* cur_table = NULL;
 
     if (NULL == tablesyncstats)
     {
@@ -172,7 +174,7 @@ void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* 
         return;
     }
 
-    if ( !tablesyncstats->tablesyncing || 0 == tablesyncstats->tablesyncing->cnt)
+    if (!tablesyncstats->tablesyncing || 0 == tablesyncstats->tablesyncing->cnt)
     {
         elog(RLOG_INFO, "refreshtables is NULL");
         tablesyncstats->tablesyncall = NULL;
@@ -185,15 +187,15 @@ void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* 
 
     while (cur_table)
     {
-        // 创建一个新的同步状态节点
-        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
+        // create a new sync status node
+        refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // 复制表信息
+        // copy table information
         refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
         refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
         refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
-        // 插入 tablesyncall
+        // insert into tablesyncall
         new_syncstat->next = tablesyncstats->tablesyncall;
         if (tablesyncstats->tablesyncall)
         {
@@ -209,9 +211,10 @@ void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* 
     return;
 }
 
-bool refreshtablesyncstats_markstatdone(refresh_table_sharding* tablesharding, refresh_table_syncstats* tablesyncstats, char* refreshdir)
+bool refreshtablesyncstats_markstatdone(refresh_table_sharding*  tablesharding,
+                                        refresh_table_syncstats* tablesyncstats, char* refreshdir)
 {
-    bool complete = false;
+    bool                    complete = false;
     refresh_table_syncstat* current_table = NULL;
 
     if (!tablesharding || !tablesyncstats || !tablesyncstats->tablesyncing)
@@ -222,31 +225,30 @@ bool refreshtablesyncstats_markstatdone(refresh_table_sharding* tablesharding, r
     refresh_table_syncstats_lock(tablesyncstats);
     current_table = tablesyncstats->tablesyncing;
 
-    /* 遍历complete目录生成任务 */
+    /* traverse complete directory to generate tasks */
     while (current_table)
     {
-        if (0 == strcmp(current_table->schema, tablesharding->schema)
-            && 0 == strcmp(current_table->table, tablesharding->table))
+        if (0 == strcmp(current_table->schema, tablesharding->schema) &&
+            0 == strcmp(current_table->table, tablesharding->table))
         {
             if (0 != tablesharding->shardings)
             {
                 current_table->completecnt += 1;
-                current_table->stat[tablesharding->sharding_no - 1] = REFRESH_TABLE_SYNCS_SHARD_STAT_DONE;
+                current_table->stat[tablesharding->sharding_no - 1] =
+                    REFRESH_TABLE_SYNCS_SHARD_STAT_DONE;
             }
 
             elog(RLOG_DEBUG, "refresh worker, queue: %s.%s %4d %4d, mark done",
-                                                               tablesharding->schema,
-                                                               tablesharding->table,
-                                                               tablesharding->shardings,
-                                                               tablesharding->sharding_no);
+                 tablesharding->schema, tablesharding->table, tablesharding->shardings,
+                 tablesharding->sharding_no);
 
             if (current_table->completecnt == current_table->cnt)
             {
-                /* 从 tablesyncing 队列中移除 */
+                /* remove from tablesyncing queue */
                 if (current_table->prev)
                 {
                     current_table->prev->next = current_table->next;
-                } 
+                }
                 else
                 {
                     tablesyncstats->tablesyncing = current_table->next;
@@ -257,7 +259,7 @@ bool refreshtablesyncstats_markstatdone(refresh_table_sharding* tablesharding, r
                     current_table->next->prev = current_table->prev;
                 }
 
-                /* 头插法加入 tablesyncdone */
+                /* head insert into tablesyncdone */
                 current_table->next = tablesyncstats->tablesyncdone;
                 if (tablesyncstats->tablesyncdone)
                 {
@@ -276,16 +278,14 @@ bool refreshtablesyncstats_markstatdone(refresh_table_sharding* tablesharding, r
 
     refresh_table_syncstats_unlock(tablesyncstats);
 
-    /* 删除已完成的文件 */
+    /* delete completed files */
     if (complete)
     {
         StringInfo path = NULL;
         path = makeStringInfo();
 
-        appendStringInfo(path, "%s/%s/%s_%s", refreshdir,
-                                              REFRESH_REFRESH,
-                                              tablesharding->schema,
-                                              tablesharding->table);
+        appendStringInfo(path, "%s/%s/%s_%s", refreshdir, REFRESH_REFRESH, tablesharding->schema,
+                         tablesharding->table);
         if (!osal_remove_dir(path->data))
         {
             elog(RLOG_ERROR, "can't remove dir: %s", path->data);
@@ -298,7 +298,7 @@ bool refreshtablesyncstats_markstatdone(refresh_table_sharding* tablesharding, r
 
 void refresh_table_syncstats_free(refresh_table_syncstats* tablesyncstats)
 {
-    if ( NULL == tablesyncstats)
+    if (NULL == tablesyncstats)
     {
         return;
     }
@@ -310,40 +310,41 @@ void refresh_table_syncstats_free(refresh_table_syncstats* tablesyncstats)
 
     refresh_table_syncstats_unlock(tablesyncstats);
 
-   rfree(tablesyncstats);
-   tablesyncstats = NULL;
+    rfree(tablesyncstats);
+    tablesyncstats = NULL;
 
-   return;
+    return;
 }
 
 bool refresh_table_check_in_syncing(refresh_table_syncstats* tablesyncstats,
-                                           refresh_table_sharding *table_shard,
-                                           refresh_table_syncstat **table_stat)
+                                    refresh_table_sharding*  table_shard,
+                                    refresh_table_syncstat** table_stat)
 {
-    refresh_table_syncstat *table = NULL;
+    refresh_table_syncstat* table = NULL;
 
     refresh_table_syncstats_lock(tablesyncstats);
     table = tablesyncstats->tablesyncing;
 
-    /* 从 待同步/同步中 的链表中查找 */
+    /* search in syncing/synced linked list */
     for (; table != NULL; table = table->next)
     {
-        if (!strcmp(table->schema, table_shard->schema) && !strcmp(table->table, table_shard->table))
+        if (!strcmp(table->schema, table_shard->schema) &&
+            !strcmp(table->table, table_shard->table))
         {
             if (table_stat)
             {
                 *table_stat = table;
             }
 
-            /* 如果不存在状态值并且表状态为SYNCING, 则没有开始同步 */
+            /* if status value doesn't exist and table status is SYNCING, sync hasn't started */
             if (!table->stat)
             {
-                /* 设置表同步状态*/
+                /* set table sync status*/
                 refresh_table_syncstats_unlock(tablesyncstats);
                 return false;
             }
 
-            /* 存在状态值的情况下,  */
+            /* when status value exists */
             if (table->stat[table_shard->sharding_no - 1] == REFRESH_TABLE_SYNCS_SHARD_STAT_INIT)
             {
                 if (REFRESH_TABLE_STAT_WAIT == table->tablestat)
@@ -366,18 +367,19 @@ bool refresh_table_check_in_syncing(refresh_table_syncstats* tablesyncstats,
 }
 
 bool refresh_table_syncstats_compare(refresh_table_syncstats* tablesA,
-                                           refresh_table_syncstats* tablesB)
+                                     refresh_table_syncstats* tablesB)
 {
-    refresh_table_syncstat *table = NULL;
-    refresh_table_syncstat *currenttable = NULL;
+    refresh_table_syncstat* table = NULL;
+    refresh_table_syncstat* currenttable = NULL;
 
-    /* 从 待同步/同步中 的链表中查找 */
-    for ( table = tablesA->tablesyncall; table != NULL; table = table->next)
+    /* search in pending-sync/syncing linked list */
+    for (table = tablesA->tablesyncall; table != NULL; table = table->next)
     {
-        for (currenttable = tablesB->tablesyncall; currenttable != NULL; currenttable = currenttable->next)
+        for (currenttable = tablesB->tablesyncall; currenttable != NULL;
+             currenttable = currenttable->next)
         {
-            if (strcmp(table->schema, currenttable->schema) == 0
-                && strcmp(table->table, currenttable->table) == 0)
+            if (strcmp(table->schema, currenttable->schema) == 0 &&
+                strcmp(table->table, currenttable->table) == 0)
             {
                 return true;
             }
@@ -387,15 +389,16 @@ bool refresh_table_syncstats_compare(refresh_table_syncstats* tablesA,
     return false;
 }
 
-/* 在应用存量数据前根据tablesyncstats清理存量表 */
-bool refresh_table_syncstats_truncatetable_fromsyncstats(refresh_table_syncstats* tablesyncstats, void* in_conn)
+/* cleanup existing tables based on tablesyncstats before applying existing data */
+bool refresh_table_syncstats_truncatetable_fromsyncstats(refresh_table_syncstats* tablesyncstats,
+                                                         void*                    in_conn)
 {
-    PGconn* conn = NULL;
-    PGresult* res = NULL;
-    char stmtsql[MAX_EXEC_SQL_LEN] = {'\0'};
-    refresh_table_syncstat *table = NULL;
+    PGconn*                 conn = NULL;
+    PGresult*               res = NULL;
+    char                    stmtsql[MAX_EXEC_SQL_LEN] = {'\0'};
+    refresh_table_syncstat* table = NULL;
 
-    if(NULL == tablesyncstats || NULL == in_conn )
+    if (NULL == tablesyncstats || NULL == in_conn)
     {
         elog(RLOG_WARNING, "truncate table from syncstats tablesyncstats or in_conn is null ");
         return false;
@@ -403,22 +406,21 @@ bool refresh_table_syncstats_truncatetable_fromsyncstats(refresh_table_syncstats
 
     conn = (PGconn*)in_conn;
 
-    /* 从 同步中 的链表中查找 */
+    /* search in syncing list */
     for (table = tablesyncstats->tablesyncing; table != NULL; table = table->next)
     {
-        /* 重启时已开始的表不清理 */
+        /* don't cleanup tables that already started syncing on restart */
         if (REFRESH_TABLE_STAT_WAIT < table->tablestat)
         {
             continue;
         }
-        
-        /* 写入数据前先清空表 */
+
+        /* truncate table before writing data */
         rmemset1(stmtsql, 0, 0, MAX_EXEC_SQL_LEN);
-        sprintf(stmtsql, "TRUNCATE TABLE \"%s\".\"%s\" ;", table->schema,
-                                                   table->table);
+        sprintf(stmtsql, "TRUNCATE TABLE \"%s\".\"%s\" ;", table->schema, table->table);
 
         res = PQexec(conn, stmtsql);
-        if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK) 
+        if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK)
         {
             elog(RLOG_WARNING, "SQL query execution failed: %s", PQerrorMessage(conn));
             PQclear(res);
@@ -429,32 +431,34 @@ bool refresh_table_syncstats_truncatetable_fromsyncstats(refresh_table_syncstats
     return true;
 }
 
-/* stats文件落盘到schema_table文件夹中 */
-bool refresh_table_syncstats_write(refresh_table_syncstat *stats, char *refresh_path)
+/* flush stats file to schema_table folder */
+bool refresh_table_syncstats_write(refresh_table_syncstat* stats, char* refresh_path)
 {
-    bool result = true;
-    int fd = -1;
-    char *bufferbegin = NULL;
-    char *buffer = NULL;
-    size_t input_size = 0;
-    int index_stat = 0;
+    bool           result = true;
+    int            fd = -1;
+    char*          bufferbegin = NULL;
+    char*          buffer = NULL;
+    size_t         input_size = 0;
+    int            index_stat = 0;
     StringInfoData path = {'\0'};
 
     initStringInfo(&path);
 
-    appendStringInfo(&path, "%s/%s/%s_%s/%s", refresh_path, REFRESH_REFRESH, stats->schema, stats->table, REFRESH_STATS);
+    appendStringInfo(&path, "%s/%s/%s_%s/%s", refresh_path, REFRESH_REFRESH, stats->schema,
+                     stats->table, REFRESH_STATS);
 
-    fd = osal_basic_open_file(path.data,
-                        O_RDWR | O_CREAT | BINARY);
+    fd = osal_basic_open_file(path.data, O_RDWR | O_CREAT | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_WARNING, "can't openfile: %s, error: %s, please check!", path.data, strerror(errno));
+        elog(RLOG_WARNING, "can't openfile: %s, error: %s, please check!", path.data,
+             strerror(errno));
         result = false;
         goto refresh_table_syncstats_write_error;
     }
 
-    /* sizeof(stats->cnt) + sizeof(stats->completecnt) + sizeof(stats->tablestat) + (stats->cnt * sizeof(int8_t)) */
+    /* sizeof(stats->cnt) + sizeof(stats->completecnt) + sizeof(stats->tablestat) + (stats->cnt *
+     * sizeof(int8_t)) */
     input_size = sizeof(int) + sizeof(int) + sizeof(int) + (stats->cnt * sizeof(int8_t));
     buffer = rmalloc0(input_size);
     if (!buffer)
@@ -469,18 +473,18 @@ bool refresh_table_syncstats_write(refresh_table_syncstat *stats, char *refresh_
     bufferbegin = buffer;
 
     /* stats->cnt */
-    put32bit((uint8_t **) &buffer, (uint32_t) stats->cnt);
+    put32bit((uint8_t**)&buffer, (uint32_t)stats->cnt);
 
     /* stats->completecnt */
-    put32bit((uint8_t **) &buffer, (uint32_t) stats->completecnt);
+    put32bit((uint8_t**)&buffer, (uint32_t)stats->completecnt);
 
     /* stats->tablestat */
-    put32bit((uint8_t **) &buffer, (uint32_t) stats->tablestat);
+    put32bit((uint8_t**)&buffer, (uint32_t)stats->tablestat);
 
     /* stats->stat */
     for (index_stat = 0; index_stat < stats->cnt; index_stat++)
     {
-        put8bit((uint8_t **) &buffer, (uint8_t) stats->stat[index_stat]);
+        put8bit((uint8_t**)&buffer, (uint8_t)stats->stat[index_stat]);
     }
 
     if (osal_file_write(fd, bufferbegin, input_size) != input_size)
@@ -491,7 +495,7 @@ bool refresh_table_syncstats_write(refresh_table_syncstat *stats, char *refresh_
         goto refresh_table_syncstats_write_error;
     }
 
-    if(0 != osal_file_sync(fd))
+    if (0 != osal_file_sync(fd))
     {
         elog(RLOG_WARNING, "could not fsync file %s, error: %s", path.data, strerror(errno));
         osal_file_close(fd);
@@ -504,39 +508,42 @@ bool refresh_table_syncstats_write(refresh_table_syncstat *stats, char *refresh_
 
 refresh_table_syncstats_write_error:
     if (path.data)
-    rfree(path.data);
+    {
+        rfree(path.data);
+    }
 
     return result;
 }
 
-/* 读取schema_table文件夹中的stats文件 */
-bool refresh_table_syncstats_read(refresh_table_syncstat *stats, char *refresh_path)
+/* read stats file from schema_table folder */
+bool refresh_table_syncstats_read(refresh_table_syncstat* stats, char* refresh_path)
 {
-    bool result = true;
-    int fd = -1;
-    char *buffer_begin = NULL;
-    char *buffer = NULL;
-    char *buffer_stat_begin = NULL;
-    char *buffer_stat = NULL;
-    size_t get_size = 0;
-    int index_stat = 0;
+    bool           result = true;
+    int            fd = -1;
+    char*          buffer_begin = NULL;
+    char*          buffer = NULL;
+    char*          buffer_stat_begin = NULL;
+    char*          buffer_stat = NULL;
+    size_t         get_size = 0;
+    int            index_stat = 0;
     StringInfoData path = {'\0'};
 
     initStringInfo(&path);
 
-    appendStringInfo(&path, "%s/%s_%s/%s", refresh_path, stats->schema, stats->table, REFRESH_STATS);
+    appendStringInfo(&path, "%s/%s_%s/%s", refresh_path, stats->schema, stats->table,
+                     REFRESH_STATS);
 
-    fd = osal_basic_open_file(path.data,
-                        O_RDONLY | BINARY);
+    fd = osal_basic_open_file(path.data, O_RDONLY | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_WARNING, "can't openfile: %s, error: %s, please check!", path.data, strerror(errno));
+        elog(RLOG_WARNING, "can't openfile: %s, error: %s, please check!", path.data,
+             strerror(errno));
         result = false;
         goto refresh_table_syncstats_read_error;
     }
 
-    /* 先获取sizeof(stats->cnt) + sizeof(stats->completecnt) + sizeof(stats->tablestat) */
+    /* first get sizeof(stats->cnt) + sizeof(stats->completecnt) + sizeof(stats->tablestat) */
     get_size = sizeof(int) + sizeof(int) + sizeof(int);
     buffer = rmalloc0(get_size);
     if (!buffer)
@@ -558,13 +565,13 @@ bool refresh_table_syncstats_read(refresh_table_syncstat *stats, char *refresh_p
     }
 
     /* stats->cnt */
-    stats->cnt = (int) get32bit((uint8_t **) &buffer);
+    stats->cnt = (int)get32bit((uint8_t**)&buffer);
 
     /* stats->completecnt */
-    stats->completecnt = (int) get32bit((uint8_t **) &buffer);
+    stats->completecnt = (int)get32bit((uint8_t**)&buffer);
 
     /* stats->tablestat */
-    stats->tablestat = (int) get32bit((uint8_t **) &buffer);
+    stats->tablestat = (int)get32bit((uint8_t**)&buffer);
 
     if (0 == stats->cnt && 0 == stats->completecnt)
     {
@@ -608,7 +615,7 @@ bool refresh_table_syncstats_read(refresh_table_syncstat *stats, char *refresh_p
     /* stats->stat */
     for (index_stat = 0; index_stat < stats->cnt; index_stat++)
     {
-        stats->stat[index_stat] = (int8_t) get8bit((uint8_t **) &buffer_stat);
+        stats->stat[index_stat] = (int8_t)get8bit((uint8_t**)&buffer_stat);
         if (REFRESH_TABLE_SYNCS_SHARD_STAT_SYNCING == stats->stat[index_stat])
         {
             stats->stat[index_stat] = REFRESH_TABLE_SYNCS_SHARD_STAT_INIT;
@@ -621,23 +628,27 @@ bool refresh_table_syncstats_read(refresh_table_syncstat *stats, char *refresh_p
 
 refresh_table_syncstats_read_error:
     if (path.data)
-    rfree(path.data);
+    {
+        rfree(path.data);
+    }
 
     return result;
 }
 
-void refresh_table_syncstats_tablesyncall_setfromfile(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats, char* refresh_path)
+void refresh_table_syncstats_tablesyncall_setfromfile(refresh_tables*          refreshtables,
+                                                      refresh_table_syncstats* tablesyncstats,
+                                                      char*                    refresh_path)
 {
-    refresh_table *cur_table = NULL;
+    refresh_table* cur_table = NULL;
 
-    if (!refreshtables )
+    if (!refreshtables)
     {
         elog(RLOG_WARNING, "refreshtables is NULL");
         tablesyncstats->tablesyncall = NULL;
         return;
     }
 
-    if ( !tablesyncstats || 0 == refreshtables->cnt)
+    if (!tablesyncstats || 0 == refreshtables->cnt)
     {
         tablesyncstats->tablesyncall = NULL;
         return;
@@ -647,17 +658,17 @@ void refresh_table_syncstats_tablesyncall_setfromfile(refresh_tables* refreshtab
 
     while (cur_table)
     {
-        // 创建一个新的同步状态节点
-        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
+        // create a new sync status node
+        refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // 复制表信息
+        // copy table information
         refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
         refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
         refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
         refresh_table_syncstats_read(new_syncstat, refresh_path);
 
-        // 插入 tablesyncall
+        // insert into tablesyncall
         new_syncstat->next = tablesyncstats->tablesyncall;
         if (tablesyncstats->tablesyncall)
         {
@@ -671,18 +682,20 @@ void refresh_table_syncstats_tablesyncall_setfromfile(refresh_tables* refreshtab
     return;
 }
 
-void refresh_table_syncstats_tablesyncing_setfromfile(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats, char* refresh_path)
+void refresh_table_syncstats_tablesyncing_setfromfile(refresh_tables*          refreshtables,
+                                                      refresh_table_syncstats* tablesyncstats,
+                                                      char*                    refresh_path)
 {
-    refresh_table *cur_table = NULL;
+    refresh_table* cur_table = NULL;
 
-    if (!refreshtables )
+    if (!refreshtables)
     {
         elog(RLOG_WARNING, "refreshtables is NULL");
         tablesyncstats->tablesyncing = NULL;
         return;
     }
 
-    if ( !tablesyncstats || 0 == refreshtables->cnt)
+    if (!tablesyncstats || 0 == refreshtables->cnt)
     {
         tablesyncstats->tablesyncing = NULL;
         return;
@@ -692,17 +705,17 @@ void refresh_table_syncstats_tablesyncing_setfromfile(refresh_tables* refreshtab
 
     while (cur_table)
     {
-        // 创建一个新的同步状态节点
-        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
+        // create a new sync status node
+        refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // 复制表信息
+        // copy table information
         refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
         refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
         refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
         refresh_table_syncstats_read(new_syncstat, refresh_path);
 
-        // 插入 tablesyncall
+        // insert into tablesyncall
         new_syncstat->next = tablesyncstats->tablesyncing;
         if (tablesyncstats->tablesyncing)
         {
@@ -716,12 +729,12 @@ void refresh_table_syncstats_tablesyncing_setfromfile(refresh_tables* refreshtab
     return;
 }
 
-/* 根据tablesyncing生成refreshtables */
+/* generate refreshtables from tablesyncing */
 refresh_tables* refresh_table_syncstats_tablesyncing2tables(refresh_table_syncstats* tablesyncstats)
 {
-    refresh_table* table                 = NULL;
-    refresh_tables* refreshtables        = NULL;
-    refresh_table_syncstat *cur_table    = NULL;
+    refresh_table*          table = NULL;
+    refresh_tables*         refreshtables = NULL;
+    refresh_table_syncstat* cur_table = NULL;
 
     if (NULL == tablesyncstats)
     {
@@ -730,7 +743,7 @@ refresh_tables* refresh_table_syncstats_tablesyncing2tables(refresh_table_syncst
         return refreshtables;
     }
 
-    if ( !tablesyncstats->tablesyncing || 0 == tablesyncstats->tablesyncing->cnt)
+    if (!tablesyncstats->tablesyncing || 0 == tablesyncstats->tablesyncing->cnt)
     {
         elog(RLOG_INFO, "refreshtables is NULL");
         refreshtables = NULL;
@@ -749,10 +762,10 @@ refresh_tables* refresh_table_syncstats_tablesyncing2tables(refresh_table_syncst
 
     while (cur_table)
     {
-        // 创建一个新的同步状态节点
-        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
+        // create a new sync status node
+        refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // 复制表信息
+        // copy table information
         table = refresh_table_init();
 
         refresh_table_setschema(new_syncstat->schema, table);

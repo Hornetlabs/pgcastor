@@ -3,22 +3,21 @@
 
 typedef enum LOADPAGE_TYPE
 {
-    LOADPAGE_TYPE_NOP                = 0x00,
-    LOADPAGE_TYPE_FILE               ,
-    LOADPAGE_TYPE_REPLICATION        
+    LOADPAGE_TYPE_NOP = 0x00,
+    LOADPAGE_TYPE_FILE,
+    LOADPAGE_TYPE_REPLICATION
 } loadpage_type;
 
 typedef struct LOADPAGE
 {
-    loadpage_type    type;
-    uint32                  blksize;
-    uint64                  filesize;
+    loadpage_type type;
+    uint32        blksize;
+    uint64        filesize;
 
-    /* 错误码 */
-    int                     error;
+    /* Error code */
+    int error;
 } loadpage;
 
-
-#define LOADPAGEBLKSIZEMASK(blksize)            ((uint64)(blksize - 1))
+#define LOADPAGEBLKSIZEMASK(blksize) ((uint64)(blksize - 1))
 
 #endif

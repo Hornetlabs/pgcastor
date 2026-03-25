@@ -28,46 +28,44 @@ typedef enum PG_PARSER_SYSDICT_TYPE
 
 typedef struct PG_PARSER_SYSDICT_PGCLASS_DICT
 {
-    int32_t                            m_count;
-    pg_parser_sysdict_pgclass      *m_pg_class;
+    int32_t                    m_count;
+    pg_parser_sysdict_pgclass* m_pg_class;
 } pg_parser_sysdict_pgclass_dict;
 
 typedef struct PG_PARSER_SYSDICT_PGATTRIBUTES_DICT
 {
-    int32_t                            m_count;
-    pg_parser_sysdict_pgattributes *m_pg_attributes;
+    int32_t                         m_count;
+    pg_parser_sysdict_pgattributes* m_pg_attributes;
 } pg_parser_sysdict_pgattributes_dict;
-
 
 typedef struct PG_PARSER_SYSDICT_PGNAMESPACE_DICT
 {
-    int32_t                            m_count;
-    pg_parser_sysdict_pgnamespace  *m_pg_namespace;
+    int32_t                        m_count;
+    pg_parser_sysdict_pgnamespace* m_pg_namespace;
 } pg_parser_sysdict_pgnamespace_dict;
-
 
 typedef struct PG_PARSER_SYSDICT_PGENUM_DICT
 {
-    int32_t                            m_count;
-    pg_parser_sysdict_pgenum       *m_pg_enum;
+    int32_t                   m_count;
+    pg_parser_sysdict_pgenum* m_pg_enum;
 } pg_parser_sysdict_pgenum_dict;
 
 typedef struct PG_PARSER_SYSDICT_PGTYPE_DICT
 {
-    int32_t                            m_count;
-    pg_parser_sysdict_pgtype       *m_pg_type;
+    int32_t                   m_count;
+    pg_parser_sysdict_pgtype* m_pg_type;
 } pg_parser_sysdict_pgtype_dict;
 
 typedef struct PG_PARSER_SYSDICT_PGPROC_DICT
 {
-    int32_t                            m_count;
-    pg_parser_sysdict_pgproc        *m_pg_proc;
+    int32_t                   m_count;
+    pg_parser_sysdict_pgproc* m_pg_proc;
 } pg_parser_sysdict_pgproc_dict;
 
 typedef struct PG_PARSER_SYSDICT_PGRANGE_DICT
 {
-    int32_t                            m_count;
-    pg_parser_sysdict_pgrange      *m_pg_range;
+    int32_t                    m_count;
+    pg_parser_sysdict_pgrange* m_pg_range;
 } pg_parser_sysdict_pgrange_dict;
 
 #if 0

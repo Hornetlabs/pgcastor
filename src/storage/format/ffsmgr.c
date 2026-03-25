@@ -10,51 +10,45 @@
 #include "storage/ffsmgr.h"
 #include "storage/trail/fftrail.h"
 
-/* 格式化入口 */
+/* Format entry */
 typedef struct FFORMATSMGR
 {
-    ffsmgr_if_type   type;
-    ffsmgr_if*       ffsmgr;
+    ffsmgr_if_type type;
+    ffsmgr_if*     ffsmgr;
 } fformatsmgr;
 
-/* trail 格式化 */
-static ffsmgr_if m_ffsmgrtrail =
-{
-    .ffsmgr_init = fftrail_init,
-    .ffsmgr_serial = fftrail_serial,
-    .ffsmgr_deserial = fftrail_deserial,
-    .ffsmgr_free = fftrail_free,
-    .ffsmg_gettokenminsize = fftrail_gettokenminsize,
-    .ffsmg_gettailsize = fftrail_taillen,
-    .ffsmgr_validrecord = fftrail_validrecord,
-    .ffsmgr_getrecordsubtype = fftrail_getrecordsubtype,
-    .ffsmgr_getrecordlsn = fftrail_getrecordlsn,
-    .ffsmgr_getrecordgrouptype = fftrail_getrecordgrouptype,
-    .ffsmgr_getrecorddataoffset = fftrail_getrecorddataoffset,
-    .ffsmgr_getrecordtotallength = fftrail_getrecordtotallength,
-    .ffsmgr_getrecordlength = fftrail_getrecordlength,
-    .ffsmgr_setrecordlength = fftrail_setrecordlength,
-    .ffsmgr_isrecordtransstart = fftrail_isrecordtransstart
-};
+/* trail format */
+static ffsmgr_if m_ffsmgrtrail = {.ffsmgr_init = fftrail_init,
+                                  .ffsmgr_serial = fftrail_serial,
+                                  .ffsmgr_deserial = fftrail_deserial,
+                                  .ffsmgr_free = fftrail_free,
+                                  .ffsmg_gettokenminsize = fftrail_gettokenminsize,
+                                  .ffsmg_gettailsize = fftrail_taillen,
+                                  .ffsmgr_validrecord = fftrail_validrecord,
+                                  .ffsmgr_getrecordsubtype = fftrail_getrecordsubtype,
+                                  .ffsmgr_getrecordlsn = fftrail_getrecordlsn,
+                                  .ffsmgr_getrecordgrouptype = fftrail_getrecordgrouptype,
+                                  .ffsmgr_getrecorddataoffset = fftrail_getrecorddataoffset,
+                                  .ffsmgr_getrecordtotallength = fftrail_getrecordtotallength,
+                                  .ffsmgr_getrecordlength = fftrail_getrecordlength,
+                                  .ffsmgr_setrecordlength = fftrail_setrecordlength,
+                                  .ffsmgr_isrecordtransstart = fftrail_isrecordtransstart};
 
-static fformatsmgr m_ffsmgrsw[] =
-{
-    {FFSMG_IF_TYPE_TRAIL, &m_ffsmgrtrail}
-};
+static fformatsmgr m_ffsmgrsw[] = {{FFSMG_IF_TYPE_TRAIL, &m_ffsmgrtrail}};
 
-/* 初始化，设置使用的格式化接口 */
+/* Initialize, set the format interface to use */
 void ffsmgr_init(ffsmgr_if_type fftype, ffsmgr_state* ffsmgrstate)
 {
     ffsmgrstate->ffsmgr = m_ffsmgrsw[fftype].ffsmgr;
 }
 
-/* 初始化文件头部信息 */
+/* Initialize file header */
 void* ffsmgr_headinit(int compatibility, FullTransactionId xid, uint64 fileid)
 {
     ff_header* ffheader = NULL;
 
     ffheader = (ff_header*)rmalloc0(sizeof(ff_header));
-    if(NULL == ffheader)
+    if (NULL == ffheader)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -66,9 +60,9 @@ void* ffsmgr_headinit(int compatibility, FullTransactionId xid, uint64 fileid)
     ffheader->encryption = 0;
     ffheader->endxid = InvalidFullTransactionId;
 
-    /* 拼装路径 */
+    /* Assemble path */
     ffheader->filename = (char*)rmalloc0(MAXPATH);
-    if(NULL == ffheader->filename)
+    if (NULL == ffheader->filename)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -81,25 +75,25 @@ void* ffsmgr_headinit(int compatibility, FullTransactionId xid, uint64 fileid)
     ffheader->restartlsn = 0;
     ffheader->startxid = xid;
 
-    /* 版本信息 */
+    /* Version info */
     ffheader->version = VERSION_STR;
 
     return ffheader;
 }
 
-/* 初始化数据库信息 */
+/* Initialize database metadata */
 void* ffsmgr_dbmetadatainit(char* dbname)
 {
     ff_dbmetadata* ffdbmd = NULL;
 
     ffdbmd = (ff_dbmetadata*)rmalloc0(sizeof(ff_dbmetadata));
-    if(NULL == ffdbmd)
+    if (NULL == ffdbmd)
     {
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(ffdbmd, 0, '\0', sizeof(ff_dbmetadata));
 
-    /* 填充值信息 */
+    /* Fill value info */
     ffdbmd->header.dbmdno = 0;
     ffdbmd->header.tbmdno = 0;
     ffdbmd->header.type = FF_DATA_TYPE_DBMETADATA;

@@ -3,15 +3,15 @@
 
 typedef struct TXNSTMT_burst
 {
-    uint8               optype;
-    uint8*              batchcmd;       /* 批量的 sql */
-    char*               table;
-    dlist*              rows;           /* 原始数据 */
+    uint8  optype;
+    uint8* batchcmd; /* Batch sql */
+    char*  table;
+    dlist* rows; /* Original data */
 } txnstmt_burst;
 
 extern txnstmt_burst* txnstmt_burst_init(void);
 
-/* 释放 */
+/* Release */
 extern void txnstmt_burst_free(void* data);
 
 #endif

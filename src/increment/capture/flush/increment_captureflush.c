@@ -1,6 +1,6 @@
 /*
- * 将缓存中的数据写入到文件中
-*/
+ * Write cached data to file
+ */
 #include "app_incl.h"
 #include "port/file/fd.h"
 #include "port/thread/thread.h"
@@ -28,7 +28,6 @@
 #include "metric/capture/metric_capture.h"
 #include "increment/capture/flush/increment_captureflush.h"
 
-
 static void increment_captureflush_reloadsyncdatasets(increment_captureflush* wstate);
 
 static void writework_capture_reloadstate(increment_captureflush* wstate, int state)
@@ -37,66 +36,66 @@ static void writework_capture_reloadstate(increment_captureflush* wstate, int st
     {
         increment_captureflush_reloadsyncdatasets(wstate);
         g_gotsigreload = CAPTURERELOAD_STATUS_UNSET;
-        elog(RLOG_INFO,"Ripple reload complete!");
+        elog(RLOG_INFO, "Ripple reload complete!");
     }
-  return;
+    return;
 }
 
-/* 初始化文件 */
+/* Initialize file */
 static void increment_captureflush_initfile(increment_captureflush* wstate, ff_fileinfo* finfo)
 {
-    int fd = -1;
-    int index = 0;
-    int blockcnt = 0;
+    int         fd = -1;
+    int         index = 0;
+    int         blockcnt = 0;
     struct stat st;
-    char    tmppath[MAXPATH] = { 0 };
-    uint8   block[FILE_BUFFER_SIZE] = { 0 };
-    if(-1 != wstate->fd)
+    char        tmppath[MAXPATH] = {0};
+    uint8       block[FILE_BUFFER_SIZE] = {0};
+    if (-1 != wstate->fd)
     {
         close(wstate->fd);
         wstate->fd = -1;
     }
 
-    /* 生成路径 */
+    /* Generate path */
     rmemset1(wstate->path, 0, '\0', MAXPATH);
     snprintf(wstate->path, MAXPATH, STORAGE_TRAIL_DIR "/%016lX", finfo->fileid);
 
-    /* 校验文件是否存在，存在则打开 */
-    if(0 == stat(wstate->path, &st))
+    /* Check if file exists, open if exists */
+    if (0 == stat(wstate->path, &st))
     {
-        /* 打开文件 */
+        /* Open file */
         wstate->fd = osal_basic_open_file(wstate->path, O_RDWR | BINARY);
-        if (wstate->fd  < 0)
+        if (wstate->fd < 0)
         {
             elog(RLOG_ERROR, "open file %s error %s", wstate->path, strerror(errno));
         }
         return;
     }
 
-    /* 查看错误是否为文件不存在 */
-    if(ENOENT != errno)
+    /* Check if error is file not exists */
+    if (ENOENT != errno)
     {
         elog(RLOG_ERROR, "stat %s error, %s", wstate->path, strerror(errno));
     }
 
-    /* 创建临时文件 */
+    /* Create temp file */
     snprintf(tmppath, MAXPATH, STORAGE_TRAIL_DIR "/%016lX.tmp", finfo->fileid);
     unlink(tmppath);
 
     fd = osal_basic_open_file(tmppath, O_RDWR | O_CREAT | O_EXCL | BINARY);
-    if(0 > fd)
+    if (0 > fd)
     {
         elog(RLOG_ERROR, "open file %s error:%s", tmppath, strerror(errno));
     }
     blockcnt = (wstate->maxsize / FILE_BUFFER_SIZE);
 
-//    elog(RLOG_WARNING, "blockcnt:%d", blockcnt);
-    for(index = 0; index < blockcnt; index++)
+    //    elog(RLOG_WARNING, "blockcnt:%d", blockcnt);
+    for (index = 0; index < blockcnt; index++)
     {
         if (write(fd, block, FILE_BUFFER_SIZE) != FILE_BUFFER_SIZE)
         {
             /* if write didn't set errno, assume no disk space */
-            if(errno == ENOSPC)
+            if (errno == ENOSPC)
             {
                 elog(RLOG_WARNING, "The disk is full and there is no available space");
                 sleep(10);
@@ -112,13 +111,13 @@ static void increment_captureflush_initfile(increment_captureflush* wstate, ff_f
     osal_file_sync(fd);
 
     osal_file_close(fd);
-    
-    /* 重命名文件 */
+
+    /* Rename file */
     osal_durable_rename(tmppath, wstate->path, RLOG_DEBUG);
 
-    /* 打开文件 */
+    /* Open file */
     wstate->fd = osal_basic_open_file(wstate->path, O_RDWR | BINARY);
-    if (wstate->fd  < 0)
+    if (wstate->fd < 0)
     {
         elog(RLOG_ERROR, "open file %s error %s", wstate->path, strerror(errno));
     }
@@ -126,50 +125,51 @@ static void increment_captureflush_initfile(increment_captureflush* wstate, ff_f
 }
 
 /*
- * 写主进程
-*/
-void* increment_captureflush_main(void *args)
+ * Write main process
+ */
+void* increment_captureflush_main(void* args)
 {
-    int timeout                             = 0;
-    ff_fileinfo* finfo               = NULL;
-    file_buffer* fbuffer             = NULL;
-    thrnode* thr_node                 = NULL;
-    increment_captureflush* cflush   = NULL;
+    int                     timeout = 0;
+    ff_fileinfo*            finfo = NULL;
+    file_buffer*            fbuffer = NULL;
+    thrnode*                thr_node = NULL;
+    increment_captureflush* cflush = NULL;
 
     thr_node = (thrnode*)args;
-    cflush = (increment_captureflush* )thr_node->data;
+    cflush = (increment_captureflush*)thr_node->data;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check state */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
         elog(RLOG_WARNING, "capture flush stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to work state */
     thr_node->stat = THRNODE_STAT_WORK;
 
-    /* 加载基础信息 */
+    /* Load basic info */
     misc_stat_loaddecode((void*)&cflush->base);
 
-    /* 加载系统表 */
+    /* Load system catalog */
     cache_sysdictsload((void**)&cflush->txnsctx->sysdicts);
 
-    /* 加载addtablepattern */
-    cflush->txnsctx->addtablepattern = filter_dataset_initaddtablepattern(cflush->txnsctx->addtablepattern);
+    /* Load addtablepattern */
+    cflush->txnsctx->addtablepattern =
+        filter_dataset_initaddtablepattern(cflush->txnsctx->addtablepattern);
 
-    /* 加载同步数据集 */
+    /* Load sync dataset */
     cflush->txnsctx->hsyncdataset = filter_dataset_load(cflush->txnsctx->sysdicts->by_namespace,
-                                                                cflush->txnsctx->sysdicts->by_class);
+                                                        cflush->txnsctx->sysdicts->by_class);
 
-    while(1)
+    while (1)
     {
         /*
-         * 1、在缓存中获取数据
-         * 2、写数据
+         * 1. Get data from cache
+         * 2. Write data
          */
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
@@ -177,86 +177,87 @@ void* increment_captureflush_main(void *args)
         writework_capture_reloadstate(cflush, g_gotsigreload);
 
         fbuffer = file_buffer_waitflush_get(cflush->txn2filebuffer, &timeout);
-        if(NULL == fbuffer)
+        if (NULL == fbuffer)
         {
             if (ERROR_TIMEOUT != timeout)
             {
-                /* 处理失败, 退出 */
+                /* Handle failure, exit */
                 elog(RLOG_WARNING, "get file buffer error");
                 break;
             }
-            
-            /* 超时没有获取到数据,继续等待获取 */
+
+            /* Timeout without obtaining data, continue waiting to obtain */
             continue;
         }
 
-        /* 将数据落盘 */
-        if(FILE_BUFFER_FLAG_DATA == (FILE_BUFFER_FLAG_DATA&fbuffer->flag)
-            && 0 != fbuffer->start)
+        /* Flush data to disk */
+        if (FILE_BUFFER_FLAG_DATA == (FILE_BUFFER_FLAG_DATA & fbuffer->flag) && 0 != fbuffer->start)
         {
-            /* 含有数据内容，那么将数据落盘 */
+            /* Has data content, then flush to disk */
             finfo = (ff_fileinfo*)fbuffer->privdata;
-            if(cflush->fileid != finfo->fileid
-                || -1 == cflush->fd)
+            if (cflush->fileid != finfo->fileid || -1 == cflush->fd)
             {
                 increment_captureflush_initfile(cflush, finfo);
                 cflush->fileid = finfo->fileid;
             }
 
-            /* 写数据 */
-            osal_file_pwrite(cflush->fd, (char*)fbuffer->data, fbuffer->maxsize, ((finfo->blknum - 1)*FILE_BUFFER_SIZE));
+            /* Write data */
+            osal_file_pwrite(cflush->fd, (char*)fbuffer->data, fbuffer->maxsize,
+                             ((finfo->blknum - 1) * FILE_BUFFER_SIZE));
             osal_file_data_sync(cflush->fd);
 
             cflush->base.fileid = finfo->fileid;
-            cflush->base.fileoffset = ((finfo->blknum - 1)*FILE_BUFFER_SIZE) + fbuffer->start;
+            cflush->base.fileoffset = ((finfo->blknum - 1) * FILE_BUFFER_SIZE) + fbuffer->start;
 
-            elog(RLOG_DEBUG, "---------fileid:%lu:%lu", cflush->base.fileid, cflush->base.fileoffset);
-            /* 设置状态线程,当前已经解析完成且持久化的 lsn */
-            cflush->callback.setmetricflushlsn(cflush->privdata, fbuffer->extra.rewind.flushlsn.wal.lsn);
+            elog(RLOG_DEBUG, "---------fileid:%lu:%lu", cflush->base.fileid,
+                 cflush->base.fileoffset);
+            /* Set status thread, current parsed and persisted lsn */
+            cflush->callback.setmetricflushlsn(cflush->privdata,
+                                               fbuffer->extra.rewind.flushlsn.wal.lsn);
             cflush->callback.setmetrictrailno(cflush->privdata, cflush->base.fileid);
             cflush->callback.setmetrictrailstart(cflush->privdata, cflush->base.fileoffset);
             cflush->callback.setmetricflushtimestamp(cflush->privdata, fbuffer->extra.timestamp);
         }
 
-        /* 更新 restartlsn 和 fileid 及 offset */
-        if(FILE_BUFFER_FLAG_REWIND == (FILE_BUFFER_FLAG_REWIND&fbuffer->flag))
+        /* Update restartlsn and fileid and offset */
+        if (FILE_BUFFER_FLAG_REWIND == (FILE_BUFFER_FLAG_REWIND & fbuffer->flag))
         {
-            /* 写base文件 */
+            /* Write base file */
             cflush->base.confirmedlsn = fbuffer->extra.rewind.confirmlsn.wal.lsn;
             cflush->base.restartlsn = fbuffer->extra.rewind.restartlsn.wal.lsn;
             cflush->base.fileid = finfo->fileid;
-            cflush->base.fileoffset = ((finfo->blknum - 1)*FILE_BUFFER_SIZE) + fbuffer->start;
-            /* 有效时更新 redolsn */
+            cflush->base.fileoffset = ((finfo->blknum - 1) * FILE_BUFFER_SIZE) + fbuffer->start;
+            /* Update redolsn when valid */
             if (InvalidXLogRecPtr != fbuffer->extra.chkpoint.redolsn.wal.lsn)
             {
                 cflush->base.redolsn = fbuffer->extra.chkpoint.redolsn.wal.lsn;
             }
             cflush->base.curtlid = fbuffer->extra.rewind.curtlid;
 
-            elog(RLOG_DEBUG, "************fileid:%lu:%lu", cflush->base.fileid, cflush->base.fileoffset);
-            /* 数据落盘,不需要加锁 */
+            elog(RLOG_DEBUG, "************fileid:%lu:%lu", cflush->base.fileid,
+                 cflush->base.fileoffset);
+            /* Flush data to disk, no lock needed */
             misc_stat_decodewrite(&cflush->base, &cflush->basefd);
         }
 
-        /* 查看是否含有 redolsn，含有 redolsn 那么写入数据 */
-        if(FILE_BUFFER_FLAG_REDO == (FILE_BUFFER_FLAG_REDO&fbuffer->flag))
+        /* Check if contains redolsn, if contains redolsn then write data */
+        if (FILE_BUFFER_FLAG_REDO == (FILE_BUFFER_FLAG_REDO & fbuffer->flag))
         {
-            /* 应用系统表 */
-            if(NULL != fbuffer->extra.chkpoint.sysdicts)
+            /* Apply system catalog */
+            if (NULL != fbuffer->extra.chkpoint.sysdicts)
             {
                 cache_sysdicts_txnsysdicthis2cache(cflush->txnsctx->sysdicts,
-                                                            fbuffer->extra.chkpoint.sysdicts);
+                                                   fbuffer->extra.chkpoint.sysdicts);
 
-                /* 更新同步数据集 */
-                if(filter_dataset_updatedatasets(cflush->txnsctx->addtablepattern,
-                                                        cflush->txnsctx->sysdicts->by_namespace,
-                                                        fbuffer->extra.chkpoint.sysdicts,
-                                                        cflush->txnsctx->hsyncdataset))
+                /* Update sync dataset */
+                if (filter_dataset_updatedatasets(
+                        cflush->txnsctx->addtablepattern, cflush->txnsctx->sysdicts->by_namespace,
+                        fbuffer->extra.chkpoint.sysdicts, cflush->txnsctx->hsyncdataset))
                 {
                     filter_dataset_flush(cflush->txnsctx->hsyncdataset);
                 }
 
-                /* 释放内存 */
+                /* Free memory */
                 cache_sysdicts_txnsysdicthisfree(fbuffer->extra.chkpoint.sysdicts);
                 list_free(fbuffer->extra.chkpoint.sysdicts);
                 fbuffer->extra.chkpoint.sysdicts = NULL;
@@ -264,18 +265,19 @@ void* increment_captureflush_main(void *args)
             }
         }
 
-        /* 存在dataset标识, 更新后强制落盘 */
-        if (FILE_BUFFER_FLAG_ONLINREFRESH_DATASET == (FILE_BUFFER_FLAG_ONLINREFRESH_DATASET & fbuffer->flag))
+        /* Exists dataset flag, force flush after update */
+        if (FILE_BUFFER_FLAG_ONLINREFRESH_DATASET ==
+            (FILE_BUFFER_FLAG_ONLINREFRESH_DATASET & fbuffer->flag))
         {
             if (fbuffer->extra.dataset.dataset)
             {
-                ListCell *cell = NULL;
+                ListCell* cell = NULL;
                 filter_dataset_updatedatasets_onlinerefresh(cflush->txnsctx->hsyncdataset,
-                                                                    fbuffer->extra.dataset.dataset);
-                
-                foreach(cell, fbuffer->extra.dataset.dataset)
+                                                            fbuffer->extra.dataset.dataset);
+
+                foreach (cell, fbuffer->extra.dataset.dataset)
                 {
-                    refresh_table *table = (refresh_table*) lfirst(cell);
+                    refresh_table* table = (refresh_table*)lfirst(cell);
                     if (table->schema)
                     {
                         rfree(table->schema);
@@ -291,7 +293,7 @@ void* increment_captureflush_main(void *args)
             }
         }
 
-        /* 放入到空闲队列中 */
+        /* Put into free queue */
         file_buffer_free(cflush->txn2filebuffer, fbuffer);
     }
 
@@ -299,12 +301,11 @@ void* increment_captureflush_main(void *args)
     return NULL;
 }
 
-
 increment_captureflush* increment_captureflush_init(void)
 {
     increment_captureflush* writestate = NULL;
     writestate = (increment_captureflush*)rmalloc1(sizeof(increment_captureflush));
-    if(NULL == writestate)
+    if (NULL == writestate)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -318,7 +319,7 @@ increment_captureflush* increment_captureflush_init(void)
     writestate->maxsize = (writestate->maxsize * 1024 * 1024);
 
     writestate->txnsctx = (txnscontext*)rmalloc0(sizeof(txnscontext));
-    if(NULL == writestate->txnsctx)
+    if (NULL == writestate->txnsctx)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -327,15 +328,15 @@ increment_captureflush* increment_captureflush_init(void)
     return writestate;
 }
 
-/* 资源回收 */
+/* Resource reclaim */
 void increment_captureflush_destroy(increment_captureflush* wstate)
 {
-    if(NULL == wstate)
+    if (NULL == wstate)
     {
         return;
     }
 
-    if(NULL != wstate->txnsctx)
+    if (NULL != wstate->txnsctx)
     {
         transcache_free(wstate->txnsctx);
         rfree(wstate->txnsctx);
@@ -351,7 +352,7 @@ void increment_captureflush_destroy(increment_captureflush* wstate)
 
 static void increment_captureflush_reloadsyncdatasets(increment_captureflush* wstate)
 {
-    wstate->txnsctx->hsyncdataset = filter_dataset_reload(wstate->txnsctx->sysdicts->by_namespace,
-                                                                wstate->txnsctx->sysdicts->by_class,
-                                                                wstate->txnsctx->hsyncdataset);
+    wstate->txnsctx->hsyncdataset =
+        filter_dataset_reload(wstate->txnsctx->sysdicts->by_namespace,
+                              wstate->txnsctx->sysdicts->by_class, wstate->txnsctx->hsyncdataset);
 }

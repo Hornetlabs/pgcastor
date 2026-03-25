@@ -41,7 +41,7 @@ task_slots* taskslots_init(void)
     task_slots* slots = NULL;
 
     slots = (task_slots*)rmalloc0(sizeof(task_slots));
-    if(NULL == slots)
+    if (NULL == slots)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -60,7 +60,7 @@ task_slot* taskslot_init(int cnt)
     }
 
     slot = (task_slot*)rmalloc0(sizeof(task_slot) * cnt);
-    if(NULL == slot)
+    if (NULL == slot)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }

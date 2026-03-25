@@ -30,44 +30,44 @@
  * ----------
  */
 
-static void big52mic(const unsigned char *big5, unsigned char *p, int32_t len);
-static void mic2big5(const unsigned char *mic, unsigned char *p, int32_t len);
-static void euc_tw2mic(const unsigned char *euc, unsigned char *p, int32_t len);
-static void mic2euc_tw(const unsigned char *mic, unsigned char *p, int32_t len);
+static void big52mic(const unsigned char* big5, unsigned char* p, int32_t len);
+static void mic2big5(const unsigned char* mic, unsigned char* p, int32_t len);
+static void euc_tw2mic(const unsigned char* euc, unsigned char* p, int32_t len);
+static void mic2euc_tw(const unsigned char* mic, unsigned char* p, int32_t len);
 
-void euc_tw_to_big5(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void euc_tw_to_big5(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
-    unsigned char *buf;
+    unsigned char* buf;
 
     CHECK_ENCODING_CONVERSION_ARGS(EUC_TW, BIG5);
-    pg_parser_mcxt_malloc(EUCTW_BIG5_MCXT, (void **) &buf, len * ENCODING_GROWTH_RATE + 1);
+    pg_parser_mcxt_malloc(EUCTW_BIG5_MCXT, (void**)&buf, len * ENCODING_GROWTH_RATE + 1);
     euc_tw2mic(src, buf, len);
-    mic2big5(buf, dest, strlen((char *) buf));
+    mic2big5(buf, dest, strlen((char*)buf));
     pg_parser_mcxt_free(EUCTW_BIG5_MCXT, buf);
 }
 
-void big5_to_euc_tw(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void big5_to_euc_tw(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
-    unsigned char *buf;
+    unsigned char* buf;
 
     CHECK_ENCODING_CONVERSION_ARGS(BIG5, EUC_TW);
 
-    pg_parser_mcxt_malloc(EUCTW_BIG5_MCXT, (void **) &buf, len * ENCODING_GROWTH_RATE + 1);
+    pg_parser_mcxt_malloc(EUCTW_BIG5_MCXT, (void**)&buf, len * ENCODING_GROWTH_RATE + 1);
     big52mic(src, buf, len);
-    mic2euc_tw(buf, dest, strlen((char *) buf));
+    mic2euc_tw(buf, dest, strlen((char*)buf));
     pg_parser_mcxt_free(EUCTW_BIG5_MCXT, buf);
 }
 
-void euc_tw_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void euc_tw_to_mic(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(EUC_TW, MULE_INTERNAL);
@@ -75,10 +75,10 @@ void euc_tw_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     euc_tw2mic(src, dest, len);
 }
 
-void mic_to_euc_tw(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void mic_to_euc_tw(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, EUC_TW);
@@ -86,10 +86,10 @@ void mic_to_euc_tw(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     mic2euc_tw(src, dest, len);
 }
 
-void big5_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void big5_to_mic(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(BIG5, MULE_INTERNAL);
@@ -97,10 +97,10 @@ void big5_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_le
     big52mic(src, dest, len);
 }
 
-void mic_to_big5(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void mic_to_big5(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, BIG5);
@@ -111,17 +111,17 @@ void mic_to_big5(unsigned char *src_str, unsigned char *dest_str, int32_t str_le
 /*
  * EUC_TW ---> MIC
  */
-static void euc_tw2mic(const unsigned char *euc, unsigned char *p, int32_t len)
+static void euc_tw2mic(const unsigned char* euc, unsigned char* p, int32_t len)
 {
-    int32_t            c1;
-    int32_t            l;
+    int32_t c1;
+    int32_t l;
 
     while (len > 0)
     {
         c1 = *euc;
         if (IS_HIGHBIT_SET(c1))
         {
-            l = character_encoding_verifymb(EUC_TW, (const char *) euc, len);
+            l = character_encoding_verifymb(EUC_TW, (const char*)euc, len);
             if (l < 0)
             {
                 /* report_invalid_encoding(EUC_TW,
@@ -130,11 +130,15 @@ static void euc_tw2mic(const unsigned char *euc, unsigned char *p, int32_t len)
             }
             if (c1 == SS2)
             {
-                c1 = euc[1];    /* plane No. */
+                c1 = euc[1]; /* plane No. */
                 if (c1 == 0xa1)
+                {
                     *p++ = LC_CNS11643_1;
+                }
                 else if (c1 == 0xa2)
+                {
                     *p++ = LC_CNS11643_2;
+                }
                 else
                 {
                     /* other planes are MULE private charsets */
@@ -145,7 +149,7 @@ static void euc_tw2mic(const unsigned char *euc, unsigned char *p, int32_t len)
                 *p++ = euc[3];
             }
             else
-            {                    /* CNS11643-1 */
+            { /* CNS11643-1 */
                 *p++ = LC_CNS11643_1;
                 *p++ = c1;
                 *p++ = euc[1];
@@ -154,7 +158,7 @@ static void euc_tw2mic(const unsigned char *euc, unsigned char *p, int32_t len)
             len -= l;
         }
         else
-        {                        /* should be ASCII */
+        { /* should be ASCII */
             if (c1 == 0)
             {
                 /* report_invalid_encoding(EUC_TW,
@@ -172,10 +176,10 @@ static void euc_tw2mic(const unsigned char *euc, unsigned char *p, int32_t len)
 /*
  * MIC ---> EUC_TW
  */
-static void mic2euc_tw(const unsigned char *mic, unsigned char *p, int32_t len)
+static void mic2euc_tw(const unsigned char* mic, unsigned char* p, int32_t len)
 {
-    int32_t            c1;
-    int32_t            l;
+    int32_t c1;
+    int32_t l;
 
     while (len > 0)
     {
@@ -194,7 +198,7 @@ static void mic2euc_tw(const unsigned char *mic, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = character_encoding_verifymb(MULE_INTERNAL, (const char *) mic, len);
+        l = character_encoding_verifymb(MULE_INTERNAL, (const char*)mic, len);
         if (l < 0)
         {
             /* report_invalid_encoding(MULE_INTERNAL,
@@ -213,8 +217,7 @@ static void mic2euc_tw(const unsigned char *mic, unsigned char *p, int32_t len)
             *p++ = mic[1];
             *p++ = mic[2];
         }
-        else if (c1 == LCPRV2_B &&
-                 mic[1] >= LC_CNS11643_3 && mic[1] <= LC_CNS11643_7)
+        else if (c1 == LCPRV2_B && mic[1] >= LC_CNS11643_3 && mic[1] <= LC_CNS11643_7)
         {
             *p++ = SS2;
             *p++ = mic[1] - LC_CNS11643_3 + 0xa3;
@@ -225,7 +228,6 @@ static void mic2euc_tw(const unsigned char *mic, unsigned char *p, int32_t len)
         {
             /* report_untranslatable_char(MULE_INTERNAL, EUC_TW,
                                        (const char *) mic, len); */
-
         }
         mic += l;
         len -= l;
@@ -236,13 +238,12 @@ static void mic2euc_tw(const unsigned char *mic, unsigned char *p, int32_t len)
 /*
  * Big5 ---> MIC
  */
-static void big52mic(const unsigned char *big5, unsigned char *p, int32_t len)
+static void big52mic(const unsigned char* big5, unsigned char* p, int32_t len)
 {
     unsigned short c1;
-    unsigned short big5buf,
-                cnsBuf;
-    unsigned char lc;
-    int32_t            l;
+    unsigned short big5buf, cnsBuf;
+    unsigned char  lc;
+    int32_t        l;
 
     while (len > 0)
     {
@@ -261,7 +262,7 @@ static void big52mic(const unsigned char *big5, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = character_encoding_verifymb(BIG5, (const char *) big5, len);
+        l = character_encoding_verifymb(BIG5, (const char*)big5, len);
         if (l < 0)
         {
             /* report_invalid_encoding(BIG5,
@@ -274,8 +275,10 @@ static void big52mic(const unsigned char *big5, unsigned char *p, int32_t len)
         {
             /* Planes 3 and 4 are MULE private charsets */
             if (lc == LC_CNS11643_3 || lc == LC_CNS11643_4)
+            {
                 *p++ = LCPRV2_B;
-            *p++ = lc;            /* Plane No. */
+            }
+            *p++ = lc; /* Plane No. */
             *p++ = (cnsBuf >> 8) & 0x00ff;
             *p++ = cnsBuf & 0x00ff;
         }
@@ -294,12 +297,11 @@ static void big52mic(const unsigned char *big5, unsigned char *p, int32_t len)
 /*
  * MIC ---> Big5
  */
-static void mic2big5(const unsigned char *mic, unsigned char *p, int32_t len)
+static void mic2big5(const unsigned char* mic, unsigned char* p, int32_t len)
 {
     unsigned short c1;
-    unsigned short big5buf,
-                cnsBuf;
-    int32_t            l;
+    unsigned short big5buf, cnsBuf;
+    int32_t        l;
 
     while (len > 0)
     {
@@ -318,7 +320,7 @@ static void mic2big5(const unsigned char *mic, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = character_encoding_verifymb(MULE_INTERNAL, (const char *) mic, len);
+        l = character_encoding_verifymb(MULE_INTERNAL, (const char*)mic, len);
         if (l < 0)
         {
             /* report_invalid_encoding(MULE_INTERNAL,
@@ -329,7 +331,7 @@ static void mic2big5(const unsigned char *mic, unsigned char *p, int32_t len)
         {
             if (c1 == LCPRV2_B)
             {
-                c1 = mic[1];    /* get plane no. */
+                c1 = mic[1]; /* get plane no. */
                 cnsBuf = (mic[2] << 8) | mic[3];
             }
             else

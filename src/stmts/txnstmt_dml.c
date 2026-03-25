@@ -13,7 +13,7 @@
 
 void txnstmt_dmlfree(void* data)
 {
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }

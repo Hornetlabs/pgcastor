@@ -21,27 +21,26 @@
 #include "increment/integrate/parser/increment_integrateparsertrail.h"
 #include "bigtransaction/integrate/parser/bigtxn_integrateparsertrail.h"
 
-
 static bool bigtxn_integrateparsertrail_txns2queue(bigtxn_integrateparsertrail* bigtxnparser)
 {
-    FullTransactionId xid               = InvalidFullTransactionId;
-    HTAB *tx_htab                       = NULL;
-    txn* txn_obj                     = NULL;
-    dlistnode* dlnode                   = NULL;
-    parsertrail* parsertrail_obj     = NULL;
+    FullTransactionId xid = InvalidFullTransactionId;
+    HTAB*             tx_htab = NULL;
+    txn*              txn_obj = NULL;
+    dlistnode*        dlnode = NULL;
+    parsertrail*      parsertrail_obj = NULL;
 
     parsertrail_obj = (parsertrail*)bigtxnparser->decodingctx;
 
     tx_htab = parsertrail_obj->transcache->by_txns;
 
-    for(dlnode = parsertrail_obj->dtxns->head; NULL != dlnode; dlnode = parsertrail_obj->dtxns->head)
+    for (dlnode = parsertrail_obj->dtxns->head; NULL != dlnode;
+         dlnode = parsertrail_obj->dtxns->head)
     {
         parsertrail_obj->dtxns->head = dlnode->next;
         txn_obj = (txn*)dlnode->value;
         dlnode->value = NULL;
 
-        if(TXN_ISBIGTXN(txn_obj->flag)
-            && (NULL == hash_search(tx_htab, &xid, HASH_FIND, NULL)))
+        if (TXN_ISBIGTXN(txn_obj->flag) && (NULL == hash_search(tx_htab, &xid, HASH_FIND, NULL)))
         {
             bigtxnparser->decodingctx->state = INTEGRATE_STATUS_PARSER_EXIT;
             txn_obj->commit = true;
@@ -52,16 +51,17 @@ static bool bigtxn_integrateparsertrail_txns2queue(bigtxn_integrateparsertrail* 
         dlist_node_free(dlnode, NULL);
     }
 
-    if(NULL != parsertrail_obj->lasttxn)
+    if (NULL != parsertrail_obj->lasttxn)
     {
         txn* copy_txn = NULL;
 
         xid = parsertrail_obj->lasttxn->xid;
 
-        /* 事务内数据量达到阈值 */
-        if(NULL != parsertrail_obj->lasttxn && parsertrail_obj->transcache->totalsize > bigtxnparser->integrateparser_buffer)
+        /* Transaction data volume reaches threshold */
+        if (NULL != parsertrail_obj->lasttxn &&
+            parsertrail_obj->transcache->totalsize > bigtxnparser->integrateparser_buffer)
         {
-            /* 复制一个事务加到缓存中并在hash中清理事务 */
+            /* Copy a transaction to cache and clean up transaction in hash */
             copy_txn = txn_copy(parsertrail_obj->lasttxn);
             copy_txn->sysdictHis = NULL;
             cache_txn_add(parsertrail_obj->parser2txn, copy_txn);
@@ -70,7 +70,7 @@ static bool bigtxn_integrateparsertrail_txns2queue(bigtxn_integrateparsertrail* 
             parsertrail_obj->lasttxn->stmtsize = 4;
         }
 
-        if(TXN_FLAG_NORMAL == parsertrail_obj->lasttxn->flag)
+        if (TXN_FLAG_NORMAL == parsertrail_obj->lasttxn->flag)
         {
             TXN_SET_BIGTXN(parsertrail_obj->lasttxn->flag);
         }
@@ -79,13 +79,13 @@ static bool bigtxn_integrateparsertrail_txns2queue(bigtxn_integrateparsertrail* 
     return true;
 }
 
-/* 逻辑读取主线程 */
+/* Logical read main thread */
 bigtxn_integrateparsertrail* bigtxn_integrateparsertrail_init(void)
 {
     bigtxn_integrateparsertrail* traildecodecxt = NULL;
 
     traildecodecxt = (bigtxn_integrateparsertrail*)rmalloc0(sizeof(bigtxn_integrateparsertrail));
-    if(NULL == traildecodecxt)
+    if (NULL == traildecodecxt)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return NULL;
@@ -94,17 +94,18 @@ bigtxn_integrateparsertrail* bigtxn_integrateparsertrail_init(void)
 
     traildecodecxt->decodingctx = increment_integrateparsertrail_init();
 
-    traildecodecxt->integrateparser_buffer = MB2BYTE(guc_getConfigOptionInt(CFG_KEY_INTEGRATE_BUFFER));
+    traildecodecxt->integrateparser_buffer =
+        MB2BYTE(guc_getConfigOptionInt(CFG_KEY_INTEGRATE_BUFFER));
     return traildecodecxt;
 }
 
-/* 解析 trail 文件主函数 */
-void *bigtxn_integrateparsertrail_main(void* args)
+/* Parse trail file main function */
+void* bigtxn_integrateparsertrail_main(void* args)
 {
-    int timeout                                                 = 0;
-    thrnode* thr_node                                     = NULL;
-    increment_integrateparsertrail* traildecodecxt       = NULL;
-    bigtxn_integrateparsertrail* bigtxn_traildecodecxt   = NULL;
+    int                             timeout = 0;
+    thrnode*                        thr_node = NULL;
+    increment_integrateparsertrail* traildecodecxt = NULL;
+    bigtxn_integrateparsertrail*    bigtxn_traildecodecxt = NULL;
 
     thr_node = (thrnode*)args;
 
@@ -112,68 +113,70 @@ void *bigtxn_integrateparsertrail_main(void* args)
 
     traildecodecxt = bigtxn_traildecodecxt->decodingctx;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "integrate bigtxn parsertrail stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(
+            RLOG_WARNING,
+            "integrate bigtxn parsertrail stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
     traildecodecxt->state = INTEGRATE_STATUS_PARSER_WORK;
 
-    /* 进入工作 */
-    while(1)
+    /* Enter work */
+    while (1)
     {
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
-            /* 序列化/落盘 */
+            /* Serialization/flush to disk */
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
-        /* 获取数据, 超时退出 */
+        /* Get data, timeout exit */
         traildecodecxt->parsertrail.records = queue_get(traildecodecxt->recordscache, &timeout);
 
-        if(true == dlist_isnull(traildecodecxt->parsertrail.records))
+        if (true == dlist_isnull(traildecodecxt->parsertrail.records))
         {
-            if(ERROR_TIMEOUT == timeout)
+            if (ERROR_TIMEOUT == timeout)
             {
-                /* 睡眠 10 毫秒 */
+                /* Sleep 10 milliseconds */
                 usleep(10000);
                 continue;
             }
 
-             /* 出错了 */
+            /* Error occurred */
             elog(RLOG_WARNING, "cache_txn_getbatch error");
             thr_node->stat = THRNODE_STAT_ABORT;
             break;
         }
 
-        if(false == parsertrail_parser((parsertrail *)traildecodecxt))
+        if (false == parsertrail_parser((parsertrail*)traildecodecxt))
         {
             elog(RLOG_WARNING, "bigtxn integrate parser parser error");
             thr_node->stat = THRNODE_STAT_ABORT;
             break;
         }
 
-        /* 事务处理 */
-        if(true == dlist_isnull(traildecodecxt->parsertrail.dtxns))
+        /* Transaction processing */
+        if (true == dlist_isnull(traildecodecxt->parsertrail.dtxns))
         {
             continue;
         }
 
-        if(false == bigtxn_integrateparsertrail_txns2queue(bigtxn_traildecodecxt))
+        if (false == bigtxn_integrateparsertrail_txns2queue(bigtxn_traildecodecxt))
         {
             elog(RLOG_WARNING, "bigtxn integrate add txn 2 queue error");
             thr_node->stat = THRNODE_STAT_ABORT;
             break;
         }
 
-        if(INTEGRATE_STATUS_PARSER_EXIT == bigtxn_traildecodecxt->decodingctx->state)
+        if (INTEGRATE_STATUS_PARSER_EXIT == bigtxn_traildecodecxt->decodingctx->state)
         {
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
@@ -183,7 +186,7 @@ void *bigtxn_integrateparsertrail_main(void* args)
     return NULL;
 }
 
-void bigtxn_integrateparsertrail_free(void *args)
+void bigtxn_integrateparsertrail_free(void* args)
 {
     bigtxn_integrateparsertrail* traildecodecxt = NULL;
 

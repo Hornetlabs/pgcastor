@@ -28,24 +28,26 @@
 #include "serial/serial.h"
 #include "increment/capture/serial/increment_captureserial.h"
 
-/* sysdicthis系统字典应用 */
-static void increment_captureserial_sysdicthis2sysdict(increment_captureserialstate* cserial, List *his)
+/* Apply sysdict this system dictionary */
+static void increment_captureserial_sysdicthis2sysdict(increment_captureserialstate* cserial,
+                                                       List*                         his)
 {
     if (NULL == his)
     {
         return;
     }
 
-    /* 可以简单套一层, 内部基本只用了sysdict和relfilenode, 且relfilenode有空值判断 */
+    /* Simply wrap a layer, internally mainly uses sysdict and relfilenode, and relfilenode has null
+     * check */
     cache_sysdicts_txnsysdicthis2cache(cserial->dictcache->sysdicts, his);
 }
 
-/* 设置时间戳 */
+/* Set timestamp */
 static void increment_captureserial_settimestamp(serialstate* serialstate, txn* txn)
 {
-    file_buffer*     fbuffer = NULL;
+    file_buffer* fbuffer = NULL;
 
-    if(NULL == txn || NULL == serialstate)
+    if (NULL == txn || NULL == serialstate)
     {
         return;
     }
@@ -57,31 +59,32 @@ static void increment_captureserial_settimestamp(serialstate* serialstate, txn* 
     return;
 }
 
-/* 将 entry 数据落盘 */
+/* Flush entry data to disk */
 static void increment_captureserial_txn2disk(serialstate* serialstate, txn* txn)
 {
     bool first = true;
-    bool txnformetadata = true;                     /* 用于标识当前事务中只含有metadata */
-    ListCell* lc = NULL;
-    ff_txndata       txndata = { {0} };
+    bool txnformetadata = true; /* Used to identify if current transaction only contains metadata */
+    ListCell*  lc = NULL;
+    ff_txndata txndata = {{0}};
 
-     /* 
-      * 组装事务信息
+    /*
+     * Assemble transaction info
      */
-    if(NULL == txn->stmts)
+    if (NULL == txn->stmts)
     {
         return;
     }
 
-    /* 调用格式化接口，进行格式化处理 */
-    /* 当一个事务中只有metadata时,那么此事务不需要落盘 */
-    foreach(lc, txn->stmts)
+    /* Call format interface for formatting */
+    /* When a transaction only contains metadata, then this transaction does not need to flush */
+    foreach (lc, txn->stmts)
     {
         txnstmt* rstmt = (txnstmt*)lfirst(lc);
 
         if (TXNSTMT_TYPE_SYSDICTHIS == rstmt->type)
         {
-            increment_captureserial_sysdicthis2sysdict((increment_captureserialstate*)serialstate, txn->sysdictHis);
+            increment_captureserial_sysdicthis2sysdict((increment_captureserialstate*)serialstate,
+                                                       txn->sysdictHis);
             continue;
         }
 
@@ -91,17 +94,17 @@ static void increment_captureserial_txn2disk(serialstate* serialstate, txn* txn)
         txndata.header.type = FF_DATA_TYPE_TXN;
         txndata.header.transid = txn->xid;
 
-trfwork_serial_txn2disk_reset:
-        if(false == txnformetadata)
+    trfwork_serial_txn2disk_reset:
+        if (false == txnformetadata)
         {
-            if(1 == list_length(txn->stmts))
+            if (1 == list_length(txn->stmts))
             {
-                /* 即是开始也是结束 */
-                txndata.header.transind = (FF_DATA_TRANSIND_START | FF_DATA_TRANSIND_IN );
+                /* Both start and end */
+                txndata.header.transind = (FF_DATA_TRANSIND_START | FF_DATA_TRANSIND_IN);
             }
             else
             {
-                if(true == first)
+                if (true == first)
                 {
                     first = false;
                     txndata.header.transind = FF_DATA_TRANSIND_START;
@@ -114,9 +117,9 @@ trfwork_serial_txn2disk_reset:
         }
         else
         {
-            if(TXNSTMT_TYPE_METADATA == rstmt->type)
+            if (TXNSTMT_TYPE_METADATA == rstmt->type)
             {
-                /* metadata 标识为开始,后面就不会产生 commit 了 */
+                /* metadata marked as start, later will not generate commit */
                 txndata.header.transind = FF_DATA_TRANSIND_START;
             }
             else
@@ -125,26 +128,29 @@ trfwork_serial_txn2disk_reset:
                 goto trfwork_serial_txn2disk_reset;
             }
         }
-        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_DATA, (void*)&txndata, serialstate->ffsmgrstate);
+        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_DATA, (void*)&txndata,
+                                                        serialstate->ffsmgrstate);
     }
     increment_captureserial_settimestamp(serialstate, txn);
 }
 
-/* 设置serial 解析节点信息 */
-static void increment_captureserial_lsn_set(increment_captureserialstate* captureserialstate, XLogRecPtr redolsn, XLogRecPtr restartlsn, XLogRecPtr confirmlsn)
+/* Set serial parse node info */
+static void increment_captureserial_lsn_set(increment_captureserialstate* captureserialstate,
+                                            XLogRecPtr redolsn, XLogRecPtr restartlsn,
+                                            XLogRecPtr confirmlsn)
 {
     captureserialstate->redolsn = redolsn;
     captureserialstate->restartlsn = restartlsn;
     captureserialstate->confirmlsn = confirmlsn;
 }
 
-/* 设置lsn和timeline */
+/* Set lsn and timeline */
 static void increment_captureserial_fbuffer_lsnset(increment_captureserialstate* captureserialstate)
 {
     file_buffer* fbuffer = NULL;
 
-    fbuffer = file_buffer_getbybufid(captureserialstate->base.txn2filebuffer, 
-                                            captureserialstate->base.ffsmgrstate->bufid);
+    fbuffer = file_buffer_getbybufid(captureserialstate->base.txn2filebuffer,
+                                     captureserialstate->base.ffsmgrstate->bufid);
 
     fbuffer->extra.chkpoint.redolsn.wal.lsn = captureserialstate->redolsn;
     fbuffer->extra.rewind.restartlsn.wal.lsn = captureserialstate->restartlsn;
@@ -153,26 +159,28 @@ static void increment_captureserial_fbuffer_lsnset(increment_captureserialstate*
     fbuffer->extra.rewind.curtlid = captureserialstate->curtlid;
 }
 
-/* 设置timeline信息 */
-static void increment_captureserial_timeline_set(increment_captureserialstate* captureserialstate, TimeLineID curtlid)
+/* Set timeline info */
+static void increment_captureserial_timeline_set(increment_captureserialstate* captureserialstate,
+                                                 TimeLineID                    curtlid)
 {
     captureserialstate->curtlid = curtlid;
 }
 
-/* 
- * 将 buffer 放入到 flush 中, 在放入前需要设置 buffer 的 flag
-*/
-static void increment_captureserial_buffer2waitflush(increment_captureserialstate* captureserialstate, txn* txn)
+/*
+ * Put buffer into flush, need to set buffer flag before putting
+ */
+static void increment_captureserial_buffer2waitflush(
+    increment_captureserialstate* captureserialstate, txn* txn)
 {
     /*
-     * 1、获取新的缓存
-     * 2、设置新缓存的标识信息
-     * 3、根据 wstate 中的 lsn 信息设置旧缓存的标识信息
+     * 1. Get new buffer cache
+     * 2. Set new cache flag info
+     * 3. Set old cache flag info based on lsn info from wstate
      */
-    int             oldflag = 0;
-    int             bufid = 0;
-    bool            flush = false;
-    int timeout         = 0;
+    int  oldflag = 0;
+    int  bufid = 0;
+    bool flush = false;
+    int  timeout = 0;
 
     ff_fileinfo* finfo = NULL;
     file_buffer* fbuffer = NULL;
@@ -181,8 +189,9 @@ static void increment_captureserial_buffer2waitflush(increment_captureserialstat
 
     serial_state = (serialstate*)captureserialstate;
 
-    foldbuffer = file_buffer_getbybufid(serial_state->txn2filebuffer, serial_state->ffsmgrstate->bufid);
-    if(0 == foldbuffer->start)
+    foldbuffer =
+        file_buffer_getbybufid(serial_state->txn2filebuffer, serial_state->ffsmgrstate->bufid);
+    if (0 == foldbuffer->start)
     {
         return;
     }
@@ -208,7 +217,7 @@ static void increment_captureserial_buffer2waitflush(increment_captureserialstat
             captureserialstate->confirmlsn = txn->confirm.wal.lsn;
             foldbuffer->flag |= FILE_BUFFER_FLAG_REWIND;
             foldbuffer->extra.rewind.confirmlsn.wal.lsn = captureserialstate->confirmlsn;
-            if(NULL != txn->stmts)
+            if (NULL != txn->stmts)
             {
                 foldbuffer->extra.rewind.flushlsn.wal.lsn = captureserialstate->confirmlsn;
             }
@@ -219,8 +228,9 @@ static void increment_captureserial_buffer2waitflush(increment_captureserialstat
             captureserialstate->redolsn = txn->redo.wal.lsn;
             foldbuffer->flag |= FILE_BUFFER_FLAG_REDO;
             foldbuffer->extra.chkpoint.redolsn.wal.lsn = captureserialstate->redolsn;
-            /* 两个 checkpoint 之间的系统表变更 */
-            foldbuffer->extra.chkpoint.sysdicts = catalog_sysdict_filterbylsn(&captureserialstate->redosysdicts, captureserialstate->redolsn);
+            /* System catalog changes between two checkpoints */
+            foldbuffer->extra.chkpoint.sysdicts = catalog_sysdict_filterbylsn(
+                &captureserialstate->redosysdicts, captureserialstate->redolsn);
             flush = true;
         }
 
@@ -234,7 +244,7 @@ static void increment_captureserial_buffer2waitflush(increment_captureserialstat
     }
     else
     {
-        /* 设置 oldbuffer 的信息 */
+        /* Set oldbuffer info */
         foldbuffer->flag |= FILE_BUFFER_FLAG_REWIND;
         foldbuffer->extra.rewind.restartlsn.wal.lsn = captureserialstate->restartlsn;
         foldbuffer->extra.rewind.confirmlsn.wal.lsn = captureserialstate->confirmlsn;
@@ -243,13 +253,13 @@ static void increment_captureserial_buffer2waitflush(increment_captureserialstat
 
     if (flush)
     {
-        /* 获取新的 buffer 缓存 */
-        while(1)
+        /* Get new buffer cache */
+        while (1)
         {
             bufid = file_buffer_get(serial_state->txn2filebuffer, &timeout);
-            if(INVALID_BUFFERID == bufid)
+            if (INVALID_BUFFERID == bufid)
             {
-                if(ERROR_TIMEOUT == timeout)
+                if (ERROR_TIMEOUT == timeout)
                 {
                     usleep(10000);
                     continue;
@@ -261,10 +271,10 @@ static void increment_captureserial_buffer2waitflush(increment_captureserialstat
         }
 
         fbuffer = file_buffer_getbybufid(serial_state->txn2filebuffer, bufid);
-        if(NULL == fbuffer->privdata)
+        if (NULL == fbuffer->privdata)
         {
             finfo = (ff_fileinfo*)rmalloc0(sizeof(ff_fileinfo));
-            if(NULL == finfo)
+            if (NULL == finfo)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
@@ -279,17 +289,17 @@ static void increment_captureserial_buffer2waitflush(increment_captureserialstat
         rmemcpy0(fbuffer->data, 0, foldbuffer->data, foldbuffer->start);
         fbuffer->start = foldbuffer->start;
 
-        /* 设置新 buffer 的其它信息 */
+        /* Set new buffer other info */
         rmemcpy0(finfo, 0, (ff_fileinfo*)foldbuffer->privdata, sizeof(ff_fileinfo));
 
-        /* 设置 oldbuffer 的信息 */
+        /* Set oldbuffer info */
         foldbuffer->extra.rewind.curtlid = captureserialstate->curtlid;
 
-        /* 将 oldbuffer 放入到待刷新缓存中 */
+        /* Put oldbuffer into wait flush cache */
         rmemcpy1(&fbuffer->extra, 0, &foldbuffer->extra, sizeof(file_buffer_extra));
         file_buffer_waitflush_add(serial_state->txn2filebuffer, foldbuffer);
 
-        /* 重置 fbuffer 的内容 */
+        /* Reset fbuffer content */
         fbuffer->flag = oldflag;
         fbuffer->extra.chkpoint.sysdicts = NULL;
         fbuffer->extra.dataset.dataset = NULL;
@@ -299,15 +309,16 @@ static void increment_captureserial_buffer2waitflush(increment_captureserialstat
     return;
 }
 
-/* 序列化故障恢复 */
-static bool increment_captureserial_recovery(increment_captureserialstate* captureserialstate, uint64 fileoffset)
+/* Serialize fault recovery */
+static bool increment_captureserial_recovery(increment_captureserialstate* captureserialstate,
+                                             uint64                        fileoffset)
 {
-    bool shiftfile = false;
-    int bufid = 0;
-    int maxbufid = 0;
-    int mbytes = 0;
-    int minsize = 0;
-    int timeout = 0;
+    bool   shiftfile = false;
+    int    bufid = 0;
+    int    maxbufid = 0;
+    int    mbytes = 0;
+    int    minsize = 0;
+    int    timeout = 0;
     uint64 bytes = 0;
     uint64 freespc = 0;
 
@@ -316,7 +327,7 @@ static bool increment_captureserial_recovery(increment_captureserialstate* captu
     ff_fileinfo* finfo = NULL;
     ff_fileinfo* nfinfo = NULL;
     serialstate* serial_state = NULL;
-    ff_tail fftail = { 0 };
+    ff_tail      fftail = {0};
 
     if (NULL == captureserialstate)
     {
@@ -324,37 +335,38 @@ static bool increment_captureserial_recovery(increment_captureserialstate* captu
     }
 
     serial_state = (serialstate*)captureserialstate;
-    in_fbuffer = file_buffer_getbybufid(serial_state->txn2filebuffer, serial_state->ffsmgrstate->bufid);
-    if(0 == fileoffset)
+    in_fbuffer =
+        file_buffer_getbybufid(serial_state->txn2filebuffer, serial_state->ffsmgrstate->bufid);
+    if (0 == fileoffset)
     {
         return false;
     }
 
-    /* 计算 maxbufid */
+    /* Calculate maxbufid */
     mbytes = guc_getConfigOptionInt(CFG_KEY_TRAIL_MAX_SIZE);
     bytes = MB2BYTE(mbytes);
-    maxbufid = (bytes/FILE_BUFFER_SIZE);
+    maxbufid = (bytes / FILE_BUFFER_SIZE);
 
-    /* 需要考虑块内空间不够和整好切文件 */
+    /* Need to consider insufficient space in block and file switching */
     finfo = (ff_fileinfo*)in_fbuffer->privdata;
 
-    /* 获取 minsize */
+    /* Get minsize */
     minsize = fftrail_data_tokenminsize(serial_state->ffsmgrstate->compatibility);
-    if(maxbufid == finfo->blknum)
+    if (maxbufid == finfo->blknum)
     {
-        /* 追加后面的内容 */
+        /* Append content after */
         minsize += fftrail_taillen(serial_state->ffsmgrstate->compatibility);
         shiftfile = true;
     }
 
-    /* 查看剩余空间 */
+    /* Check remaining space */
     freespc = (in_fbuffer->maxsize - in_fbuffer->start);
 
     elog(RLOG_INFO, "minsize:%u, freespc:%u, fileoffset:%lu", minsize, freespc, fileoffset);
-    /* 比较剩余空间是否满足放入数据的最小要求 */
-    if(minsize >= freespc)
+    /* Compare if remaining space meets minimum requirement for data */
+    if (minsize >= freespc)
     {
-        if(false == shiftfile)
+        if (false == shiftfile)
         {
             finfo->blknum++;
         }
@@ -363,23 +375,22 @@ static bool increment_captureserial_recovery(increment_captureserialstate* captu
             finfo->blknum = 1;
             finfo->fileid++;
         }
-        
+
         in_fbuffer->start = 0;
         rmemset0(in_fbuffer->data, 0, '\0', in_fbuffer->maxsize);
     }
 
     fftail.nexttrailno = (finfo->fileid + 1);
-    serial_state->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_RESET,
-                                                    &fftail,
-                                                    (void*)serial_state->ffsmgrstate);
+    serial_state->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_RESET, &fftail,
+                                                     (void*)serial_state->ffsmgrstate);
 
-    /* 重新获取 fbuffer */
-    while(1)
+    /* Re-fetch fbuffer */
+    while (1)
     {
         bufid = file_buffer_get(serial_state->txn2filebuffer, &timeout);
-        if(INVALID_BUFFERID == bufid)
+        if (INVALID_BUFFERID == bufid)
         {
-            if(ERROR_TIMEOUT == timeout)
+            if (ERROR_TIMEOUT == timeout)
             {
                 usleep(10000);
                 continue;
@@ -391,53 +402,54 @@ static bool increment_captureserial_recovery(increment_captureserialstate* captu
     }
     fbuffer = file_buffer_getbybufid(serial_state->txn2filebuffer, bufid);
 
-    if(NULL != fbuffer->privdata)
+    if (NULL != fbuffer->privdata)
     {
         nfinfo = (ff_fileinfo*)fbuffer->privdata;
     }
     else
     {
         nfinfo = (ff_fileinfo*)rmalloc0(sizeof(ff_fileinfo));
-        if(NULL == nfinfo)
+        if (NULL == nfinfo)
         {
             elog(RLOG_ERROR, "out of memory");
         }
         rmemset0(nfinfo, 0, '\0', sizeof(ff_fileinfo));
         fbuffer->privdata = (void*)nfinfo;
     }
-    /* 设置新 buffer 的其它信息 */
+    /* Set new buffer other info */
     rmemcpy0(nfinfo, 0, finfo, sizeof(ff_fileinfo));
     nfinfo->fileid = finfo->fileid;
     nfinfo->fileid++;
     nfinfo->blknum = 1;
 
-    /* 初始化头部信息 */
+    /* Initialize header info */
     serial_state->ffsmgrstate->bufid = bufid;
     serial_state->ffsmgrstate->ffsmgr->ffsmgr_init(FFSMGR_IF_OPTYPE_SERIAL,
-                                                  serial_state->ffsmgrstate);
+                                                   serial_state->ffsmgrstate);
 
-    /*稳定后删除*/
-    //serial_state->ffsmgrstate->fdata->extradata = (void*)captureserialstate->dictcache;
+    /*Stable after delete*/
+    // serial_state->ffsmgrstate->fdata->extradata = (void*)captureserialstate->dictcache;
 
-    /* 将 buffer 放入到待刷新缓存中 */
+    /* Put buffer into wait flush cache */
     rmemcpy1(&fbuffer->extra, 0, &in_fbuffer->extra, sizeof(file_buffer_extra));
     file_buffer_waitflush_add(serial_state->txn2filebuffer, in_fbuffer);
 
-    /* 切换文件后将新生成的buffer加入缓存，用于write将新的文件点信息更新到base文件 */
+    /* After switching file, add newly generated buffer to cache, used by write to update base file
+     * with new file position info */
     increment_captureserial_buffer2waitflush(captureserialstate, NULL);
 
     return true;
 }
 
-/* 设置ffsmgrstate privdata和fdata */
+/* Set ffsmgrstate privdata and fdata */
 static void increment_captureserialstate_ffsmgr_set(increment_captureserialstate* serialstate)
 {
-    serialstate->base.ffsmgrstate->privdata = (void *)serialstate;
+    serialstate->base.ffsmgrstate->privdata = (void*)serialstate;
     serialstate->base.ffsmgrstate->fdata->ffdata2 = serialstate->dictcache;
 }
 
-/* 设置redo保存的系统字典 */
-static void  increment_captureserial_setredosysdicts(void* serial, void* catalogdata)
+/* Set redo saved system dictionary */
+static void increment_captureserial_setredosysdicts(void* serial, void* catalogdata)
 {
     increment_captureserialstate* captureserialstate = NULL;
 
@@ -457,10 +469,10 @@ static void  increment_captureserial_setredosysdicts(void* serial, void* catalog
     return;
 }
 
-static void increment_captureserial_setonlinerefreshdataset(void* serial,  void* dataset)
+static void increment_captureserial_setonlinerefreshdataset(void* serial, void* dataset)
 {
     increment_captureserialstate* captureserialstate = NULL;
-    List* dataset_list = NULL;
+    List*                         dataset_list = NULL;
 
     if (NULL == serial)
     {
@@ -475,15 +487,16 @@ static void increment_captureserial_setonlinerefreshdataset(void* serial,  void*
     dataset_list = (List*)dataset;
     captureserialstate = (increment_captureserialstate*)serial;
 
-    /* 如果存在, 那么合并list */
+    /* If exists, merge list */
     if (captureserialstate->onlinerefreshdataset)
     {
-        ListCell *cell = NULL;
-        foreach(cell, dataset_list)
+        ListCell* cell = NULL;
+        foreach (cell, dataset_list)
         {
-            void *node = lfirst(cell);
+            void* node = lfirst(cell);
 
-            captureserialstate->onlinerefreshdataset = lappend(captureserialstate->onlinerefreshdataset, node);
+            captureserialstate->onlinerefreshdataset =
+                lappend(captureserialstate->onlinerefreshdataset, node);
         }
         list_free(dataset_list);
     }
@@ -495,7 +508,7 @@ static void increment_captureserial_setonlinerefreshdataset(void* serial,  void*
     return;
 }
 
-/* 在系统字典获取dbname */
+/* Get dbname from system dictionary */
 char* increment_captureserial_getdbname(void* captureserial, Oid oid)
 {
     increment_captureserialstate* serialstate = NULL;
@@ -504,13 +517,13 @@ char* increment_captureserial_getdbname(void* captureserial, Oid oid)
     return transcache_getdbname(oid, (void*)serialstate->dictcache);
 }
 
-/* 在系统字典获取dboid */
+/* Get dboid from system dictionary */
 Oid increment_captureserial_getdboid(void* captureserial)
 {
     return misc_controldata_database_get(captureserial);
 }
 
-/* 在系统字典获取namespace */
+/* Get namespace from system dictionary */
 void* increment_captureserial_getnamespace(void* captureserial, Oid oid)
 {
     increment_captureserialstate* serialstate = NULL;
@@ -518,7 +531,7 @@ void* increment_captureserial_getnamespace(void* captureserial, Oid oid)
     return transcache_getnamespace(oid, (void*)serialstate->dictcache);
 }
 
-/* 在系统字典获取class */
+/* Get class from system dictionary */
 void* increment_captureserial_getclass(void* captureserial, Oid oid)
 {
     increment_captureserialstate* serialstate = NULL;
@@ -526,11 +539,11 @@ void* increment_captureserial_getclass(void* captureserial, Oid oid)
     return transcache_getclass(oid, (void*)serialstate->dictcache);
 }
 
-/* 根据 oid 获取索引信息, 返回为链表 */
+/* Get index info by oid, return as linked list */
 static void* increment_captureserial_getindex(void* captureserial, Oid oid)
 {
     increment_captureserialstate* serialstate = NULL;
-    void *index = NULL;
+    void*                         index = NULL;
 
     serialstate = (increment_captureserialstate*)captureserial;
 
@@ -539,7 +552,7 @@ static void* increment_captureserial_getindex(void* captureserial, Oid oid)
     return index;
 }
 
-/* 在系统字典获取attribute */
+/* Get attribute from system dictionary */
 void* increment_captureserial_getattributes(void* captureserial, Oid oid)
 {
     increment_captureserialstate* serialstate = NULL;
@@ -547,7 +560,7 @@ void* increment_captureserial_getattributes(void* captureserial, Oid oid)
     return transcache_getattributes(oid, (void*)serialstate->dictcache);
 }
 
-/* 在系统字典获取type */
+/* Get type from system dictionary */
 void* increment_captureserial_gettype(void* captureserial, Oid oid)
 {
     increment_captureserialstate* serialstate = NULL;
@@ -555,7 +568,7 @@ void* increment_captureserial_gettype(void* captureserial, Oid oid)
     return transcache_gettype(oid, (void*)serialstate->dictcache);
 }
 
-/* 系统字典应用 */
+/* System catalog apply */
 void increment_captureserial_transcatalog2transcache(void* captureserial, void* catalog)
 {
     increment_captureserialstate* serialstate = NULL;
@@ -563,7 +576,7 @@ void increment_captureserial_transcatalog2transcache(void* captureserial, void* 
     cache_sysdicts_txnsysdicthisitem2cache(serialstate->dictcache->sysdicts, (ListCell*)catalog);
 }
 
-/* 设置ffsmgr的callback函数 */
+/* Set ffsmgr callback function */
 void increment_captureserial_ffsmgr_setcallback(increment_captureserialstate* wstate)
 {
     wstate->base.ffsmgrstate->callback.getdboid = increment_captureserial_getdboid;
@@ -575,21 +588,23 @@ void increment_captureserial_ffsmgr_setcallback(increment_captureserialstate* ws
     wstate->base.ffsmgrstate->callback.getattributes = increment_captureserial_getattributes;
     wstate->base.ffsmgrstate->callback.gettype = increment_captureserial_gettype;
     wstate->base.ffsmgrstate->callback.setredosysdicts = increment_captureserial_setredosysdicts;
-    wstate->base.ffsmgrstate->callback.catalog2transcache = increment_captureserial_transcatalog2transcache;
-    wstate->base.ffsmgrstate->callback.setonlinerefreshdataset = increment_captureserial_setonlinerefreshdataset;
+    wstate->base.ffsmgrstate->callback.catalog2transcache =
+        increment_captureserial_transcatalog2transcache;
+    wstate->base.ffsmgrstate->callback.setonlinerefreshdataset =
+        increment_captureserial_setonlinerefreshdataset;
     wstate->base.ffsmgrstate->callback.setdboid = NULL;
     wstate->base.ffsmgrstate->callback.getrecords = NULL;
     wstate->base.ffsmgrstate->callback.getparserstate = NULL;
     wstate->base.ffsmgrstate->callback.freeattributes = NULL;
 }
 
-/* 初始化capture_serialstate */
+/* Initialize capture_serialstate */
 increment_captureserialstate* increment_captureserial_init(void)
 {
     increment_captureserialstate* serialstate = NULL;
 
     serialstate = (increment_captureserialstate*)rmalloc0(sizeof(increment_captureserialstate));
-    if(NULL == serialstate)
+    if (NULL == serialstate)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -598,7 +613,7 @@ increment_captureserialstate* increment_captureserial_init(void)
     serialstate_init(&serialstate->base);
 
     serialstate->dictcache = (transcache*)rmalloc0(sizeof(transcache));
-    if(NULL == serialstate->dictcache)
+    if (NULL == serialstate->dictcache)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -623,47 +638,47 @@ static bool capture_serialstate_transcache_setfromfile(transcache* dictcache)
     cache_sysdictsload((void**)&dictcache->sysdicts);
 
     return true;
-
 }
 
 /*
- * 格式化主进程
-*/
-void* increment_captureserial_main(void *args)
+ * Format main process
+ */
+void* increment_captureserial_main(void* args)
 {
-    int iret                                    = 0;                           /* 获取缓存中的事务时，附加出参 */
-    txn* entry                           = NULL;
-    thrnode* thr_node                     = NULL;
-    serialstate* serial_state             = NULL;
+    int          iret = 0; /* Additional output parameter when getting transaction from cache */
+    txn*         entry = NULL;
+    thrnode*     thr_node = NULL;
+    serialstate* serial_state = NULL;
     increment_captureserialstate* wstate = NULL;
-    capturebase dbase = { 0 };
+    capturebase                   dbase = {0};
 
     thr_node = (thrnode*)args;
 
     wstate = (increment_captureserialstate*)thr_node->data;
     serial_state = (serialstate*)wstate;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check state */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "increment capture serial stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "increment capture serial stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to work state */
     thr_node->stat = THRNODE_STAT_WORK;
 
-    /* 获取基础信息 */
+    /* Get basic info */
     misc_stat_loaddecode(&dbase);
 
-    /* database设置 */
+    /* database set */
     wstate->base.database = misc_controldata_database_get(NULL);
 
-    /* 加载字典表 */
+    /* Load dictionary table */
     capture_serialstate_transcache_setfromfile(wstate->dictcache);
 
-    /* 设置lsn信息 */
+    /* Set lsn info */
     increment_captureserial_lsn_set(wstate, dbase.redolsn, dbase.restartlsn, dbase.confirmedlsn);
 
     increment_captureserial_timeline_set(wstate, dbase.curtlid);
@@ -672,41 +687,41 @@ void* increment_captureserial_main(void *args)
 
     increment_captureserial_fbuffer_lsnset(wstate);
 
-    /* 设置ffsmgrstate回调函数 */
+    /* Set ffsmgrstate callback function */
     increment_captureserial_ffsmgr_setcallback(wstate);
 
-    /* 序列化内容设置 */
+    /* Serialize content set */
     serialstate_ffsmgr_set(serial_state, FFSMG_IF_TYPE_TRAIL);
 
-    /* 设置 fdata内容和privdata */
+    /* Set fdata content and privdata */
     increment_captureserialstate_ffsmgr_set(wstate);
 
     increment_captureserial_recovery(wstate, dbase.fileoffset);
 
-    while(1)
+    while (1)
     {
         entry = NULL;
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
-            /* 序列化/落盘 */
+            /* Serialize/flush */
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
-        /* 获取数据 */
+        /* Get data */
         entry = cache_txn_get(wstate->parser2serialtxns, &iret);
-        if(NULL == entry)
+        if (NULL == entry)
         {
-            if(ERROR_TIMEOUT == iret)
+            if (ERROR_TIMEOUT == iret)
             {
-                /* 超时，查看是否需要将待写的 buffer 刷新到磁盘中 */
+                /* Timeout, check if need to flush pending write buffer to disk */
                 increment_captureserial_buffer2waitflush(wstate, NULL);
                 continue;
             }
-            /* 需要退出，等待 worknode->status 变为 WORK_STATUS_TERM 后退出*/
-            if(THRNODE_STAT_TERM != thr_node->stat)
+            /* Need to exit, wait for worknode->status to become WORK_STATUS_TERM then exit*/
+            if (THRNODE_STAT_TERM != thr_node->stat)
             {
-                /* 睡眠 10 毫秒 */
+                /* Sleep 10 ms */
                 usleep(10000);
                 continue;
             }
@@ -714,40 +729,39 @@ void* increment_captureserial_main(void *args)
             break;
         }
 
-        /* 系统表应用 */
-        /* 先加载，在应用 */
-        /* 事务类型为提交 */
+        /* System catalog apply */
+        /* First load, then apply */
+        /* Transaction type is commit */
 
-        /* 将 entry 数据落盘 */
+        /* Flush entry data to disk */
         increment_captureserial_txn2disk(serial_state, entry);
 
-        /* 根据txn更新wstate->lsn信息 */
+        /* Update wstate->lsn info based on txn */
         increment_captureserial_buffer2waitflush(wstate, entry);
 
-        /* txn 内存释放 */
+        /* txn memory release */
         txn_free(entry);
 
         rfree(entry);
 
         entry = NULL;
-
     }
 
     pthread_exit(NULL);
     return NULL;
 }
 
-/* 资源回收 */
-void  increment_captureserial_destroy(increment_captureserialstate* captureserialstate)
+/* Resource reclaim */
+void increment_captureserial_destroy(increment_captureserialstate* captureserialstate)
 {
-    if(NULL == captureserialstate)
+    if (NULL == captureserialstate)
     {
         return;
     }
 
     serialstate_destroy((serialstate*)captureserialstate);
 
-    if(NULL != captureserialstate->dictcache)
+    if (NULL != captureserialstate->dictcache)
     {
         transcache_free(captureserialstate->dictcache);
         rfree(captureserialstate->dictcache);

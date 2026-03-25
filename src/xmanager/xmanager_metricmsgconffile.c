@@ -14,29 +14,28 @@
 #include "xmanager/xmanager_metricmsg.h"
 
 /*
- * 处理 conffile 命令
- *  1、jobtype 需要小于 PROCESS
- *  2、校验 job 是否已经存在
- *  3、覆盖conf文件
-*/
-bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric,
-                                             netpoolentry* npoolentry,
-                                             netpacket* npacket)
+ * Handle conffile command
+ *1. jobtype must be less than PROCESS
+ *2. Verify job already exists
+ *3. Overwrite conf file
+ */
+bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                      netpacket* npacket)
 {
-    int fd                                              = 0;
-    int len                                             = 0;
-    int jobtype                                         = 0;
-    int errcode                                         = 0;
-    uint32 fnamelen                                     = 0;
-    uint32 filesize                                     = 0;
-    uint8* uptr                                         = NULL;
-    char* jobname                                       = NULL;
-    xmanager_metricnode* pxmetricnode            = NULL;
-    xmanager_metricnode xmetricnode              = { 0 };
-    char tmppath[1024]                                  = { 0 };
-    char errormsg[2048]                                 = { 0 };
+    int                  fd = 0;
+    int                  len = 0;
+    int                  jobtype = 0;
+    int                  errcode = 0;
+    uint32               fnamelen = 0;
+    uint32               filesize = 0;
+    uint8*               uptr = NULL;
+    char*                jobname = NULL;
+    xmanager_metricnode* pxmetricnode = NULL;
+    xmanager_metricnode  xmetricnode = {0};
+    char                 tmppath[1024] = {0};
+    char                 errormsg[2048] = {0};
 
-    /* 获取作业类型 */
+    /* Get job type */
     uptr = npacket->data;
 
     /* msglen + crc32 + commandtype */
@@ -50,13 +49,12 @@ bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric,
     if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 2048, 
-                 "xmanager parse conffile command, unsupport %s",
+        snprintf(errormsg, 2048, "xmanager parse conffile command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parseconffile_error;
     }
 
-    /* 获取 jobname */
+    /* Get jobname */
     rmemcpy1(&len, 0, uptr, 4);
     len = r_ntoh32(len);
     uptr += 4;
@@ -74,7 +72,7 @@ bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric,
     rmemcpy0(jobname, 0, uptr, len);
     uptr += len;
 
-    /* 查看节点是否存在 */
+    /* Check if node exists */
     xmetricnode.type = jobtype;
     xmetricnode.name = jobname;
 
@@ -86,20 +84,20 @@ bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parseconffile_error;
     }
 
-    /* filename len */
+    /*filename lengthgth */
     rmemcpy1(&fnamelen, 0, uptr, 4);
     fnamelen = r_ntoh32(fnamelen);
     uptr += 4;
 
-    /* 暂时无用 */
+    /* Temporarily unused */
     uptr += fnamelen;
 
-    /* filename len */
+    /*filename lengthgth */
     rmemcpy1(&filesize, 0, uptr, 4);
     filesize = r_ntoh32(filesize);
     uptr += 4;
 
-    /* 临时文件 */
+    /* Temp file */
     snprintf(tmppath, 1024, "%s.tmp", pxmetricnode->conf);
 
     fd = osal_file_open(tmppath, O_RDWR | O_CREAT, g_file_create_mode);
@@ -119,11 +117,12 @@ bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parseconffile_error;
     }
 
-    /* 重命名文件 */
-    if (osal_durable_rename(tmppath, pxmetricnode->conf, RLOG_DEBUG)) 
+    /* Rename file */
+    if (osal_durable_rename(tmppath, pxmetricnode->conf, RLOG_DEBUG))
     {
         errcode = ERROR_OPENFILEERROR;
-        snprintf(errormsg, 2048, "ERROR: %s does not renaming file %s:%s .", jobname, tmppath, strerror(errno));
+        snprintf(errormsg, 2048, "ERROR: %s does not renaming file %s:%s .", jobname, tmppath,
+                 strerror(errno));
         goto xmanager_metricmsg_parseconffile_error;
     }
 
@@ -142,10 +141,6 @@ xmanager_metricmsg_parseconffile_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_CONFFILECMD,
-                                                      errcode,
-                                                      errormsg);
-
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
+                                               XMANAGER_MSG_CONFFILECMD, errcode, errormsg);
 }

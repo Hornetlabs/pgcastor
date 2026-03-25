@@ -5,7 +5,7 @@
 
 void txnstmt_bigtxnbegin_free(void* data)
 {
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }

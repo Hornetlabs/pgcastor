@@ -17,7 +17,6 @@
 #include "./unicode_map/gbk_to_utf8.map"
 #include "./unicode_map/utf8_to_gbk.map"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -28,32 +27,24 @@
  * ) returns VOID;
  * ----------
  */
-void gbk_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void gbk_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(GBK, UTF8);
 
-    LocalToUtf(src, len, dest,
-               &gbk_to_unicode_tree,
-               NULL, 0,
-               NULL,
-               GBK);
+    LocalToUtf(src, len, dest, &gbk_to_unicode_tree, NULL, 0, NULL, GBK);
 }
 
-void utf8_to_gbk(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_gbk(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, GBK);
 
-    UtfToLocal(src, len, dest,
-               &gbk_from_unicode_tree,
-               NULL, 0,
-               NULL,
-               GBK);
+    UtfToLocal(src, len, dest, &gbk_from_unicode_tree, NULL, 0, NULL, GBK);
 }

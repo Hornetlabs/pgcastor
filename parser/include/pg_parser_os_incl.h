@@ -1,5 +1,5 @@
 /*
- * 引用的操作系统文件
+ * Referenced operating system files
  * */
 #ifndef PG_PARSER_OS_INCL_H
 #define PG_PARSER_OS_INCL_H

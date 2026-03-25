@@ -22,13 +22,13 @@
 
 bool parsertrail_txntxnonlinerefreshabandonapply(parsertrail* parsertrail, void* data)
 {
-    /* 将大事务在hash中移除, 并添加大事务结束加入到完成列表中 */
-    txnstmt* rstmt = NULL;
-    txn* cur_txn = NULL;
-    record* record_obj = NULL;
+    /* Remove big transaction from hash, and add big transaction end to completion list */
+    txnstmt*    rstmt = NULL;
+    txn*        cur_txn = NULL;
+    record*     record_obj = NULL;
     ff_txndata* txndata = NULL;
 
-    if(NULL == data)
+    if (NULL == data)
     {
         return true;
     }
@@ -37,7 +37,7 @@ bool parsertrail_txntxnonlinerefreshabandonapply(parsertrail* parsertrail, void*
     rstmt = (txnstmt*)txndata->data;
 
     cur_txn = txn_init(FROZEN_TXNID, InvalidXLogRecPtr, InvalidXLogRecPtr);
-    if(NULL == cur_txn)
+    if (NULL == cur_txn)
     {
         elog(RLOG_WARNING, "out of memory");
         return false;
@@ -48,7 +48,7 @@ bool parsertrail_txntxnonlinerefreshabandonapply(parsertrail* parsertrail, void*
     cur_txn->start.wal.lsn = rstmt->extra0.wal.lsn;
     cur_txn->confirm.wal.lsn = MAX_LSN;
 
-    /* 设置segno */
+    /* Set segno */
     record_obj = (record*)(parsertrail->ffsmgrstate->fdata->extradata);
     cur_txn->end.trail.offset = record_obj->end.trail.offset;
     cur_txn->segno = record_obj->end.trail.fileid;
@@ -58,13 +58,12 @@ bool parsertrail_txntxnonlinerefreshabandonapply(parsertrail* parsertrail, void*
 
     elog(RLOG_INFO, "then onlinerefresh abandon");
 
-    /* 查看是否发生了切换，发生切换那么需要清理缓存 */
-    if(FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
+    /* Check if file switch occurred, if so need to cleanup cache */
+    if (FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
     {
-        /* 交换 */
+        /* Swap */
         parsertrail_traildata_shiftfile(parsertrail);
     }
 
     return true;
-
 }

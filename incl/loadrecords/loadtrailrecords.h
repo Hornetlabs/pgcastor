@@ -3,66 +3,66 @@
 
 typedef struct LOADTRAILRECOREDS
 {
-    loadrecords              loadrecords;
+    loadrecords loadrecords;
 
-    /* trail 文件兼容版本 */
-    int                             compatibility;
-    uint64                          fileid;
-    uint64                          foffset;
-    recpos                   orgpos;
+    /* Trail file compatible version */
+    int    compatibility;
+    uint64 fileid;
+    uint64 foffset;
+    recpos orgpos;
 
-    /* 存放跨页/文件的 record */
-    recordcross              recordcross;
-    mpage*                          mp;
+    /* Store cross-page/file records */
+    recordcross recordcross;
+    mpage*      mp;
 
-    /* 临时存放完整 record 的链表, 此结构中应该为 TAIL/HEAD/DBMETA 三种类型 */
-    dlist*                          remainrecords;
-    dlist*                          records;
-    loadpage*                loadpage;
-    loadpageroutine*         loadpageroutine;
+    /* Temporary linked list for complete records, should be TAIL/HEAD/DBMETA types */
+    dlist*           remainrecords;
+    dlist*           records;
+    loadpage*        loadpage;
+    loadpageroutine* loadpageroutine;
 } loadtrailrecords;
 
-/* 初始化 */
+/* Initialize */
 loadtrailrecords* loadtrailrecords_init(void);
 
-/* 设置加载trail文件的方式 */
+/* Set method for loading trail file */
 bool loadtrailrecords_setloadpageroutine(loadtrailrecords* loadrecords, loadpage_type type);
 
-/* 设置加载的起点 */
+/* Set starting point for loading */
 void loadtrailrecords_setloadposition(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset);
 
-/* 设置加载的路径 */
+/* Set loading path */
 bool loadtrailrecords_setloadsource(loadtrailrecords* loadrecords, char* source);
 
-
-/* 加载 records */
+/* Load records */
 bool loadtrailrecords_load(loadtrailrecords* loadrecords);
 
-/* 
- * 过滤 record
- *  返回值说明:
- *   true           还需要继续过滤
- *   false          不需要继续过滤
+/*
+ * Filter record
+ *  Return value description:
+ *   true           Still need to continue filtering
+ *   false          No need to continue filtering
  */
 bool loadtrailrecords_filterfortransbegin(loadtrailrecords* loadrecords);
 
-/* 关闭文件描述符 */
+/* Close file descriptor */
 void loadtrailrecords_fileclose(loadtrailrecords* loadrecords);
 
 /*
- * 根据 fileid 和 offset 过滤,小于此值的不需要
-*/
+ * Filter by fileid and offset, values less than this are not needed
+ */
 void loadtrailrecords_filter(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset);
 
 /*
- * 根据 fileid 和 offset 过滤，但是保留 metadata
- * 返回值说明:
- *   true           还需要继续过滤
- *   false          不需要继续过滤
-*/
-bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset);
+ * Filter by fileid and offset, but keep metadata
+ * Return value description:
+ *   true           Still need to continue filtering
+ *   false          No need to continue filtering
+ */
+bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64 fileid,
+                                           uint64 foffset);
 
-/* 释放 */
+/* Release */
 void loadtrailrecords_free(loadtrailrecords* loadrecords);
 
 #endif

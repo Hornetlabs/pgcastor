@@ -3,20 +3,18 @@
 
 typedef enum NETMSG_TYPE
 {
-    /* 保留 */
-    NETMSG_TYPE_NOP                  = 0x00,
+    /* Reserved */
+    NETMSG_TYPE_NOP = 0x00,
 
-    /* 消息类型在此之前添加 */
+    /* Message type added before this */
     NETMSG_TYPE_MAX
 
 } netmsg_type;
 
-/* 网络协议头部固定长度 */
-#define NETMSG_TYPE_HDR_SIZE                     8
+/* Fixed length of network protocol header */
+#define NETMSG_TYPE_HDR_SIZE 8
 
-/* 消息分发处理 */
-bool netmsg(void* privdata,
-                    uint32 msgtype,
-                    uint8* msg);
+/* Message distribution processing */
+bool netmsg(void* privdata, uint32 msgtype, uint8* msg);
 
 #endif

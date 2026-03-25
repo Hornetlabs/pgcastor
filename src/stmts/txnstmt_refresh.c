@@ -12,14 +12,14 @@ void txnstmt_refreshfree(void* data)
 {
     refresh_tables* refreshtables = NULL;
 
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }
 
     refreshtables = (refresh_tables*)data;
 
-    if(NULL != refreshtables)
+    if (NULL != refreshtables)
     {
         refresh_freetables(refreshtables);
     }

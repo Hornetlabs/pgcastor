@@ -6,12 +6,12 @@
  *
  * indicate for value type
  * */
-static rbtreenode *rbtree_newnode(void)
+static rbtreenode* rbtree_newnode(void)
 {
-    rbtreenode *tnode = NULL;
+    rbtreenode* tnode = NULL;
 
     tnode = rmalloc0(sizeof(rbtreenode));
-    if(NULL == tnode)
+    if (NULL == tnode)
     {
         elog(RLOG_WARNING, "rbtree newnode error");
         return NULL;
@@ -24,24 +24,24 @@ static rbtreenode *rbtree_newnode(void)
 
 /*
  * init
- *   初始化一个哨兵节点
+ *   Initialize a sentinel node
  * */
 rbtree* rbtree_init(treenodedatacmp datacmp, treenodedatafree datafree, treenodedebug debug)
 {
-    rbtree* tree = NULL;
+    rbtree*     tree = NULL;
     rbtreenode* sentinel = NULL;
 
     tree = rmalloc0(sizeof(rbtree));
-    if(NULL == tree)
+    if (NULL == tree)
     {
         elog(RLOG_WARNING, "rbtree init sentinel error");
         return NULL;
     }
     rmemset0(tree, 0, '\0', sizeof(rbtree));
 
-    /* 跟节点就是哨兵节点 */
+    /* Root node is the sentinel node */
     sentinel = rbtree_newnode();
-    if(NULL == sentinel)
+    if (NULL == sentinel)
     {
         elog(RLOG_WARNING, "rbtree init sentinel error");
         return NULL;
@@ -56,32 +56,36 @@ rbtree* rbtree_init(treenodedatacmp datacmp, treenodedatafree datafree, treenode
     return tree;
 }
 
-
 /*
  * left rotate
  *
- * let the node's right child to be the node's parent. the right child's left child to be node's right child.
- * 
+ * let the node's right child to be the node's parent. the right child's left child to be node's
+ * right child.
+ *
  */
-static void rbtree_leftrotate(rbtreenode **root, rbtreenode *node, rbtreenode *sentinel)
+static void rbtree_leftrotate(rbtreenode** root, rbtreenode* node, rbtreenode* sentinel)
 {
-    rbtreenode *temp = NULL;
+    rbtreenode* temp = NULL;
 
     temp = node->right;
     node->right = temp->left;
 
-    if(temp->left != sentinel){
+    if (temp->left != sentinel)
+    {
         temp->left->parent = node;
     }
 
     temp->parent = node->parent;
-    if(node == *root){
+    if (node == *root)
+    {
         *root = temp;
     }
-    else if(node == node->parent->left){
+    else if (node == node->parent->left)
+    {
         node->parent->left = temp;
     }
-    else{
+    else
+    {
         node->parent->right = temp;
     }
 
@@ -92,25 +96,29 @@ static void rbtree_leftrotate(rbtreenode **root, rbtreenode *node, rbtreenode *s
 /*
  * right rotate
  * */
-static void rbtree_rightrotate(rbtreenode **root, rbtreenode *node , rbtreenode *sentinel)
+static void rbtree_rightrotate(rbtreenode** root, rbtreenode* node, rbtreenode* sentinel)
 {
-    rbtreenode *temp = NULL;
+    rbtreenode* temp = NULL;
 
     temp = node->left;
     node->left = temp->right;
 
-    if(temp->right != sentinel){
+    if (temp->right != sentinel)
+    {
         temp->right->parent = node;
     }
 
     temp->parent = node->parent;
-    if(node == *root){
+    if (node == *root)
+    {
         *root = temp;
     }
-    else if(node == node->parent->left){
+    else if (node == node->parent->left)
+    {
         node->parent->left = temp;
     }
-    else{
+    else
+    {
         node->parent->right = temp;
     }
 
@@ -118,16 +126,16 @@ static void rbtree_rightrotate(rbtreenode **root, rbtreenode *node , rbtreenode 
     temp->right = node;
 }
 
-/* 插入节点 */
-static void rbtree_addnode(rbtree* tree, rbtreenode *node)
+/* Insert node */
+static void rbtree_addnode(rbtree* tree, rbtreenode* node)
 {
-    rbtreenode** p              = NULL;
-    rbtreenode* tnode           = NULL;
+    rbtreenode** p = NULL;
+    rbtreenode*  tnode = NULL;
 
     tnode = tree->root;
 
-    for ( ;; ) {
-
+    for (;;)
+    {
         p = (tree->cmpare(node->data, tnode->data) < 0 ? &tnode->left : &tnode->right);
         if (*p == tree->sentinel)
         {
@@ -144,22 +152,21 @@ static void rbtree_addnode(rbtree* tree, rbtreenode *node)
     node->color = RBTREE_COLOR_RED;
 }
 
-
 /*
  *insert node
  *  */
-bool rbtree_insert(rbtree *rbtree, void* data)
+bool rbtree_insert(rbtree* rbtree, void* data)
 {
-    rbtreenode *temp = NULL;
-    rbtreenode **root = NULL;
-    rbtreenode *node = NULL;
-    if(NULL == rbtree || data == NULL)
+    rbtreenode*  temp = NULL;
+    rbtreenode** root = NULL;
+    rbtreenode*  node = NULL;
+    if (NULL == rbtree || data == NULL)
     {
         return true;
     }
 
     node = rbtree_newnode();
-    if(NULL == node)
+    if (NULL == node)
     {
         elog(RLOG_WARNING, "rbtree insert error");
         return false;
@@ -168,7 +175,7 @@ bool rbtree_insert(rbtree *rbtree, void* data)
 
     /* root */
     root = &(rbtree->root);
-    if(*root == rbtree->sentinel)
+    if (*root == rbtree->sentinel)
     {
         node->parent = NULL;
         node->left = rbtree->sentinel;
@@ -182,12 +189,12 @@ bool rbtree_insert(rbtree *rbtree, void* data)
     rbtree_addnode(rbtree, node);
 
     /* rebalance */
-    while((node != *root) && (node->parent->color == RBTREE_COLOR_RED))
+    while ((node != *root) && (node->parent->color == RBTREE_COLOR_RED))
     {
-        if(node->parent == node->parent->parent->left)
+        if (node->parent == node->parent->parent->left)
         {
             temp = node->parent->parent->right;
-            if(temp->color == RBTREE_COLOR_RED)
+            if (temp->color == RBTREE_COLOR_RED)
             {
                 temp->color = RBTREE_COLOR_BLACK;
                 node->parent->color = RBTREE_COLOR_BLACK;
@@ -196,7 +203,7 @@ bool rbtree_insert(rbtree *rbtree, void* data)
             }
             else
             {
-                if(node == node->parent->right)
+                if (node == node->parent->right)
                 {
                     node = node->parent;
                     /* left rotate */
@@ -211,7 +218,8 @@ bool rbtree_insert(rbtree *rbtree, void* data)
         else
         {
             temp = node->parent->parent->left;
-            if(temp->color == RBTREE_COLOR_RED){
+            if (temp->color == RBTREE_COLOR_RED)
+            {
                 temp->color = RBTREE_COLOR_BLACK;
                 node->parent->color = RBTREE_COLOR_BLACK;
                 node->parent->parent->color = RBTREE_COLOR_RED;
@@ -235,9 +243,9 @@ bool rbtree_insert(rbtree *rbtree, void* data)
     return true;
 }
 
-static rbtreenode *rbtree_minnode(rbtreenode *node, rbtreenode *sentinel)
+static rbtreenode* rbtree_minnode(rbtreenode* node, rbtreenode* sentinel)
 {
-    while(sentinel != node->left)
+    while (sentinel != node->left)
     {
         node = node->left;
     }
@@ -245,15 +253,16 @@ static rbtreenode *rbtree_minnode(rbtreenode *node, rbtreenode *sentinel)
 }
 
 /* delete node */
-void rbtree_delete(rbtree *rbtree, rbtreenode *node)
+void rbtree_delete(rbtree* rbtree, rbtreenode* node)
 {
-    int    color = RBTREE_COLOR_RED;
-    rbtreenode *bro = NULL;
-    rbtreenode *subnode = NULL;
-    rbtreenode *temp = NULL;
-    rbtreenode *sentinel = NULL;
-    rbtreenode **root = NULL;;
-    if(NULL == rbtree || NULL == rbtree->root || NULL == node)
+    int          color = RBTREE_COLOR_RED;
+    rbtreenode*  bro = NULL;
+    rbtreenode*  subnode = NULL;
+    rbtreenode*  temp = NULL;
+    rbtreenode*  sentinel = NULL;
+    rbtreenode** root = NULL;
+    ;
+    if (NULL == rbtree || NULL == rbtree->root || NULL == node)
     {
         return;
     }
@@ -264,12 +273,12 @@ void rbtree_delete(rbtree *rbtree, rbtreenode *node)
     /*
      * step 1: replace
      *  */
-    if(sentinel == node->left)
+    if (sentinel == node->left)
     {
         temp = node->right;
         subnode = node;
     }
-    else if(sentinel == node->right)
+    else if (sentinel == node->right)
     {
         temp = node->left;
         subnode = node;
@@ -281,140 +290,158 @@ void rbtree_delete(rbtree *rbtree, rbtreenode *node)
         if (subnode->left != sentinel)
         {
             temp = subnode->left;
-        } 
+        }
         else
         {
             temp = subnode->right;
         }
     }
-    
-    if(subnode == rbtree->root)
+
+    if (subnode == rbtree->root)
     {
         *root = temp;
         temp->color = RBTREE_COLOR_BLACK;
         return;
     }
-    
+
     color = subnode->color;
     /* subnode parent to *node */
-    if(subnode == subnode->parent->left)
+    if (subnode == subnode->parent->left)
     {
         subnode->parent->left = temp;
     }
-    else if(subnode == subnode->parent->right)
+    else if (subnode == subnode->parent->right)
     {
         subnode->parent->right = temp;
     }
-    
-    if(node == subnode)
+
+    if (node == subnode)
     {
         temp->parent = subnode->parent;
     }
     else
     {
-        if(subnode->parent == node)
+        if (subnode->parent == node)
         {
             temp->parent = subnode;
         }
-        else{
+        else
+        {
             temp->parent = subnode->parent;
         }
-    
+
         subnode->left = node->left;
         subnode->right = node->right;
         subnode->parent = node->parent;
         subnode->color = node->color;
-        if(node == *root){
+        if (node == *root)
+        {
             *root = subnode;
         }
-        else{
+        else
+        {
             /* *node's parent to subnode */
-            if(node->parent->left == node){
+            if (node->parent->left == node)
+            {
                 node->parent->left = subnode;
             }
-            else{
+            else
+            {
                 node->parent->right = subnode;
             }
         }
-    
-        if(sentinel != subnode->left){
+
+        if (sentinel != subnode->left)
+        {
             subnode->left->parent = subnode;
         }
-    
-        if(sentinel != subnode->right){
+
+        if (sentinel != subnode->right)
+        {
             subnode->right->parent = subnode;
         }
     }
-    
-    if(NULL != node->data)
+
+    if (NULL != node->data)
     {
-        if(NULL != rbtree->free)
+        if (NULL != rbtree->free)
         {
             rbtree->free(node->data);
         }
     }
     rfree(node);
 
-    if(RBTREE_COLOR_RED == color)
+    if (RBTREE_COLOR_RED == color)
     {
         return;
     }
-    
+
     /*
      * reblance
      *  */
-    while(temp != rbtree->root && (RBTREE_COLOR_BLACK == temp->color)){
-        if(temp == temp->parent->left){
+    while (temp != rbtree->root && (RBTREE_COLOR_BLACK == temp->color))
+    {
+        if (temp == temp->parent->left)
+        {
             bro = temp->parent->right;
             /* case 1: bro's red, need right rotate */
-            if(RBTREE_COLOR_RED == bro->color){
+            if (RBTREE_COLOR_RED == bro->color)
+            {
                 bro->color = RBTREE_COLOR_BLACK;
                 temp->parent->color = RBTREE_COLOR_RED;
                 rbtree_leftrotate(&(rbtree->root), temp->parent, sentinel);
                 bro = temp->parent->right;
             }
-    
-            if(RBTREE_COLOR_BLACK == bro->left->color && RBTREE_COLOR_BLACK == bro->right->color){
-                /* 兄弟节点的子节点都为黑色 */
+
+            if (RBTREE_COLOR_BLACK == bro->left->color && RBTREE_COLOR_BLACK == bro->right->color)
+            {
+                /* All children of sibling node are black */
                 bro->color = RBTREE_COLOR_RED;
                 temp = temp->parent;
             }
-            else{
-                if (RBTREE_COLOR_BLACK == bro->right->color) {
+            else
+            {
+                if (RBTREE_COLOR_BLACK == bro->right->color)
+                {
                     bro->left->color = RBTREE_COLOR_BLACK;
                     bro->color = RBTREE_COLOR_RED;
                     rbtree_rightrotate(&(rbtree->root), bro, sentinel);
                     bro = temp->parent->right;
                 }
-    
+
                 bro->color = temp->parent->color;
                 temp->parent->color = RBTREE_COLOR_BLACK;
-                bro->right->color= RBTREE_COLOR_BLACK;
+                bro->right->color = RBTREE_COLOR_BLACK;
                 rbtree_leftrotate(&(rbtree->root), temp->parent, sentinel);
                 temp = rbtree->root;
             }
         }
-        else{
+        else
+        {
             bro = temp->parent->left;
-            if(RBTREE_COLOR_RED == bro->color){
+            if (RBTREE_COLOR_RED == bro->color)
+            {
                 bro->color = RBTREE_COLOR_BLACK;
                 temp->parent->color = RBTREE_COLOR_RED;
                 rbtree_rightrotate(&(rbtree->root), temp->parent, sentinel);
                 bro = temp->parent->left;
             }
-    
-            if(RBTREE_COLOR_BLACK == bro->right->color && RBTREE_COLOR_BLACK == bro->left->color){
+
+            if (RBTREE_COLOR_BLACK == bro->right->color && RBTREE_COLOR_BLACK == bro->left->color)
+            {
                 bro->color = RBTREE_COLOR_RED;
                 temp = temp->parent;
             }
-            else{
-                if(RBTREE_COLOR_BLACK == bro->left->color){
+            else
+            {
+                if (RBTREE_COLOR_BLACK == bro->left->color)
+                {
                     bro->right->color = RBTREE_COLOR_BLACK;
                     bro->color = RBTREE_COLOR_RED;
                     rbtree_leftrotate(&(rbtree->root), bro, sentinel);
                     bro = temp->parent->left;
                 }
-    
+
                 bro->color = temp->parent->color;
                 temp->parent->color = RBTREE_COLOR_BLACK;
                 bro->left->color = RBTREE_COLOR_BLACK;
@@ -423,28 +450,27 @@ void rbtree_delete(rbtree *rbtree, rbtreenode *node)
             }
         }
     }
-    
+
     temp->color = RBTREE_COLOR_BLACK;
 }
 
-
 rbtreenode* rbtree_get_value(rbtree* tree, void* data)
 {
-    int iret = 0;
-    rbtreenode** p      = NULL;
-    rbtreenode* tnode   = NULL;
+    int          iret = 0;
+    rbtreenode** p = NULL;
+    rbtreenode*  tnode = NULL;
 
-    /* 获取 root 节点 */
+    /* Get root node */
     tnode = tree->root;
 
-    for ( ;; )
+    for (;;)
     {
         iret = tree->cmpare(data, tnode->data);
-        if(0 == iret)
+        if (0 == iret)
         {
             return tnode;
         }
-        else if(0 > iret)
+        else if (0 > iret)
         {
             p = &tnode->left;
         }
@@ -452,7 +478,7 @@ rbtreenode* rbtree_get_value(rbtree* tree, void* data)
         {
             p = &tnode->right;
         }
-        
+
         if (*p == tree->sentinel)
         {
             break;
@@ -463,23 +489,23 @@ rbtreenode* rbtree_get_value(rbtree* tree, void* data)
     return NULL;
 }
 
-
-static void rbtree_traversefree(rbtreenode *root, rbtreenode *sentinel, treenodedatafree datafree)
+static void rbtree_traversefree(rbtreenode* root, rbtreenode* sentinel, treenodedatafree datafree)
 {
-    if (root == NULL) {
-        return ; 
+    if (root == NULL)
+    {
+        return;
     }
 
-    /* 递归释放左子树 */ 
+    /* Recursively free left subtree */
     rbtree_traversefree(root->left, sentinel, datafree);
 
-    /* 递归释放右子树 */
+    /* Recursively free right subtree */
     rbtree_traversefree(root->right, sentinel, datafree);
 
-    /* 释放当前节点 */ 
-    if(sentinel != root)
+    /* Free current node */
+    if (sentinel != root)
     {
-        /* TODO data 释放 */
+        /* TODO data release */
         datafree(root->data);
         rfree(root);
     }
@@ -491,22 +517,22 @@ void rbtree_free(rbtree* tree)
 {
     if (tree == NULL)
     {
-        return ; 
+        return;
     }
 
-    /* 递归释放左子树 */ 
+    /* Recursively free left subtree */
     rbtree_traversefree(tree->root->left, tree->sentinel, tree->free);
 
-    /* 递归释放右子树 */
+    /* Recursively free right subtree */
     rbtree_traversefree(tree->root->right, tree->sentinel, tree->free);
 
-    /* 释放当前节点 */
-    if(tree->root != tree->sentinel)
+    /* Free current node */
+    if (tree->root != tree->sentinel)
     {
         tree->free(tree->root->data);
         rfree(tree->root);
     }
-    
+
     rfree(tree->sentinel);
     rfree(tree);
     return;
@@ -514,20 +540,20 @@ void rbtree_free(rbtree* tree)
 
 static void rbtree_treenodedebug(rbtree* tree, rbtreenode* tnode)
 {
-    if(NULL == tnode || tnode == tree->sentinel)
+    if (NULL == tnode || tnode == tree->sentinel)
     {
         return;
     }
 
-    if(NULL != tnode->left)
+    if (NULL != tnode->left)
     {
         rbtree_treenodedebug(tree, tnode->left);
     }
 
-    /* 输出本节点 */
+    /* Output this node */
     tree->debug(tnode->data);
 
-    if(NULL != tnode->right)
+    if (NULL != tnode->right)
     {
         rbtree_treenodedebug(tree, tnode->right);
     }
@@ -536,13 +562,13 @@ static void rbtree_treenodedebug(rbtree* tree, rbtreenode* tnode)
 /* for debug */
 void rbtree_debug(rbtree* tree)
 {
-    rbtreenode* tnode   = NULL;
-    if(NULL == tree)
+    rbtreenode* tnode = NULL;
+    if (NULL == tree)
     {
         return;
     }
 
-    /* 获取 root 节点 */
+    /* Get root node */
     tnode = tree->root;
 
     rbtree_treenodedebug(tree, tnode);

@@ -12,9 +12,9 @@
 #include "refresh/refresh_table_syncstats.h"
 #include "refresh/p2csharding/refresh_p2csharding.h"
 
-refresh_table_sharding *refresh_table_sharding_init(void)
+refresh_table_sharding* refresh_table_sharding_init(void)
 {
-    refresh_table_sharding *shard = NULL;
+    refresh_table_sharding* shard = NULL;
 
     shard = rmalloc0(sizeof(refresh_table_sharding));
     if (!shard)
@@ -26,7 +26,7 @@ refresh_table_sharding *refresh_table_sharding_init(void)
     return shard;
 }
 
-void refresh_table_sharding_set_schema(refresh_table_sharding *shard, char *schema)
+void refresh_table_sharding_set_schema(refresh_table_sharding* shard, char* schema)
 {
     if (!shard || !schema)
     {
@@ -35,7 +35,7 @@ void refresh_table_sharding_set_schema(refresh_table_sharding *shard, char *sche
     shard->schema = rstrdup(schema);
 }
 
-void refresh_table_sharding_set_table(refresh_table_sharding *shard, char *table)
+void refresh_table_sharding_set_table(refresh_table_sharding* shard, char* table)
 {
     if (!shard || !table)
     {
@@ -44,7 +44,7 @@ void refresh_table_sharding_set_table(refresh_table_sharding *shard, char *table
     shard->table = rstrdup(table);
 }
 
-void refresh_table_sharding_set_shardings(refresh_table_sharding *shard, int num)
+void refresh_table_sharding_set_shardings(refresh_table_sharding* shard, int num)
 {
     if (!shard)
     {
@@ -53,7 +53,7 @@ void refresh_table_sharding_set_shardings(refresh_table_sharding *shard, int num
     shard->shardings = num;
 }
 
-void refresh_table_sharding_set_shardno(refresh_table_sharding *shard, int num)
+void refresh_table_sharding_set_shardno(refresh_table_sharding* shard, int num)
 {
     if (!shard)
     {
@@ -62,7 +62,8 @@ void refresh_table_sharding_set_shardno(refresh_table_sharding *shard, int num)
     shard->sharding_no = num;
 }
 
-void refresh_table_sharding_set_condition(refresh_table_sharding *shard, refresh_table_condition *cond)
+void refresh_table_sharding_set_condition(refresh_table_sharding*  shard,
+                                          refresh_table_condition* cond)
 {
     if (!shard)
     {
@@ -71,9 +72,9 @@ void refresh_table_sharding_set_condition(refresh_table_sharding *shard, refresh
     shard->sharding_condition = cond;
 }
 
-refresh_table_condition *refresh_table_sharding_condition_init(void)
+refresh_table_condition* refresh_table_sharding_condition_init(void)
 {
-    refresh_table_condition *cond = NULL;
+    refresh_table_condition* cond = NULL;
 
     cond = rmalloc0(sizeof(refresh_table_condition));
     cond->left_condition = 0;
@@ -82,20 +83,21 @@ refresh_table_condition *refresh_table_sharding_condition_init(void)
     return cond;
 }
 
-void refresh_table_sharding_get_info_from_filename(char *filename, refresh_table_sharding *table_shard)
+void refresh_table_sharding_get_info_from_filename(char*                   filename,
+                                                   refresh_table_sharding* table_shard)
 {
-    char *ptr_left = filename;
-    char *ptr_right = NULL;
-    char num_char[64] = {'\0'};
-    int len = 0;
+    char* ptr_left = filename;
+    char* ptr_right = NULL;
+    char  num_char[64] = {'\0'};
+    int   len = 0;
 
-    /* 计算 schema name 长度 */
+    /* calculate schema name length */
     len += strlen(table_shard->schema);
 
-    /* 计算 table name 长度 */
+    /* calculate table name length */
     len += strlen(table_shard->table);
 
-    /* 跳过schema和table */
+    /* skip schema and table */
     ptr_left = ptr_left + len + 2;
 
     /* shards */
@@ -117,7 +119,7 @@ void refresh_table_sharding_get_info_from_filename(char *filename, refresh_table
     table_shard->sharding_no = atoi(num_char);
 }
 
-void refresh_table_sharding_free(refresh_table_sharding *table_shard)
+void refresh_table_sharding_free(refresh_table_sharding* table_shard)
 {
     if (table_shard)
     {
@@ -142,11 +144,11 @@ void refresh_table_sharding_free(refresh_table_sharding *table_shard)
 
 void refresh_table_sharding_queuefree(void* data)
 {
-    refresh_table_sharding *table_shard = NULL;
+    refresh_table_sharding* table_shard = NULL;
 
     if (data)
     {
-        table_shard = (refresh_table_sharding *)data;
+        table_shard = (refresh_table_sharding*)data;
         if (table_shard->schema)
         {
             rfree(table_shard->schema);

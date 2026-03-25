@@ -7,14 +7,14 @@ void txnstmt_ddlfree(void* data)
 {
     txnstmt_ddl* txnstmtddl = NULL;
 
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }
 
     txnstmtddl = (txnstmt_ddl*)data;
 
-    if(NULL != txnstmtddl->ddlstmt)
+    if (NULL != txnstmtddl->ddlstmt)
     {
         rfree(txnstmtddl->ddlstmt);
     }

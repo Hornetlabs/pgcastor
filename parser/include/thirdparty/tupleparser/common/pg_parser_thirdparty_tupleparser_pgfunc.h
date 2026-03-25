@@ -2,16 +2,15 @@
 #define PG_PARSER_THIRDPARTY_TUPLEPARSER_PGFUNC_H
 
 /*
- * 定义函数指针, 为普通类型提供函数原型
+ * Define function pointers, provide function prototypes for normal types
  */
-typedef pg_parser_Datum (*pg_parser_Local_PGFunctionNormal) (pg_parser_Datum attr);
+typedef pg_parser_Datum (*pg_parser_Local_PGFunctionNormal)(pg_parser_Datum attr);
 
 typedef struct
 {
-    const char                           *funcName;           /* C name of the function */
-    pg_parser_Local_PGFunctionNormal   func;               /* pointer to compiled function */
+    const char*                      funcName; /* C name of the function */
+    pg_parser_Local_PGFunctionNormal func;     /* pointer to compiled function */
 } pg_parser_FmgrBuiltinNormal;
-
 
 /* normal function extern */
 extern pg_parser_Datum charout(pg_parser_Datum attr);

@@ -1,15 +1,12 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 project(castor C)
 
-# Disable C++ compiler check
-set(CMAKE_CXX_COMPILER "")
-set(CMAKE_CXX_COMPILER_WORKS TRUE)
+# Set C standard
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Set default compilation options
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE -fPIC -Wall -Wunused-but-set-variable -D __STDC_FORMAT_MACROS -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement")
-
-# Enable multi-threaded compilation
-set(CMAKE_BUILD_PARALLEL_LEVEL 4)
 
 # Options: Allow users to specify PostgreSQL installation directories
 option(POSTGRES_INSTALL_DIR "PostgreSQL installation directory" "")
@@ -32,7 +29,7 @@ find_package(Threads REQUIRED)
 
 # Check dependencies
 if(NOT PG_INCLUDE_DIR OR NOT PG_LIBRARY)
-    message(FATAL_ERROR "PostgreSQL not found. Please specify POSTGRES_INSTALL_DIR.")
+    message(FATAL_ERROR "PostgreSQL not found. Please specify POSTGRES_INSTALL_DIR.\nUsage: -DPOSTGRES_INSTALL_DIR=$PATH")
 endif()
 
 if(NOT READLINE_LIBRARY)
@@ -77,13 +74,13 @@ set(SYSTEM_LIBS
 )
 
 # Recursively collect all .c files in src directory
-file(GLOB_RECURSE SRC_FILES ${SRC_DIR}/*.c)
+file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS ${SRC_DIR}/*.c)
 
 # Recursively collect all .c files in parser directory
-file(GLOB_RECURSE PARSER_FILES ${PARSER_SRC_DIR}/*.c)
+file(GLOB_RECURSE PARSER_FILES CONFIGURE_DEPENDS ${PARSER_SRC_DIR}/*.c)
 
 # Recursively collect all .c files in interfaces/src directory
-file(GLOB_RECURSE INTERFACE_FILES ${INTERFACE_SRC_DIR}/*.c)
+file(GLOB_RECURSE INTERFACE_FILES CONFIGURE_DEPENDS ${INTERFACE_SRC_DIR}/*.c)
 
 # Create a static library to include all src and parser object files
 add_library(castor_static STATIC ${SRC_FILES} ${PARSER_FILES})
@@ -170,6 +167,16 @@ endforeach()
 
 # Clean target
 add_custom_target(clean_all
-    COMMAND rm -rf ${LIB_DIR}/* ${INTERFACE_LIB_DIR}/* ${BIN_DIR}/capture/capture ${BIN_DIR}/integrate/integrate ${BIN_DIR}/receivepglog/receivelog ${BIN_DIR}/xscsci/xscsci ${BIN_DIR}/xscsci/xscsci_gram.c ${BIN_DIR}/xscsci/xscsci_gram.h ${BIN_DIR}/xscsci/xscsci_scan.c ${BIN_DIR}/xscsci/xscsci_prescan.c ${BIN_DIR}/xmanager/xmanager
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${LIB_DIR} ${INTERFACE_LIB_DIR}
+    COMMAND ${CMAKE_COMMAND} -E remove 
+            ${BIN_DIR}/capture/capture 
+            ${BIN_DIR}/integrate/integrate 
+            ${BIN_DIR}/receivepglog/receivelog 
+            ${BIN_DIR}/xscsci/xscsci 
+            ${BIN_DIR}/xscsci/xscsci_gram.c 
+            ${BIN_DIR}/xscsci/xscsci_gram.h 
+            ${BIN_DIR}/xscsci/xscsci_scan.c 
+            ${BIN_DIR}/xscsci/xscsci_prescan.c 
+            ${BIN_DIR}/xmanager/xmanager
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )

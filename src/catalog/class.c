@@ -21,58 +21,59 @@
 #include "snapshot/snapshot.h"
 #include "works/parserwork/wal/rewind.h"
 
-
-/* 生成系统字典 */
-void class_attribute_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
+/* Generate system dictionary */
+void class_attribute_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
 {
-    int i, j;
-    bool found = false;
-    PGresult    *res = NULL;
-    ListCell*   cell = NULL;
-    List*   classlist = NIL;
-    pg_sysdict_Form_pg_class class = NULL;
-    pg_sysdict_Form_pg_class classtoast = NULL;
+    int                          i, j;
+    bool                         found = false;
+    PGresult*                    res = NULL;
+    ListCell*                    cell = NULL;
+    List*                        classlist = NIL;
+    pg_sysdict_Form_pg_class     class = NULL;
+    pg_sysdict_Form_pg_class     classtoast = NULL;
     pg_sysdict_Form_pg_attribute attribute = NULL;
-    char sql_exec[MAX_EXEC_SQL_LEN] = {'\0'};
+    char                         sql_exec[MAX_EXEC_SQL_LEN] = {'\0'};
 
-    HASHCTL class_hash_ctl;
-    HASHCTL attr_hash_ctl;
-    catalog_class_value *class_entry = NULL;
-    catalog_attribute_value *attr_entry = NULL;
+    HASHCTL                  class_hash_ctl;
+    HASHCTL                  attr_hash_ctl;
+    catalog_class_value*     class_entry = NULL;
+    catalog_attribute_value* attr_entry = NULL;
 
     rmemset1(&class_hash_ctl, 0, '\0', sizeof(class_hash_ctl));
     class_hash_ctl.keysize = sizeof(Oid);
     class_hash_ctl.entrysize = sizeof(catalog_class_value);
-    sysdicts->by_class = hash_create("catalog_sysdict_class", 2048, &class_hash_ctl,
-                        HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_class =
+        hash_create("catalog_sysdict_class", 2048, &class_hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     rmemset1(&attr_hash_ctl, 0, '\0', sizeof(attr_hash_ctl));
     attr_hash_ctl.keysize = sizeof(Oid);
     attr_hash_ctl.entrysize = sizeof(catalog_attribute_value);
-    sysdicts->by_attribute = hash_create("catalog_sysdict_attribute", 2048, &attr_hash_ctl,
-                        HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_attribute =
+        hash_create("catalog_sysdict_attribute", 2048, &attr_hash_ctl, HASH_ELEM | HASH_BLOBS);
 
-    sprintf(sql_exec, "SELECT rel.oid, \n"
-                            "rel.relname, \n"
-                            "rel.relnamespace, \n"
-                            "rel.reltype, \n"
-                            "case rel.relfilenode when  0 then pg_relation_filenode(rel.oid) else rel.relfilenode end relfilenode, \n"
-                            "rel.relkind, \n"
-                            "rel.relnatts, \n"
-                            "rel.reltoastrelid, \n"
-                            "rel.reltablespace, \n"
-                            "rel.relreplident, \n"
-                            "rel.relpersistence, \n"
-                            "case when cont.oid is not null then 1 else 0 end as relhaspk, \n"
-                            "rel.relhasindex,\n"
-                            "rel.relowner, \n"
-                            "nsp.nspname \n"
-                            "FROM pg_class rel\n"
-                            "LEFT JOIN pg_constraint cont \n"
-                            "ON rel.oid = cont.conrelid and cont.contype = 'p' \n "
-                            "LEFT JOIN pg_namespace nsp \n"
-                            "ON rel.relnamespace = nsp.oid \n"
-                            "WHERE relkind not in ('v', 'i', 'c', 'I');");
+    sprintf(sql_exec,
+            "SELECT rel.oid, \n"
+            "rel.relname, \n"
+            "rel.relnamespace, \n"
+            "rel.reltype, \n"
+            "case rel.relfilenode when  0 then pg_relation_filenode(rel.oid) else rel.relfilenode "
+            "end relfilenode, \n"
+            "rel.relkind, \n"
+            "rel.relnatts, \n"
+            "rel.reltoastrelid, \n"
+            "rel.reltablespace, \n"
+            "rel.relreplident, \n"
+            "rel.relpersistence, \n"
+            "case when cont.oid is not null then 1 else 0 end as relhaspk, \n"
+            "rel.relhasindex,\n"
+            "rel.relowner, \n"
+            "nsp.nspname \n"
+            "FROM pg_class rel\n"
+            "LEFT JOIN pg_constraint cont \n"
+            "ON rel.oid = cont.conrelid and cont.contype = 'p' \n "
+            "LEFT JOIN pg_namespace nsp \n"
+            "ON rel.relnamespace = nsp.oid \n"
+            "WHERE relkind not in ('v', 'i', 'c', 'I');");
 
     res = conn_exec(conn, sql_exec);
     if (NULL == res)
@@ -80,18 +81,18 @@ void class_attribute_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "pg_class query failed");
     }
 
-    // 打印行数据
+    // Print row data
     for (i = 0; i < PQntuples(res); i++)
     {
         class = (pg_sysdict_Form_pg_class)rmalloc0(sizeof(pg_parser_sysdict_pgclass));
-        if(NULL == class)
+        if (NULL == class)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
         rmemset0(class, 0, '\0', sizeof(pg_parser_sysdict_pgclass));
-        j=0;
+        j = 0;
         sscanf(PQgetvalue(res, i, j++), "%u", &class->oid);
-        strcpy(class->relname.data ,PQgetvalue(res, i, j++));
+        strcpy(class->relname.data, PQgetvalue(res, i, j++));
         sscanf(PQgetvalue(res, i, j++), "%u", &class->relnamespace);
         sscanf(PQgetvalue(res, i, j++), "%u", &class->reltype);
         sscanf(PQgetvalue(res, i, j++), "%u", &class->relfilenode);
@@ -99,33 +100,33 @@ void class_attribute_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
         sscanf(PQgetvalue(res, i, j++), "%hd", &class->relnatts);
         sscanf(PQgetvalue(res, i, j++), "%u", &class->reltoastrelid);
         sscanf(PQgetvalue(res, i, j++), "%u", &class->reltablespace);
-        if(0 == class->reltablespace)
+        if (0 == class->reltablespace)
         {
             class->reltablespace = PG_DFAULT_TABLESPACE;
         }
         sscanf(PQgetvalue(res, i, j++), "%c", &class->relreplident);
         sscanf(PQgetvalue(res, i, j++), "%c", &class->relpersistence);
-        if(strcmp(PQgetvalue(res, i, j++), "1") == 0)
+        if (strcmp(PQgetvalue(res, i, j++), "1") == 0)
         {
             class->relhaspk = true;
         }
-        if(strcmp(PQgetvalue(res, i, j++), "t") == 0)
+        if (strcmp(PQgetvalue(res, i, j++), "t") == 0)
         {
             class->relhasindex = true;
         }
         sscanf(PQgetvalue(res, i, j++), "%u", &class->relowner);
-        strcpy(class->nspname.data ,PQgetvalue(res, i, j++));
+        strcpy(class->nspname.data, PQgetvalue(res, i, j++));
 
         classlist = lappend(classlist, class);
     }
     PQclear(res);
 
-    foreach(cell, classlist)
+    foreach (cell, classlist)
     {
-        classtoast = (pg_sysdict_Form_pg_class) lfirst(cell);
+        classtoast = (pg_sysdict_Form_pg_class)lfirst(cell);
 
         class_entry = hash_search(sysdicts->by_class, &classtoast->oid, HASH_ENTER, &found);
-        if(found)
+        if (found)
         {
             elog(RLOG_ERROR, "class_oid:%u already exist in by_class", class_entry->class->oid);
         }
@@ -133,47 +134,50 @@ void class_attribute_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
         class_entry->class = classtoast;
 
         rmemset1(sql_exec, 0, '\0', MAX_EXEC_SQL_LEN);
-        sprintf(sql_exec, "SELECT rel.attrelid, \n"
-                                    "rel.attname, \n"
-                                    "rel.atttypid, \n"
-                                    "rel.attstattarget, \n"
-                                    "rel.attlen, \n"
-                                    "rel.attnum, \n"
-                                    "rel.attndims, \n"
-                                    "rel.attcacheoff, \n"
-                                    "rel.atttypmod, \n"
-                                    "rel.attbyval, \n"
-                                    "rel.attstorage, \n"
-                                    "rel.attalign, \n"
-                                    "rel.attnotnull, \n"
-                                    "rel.atthasdef, \n"
-                                    "rel.atthasmissing, \n"
-                                    "rel.attidentity, \n"
-                                    "rel.attgenerated,\n"
-                                    "rel.attisdropped, \n"
-                                    "rel.attislocal, \n"
-                                    "rel.attinhcount, \n"
-                                    "rel.attcollation \n"
-                                    "FROM pg_attribute rel \n"
-                                    "where rel.attrelid = '%u' and rel.attnum > 0;",classtoast->oid );
+        sprintf(sql_exec,
+                "SELECT rel.attrelid, \n"
+                "rel.attname, \n"
+                "rel.atttypid, \n"
+                "rel.attstattarget, \n"
+                "rel.attlen, \n"
+                "rel.attnum, \n"
+                "rel.attndims, \n"
+                "rel.attcacheoff, \n"
+                "rel.atttypmod, \n"
+                "rel.attbyval, \n"
+                "rel.attstorage, \n"
+                "rel.attalign, \n"
+                "rel.attnotnull, \n"
+                "rel.atthasdef, \n"
+                "rel.atthasmissing, \n"
+                "rel.attidentity, \n"
+                "rel.attgenerated,\n"
+                "rel.attisdropped, \n"
+                "rel.attislocal, \n"
+                "rel.attinhcount, \n"
+                "rel.attcollation \n"
+                "FROM pg_attribute rel \n"
+                "where rel.attrelid = '%u' and rel.attnum > 0;",
+                classtoast->oid);
         res = conn_exec(conn, sql_exec);
         if (NULL == res)
         {
             elog(RLOG_ERROR, "pg_attribute query failed");
         }
 
-        for (i = 0; i < PQntuples(res); i++) 
+        for (i = 0; i < PQntuples(res); i++)
         {
-            attribute = (pg_sysdict_Form_pg_attribute)rmalloc0(sizeof(pg_parser_sysdict_pgattributes));
-            if(NULL == attribute)
+            attribute =
+                (pg_sysdict_Form_pg_attribute)rmalloc0(sizeof(pg_parser_sysdict_pgattributes));
+            if (NULL == attribute)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
             rmemset0(attribute, 0, '\0', sizeof(pg_parser_sysdict_pgattributes));
-            j=0;
+            j = 0;
 
             sscanf(PQgetvalue(res, i, j++), "%u", &attribute->attrelid);
-            strcpy(attribute->attname.data ,PQgetvalue(res, i, j++));
+            strcpy(attribute->attname.data, PQgetvalue(res, i, j++));
             sscanf(PQgetvalue(res, i, j++), "%u", &attribute->atttypid);
             sscanf(PQgetvalue(res, i, j++), "%d", &attribute->attstattarget);
             sscanf(PQgetvalue(res, i, j++), "%hd", &attribute->attlen);
@@ -194,7 +198,8 @@ void class_attribute_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
             sscanf(PQgetvalue(res, i, j++), "%d", &attribute->attinhcount);
             sscanf(PQgetvalue(res, i, j++), "%u", &attribute->attcollation);
 
-            attr_entry = (catalog_attribute_value *)hash_search(sysdicts->by_attribute, &attribute->attrelid, HASH_ENTER, &found);
+            attr_entry = (catalog_attribute_value*)hash_search(
+                sysdicts->by_attribute, &attribute->attrelid, HASH_ENTER, &found);
             if (!found)
             {
                 attr_entry->attrs = NIL;
@@ -209,34 +214,34 @@ void class_attribute_getfromdb(PGconn *conn, cache_sysdicts* sysdicts)
     return;
 }
 
-void classdata_write(List* class, uint64 *offset, sysdict_header_array* array)
+void classdata_write(List* class, uint64* offset, sysdict_header_array* array)
 {
-    int	 fd;
-    uint64 page_num = 0;
-    uint64 page_offset = 0;
-    ListCell*	cell = NULL;
-    char buffer[FILE_BLK_SIZE];
+    int                      fd;
+    uint64                   page_num = 0;
+    uint64                   page_offset = 0;
+    ListCell*                cell = NULL;
+    char                     buffer[FILE_BLK_SIZE];
     pg_sysdict_Form_pg_class class_data = NULL;
-    
+
     array->type = CATALOG_TYPE_CLASS;
     array->offset = *offset;
     page_num = *offset;
-    
+
     rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
-    fd = osal_basic_open_file(SYSDICTS_FILE,
-                        O_RDWR | O_CREAT | BINARY);
+    fd = osal_basic_open_file(SYSDICTS_FILE, O_RDWR | O_CREAT | BINARY);
 
     if (fd < 0)
     {
         elog(RLOG_ERROR, "could not create file %s", SYSDICTS_FILE);
     }
 
-    foreach(cell, class)
+    foreach (cell, class)
     {
-        class_data = (pg_sysdict_Form_pg_class) lfirst(cell);
-        if(page_offset + sizeof(pg_parser_sysdict_pgclass) > FILE_BLK_SIZE)
+        class_data = (pg_sysdict_Form_pg_class)lfirst(cell);
+        if (page_offset + sizeof(pg_parser_sysdict_pgclass) > FILE_BLK_SIZE)
         {
-            if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+            if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE)
+            {
                 elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
                 osal_file_close(fd);
                 return;
@@ -250,8 +255,10 @@ void classdata_write(List* class, uint64 *offset, sysdict_header_array* array)
         page_offset += sizeof(pg_parser_sysdict_pgclass);
     }
 
-    if (page_offset > 0) {
-        if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+    if (page_offset > 0)
+    {
+        if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE)
+        {
             elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_FILE);
             osal_file_close(fd);
             return;
@@ -260,46 +267,43 @@ void classdata_write(List* class, uint64 *offset, sysdict_header_array* array)
         *offset += FILE_BLK_SIZE;
     }
 
-    if(0 != osal_file_sync(fd))
+    if (0 != osal_file_sync(fd))
     {
         elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_FILE);
     }
 
-    if(osal_file_close(fd))
+    if (osal_file_close(fd))
     {
         elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
     }
 
     array->len = page_num;
-
 }
 
 HTAB* classcache_load(sysdict_header_array* array)
 {
-    int r = 0;
-    int fd = -1;
-    HTAB* classhtab;
+    int     r = 0;
+    int     fd = -1;
+    HTAB*   classhtab;
     HASHCTL hash_ctl;
-    bool found = false;
-    uint64 fileoffset = 0;
+    bool    found = false;
+    uint64  fileoffset = 0;
 
-    char buffer[FILE_BLK_SIZE];
+    char                     buffer[FILE_BLK_SIZE];
     pg_sysdict_Form_pg_class class;
-    catalog_class_value *entry = NULL;
+    catalog_class_value*     entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(uint32_t);
     hash_ctl.entrysize = sizeof(catalog_class_value);
-    classhtab = hash_create("catalog_class_value", 2048, &hash_ctl,
-                                 HASH_ELEM | HASH_BLOBS);
+    classhtab = hash_create("catalog_class_value", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
 
-	if (array[CATALOG_TYPE_CLASS - 1].len == array[CATALOG_TYPE_CLASS - 1].offset)
-	{
-		return classhtab;
-	}
+    if (array[CATALOG_TYPE_CLASS - 1].len == array[CATALOG_TYPE_CLASS - 1].offset)
+    {
+        return classhtab;
+    }
 
-    fd = osal_basic_open_file(SYSDICTS_FILE,
-                        O_RDWR | BINARY);
+    fd = osal_basic_open_file(SYSDICTS_FILE, O_RDWR | BINARY);
 
     if (fd < 0)
     {
@@ -307,21 +311,21 @@ HTAB* classcache_load(sysdict_header_array* array)
     }
 
     fileoffset = array[CATALOG_TYPE_CLASS - 1].offset;
-    while ((r = osal_file_pread(fd, buffer, FILE_BLK_SIZE, fileoffset)) > 0) 
+    while ((r = osal_file_pread(fd, buffer, FILE_BLK_SIZE, fileoffset)) > 0)
     {
         uint64 offset = 0;
 
         while (offset + sizeof(pg_parser_sysdict_pgclass) < FILE_BLK_SIZE)
         {
             class = (pg_sysdict_Form_pg_class)rmalloc1(sizeof(pg_parser_sysdict_pgclass));
-            if(NULL == class)
+            if (NULL == class)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
             rmemset0(class, 0, '\0', sizeof(pg_parser_sysdict_pgclass));
             rmemcpy0(class, 0, buffer + offset, sizeof(pg_parser_sysdict_pgclass));
             entry = hash_search(classhtab, &class->oid, HASH_ENTER, &found);
-            if(found)
+            if (found)
             {
                 elog(RLOG_ERROR, "class_oid:%u already exist in by_class", entry->class->oid);
             }
@@ -330,7 +334,7 @@ HTAB* classcache_load(sysdict_header_array* array)
             offset += sizeof(pg_parser_sysdict_pgclass);
             if (fileoffset + offset == array[CATALOG_TYPE_CLASS - 1].len)
             {
-                if(osal_file_close(fd))
+                if (osal_file_close(fd))
                 {
                     elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
                 }
@@ -340,7 +344,7 @@ HTAB* classcache_load(sysdict_header_array* array)
         fileoffset += FILE_BLK_SIZE;
     }
 
-    if(osal_file_close(fd))
+    if (osal_file_close(fd))
     {
         elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
     }
@@ -350,23 +354,23 @@ HTAB* classcache_load(sysdict_header_array* array)
 /* colvalue2class */
 catalogdata* class_colvalue2class(void* in_colvalue)
 {
-    catalogdata* catalogclass = NULL;
-    pg_sysdict_Form_pg_class pgclass = NULL;
-    catalog_class_value* classvalue = NULL;
+    catalogdata*                    catalogclass = NULL;
+    pg_sysdict_Form_pg_class        pgclass = NULL;
+    catalog_class_value*            classvalue = NULL;
     pg_parser_translog_tbcol_value* colvalue = NULL;
 
     colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
-    /* 值转换 */
+    /* convert colvalue */
     catalogclass = (catalogdata*)rmalloc0(sizeof(catalogdata));
-    if(NULL == catalogclass)
+    if (NULL == catalogclass)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
     rmemset0(catalogclass, 0, '\0', sizeof(catalogdata));
 
     classvalue = (catalog_class_value*)rmalloc0(sizeof(catalog_class_value));
-    if(NULL == classvalue)
+    if (NULL == classvalue)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -375,7 +379,7 @@ catalogdata* class_colvalue2class(void* in_colvalue)
     catalogclass->type = CATALOG_TYPE_CLASS;
 
     pgclass = (pg_sysdict_Form_pg_class)rmalloc0(sizeof(pg_parser_sysdict_pgclass));
-    if(NULL == pgclass)
+    if (NULL == pgclass)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -392,10 +396,10 @@ catalogdata* class_colvalue2class(void* in_colvalue)
     /* relkind 16 */
     pgclass->relkind = ((char*)((colvalue + 16)->m_value))[0];
 
-    if(PG_SYSDICT_RELKIND_VIEW == pgclass->relkind
-        || PG_SYSDICT_RELKIND_PARTITIONED_INDEX == pgclass->relkind)
+    if (PG_SYSDICT_RELKIND_VIEW == pgclass->relkind ||
+        PG_SYSDICT_RELKIND_PARTITIONED_INDEX == pgclass->relkind)
     {
-        /* 内存释放，不记录 */
+        /* Memory release, no logging */
         rfree(pgclass);
         rfree(classvalue);
         rfree(catalogclass);
@@ -403,7 +407,8 @@ catalogdata* class_colvalue2class(void* in_colvalue)
     }
 
     /* relname 1*/
-    rmemcpy1(pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
+    rmemcpy1(pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value),
+             (colvalue + 1)->m_valueLen);
 
     /* relnamespace 2*/
     sscanf((char*)((colvalue + 2)->m_value), "%u", &pgclass->relnamespace);
@@ -422,16 +427,15 @@ catalogdata* class_colvalue2class(void* in_colvalue)
 
     /* reltablespace 8 */
     sscanf((char*)((colvalue + 8)->m_value), "%u", &pgclass->reltablespace);
-    if(0 == pgclass->reltablespace)
+    if (0 == pgclass->reltablespace)
     {
         pgclass->reltablespace = PG_DFAULT_TABLESPACE;
     }
 
-    /* 过滤系统自建临时表 */
-    if(8 <= strlen(pgclass->relname.data)
-        && 0 == strncmp("pg_temp_", pgclass->relname.data, 8))
+    /* Filter system-created temporary tables */
+    if (8 <= strlen(pgclass->relname.data) && 0 == strncmp("pg_temp_", pgclass->relname.data, 8))
     {
-        /* 内存释放，不记录 */
+        /* Memory release, no logging */
         rfree(pgclass);
         rfree(classvalue);
         rfree(catalogclass);
@@ -450,23 +454,23 @@ catalogdata* class_colvalue2class(void* in_colvalue)
 /* colvalue2class */
 catalogdata* class_colvalue2class_nofilter(void* in_colvalue)
 {
-    catalogdata* catalogclass = NULL;
-    pg_sysdict_Form_pg_class pgclass = NULL;
-    catalog_class_value* classvalue = NULL;
+    catalogdata*                    catalogclass = NULL;
+    pg_sysdict_Form_pg_class        pgclass = NULL;
+    catalog_class_value*            classvalue = NULL;
     pg_parser_translog_tbcol_value* colvalue = NULL;
 
     colvalue = (pg_parser_translog_tbcol_value*)in_colvalue;
 
-    /* 值转换 */
+    /* Value conversion */
     catalogclass = (catalogdata*)rmalloc1(sizeof(catalogdata));
-    if(NULL == catalogclass)
+    if (NULL == catalogclass)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
     rmemset0(catalogclass, 0, '\0', sizeof(catalogdata));
 
     classvalue = (catalog_class_value*)rmalloc1(sizeof(catalog_class_value));
-    if(NULL == classvalue)
+    if (NULL == classvalue)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -475,7 +479,7 @@ catalogdata* class_colvalue2class_nofilter(void* in_colvalue)
     catalogclass->type = CATALOG_TYPE_CLASS;
 
     pgclass = (pg_sysdict_Form_pg_class)rmalloc1(sizeof(pg_parser_sysdict_pgclass));
-    if(NULL == pgclass)
+    if (NULL == pgclass)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -493,7 +497,8 @@ catalogdata* class_colvalue2class_nofilter(void* in_colvalue)
     pgclass->relkind = ((char*)((colvalue + 16)->m_value))[0];
 
     /* relname 1*/
-    rmemcpy1(pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
+    rmemcpy1(pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value),
+             (colvalue + 1)->m_valueLen);
 
     /* relnamespace 2*/
     sscanf((char*)((colvalue + 2)->m_value), "%u", &pgclass->relnamespace);
@@ -512,7 +517,7 @@ catalogdata* class_colvalue2class_nofilter(void* in_colvalue)
 
     /* reltablespace 8 */
     sscanf((char*)((colvalue + 8)->m_value), "%u", &pgclass->reltablespace);
-    if(0 == pgclass->reltablespace)
+    if (0 == pgclass->reltablespace)
     {
         pgclass->reltablespace = PG_DFAULT_TABLESPACE;
     }
@@ -526,11 +531,14 @@ catalogdata* class_colvalue2class_nofilter(void* in_colvalue)
     return catalogclass;
 }
 
-bool bool_judgment(char * str)
+bool bool_judgment(char* str)
 {
-    if (str[0] == 't' || str[0] == 'T') {
+    if (str[0] == 't' || str[0] == 'T')
+    {
         return true;
-    } else if (str[0] == 'f' || str[0] == 'F') {
+    }
+    else if (str[0] == 'f' || str[0] == 'F')
+    {
         return false;
     }
     return -1;
@@ -539,51 +547,48 @@ bool bool_judgment(char * str)
 /* catalogdata2transcache */
 void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata)
 {
-    bool found = false;
-    RelFileNode relfilenode = { 0 };
+    bool                 found = false;
+    RelFileNode          relfilenode = {0};
     catalog_class_value* newClass = NULL;
     catalog_class_value* classInHash = NULL;
-    relfilenode2oid* prelfilenode2oid = NULL;
-    relfilenode2oid* prelfilenode2oidOld = NULL;
+    relfilenode2oid*     prelfilenode2oid = NULL;
+    relfilenode2oid*     prelfilenode2oidOld = NULL;
 
-    if(NULL == catalogdata || NULL == catalogdata->catalog)
+    if (NULL == catalogdata || NULL == catalogdata->catalog)
     {
         return;
     }
 
     newClass = (catalog_class_value*)catalogdata->catalog;
-    elog(RLOG_DEBUG, "op:%d, newclass, %s,type:%c, %u.%u",
-                    catalogdata->op,
-                    newClass->class->relname.data,
-                    newClass->class->relkind,
-                    newClass->class->oid,
-                    newClass->class->relfilenode);
+    elog(RLOG_DEBUG, "op:%d, newclass, %s,type:%c, %u.%u", catalogdata->op,
+         newClass->class->relname.data, newClass->class->relkind, newClass->class->oid,
+         newClass->class->relfilenode);
 
-    if(CATALOG_OP_INSERT == catalogdata->op)
+    if (CATALOG_OP_INSERT == catalogdata->op)
     {
         classInHash = hash_search(sysdicts->by_class, &newClass->oid, HASH_ENTER, &found);
-        if(true == found)
+        if (true == found)
         {
-            if(NULL != classInHash->class)
+            if (NULL != classInHash->class)
             {
                 rfree(classInHash->class);
             }
         }
         classInHash->oid = newClass->oid;
 
-        /* 申请空间，并赋值 */
+        /* Allocate space and assign */
         classInHash->class = (pg_sysdict_Form_pg_class)rmalloc1(sizeof(pg_parser_sysdict_pgclass));
-        if(NULL == classInHash->class)
+        if (NULL == classInHash->class)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
         rmemcpy0(classInHash->class, 0, newClass->class, sizeof(pg_parser_sysdict_pgclass));
 
-        if(NULL != sysdicts->by_relfilenode)
+        if (NULL != sysdicts->by_relfilenode)
         {
             relfilenode.relNode = newClass->class->relfilenode;
             relfilenode.dbNode = misc_controldata_database_get(NULL);
-            if(0 == newClass->class->reltablespace)
+            if (0 == newClass->class->reltablespace)
             {
                 relfilenode.spcNode = PG_DFAULT_TABLESPACE;
                 newClass->class->reltablespace = PG_DFAULT_TABLESPACE;
@@ -593,33 +598,31 @@ void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
                 relfilenode.spcNode = newClass->class->reltablespace;
             }
 
-            /* 将 relfilenode 添加到 hash 表中 */
-            /* 插入新的 */
-            prelfilenode2oid = hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, &found);
-            if(NULL == prelfilenode2oid)
+            /* Add relfilenode to hash table */
+            /* Insert new */
+            prelfilenode2oid =
+                hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, &found);
+            if (NULL == prelfilenode2oid)
             {
                 elog(RLOG_ERROR, "put relfilenode2oid hash error, %u.%u.%u, oid:%u",
-                                    relfilenode.spcNode,
-                                    relfilenode.dbNode,
-                                    relfilenode.relNode,
-                                    newClass->oid);
+                     relfilenode.spcNode, relfilenode.dbNode, relfilenode.relNode, newClass->oid);
             }
             prelfilenode2oid->oid = newClass->class->oid;
             rmemcpy1(&prelfilenode2oid->relfilenode, 0, &relfilenode, sizeof(RelFileNode));
         }
     }
-    else if(CATALOG_OP_DELETE == catalogdata->op)
+    else if (CATALOG_OP_DELETE == catalogdata->op)
     {
         classInHash = hash_search(sysdicts->by_class, &newClass->oid, HASH_REMOVE, &found);
 
-        if(NULL != classInHash)
+        if (NULL != classInHash)
         {
-            if(NULL != classInHash->class)
+            if (NULL != classInHash->class)
             {
                 relfilenode.relNode = classInHash->class->relfilenode;
                 relfilenode.dbNode = misc_controldata_database_get(NULL);
                 relfilenode.spcNode = classInHash->class->reltablespace;
-                if(NULL != sysdicts->by_relfilenode)
+                if (NULL != sysdicts->by_relfilenode)
                 {
                     hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_REMOVE, NULL);
                 }
@@ -627,41 +630,45 @@ void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
             }
         }
     }
-    else if(CATALOG_OP_UPDATE == catalogdata->op)
+    else if (CATALOG_OP_UPDATE == catalogdata->op)
     {
         classInHash = hash_search(sysdicts->by_class, &newClass->oid, HASH_FIND, &found);
-        if(NULL == classInHash)
+        if (NULL == classInHash)
         {
-            elog(RLOG_WARNING, "relation %u,%s can not fond in class hash",
-                                newClass->class->oid, newClass->class->relname.data);
+            elog(RLOG_WARNING, "relation %u,%s can not fond in class hash", newClass->class->oid,
+                 newClass->class->relname.data);
             return;
         }
 
-        /* 查看 relfilenode 是否发生了变化 */
-        if(classInHash->class->relfilenode != newClass->class->relfilenode)
+        /* Check if relfilenode has changed */
+        if (classInHash->class->relfilenode != newClass->class->relfilenode)
         {
             relfilenode.relNode = classInHash->class->relfilenode;
             relfilenode.dbNode = misc_controldata_database_get(NULL);
             relfilenode.spcNode = classInHash->class->reltablespace;
 
-            /* 在对含有 toast 字段的表做 vacuum full 操作时，会修改 toast 的 relfilenode */
-            if(NULL != sysdicts->by_relfilenode)
+            /* When performing vacuum full on tables with toast fields, toast's relfilenode will be
+             * modified */
+            if (NULL != sysdicts->by_relfilenode)
             {
-                prelfilenode2oidOld = hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_FIND, NULL);
-                if(prelfilenode2oidOld->oid == classInHash->class->oid)
+                prelfilenode2oidOld =
+                    hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_FIND, NULL);
+                if (prelfilenode2oidOld->oid == classInHash->class->oid)
                 {
-                    /* 替换 relfilenode 的数据信息 */
+                    /* Replace relfilenode data */
                     hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_REMOVE, NULL);
 
-                    /* 插入新的 */
+                    /* Insert new */
                     relfilenode.relNode = newClass->class->relfilenode;
-                    prelfilenode2oid = hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, &found);
-                    if(!found)
+                    prelfilenode2oid =
+                        hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, &found);
+                    if (!found)
                     {
-                        rmemcpy1(&prelfilenode2oid->relfilenode, 0, &relfilenode, sizeof(RelFileNode));
+                        rmemcpy1(&prelfilenode2oid->relfilenode, 0, &relfilenode,
+                                 sizeof(RelFileNode));
                     }
 
-                    /* 那么直接替换掉 */
+                    /* Then directly replace */
                     prelfilenode2oid->oid = newClass->class->oid;
                 }
             }
@@ -676,37 +683,37 @@ void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
     }
 }
 
-void classcache_write(HTAB* classcache, uint64 *offset, sysdict_header_array* array)
+void classcache_write(HTAB* classcache, uint64* offset, sysdict_header_array* array)
 {
-    int     fd;
-    uint64 page_num = 0;
-    uint64 page_offset = 0;
-    HASH_SEQ_STATUS status;
-    char buffer[FILE_BLK_SIZE];
+    int                      fd;
+    uint64                   page_num = 0;
+    uint64                   page_offset = 0;
+    HASH_SEQ_STATUS          status;
+    char                     buffer[FILE_BLK_SIZE];
     pg_sysdict_Form_pg_class class;
-    catalog_class_value *entry;
+    catalog_class_value*     entry;
 
     array[CATALOG_TYPE_CLASS - 1].type = CATALOG_TYPE_CLASS;
     array[CATALOG_TYPE_CLASS - 1].offset = *offset;
     page_num = *offset;
 
     rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
-    fd = osal_basic_open_file(SYSDICTS_TMP_FILE,
-                        O_RDWR | O_CREAT | O_EXCL| BINARY);
+    fd = osal_basic_open_file(SYSDICTS_TMP_FILE, O_RDWR | O_CREAT | O_EXCL | BINARY);
 
     if (fd < 0)
     {
         elog(RLOG_ERROR, "could not create file %s", SYSDICTS_TMP_FILE);
     }
 
-    hash_seq_init(&status,classcache);
+    hash_seq_init(&status, classcache);
     while ((entry = hash_seq_search(&status)) != NULL)
     {
         class = entry->class;
 
-        if(page_offset + sizeof(pg_parser_sysdict_pgclass) > FILE_BLK_SIZE)
+        if (page_offset + sizeof(pg_parser_sysdict_pgclass) > FILE_BLK_SIZE)
         {
-            if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+            if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE)
+            {
                 elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
                 osal_file_close(fd);
                 return;
@@ -720,8 +727,10 @@ void classcache_write(HTAB* classcache, uint64 *offset, sysdict_header_array* ar
         page_offset += sizeof(pg_parser_sysdict_pgclass);
     }
 
-    if (page_offset > 0) {
-        if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE) {
+    if (page_offset > 0)
+    {
+        if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, *offset) != FILE_BLK_SIZE)
+        {
             elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
             osal_file_close(fd);
             return;
@@ -730,12 +739,12 @@ void classcache_write(HTAB* classcache, uint64 *offset, sysdict_header_array* ar
         *offset += FILE_BLK_SIZE;
     }
 
-    if(0 != osal_file_sync(fd))
+    if (0 != osal_file_sync(fd))
     {
         elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_TMP_FILE);
     }
 
-    if(osal_file_close(fd))
+    if (osal_file_close(fd))
     {
         elog(RLOG_ERROR, "could not close file %s", SYSDICTS_TMP_FILE);
     }
@@ -748,16 +757,16 @@ void classcache_write(HTAB* classcache, uint64 *offset, sysdict_header_array* ar
 void class_catalogdatafree(catalogdata* catalogdata)
 {
     catalog_class_value* catalog = NULL;
-    if(NULL == catalogdata)
+    if (NULL == catalogdata)
     {
         return;
     }
 
-    /* catalog 内存释放 */
-    if(NULL != catalogdata->catalog)
+    /* Catalog memory release */
+    if (NULL != catalogdata->catalog)
     {
         catalog = (catalog_class_value*)catalogdata->catalog;
-        if(NULL != catalog->class)
+        if (NULL != catalog->class)
         {
             rfree(catalog->class);
         }
@@ -766,13 +775,13 @@ void class_catalogdatafree(catalogdata* catalogdata)
     rfree(catalogdata);
 }
 
-/* 根据oid获取pg_class 数据 */
+/* Get pg_class data by oid */
 void* class_getbyoid(Oid oid, HTAB* by_class)
 {
-    bool found = false;
-    catalog_class_value *classentry = NULL;
+    bool                 found = false;
+    catalog_class_value* classentry = NULL;
     classentry = hash_search(by_class, &oid, HASH_FIND, &found);
-    if(false == found)
+    if (false == found)
     {
         return NULL;
     }

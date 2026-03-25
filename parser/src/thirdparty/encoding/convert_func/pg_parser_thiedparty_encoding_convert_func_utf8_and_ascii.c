@@ -15,7 +15,6 @@
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -27,11 +26,11 @@
  * ----------
  */
 
-void ascii_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void ascii_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(SQL_ASCII, UTF8);
 
@@ -39,11 +38,11 @@ void ascii_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     conv_ascii2mic(src, dest, len);
 }
 
-void utf8_to_ascii(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_ascii(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, SQL_ASCII);
 

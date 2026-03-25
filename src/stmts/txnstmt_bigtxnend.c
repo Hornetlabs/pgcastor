@@ -16,10 +16,9 @@ bigtxn_end_stmt* txnstmt_bigtxnend_init(void)
     return endstmt;
 }
 
-
 void txnstmt_bigtxnend_free(void* data)
 {
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }

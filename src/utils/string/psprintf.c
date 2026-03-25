@@ -6,8 +6,8 @@
  *
  * All Copyright (c) 2024-2024, Byte Sync Development Group
  *
- * Author: liuzihe  Date: 2024/07/10 
- * 
+ * Author: liuzihe  Date: 2024/07/10
+ *
  * src/utils/string/psprintf.c
  *
  *-------------------------------------------------------------------------
@@ -15,7 +15,7 @@
 #include "app_incl.h"
 #include "utils/string/psprintf.h"
 
-#define MaxAllocSize	((Size) 0x3fffffff) /* 1 gigabyte - 1 */
+#define MaxAllocSize ((Size)0x3fffffff) /* 1 gigabyte - 1 */
 #define PSPRINTF_MEM_ALLOC rmalloc0
 #define PSPRINTF_MEM_FREE rfree
 
@@ -33,37 +33,38 @@
  * in the backend, or printf-to-stderr-and-exit() in frontend builds.
  * One should therefore think twice about using this in libpq.
  */
-char *
-psprintf(const char *fmt,...)
+char* psprintf(const char* fmt, ...)
 {
-	int			save_errno = errno;
-	size_t		len = 128;		/* initial assumption about buffer size */
+    int    save_errno = errno;
+    size_t len = 128; /* initial assumption about buffer size */
 
-	for (;;)
-	{
-		char	   *result;
-		va_list		args;
-		size_t		newlen;
+    for (;;)
+    {
+        char*   result;
+        va_list args;
+        size_t  newlen;
 
-		/*
-		 * Allocate result buffer.  Note that in frontend this maps to malloc
-		 * with exit-on-error.
-		 */
-		result = (char *) PSPRINTF_MEM_ALLOC(len);
+        /*
+         * Allocate result buffer.  Note that in frontend this maps to malloc
+         * with exit-on-error.
+         */
+        result = (char*)PSPRINTF_MEM_ALLOC(len);
 
-		/* Try to format the data. */
-		errno = save_errno;
-		va_start(args, fmt);
-		newlen = pvsnprintf(result, len, fmt, args);
-		va_end(args);
+        /* Try to format the data. */
+        errno = save_errno;
+        va_start(args, fmt);
+        newlen = pvsnprintf(result, len, fmt, args);
+        va_end(args);
 
-		if (newlen < len)
-			return result;		/* success */
+        if (newlen < len)
+        {
+            return result; /* success */
+        }
 
-		/* Release buffer and loop around to try again with larger len. */
-		PSPRINTF_MEM_FREE(result);
-		len = newlen;
-	}
+        /* Release buffer and loop around to try again with larger len. */
+        PSPRINTF_MEM_FREE(result);
+        len = newlen;
+    }
 }
 
 /*
@@ -93,37 +94,36 @@ psprintf(const char *fmt,...)
  * Second, we return the recommended buffer size, not one less than that;
  * this lets overflow concerns be handled here rather than in the callers.
  */
-size_t
-pvsnprintf(char *buf, size_t len, const char *fmt, va_list args)
+size_t pvsnprintf(char* buf, size_t len, const char* fmt, va_list args)
 {
-	int			nprinted;
+    int nprinted;
 
-	nprinted = vsnprintf(buf, len, fmt, args);
+    nprinted = vsnprintf(buf, len, fmt, args);
 
-	/* We assume failure means the fmt is bogus, hence hard failure is OK */
-	if (ps_unlikely(nprinted < 0))
-	{
-		elog(RLOG_ERROR, "pvsnprintf failure");
-	}
+    /* We assume failure means the fmt is bogus, hence hard failure is OK */
+    if (ps_unlikely(nprinted < 0))
+    {
+        elog(RLOG_ERROR, "pvsnprintf failure");
+    }
 
-	if ((size_t) nprinted < len)
-	{
-		/* Success.  Note nprinted does not include trailing null. */
-		return (size_t) nprinted;
-	}
+    if ((size_t)nprinted < len)
+    {
+        /* Success.  Note nprinted does not include trailing null. */
+        return (size_t)nprinted;
+    }
 
-	/*
-	 * We assume a C99-compliant vsnprintf, so believe its estimate of the
-	 * required space, and add one for the trailing null.  (If it's wrong, the
-	 * logic will still work, but we may loop multiple times.)
-	 *
-	 * Choke if the required space would exceed MaxAllocSize.  Note we use
-	 * this PSPRINTF_MEM_ALLOC-oriented overflow limit even when in frontend.
-	 */
-	if (ps_unlikely((size_t) nprinted > MaxAllocSize - 1))
-	{
-		elog(RLOG_ERROR, "out of memory");
-	}
+    /*
+     * We assume a C99-compliant vsnprintf, so believe its estimate of the
+     * required space, and add one for the trailing null.  (If it's wrong, the
+     * logic will still work, but we may loop multiple times.)
+     *
+     * Choke if the required space would exceed MaxAllocSize.  Note we use
+     * this PSPRINTF_MEM_ALLOC-oriented overflow limit even when in frontend.
+     */
+    if (ps_unlikely((size_t)nprinted > MaxAllocSize - 1))
+    {
+        elog(RLOG_ERROR, "out of memory");
+    }
 
-	return nprinted + 1;
+    return nprinted + 1;
 }

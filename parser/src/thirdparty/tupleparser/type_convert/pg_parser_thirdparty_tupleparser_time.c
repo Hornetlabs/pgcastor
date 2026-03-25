@@ -1,12 +1,12 @@
 /**
  * @file pg_parser_thirdparty_tupleparser_char.c
  * @author bytesync
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2023-08-03
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  */
 #include "pg_parser_os_incl.h"
 #include "pg_parser_app_incl.h"
@@ -20,38 +20,32 @@
 
 #define Abs(x) ((x) >= 0 ? (x) : -(x))
 
-static int32_t time2tm(TimeADT time, struct pg_parser_tm *tm, fsec_t *fsec);
-static char *AppendSeconds(char *cp, int32_t sec, fsec_t fsec, int32_t precision, bool fillzeros);
-static char *EncodeTimezone(char *str, int32_t tz, int32_t style);
+static int32_t time2tm(TimeADT time, struct pg_parser_tm* tm, fsec_t* fsec);
+static char*   AppendSeconds(char* cp, int32_t sec, fsec_t fsec, int32_t precision, bool fillzeros);
+static char*   EncodeTimezone(char* str, int32_t tz, int32_t style);
 
-static void EncodeTimeOnly(struct pg_parser_tm *tm,
-                           fsec_t fsec,
-                           bool print_tz,
-                           int32_t tz,
-                           int32_t style,
-                           char *str);
+static void EncodeTimeOnly(struct pg_parser_tm* tm, fsec_t fsec, bool print_tz, int32_t tz,
+                           int32_t style, char* str);
 
 pg_parser_Datum time_out(pg_parser_Datum attr)
 {
-    TimeADT        time = (TimeADT) attr;
-    char          *result;
-    struct pg_parser_tm   tt,
-                  *tm = &tt;
-    fsec_t         fsec;
-    char           buf[MAXDATELEN + 1];
-    int32_t        DateStyle = USE_ISO_DATES;
+    TimeADT             time = (TimeADT)attr;
+    char*               result;
+    struct pg_parser_tm tt, *tm = &tt;
+    fsec_t              fsec;
+    char                buf[MAXDATELEN + 1];
+    int32_t             DateStyle = USE_ISO_DATES;
 
     time2tm(time, tm, &fsec);
     EncodeTimeOnly(tm, fsec, false, 0, DateStyle, buf);
 
     result = pg_parser_mcxt_strdup(buf);
-    return (pg_parser_Datum) result;
+    return (pg_parser_Datum)result;
 }
 
 /*****************************************************************************
  *     Time ADT
  *****************************************************************************/
-
 
 /* time2tm()
  * Convert time data type to POSIX time structure.
@@ -60,7 +54,7 @@ pg_parser_Datum time_out(pg_parser_Datum attr)
  * If out of this range, leave as UTC (in practice that could only happen
  * if pg_time_t is just 32 bits) - thomas 97/05/27
  */
-static int32_t time2tm(TimeADT time, struct pg_parser_tm *tm, fsec_t *fsec)
+static int32_t time2tm(TimeADT time, struct pg_parser_tm* tm, fsec_t* fsec)
 {
     tm->tm_hour = time / USECS_PER_HOUR;
     time -= tm->tm_hour * USECS_PER_HOUR;
@@ -80,7 +74,8 @@ static int32_t time2tm(TimeADT time, struct pg_parser_tm *tm, fsec_t *fsec)
  * numeric time zone offset, style is the date style, str is where to write the
  * output.
  */
-static void EncodeTimeOnly(struct pg_parser_tm *tm, fsec_t fsec, bool print_tz, int32_t tz, int32_t style, char *str)
+static void EncodeTimeOnly(struct pg_parser_tm* tm, fsec_t fsec, bool print_tz, int32_t tz,
+                           int32_t style, char* str)
 {
     str = numutils_ltostr_zeropad(str, tm->tm_hour, 2);
     *str++ = ':';
@@ -88,7 +83,9 @@ static void EncodeTimeOnly(struct pg_parser_tm *tm, fsec_t fsec, bool print_tz, 
     *str++ = ':';
     str = AppendSeconds(str, tm->tm_sec, fsec, MAX_TIME_PRECISION, true);
     if (print_tz)
+    {
         str = EncodeTimezone(str, tz, style);
+    }
     *str = '\0';
 }
 
@@ -103,19 +100,23 @@ static void EncodeTimeOnly(struct pg_parser_tm *tm, fsec_t fsec, bool print_tz, 
  *
  * Note that any sign is stripped from the input seconds values.
  */
-static char *AppendSeconds(char *cp, int32_t sec, fsec_t fsec, int32_t precision, bool fillzeros)
+static char* AppendSeconds(char* cp, int32_t sec, fsec_t fsec, int32_t precision, bool fillzeros)
 {
     if (fillzeros)
+    {
         cp = numutils_ltostr_zeropad(cp, Abs(sec), 2);
+    }
     else
+    {
         cp = numutils_ltostr(cp, Abs(sec));
+    }
 
     /* fsec_t is just an int32 */
     if (fsec != 0)
     {
-        int32_t        value = Abs(fsec);
-        char       *end = &cp[precision + 1];
-        bool        gotnonzero = false;
+        int32_t value = Abs(fsec);
+        char*   end = &cp[precision + 1];
+        bool    gotnonzero = false;
 
         *cp++ = '.';
 
@@ -126,20 +127,26 @@ static char *AppendSeconds(char *cp, int32_t sec, fsec_t fsec, int32_t precision
          */
         while (precision--)
         {
-            int32_t        oldval = value;
-            int32_t        remainder;
+            int32_t oldval = value;
+            int32_t remainder;
 
             value /= 10;
             remainder = oldval - value * 10;
 
             /* check if we got a non-zero */
             if (remainder)
+            {
                 gotnonzero = true;
+            }
 
             if (gotnonzero)
+            {
                 cp[precision] = '0' + remainder;
+            }
             else
+            {
                 end = &cp[precision];
+            }
         }
 
         /*
@@ -148,12 +155,16 @@ static char *AppendSeconds(char *cp, int32_t sec, fsec_t fsec, int32_t precision
          * which will generate a correct answer in the minimum valid width.
          */
         if (value)
+        {
             return numutils_ltostr(cp, Abs(fsec));
+        }
 
         return end;
     }
     else
+    {
         return cp;
+    }
 }
 
 /* EncodeTimezone()
@@ -162,11 +173,9 @@ static char *AppendSeconds(char *cp, int32_t sec, fsec_t fsec, int32_t precision
  * Returns a pointer to the new end of string.  No NUL terminator is put
  * there; callers are responsible for NUL terminating str themselves.
  */
-static char *EncodeTimezone(char *str, int32_t tz, int32_t style)
+static char* EncodeTimezone(char* str, int32_t tz, int32_t style)
 {
-    int32_t     hour,
-                min,
-                sec;
+    int32_t hour, min, sec;
 
     sec = abs(tz);
     min = sec / SECS_PER_MINUTE;
@@ -192,6 +201,8 @@ static char *EncodeTimezone(char *str, int32_t tz, int32_t style)
         str = numutils_ltostr_zeropad(str, min, 2);
     }
     else
+    {
         str = numutils_ltostr_zeropad(str, hour, 2);
+    }
     return str;
 }

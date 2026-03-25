@@ -1,7 +1,7 @@
 #include "app_incl.h"
 #include "net/netpacket/netpacket.h"
 
-/* 初始化netpacket */
+/* Initialize netpacket */
 netpacket* netpacket_init(void)
 {
     netpacket* net_packet = NULL;
@@ -20,7 +20,7 @@ netpacket* netpacket_init(void)
     return net_packet;
 }
 
-/* 按长度申请netpacket data空间 */
+/* Apply for netpacket data space by length */
 uint8* netpacket_data_init(int len)
 {
     uint8* data = NULL;
@@ -39,21 +39,21 @@ uint8* netpacket_data_init(int len)
     return data;
 }
 
-/* 释放队列中的netpacket */
+/* Release netpacket in queue */
 void netpacket_destroyvoid(void* args)
 {
     netpacket_destroy((netpacket*)args);
     return;
 }
 
-/* netpacket资源回收 */
+/* netpacket resource cleanup */
 void netpacket_destroy(netpacket* net_packet)
 {
     if (NULL == net_packet)
     {
         return;
     }
-    
+
     if (net_packet->data)
     {
         rfree(net_packet->data);

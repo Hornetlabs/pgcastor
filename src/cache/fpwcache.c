@@ -15,11 +15,11 @@
 #include "cache/fpwcache.h"
 
 /*
- * FPW 缓存由 PARSER 与 写线程共同维护，需要锁
-*/
-HTAB *fpwcache_init(transcache *transcache)
+ * FPW cache is maintained jointly by PARSER and write thread, needs locking
+ */
+HTAB* fpwcache_init(transcache* transcache)
 {
-    HTAB *result = NULL;
+    HTAB*   result = NULL;
     HASHCTL hashCtl = {'\0'};
 
     transcache->fpwtupleslist = NULL;
@@ -27,24 +27,20 @@ HTAB *fpwcache_init(transcache *transcache)
     hashCtl.keysize = sizeof(ReorderBufferFPWKey);
     hashCtl.entrysize = sizeof(ReorderBufferFPWEntry);
 
-    result = hash_create("HASH_FPW_TUPLE",
-                          128,
-                         &hashCtl,
-                          HASH_ELEM | HASH_BLOBS);
+    result = hash_create("HASH_FPW_TUPLE", 128, &hashCtl, HASH_ELEM | HASH_BLOBS);
 
     return result;
 }
 
-/* 该函数中, 所有指针都是malloc的, 因此调用完该函数后, 应释放无用的入参 */
-void fpwcache_add(transcache *transcache,
-                            ReorderBufferFPWKey *key,
-                            ReorderBufferFPWEntry *entry)
+/* In this function, all pointers are malloc'd, so after calling this function, unused input
+ * parameters should be freed */
+void fpwcache_add(transcache* transcache, ReorderBufferFPWKey* key, ReorderBufferFPWEntry* entry)
 {
-    bool find = false;
-    ReorderBufferFPWKey nodekey = { 0 };
-    ReorderBufferFPWEntry *search_result = NULL;
-    ReorderBufferFPWNode *tuplenode = rmalloc1(sizeof(ReorderBufferFPWNode));
-    if(NULL == tuplenode)
+    bool                   find = false;
+    ReorderBufferFPWKey    nodekey = {0};
+    ReorderBufferFPWEntry* search_result = NULL;
+    ReorderBufferFPWNode*  tuplenode = rmalloc1(sizeof(ReorderBufferFPWNode));
+    if (NULL == tuplenode)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -54,27 +50,24 @@ void fpwcache_add(transcache *transcache,
     nodekey.itemoffset = key->itemoffset;
     nodekey.relfilenode = key->relfilenode;
 
-    /* 设置key信息 */
+    /* Set key information */
     rmemcpy1(&tuplenode->key, 0, &nodekey, sizeof(ReorderBufferFPWKey));
     rmemcpy1(&tuplenode->key, 0, &nodekey, sizeof(ReorderBufferFPWKey));
     tuplenode->lsn = entry->lsn;
 
-    elog(RLOG_DEBUG, "add2fpwcache relfilenode:%u, %u. %u, lsn:%X/%X",
-                    nodekey.relfilenode,
-                    nodekey.blcknum,
-                    nodekey.itemoffset,
-                    (uint32)(entry->lsn>>32), (uint32)(entry->lsn));
+    elog(RLOG_DEBUG, "add2fpwcache relfilenode:%u, %u. %u, lsn:%X/%X", nodekey.relfilenode,
+         nodekey.blcknum, nodekey.itemoffset, (uint32)(entry->lsn >> 32), (uint32)(entry->lsn));
 
     search_result = hash_search(transcache->by_fpwtuples, key, HASH_ENTER, &find);
     if (find)
     {
-        /* 做更新操作, 只需要更新len, lsn, data*/
-        if(search_result->len < entry->len)
+        /* Update operation, only need to update len, lsn, data*/
+        if (search_result->len < entry->len)
         {
             rfree(search_result->data);
             search_result->data = NULL;
             search_result->data = rmalloc0(entry->len);
-            if(NULL == search_result->data)
+            if (NULL == search_result->data)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
@@ -85,21 +78,21 @@ void fpwcache_add(transcache *transcache,
             rmemset0(search_result->data, 0, 0, search_result->len);
         }
 
-        /* 值复制 */
+        /* Value copy */
         search_result->len = entry->len;
         search_result->lsn = entry->lsn;
         rmemcpy0(search_result->data, 0, entry->data, entry->len);
     }
     else
     {
-        /* 插入操作 */
+        /* Insert operation */
         search_result->blcknum = key->blcknum;
         search_result->itemoffset = key->itemoffset;
         search_result->relfilenode = key->relfilenode;
         search_result->lsn = entry->lsn;
         search_result->len = entry->len;
         search_result->data = rmalloc0(entry->len);
-        if(NULL == search_result->data)
+        if (NULL == search_result->data)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
@@ -109,49 +102,47 @@ void fpwcache_add(transcache *transcache,
     transcache->fpwtupleslist = lappend(transcache->fpwtupleslist, tuplenode);
 }
 
-/* 删除 */
-static void fpwcache_removebyredolsn(transcache *transcache, XLogRecPtr redolsn)
+/* Delete */
+static void fpwcache_removebyredolsn(transcache* transcache, XLogRecPtr redolsn)
 {
-    ListCell* lc = NULL;
-    List* newlist = NULL;
-    ReorderBufferFPWNode *tuplenode = NULL;
-    ReorderBufferFPWEntry *fpwentry = NULL;
+    ListCell*              lc = NULL;
+    List*                  newlist = NULL;
+    ReorderBufferFPWNode*  tuplenode = NULL;
+    ReorderBufferFPWEntry* fpwentry = NULL;
 
-    elog(RLOG_DEBUG, "fpwcache_removebyredolsn, redolsn:%X/%X",
-                        (uint32)(redolsn>>32), (uint32)redolsn);
+    elog(RLOG_DEBUG, "fpwcache_removebyredolsn, redolsn:%X/%X", (uint32)(redolsn >> 32),
+         (uint32)redolsn);
 
-    foreach(lc, transcache->fpwtupleslist)
+    foreach (lc, transcache->fpwtupleslist)
     {
-        tuplenode = (ReorderBufferFPWNode *)lfirst(lc);
-        if(tuplenode->lsn < redolsn)
+        tuplenode = (ReorderBufferFPWNode*)lfirst(lc);
+        if (tuplenode->lsn < redolsn)
         {
             fpwentry = hash_search(transcache->by_fpwtuples, &tuplenode->key, HASH_FIND, NULL);
-            if(NULL != fpwentry)
+            if (NULL != fpwentry)
             {
-                if(fpwentry->lsn < redolsn)
+                if (fpwentry->lsn < redolsn)
                 {
-                    if(NULL != fpwentry->data)
+                    if (NULL != fpwentry->data)
                     {
                         rfree(fpwentry->data);
                     }
 
-                    elog(RLOG_DEBUG, "removefromfpwcache relfilenode:%u, %u. %u, lsn:%X/%X, redolsn:%X/%X",
-                                    tuplenode->key.relfilenode,
-                                    tuplenode->key.blcknum,
-                                    tuplenode->key.itemoffset,
-                                    (uint32)(tuplenode->lsn>>32), (uint32)tuplenode->lsn,
-                                    (uint32)(redolsn>>32), (uint32)redolsn);
+                    elog(RLOG_DEBUG,
+                         "removefromfpwcache relfilenode:%u, %u. %u, lsn:%X/%X, redolsn:%X/%X",
+                         tuplenode->key.relfilenode, tuplenode->key.blcknum,
+                         tuplenode->key.itemoffset, (uint32)(tuplenode->lsn >> 32),
+                         (uint32)tuplenode->lsn, (uint32)(redolsn >> 32), (uint32)redolsn);
                     hash_search(transcache->by_fpwtuples, &tuplenode->key, HASH_REMOVE, NULL);
                 }
             }
             else
             {
-                elog(RLOG_DEBUG, "removefromfpwcache relfilenode NULL:%u, %u. %u,lsn:%X/%X, redolsn:%X/%X",
-                                    tuplenode->key.relfilenode,
-                                    tuplenode->key.blcknum,
-                                    tuplenode->key.itemoffset,
-                                    (uint32)(tuplenode->lsn>>32), (uint32)tuplenode->lsn,
-                                    (uint32)(redolsn>>32), (uint32)redolsn);
+                elog(RLOG_DEBUG,
+                     "removefromfpwcache relfilenode NULL:%u, %u. %u,lsn:%X/%X, redolsn:%X/%X",
+                     tuplenode->key.relfilenode, tuplenode->key.blcknum, tuplenode->key.itemoffset,
+                     (uint32)(tuplenode->lsn >> 32), (uint32)tuplenode->lsn,
+                     (uint32)(redolsn >> 32), (uint32)redolsn);
             }
 
             rfree(tuplenode);
@@ -159,7 +150,6 @@ static void fpwcache_removebyredolsn(transcache *transcache, XLogRecPtr redolsn)
         }
         else
         {
-            
         }
 
         newlist = lappend(newlist, tuplenode);
@@ -170,19 +160,19 @@ static void fpwcache_removebyredolsn(transcache *transcache, XLogRecPtr redolsn)
     return;
 }
 
-/* 遍历transcache->chkpts查看小于restartlsn清理fpw并更新redo */
-void fpwcache_calcredolsnbyrestartlsn(transcache *transcache,
-                                            XLogRecPtr restartlsn,
-                                            XLogRecPtr* redolsn)
+/* Traverse transcache->chkpts to check less than restartlsn, clean up fpw and update redo */
+void fpwcache_calcredolsnbyrestartlsn(transcache* transcache, XLogRecPtr restartlsn,
+                                      XLogRecPtr* redolsn)
 {
-    XLogRecPtr curredolsn = InvalidXLogRecPtr;
-    checkpointnode* chkptnode = NULL;                /* 大于 restartlsn 的数据 */
-    checkpointnode* chkptnodeprev = NULL;            /* 小于 restartlsn 的数据 */
+    XLogRecPtr      curredolsn = InvalidXLogRecPtr;
+    checkpointnode* chkptnode = NULL;     /* Data greater than restartlsn */
+    checkpointnode* chkptnodeprev = NULL; /* Data less than restartlsn */
 
     curredolsn = *redolsn;
-    for(chkptnode = chkptnodeprev = transcache->chkpts->head; NULL != chkptnode; chkptnode= chkptnode->next)
+    for (chkptnode = chkptnodeprev = transcache->chkpts->head; NULL != chkptnode;
+         chkptnode = chkptnode->next)
     {
-        if(restartlsn > chkptnode->redolsn)
+        if (restartlsn > chkptnode->redolsn)
         {
             chkptnodeprev = chkptnode;
             continue;
@@ -190,34 +180,34 @@ void fpwcache_calcredolsnbyrestartlsn(transcache *transcache,
         break;
     }
 
-    /* 首个，不处理 */
-    if(chkptnode == chkptnodeprev)
+    /* First one, not processed */
+    if (chkptnode == chkptnodeprev)
     {
         return;
     }
 
-    /* 是否与记录的相同，相同则不处理 */
-    if(curredolsn == chkptnodeprev->redolsn)
+    /* Check if same as recorded, if same not processed */
+    if (curredolsn == chkptnodeprev->redolsn)
     {
         return;
     }
 
-    /* 清理 chkpts 数据 */
-    /* 将 prev 之前的数据从数据中摘除 */
+    /* Clean up chkpts data */
+    /* Remove data before prev from data */
     chkptnode = transcache->chkpts->head;
     transcache->chkpts->head = chkptnodeprev;
     chkptnodeprev->prev->next = NULL;
     chkptnodeprev->prev = NULL;
 
-    for(chkptnodeprev = chkptnode; NULL != chkptnodeprev; chkptnodeprev = chkptnode)
+    for (chkptnodeprev = chkptnode; NULL != chkptnodeprev; chkptnodeprev = chkptnode)
     {
         chkptnode = chkptnodeprev->next;
         rfree(chkptnodeprev);
     }
 
-    /* 清理fpw数据  */
+    /* Clean up fpw data */
     fpwcache_removebyredolsn(transcache, transcache->chkpts->head->redolsn);
 
-    /* 设置新的 redolsn */
+    /* Set new redolsn */
     *redolsn = transcache->chkpts->head->redolsn;
 }

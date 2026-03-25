@@ -6,384 +6,383 @@ typedef int8_t bool;
 #endif
 
 #ifndef true
-#define true	((bool) 1)
+#define true ((bool)1)
 #endif
 
 #ifndef false
-#define false	((bool) 0)
+#define false ((bool)0)
 #endif
 
-typedef unsigned int                    Oid;
-
+typedef unsigned int Oid;
 
 #include "list_func.h"
 
 typedef enum XSYNCH_CMDTAG
 {
-    T_XSYNCH_NOP                            = 0,
-    T_XSYNCH_IDENTITYCMD                    ,
-    T_XSYNCH_CREATECMD                      ,
-    T_XSYNCH_ALTERCMD                       ,
-    T_XSYNCH_REMOVECMD                      ,
-    T_XSYNCH_DROPCMD                        ,
-    T_XSYNCH_INITCMD                        ,
-    T_XSYNCH_EDITCMD                        ,
-    T_XSYNCH_STARTCMD                       ,
-    T_XSYNCH_STOPCMD                        ,
-    T_XSYNCH_RELOADCMD                      ,
-    T_XSYNCH_INFOCMD                        ,
-    T_XSYNCH_WATCHCMD                       ,
-    T_XSYNCH_CFGfILECMD                     ,
-    T_XSYNCH_REFRESHCMD                     ,
-    T_XSYNCH_LISTCMD                        ,
+    T_XSYNCH_NOP = 0,
+    T_XSYNCH_IDENTITYCMD,
+    T_XSYNCH_CREATECMD,
+    T_XSYNCH_ALTERCMD,
+    T_XSYNCH_REMOVECMD,
+    T_XSYNCH_DROPCMD,
+    T_XSYNCH_INITCMD,
+    T_XSYNCH_EDITCMD,
+    T_XSYNCH_STARTCMD,
+    T_XSYNCH_STOPCMD,
+    T_XSYNCH_RELOADCMD,
+    T_XSYNCH_INFOCMD,
+    T_XSYNCH_WATCHCMD,
+    T_XSYNCH_CFGfILECMD,
+    T_XSYNCH_REFRESHCMD,
+    T_XSYNCH_LISTCMD,
 
-    /* 在此前添加 */
-    T_XSYNCH_MAX                            
+    /* add before this */
+    T_XSYNCH_MAX
 } xsynch_cmdtag;
 
 typedef struct XSYNCH_CMD
 {
-    xsynch_cmdtag                          type;
+    xsynch_cmdtag type;
 } xsynch_cmd;
 
 typedef enum XSYNCH_JOBKIND
 {
-    XSYNCH_JOBKIND_NOP                      = 0,
-    XSYNCH_JOBKIND_CAPTURE                  ,
-    XSYNCH_JOBKIND_INTEGRATE                ,
-    XSYNCH_JOBKIND_PGRECEIVELOG             ,
-    XSYNCH_JOBKIND_PROCESS                  ,
+    XSYNCH_JOBKIND_NOP = 0,
+    XSYNCH_JOBKIND_CAPTURE,
+    XSYNCH_JOBKIND_INTEGRATE,
+    XSYNCH_JOBKIND_PGRECEIVELOG,
+    XSYNCH_JOBKIND_PROCESS,
 
-    /*---------有具体业务类型的在此上添加 ------*/
+    /*---------add specific business types above ------*/
 
-    /* 对 start/stop/info/watch 起作用 */
-    XSYNCH_JOBKIND_ALL                      ,
+    /* applies to start/stop/info/watch */
+    XSYNCH_JOBKIND_ALL,
 
     /* xmanager */
-    XSYNCH_JOBKIND_MANAGER                  ,
+    XSYNCH_JOBKIND_MANAGER,
 
     /* XSCSCI */
-    XSYNCH_JOBKIND_XSCSCI                   ,
+    XSYNCH_JOBKIND_XSCSCI,
 
-    /* 在此之前添加 */
+    /* add before this */
     XSYNCH_JOBKIND_MAX
 } xsynch_jobkind;
 
 typedef enum XSYNCH_ACTION
 {
-    XSYNCH_ACTION_NOP                        = 0,
-    XSYNCH_ACTION_ADD                       ,
-    XSYNCH_ACTION_REMOVE                    ,
+    XSYNCH_ACTION_NOP = 0,
+    XSYNCH_ACTION_ADD,
+    XSYNCH_ACTION_REMOVE,
 
-    /* 在此前添加 */
+    /* add before this */
     XSYNCH_ACTION_MAX
 } xsynch_action;
 
 typedef struct XSYNCH_RANGEVAR
 {
-    char*                                   schema;
-    char*                                   table;
+    char* schema;
+    char* table;
 } xsynch_rangevar;
 
 typedef struct XSYNCH_JOB
 {
-    xsynch_jobkind                          kind;
-    char*                                   jobname;
+    xsynch_jobkind kind;
+    char*          jobname;
 } xsynch_job;
 
-/* 创建指定作业类型 */
+/* create specified job type */
 typedef struct XSYNCH_IDENTITYCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
     /*
-     * 暂无用途
+     * no current use
      */
-    /* 用户名 */
-    char*                                   user;
+    /* username */
+    char* user;
 
-    /* 密码 */
-    char*                                   passwd;
+    /* password */
+    char* passwd;
 
-    /* 作业名称 */
-    char*                                   jobname;
+    /* job name */
+    char* jobname;
 } xsynch_identitycmd;
 
 typedef struct XSYNCH_CREATECMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 作业名称 */
-    char*                                   name;
+    /* job name */
+    char* name;
 
     /* xsynch_job */
-    List*                                   job;
+    List* job;
 } xsynch_createcmd;
 
-/* 修改 process 作业的成员 */
+/* modify process job members */
 typedef struct XSYNCH_ALTERCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 操作类型, add/remove */
-    xsynch_action                           action;
+    /* operation type, add/remove */
+    xsynch_action action;
 
-    /* 名称 */
-    char*                                   name;
+    /* name */
+    char* name;
 
     /* xsynch_job */
-    List*                                   job;
+    List* job;
 } xsynch_altercmd;
 
-/* 删除指定作业类型的配置文件 */
+/* delete config file for specified job type */
 typedef struct XSYNCH_REMOVECMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 作业名称 */
-    char*                                   name;
+    /* job name */
+    char* name;
 } xsynch_removecmd;
 
-/* 删除指定作业 */
+/* drop specified job */
 typedef struct XSYNCH_DROPCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 作业名称 */
-    char*                                   name;
+    /* job name */
+    char* name;
 } xsynch_dropcmd;
 
-/* 初始化指定作业 */
+/* initialize specified job */
 typedef struct XSYNCH_INITCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 作业名称 */
-    char*                                   name;
-}  xsynch_initcmd;
+    /* job name */
+    char* name;
+} xsynch_initcmd;
 
-/* 编辑指定作业配置文件 */
+/* edit specified job config file */
 typedef struct XSYNCH_EDITCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 作业名称 */
-    char*                                   name;
-}  xsynch_editcmd;
+    /* job name */
+    char* name;
+} xsynch_editcmd;
 
-/* 启动指定作业 */
+/* start specified job */
 typedef struct XSYNCH_STARTCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 作业名称 */
-    char*                                   name;
-}  xsynch_startcmd;
+    /* job name */
+    char* name;
+} xsynch_startcmd;
 
-/* 停止指定作业 */
+/* stop specified job */
 typedef struct XSYNCH_STOPCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 作业名称 */
-    char*                                   name;
-}  xsynch_stopcmd;
+    /* job name */
+    char* name;
+} xsynch_stopcmd;
 
-/* 重载指定作业的配置文件 */
+/* reload config file for specified job */
 typedef struct XSYNCH_RELOADCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 作业名称 */
-    char*                                   name;
-}  xsynch_reloadcmd;
+    /* job name */
+    char* name;
+} xsynch_reloadcmd;
 
-/* 查看指定作业的基础信息 */
+/* view basic info of specified job */
 typedef struct XSYNCH_INFOCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 作业名称 */
-    char*                                   name;
-}  xsynch_infocmd;
+    /* job name */
+    char* name;
+} xsynch_infocmd;
 
-/* 查看指定作业的基础信息 */
+/* view basic info of specified job */
 typedef struct XSYNCH_LISTCMD
 {
-    xsynch_cmd                              type;
-}  xsynch_listcmd;
+    xsynch_cmd type;
+} xsynch_listcmd;
 
-/* 定时返回指定作业的信息 */
+/* periodically return info of specified job */
 typedef struct XSYNCH_WATCHCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 间隔, 单位秒 */
-    int                                     interval;
+    /* interval, unit: seconds */
+    int interval;
 
-    /* 作业名称 */
-    char*                                   name;
+    /* job name */
+    char* name;
 } xsynch_watchcmd;
 
-/* 发送配置文件信息 */
+/* send config file information */
 typedef struct XSYNCH_CFGFILECMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* 作业类型 */
-    xsynch_jobkind                          kind;
+    /* job type */
+    xsynch_jobkind kind;
 
-    /* 作业名称 */
-    char*                                   name;
+    /* job name */
+    char* name;
 
-    /* 文件名称 */
-    char*                                   filename;
+    /* file name */
+    char* filename;
 
-    /* 文件内容 */
-    int                                     datalen;
+    /* file content */
+    int datalen;
 
-    /* 文件内容 */
-    char*                                   data;
+    /* file content */
+    char* data;
 } xsynch_cfgfilecmd;
 
-/* refresh 命令 */
+/* refresh command */
 typedef struct XSYNCH_REFRESHCMD
 {
-    xsynch_cmd                              type;
+    xsynch_cmd type;
 
-    /* capture 名称 */
-    char*                                   name;
+    /* capture name */
+    char* name;
 
     /* xsynch_rangevar */
-    List*                                   tables;
+    List* tables;
 } xsynch_refreshcmd;
 
-#define XSYNCH_NEWCMD(size, tag) \
-({ \
-    xsynch_cmd *_result = NULL; \
-    _result = (xsynch_cmd *) malloc(size); \
-    _result->type = (tag); \
-    _result; \
-})
+#define XSYNCH_NEWCMD(size, tag)             \
+    ({                                       \
+        xsynch_cmd* _result = NULL;          \
+        _result = (xsynch_cmd*)malloc(size); \
+        _result->type = (tag);               \
+        _result;                             \
+    })
 
-#define XSYNCH_MAKECMD(_type_)                     ((struct _type_ *) XSYNCH_NEWCMD(sizeof(struct _type_),T_##_type_))
+#define XSYNCH_MAKECMD(_type_) ((struct _type_*)XSYNCH_NEWCMD(sizeof(struct _type_), T_##_type_))
 
-/* key/value 数值 */
+/* key/value pair */
 typedef struct XSYNCHPAIR
 {
-    int                 keylen;
-    int                 valuelen;
-    char*               key;
+    int   keylen;
+    int   valuelen;
+    char* key;
 
-    /* value 可能为空, 当 value 为空时, 说明未取到值或没有此列信息 */
-    char*               value;
+    /* value may be empty, when value is empty, it means value not found or no such column info */
+    char* value;
 } xsynchpair;
 
-/* 行数值 */
+/* row values */
 typedef struct XSYNCHROW
 {
-    int                 columncnt;
-    xsynchpair*         columns;
+    int         columncnt;
+    xsynchpair* columns;
 } xsynchrow;
 
-/* 连接状态 */
+/* connection status */
 typedef enum XSYNCHCONN_STATUS
 {
-    XSYNCHCONN_STATUS_NOP                   = 0x00,
+    XSYNCHCONN_STATUS_NOP = 0x00,
 
-    /* 连接中 */
-    XSYNCHCONN_STATUS_INPROCESS             ,
+    /* connecting */
+    XSYNCHCONN_STATUS_INPROCESS,
 
-    /* 链接上 */
-    XSYNCHCONN_STATUS_OK                    
+    /* connected */
+    XSYNCHCONN_STATUS_OK
 } xsynchconn_status;
 
-typedef struct XSYNCH_CONN           xsynchconn;
+typedef struct XSYNCH_CONN xsynchconn;
 
-/* 初始化xsynch_result */
+/* initialize xsynch_result */
 void* XsynchResultInit(void);
 
-/* 重置xsynch_result内容 */
+/* reset xsynch_result content */
 void XsynchResultReset(void* in_result);
 
-/* 释放pari资源 */
+/* free pair resources */
 xsynchrow* XsynchRowInit(int rowcnt);
 
-/* 初始化xsynchpair */
+/* initialize xsynchpair */
 xsynchpair* XsynchPairInit(int colcnt);
 
-/* 释放rows资源 */
+/* free rows resources */
 void XsynchRowFree(int rowcnt, void* in_rows);
 
-/* 释放pair资源 */
+/* free pair resources */
 void XsynchPairFree(int colcnt, void* in_col);
 
-/* 设置连接参数 */
+/* set connection parameters */
 xsynchconn* XSynchSetParam(char* connstr);
 
-/* 链接 xmanager */
+/* connect to xmanager */
 bool XSynchConn(xsynchconn* conn);
 
-/* 测试 xmanager 是否启动 */
+/* test if xmanager is started */
 bool XSynchPing(xsynchconn* conn);
 
-/* 发送命令 */
+/* send command */
 bool XSynchSendCmd(xsynchconn* conn, xsynch_cmd* cmd);
 
-/* 获取返回结果 */
+/* get return result */
 void XSynchGetResult(xsynchconn* conn, int* rownumber, xsynchrow** rows);
 
-/* 清理返回结果 */
+/* clean return result */
 void XSynchClear(xsynchconn* conn);
 
 void XSynchGetErrmsg(xsynchconn* conn);
 
-/* 清理 xsynchconn */
+/* clean xsynchconn */
 void XSynchFinish(xsynchconn* conn);
 
 void xsynch_rangvar_destroy(xsynch_rangevar* rs);
 
-xsynch_rangevar *xsynch_rangvar_init(char* schema, char* table);
+xsynch_rangevar* xsynch_rangvar_init(char* schema, char* table);
 
-void xsynch_rangvar_free(xsynch_rangevar *rangevar);
+void xsynch_rangvar_free(xsynch_rangevar* rangevar);
 
-xsynch_job *xsynch_job_init(int jobkind, char* jobname);
+xsynch_job* xsynch_job_init(int jobkind, char* jobname);
 
 void xsynch_job_free(xsynch_job* job);
 

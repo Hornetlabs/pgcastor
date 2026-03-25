@@ -1,6 +1,6 @@
 /*
- * 组装待发送数据
-*/
+ * assemble data to send
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,23 +16,23 @@
 
 typedef struct XSYNCH_FEBUILDMSG_ASSEMBLE
 {
-    xsynch_cmdtag           cmd;
-    char*                   desc;
+    xsynch_cmdtag cmd;
+    char*         desc;
 
     bool (*assemble)(xsynch_cmd* cmd, xsynch_exbuffer msg);
 } xsynch_febuildmsg_assemble;
 
-/* 身份标识消息 */
+/* identity message */
 static bool xsynch_febuildmsg_identitycmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_IDENTITYCMD;
-    char* cptr = NULL;
+    int                 msglen = 0;
+    int                 msgjobtype = 0;
+    int                 msgjobnamelen = 0;
+    int                 msgtype = T_XSYNCH_IDENTITYCMD;
+    char*               cptr = NULL;
     xsynch_identitycmd* icmd = (xsynch_identitycmd*)cmd;
 
-    /* 字节序转换 */
+    /* byte order conversion */
     msglen = 8;
     msgtype = r_hton32(msgtype);
     msglen += 4;
@@ -57,32 +57,32 @@ static bool xsynch_febuildmsg_identitycmdassemble(xsynch_cmd* cmd, xsynch_exbuff
         return false;
     }
 
-    /* 
-     * 将数据加入到待发送缓存中
+    /*
+     * add data to send buffer
      */
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -91,12 +91,12 @@ static bool xsynch_febuildmsg_identitycmdassemble(xsynch_cmd* cmd, xsynch_exbuff
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, icmd->jobname, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -105,18 +105,18 @@ static bool xsynch_febuildmsg_identitycmdassemble(xsynch_cmd* cmd, xsynch_exbuff
     return true;
 }
 
-/* create标识消息 */
+/* create identifier message */
 static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int ivalue = 0;
-    int valuelen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_CREATECMD;
-    char* cptr = NULL;
-    ListCell* lc = NULL;
-    xsynch_job* job = NULL;
+    int               msglen = 0;
+    int               ivalue = 0;
+    int               valuelen = 0;
+    int               msgjobtype = 0;
+    int               msgjobnamelen = 0;
+    int               msgtype = T_XSYNCH_CREATECMD;
+    char*             cptr = NULL;
+    ListCell*         lc = NULL;
+    xsynch_job*       job = NULL;
     xsynch_createcmd* createcmd = (xsynch_createcmd*)cmd;
 
     msglen = 4 + 4;
@@ -144,7 +144,7 @@ static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
         /* job cnt */
         msglen += 4;
 
-        foreach(lc, createcmd->job)
+        foreach (lc, createcmd->job)
         {
             job = (xsynch_job*)lfirst(lc);
 
@@ -161,27 +161,27 @@ static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -190,12 +190,12 @@ static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, createcmd->name, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     ivalue = msgjobnamelen;
     ivalue = r_hton32(ivalue);
@@ -213,19 +213,19 @@ static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
         msg->len += 4;
         cptr += 4;
 
-        foreach(lc, createcmd->job)
+        foreach (lc, createcmd->job)
         {
             job = (xsynch_job*)lfirst(lc);
 
             /* job type */
-            ivalue  = job->kind;
+            ivalue = job->kind;
             ivalue = r_hton32(ivalue);
             memcpy(cptr, &ivalue, 4);
             msg->len += 4;
             cptr += 4;
 
             /* jobnamelen */
-            valuelen  = strlen(job->jobname);
+            valuelen = strlen(job->jobname);
             if (0 == valuelen)
             {
                 memcpy(cptr, &msgjobnamelen, 4);
@@ -233,14 +233,14 @@ static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
                 cptr += 4;
                 continue;
             }
-            valuelen  = strlen(job->jobname);
+            valuelen = strlen(job->jobname);
             valuelen = r_hton32(valuelen);
             memcpy(cptr, &valuelen, 4);
             msg->len += 4;
             cptr += 4;
 
             /* jobname */
-            valuelen  = strlen(job->jobname);
+            valuelen = strlen(job->jobname);
             memcpy(cptr, job->jobname, valuelen);
             msg->len += valuelen;
             cptr += valuelen;
@@ -250,19 +250,19 @@ static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
     return true;
 }
 
-/* alter标识消息 */
+/* alter identifier message */
 static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int8 action = 0;
-    int msglen = 0;
-    int ivalue = 0;
-    int valuelen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_ALTERCMD;
-    char* cptr = NULL;
-    ListCell* lc = NULL;
-    xsynch_job* job = NULL;
+    int8             action = 0;
+    int              msglen = 0;
+    int              ivalue = 0;
+    int              valuelen = 0;
+    int              msgjobtype = 0;
+    int              msgjobnamelen = 0;
+    int              msgtype = T_XSYNCH_ALTERCMD;
+    char*            cptr = NULL;
+    ListCell*        lc = NULL;
+    xsynch_job*      job = NULL;
     xsynch_altercmd* altercmd = (xsynch_altercmd*)cmd;
 
     msglen = 4 + 4;
@@ -292,7 +292,7 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
         /* job cnt */
         msglen += 4;
 
-        foreach(lc, altercmd->job)
+        foreach (lc, altercmd->job)
         {
             job = (xsynch_job*)lfirst(lc);
 
@@ -309,27 +309,27 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -350,7 +350,7 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
     msg->len += msgjobnamelen;
     cptr += msgjobnamelen;
 
-    /* 操作类型 */
+    /* operation type */
     memcpy(cptr, &action, 1);
     msg->len += 1;
     cptr += 1;
@@ -358,25 +358,25 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
     if (NULL != altercmd->job)
     {
         /* job cnt */
-        valuelen  = altercmd->job->length;
+        valuelen = altercmd->job->length;
         valuelen = r_hton32(valuelen);
         memcpy(cptr, &valuelen, 4);
         msg->len += 4;
         cptr += 4;
 
-        foreach(lc, altercmd->job)
+        foreach (lc, altercmd->job)
         {
             job = (xsynch_job*)lfirst(lc);
 
             /* job cnt */
-            ivalue  = job->kind;
+            ivalue = job->kind;
             ivalue = r_hton32(ivalue);
             memcpy(cptr, &ivalue, 4);
             msg->len += 4;
             cptr += 4;
 
             /* jobtype */
-            valuelen  = strlen(job->jobname);
+            valuelen = strlen(job->jobname);
             if (0 == valuelen)
             {
                 memcpy(cptr, &msgjobnamelen, 4);
@@ -392,7 +392,7 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
             cptr += 4;
 
             /* jobname */
-            valuelen  = strlen(job->jobname);
+            valuelen = strlen(job->jobname);
             memcpy(cptr, job->jobname, valuelen);
             msg->len += valuelen;
             cptr += valuelen;
@@ -402,14 +402,14 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
     return true;
 }
 
-/* remove标识消息 */
+/* remove identifier message */
 static bool xsynch_febuildmsg_removecmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_REMOVECMD;
-    char* cptr = NULL;
+    int               msglen = 0;
+    int               msgjobtype = 0;
+    int               msgjobnamelen = 0;
+    int               msgtype = T_XSYNCH_REMOVECMD;
+    char*             cptr = NULL;
     xsynch_removecmd* removecmd = (xsynch_removecmd*)cmd;
 
     msglen = 4 + 4;
@@ -438,27 +438,27 @@ static bool xsynch_febuildmsg_removecmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -467,12 +467,12 @@ static bool xsynch_febuildmsg_removecmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, removecmd->name, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -481,14 +481,14 @@ static bool xsynch_febuildmsg_removecmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
     return true;
 }
 
-/* drop标识消息 */
+/* drop identifier message */
 static bool xsynch_febuildmsg_dropcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_DROPCMD;
-    char* cptr = NULL;
+    int             msglen = 0;
+    int             msgjobtype = 0;
+    int             msgjobnamelen = 0;
+    int             msgtype = T_XSYNCH_DROPCMD;
+    char*           cptr = NULL;
     xsynch_dropcmd* dropcmd = (xsynch_dropcmd*)cmd;
 
     msglen = 4 + 4;
@@ -517,27 +517,27 @@ static bool xsynch_febuildmsg_dropcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -546,12 +546,12 @@ static bool xsynch_febuildmsg_dropcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, dropcmd->name, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -560,14 +560,14 @@ static bool xsynch_febuildmsg_dropcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     return true;
 }
 
-/* init标识消息 */
+/* init identifier message */
 static bool xsynch_febuildmsg_initcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_INITCMD;
-    char* cptr = NULL;
+    int             msglen = 0;
+    int             msgjobtype = 0;
+    int             msgjobnamelen = 0;
+    int             msgtype = T_XSYNCH_INITCMD;
+    char*           cptr = NULL;
     xsynch_initcmd* initcmd = (xsynch_initcmd*)cmd;
 
     msglen = 4 + 4;
@@ -596,27 +596,27 @@ static bool xsynch_febuildmsg_initcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -625,12 +625,12 @@ static bool xsynch_febuildmsg_initcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, initcmd->name, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -639,14 +639,14 @@ static bool xsynch_febuildmsg_initcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     return true;
 }
 
-/* edit标识消息 */
+/* edit identifier message */
 static bool xsynch_febuildmsg_editcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_EDITCMD;
-    char* cptr = NULL;
+    int             msglen = 0;
+    int             msgjobtype = 0;
+    int             msgjobnamelen = 0;
+    int             msgtype = T_XSYNCH_EDITCMD;
+    char*           cptr = NULL;
     xsynch_editcmd* editcmd = (xsynch_editcmd*)cmd;
 
     msglen = 4 + 4;
@@ -675,27 +675,27 @@ static bool xsynch_febuildmsg_editcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -704,12 +704,12 @@ static bool xsynch_febuildmsg_editcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, editcmd->name, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -718,14 +718,14 @@ static bool xsynch_febuildmsg_editcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     return true;
 }
 
-/* start标识消息 */
+/* start identifier message */
 static bool xsynch_febuildmsg_startcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_STARTCMD;
-    char* cptr = NULL;
+    int              msglen = 0;
+    int              msgjobtype = 0;
+    int              msgjobnamelen = 0;
+    int              msgtype = T_XSYNCH_STARTCMD;
+    char*            cptr = NULL;
     xsynch_startcmd* startcmd = (xsynch_startcmd*)cmd;
 
     msglen = 4 + 4;
@@ -754,27 +754,27 @@ static bool xsynch_febuildmsg_startcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -783,12 +783,12 @@ static bool xsynch_febuildmsg_startcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, startcmd->name, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -797,14 +797,14 @@ static bool xsynch_febuildmsg_startcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
     return true;
 }
 
-/* stop标识消息 */
+/* stop identifier message */
 static bool xsynch_febuildmsg_stopcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_STOPCMD;
-    char* cptr = NULL;
+    int             msglen = 0;
+    int             msgjobtype = 0;
+    int             msgjobnamelen = 0;
+    int             msgtype = T_XSYNCH_STOPCMD;
+    char*           cptr = NULL;
     xsynch_stopcmd* stopcmd = (xsynch_stopcmd*)cmd;
 
     msglen = 4 + 4;
@@ -833,27 +833,27 @@ static bool xsynch_febuildmsg_stopcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -862,12 +862,12 @@ static bool xsynch_febuildmsg_stopcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, stopcmd->name, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -876,14 +876,14 @@ static bool xsynch_febuildmsg_stopcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     return true;
 }
 
-/* reload标识消息 */
+/* reload identifier message */
 static bool xsynch_febuildmsg_reloadcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_RELOADCMD;
-    char* cptr = NULL;
+    int               msglen = 0;
+    int               msgjobtype = 0;
+    int               msgjobnamelen = 0;
+    int               msgtype = T_XSYNCH_RELOADCMD;
+    char*             cptr = NULL;
     xsynch_reloadcmd* reloadcmd = (xsynch_reloadcmd*)cmd;
 
     msglen = 4 + 4;
@@ -912,27 +912,27 @@ static bool xsynch_febuildmsg_reloadcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -941,12 +941,12 @@ static bool xsynch_febuildmsg_reloadcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, reloadcmd->name, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -955,14 +955,14 @@ static bool xsynch_febuildmsg_reloadcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
     return true;
 }
 
-/* info标识消息 */
+/* info identifier message */
 static bool xsynch_febuildmsg_infocmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_INFOCMD;
-    char* cptr = NULL;
+    int             msglen = 0;
+    int             msgjobtype = 0;
+    int             msgjobnamelen = 0;
+    int             msgtype = T_XSYNCH_INFOCMD;
+    char*           cptr = NULL;
     xsynch_infocmd* infocmd = (xsynch_infocmd*)cmd;
 
     msglen = 4 + 4;
@@ -991,27 +991,27 @@ static bool xsynch_febuildmsg_infocmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -1020,12 +1020,12 @@ static bool xsynch_febuildmsg_infocmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, infocmd->name, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -1034,14 +1034,14 @@ static bool xsynch_febuildmsg_infocmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     return true;
 }
 
-/* watch标识消息 */
+/* watch identifier message */
 static bool xsynch_febuildmsg_watchcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgtype = T_XSYNCH_WATCHCMD;
-    char* cptr = NULL;
+    int              msglen = 0;
+    int              msgjobtype = 0;
+    int              msgjobnamelen = 0;
+    int              msgtype = T_XSYNCH_WATCHCMD;
+    char*            cptr = NULL;
     xsynch_watchcmd* watchcmd = (xsynch_watchcmd*)cmd;
 
     msglen = 4 + 4;
@@ -1070,27 +1070,27 @@ static bool xsynch_febuildmsg_watchcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业名称 */
+    /* job name */
     if (0 == msgjobnamelen)
     {
         memcpy(cptr, &msgjobnamelen, 4);
@@ -1099,12 +1099,12 @@ static bool xsynch_febuildmsg_watchcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
         return true;
     }
 
-    /* 先填充名称 */
+    /* fill name first */
     cptr += 4;
     memcpy(cptr, watchcmd->name, msgjobnamelen);
     msg->len += msgjobnamelen;
 
-    /* 再次填充长度 */
+    /* fill length again */
     cptr -= 4;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -1113,17 +1113,17 @@ static bool xsynch_febuildmsg_watchcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
     return true;
 }
 
-/* cfgfile标识消息 */
+/* cfgfile identifier message */
 static bool xsynch_febuildmsg_cfgfilecmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgjobtype = 0;
-    int msgjobnamelen = 0;
-    int msgfilenamelen = 0;
-    int msgtype = T_XSYNCH_CFGfILECMD;
-    int tmplen = 0;
-    int datalen = 0;
-    char* cptr = NULL;
+    int                msglen = 0;
+    int                msgjobtype = 0;
+    int                msgjobnamelen = 0;
+    int                msgfilenamelen = 0;
+    int                msgtype = T_XSYNCH_CFGfILECMD;
+    int                tmplen = 0;
+    int                datalen = 0;
+    char*              cptr = NULL;
     xsynch_cfgfilecmd* cfgfilecmd = (xsynch_cfgfilecmd*)cmd;
 
     msglen = 4 + 4;
@@ -1167,27 +1167,27 @@ static bool xsynch_febuildmsg_cfgfilecmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 作业类型 */
+    /* job type */
     memcpy(cptr, &msgjobtype, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* 先填充名称 */
+    /* fill name first */
     tmplen = msgjobnamelen;
     msgjobnamelen = r_hton32(msgjobnamelen);
     memcpy(cptr, &msgjobnamelen, 4);
@@ -1201,7 +1201,7 @@ static bool xsynch_febuildmsg_cfgfilecmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
         cptr += tmplen;
     }
 
-    /* 填充filename */
+    /* fill filename */
     tmplen = msgfilenamelen;
     msgfilenamelen = r_hton32(msgfilenamelen);
     memcpy(cptr, &msgfilenamelen, 4);
@@ -1215,7 +1215,7 @@ static bool xsynch_febuildmsg_cfgfilecmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
         cptr += tmplen;
     }
 
-    /* 填充data */
+    /* fill data */
     tmplen = datalen;
     datalen = r_hton32(datalen);
     memcpy(cptr, &datalen, 4);
@@ -1232,29 +1232,28 @@ static bool xsynch_febuildmsg_cfgfilecmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
     return true;
 }
 
-
-/* refresh消息 */
+/* refresh message */
 static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
     /*
      * msglen
      * crc32
      * cmdtype
-     * jobname 
-     * 行数
+     * jobname
+     * row count
      *  schema.table
      */
-    int ivalue                      = 0;
-    int msglen                      = 0;
-    char* cptr                      = NULL;
-    ListCell* lc                    = NULL;
-    xsynch_rangevar* rvar           = NULL;
-    xsynch_refreshcmd* refreshcmd   = NULL;
+    int                ivalue = 0;
+    int                msglen = 0;
+    char*              cptr = NULL;
+    ListCell*          lc = NULL;
+    xsynch_rangevar*   rvar = NULL;
+    xsynch_refreshcmd* refreshcmd = NULL;
 
     refreshcmd = (xsynch_refreshcmd*)cmd;
 
-    /* 算总长度 */
-    /* 总长度 + crc32 */
+    /* calculate total length */
+    /* total length + crc32 */
     msglen = 4 + 4;
 
     /* cmdtype */
@@ -1264,10 +1263,10 @@ static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
     msglen += 4;
     msglen += strlen(refreshcmd->name);
 
-    /* 总行数 */
+    /* total row count */
     msglen += 4;
 
-    foreach(lc, refreshcmd->tables)
+    foreach (lc, refreshcmd->tables)
     {
         rvar = (xsynch_rangevar*)lfirst(lc);
 
@@ -1280,28 +1279,28 @@ static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
         msglen += strlen(rvar->table);
     }
 
-    /* 申请空间 */
+    /* allocate space */
     msg->len = 0;
     if (false == xsynch_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
 
-    /* 填充数据 */
+    /* fill data */
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     ivalue = msglen;
     ivalue = r_hton32(ivalue);
     memcpy(cptr, &ivalue, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     ivalue = T_XSYNCH_REFRESHCMD;
     ivalue = r_hton32(ivalue);
     memcpy(cptr, &ivalue, 4);
@@ -1321,14 +1320,14 @@ static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
     cptr += ivalue;
     msg->len += ivalue;
 
-    /* 行数 */
+    /* row count */
     ivalue = refreshcmd->tables->length;
     ivalue = r_hton32(ivalue);
     memcpy(cptr, &ivalue, 4);
     msg->len += 4;
     cptr += 4;
 
-    foreach(lc, refreshcmd->tables)
+    foreach (lc, refreshcmd->tables)
     {
         rvar = (xsynch_rangevar*)lfirst(lc);
 
@@ -1360,11 +1359,11 @@ static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
     return true;
 }
 
-/* list消息 */
+/* list message */
 static bool xsynch_febuildmsg_listcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
-    int msglen = 0;
-    int msgtype = T_XSYNCH_LISTCMD;
+    int   msglen = 0;
+    int   msgtype = T_XSYNCH_LISTCMD;
     char* cptr = NULL;
 
     msglen = 4 + 4;
@@ -1378,123 +1377,52 @@ static bool xsynch_febuildmsg_listcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 
     cptr = msg->data + msg->len;
 
-    /* 总长度 */
+    /* total length */
     msglen = r_hton32(msglen);
     memcpy(cptr, &msglen, 4);
     msg->len += 4;
     cptr += 4;
 
-    /* crc, 暂时不用 */
+    /* crc, not used for now */
     msg->len += 4;
     cptr += 4;
 
-    /* 消息类型 */
+    /* message type */
     memcpy(cptr, &msgtype, 4);
     msg->len += 4;
     cptr += 4;
     return true;
 }
 
-static xsynch_febuildmsg_assemble m_cmd2msgmap[] =
-{
-    {
-        T_XSYNCH_NOP,
-        "unknown command",
-        NULL
-    },
-    {
-        T_XSYNCH_IDENTITYCMD,
-        "identity command",
-        xsynch_febuildmsg_identitycmdassemble
-    },
-    {
-        T_XSYNCH_CREATECMD,
-        "create command",
-        xsynch_febuildmsg_createcmdassemble
-    },
-    {
-        T_XSYNCH_ALTERCMD,
-        "alter command",
-        xsynch_febuildmsg_altercmdassemble
-    },
-    {
-        T_XSYNCH_REMOVECMD,
-        "remove command",
-        xsynch_febuildmsg_removecmdassemble
-    },
-    {
-        T_XSYNCH_DROPCMD,
-        "drop command",
-        xsynch_febuildmsg_dropcmdassemble
-    },
-    {
-        T_XSYNCH_INITCMD,
-        "init command",
-        xsynch_febuildmsg_initcmdassemble
-    },
-    {
-        T_XSYNCH_EDITCMD,
-        "edit command",
-        xsynch_febuildmsg_editcmdassemble
-    },
-    {
-        T_XSYNCH_STARTCMD,
-        "start command",
-        xsynch_febuildmsg_startcmdassemble
-    },
-    {
-        T_XSYNCH_STOPCMD,
-        "stop command",
-        xsynch_febuildmsg_stopcmdassemble
-    },
-    {
-        T_XSYNCH_RELOADCMD,
-        "reload command",
-        xsynch_febuildmsg_reloadcmdassemble
-    },
-    {
-        T_XSYNCH_INFOCMD,
-        "info command",
-        xsynch_febuildmsg_infocmdassemble
-    },
-    {
-        T_XSYNCH_WATCHCMD,
-        "watch command",
-        xsynch_febuildmsg_watchcmdassemble
-    },
-    {
-        T_XSYNCH_CFGfILECMD,
-        "config file command",
-        xsynch_febuildmsg_cfgfilecmdassemble
-    },
-    {
-        T_XSYNCH_REFRESHCMD,
-        "refresh command",
-        xsynch_febuildmsg_refreshcmdassemble
-    },
-    {
-        T_XSYNCH_LISTCMD,
-        "list command",
-        xsynch_febuildmsg_listcmdassemble
-    },
+static xsynch_febuildmsg_assemble m_cmd2msgmap[] = {
+    {T_XSYNCH_NOP, "unknown command", NULL},
+    {T_XSYNCH_IDENTITYCMD, "identity command", xsynch_febuildmsg_identitycmdassemble},
+    {T_XSYNCH_CREATECMD, "create command", xsynch_febuildmsg_createcmdassemble},
+    {T_XSYNCH_ALTERCMD, "alter command", xsynch_febuildmsg_altercmdassemble},
+    {T_XSYNCH_REMOVECMD, "remove command", xsynch_febuildmsg_removecmdassemble},
+    {T_XSYNCH_DROPCMD, "drop command", xsynch_febuildmsg_dropcmdassemble},
+    {T_XSYNCH_INITCMD, "init command", xsynch_febuildmsg_initcmdassemble},
+    {T_XSYNCH_EDITCMD, "edit command", xsynch_febuildmsg_editcmdassemble},
+    {T_XSYNCH_STARTCMD, "start command", xsynch_febuildmsg_startcmdassemble},
+    {T_XSYNCH_STOPCMD, "stop command", xsynch_febuildmsg_stopcmdassemble},
+    {T_XSYNCH_RELOADCMD, "reload command", xsynch_febuildmsg_reloadcmdassemble},
+    {T_XSYNCH_INFOCMD, "info command", xsynch_febuildmsg_infocmdassemble},
+    {T_XSYNCH_WATCHCMD, "watch command", xsynch_febuildmsg_watchcmdassemble},
+    {T_XSYNCH_CFGfILECMD, "config file command", xsynch_febuildmsg_cfgfilecmdassemble},
+    {T_XSYNCH_REFRESHCMD, "refresh command", xsynch_febuildmsg_refreshcmdassemble},
+    {T_XSYNCH_LISTCMD, "list command", xsynch_febuildmsg_listcmdassemble},
 
-    /* 在此之前添加 */
-    {
-        T_XSYNCH_MAX,
-        "max command",
-        NULL
-    }
-};
+    /* add before this */
+    {T_XSYNCH_MAX, "max command", NULL}};
 
 /*
- * 根据 command 的类型组装数据到缓存中
-*/
+ * assemble data to buffer according to command type
+ */
 bool xsynch_febuildmsg_cmd2msg(xsynch_cmd* cmd, xsynch_exbuffer msg)
 {
     /*
-     * 组装 长度 等信息数据时，需要将主机字节序转换为网络字节序
-     *  在 c.h 中含有转换函数:
-     *      r_hton16 r_hton32 r_hton64
+     * when assembling length and other info data, need to convert host byte order to network byte
+     * order c.h contains conversion functions: r_hton16 r_hton32 r_hton64
      */
     if (NULL == m_cmd2msgmap[cmd->type].assemble)
     {

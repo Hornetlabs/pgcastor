@@ -22,16 +22,16 @@
 
 bool parsertrail_txnbigtxnendapply(parsertrail* parsertrail, void* data)
 {
-    /* 将大事务在hash中移除, 并添加大事务结束加入到完成列表中 */
-    bool find = false;
+    /* Remove big transaction from hash, and add big transaction end to completion list */
+    bool              find = false;
     FullTransactionId xid = InvalidFullTransactionId;
-    txnstmt* rstmt = NULL;
-    txn* bigtxn = NULL;
-    record* record_obj = NULL;
-    ff_txndata* txndata = NULL;
-    bigtxn_end_stmt* bigtxnendstmt = NULL;
+    txnstmt*          rstmt = NULL;
+    txn*              bigtxn = NULL;
+    record*           record_obj = NULL;
+    ff_txndata*       txndata = NULL;
+    bigtxn_end_stmt*  bigtxnendstmt = NULL;
 
-    if(NULL == data)
+    if (NULL == data)
     {
         return true;
     }
@@ -43,7 +43,7 @@ bool parsertrail_txnbigtxnendapply(parsertrail* parsertrail, void* data)
 
     elog(RLOG_DEBUG, "txnbigtxn end:%lu", xid);
 
-    /* 将数据放入到缓存当中 */
+    /* Put data into cache */
     hash_search(parsertrail->transcache->by_txns, &xid, HASH_FIND, &find);
     if (find)
     {
@@ -51,7 +51,7 @@ bool parsertrail_txnbigtxnendapply(parsertrail* parsertrail, void* data)
     }
 
     bigtxn = txn_initbigtxn(xid);
-    if(NULL == bigtxn)
+    if (NULL == bigtxn)
     {
         elog(RLOG_WARNING, "init big txn error, xid:%lu", xid);
         return false;
@@ -61,7 +61,7 @@ bool parsertrail_txnbigtxnendapply(parsertrail* parsertrail, void* data)
     bigtxn->stmts = lappend(bigtxn->stmts, rstmt);
     txndata->data = NULL;
     TXN_SET_BIGTXN(bigtxn->flag);
-    if(bigtxnendstmt->commit)
+    if (bigtxnendstmt->commit)
     {
         bigtxn->type = TXN_TYPE_BIGTXN_END_COMMIT;
     }
@@ -79,13 +79,12 @@ bool parsertrail_txnbigtxnendapply(parsertrail* parsertrail, void* data)
     bigtxn->end.trail.offset = record_obj->end.trail.offset;
     bigtxn->confirm.wal.lsn = rstmt->extra0.wal.lsn;
 
-    /* 查看是否发生了切换，发生切换那么需要清理缓存 */
-    if(FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
+    /* Check if file switch occurred, if so need to clean up cache */
+    if (FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
     {
-        /* 交换 */
+        /* Swap */
         parsertrail_traildata_shiftfile(parsertrail);
     }
 
     return true;
-
 }

@@ -15,27 +15,26 @@
 #include "storage/trail/fftrail.h"
 #include "storage/trail/data/fftrail_txnshiftfile.h"
 
-
-/* 将lsn信息写入file_buffer.extra */
+/* Write lsn info to file_buffer.extra */
 bool fftrail_txnshiftfile(void* data, void* state)
 {
-    txnstmt* rstmt = NULL;
-    file_buffer* fbuffer = NULL;
-    ffsmgr_state* ffsmgrstate = NULL;
+    txnstmt*           rstmt = NULL;
+    file_buffer*       fbuffer = NULL;
+    ffsmgr_state*      ffsmgrstate = NULL;
     txnstmt_shiftfile* stmt = NULL;
-    ff_txndata*  txndata = NULL;
+    ff_txndata*        txndata = NULL;
 
     txndata = (ff_txndata*)data;
     rstmt = (txnstmt*)txndata->data;
 
     ffsmgrstate = (ffsmgr_state*)state;
-    stmt = (txnstmt_shiftfile* )rstmt->stmt;
+    stmt = (txnstmt_shiftfile*)rstmt->stmt;
 
-    fbuffer = file_buffer_getbybufid(ffsmgrstate->callback.getfilebuffer(ffsmgrstate->privdata), ffsmgrstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffsmgrstate->callback.getfilebuffer(ffsmgrstate->privdata),
+                                     ffsmgrstate->bufid);
     fbuffer->extra.chkpoint.redolsn.wal.lsn = stmt->redolsn;
     fbuffer->extra.rewind.restartlsn.wal.lsn = stmt->restartlsn;
     fbuffer->extra.rewind.confirmlsn.wal.lsn = stmt->confirmlsn;
 
     return true;
 }
-

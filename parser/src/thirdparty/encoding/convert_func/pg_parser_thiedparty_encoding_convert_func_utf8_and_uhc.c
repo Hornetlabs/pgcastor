@@ -17,7 +17,6 @@
 #include "./unicode_map/uhc_to_utf8.map"
 #include "./unicode_map/utf8_to_uhc.map"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -28,32 +27,24 @@
  * ) returns VOID;
  * ----------
  */
-void uhc_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void uhc_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UHC, UTF8);
 
-    LocalToUtf(src, len, dest,
-               &uhc_to_unicode_tree,
-               NULL, 0,
-               NULL,
-               UHC);
+    LocalToUtf(src, len, dest, &uhc_to_unicode_tree, NULL, 0, NULL, UHC);
 }
 
-void utf8_to_uhc(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_uhc(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, UHC);
 
-    UtfToLocal(src, len, dest,
-               &uhc_from_unicode_tree,
-               NULL, 0,
-               NULL,
-               UHC);
+    UtfToLocal(src, len, dest, &uhc_from_unicode_tree, NULL, 0, NULL, UHC);
 }

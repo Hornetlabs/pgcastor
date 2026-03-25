@@ -7,18 +7,22 @@
  */
 double rint(double x)
 {
-    double        x_orig;
-    double        r;
+    double x_orig;
+    double r;
 
     /* Per POSIX, NaNs must be returned unchanged. */
     if (isnan(x))
+    {
         return x;
+    }
 
     if (x <= 0.0)
     {
         /* Both positive and negative zero should be returned unchanged. */
         if (x == 0.0)
+        {
             return x;
+        }
 
         /*
          * Subtracting 0.5 from a number very close to -0.5 can round to
@@ -35,7 +39,9 @@ double rint(double x)
          * rint() should return with negative input.
          */
         if (x >= 0.0)
+        {
             return -0.0;
+        }
 
         /*
          * For very big numbers the input may have no decimals.  That case is
@@ -43,7 +49,9 @@ double rint(double x)
          * returned unchanged.  This also covers the case of minus infinity.
          */
         if (x == x_orig + 1.0)
+        {
             return x_orig;
+        }
 
         /* Otherwise produce a rounded estimate. */
         r = floor(x);
@@ -52,7 +60,9 @@ double rint(double x)
          * If the rounding did not produce exactly input+0.5 then we're done.
          */
         if (r != x)
+        {
             return r;
+        }
 
         /*
          * The original fractional part was exactly 0.5 (since
@@ -73,12 +83,18 @@ double rint(double x)
         x_orig = x;
         x -= 0.5;
         if (x <= 0.0)
+        {
             return 0.0;
+        }
         if (x == x_orig - 1.0)
+        {
             return x_orig;
+        }
         r = ceil(x);
         if (r != x)
+        {
             return r;
+        }
         return ceil(x * 0.5) * 2.0;
     }
 }

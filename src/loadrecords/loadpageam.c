@@ -4,21 +4,18 @@
 #include "loadrecords/loadpageam.h"
 #include "loadrecords/loadpagefromfile.h"
 
-static loadpageroutine m_loadpagefile =
-{
-    .loadpageinit           = loadpagefromfile_init,
-    .loadpagesetfilesource  = loadpagefromfile_setfdir,
-    .loadpagesettype        = loadpagefromfile_settype,
-    .loadpagesetstartpos    = loadpagefromfile_setstartpos,
-    .loadpageclose          = loadpagefromfile_close,
-    .loadpage               = loadpagefromfile_loadpage,
-    .loadpagefree           = loadpagefromfile_free
-};
+static loadpageroutine m_loadpagefile = {.loadpageinit = loadpagefromfile_init,
+                                         .loadpagesetfilesource = loadpagefromfile_setfdir,
+                                         .loadpagesettype = loadpagefromfile_settype,
+                                         .loadpagesetstartpos = loadpagefromfile_setstartpos,
+                                         .loadpageclose = loadpagefromfile_close,
+                                         .loadpage = loadpagefromfile_loadpage,
+                                         .loadpagefree = loadpagefromfile_free};
 
-/* 获取 getpage 信息 */
+/* get page routine information */
 loadpageroutine* loadpage_getpageroutine(int type)
 {
-    if(LOADPAGE_TYPE_FILE == type)
+    if (LOADPAGE_TYPE_FILE == type)
     {
         return &m_loadpagefile;
     }

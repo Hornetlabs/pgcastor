@@ -17,7 +17,6 @@
 #include "./unicode_map/big5_to_utf8.map"
 #include "./unicode_map/utf8_to_big5.map"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -28,32 +27,24 @@
  * ) returns VOID;
  * ----------
  */
-void big5_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void big5_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(BIG5, UTF8);
 
-    LocalToUtf(src, len, dest,
-               &big5_to_unicode_tree,
-               NULL, 0,
-               NULL,
-               BIG5);
+    LocalToUtf(src, len, dest, &big5_to_unicode_tree, NULL, 0, NULL, BIG5);
 }
 
-void utf8_to_big5(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_big5(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, BIG5);
 
-    UtfToLocal(src, len, dest,
-               &big5_from_unicode_tree,
-               NULL, 0,
-               NULL,
-               BIG5);
+    UtfToLocal(src, len, dest, &big5_from_unicode_tree, NULL, 0, NULL, BIG5);
 }

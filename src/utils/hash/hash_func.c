@@ -6,8 +6,8 @@
  *
  * All Copyright (c) 2024-2024, Byte Sync Development Group
  *
- * Author: liuzihe  Date: 2024/07/09 
- * 
+ * Author: liuzihe  Date: 2024/07/09
+ *
  * src/utils/hash/hash_func.c
  *
  *-------------------------------------------------------------------------
@@ -37,19 +37,19 @@
  * a good idea of the maximum number of entries!).  For non-shared hash
  * tables, the initial directory size can be left at the default.
  */
-#define DEF_SEGSIZE			   256
-#define DEF_SEGSIZE_SHIFT	   8	/* must be log2(DEF_SEGSIZE) */
-#define DEF_DIRSIZE			   256
-#define DEF_FFACTOR			   1	/* default fill factor */
+#define DEF_SEGSIZE 256
+#define DEF_SEGSIZE_SHIFT 8 /* must be log2(DEF_SEGSIZE) */
+#define DEF_DIRSIZE 256
+#define DEF_FFACTOR 1 /* default fill factor */
 
 /* Number of freelists to be used for a partitioned hash table. */
-#define NUM_FREELISTS			32
+#define NUM_FREELISTS 32
 
 /* A hash bucket is a linked list of HASHELEMENTs */
-typedef HASHELEMENT *HASHBUCKET;
+typedef HASHELEMENT* HASHBUCKET;
 
 /* A hash segment is an array of bucket headers */
-typedef HASHBUCKET *HASHSEGMENT;
+typedef HASHBUCKET* HASHSEGMENT;
 
 typedef unsigned char slock_t;
 
@@ -72,9 +72,9 @@ typedef unsigned char slock_t;
  */
 typedef struct
 {
-	slock_t		mutex;			/* spinlock for this freelist */
-	long		nentries;		/* number of entries in associated buckets */
-	HASHELEMENT *freeList;		/* chain of free elements */
+    slock_t      mutex;    /* spinlock for this freelist */
+    long         nentries; /* number of entries in associated buckets */
+    HASHELEMENT* freeList; /* chain of free elements */
 } FreeListData;
 
 /*
@@ -87,53 +87,52 @@ typedef struct
  */
 struct HASHHDR
 {
-	/*
-	 * The freelist can become a point of contention in high-concurrency hash
-	 * tables, so we use an array of freelists, each with its own mutex and
-	 * nentries count, instead of just a single one.  Although the freelists
-	 * normally operate independently, we will scavenge entries from freelists
-	 * other than a hashcode's default freelist when necessary.
-	 *
-	 * If the hash table is not partitioned, only freeList[0] is used and its
-	 * spinlock is not used at all; callers' locking is assumed sufficient.
-	 */
-	FreeListData freeList[NUM_FREELISTS];
-	void	  **elements_ptr;	/* 最后一个桶的指针 */
-	uint64_t	elements_num;
+    /*
+     * The freelist can become a point of contention in high-concurrency hash
+     * tables, so we use an array of freelists, each with its own mutex and
+     * nentries count, instead of just a single one.  Although the freelists
+     * normally operate independently, we will scavenge entries from freelists
+     * other than a hashcode's default freelist when necessary.
+     *
+     * If the hash table is not partitioned, only freeList[0] is used and its
+     * spinlock is not used at all; callers' locking is assumed sufficient.
+     */
+    FreeListData freeList[NUM_FREELISTS];
+    void**       elements_ptr; /* pointer to the last bucket */
+    uint64_t     elements_num;
 
-	/* These fields can change, but not in a partitioned table */
-	/* Also, dsize can't change in a shared table, even if unpartitioned */
-	long		dsize;			/* directory size */
-	long		nsegs;			/* number of allocated segments (<= dsize) */
-	uint32		max_bucket;		/* ID of maximum bucket in use */
-	uint32		high_mask;		/* mask to modulo into entire table */
-	uint32		low_mask;		/* mask to modulo into lower half of table */
+    /* These fields can change, but not in a partitioned table */
+    /* Also, dsize can't change in a shared table, even if unpartitioned */
+    long   dsize;      /* directory size */
+    long   nsegs;      /* number of allocated segments (<= dsize) */
+    uint32 max_bucket; /* ID of maximum bucket in use */
+    uint32 high_mask;  /* mask to modulo into entire table */
+    uint32 low_mask;   /* mask to modulo into lower half of table */
 
-	/* These fields are fixed at hashtable creation */
-	Size		keysize;		/* hash key length in bytes */
-	Size		entrysize;		/* total user element size in bytes */
-	long		num_partitions; /* # partitions (must be power of 2), or 0 */
-	long		ffactor;		/* target fill factor */
-	long		max_dsize;		/* 'dsize' limit if directory is fixed size */
-	long		ssize;			/* segment size --- must be power of 2 */
-	int			sshift;			/* segment shift = log2(ssize) */
-	int			nelem_alloc;	/* number of entries to allocate at once */
+    /* These fields are fixed at hashtable creation */
+    Size keysize;        /* hash key length in bytes */
+    Size entrysize;      /* total user element size in bytes */
+    long num_partitions; /* # partitions (must be power of 2), or 0 */
+    long ffactor;        /* target fill factor */
+    long max_dsize;      /* 'dsize' limit if directory is fixed size */
+    long ssize;          /* segment size --- must be power of 2 */
+    int  sshift;         /* segment shift = log2(ssize) */
+    int  nelem_alloc;    /* number of entries to allocate at once */
 
 #ifdef HASH_STATISTICS
 
-	/*
-	 * Count statistics here.  NB: stats code doesn't bother with mutex, so
-	 * counts could be corrupted a bit in a partitioned table.
-	 */
-	long		accesses;
-	long		collisions;
+    /*
+     * Count statistics here.  NB: stats code doesn't bother with mutex, so
+     * counts could be corrupted a bit in a partitioned table.
+     */
+    long accesses;
+    long collisions;
 #endif
 };
 
-#define IS_PARTITIONED(hctl)  ((hctl)->num_partitions != 0)
+#define IS_PARTITIONED(hctl) ((hctl)->num_partitions != 0)
 
-#define FREELIST_IDX(hctl, hashcode) \
-	(IS_PARTITIONED(hctl) ? (hashcode) % NUM_FREELISTS : 0)
+#define FREELIST_IDX(hctl, hashcode) (IS_PARTITIONED(hctl) ? (hashcode) % NUM_FREELISTS : 0)
 
 /*
  * Top control structure for a hashtable --- in a shared table, each backend
@@ -141,81 +140,80 @@ struct HASHHDR
  */
 struct HTAB
 {
-	HASHHDR    *hctl;			/* => shared control information */
-	HASHSEGMENT *dir;			/* directory of segment starts */
-	HashValueFunc hash;			/* hash function */
-	HashCompareFunc match;		/* key comparison function */
-	HashCopyFunc keycopy;		/* key copying function */
-	HashAllocFunc alloc;		/* memory allocator */
-	char	   *tabname;		/* table name (for error messages) */
-	bool		isshared;		/* true if table is in shared memory */
-	bool		isfixed;		/* if true, don't enlarge */
+    HASHHDR*        hctl;     /* => shared control information */
+    HASHSEGMENT*    dir;      /* directory of segment starts */
+    HashValueFunc   hash;     /* hash function */
+    HashCompareFunc match;    /* key comparison function */
+    HashCopyFunc    keycopy;  /* key copying function */
+    HashAllocFunc   alloc;    /* memory allocator */
+    char*           tabname;  /* table name (for error messages) */
+    bool            isshared; /* true if table is in shared memory */
+    bool            isfixed;  /* if true, don't enlarge */
 
-	/* freezing a shared table isn't allowed, so we can keep state here */
-	bool		frozen;			/* true = no more inserts allowed */
+    /* freezing a shared table isn't allowed, so we can keep state here */
+    bool frozen; /* true = no more inserts allowed */
 
-	/* We keep local copies of these fixed values to reduce contention */
-	Size		keysize;		/* hash key length in bytes */
-	long		ssize;			/* segment size --- must be power of 2 */
-	int			sshift;			/* segment shift = log2(ssize) */
+    /* We keep local copies of these fixed values to reduce contention */
+    Size keysize; /* hash key length in bytes */
+    long ssize;   /* segment size --- must be power of 2 */
+    int  sshift;  /* segment shift = log2(ssize) */
 };
 
 /*
  * Key (also entry) part of a HASHELEMENT
  */
-#define ELEMENTKEY(helem)  (((char *)(helem)) + MAXALIGN(sizeof(HASHELEMENT)))
+#define ELEMENTKEY(helem) (((char*)(helem)) + MAXALIGN(sizeof(HASHELEMENT)))
 
 /*
  * Obtain element pointer given pointer to key
  */
-#define ELEMENT_FROM_KEY(key)  \
-	((HASHELEMENT *) (((char *) (key)) - MAXALIGN(sizeof(HASHELEMENT))))
+#define ELEMENT_FROM_KEY(key) ((HASHELEMENT*)(((char*)(key)) - MAXALIGN(sizeof(HASHELEMENT))))
 
 /*
  * Fast MOD arithmetic, assuming that y is a power of 2 !
  */
-#define MOD(x,y)			   ((x) & ((y)-1))
+#define MOD(x, y) ((x) & ((y) - 1))
 
 #if HASH_STATISTICS
-static long hash_accesses,
-			hash_collisions,
-			hash_expansions;
+static long hash_accesses, hash_collisions, hash_expansions;
 #endif
 
 #define MAX_SEQ_SCANS 100
-//static HTAB *seq_scan_tables[MAX_SEQ_SCANS];	/* tables being scanned */
-//static int	seq_scan_level[MAX_SEQ_SCANS];	/* subtransaction nest level */
-//static int	num_seq_scans = 0;
+// static HTAB *seq_scan_tables[MAX_SEQ_SCANS];	/* tables being scanned */
+// static int	seq_scan_level[MAX_SEQ_SCANS];	/* subtransaction nest level */
+// static int	num_seq_scans = 0;
 
 /* ------------------↓↓ Private function prototypes ↓↓------------------ */
 
-static void *DynaHashAlloc(Size size);
-static int string_compare(const char *key1, const char *key2, Size keysize);
-static void hdefault(HTAB *hashp);
-static int next_pow2_int(long num);
-static bool init_htab(HTAB *hashp, long nelem);
-static HASHSEGMENT seg_alloc(HTAB *hashp);
-static int choose_nelem_alloc(Size entrysize);
-static bool element_alloc(HTAB *hashp, int nelem, int freelist_idx);
-//static bool has_seq_scans(HTAB *hashp);
-static bool expand_table(HTAB *hashp);
-static bool dir_realloc(HTAB *hashp);
-static void hash_corrupted(HTAB *hashp);
-static HASHBUCKET get_hash_entry(HTAB *hashp, int freelist_idx);
-static void register_seq_scan(HTAB *hashp);
-static void deregister_seq_scan(HTAB *hashp);
+static void*       DynaHashAlloc(Size size);
+static int         string_compare(const char* key1, const char* key2, Size keysize);
+static void        hdefault(HTAB* hashp);
+static int         next_pow2_int(long num);
+static bool        init_htab(HTAB* hashp, long nelem);
+static HASHSEGMENT seg_alloc(HTAB* hashp);
+static int         choose_nelem_alloc(Size entrysize);
+static bool        element_alloc(HTAB* hashp, int nelem, int freelist_idx);
+// static bool has_seq_scans(HTAB *hashp);
+static bool       expand_table(HTAB* hashp);
+static bool       dir_realloc(HTAB* hashp);
+static void       hash_corrupted(HTAB* hashp);
+static HASHBUCKET get_hash_entry(HTAB* hashp, int freelist_idx);
+static void       register_seq_scan(HTAB* hashp);
+static void       deregister_seq_scan(HTAB* hashp);
 
 /* ------------------↑↑ Private function prototypes ↑↑------------------ */
 
-static inline uint32 calc_bucket(HASHHDR *hctl, uint32 hash_val)
+static inline uint32 calc_bucket(HASHHDR* hctl, uint32 hash_val)
 {
-	uint32		bucket;
+    uint32 bucket;
 
-	bucket = hash_val & hctl->high_mask;
-	if (bucket > hctl->max_bucket)
-		bucket = bucket & hctl->low_mask;
+    bucket = hash_val & hctl->high_mask;
+    if (bucket > hctl->max_bucket)
+    {
+        bucket = bucket & hctl->low_mask;
+    }
 
-	return bucket;
+    return bucket;
 }
 
 /*
@@ -228,32 +226,30 @@ static inline uint32 calc_bucket(HASHHDR *hctl, uint32 hash_val)
  *	memset() functions.  More research needs to be done, perhaps with
  *	MEMSET_LOOP_LIMIT tests in configure.
  */
-#define MemSet(start, val, len) \
-	do \
-	{ \
-		/* must be void* because we don't know if it is integer aligned yet */ \
-		void   *_vstart = (void *) (start); \
-		int		_val = (val); \
-		Size	_len = (len); \
-\
-		if ((((uintptr_t) _vstart) & LONG_ALIGN_MASK) == 0 && \
-			(_len & LONG_ALIGN_MASK) == 0 && \
-			_val == 0 && \
-			_len <= MEMSET_LOOP_LIMIT && \
-			/* \
-			 *	If MEMSET_LOOP_LIMIT == 0, optimizer should find \
-			 *	the whole "if" false at compile time. \
-			 */ \
-			MEMSET_LOOP_LIMIT != 0) \
-		{ \
-			long *_start = (long *) _vstart; \
-			long *_stop = (long *) ((char *) _start + _len); \
-			while (_start < _stop) \
-				*_start++ = 0; \
-		} \
-		else \
-			rmemset1(_vstart, 0, _val, _len); \
-	} while (0)
+#define MemSet(start, val, len)                                                               \
+    do                                                                                        \
+    {                                                                                         \
+        /* must be void* because we don't know if it is integer aligned yet */                \
+        void* _vstart = (void*)(start);                                                       \
+        int   _val = (val);                                                                   \
+        Size  _len = (len);                                                                   \
+                                                                                              \
+        if ((((uintptr_t)_vstart) & LONG_ALIGN_MASK) == 0 && (_len & LONG_ALIGN_MASK) == 0 && \
+            _val == 0 &&                                                                      \
+            _len <= MEMSET_LOOP_LIMIT && /*                                                   \
+                                          *	If MEMSET_LOOP_LIMIT == 0, optimizer should find  \
+                                          *	the whole "if" false at compile time.             \
+                                          */                                                  \
+            MEMSET_LOOP_LIMIT != 0)                                                           \
+        {                                                                                     \
+            long* _start = (long*)_vstart;                                                    \
+            long* _stop = (long*)((char*)_start + _len);                                      \
+            while (_start < _stop)                                                            \
+                *_start++ = 0;                                                                \
+        }                                                                                     \
+        else                                                                                  \
+            rmemset1(_vstart, 0, _val, _len);                                                 \
+    } while (0)
 
 /*
  * hash_create -- create a new dynamic hash table
@@ -269,263 +265,298 @@ static inline uint32 calc_bucket(HASHHDR *hctl, uint32 hash_val)
  * on the small side and let the table grow if it's exceeded.  An overly
  * large nelem will penalize hash_seq_search speed without buying much.
  */
-HTAB *hash_create(const char *tabname, long nelem, HASHCTL *info, int flags)
+HTAB* hash_create(const char* tabname, long nelem, HASHCTL* info, int flags)
 {
-	HTAB	   *hashp;
-	HASHHDR    *hctl;
+    HTAB*    hashp;
+    HASHHDR* hctl;
 
-	/* Initialize the hash header, plus a copy of the table name */
-	hashp = (HTAB *) DynaHashAlloc(sizeof(HTAB) + strlen(tabname) + 1 + 1);
-	MemSet(hashp, 0, sizeof(HTAB));
+    /* Initialize the hash header, plus a copy of the table name */
+    hashp = (HTAB*)DynaHashAlloc(sizeof(HTAB) + strlen(tabname) + 1 + 1);
+    MemSet(hashp, 0, sizeof(HTAB));
 
-	hashp->tabname = (char *) (hashp + 1);
-	strcpy(hashp->tabname, tabname);
+    hashp->tabname = (char*)(hashp + 1);
+    strcpy(hashp->tabname, tabname);
 
-	/*
-	 * Select the appropriate hash function (see comments at head of file).
-	 */
-	if (flags & HASH_FUNCTION)
-		hashp->hash = info->hash;
-	else if (flags & HASH_BLOBS)
-	{
-		/* We can optimize hashing for common key sizes */
-		Assert(flags & HASH_ELEM);
-		if (info->keysize == sizeof(uint32))
-			hashp->hash = uint32_hash;
-		else
-			hashp->hash = tag_hash;
-	}
-	else
-		hashp->hash = string_hash;	/* default hash function */
+    /*
+     * Select the appropriate hash function (see comments at head of file).
+     */
+    if (flags & HASH_FUNCTION)
+    {
+        hashp->hash = info->hash;
+    }
+    else if (flags & HASH_BLOBS)
+    {
+        /* We can optimize hashing for common key sizes */
+        Assert(flags & HASH_ELEM);
+        if (info->keysize == sizeof(uint32))
+        {
+            hashp->hash = uint32_hash;
+        }
+        else
+        {
+            hashp->hash = tag_hash;
+        }
+    }
+    else
+    {
+        hashp->hash = string_hash; /* default hash function */
+    }
 
-	/*
-	 * If you don't specify a match function, it defaults to string_compare if
-	 * you used string_hash (either explicitly or by default) and to memcmp
-	 * otherwise.
-	 *
-	 * Note: explicitly specifying string_hash is deprecated, because this
-	 * might not work for callers in loadable modules on some platforms due to
-	 * referencing a trampoline instead of the string_hash function proper.
-	 * Just let it default, eh?
-	 */
-	if (flags & HASH_COMPARE)
-		hashp->match = info->match;
-	else if (hashp->hash == string_hash)
-		hashp->match = (HashCompareFunc) string_compare;
-	else
-		hashp->match = memcmp;
+    /*
+     * If you don't specify a match function, it defaults to string_compare if
+     * you used string_hash (either explicitly or by default) and to memcmp
+     * otherwise.
+     *
+     * Note: explicitly specifying string_hash is deprecated, because this
+     * might not work for callers in loadable modules on some platforms due to
+     * referencing a trampoline instead of the string_hash function proper.
+     * Just let it default, eh?
+     */
+    if (flags & HASH_COMPARE)
+    {
+        hashp->match = info->match;
+    }
+    else if (hashp->hash == string_hash)
+    {
+        hashp->match = (HashCompareFunc)string_compare;
+    }
+    else
+    {
+        hashp->match = memcmp;
+    }
 
-	/*
-	 * Similarly, the key-copying function defaults to strlcpy or memcpy.
-	 */
-	if (flags & HASH_KEYCOPY)
-		hashp->keycopy = info->keycopy;
-	else if (hashp->hash == string_hash)
-		hashp->keycopy = (HashCopyFunc) strlcpy;
-	else
-		hashp->keycopy = rmemcpy;
+    /*
+     * Similarly, the key-copying function defaults to strlcpy or memcpy.
+     */
+    if (flags & HASH_KEYCOPY)
+    {
+        hashp->keycopy = info->keycopy;
+    }
+    else if (hashp->hash == string_hash)
+    {
+        hashp->keycopy = (HashCopyFunc)strlcpy;
+    }
+    else
+    {
+        hashp->keycopy = rmemcpy;
+    }
 
-	/* And select the entry allocation function, too. */
-	if (flags & HASH_ALLOC)
-		hashp->alloc = info->alloc;
-	else
-		hashp->alloc = DynaHashAlloc;
+    /* And select the entry allocation function, too. */
+    if (flags & HASH_ALLOC)
+    {
+        hashp->alloc = info->alloc;
+    }
+    else
+    {
+        hashp->alloc = DynaHashAlloc;
+    }
 
-	if (flags & HASH_SHARED_MEM)
-	{
-		/*
-		 * ctl structure and directory are preallocated for shared memory
-		 * tables.  Note that HASH_DIRSIZE and HASH_ALLOC had better be set as
-		 * well.
-		 */
-		hashp->hctl = info->hctl;
-		hashp->dir = (HASHSEGMENT *) (((char *) info->hctl) + sizeof(HASHHDR));
-		hashp->isshared = true;
+    if (flags & HASH_SHARED_MEM)
+    {
+        /*
+         * ctl structure and directory are preallocated for shared memory
+         * tables.  Note that HASH_DIRSIZE and HASH_ALLOC had better be set as
+         * well.
+         */
+        hashp->hctl = info->hctl;
+        hashp->dir = (HASHSEGMENT*)(((char*)info->hctl) + sizeof(HASHHDR));
+        hashp->isshared = true;
 
-		/* hash table already exists, we're just attaching to it */
-		if (flags & HASH_ATTACH)
-		{
-			/* make local copies of some heavily-used values */
-			hctl = hashp->hctl;
-			hashp->keysize = hctl->keysize;
-			hashp->ssize = hctl->ssize;
-			hashp->sshift = hctl->sshift;
+        /* hash table already exists, we're just attaching to it */
+        if (flags & HASH_ATTACH)
+        {
+            /* make local copies of some heavily-used values */
+            hctl = hashp->hctl;
+            hashp->keysize = hctl->keysize;
+            hashp->ssize = hctl->ssize;
+            hashp->sshift = hctl->sshift;
 
-			return hashp;
-		}
-	}
-	else
-	{
-		/* setup hash table defaults */
-		hashp->hctl = NULL;
-		hashp->dir = NULL;
-		hashp->isshared = false;
-	}
+            return hashp;
+        }
+    }
+    else
+    {
+        /* setup hash table defaults */
+        hashp->hctl = NULL;
+        hashp->dir = NULL;
+        hashp->isshared = false;
+    }
 
-	if (!hashp->hctl)
-	{
-		hashp->hctl = (HASHHDR *) hashp->alloc(sizeof(HASHHDR));
-		rmemset0(hashp->hctl, 0, 0, sizeof(HASHHDR));
-		if (!hashp->hctl)
-		{
-			elog(RLOG_ERROR, "out of memory");
-		}
-	}
+    if (!hashp->hctl)
+    {
+        hashp->hctl = (HASHHDR*)hashp->alloc(sizeof(HASHHDR));
+        rmemset0(hashp->hctl, 0, 0, sizeof(HASHHDR));
+        if (!hashp->hctl)
+        {
+            elog(RLOG_ERROR, "out of memory");
+        }
+    }
 
-	hashp->frozen = false;
+    hashp->frozen = false;
 
-	hdefault(hashp);
+    hdefault(hashp);
 
-	hctl = hashp->hctl;
+    hctl = hashp->hctl;
 
-	if (flags & HASH_PARTITION)
-	{
-		/* Doesn't make sense to partition a local hash table */
-		Assert(flags & HASH_SHARED_MEM);
+    if (flags & HASH_PARTITION)
+    {
+        /* Doesn't make sense to partition a local hash table */
+        Assert(flags & HASH_SHARED_MEM);
 
-		/*
-		 * The number of partitions had better be a power of 2. Also, it must
-		 * be less than INT_MAX (see init_htab()), so call the int version of
-		 * next_pow2.
-		 */
-		Assert(info->num_partitions == next_pow2_int(info->num_partitions));
+        /*
+         * The number of partitions had better be a power of 2. Also, it must
+         * be less than INT_MAX (see init_htab()), so call the int version of
+         * next_pow2.
+         */
+        Assert(info->num_partitions == next_pow2_int(info->num_partitions));
 
-		hctl->num_partitions = info->num_partitions;
-	}
+        hctl->num_partitions = info->num_partitions;
+    }
 
-	if (flags & HASH_SEGMENT)
-	{
-		hctl->ssize = info->ssize;
-		hctl->sshift = my_log2(info->ssize);
-		/* ssize had better be a power of 2 */
-		Assert(hctl->ssize == (1L << hctl->sshift));
-	}
-	if (flags & HASH_FFACTOR)
-		hctl->ffactor = info->ffactor;
+    if (flags & HASH_SEGMENT)
+    {
+        hctl->ssize = info->ssize;
+        hctl->sshift = my_log2(info->ssize);
+        /* ssize had better be a power of 2 */
+        Assert(hctl->ssize == (1L << hctl->sshift));
+    }
+    if (flags & HASH_FFACTOR)
+    {
+        hctl->ffactor = info->ffactor;
+    }
 
-	/*
-	 * SHM hash tables have fixed directory size passed by the caller.
-	 */
-	if (flags & HASH_DIRSIZE)
-	{
-		hctl->max_dsize = info->max_dsize;
-		hctl->dsize = info->dsize;
-	}
+    /*
+     * SHM hash tables have fixed directory size passed by the caller.
+     */
+    if (flags & HASH_DIRSIZE)
+    {
+        hctl->max_dsize = info->max_dsize;
+        hctl->dsize = info->dsize;
+    }
 
-	/*
-	 * hash table now allocates space for key and data but you have to say how
-	 * much space to allocate
-	 */
-	if (flags & HASH_ELEM)
-	{
-		Assert(info->entrysize >= info->keysize);
-		hctl->keysize = info->keysize;
-		hctl->entrysize = info->entrysize;
-	}
+    /*
+     * hash table now allocates space for key and data but you have to say how
+     * much space to allocate
+     */
+    if (flags & HASH_ELEM)
+    {
+        Assert(info->entrysize >= info->keysize);
+        hctl->keysize = info->keysize;
+        hctl->entrysize = info->entrysize;
+    }
 
-	/* make local copies of heavily-used constant fields */
-	hashp->keysize = hctl->keysize;
-	hashp->ssize = hctl->ssize;
-	hashp->sshift = hctl->sshift;
+    /* make local copies of heavily-used constant fields */
+    hashp->keysize = hctl->keysize;
+    hashp->ssize = hctl->ssize;
+    hashp->sshift = hctl->sshift;
 
-	/* Build the hash directory structure */
-	if (!init_htab(hashp, nelem))
-	{
-		elog(RLOG_ERROR, "failed to initialize hash table \"%s\"", hashp->tabname);
-	}
+    /* Build the hash directory structure */
+    if (!init_htab(hashp, nelem))
+    {
+        elog(RLOG_ERROR, "failed to initialize hash table \"%s\"", hashp->tabname);
+    }
 
-	/*
-	 * For a shared hash table, preallocate the requested number of elements.
-	 * This reduces problems with run-time out-of-shared-memory conditions.
-	 *
-	 * For a non-shared hash table, preallocate the requested number of
-	 * elements if it's less than our chosen nelem_alloc.  This avoids wasting
-	 * space if the caller correctly estimates a small table size.
-	 */
-	if ((flags & HASH_SHARED_MEM) ||
-		nelem < hctl->nelem_alloc)
-	{
-		int			i,
-					freelist_partitions,
-					nelem_alloc,
-					nelem_alloc_first;
+    /*
+     * For a shared hash table, preallocate the requested number of elements.
+     * This reduces problems with run-time out-of-shared-memory conditions.
+     *
+     * For a non-shared hash table, preallocate the requested number of
+     * elements if it's less than our chosen nelem_alloc.  This avoids wasting
+     * space if the caller correctly estimates a small table size.
+     */
+    if ((flags & HASH_SHARED_MEM) || nelem < hctl->nelem_alloc)
+    {
+        int i, freelist_partitions, nelem_alloc, nelem_alloc_first;
 
-		/*
-		 * If hash table is partitioned, give each freelist an equal share of
-		 * the initial allocation.  Otherwise only freeList[0] is used.
-		 */
-		if (IS_PARTITIONED(hashp->hctl))
-			freelist_partitions = NUM_FREELISTS;
-		else
-			freelist_partitions = 1;
+        /*
+         * If hash table is partitioned, give each freelist an equal share of
+         * the initial allocation.  Otherwise only freeList[0] is used.
+         */
+        if (IS_PARTITIONED(hashp->hctl))
+        {
+            freelist_partitions = NUM_FREELISTS;
+        }
+        else
+        {
+            freelist_partitions = 1;
+        }
 
-		nelem_alloc = nelem / freelist_partitions;
-		if (nelem_alloc <= 0)
-			nelem_alloc = 1;
+        nelem_alloc = nelem / freelist_partitions;
+        if (nelem_alloc <= 0)
+        {
+            nelem_alloc = 1;
+        }
 
-		/*
-		 * Make sure we'll allocate all the requested elements; freeList[0]
-		 * gets the excess if the request isn't divisible by NUM_FREELISTS.
-		 */
-		if (nelem_alloc * freelist_partitions < nelem)
-			nelem_alloc_first =
-				nelem - nelem_alloc * (freelist_partitions - 1);
-		else
-			nelem_alloc_first = nelem_alloc;
+        /*
+         * Make sure we'll allocate all the requested elements; freeList[0]
+         * gets the excess if the request isn't divisible by NUM_FREELISTS.
+         */
+        if (nelem_alloc * freelist_partitions < nelem)
+        {
+            nelem_alloc_first = nelem - nelem_alloc * (freelist_partitions - 1);
+        }
+        else
+        {
+            nelem_alloc_first = nelem_alloc;
+        }
 
-		for (i = 0; i < freelist_partitions; i++)
-		{
-			int			temp = (i == 0) ? nelem_alloc_first : nelem_alloc;
+        for (i = 0; i < freelist_partitions; i++)
+        {
+            int temp = (i == 0) ? nelem_alloc_first : nelem_alloc;
 
-			if (!element_alloc(hashp, temp, i))
-			{
-				elog(RLOG_ERROR, "out of memory");
-			}
-		}
-	}
+            if (!element_alloc(hashp, temp, i))
+            {
+                elog(RLOG_ERROR, "out of memory");
+            }
+        }
+    }
 
-	if (flags & HASH_FIXED_SIZE)
-		hashp->isfixed = true;
-	return hashp;
+    if (flags & HASH_FIXED_SIZE)
+    {
+        hashp->isfixed = true;
+    }
+    return hashp;
 }
 
-void hash_destroy(HTAB *hashp)
+void hash_destroy(HTAB* hashp)
 {
-	if (hashp != NULL)
-	{
-		HASHHDR *hctl = hashp->hctl;
+    if (hashp != NULL)
+    {
+        HASHHDR* hctl = hashp->hctl;
 
-		/* allocation method must be one we know how to free, too */
-		Assert(hashp->alloc == DynaHashAlloc);
-		/* so this hashtable must have its own context */
-		Assert(hashp->hcxt != NULL);
+        /* allocation method must be one we know how to free, too */
+        Assert(hashp->alloc == DynaHashAlloc);
+        /* so this hashtable must have its own context */
+        Assert(hashp->hcxt != NULL);
 
-		/*
-		 * Free everything by destroying the hash table's memory context.
-		 */
-		if (hashp->dir)
-		{
-			int index_segs = 0;
-			for (index_segs = 0; index_segs < hctl->nsegs; index_segs++)
-				HASH_MEM_FREE(hashp->dir[index_segs]);
-			HASH_MEM_FREE(hashp->dir);
-		}
+        /*
+         * Free everything by destroying the hash table's memory context.
+         */
+        if (hashp->dir)
+        {
+            int index_segs = 0;
+            for (index_segs = 0; index_segs < hctl->nsegs; index_segs++)
+            {
+                HASH_MEM_FREE(hashp->dir[index_segs]);
+            }
+            HASH_MEM_FREE(hashp->dir);
+        }
 
-		if (hctl)
-		{
-			int i = 0;
-			for (i = 0; i < hctl->elements_num; i++)
-			{
-				HASH_MEM_FREE(hctl->elements_ptr[i]);
-			}
-			if (hctl->elements_ptr)
-			{
-				HASH_MEM_FREE(hctl->elements_ptr);
-			}
-			HASH_MEM_FREE(hctl);
-		}
-		HASH_MEM_FREE(hashp);
-	}
+        if (hctl)
+        {
+            int i = 0;
+            for (i = 0; i < hctl->elements_num; i++)
+            {
+                HASH_MEM_FREE(hctl->elements_ptr[i]);
+            }
+            if (hctl->elements_ptr)
+            {
+                HASH_MEM_FREE(hctl->elements_ptr);
+            }
+            HASH_MEM_FREE(hctl);
+        }
+        HASH_MEM_FREE(hashp);
+    }
 }
 
 /*
@@ -535,9 +566,9 @@ void hash_destroy(HTAB *hashp)
  * the partition number (from the low-order bits of the hash value) before
  * searching.
  */
-uint32 get_hash_value(HTAB *hashp, const void *keyPtr)
+uint32 get_hash_value(HTAB* hashp, const void* keyPtr)
 {
-	return hashp->hash(keyPtr, hashp->keysize);
+    return hashp->hash(keyPtr, hashp->keysize);
 }
 
 /*
@@ -567,191 +598,196 @@ uint32 get_hash_value(HTAB *hashp, const void *keyPtr)
  * For hash_search_with_hash_value, the hashvalue parameter must have been
  * calculated with get_hash_value().
  */
-void *hash_search(HTAB *hashp,
-			const void *keyPtr,
-			HASHACTION action,
-			bool *foundPtr)
+void* hash_search(HTAB* hashp, const void* keyPtr, HASHACTION action, bool* foundPtr)
 {
-	return hash_search_with_hash_value(hashp,
-									   keyPtr,
-									   hashp->hash(keyPtr, hashp->keysize),
-									   action,
-									   foundPtr);
+    return hash_search_with_hash_value(hashp, keyPtr, hashp->hash(keyPtr, hashp->keysize), action,
+                                       foundPtr);
 }
 
-void *hash_search_with_hash_value(HTAB *hashp,
-								  const void *keyPtr,
-								  uint32 hashvalue,
-								  HASHACTION action,
-								  bool *foundPtr)
+void* hash_search_with_hash_value(HTAB* hashp, const void* keyPtr, uint32 hashvalue,
+                                  HASHACTION action, bool* foundPtr)
 {
-	HASHHDR    *hctl = hashp->hctl;
-	int			freelist_idx = FREELIST_IDX(hctl, hashvalue);
-	Size		keysize;
-	uint32		bucket;
-	long		segment_num;
-	long		segment_ndx;
-	HASHSEGMENT segp;
-	HASHBUCKET	currBucket;
-	HASHBUCKET *prevBucketPtr;
-	HashCompareFunc match;
+    HASHHDR*        hctl = hashp->hctl;
+    int             freelist_idx = FREELIST_IDX(hctl, hashvalue);
+    Size            keysize;
+    uint32          bucket;
+    long            segment_num;
+    long            segment_ndx;
+    HASHSEGMENT     segp;
+    HASHBUCKET      currBucket;
+    HASHBUCKET*     prevBucketPtr;
+    HashCompareFunc match;
 
 #if HASH_STATISTICS
-	hash_accesses++;
-	hctl->accesses++;
+    hash_accesses++;
+    hctl->accesses++;
 #endif
 
-	/*
-	 * If inserting, check if it is time to split a bucket.
-	 *
-	 * NOTE: failure to expand table is not a fatal error, it just means we
-	 * have to run at higher fill factor than we wanted.  However, if we're
-	 * using the palloc allocator then it will throw error anyway on
-	 * out-of-memory, so we must do this before modifying the table.
-	 */
-	if (action == HASH_ENTER || action == HASH_ENTER_NULL)
-	{
-		/*
-		 * Can't split if running in partitioned mode, nor if frozen, nor if
-		 * table is the subject of any active hash_seq_search scans.  Strange
-		 * order of these tests is to try to check cheaper conditions first.
-		 */
-		if (!IS_PARTITIONED(hctl) && !hashp->frozen &&
-			hctl->freeList[0].nentries / (long) (hctl->max_bucket + 1) >= hctl->ffactor)
-			(void) expand_table(hashp);
-	}
+    /*
+     * If inserting, check if it is time to split a bucket.
+     *
+     * NOTE: failure to expand table is not a fatal error, it just means we
+     * have to run at higher fill factor than we wanted.  However, if we're
+     * using the palloc allocator then it will throw error anyway on
+     * out-of-memory, so we must do this before modifying the table.
+     */
+    if (action == HASH_ENTER || action == HASH_ENTER_NULL)
+    {
+        /*
+         * Can't split if running in partitioned mode, nor if frozen, nor if
+         * table is the subject of any active hash_seq_search scans.  Strange
+         * order of these tests is to try to check cheaper conditions first.
+         */
+        if (!IS_PARTITIONED(hctl) && !hashp->frozen &&
+            hctl->freeList[0].nentries / (long)(hctl->max_bucket + 1) >= hctl->ffactor)
+        {
+            (void)expand_table(hashp);
+        }
+    }
 
-	/*
-	 * Do the initial lookup
-	 */
-	bucket = calc_bucket(hctl, hashvalue);
+    /*
+     * Do the initial lookup
+     */
+    bucket = calc_bucket(hctl, hashvalue);
 
-	segment_num = bucket >> hashp->sshift;
-	segment_ndx = MOD(bucket, hashp->ssize);
+    segment_num = bucket >> hashp->sshift;
+    segment_ndx = MOD(bucket, hashp->ssize);
 
-	segp = hashp->dir[segment_num];
+    segp = hashp->dir[segment_num];
 
-	if (segp == NULL)
-		hash_corrupted(hashp);
+    if (segp == NULL)
+    {
+        hash_corrupted(hashp);
+    }
 
-	prevBucketPtr = &segp[segment_ndx];
-	currBucket = *prevBucketPtr;
+    prevBucketPtr = &segp[segment_ndx];
+    currBucket = *prevBucketPtr;
 
-	/*
-	 * Follow collision chain looking for matching key
-	 */
-	match = hashp->match;		/* save one fetch in inner loop */
-	keysize = hashp->keysize;	/* ditto */
+    /*
+     * Follow collision chain looking for matching key
+     */
+    match = hashp->match;     /* save one fetch in inner loop */
+    keysize = hashp->keysize; /* ditto */
 
-	while (currBucket != NULL)
-	{
-		if (currBucket->hashvalue == hashvalue &&
-			match(ELEMENTKEY(currBucket), keyPtr, keysize) == 0)
-			break;
-		prevBucketPtr = &(currBucket->link);
-		currBucket = *prevBucketPtr;
+    while (currBucket != NULL)
+    {
+        if (currBucket->hashvalue == hashvalue &&
+            match(ELEMENTKEY(currBucket), keyPtr, keysize) == 0)
+        {
+            break;
+        }
+        prevBucketPtr = &(currBucket->link);
+        currBucket = *prevBucketPtr;
 #if HASH_STATISTICS
-		hash_collisions++;
-		hctl->collisions++;
+        hash_collisions++;
+        hctl->collisions++;
 #endif
-	}
+    }
 
-	if (foundPtr)
-		*foundPtr = (bool) (currBucket != NULL);
+    if (foundPtr)
+    {
+        *foundPtr = (bool)(currBucket != NULL);
+    }
 
-	/*
-	 * OK, now what?
-	 */
-	switch (action)
-	{
-		case HASH_FIND:
-			if (currBucket != NULL)
-				return (void *) ELEMENTKEY(currBucket);
-			return NULL;
+    /*
+     * OK, now what?
+     */
+    switch (action)
+    {
+        case HASH_FIND:
+            if (currBucket != NULL)
+            {
+                return (void*)ELEMENTKEY(currBucket);
+            }
+            return NULL;
 
-		case HASH_REMOVE:
-			if (currBucket != NULL)
-			{
-				/* if partitioned, must lock to touch nentries and freeList */
-				if (IS_PARTITIONED(hctl))
-				{
-					elog(RLOG_ERROR, "partitioned hash");
-				}
+        case HASH_REMOVE:
+            if (currBucket != NULL)
+            {
+                /* if partitioned, must lock to touch nentries and freeList */
+                if (IS_PARTITIONED(hctl))
+                {
+                    elog(RLOG_ERROR, "partitioned hash");
+                }
 
-				/* delete the record from the appropriate nentries counter. */
-				Assert(hctl->freeList[freelist_idx].nentries > 0);
-				hctl->freeList[freelist_idx].nentries--;
+                /* delete the record from the appropriate nentries counter. */
+                Assert(hctl->freeList[freelist_idx].nentries > 0);
+                hctl->freeList[freelist_idx].nentries--;
 
-				/* remove record from hash bucket's chain. */
-				*prevBucketPtr = currBucket->link;
+                /* remove record from hash bucket's chain. */
+                *prevBucketPtr = currBucket->link;
 
-				/* add the record to the appropriate freelist. */
-				currBucket->link = hctl->freeList[freelist_idx].freeList;
-				hctl->freeList[freelist_idx].freeList = currBucket;
+                /* add the record to the appropriate freelist. */
+                currBucket->link = hctl->freeList[freelist_idx].freeList;
+                hctl->freeList[freelist_idx].freeList = currBucket;
 
-				/*
-				 * better hope the caller is synchronizing access to this
-				 * element, because someone else is going to reuse it the next
-				 * time something is added to the table
-				 */
-				return (void *) ELEMENTKEY(currBucket);
-			}
-			return NULL;
+                /*
+                 * better hope the caller is synchronizing access to this
+                 * element, because someone else is going to reuse it the next
+                 * time something is added to the table
+                 */
+                return (void*)ELEMENTKEY(currBucket);
+            }
+            return NULL;
 
-		case HASH_ENTER_NULL:
-			/* ENTER_NULL does not work with palloc-based allocator */
-			Assert(hashp->alloc != DynaHashAlloc);
-			/* FALL THRU */
+        case HASH_ENTER_NULL:
+            /* ENTER_NULL does not work with palloc-based allocator */
+            Assert(hashp->alloc != DynaHashAlloc);
+            /* FALL THRU */
 
-		case HASH_ENTER:
-			/* Return existing element if found, else create one */
-			if (currBucket != NULL)
-				return (void *) ELEMENTKEY(currBucket);
+        case HASH_ENTER:
+            /* Return existing element if found, else create one */
+            if (currBucket != NULL)
+            {
+                return (void*)ELEMENTKEY(currBucket);
+            }
 
-			/* disallow inserts if frozen */
-			if (hashp->frozen)
-			{
-				elog(RLOG_ERROR, "cannot insert into frozen hashtable \"%s\"", hashp->tabname);
-			}
+            /* disallow inserts if frozen */
+            if (hashp->frozen)
+            {
+                elog(RLOG_ERROR, "cannot insert into frozen hashtable \"%s\"", hashp->tabname);
+            }
 
-			currBucket = get_hash_entry(hashp, freelist_idx);
-			if (currBucket == NULL)
-			{
-				/* out of memory */
-				if (action == HASH_ENTER_NULL)
-					return NULL;
-				/* report a generic message */
-				if (hashp->isshared)
-				{
-					elog(RLOG_ERROR, "out of shared memory");
-				}
-				else
-				{
-					elog(RLOG_ERROR, "out of memory");
-				}
-			}
+            currBucket = get_hash_entry(hashp, freelist_idx);
+            if (currBucket == NULL)
+            {
+                /* out of memory */
+                if (action == HASH_ENTER_NULL)
+                {
+                    return NULL;
+                }
+                /* report a generic message */
+                if (hashp->isshared)
+                {
+                    elog(RLOG_ERROR, "out of shared memory");
+                }
+                else
+                {
+                    elog(RLOG_ERROR, "out of memory");
+                }
+            }
 
-			/* link into hashbucket chain */
-			*prevBucketPtr = currBucket;
-			currBucket->link = NULL;
+            /* link into hashbucket chain */
+            *prevBucketPtr = currBucket;
+            currBucket->link = NULL;
 
-			/* copy key into record */
-			currBucket->hashvalue = hashvalue;
-			hashp->keycopy(ELEMENTKEY(currBucket), 0, keyPtr, keysize, false);
+            /* copy key into record */
+            currBucket->hashvalue = hashvalue;
+            hashp->keycopy(ELEMENTKEY(currBucket), 0, keyPtr, keysize, false);
 
-			/*
-			 * Caller is expected to fill the data field on return.  DO NOT
-			 * insert any code that could possibly throw error here, as doing
-			 * so would leave the table entry incomplete and hence corrupt the
-			 * caller's data structure.
-			 */
+            /*
+             * Caller is expected to fill the data field on return.  DO NOT
+             * insert any code that could possibly throw error here, as doing
+             * so would leave the table entry incomplete and hence corrupt the
+             * caller's data structure.
+             */
 
-			return (void *) ELEMENTKEY(currBucket);
-	}
+            return (void*)ELEMENTKEY(currBucket);
+    }
 
-	elog(RLOG_ERROR, "unrecognized hash action code: %d", (int) action);
+    elog(RLOG_ERROR, "unrecognized hash action code: %d", (int)action);
 
-	return NULL;				/* keep compiler quiet */
+    return NULL; /* keep compiler quiet */
 }
 
 /*
@@ -773,156 +809,166 @@ void *hash_search_with_hash_value(HTAB *hashp,
  * NB: for a partitioned hashtable, caller must hold lock on both relevant
  * partitions, if the new hash key would belong to a different partition.
  */
-bool hash_update_hash_key(HTAB *hashp,
-					 void *existingEntry,
-					 const void *newKeyPtr)
+bool hash_update_hash_key(HTAB* hashp, void* existingEntry, const void* newKeyPtr)
 {
-	HASHELEMENT *existingElement = ELEMENT_FROM_KEY(existingEntry);
-	HASHHDR    *hctl = hashp->hctl;
-	uint32		newhashvalue;
-	Size		keysize;
-	uint32		bucket;
-	uint32		newbucket;
-	long		segment_num;
-	long		segment_ndx;
-	HASHSEGMENT segp;
-	HASHBUCKET	currBucket;
-	HASHBUCKET *prevBucketPtr;
-	HASHBUCKET *oldPrevPtr;
-	HashCompareFunc match;
+    HASHELEMENT*    existingElement = ELEMENT_FROM_KEY(existingEntry);
+    HASHHDR*        hctl = hashp->hctl;
+    uint32          newhashvalue;
+    Size            keysize;
+    uint32          bucket;
+    uint32          newbucket;
+    long            segment_num;
+    long            segment_ndx;
+    HASHSEGMENT     segp;
+    HASHBUCKET      currBucket;
+    HASHBUCKET*     prevBucketPtr;
+    HASHBUCKET*     oldPrevPtr;
+    HashCompareFunc match;
 
 #if HASH_STATISTICS
-	hash_accesses++;
-	hctl->accesses++;
+    hash_accesses++;
+    hctl->accesses++;
 #endif
 
-	/* disallow updates if frozen */
-	if (hashp->frozen)
-	{
-		elog(RLOG_ERROR, "cannot update in frozen hashtable \"%s\"", hashp->tabname);
-	}
+    /* disallow updates if frozen */
+    if (hashp->frozen)
+    {
+        elog(RLOG_ERROR, "cannot update in frozen hashtable \"%s\"", hashp->tabname);
+    }
 
+    /*
+     * Lookup the existing element using its saved hash value.  We need to do
+     * this to be able to unlink it from its hash chain, but as a side benefit
+     * we can verify the validity of the passed existingEntry pointer.
+     */
+    bucket = calc_bucket(hctl, existingElement->hashvalue);
 
-	/*
-	 * Lookup the existing element using its saved hash value.  We need to do
-	 * this to be able to unlink it from its hash chain, but as a side benefit
-	 * we can verify the validity of the passed existingEntry pointer.
-	 */
-	bucket = calc_bucket(hctl, existingElement->hashvalue);
+    segment_num = bucket >> hashp->sshift;
+    segment_ndx = MOD(bucket, hashp->ssize);
 
-	segment_num = bucket >> hashp->sshift;
-	segment_ndx = MOD(bucket, hashp->ssize);
+    segp = hashp->dir[segment_num];
 
-	segp = hashp->dir[segment_num];
+    if (segp == NULL)
+    {
+        hash_corrupted(hashp);
+    }
 
-	if (segp == NULL)
-		hash_corrupted(hashp);
+    prevBucketPtr = &segp[segment_ndx];
+    currBucket = *prevBucketPtr;
 
-	prevBucketPtr = &segp[segment_ndx];
-	currBucket = *prevBucketPtr;
+    while (currBucket != NULL)
+    {
+        if (currBucket == existingElement)
+        {
+            break;
+        }
+        prevBucketPtr = &(currBucket->link);
+        currBucket = *prevBucketPtr;
+    }
 
-	while (currBucket != NULL)
-	{
-		if (currBucket == existingElement)
-			break;
-		prevBucketPtr = &(currBucket->link);
-		currBucket = *prevBucketPtr;
-	}
+    if (currBucket == NULL)
+    {
+        elog(RLOG_ERROR, "hash_update_hash_key argument is not in hashtable \"%s\"",
+             hashp->tabname);
+    }
 
-	if (currBucket == NULL)
-	{
-		elog(RLOG_ERROR, "hash_update_hash_key argument is not in hashtable \"%s\"",hashp->tabname);
-	}
+    oldPrevPtr = prevBucketPtr;
 
-	oldPrevPtr = prevBucketPtr;
+    /*
+     * Now perform the equivalent of a HASH_ENTER operation to locate the hash
+     * chain we want to put the entry into.
+     */
+    newhashvalue = hashp->hash(newKeyPtr, hashp->keysize);
 
-	/*
-	 * Now perform the equivalent of a HASH_ENTER operation to locate the hash
-	 * chain we want to put the entry into.
-	 */
-	newhashvalue = hashp->hash(newKeyPtr, hashp->keysize);
+    newbucket = calc_bucket(hctl, newhashvalue);
 
-	newbucket = calc_bucket(hctl, newhashvalue);
+    segment_num = newbucket >> hashp->sshift;
+    segment_ndx = MOD(newbucket, hashp->ssize);
 
-	segment_num = newbucket >> hashp->sshift;
-	segment_ndx = MOD(newbucket, hashp->ssize);
+    segp = hashp->dir[segment_num];
 
-	segp = hashp->dir[segment_num];
+    if (segp == NULL)
+    {
+        hash_corrupted(hashp);
+    }
 
-	if (segp == NULL)
-		hash_corrupted(hashp);
+    prevBucketPtr = &segp[segment_ndx];
+    currBucket = *prevBucketPtr;
 
-	prevBucketPtr = &segp[segment_ndx];
-	currBucket = *prevBucketPtr;
+    /*
+     * Follow collision chain looking for matching key
+     */
+    match = hashp->match;     /* save one fetch in inner loop */
+    keysize = hashp->keysize; /* ditto */
 
-	/*
-	 * Follow collision chain looking for matching key
-	 */
-	match = hashp->match;		/* save one fetch in inner loop */
-	keysize = hashp->keysize;	/* ditto */
-
-	while (currBucket != NULL)
-	{
-		if (currBucket->hashvalue == newhashvalue &&
-			match(ELEMENTKEY(currBucket), newKeyPtr, keysize) == 0)
-			break;
-		prevBucketPtr = &(currBucket->link);
-		currBucket = *prevBucketPtr;
+    while (currBucket != NULL)
+    {
+        if (currBucket->hashvalue == newhashvalue &&
+            match(ELEMENTKEY(currBucket), newKeyPtr, keysize) == 0)
+        {
+            break;
+        }
+        prevBucketPtr = &(currBucket->link);
+        currBucket = *prevBucketPtr;
 #if HASH_STATISTICS
-		hash_collisions++;
-		hctl->collisions++;
+        hash_collisions++;
+        hctl->collisions++;
 #endif
-	}
+    }
 
-	if (currBucket != NULL)
-		return false;			/* collision with an existing entry */
+    if (currBucket != NULL)
+    {
+        return false; /* collision with an existing entry */
+    }
 
-	currBucket = existingElement;
+    currBucket = existingElement;
 
-	/*
-	 * If old and new hash values belong to the same bucket, we need not
-	 * change any chain links, and indeed should not since this simplistic
-	 * update will corrupt the list if currBucket is the last element.  (We
-	 * cannot fall out earlier, however, since we need to scan the bucket to
-	 * check for duplicate keys.)
-	 */
-	if (bucket != newbucket)
-	{
-		/* OK to remove record from old hash bucket's chain. */
-		*oldPrevPtr = currBucket->link;
+    /*
+     * If old and new hash values belong to the same bucket, we need not
+     * change any chain links, and indeed should not since this simplistic
+     * update will corrupt the list if currBucket is the last element.  (We
+     * cannot fall out earlier, however, since we need to scan the bucket to
+     * check for duplicate keys.)
+     */
+    if (bucket != newbucket)
+    {
+        /* OK to remove record from old hash bucket's chain. */
+        *oldPrevPtr = currBucket->link;
 
-		/* link into new hashbucket chain */
-		*prevBucketPtr = currBucket;
-		currBucket->link = NULL;
-	}
+        /* link into new hashbucket chain */
+        *prevBucketPtr = currBucket;
+        currBucket->link = NULL;
+    }
 
-	/* copy new key into record */
-	currBucket->hashvalue = newhashvalue;
-	hashp->keycopy(ELEMENTKEY(currBucket), 0, newKeyPtr, keysize, false);
+    /* copy new key into record */
+    currBucket->hashvalue = newhashvalue;
+    hashp->keycopy(ELEMENTKEY(currBucket), 0, newKeyPtr, keysize, false);
 
-	/* rest of record is untouched */
+    /* rest of record is untouched */
 
-	return true;
+    return true;
 }
 
 /* calculate ceil(log base 2) of num */
 int my_log2(long num)
 {
-	int			i;
-	long		limit;
+    int  i;
+    long limit;
 
-	/* guard against too-large input, which would put us into infinite loop */
-	if (num > LONG_MAX / 2)
-		num = LONG_MAX / 2;
+    /* guard against too-large input, which would put us into infinite loop */
+    if (num > LONG_MAX / 2)
+    {
+        num = LONG_MAX / 2;
+    }
 
-	for (i = 0, limit = 1; limit < num; i++, limit <<= 1)
-		;
-	return i;
+    for (i = 0, limit = 1; limit < num; i++, limit <<= 1)
+        ;
+    return i;
 }
 
-static void *DynaHashAlloc(Size size)
+static void* DynaHashAlloc(Size size)
 {
-	return HASH_MEM_ALLOC(size);
+    return HASH_MEM_ALLOC(size);
 }
 
 /*
@@ -932,154 +978,162 @@ static void *DynaHashAlloc(Size size)
  * bytes, so we can only compare that many ... hence strncmp is almost but
  * not quite the right thing.
  */
-static int string_compare(const char *key1, const char *key2, Size keysize)
+static int string_compare(const char* key1, const char* key2, Size keysize)
 {
-	return strncmp(key1, key2, keysize - 1);
+    return strncmp(key1, key2, keysize - 1);
 }
 
 /*
  * Set default HASHHDR parameters.
  */
-static void hdefault(HTAB *hashp)
+static void hdefault(HTAB* hashp)
 {
-	HASHHDR    *hctl = hashp->hctl;
+    HASHHDR* hctl = hashp->hctl;
 
-	MemSet(hctl, 0, sizeof(HASHHDR));
+    MemSet(hctl, 0, sizeof(HASHHDR));
 
-	hctl->dsize = DEF_DIRSIZE;
-	hctl->nsegs = 0;
+    hctl->dsize = DEF_DIRSIZE;
+    hctl->nsegs = 0;
 
-	/* rather pointless defaults for key & entry size */
-	hctl->keysize = sizeof(char *);
-	hctl->entrysize = 2 * sizeof(char *);
+    /* rather pointless defaults for key & entry size */
+    hctl->keysize = sizeof(char*);
+    hctl->entrysize = 2 * sizeof(char*);
 
-	hctl->num_partitions = 0;	/* not partitioned */
+    hctl->num_partitions = 0; /* not partitioned */
 
-	hctl->ffactor = DEF_FFACTOR;
+    hctl->ffactor = DEF_FFACTOR;
 
-	/* table has no fixed maximum size */
-	hctl->max_dsize = NO_MAX_DSIZE;
+    /* table has no fixed maximum size */
+    hctl->max_dsize = NO_MAX_DSIZE;
 
-	hctl->ssize = DEF_SEGSIZE;
-	hctl->sshift = DEF_SEGSIZE_SHIFT;
+    hctl->ssize = DEF_SEGSIZE;
+    hctl->sshift = DEF_SEGSIZE_SHIFT;
 
 #ifdef HASH_STATISTICS
-	hctl->accesses = hctl->collisions = 0;
+    hctl->accesses = hctl->collisions = 0;
 #endif
 }
 
 /* calculate first power of 2 >= num, bounded to what will fit in an int */
 static int next_pow2_int(long num)
 {
-	if (num > INT_MAX / 2)
-		num = INT_MAX / 2;
-	return 1 << my_log2(num);
+    if (num > INT_MAX / 2)
+    {
+        num = INT_MAX / 2;
+    }
+    return 1 << my_log2(num);
 }
 
 /*
  * Compute derived fields of hctl and build the initial directory/segment
  * arrays
  */
-static bool init_htab(HTAB *hashp, long nelem)
+static bool init_htab(HTAB* hashp, long nelem)
 {
-	HASHHDR    *hctl = hashp->hctl;
-	HASHSEGMENT *segp;
-	int			nbuckets;
-	int			nsegs;
-	//int			i;
+    HASHHDR*     hctl = hashp->hctl;
+    HASHSEGMENT* segp;
+    int          nbuckets;
+    int          nsegs;
+    // int			i;
 
-	/*
-	 * initialize mutexes if it's a partitioned table
-	 */
-	if (IS_PARTITIONED(hctl))
-	{
-		elog(RLOG_ERROR, "partitioned table");
-	}
+    /*
+     * initialize mutexes if it's a partitioned table
+     */
+    if (IS_PARTITIONED(hctl))
+    {
+        elog(RLOG_ERROR, "partitioned table");
+    }
 
-	/*
-	 * Divide number of elements by the fill factor to determine a desired
-	 * number of buckets.  Allocate space for the next greater power of two
-	 * number of buckets
-	 */
-	nbuckets = next_pow2_int((nelem - 1) / hctl->ffactor + 1);
+    /*
+     * Divide number of elements by the fill factor to determine a desired
+     * number of buckets.  Allocate space for the next greater power of two
+     * number of buckets
+     */
+    nbuckets = next_pow2_int((nelem - 1) / hctl->ffactor + 1);
 
-	/*
-	 * In a partitioned table, nbuckets must be at least equal to
-	 * num_partitions; were it less, keys with apparently different partition
-	 * numbers would map to the same bucket, breaking partition independence.
-	 * (Normally nbuckets will be much bigger; this is just a safety check.)
-	 */
-	while (nbuckets < hctl->num_partitions)
-		nbuckets <<= 1;
+    /*
+     * In a partitioned table, nbuckets must be at least equal to
+     * num_partitions; were it less, keys with apparently different partition
+     * numbers would map to the same bucket, breaking partition independence.
+     * (Normally nbuckets will be much bigger; this is just a safety check.)
+     */
+    while (nbuckets < hctl->num_partitions)
+    {
+        nbuckets <<= 1;
+    }
 
-	hctl->max_bucket = hctl->low_mask = nbuckets - 1;
-	hctl->high_mask = (nbuckets << 1) - 1;
+    hctl->max_bucket = hctl->low_mask = nbuckets - 1;
+    hctl->high_mask = (nbuckets << 1) - 1;
 
-	/*
-	 * Figure number of directory segments needed, round up to a power of 2
-	 */
-	nsegs = (nbuckets - 1) / hctl->ssize + 1;
-	nsegs = next_pow2_int(nsegs);
+    /*
+     * Figure number of directory segments needed, round up to a power of 2
+     */
+    nsegs = (nbuckets - 1) / hctl->ssize + 1;
+    nsegs = next_pow2_int(nsegs);
 
-	/*
-	 * Make sure directory is big enough. If pre-allocated directory is too
-	 * small, choke (caller screwed up).
-	 */
-	if (nsegs > hctl->dsize)
-	{
-		if (!(hashp->dir))
-			hctl->dsize = nsegs;
-		else
-			return false;
-	}
+    /*
+     * Make sure directory is big enough. If pre-allocated directory is too
+     * small, choke (caller screwed up).
+     */
+    if (nsegs > hctl->dsize)
+    {
+        if (!(hashp->dir))
+        {
+            hctl->dsize = nsegs;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
-	/* Allocate a directory */
-	if (!(hashp->dir))
-	{
-		hashp->dir = (HASHSEGMENT *)
-			hashp->alloc(hctl->dsize * sizeof(HASHSEGMENT));
-		if (!hashp->dir)
-			return false;
-	}
+    /* Allocate a directory */
+    if (!(hashp->dir))
+    {
+        hashp->dir = (HASHSEGMENT*)hashp->alloc(hctl->dsize * sizeof(HASHSEGMENT));
+        if (!hashp->dir)
+        {
+            return false;
+        }
+    }
 
-	/* Allocate initial segments */
-	for (segp = hashp->dir; hctl->nsegs < nsegs; hctl->nsegs++, segp++)
-	{
-		*segp = seg_alloc(hashp);
-		if (*segp == NULL)
-			return false;
-	}
+    /* Allocate initial segments */
+    for (segp = hashp->dir; hctl->nsegs < nsegs; hctl->nsegs++, segp++)
+    {
+        *segp = seg_alloc(hashp);
+        if (*segp == NULL)
+        {
+            return false;
+        }
+    }
 
-	/* Choose number of entries to allocate at a time */
-	hctl->nelem_alloc = choose_nelem_alloc(hctl->entrysize);
+    /* Choose number of entries to allocate at a time */
+    hctl->nelem_alloc = choose_nelem_alloc(hctl->entrysize);
 
 #if HASH_DEBUG
-	fprintf(stderr, "init_htab:\n%s%p\n%s%ld\n%s%ld\n%s%d\n%s%ld\n%s%u\n%s%x\n%s%x\n%s%ld\n",
-			"TABLE POINTER   ", hashp,
-			"DIRECTORY SIZE  ", hctl->dsize,
-			"SEGMENT SIZE    ", hctl->ssize,
-			"SEGMENT SHIFT   ", hctl->sshift,
-			"FILL FACTOR     ", hctl->ffactor,
-			"MAX BUCKET      ", hctl->max_bucket,
-			"HIGH MASK       ", hctl->high_mask,
-			"LOW  MASK       ", hctl->low_mask,
-			"NSEGS           ", hctl->nsegs);
+    fprintf(stderr, "init_htab:\n%s%p\n%s%ld\n%s%ld\n%s%d\n%s%ld\n%s%u\n%s%x\n%s%x\n%s%ld\n",
+            "TABLE POINTER   ", hashp, "DIRECTORY SIZE  ", hctl->dsize, "SEGMENT SIZE    ",
+            hctl->ssize, "SEGMENT SHIFT   ", hctl->sshift, "FILL FACTOR     ", hctl->ffactor,
+            "MAX BUCKET      ", hctl->max_bucket, "HIGH MASK       ", hctl->high_mask,
+            "LOW  MASK       ", hctl->low_mask, "NSEGS           ", hctl->nsegs);
 #endif
-	return true;
+    return true;
 }
 
-static HASHSEGMENT seg_alloc(HTAB *hashp)
+static HASHSEGMENT seg_alloc(HTAB* hashp)
 {
-	HASHSEGMENT segp;
+    HASHSEGMENT segp;
 
-	segp = (HASHSEGMENT) hashp->alloc(sizeof(HASHBUCKET) * hashp->ssize);
+    segp = (HASHSEGMENT)hashp->alloc(sizeof(HASHBUCKET) * hashp->ssize);
 
-	if (!segp)
-		return NULL;
+    if (!segp)
+    {
+        return NULL;
+    }
 
-	MemSet(segp, 0, sizeof(HASHBUCKET) * hashp->ssize);
+    MemSet(segp, 0, sizeof(HASHBUCKET) * hashp->ssize);
 
-	return segp;
+    return segp;
 }
 
 /*
@@ -1088,78 +1142,82 @@ static HASHSEGMENT seg_alloc(HTAB *hashp)
  */
 static int choose_nelem_alloc(Size entrysize)
 {
-	int			nelem_alloc;
-	Size		elementSize;
-	Size		allocSize;
+    int  nelem_alloc;
+    Size elementSize;
+    Size allocSize;
 
-	/* Each element has a HASHELEMENT header plus user data. */
-	/* NB: this had better match element_alloc() */
-	elementSize = MAXALIGN(sizeof(HASHELEMENT)) + MAXALIGN(entrysize);
+    /* Each element has a HASHELEMENT header plus user data. */
+    /* NB: this had better match element_alloc() */
+    elementSize = MAXALIGN(sizeof(HASHELEMENT)) + MAXALIGN(entrysize);
 
-	/*
-	 * The idea here is to choose nelem_alloc at least 32, but round up so
-	 * that the allocation request will be a power of 2 or just less. This
-	 * makes little difference for hash tables in shared memory, but for hash
-	 * tables managed by palloc, the allocation request will be rounded up to
-	 * a power of 2 anyway.  If we fail to take this into account, we'll waste
-	 * as much as half the allocated space.
-	 */
-	allocSize = 32 * 4;			/* assume elementSize at least 8 */
-	do
-	{
-		allocSize <<= 1;
-		nelem_alloc = allocSize / elementSize;
-	} while (nelem_alloc < 32);
+    /*
+     * The idea here is to choose nelem_alloc at least 32, but round up so
+     * that the allocation request will be a power of 2 or just less. This
+     * makes little difference for hash tables in shared memory, but for hash
+     * tables managed by palloc, the allocation request will be rounded up to
+     * a power of 2 anyway.  If we fail to take this into account, we'll waste
+     * as much as half the allocated space.
+     */
+    allocSize = 32 * 4; /* assume elementSize at least 8 */
+    do
+    {
+        allocSize <<= 1;
+        nelem_alloc = allocSize / elementSize;
+    } while (nelem_alloc < 32);
 
-	return nelem_alloc;
+    return nelem_alloc;
 }
 
 /*
  * allocate some new elements and link them into the indicated free list
  */
-static bool element_alloc(HTAB *hashp, int nelem, int freelist_idx)
+static bool element_alloc(HTAB* hashp, int nelem, int freelist_idx)
 {
-	HASHHDR    *hctl = hashp->hctl;
-	Size		elementSize;
-	HASHELEMENT *firstElement;
-	HASHELEMENT *tmpElement;
-	HASHELEMENT *prevElement;
-	int			i;
+    HASHHDR*     hctl = hashp->hctl;
+    Size         elementSize;
+    HASHELEMENT* firstElement;
+    HASHELEMENT* tmpElement;
+    HASHELEMENT* prevElement;
+    int          i;
 
-	if (hashp->isfixed)
-		return false;
+    if (hashp->isfixed)
+    {
+        return false;
+    }
 
-	/* Each element has a HASHELEMENT header plus user data. */
-	elementSize = MAXALIGN(sizeof(HASHELEMENT)) + MAXALIGN(hctl->entrysize);
+    /* Each element has a HASHELEMENT header plus user data. */
+    elementSize = MAXALIGN(sizeof(HASHELEMENT)) + MAXALIGN(hctl->entrysize);
 
-	firstElement = (HASHELEMENT *) hashp->alloc(nelem * elementSize);
+    firstElement = (HASHELEMENT*)hashp->alloc(nelem * elementSize);
 
-	if (!firstElement)
-		return false;
+    if (!firstElement)
+    {
+        return false;
+    }
 
-	/* prepare to link all the new entries into the freelist */
-	prevElement = NULL;
-	tmpElement = firstElement;
-	for (i = 0; i < nelem; i++)
-	{
-		tmpElement->link = prevElement;
-		prevElement = tmpElement;
-		tmpElement = (HASHELEMENT *) (((char *) tmpElement) + elementSize);
-	}
+    /* prepare to link all the new entries into the freelist */
+    prevElement = NULL;
+    tmpElement = firstElement;
+    for (i = 0; i < nelem; i++)
+    {
+        tmpElement->link = prevElement;
+        prevElement = tmpElement;
+        tmpElement = (HASHELEMENT*)(((char*)tmpElement) + elementSize);
+    }
 
-	/* if partitioned, must lock to touch freeList */
-	if (IS_PARTITIONED(hctl))
-	{
-		elog(RLOG_ERROR, "partitioned table");
-	}
-	hctl->elements_ptr = rrealloc0(hctl->elements_ptr, (++(hctl->elements_num)) * sizeof(void *));
-	hctl->elements_ptr[hctl->elements_num - 1] = (void *)firstElement;
+    /* if partitioned, must lock to touch freeList */
+    if (IS_PARTITIONED(hctl))
+    {
+        elog(RLOG_ERROR, "partitioned table");
+    }
+    hctl->elements_ptr = rrealloc0(hctl->elements_ptr, (++(hctl->elements_num)) * sizeof(void*));
+    hctl->elements_ptr[hctl->elements_num - 1] = (void*)firstElement;
 
-	/* freelist could be nonempty if two backends did this concurrently */
-	firstElement->link = hctl->freeList[freelist_idx].freeList;
-	hctl->freeList[freelist_idx].freeList = prevElement;
+    /* freelist could be nonempty if two backends did this concurrently */
+    firstElement->link = hctl->freeList[freelist_idx].freeList;
+    hctl->freeList[freelist_idx].freeList = prevElement;
 
-	return true;
+    return true;
 }
 
 #if 0
@@ -1180,168 +1238,169 @@ static bool has_seq_scans(HTAB *hashp)
 /*
  * Expand the table by adding one more hash bucket.
  */
-static bool expand_table(HTAB *hashp)
+static bool expand_table(HTAB* hashp)
 {
-	HASHHDR    *hctl = hashp->hctl;
-	HASHSEGMENT old_seg,
-				new_seg;
-	long		old_bucket,
-				new_bucket;
-	long		new_segnum,
-				new_segndx;
-	long		old_segnum,
-				old_segndx;
-	HASHBUCKET *oldlink,
-			   *newlink;
-	HASHBUCKET	currElement,
-				nextElement;
+    HASHHDR*    hctl = hashp->hctl;
+    HASHSEGMENT old_seg, new_seg;
+    long        old_bucket, new_bucket;
+    long        new_segnum, new_segndx;
+    long        old_segnum, old_segndx;
+    HASHBUCKET *oldlink, *newlink;
+    HASHBUCKET  currElement, nextElement;
 
-	Assert(!IS_PARTITIONED(hctl));
+    Assert(!IS_PARTITIONED(hctl));
 
 #ifdef HASH_STATISTICS
-	hash_expansions++;
+    hash_expansions++;
 #endif
 
-	new_bucket = hctl->max_bucket + 1;
-	new_segnum = new_bucket >> hashp->sshift;
-	new_segndx = MOD(new_bucket, hashp->ssize);
+    new_bucket = hctl->max_bucket + 1;
+    new_segnum = new_bucket >> hashp->sshift;
+    new_segndx = MOD(new_bucket, hashp->ssize);
 
-	if (new_segnum >= hctl->nsegs)
-	{
-		/* Allocate new segment if necessary -- could fail if dir full */
-		if (new_segnum >= hctl->dsize)
-			if (!dir_realloc(hashp))
-				return false;
-		if (!(hashp->dir[new_segnum] = seg_alloc(hashp)))
-			return false;
-		hctl->nsegs++;
-	}
+    if (new_segnum >= hctl->nsegs)
+    {
+        /* Allocate new segment if necessary -- could fail if dir full */
+        if (new_segnum >= hctl->dsize)
+        {
+            if (!dir_realloc(hashp))
+            {
+                return false;
+            }
+        }
+        if (!(hashp->dir[new_segnum] = seg_alloc(hashp)))
+        {
+            return false;
+        }
+        hctl->nsegs++;
+    }
 
-	/* OK, we created a new bucket */
-	hctl->max_bucket++;
+    /* OK, we created a new bucket */
+    hctl->max_bucket++;
 
-	/*
-	 * *Before* changing masks, find old bucket corresponding to same hash
-	 * values; values in that bucket may need to be relocated to new bucket.
-	 * Note that new_bucket is certainly larger than low_mask at this point,
-	 * so we can skip the first step of the regular hash mask calc.
-	 */
-	old_bucket = (new_bucket & hctl->low_mask);
+    /*
+     * *Before* changing masks, find old bucket corresponding to same hash
+     * values; values in that bucket may need to be relocated to new bucket.
+     * Note that new_bucket is certainly larger than low_mask at this point,
+     * so we can skip the first step of the regular hash mask calc.
+     */
+    old_bucket = (new_bucket & hctl->low_mask);
 
-	/*
-	 * If we crossed a power of 2, readjust masks.
-	 */
-	if ((uint32) new_bucket > hctl->high_mask)
-	{
-		hctl->low_mask = hctl->high_mask;
-		hctl->high_mask = (uint32) new_bucket | hctl->low_mask;
-	}
+    /*
+     * If we crossed a power of 2, readjust masks.
+     */
+    if ((uint32)new_bucket > hctl->high_mask)
+    {
+        hctl->low_mask = hctl->high_mask;
+        hctl->high_mask = (uint32)new_bucket | hctl->low_mask;
+    }
 
-	/*
-	 * Relocate records to the new bucket.  NOTE: because of the way the hash
-	 * masking is done in calc_bucket, only one old bucket can need to be
-	 * split at this point.  With a different way of reducing the hash value,
-	 * that might not be true!
-	 */
-	old_segnum = old_bucket >> hashp->sshift;
-	old_segndx = MOD(old_bucket, hashp->ssize);
+    /*
+     * Relocate records to the new bucket.  NOTE: because of the way the hash
+     * masking is done in calc_bucket, only one old bucket can need to be
+     * split at this point.  With a different way of reducing the hash value,
+     * that might not be true!
+     */
+    old_segnum = old_bucket >> hashp->sshift;
+    old_segndx = MOD(old_bucket, hashp->ssize);
 
-	old_seg = hashp->dir[old_segnum];
-	new_seg = hashp->dir[new_segnum];
+    old_seg = hashp->dir[old_segnum];
+    new_seg = hashp->dir[new_segnum];
 
-	oldlink = &old_seg[old_segndx];
-	newlink = &new_seg[new_segndx];
+    oldlink = &old_seg[old_segndx];
+    newlink = &new_seg[new_segndx];
 
-	for (currElement = *oldlink;
-		 currElement != NULL;
-		 currElement = nextElement)
-	{
-		nextElement = currElement->link;
-		if ((long) calc_bucket(hctl, currElement->hashvalue) == old_bucket)
-		{
-			*oldlink = currElement;
-			oldlink = &currElement->link;
-		}
-		else
-		{
-			*newlink = currElement;
-			newlink = &currElement->link;
-		}
-	}
-	/* don't forget to terminate the rebuilt hash chains... */
-	*oldlink = NULL;
-	*newlink = NULL;
+    for (currElement = *oldlink; currElement != NULL; currElement = nextElement)
+    {
+        nextElement = currElement->link;
+        if ((long)calc_bucket(hctl, currElement->hashvalue) == old_bucket)
+        {
+            *oldlink = currElement;
+            oldlink = &currElement->link;
+        }
+        else
+        {
+            *newlink = currElement;
+            newlink = &currElement->link;
+        }
+    }
+    /* don't forget to terminate the rebuilt hash chains... */
+    *oldlink = NULL;
+    *newlink = NULL;
 
-	return true;
+    return true;
 }
 
-static bool dir_realloc(HTAB *hashp)
+static bool dir_realloc(HTAB* hashp)
 {
-	HASHSEGMENT *p;
-	HASHSEGMENT *old_p;
-	long		new_dsize;
-	long		old_dirsize;
-	long		new_dirsize;
+    HASHSEGMENT* p;
+    HASHSEGMENT* old_p;
+    long         new_dsize;
+    long         old_dirsize;
+    long         new_dirsize;
 
-	if (hashp->hctl->max_dsize != NO_MAX_DSIZE)
-		return false;
+    if (hashp->hctl->max_dsize != NO_MAX_DSIZE)
+    {
+        return false;
+    }
 
-	/* Reallocate directory */
-	new_dsize = hashp->hctl->dsize << 1;
-	old_dirsize = hashp->hctl->dsize * sizeof(HASHSEGMENT);
-	new_dirsize = new_dsize * sizeof(HASHSEGMENT);
+    /* Reallocate directory */
+    new_dsize = hashp->hctl->dsize << 1;
+    old_dirsize = hashp->hctl->dsize * sizeof(HASHSEGMENT);
+    new_dirsize = new_dsize * sizeof(HASHSEGMENT);
 
-	old_p = hashp->dir;
-	p = (HASHSEGMENT *) hashp->alloc((Size) new_dirsize);
+    old_p = hashp->dir;
+    p = (HASHSEGMENT*)hashp->alloc((Size)new_dirsize);
 
-	if (p != NULL)
-	{
-		rmemcpy1(p, 0, old_p, old_dirsize);
-		MemSet(((char *) p) + old_dirsize, 0, new_dirsize - old_dirsize);
-		hashp->dir = p;
-		hashp->hctl->dsize = new_dsize;
+    if (p != NULL)
+    {
+        rmemcpy1(p, 0, old_p, old_dirsize);
+        MemSet(((char*)p) + old_dirsize, 0, new_dirsize - old_dirsize);
+        hashp->dir = p;
+        hashp->hctl->dsize = new_dsize;
 
-		/* XXX assume the allocator is palloc, so we know how to free */
-		Assert(hashp->alloc == DynaHashAlloc);
-		HASH_MEM_FREE(old_p);
+        /* XXX assume the allocator is palloc, so we know how to free */
+        Assert(hashp->alloc == DynaHashAlloc);
+        HASH_MEM_FREE(old_p);
 
-		return true;
-	}
+        return true;
+    }
 
-	return false;
+    return false;
 }
 
 /* complain when we have detected a corrupted hashtable */
-static void hash_corrupted(HTAB *hashp)
+static void hash_corrupted(HTAB* hashp)
 {
-	/*
-	 * If the corruption is in a shared hashtable, we'd better force a
-	 * systemwide restart.  Otherwise, just shut down this one backend.
-	 */
-	elog(RLOG_ERROR, "hash corrupted");
-
+    /*
+     * If the corruption is in a shared hashtable, we'd better force a
+     * systemwide restart.  Otherwise, just shut down this one backend.
+     */
+    elog(RLOG_ERROR, "hash corrupted");
 }
 
 /*
  * hash_get_num_entries -- get the number of entries in a hashtable
  */
-long hash_get_num_entries(HTAB *hashp)
+long hash_get_num_entries(HTAB* hashp)
 {
-	int			i;
-	long		sum = hashp->hctl->freeList[0].nentries;
+    int  i;
+    long sum = hashp->hctl->freeList[0].nentries;
 
-	/*
-	 * We currently don't bother with acquiring the mutexes; it's only
-	 * sensible to call this function if you've got lock on all partitions of
-	 * the table.
-	 */
-	if (IS_PARTITIONED(hashp->hctl))
-	{
-		for (i = 1; i < NUM_FREELISTS; i++)
-			sum += hashp->hctl->freeList[i].nentries;
-	}
+    /*
+     * We currently don't bother with acquiring the mutexes; it's only
+     * sensible to call this function if you've got lock on all partitions of
+     * the table.
+     */
+    if (IS_PARTITIONED(hashp->hctl))
+    {
+        for (i = 1; i < NUM_FREELISTS; i++)
+        {
+            sum += hashp->hctl->freeList[i].nentries;
+        }
+    }
 
-	return sum;
+    return sum;
 }
 
 /*
@@ -1368,94 +1427,102 @@ long hash_get_num_entries(HTAB *hashp)
  * We can cope with insertions or deletions by our own backend, but *not*
  * with concurrent insertions or deletions by another.
  */
-void hash_seq_init(HASH_SEQ_STATUS *status, HTAB *hashp)
+void hash_seq_init(HASH_SEQ_STATUS* status, HTAB* hashp)
 {
-	status->hashp = hashp;
-	status->curBucket = 0;
-	status->curEntry = NULL;
-	if (!hashp->frozen)
-		register_seq_scan(hashp);
+    status->hashp = hashp;
+    status->curBucket = 0;
+    status->curEntry = NULL;
+    if (!hashp->frozen)
+    {
+        register_seq_scan(hashp);
+    }
 }
 
-void * hash_seq_search(HASH_SEQ_STATUS *status)
+void* hash_seq_search(HASH_SEQ_STATUS* status)
 {
-	HTAB	   *hashp;
-	HASHHDR    *hctl;
-	uint32		max_bucket;
-	long		ssize;
-	long		segment_num;
-	long		segment_ndx;
-	HASHSEGMENT segp;
-	uint32		curBucket;
-	HASHELEMENT *curElem;
+    HTAB*        hashp;
+    HASHHDR*     hctl;
+    uint32       max_bucket;
+    long         ssize;
+    long         segment_num;
+    long         segment_ndx;
+    HASHSEGMENT  segp;
+    uint32       curBucket;
+    HASHELEMENT* curElem;
 
-	if ((curElem = status->curEntry) != NULL)
-	{
-		/* Continuing scan of curBucket... */
-		status->curEntry = curElem->link;
-		if (status->curEntry == NULL)	/* end of this bucket */
-			++status->curBucket;
-		return (void *) ELEMENTKEY(curElem);
-	}
+    if ((curElem = status->curEntry) != NULL)
+    {
+        /* Continuing scan of curBucket... */
+        status->curEntry = curElem->link;
+        if (status->curEntry == NULL) /* end of this bucket */
+        {
+            ++status->curBucket;
+        }
+        return (void*)ELEMENTKEY(curElem);
+    }
 
-	/*
-	 * Search for next nonempty bucket starting at curBucket.
-	 */
-	curBucket = status->curBucket;
-	hashp = status->hashp;
-	hctl = hashp->hctl;
-	ssize = hashp->ssize;
-	max_bucket = hctl->max_bucket;
+    /*
+     * Search for next nonempty bucket starting at curBucket.
+     */
+    curBucket = status->curBucket;
+    hashp = status->hashp;
+    hctl = hashp->hctl;
+    ssize = hashp->ssize;
+    max_bucket = hctl->max_bucket;
 
-	if (curBucket > max_bucket)
-	{
-		hash_seq_term(status);
-		return NULL;			/* search is done */
-	}
+    if (curBucket > max_bucket)
+    {
+        hash_seq_term(status);
+        return NULL; /* search is done */
+    }
 
-	/*
-	 * first find the right segment in the table directory.
-	 */
-	segment_num = curBucket >> hashp->sshift;
-	segment_ndx = MOD(curBucket, ssize);
+    /*
+     * first find the right segment in the table directory.
+     */
+    segment_num = curBucket >> hashp->sshift;
+    segment_ndx = MOD(curBucket, ssize);
 
-	segp = hashp->dir[segment_num];
+    segp = hashp->dir[segment_num];
 
-	/*
-	 * Pick up the first item in this bucket's chain.  If chain is not empty
-	 * we can begin searching it.  Otherwise we have to advance to find the
-	 * next nonempty bucket.  We try to optimize that case since searching a
-	 * near-empty hashtable has to iterate this loop a lot.
-	 */
-	while ((curElem = segp[segment_ndx]) == NULL)
-	{
-		/* empty bucket, advance to next */
-		if (++curBucket > max_bucket)
-		{
-			status->curBucket = curBucket;
-			hash_seq_term(status);
-			return NULL;		/* search is done */
-		}
-		if (++segment_ndx >= ssize)
-		{
-			segment_num++;
-			segment_ndx = 0;
-			segp = hashp->dir[segment_num];
-		}
-	}
+    /*
+     * Pick up the first item in this bucket's chain.  If chain is not empty
+     * we can begin searching it.  Otherwise we have to advance to find the
+     * next nonempty bucket.  We try to optimize that case since searching a
+     * near-empty hashtable has to iterate this loop a lot.
+     */
+    while ((curElem = segp[segment_ndx]) == NULL)
+    {
+        /* empty bucket, advance to next */
+        if (++curBucket > max_bucket)
+        {
+            status->curBucket = curBucket;
+            hash_seq_term(status);
+            return NULL; /* search is done */
+        }
+        if (++segment_ndx >= ssize)
+        {
+            segment_num++;
+            segment_ndx = 0;
+            segp = hashp->dir[segment_num];
+        }
+    }
 
-	/* Begin scan of curBucket... */
-	status->curEntry = curElem->link;
-	if (status->curEntry == NULL)	/* end of this bucket */
-		++curBucket;
-	status->curBucket = curBucket;
-	return (void *) ELEMENTKEY(curElem);
+    /* Begin scan of curBucket... */
+    status->curEntry = curElem->link;
+    if (status->curEntry == NULL) /* end of this bucket */
+    {
+        ++curBucket;
+    }
+    status->curBucket = curBucket;
+    return (void*)ELEMENTKEY(curElem);
 }
 
-void hash_seq_term(HASH_SEQ_STATUS *status)
+void hash_seq_term(HASH_SEQ_STATUS* status)
 {
-	if (!status->hashp->frozen)
-		deregister_seq_scan(status->hashp);
+    if (!status->hashp->frozen)
+    {
+        deregister_seq_scan(status->hashp);
+    }
 }
 
 /*
@@ -1471,13 +1538,13 @@ void hash_seq_term(HASH_SEQ_STATUS *status)
  * Multiple calls to hash_freeze() are allowed, but you can't freeze a table
  * with active scans (since hash_seq_term would then do the wrong thing).
  */
-void hash_freeze(HTAB *hashp)
+void hash_freeze(HTAB* hashp)
 {
-	if (hashp->isshared)
-	{
-		elog(RLOG_ERROR, "cannot freeze shared hashtable \"%s\"", hashp->tabname);
-	}
-	hashp->frozen = true;
+    if (hashp->isshared)
+    {
+        elog(RLOG_ERROR, "cannot freeze shared hashtable \"%s\"", hashp->tabname);
+    }
+    hashp->frozen = true;
 }
 
 /* ----------------- private functions begin ----------------- */
@@ -1487,56 +1554,60 @@ void hash_freeze(HTAB *hashp)
  * (Or, if the underlying space allocator throws error for out-of-memory,
  * we won't return at all.)
  */
-static HASHBUCKET get_hash_entry(HTAB *hashp, int freelist_idx)
+static HASHBUCKET get_hash_entry(HTAB* hashp, int freelist_idx)
 {
-	HASHHDR    *hctl = hashp->hctl;
-	HASHBUCKET	newElement;
+    HASHHDR*   hctl = hashp->hctl;
+    HASHBUCKET newElement;
 
-	for (;;)
-	{
-		/* if partitioned, must lock to touch nentries and freeList */
-		if (IS_PARTITIONED(hctl))
-		{
-			elog(RLOG_ERROR, "partitioned table");
-		}
+    for (;;)
+    {
+        /* if partitioned, must lock to touch nentries and freeList */
+        if (IS_PARTITIONED(hctl))
+        {
+            elog(RLOG_ERROR, "partitioned table");
+        }
 
-		/* try to get an entry from the freelist */
-		newElement = hctl->freeList[freelist_idx].freeList;
+        /* try to get an entry from the freelist */
+        newElement = hctl->freeList[freelist_idx].freeList;
 
-		if (newElement != NULL)
-			break;
+        if (newElement != NULL)
+        {
+            break;
+        }
 
-		/*
-		 * No free elements in this freelist.  In a partitioned table, there
-		 * might be entries in other freelists, but to reduce contention we
-		 * prefer to first try to get another chunk of buckets from the main
-		 * shmem allocator.  If that fails, though, we *MUST* root through all
-		 * the other freelists before giving up.  There are multiple callers
-		 * that assume that they can allocate every element in the initially
-		 * requested table size, or that deleting an element guarantees they
-		 * can insert a new element, even if shared memory is entirely full.
-		 * Failing because the needed element is in a different freelist is
-		 * not acceptable.
-		 */
-		if (!element_alloc(hashp, hctl->nelem_alloc, freelist_idx))
-			return NULL;	/* out of memory */
-	}
+        /*
+         * No free elements in this freelist.  In a partitioned table, there
+         * might be entries in other freelists, but to reduce contention we
+         * prefer to first try to get another chunk of buckets from the main
+         * shmem allocator.  If that fails, though, we *MUST* root through all
+         * the other freelists before giving up.  There are multiple callers
+         * that assume that they can allocate every element in the initially
+         * requested table size, or that deleting an element guarantees they
+         * can insert a new element, even if shared memory is entirely full.
+         * Failing because the needed element is in a different freelist is
+         * not acceptable.
+         */
+        if (!element_alloc(hashp, hctl->nelem_alloc, freelist_idx))
+        {
+            return NULL; /* out of memory */
+        }
+    }
 
-	/* remove entry from freelist, bump nentries */
-	hctl->freeList[freelist_idx].freeList = newElement->link;
-	hctl->freeList[freelist_idx].nentries++;
+    /* remove entry from freelist, bump nentries */
+    hctl->freeList[freelist_idx].freeList = newElement->link;
+    hctl->freeList[freelist_idx].nentries++;
 
-	return newElement;
+    return newElement;
 }
 
 /* Register a table as having an active hash_seq_search scan */
-static void register_seq_scan(HTAB *hashp)
+static void register_seq_scan(HTAB* hashp)
 {
-	return;
+    return;
 }
 
 /* Deregister an active scan */
-static void deregister_seq_scan(HTAB *hashp)
+static void deregister_seq_scan(HTAB* hashp)
 {
-	return;
+    return;
 }

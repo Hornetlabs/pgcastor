@@ -10,14 +10,14 @@
 
 void txnstmt_onlinerefresh_begin_free(void* data)
 {
-    txnstmt_onlinerefresh *onlinerefresh = NULL;
+    txnstmt_onlinerefresh* onlinerefresh = NULL;
 
     if (NULL == data)
     {
         return;
     }
 
-    onlinerefresh = (txnstmt_onlinerefresh *)data;
+    onlinerefresh = (txnstmt_onlinerefresh*)data;
 
     if (onlinerefresh->no)
     {
@@ -45,9 +45,9 @@ void txnstmt_onlinerefresh_increment_end_free(void* data)
     return;
 }
 
-txnstmt_onlinerefresh *txnstmt_onlinerefresh_init(void)
+txnstmt_onlinerefresh* txnstmt_onlinerefresh_init(void)
 {
-    txnstmt_onlinerefresh *result = NULL;
+    txnstmt_onlinerefresh* result = NULL;
 
     result = rmalloc0(sizeof(txnstmt_onlinerefresh));
     if (!result)
@@ -58,22 +58,22 @@ txnstmt_onlinerefresh *txnstmt_onlinerefresh_init(void)
     return result;
 }
 
-void txnstmt_onlinerefresh_set_increment(txnstmt_onlinerefresh *refresh, int8 increment)
+void txnstmt_onlinerefresh_set_increment(txnstmt_onlinerefresh* refresh, int8 increment)
 {
     refresh->increment = increment;
 }
 
-void txnstmt_onlinerefresh_set_no(txnstmt_onlinerefresh *refresh, uuid_t *uuid)
+void txnstmt_onlinerefresh_set_no(txnstmt_onlinerefresh* refresh, uuid_t* uuid)
 {
     refresh->no = uuid;
 }
 
-void txnstmt_onlinerefresh_set_txid(txnstmt_onlinerefresh *refresh, FullTransactionId txid)
+void txnstmt_onlinerefresh_set_txid(txnstmt_onlinerefresh* refresh, FullTransactionId txid)
 {
     refresh->txid = txid;
 }
 
-void txnstmt_onlinerefresh_set_refreshtables(txnstmt_onlinerefresh *refresh, refresh_tables *tables)
+void txnstmt_onlinerefresh_set_refreshtables(txnstmt_onlinerefresh* refresh, refresh_tables* tables)
 {
     refresh->refreshtables = tables;
 }

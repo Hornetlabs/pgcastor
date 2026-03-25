@@ -1,0 +1,46 @@
+# 基于 CODE_STYLE.md 的配置
+BasedOnStyle: Google
+
+# 缩进设置
+IndentWidth: 4
+UseTab: Never
+
+# 大括号风格 (Allman style)
+BreakBeforeBraces: Allman
+
+# 空格设置
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpacesInAngles: false
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+
+# 对齐设置 - 只对齐变量声明, 不对齐函数体中的赋值
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  AlignFunctionPointers: false
+  PadOperators: false
+AlignConsecutiveAssignments:
+  Enabled: false
+AlignEscapedNewlines: Left
+AlignOperands: Align
+AlignTrailingComments: true
+
+# 换行设置
+ColumnLimit: 100
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AlwaysBreakAfterReturnType: None
+
+# 其他设置
+PointerAlignment: Left
+DerivePointerAlignment: false
+SortIncludes: false
+IncludeBlocks: Regroup
+InsertBraces: true

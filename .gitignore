@@ -24,3 +24,4 @@ c_cpp_properties.json
 # Build file excludes 
 Makefile.global
 Makefile
+/.cache

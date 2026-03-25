@@ -16,31 +16,31 @@
 #include "parser/trail/parsertrail.h"
 #include "parser/trail/reset/parsertrail_reset.h"
 
-/* 
- * Trail RESET 应用
- *  清理数据
+/*
+ * Trail RESET application
+ *  Clean data
  */
 bool parsertrail_trailresetapply(parsertrail* parsertrail, void* data)
 {
-    /* 大事务相关暂时不需要*/
-    txnstmt* rstmt = NULL;
-    txn *resettxn = NULL;
+    /* Big transaction related, not needed for now */
+    txnstmt*  rstmt = NULL;
+    txn*      resettxn = NULL;
     ff_reset* resetdata = NULL;
-    txn *cur_txn = NULL;
+    txn*      cur_txn = NULL;
 
-    if(NULL == data)
+    if (NULL == data)
     {
         return true;
     }
 
-    /* 数据清理 */
+    /* Data cleanup */
     cur_txn = parsertrail->lasttxn;
     fftrail_invalidprivdata(FFSMGR_IF_OPTYPE_DESERIAL, parsertrail->ffsmgrstate->fdata->ffdata);
 
-    /* 清理所有未完成的事务 */
+    /* Cleanup all incomplete transactions */
     if (cur_txn)
     {
-        if(InvalidFullTransactionId != cur_txn->xid)
+        if (InvalidFullTransactionId != cur_txn->xid)
         {
             transcache_removeTXNByXid(parsertrail->transcache, cur_txn->xid);
             parsertrail->lasttxn = NULL;
@@ -48,7 +48,7 @@ bool parsertrail_trailresetapply(parsertrail* parsertrail, void* data)
     }
     resetdata = (ff_reset*)data;
 
-    /* 生成reset事务加入到缓存中 */
+    /* Generate reset transaction and add to cache */
     resettxn = txn_init(FROZEN_TXNID, InvalidXLogRecPtr, InvalidXLogRecPtr);
     if (NULL == resettxn)
     {
@@ -57,7 +57,7 @@ bool parsertrail_trailresetapply(parsertrail* parsertrail, void* data)
     }
 
     rstmt = txnstmt_init();
-    if(NULL == rstmt)
+    if (NULL == rstmt)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return false;
@@ -77,7 +77,7 @@ void parsertrail_trailresetclean(parsertrail* parsertrail, void* data)
 {
     UNUSED(parsertrail);
 
-    /* 释放data */
+    /* Free data */
     if (data)
     {
         rfree(data);

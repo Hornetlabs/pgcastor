@@ -8,7 +8,7 @@ txnstmt_metadata* txnstmt_metadata_init(void)
     txnstmt_metadata* metastmt = NULL;
 
     metastmt = rmalloc0(sizeof(txnstmt_metadata));
-    if(NULL == metastmt)
+    if (NULL == metastmt)
     {
         elog(RLOG_WARNING, "init metadata stmt error");
         return NULL;
@@ -19,7 +19,7 @@ txnstmt_metadata* txnstmt_metadata_init(void)
 
 void txnstmt_metadatafree(void* data)
 {
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }

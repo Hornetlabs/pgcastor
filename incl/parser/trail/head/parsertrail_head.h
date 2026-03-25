@@ -1,10 +1,10 @@
 #ifndef _parsertrail_head_H
 #define _parsertrail_head_H
 
-/* 
- * Trail 文件头应用
- *  按照当前看，此头无用可不处理
-  */
+/*
+ * Trail file header application
+ *  According to current view, this header is useless and can be ignored
+ */
 bool parsertrail_trailheadapply(parsertrail* parsertrail, void* data);
 void parsertrail_trailheadclean(parsertrail* parsertrail, void* data);
 

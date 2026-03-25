@@ -19,12 +19,12 @@
 
 bool bigtxn_reset(bigtxn* bigtxn)
 {
-    /* 初始化 buffer 信息 */
+    /* Initialize buffer information */
     rmemset1(&bigtxn->fbuffer, 0, '\0', sizeof(file_buffer));
     bigtxn->txndicts = NULL;
     bigtxn->fbuffer.bufid = INVALID_BUFFERID;
     bigtxn->fbuffer.data = rmalloc0(FILE_BUFFER_SIZE);
-    if(NULL == bigtxn->fbuffer.data)
+    if (NULL == bigtxn->fbuffer.data)
     {
         elog(RLOG_WARNING, "big transaction capture serial out of memory");
         return false;
@@ -34,8 +34,8 @@ bool bigtxn_reset(bigtxn* bigtxn)
     return true;
 }
 
-/* 清理大事务txn */
-void bigtxn_clean(bigtxn *htxn)
+/* Clean up big transaction txn */
+void bigtxn_clean(bigtxn* htxn)
 {
     if (htxn)
     {
@@ -43,7 +43,7 @@ void bigtxn_clean(bigtxn *htxn)
         {
             cache_sysdicts_txnsysdicthisfree(htxn->txndicts);
         }
-        /* fdata不在这里释放 */
+        /* fdata is not freed here */
         if (htxn->fbuffer.data)
         {
             rfree(htxn->fbuffer.data);

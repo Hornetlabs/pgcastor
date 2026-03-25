@@ -15,7 +15,6 @@
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -27,13 +26,13 @@
  * ----------
  */
 
-static void euc_cn2mic(const unsigned char *euc, unsigned char *p, int32_t len);
-static void mic2euc_cn(const unsigned char *mic, unsigned char *p, int32_t len);
+static void euc_cn2mic(const unsigned char* euc, unsigned char* p, int32_t len);
+static void mic2euc_cn(const unsigned char* mic, unsigned char* p, int32_t len);
 
-void euc_cn_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void euc_cn_to_mic(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(EUC_CN, MULE_INTERNAL);
@@ -41,10 +40,10 @@ void euc_cn_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_
     euc_cn2mic(src, dest, len);
 }
 
-void mic_to_euc_cn(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void mic_to_euc_cn(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, EUC_CN);
@@ -55,7 +54,7 @@ void mic_to_euc_cn(unsigned char *src_str, unsigned char *dest_str, int32_t str_
 /*
  * EUC_CN ---> MIC
  */
-static void euc_cn2mic(const unsigned char *euc, unsigned char *p, int32_t len)
+static void euc_cn2mic(const unsigned char* euc, unsigned char* p, int32_t len)
 {
     int32_t c1;
 
@@ -76,7 +75,7 @@ static void euc_cn2mic(const unsigned char *euc, unsigned char *p, int32_t len)
             len -= 2;
         }
         else
-        {                        /* should be ASCII */
+        { /* should be ASCII */
             if (c1 == 0)
             {
                 /* report_invalid_encoding(EUC_CN, (const char *) euc, len); */
@@ -93,9 +92,9 @@ static void euc_cn2mic(const unsigned char *euc, unsigned char *p, int32_t len)
 /*
  * MIC ---> EUC_CN
  */
-static void mic2euc_cn(const unsigned char *mic, unsigned char *p, int32_t len)
+static void mic2euc_cn(const unsigned char* mic, unsigned char* p, int32_t len)
 {
-    int32_t            c1;
+    int32_t c1;
 
     while (len > 0)
     {
@@ -120,7 +119,7 @@ static void mic2euc_cn(const unsigned char *mic, unsigned char *p, int32_t len)
             len -= 3;
         }
         else
-        {                        /* should be ASCII */
+        { /* should be ASCII */
             if (c1 == 0)
             {
                 /* report_invalid_encoding(MULE_INTERNAL,

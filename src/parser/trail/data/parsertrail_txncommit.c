@@ -19,15 +19,15 @@
 
 static txn* parsertrail_txncommit_copytxn(parsertrail* parsertrail)
 {
-    txn* copy_txn                = NULL;
+    txn* copy_txn = NULL;
 
     if (NULL == parsertrail->lasttxn)
     {
         return NULL;
     }
 
-    if (parsertrail->lasttxn->type > TXN_TYPE_NORMAL 
-        && TXN_TYPE_BIGTXN_BEGIN != parsertrail->lasttxn->type)
+    if (parsertrail->lasttxn->type > TXN_TYPE_NORMAL &&
+        TXN_TYPE_BIGTXN_BEGIN != parsertrail->lasttxn->type)
     {
         copy_txn = parsertrail->lasttxn;
     }
@@ -38,25 +38,24 @@ static txn* parsertrail_txncommit_copytxn(parsertrail* parsertrail)
     return copy_txn;
 }
 
-
 /*
- * 事务结束标识
- *  结束当前的事务，若没有事务那么报错
-*/
+ * Transaction end marker
+ * End the current transaction, report error if no transaction exists
+ */
 bool parsertrail_txncommitapply(parsertrail* parsertrail, void* data)
 {
-    ListCell* lc                        = NULL;
-    txn* copy_txn                = NULL;
-    txnstmt* stmt                = NULL;
-    txnstmt* rstmt               = NULL;
-    record* record_obj               = NULL;
-    commit_stmt* commit          = NULL;
-    ff_txndata* txndata          = NULL;
-    fftrail_privdata* privdata   = NULL;
+    ListCell*         lc = NULL;
+    txn*              copy_txn = NULL;
+    txnstmt*          stmt = NULL;
+    txnstmt*          rstmt = NULL;
+    record*           record_obj = NULL;
+    commit_stmt*      commit = NULL;
+    ff_txndata*       txndata = NULL;
+    fftrail_privdata* privdata = NULL;
 
     UNUSED(privdata);
 
-    if(NULL == data)
+    if (NULL == data)
     {
         return true;
     }
@@ -66,7 +65,7 @@ bool parsertrail_txncommitapply(parsertrail* parsertrail, void* data)
 
     commit = (commit_stmt*)rstmt->stmt;
 
-    /* 接收到事务结束标识 */
+    /* Received transaction end marker */
     elog(RLOG_DEBUG, "txn commit apply, xid:%lu", txndata->header.transid);
 
     if (!parsertrail->lasttxn)
@@ -74,8 +73,8 @@ bool parsertrail_txncommitapply(parsertrail* parsertrail, void* data)
         return true;
     }
 
-    /* 添加到缓存, currenttxn置空 */
-    /* 添加事务结束lsn */
+    /* Add to cache, clear currenttxn */
+    /* Add transaction end lsn */
     if (parsertrail->lasttxn->stmts != NULL)
     {
         parsertrail->lasttxn->confirm.wal.lsn = txndata->header.orgpos;
@@ -87,10 +86,11 @@ bool parsertrail_txncommitapply(parsertrail* parsertrail, void* data)
                 stmt->extra0.wal.lsn = txndata->header.orgpos;
             }
         }
-        elog(RLOG_DEBUG,"decodingctx->currenttxn->end.wal.lsn %lu", parsertrail->lasttxn->end.wal.lsn);
+        elog(RLOG_DEBUG, "decodingctx->currenttxn->end.wal.lsn %lu",
+             parsertrail->lasttxn->end.wal.lsn);
     }
 
-    /* 设置事务的结束位置 */
+    /* Set transaction end position */
     record_obj = (record*)(parsertrail->ffsmgrstate->fdata->extradata);
     parsertrail->lasttxn->end.trail.offset = record_obj->end.trail.offset;
     parsertrail->lasttxn->segno = record_obj->end.trail.fileid;
@@ -105,7 +105,7 @@ bool parsertrail_txncommitapply(parsertrail* parsertrail, void* data)
 
     parsertrail->dtxns = dlist_put(parsertrail->dtxns, copy_txn);
     parsertrail->lasttxn = NULL;
-    elog(RLOG_DEBUG, "commit transaction:%lu : %lu/%lu", txndata->header.transid, record_obj->end.trail.fileid,record_obj->end.trail.offset);
+    elog(RLOG_DEBUG, "commit transaction:%lu : %lu/%lu", txndata->header.transid,
+         record_obj->end.trail.fileid, record_obj->end.trail.offset);
     return true;
 }
-

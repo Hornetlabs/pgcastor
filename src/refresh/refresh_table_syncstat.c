@@ -22,7 +22,7 @@ refresh_table_syncstat* refresh_table_syncstat_init(void)
     tablesyncstat->cnt = 0;
     tablesyncstat->completecnt = 0;
     tablesyncstat->tablestat = REFRESH_TABLE_STAT_WAIT;
-    tablesyncstat->oid = InvalidOid;
+    tablesyncstat->oid = INVALIDOID;
     tablesyncstat->schema = NULL;
     tablesyncstat->table = NULL;
     tablesyncstat->stat = NULL;
@@ -42,7 +42,6 @@ void refresh_table_syncstat_schema_set(char* schema, refresh_table_syncstat* syn
     syncstat->schema = rstrdup(schema);
 
     return;
-
 }
 
 void refresh_table_syncstat_table_set(char* table, refresh_table_syncstat* syncstat)
@@ -51,7 +50,7 @@ void refresh_table_syncstat_table_set(char* table, refresh_table_syncstat* syncs
     {
         elog(RLOG_ERROR, "syncstat or table is NULL");
     }
-    
+
     syncstat->table = rstrdup(table);
 
     return;
@@ -63,7 +62,7 @@ void refresh_table_syncstat_oid_set(Oid oid, refresh_table_syncstat* syncstat)
     {
         elog(RLOG_ERROR, "syncstat or table is NULL");
     }
-    
+
     syncstat->oid = oid;
 
     return;
@@ -78,7 +77,7 @@ void refreshtablesyncstat_cnt_set(int cnt, refresh_table_syncstat* syncstat)
 
     syncstat->cnt = cnt;
 
-    if (cnt !=0 )
+    if (cnt != 0)
     {
         syncstat->stat = (int8_t*)rmalloc0(cnt * sizeof(int8_t));
         if (NULL == syncstat->stat)
@@ -89,40 +88,37 @@ void refreshtablesyncstat_cnt_set(int cnt, refresh_table_syncstat* syncstat)
     }
 }
 
-/* 遍历refresh目录根据tablesyncstats, 生成queue */
-bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, void* queue_ptr, char* refreshdir)
+/* traverse refresh directory based on tablesyncstats, generate queue */
+bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, void* queue_ptr,
+                                     char* refreshdir)
 {
-    DIR* compdir = NULL;
-    struct dirent *entry = NULL;
-    StringInfo  path = NULL;
+    DIR*                    compdir = NULL;
+    struct dirent*          entry = NULL;
+    StringInfo              path = NULL;
     refresh_table_syncstat* tables = NULL;
 
     path = makeStringInfo();
 
-    /* 遍历complete目录生成任务 */
+    /* traverse complete directory to generate tasks */
     for (tables = tablesyncstats->tablesyncall; tables != NULL; tables = tables->next)
     {
-        refresh_table_syncstat *temp_table_state = NULL;
+        refresh_table_syncstat* temp_table_state = NULL;
 
         resetStringInfo(path);
 
-        appendStringInfo(path, "%s/%s/%s_%s/%s", refreshdir,
-                                                 REFRESH_REFRESH,
-                                                 tables->schema,
-                                                 tables->table,
-                                                 REFRESH_COMPLETE);
+        appendStringInfo(path, "%s/%s/%s_%s/%s", refreshdir, REFRESH_REFRESH, tables->schema,
+                         tables->table, REFRESH_COMPLETE);
         compdir = osal_open_dir(path->data);
-        if(NULL == compdir)
+        if (NULL == compdir)
         {
             continue;
         }
 
         while (NULL != (entry = osal_read_dir(compdir, path->data)))
         {
-            refresh_table_sharding *table_shard = NULL;
+            refresh_table_sharding* table_shard = NULL;
 
-            if (0 == strcmp(".", entry->d_name)
-            || 0 == strcmp("..", entry->d_name))
+            if (0 == strcmp(".", entry->d_name) || 0 == strcmp("..", entry->d_name))
             {
                 continue;
             }
@@ -138,7 +134,7 @@ bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, vo
 
             if (refresh_table_check_in_syncing(tablesyncstats, table_shard, &temp_table_state))
             {
-                /* 释放 */
+                /* free */
                 refresh_table_sharding_free(table_shard);
 
                 continue;
@@ -149,10 +145,10 @@ bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, vo
                 refreshtablesyncstat_cnt_set(table_shard->shardings, temp_table_state);
             }
 
-            if (0 == table_shard->shardings 
-                && REFRESH_TABLE_STAT_WAIT != temp_table_state->tablestat)
+            if (0 == table_shard->shardings &&
+                REFRESH_TABLE_STAT_WAIT != temp_table_state->tablestat)
             {
-                /* 释放 */
+                /* free */
                 refresh_table_sharding_free(table_shard);
                 continue;
             }
@@ -161,32 +157,29 @@ bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, vo
 
             if (temp_table_state->stat)
             {
-                if (temp_table_state->stat[table_shard->sharding_no - 1] == REFRESH_TABLE_SYNCS_SHARD_STAT_INIT)
+                if (temp_table_state->stat[table_shard->sharding_no - 1] ==
+                    REFRESH_TABLE_SYNCS_SHARD_STAT_INIT)
                 {
-                    temp_table_state->stat[table_shard->sharding_no - 1] = REFRESH_TABLE_SYNCS_SHARD_STAT_SYNCING;
+                    temp_table_state->stat[table_shard->sharding_no - 1] =
+                        REFRESH_TABLE_SYNCS_SHARD_STAT_SYNCING;
                 }
             }
 
-            elog(RLOG_DEBUG, "refresh monitor, queue gen: %s.%s %4d %4d",
-                                                               table_shard->schema,
-                                                               table_shard->table,
-                                                               table_shard->shardings,
-                                                               table_shard->sharding_no);
+            elog(RLOG_DEBUG, "refresh monitor, queue gen: %s.%s %4d %4d", table_shard->schema,
+                 table_shard->table, table_shard->shardings, table_shard->sharding_no);
             if (temp_table_state->stat)
             {
-                elog(RLOG_DEBUG, "refresh monitor, stat [%d]: %d",
-                                                               table_shard->sharding_no - 1,
-                                                               temp_table_state->stat[table_shard->sharding_no - 1]);
+                elog(RLOG_DEBUG, "refresh monitor, stat [%d]: %d", table_shard->sharding_no - 1,
+                     temp_table_state->stat[table_shard->sharding_no - 1]);
             }
 
-            /* 添加到缓存中 */
-            queue_put((queue*)queue_ptr, (void *)table_shard);
+            /* add to cache */
+            queue_put((queue*)queue_ptr, (void*)table_shard);
         }
 
         osal_free_dir(compdir);
-
     }
-    /* 清理工作 */
+    /* cleanup */
     deleteStringInfo(path);
 
     return true;
@@ -194,10 +187,10 @@ bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, vo
 
 void refresh_table_syncstat_free(refresh_table_syncstat* tablesyncstat)
 {
-    refresh_table_syncstat *next = NULL;
-    refresh_table_syncstat *current = tablesyncstat;
+    refresh_table_syncstat* next = NULL;
+    refresh_table_syncstat* current = tablesyncstat;
 
-    if ( NULL == tablesyncstat)
+    if (NULL == tablesyncstat)
     {
         return;
     }
@@ -226,6 +219,6 @@ void refresh_table_syncstat_free(refresh_table_syncstat* tablesyncstat)
         rfree(current);
         current = next;
     }
-   tablesyncstat = NULL;
-   return;
+    tablesyncstat = NULL;
+    return;
 }

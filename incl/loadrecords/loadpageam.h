@@ -3,29 +3,29 @@
 
 typedef struct LOADPAGEROUTINE
 {
-    /* 初始化 */
+    /* Initialize */
     loadpage* (*loadpageinit)(void);
 
-    /* 设置数据源 */
+    /* Set data source */
     bool (*loadpagesetfilesource)(loadpage* loadpage, char* fsource);
 
-    /* 设置类型, WAL/TRAIL */
+    /* Set type, WAL/TRAIL */
     void (*loadpagesettype)(loadpage* loadpage, int type);
 
-    /* 设置加载的起点 */
+    /* Set starting point for loading */
     void (*loadpagesetstartpos)(loadpage* loadpage, recpos pos);
 
-    /* 关闭文件描述符 */
+    /* Close file descriptor */
     void (*loadpageclose)(loadpage* loadpage);
 
-    /* 加载页面 */
+    /* Load page */
     bool (*loadpage)(loadpage* loadpage, mpage* mp);
 
-    /* 内存释放 */
+    /* Memory release */
     void (*loadpagefree)(loadpage* loadpage);
 } loadpageroutine;
 
-/* 获取 getpage 信息 */
+/* Get getpage information */
 loadpageroutine* loadpage_getpageroutine(int type);
 
 #endif

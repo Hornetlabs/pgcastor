@@ -4,4 +4,3 @@
 bool fftrail_txnmetadata(void* data, void* state);
 
 #endif
-

@@ -17,7 +17,6 @@
 #include "./unicode_map/sjis_to_utf8.map"
 #include "./unicode_map/utf8_to_sjis.map"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -28,32 +27,24 @@
  * ) returns VOID;
  * ----------
  */
-void sjis_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void sjis_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(SJIS, UTF8);
 
-    LocalToUtf(src, len, dest,
-               &sjis_to_unicode_tree,
-               NULL, 0,
-               NULL,
-               SJIS);
+    LocalToUtf(src, len, dest, &sjis_to_unicode_tree, NULL, 0, NULL, SJIS);
 }
 
-void utf8_to_sjis(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_sjis(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, SJIS);
 
-    UtfToLocal(src, len, dest,
-               &sjis_from_unicode_tree,
-               NULL, 0,
-               NULL,
-               SJIS);
+    UtfToLocal(src, len, dest, &sjis_from_unicode_tree, NULL, 0, NULL, SJIS);
 }

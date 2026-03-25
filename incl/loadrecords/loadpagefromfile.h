@@ -10,35 +10,34 @@ typedef enum LOADPAGEFROMFILE_TYPE
 
 typedef struct LOADPAGEFROMFILE
 {
-    loadpage             loadpage;
-    int                         filetype;
-    int                         fd;
-    uint64                      foffset;
-    uint64                      fileno;
-    char                        fdir[MAXPATH];
-    char                        fpath[ABSPATH];
+    loadpage loadpage;
+    int      filetype;
+    int      fd;
+    uint64   foffset;
+    uint64   fileno;
+    char     fdir[MAXPATH];
+    char     fpath[ABSPATH];
 } loadpagefromfile;
 
-/* 初始化 */
+/* Initialize */
 loadpage* loadpagefromfile_init(void);
 
-
-/* 设置文件的存储路径 */
+/* Set file storage path */
 bool loadpagefromfile_setfdir(loadpage* loadpage, char* fsource);
 
-/* 设置类型 */
+/* Set type */
 void loadpagefromfile_settype(loadpage* loadpage, int type);
 
-/* 设置解析的起点 */
+/* Set parsing starting point */
 void loadpagefromfile_setstartpos(loadpage* loadpage, recpos pos);
 
-/* 加载页 */
+/* Load page */
 bool loadpagefromfile_loadpage(loadpage* loadpage, mpage* mp);
 
-/* 关闭文件描述符 */
+/* Close file descriptor */
 void loadpagefromfile_close(loadpage* loadpage);
 
-/* 释放 */
+/* Release */
 void loadpagefromfile_free(loadpage* loadpage);
 
 #endif

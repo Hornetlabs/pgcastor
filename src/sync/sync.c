@@ -18,10 +18,10 @@
 #include "refresh/refresh_tables.h"
 #include "onlinerefresh/integrate/dataset/onlinerefresh_integratedataset.h"
 
-static bool syncstate_prepare(syncstate* syncstate, const char *stmtName,
-                                                        const char *query, int nParams)
+static bool syncstate_prepare(syncstate* syncstate, const char* stmtName, const char* query,
+                              int nParams)
 {
-    PGresult *res = NULL;
+    PGresult* res = NULL;
     res = PQprepare(syncstate->conn, stmtName, query, nParams, NULL);
 
     if (PGRES_COMMAND_OK != PQresultStatus(res))
@@ -34,12 +34,10 @@ static bool syncstate_prepare(syncstate* syncstate, const char *stmtName,
     return true;
 }
 
-static bool syncstate_execprepare(syncstate* syncstate,
-                                 const char *stmtName,
-                                 int nParams,
-                                 const char *const *paramValues)
+static bool syncstate_execprepare(syncstate* syncstate, const char* stmtName, int nParams,
+                                  const char* const* paramValues)
 {
-    PGresult *res = NULL;
+    PGresult* res = NULL;
     res = PQexecPrepared(syncstate->conn, stmtName, nParams, paramValues, NULL, NULL, 0);
 
     if (PGRES_COMMAND_OK != PQresultStatus(res))
@@ -48,26 +46,25 @@ static bool syncstate_execprepare(syncstate* syncstate,
         PQclear(res);
         return false;
     }
-    
+
     PQclear(res);
     return true;
 }
 
-/* 初始化syncstate->hatables2prepare哈希表 */
+/* initialize syncstate->hatables2prepare hash table */
 HTAB* syncstate_hpreparedno_init(void)
 {
-    HASHCTL        hash_ctl;
-    HTAB* stmthtab;
+    HASHCTL hash_ctl;
+    HTAB*   stmthtab;
 
     rmemset1(&hash_ctl, 0, 0, sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(uint64);
     hash_ctl.entrysize = sizeof(syncstate_prepared);
-    stmthtab = hash_create("sync_hpreparedno", 2048, &hash_ctl,
-                                                    HASH_ELEM | HASH_BLOBS);
+    stmthtab = hash_create("sync_hpreparedno", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
     return stmthtab;
 }
 
-/* 释放syncstate->hatables2prepare哈希表 */
+/* free syncstate->hatables2prepare hash table */
 void syncstate_hpreparedno_free(syncstate* syncstate)
 {
     if (NULL == syncstate->hpreparedno)
@@ -79,7 +76,7 @@ void syncstate_hpreparedno_free(syncstate* syncstate)
     return;
 }
 
-/* 重置syncstate */
+/* reset syncstate */
 void syncstate_reset(syncstate* syncstate)
 {
     if (NULL == syncstate)
@@ -92,7 +89,7 @@ void syncstate_reset(syncstate* syncstate)
         PQfinish(syncstate->conn);
     }
     syncstate->conn = NULL;
-    if(syncstate->hpreparedno)
+    if (syncstate->hpreparedno)
     {
         syncstate_hpreparedno_free(syncstate);
     }
@@ -100,13 +97,18 @@ void syncstate_reset(syncstate* syncstate)
     syncstate->hpreparedno = syncstate_hpreparedno_init();
 }
 
-/* 设置连接信息 */
+/* set connection information */
 void syncstate_conninfo_set(syncstate* syncstate, char* conn)
 {
+    if (NULL == syncstate)
+    {
+        return;
+    }
+
     syncstate->conninfo = conn;
 }
 
-/* 连接目的端 */
+/* connect to destination */
 bool syncstate_conn(syncstate* sync_state, void* thr_node_ptr)
 {
     thrnode* thr_node = NULL;
@@ -118,7 +120,7 @@ bool syncstate_conn(syncstate* sync_state, void* thr_node_ptr)
     thr_node = (thrnode*)thr_node_ptr;
 
     syncstate_conninfo_set(sync_state, guc_getConfigOption(CFG_KEY_URL));
-    
+
     while (1)
     {
         if (THRNODE_STAT_TERM == thr_node->stat)
@@ -143,16 +145,16 @@ bool syncstate_conn(syncstate* sync_state, void* thr_node_ptr)
     return true;
 }
 
-/* 更新状态表信息 */
-bool syncstate_update_statustb(syncstate* sync_state, void* txn_ptr , bool exec)
+/* update status table information */
+bool syncstate_update_statustb(syncstate* sync_state, void* txn_ptr, bool exec)
 {
-    char xid[65] = {'\0'};
-    char fileid[65] = {'\0'};
-    char lsn[65] = {'\0'};
-    char offset[65] = {'\0'};
-    PGresult *res = NULL;
-    txn* txn_entry = NULL;
-    const char  *paramValues[4];
+    char        xid[65] = {'\0'};
+    char        fileid[65] = {'\0'};
+    char        lsn[65] = {'\0'};
+    char        offset[65] = {'\0'};
+    PGresult*   res = NULL;
+    txn*        txn_entry = NULL;
+    const char* paramValues[4];
 
     char* stmtname = "update_sync_statustb";
     txn_entry = (txn*)txn_ptr;
@@ -182,15 +184,15 @@ bool syncstate_update_statustb(syncstate* sync_state, void* txn_ptr , bool exec)
             elog(RLOG_WARNING, "update_sync_statustb failde");
             return false;
         }
-
     }
     else
     {
         char sql_exec[1024] = {'\0'};
         rmemset1(sql_exec, 0, '\0', 1024);
-        sprintf(sql_exec,"UPDATE %s.sync_status SET emit_fileid = $1, lsn = $2, xid = $3, emit_offset = $4 where name = '%s';",
-                            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
-                            sync_state->name);
+        sprintf(sql_exec,
+                "UPDATE %s.sync_status SET emit_fileid = $1, lsn = $2, xid = $3, emit_offset = $4 "
+                "where name = '%s';",
+                guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), sync_state->name);
 
         res = PQprepare(sync_state->conn, stmtname, sql_exec, 4, NULL);
 
@@ -206,23 +208,20 @@ bool syncstate_update_statustb(syncstate* sync_state, void* txn_ptr , bool exec)
     return true;
 }
 
-/* 更新状态表commitlsn信息 */
+/* update status table commitlsn information */
 bool syncstate_update_statustb_commitlsn(syncstate* syncstate, XLogRecPtr commitlsn)
 {
-    char lsn[65] = {'\0'};
-    char sql_exec[1024] = {'\0'};
-    PGresult *res = NULL;
+    char      lsn[65] = {'\0'};
+    char      sql_exec[1024] = {'\0'};
+    PGresult* res = NULL;
 
     rmemset1(lsn, 0, '\0', 65);
 
     sprintf(lsn, "%lu", commitlsn);
 
-
     rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec,"UPDATE %s.sync_status SET lsn = '%s' where name = '%s';",
-                            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
-                            lsn,
-                            syncstate->name);
+    sprintf(sql_exec, "UPDATE %s.sync_status SET lsn = '%s' where name = '%s';",
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), lsn, syncstate->name);
 
     res = conn_exec(syncstate->conn, sql_exec);
 
@@ -236,14 +235,13 @@ bool syncstate_update_statustb_commitlsn(syncstate* syncstate, XLogRecPtr commit
     return true;
 }
 
-
-/* 更新状态表rewind信息 */
+/* update status table rewind information */
 bool syncstate_update_rewind(syncstate* syncstate, recpos rewind)
 {
-    char sql_exec[1024] = {'\0'};
-    char rewind_fileid[65] = {'\0'};
-    char rewind_offset[65] = {'\0'};
-    PGresult *res = NULL;
+    char      sql_exec[1024] = {'\0'};
+    char      rewind_fileid[65] = {'\0'};
+    char      rewind_offset[65] = {'\0'};
+    PGresult* res = NULL;
 
     rmemset1(sql_exec, 0, '\0', 1024);
     rmemset1(rewind_fileid, 0, '\0', 65);
@@ -251,11 +249,10 @@ bool syncstate_update_rewind(syncstate* syncstate, recpos rewind)
 
     sprintf(rewind_fileid, "%lu", rewind.trail.fileid);
     sprintf(rewind_offset, "%lu", rewind.trail.offset);
-    sprintf(sql_exec,"UPDATE %s.sync_status SET rewind_fileid = %s, rewind_offset = %s where name = '%s';",
-                            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
-                            rewind_fileid,
-                            rewind_offset,
-                            syncstate->name);
+    sprintf(sql_exec,
+            "UPDATE %s.sync_status SET rewind_fileid = %s, rewind_offset = %s where name = '%s';",
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), rewind_fileid, rewind_offset,
+            syncstate->name);
 
     res = conn_exec(syncstate->conn, sql_exec);
     if (NULL == res)
@@ -272,13 +269,13 @@ bool syncstate_update_rewind(syncstate* syncstate, recpos rewind)
 
 bool syncstate_applytxn(syncstate* sync_state, void* thr_node_ptr, void* txn_ptr, bool update)
 {
-    bool find = false;
-    uint64 debugno = 0;
-    PGresult *res = NULL;
-    ListCell* lcdebug = NULL;
-    txn* txn_entry = NULL;
-    txnstmt* stmtnode = NULL;
-    thrnode* thr_node = NULL;
+    bool                find = false;
+    uint64              debugno = 0;
+    PGresult*           res = NULL;
+    ListCell*           lcdebug = NULL;
+    txn*                txn_entry = NULL;
+    txnstmt*            stmtnode = NULL;
+    thrnode*            thr_node = NULL;
     syncstate_prepared* prepared_entry = NULL;
 
     if (NULL == sync_state)
@@ -289,7 +286,7 @@ bool syncstate_applytxn(syncstate* sync_state, void* thr_node_ptr, void* txn_ptr
     thr_node = (thrnode*)thr_node_ptr;
     txn_entry = (txn*)txn_ptr;
 
-    //elog(RLOG_DEBUG, "begin, %d", txn_entry->stmts->length);
+    // elog(RLOG_DEBUG, "begin, %d", txn_entry->stmts->length);
 stmts_write_retry:
 
     if (THRNODE_STAT_TERM == thr_node->stat)
@@ -297,8 +294,8 @@ stmts_write_retry:
         return false;
     }
 
-    /* 开启事务 */
-    res = PQexec(sync_state->conn,"begin;");
+    /* begin transaction */
+    res = PQexec(sync_state->conn, "begin;");
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
         elog(RLOG_WARNING, "begin failed: %s", PQerrorMessage(sync_state->conn));
@@ -307,13 +304,12 @@ stmts_write_retry:
     }
     PQclear(res);
 
-
-    /* 执行事务中的语句 */
-    foreach(lcdebug, txn_entry->stmts)
+    /* execute statements in transaction */
+    foreach (lcdebug, txn_entry->stmts)
     {
         stmtnode = (txnstmt*)lfirst(lcdebug);
 
-        /* 组装preparestmt和paramvalues */
+        /* assemble preparestmt and paramvalues */
         if (TXNSTMT_TYPE_UPDATESYNCTABLE == stmtnode->type)
         {
             if (false == syncstate_update_statustb(sync_state, txn_entry, true))
@@ -334,13 +330,12 @@ stmts_write_retry:
         {
             txnstmt_prepared* preparedstmt = NULL;
             preparedstmt = (txnstmt_prepared*)stmtnode->stmt;
-            prepared_entry = hash_search(sync_state->hpreparedno, &preparedstmt->number, HASH_ENTER, &find);
+            prepared_entry =
+                hash_search(sync_state->hpreparedno, &preparedstmt->number, HASH_ENTER, &find);
             if (false == find)
             {
-                if(!syncstate_prepare(sync_state,
-                                             preparedstmt->preparedname,
-                                             preparedstmt->preparedsql,
-                                             preparedstmt->valuecnt))
+                if (!syncstate_prepare(sync_state, preparedstmt->preparedname,
+                                       preparedstmt->preparedsql, preparedstmt->valuecnt))
                 {
                     if (CONNECTION_OK == PQstatus(sync_state->conn))
                     {
@@ -350,25 +345,23 @@ stmts_write_retry:
                 }
                 prepared_entry->number = preparedstmt->number;
                 rmemset1(prepared_entry->preparename, 0, '\0', 64);
-                rmemcpy1(prepared_entry->preparename, 0 , preparedstmt->preparedname, strlen(preparedstmt->preparedname));
-
+                rmemcpy1(prepared_entry->preparename, 0, preparedstmt->preparedname,
+                         strlen(preparedstmt->preparedname));
             }
 
-            if(!syncstate_execprepare(sync_state,
-                                             preparedstmt->preparedname,
-                                             preparedstmt->valuecnt,
-                                             (const char**)preparedstmt->values))
+            if (!syncstate_execprepare(sync_state, preparedstmt->preparedname,
+                                       preparedstmt->valuecnt, (const char**)preparedstmt->values))
             {
                 if (CONNECTION_OK == PQstatus(sync_state->conn))
                 {
-                    txn_entry->stmts = list_delete(txn_entry->stmts,stmtnode);
+                    txn_entry->stmts = list_delete(txn_entry->stmts, stmtnode);
                     txnstmt_free(stmtnode);
                     goto stmts_write_retry;
                 }
                 return false;
             }
         }
-        else if(TXNSTMT_TYPE_DDL == stmtnode->type)
+        else if (TXNSTMT_TYPE_DDL == stmtnode->type)
         {
             txnstmt_ddl* ddlstmt = NULL;
             ddlstmt = (txnstmt_ddl*)stmtnode->stmt;
@@ -387,7 +380,7 @@ stmts_write_retry:
             }
             PQclear(res);
         }
-        else if(TXNSTMT_TYPE_BURST == stmtnode->type)
+        else if (TXNSTMT_TYPE_BURST == stmtnode->type)
         {
             txnstmt_burst* burststmt = NULL;
             burststmt = (txnstmt_burst*)stmtnode->stmt;
@@ -415,7 +408,7 @@ stmts_write_retry:
         debugno++;
     }
 
-    /* 更新同步表 */
+    /* update sync table */
     if (update)
     {
         if (false == syncstate_update_statustb(sync_state, txn_entry, true))
@@ -424,8 +417,8 @@ stmts_write_retry:
         }
     }
 
-    /* 提交事务 */
-    res = PQexec(sync_state->conn,"commit;");
+    /* commit transaction */
+    res = PQexec(sync_state->conn, "commit;");
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
         elog(RLOG_WARNING, "commit failed: %s", PQerrorMessage(sync_state->conn));
@@ -439,10 +432,10 @@ stmts_write_retry:
 
 bool sync_txnbegin(syncstate* syncstate)
 {
-    PGresult *res = NULL;
-    /* 开启事务 */
+    PGresult* res = NULL;
+    /* begin transaction */
 
-    res = PQexec(syncstate->conn,"begin;");
+    res = PQexec(syncstate->conn, "begin;");
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
         elog(RLOG_WARNING, "bigtxn begin failed: %s", PQerrorMessage(syncstate->conn));
@@ -455,19 +448,19 @@ bool sync_txnbegin(syncstate* syncstate)
 
 bool sync_txncommit(syncstate* sync_state, void* txn_ptr)
 {
-    txn* txn_entry = NULL;
-    PGresult *res = NULL;
-    /* 开启事务 */
+    txn*      txn_entry = NULL;
+    PGresult* res = NULL;
+    /* begin transaction */
 
     txn_entry = (txn*)txn_ptr;
 
-    if(!syncstate_update_statustb(sync_state, txn_entry, true))
+    if (!syncstate_update_statustb(sync_state, txn_entry, true))
     {
         return false;
     }
-    
-    /* 开启事务 */
-    res = PQexec(sync_state->conn,"commit;");
+
+    /* commit transaction */
+    res = PQexec(sync_state->conn, "commit;");
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
         elog(RLOG_WARNING, "bigtxn commit failed: %s", PQerrorMessage(sync_state->conn));
@@ -475,21 +468,21 @@ bool sync_txncommit(syncstate* sync_state, void* txn_ptr)
         return false;
     }
     PQclear(res);
-    
+
     elog(RLOG_INFO, "bigtxn commit lsn: %lu", txn_entry->confirm.wal.lsn);
     return true;
 }
 
-/* 大事务应用不提交 */
+/* big transaction apply without commit */
 bool syncstate_bigtxn_applytxn(syncstate* sync_state, void* thr_node_ptr, void* txn_ptr)
 {
-    bool find = false;
-    uint64 debugno = 0;
-    PGresult *res = NULL;
-    ListCell* lcdebug = NULL;
-    txn* txn_entry = NULL;
-    txnstmt* stmtnode = NULL;
-    thrnode* thr_node = NULL;
+    bool                find = false;
+    uint64              debugno = 0;
+    PGresult*           res = NULL;
+    ListCell*           lcdebug = NULL;
+    txn*                txn_entry = NULL;
+    txnstmt*            stmtnode = NULL;
+    thrnode*            thr_node = NULL;
     syncstate_prepared* prepared_entry = NULL;
 
     if (NULL == sync_state)
@@ -500,15 +493,15 @@ bool syncstate_bigtxn_applytxn(syncstate* sync_state, void* thr_node_ptr, void* 
     thr_node = (thrnode*)thr_node_ptr;
     txn_entry = (txn*)txn_ptr;
 
-    //elog(RLOG_DEBUG, "begin, %d", txn_entry->stmts->length);
+    // elog(RLOG_DEBUG, "begin, %d", txn_entry->stmts->length);
 stmts_write_retry:
     if (THRNODE_STAT_TERM == thr_node->stat)
     {
         return false;
     }
 
-    /* 执行事务中的语句 */
-    foreach(lcdebug, txn_entry->stmts)
+    /* execute statements in transaction */
+    foreach (lcdebug, txn_entry->stmts)
     {
         stmtnode = (txnstmt*)lfirst(lcdebug);
 
@@ -516,13 +509,12 @@ stmts_write_retry:
         {
             txnstmt_prepared* preparedstmt = NULL;
             preparedstmt = (txnstmt_prepared*)stmtnode->stmt;
-            prepared_entry = hash_search(sync_state->hpreparedno, &preparedstmt->number, HASH_ENTER, &find);
+            prepared_entry =
+                hash_search(sync_state->hpreparedno, &preparedstmt->number, HASH_ENTER, &find);
             if (false == find)
             {
-                if(!syncstate_prepare(sync_state,
-                                             preparedstmt->preparedname,
-                                             preparedstmt->preparedsql,
-                                             preparedstmt->valuecnt))
+                if (!syncstate_prepare(sync_state, preparedstmt->preparedname,
+                                       preparedstmt->preparedsql, preparedstmt->valuecnt))
                 {
                     if (CONNECTION_OK == PQstatus(sync_state->conn))
                     {
@@ -532,24 +524,23 @@ stmts_write_retry:
                 }
                 prepared_entry->number = preparedstmt->number;
                 rmemset1(prepared_entry->preparename, 0, '\0', 64);
-                rmemcpy1(prepared_entry->preparename, 0 , preparedstmt->preparedname, strlen(preparedstmt->preparedname));
+                rmemcpy1(prepared_entry->preparename, 0, preparedstmt->preparedname,
+                         strlen(preparedstmt->preparedname));
             }
 
-            if(!syncstate_execprepare(sync_state,
-                                             preparedstmt->preparedname,
-                                             preparedstmt->valuecnt,
-                                             (const char**)preparedstmt->values))
+            if (!syncstate_execprepare(sync_state, preparedstmt->preparedname,
+                                       preparedstmt->valuecnt, (const char**)preparedstmt->values))
             {
                 if (CONNECTION_OK == PQstatus(sync_state->conn))
                 {
-                    txn_entry->stmts = list_delete(txn_entry->stmts,stmtnode);
+                    txn_entry->stmts = list_delete(txn_entry->stmts, stmtnode);
                     txnstmt_free(stmtnode);
                     goto stmts_write_retry;
                 }
                 return false;
             }
         }
-        else if(TXNSTMT_TYPE_DDL == stmtnode->type)
+        else if (TXNSTMT_TYPE_DDL == stmtnode->type)
         {
             txnstmt_ddl* ddlstmt = NULL;
             ddlstmt = (txnstmt_ddl*)stmtnode->stmt;
@@ -568,7 +559,7 @@ stmts_write_retry:
             }
             PQclear(res);
         }
-        else if(TXNSTMT_TYPE_BURST == stmtnode->type)
+        else if (TXNSTMT_TYPE_BURST == stmtnode->type)
         {
             txnstmt_burst* burststmt = NULL;
             burststmt = (txnstmt_burst*)stmtnode->stmt;
@@ -601,10 +592,10 @@ stmts_write_retry:
     return true;
 }
 
-/* syncstate资源回收 */
+/* syncstate resource cleanup */
 void syncstate_destroy(syncstate* syncstate)
 {
-    if(NULL == syncstate)
+    if (NULL == syncstate)
     {
         return;
     }
@@ -620,7 +611,7 @@ void syncstate_destroy(syncstate* syncstate)
         rfree(syncstate->name);
     }
 
-    if(syncstate->hpreparedno)
+    if (syncstate->hpreparedno)
     {
         syncstate_hpreparedno_free(syncstate);
         syncstate->hpreparedno = NULL;

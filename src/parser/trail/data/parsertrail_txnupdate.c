@@ -16,33 +16,32 @@
 #include "parser/trail/parsertrail.h"
 #include "parser/trail/data/parsertrail_txnupdate.h"
 
-static void parsertrail_txnupdate2hash(parsertrail* parsertrail,
-                                            ff_txndata* txndata)
+static void parsertrail_txnupdate2hash(parsertrail* parsertrail, ff_txndata* txndata)
 {
-    /* 
-     * 1、查看事务是否存在，不存在则创建，存在则append
-     * 2、返回
+    /*
+     * 1、Check if transaction exists, create if not exists, append if exists
+     * 2、Return
      */
-    uint16 index                                    = 0;
-    txnstmt* rstmt                           = NULL;
-    pg_parser_translog_tbcol_values* colvalues   = NULL;
+    uint16                           index = 0;
+    txnstmt*                         rstmt = NULL;
+    pg_parser_translog_tbcol_values* colvalues = NULL;
 
     rstmt = (txnstmt*)txndata->data;
 
-    /* 查看类型 */
-    if(FF_DATA_TRANSIND_START == (FF_DATA_TRANSIND_START & txndata->header.transind))
+    /* Check type */
+    if (FF_DATA_TRANSIND_START == (FF_DATA_TRANSIND_START & txndata->header.transind))
     {
-        /* 在hash中查看是否存在，不存在则添加 */
-        HTAB *tx_htab = parsertrail->transcache->by_txns;
-        txn *txn_entry = NULL;
-        bool find = false;
+        /* Check if exists in hash, add if not found */
+        HTAB*             tx_htab = parsertrail->transcache->by_txns;
+        txn*              txn_entry = NULL;
+        bool              find = false;
         FullTransactionId xid = txndata->header.transid;
 
-        /* 查找哈希 */
-        txn_entry = (txn *) hash_search(tx_htab, &xid, HASH_ENTER, &find);
+        /* Search hash */
+        txn_entry = (txn*)hash_search(tx_htab, &xid, HASH_ENTER, &find);
         if (!find)
         {
-            //初始化
+            // Initialize
             txn_initset(txn_entry, xid, InvalidXLogRecPtr);
         }
         else
@@ -55,9 +54,9 @@ static void parsertrail_txnupdate2hash(parsertrail* parsertrail,
         elog(RLOG_DEBUG, "then begin of transaction:%lu", txndata->header.transid);
     }
 
-    if(FF_DATA_TRANSIND_IN == (FF_DATA_TRANSIND_IN & txndata->header.transind))
+    if (FF_DATA_TRANSIND_IN == (FF_DATA_TRANSIND_IN & txndata->header.transind))
     {
-        /* 在hash中查看是否存在，不存在则添加 */
+        /* Check if exists in hash, add if not found */
         if (!parsertrail->lasttxn)
         {
             elog(RLOG_ERROR, "missing trans start, transid:%lu", txndata->header.transid);
@@ -69,45 +68,50 @@ static void parsertrail_txnupdate2hash(parsertrail* parsertrail,
     parsertrail->lasttxn->stmtsize += rstmt->len;
     parsertrail->transcache->totalsize += rstmt->len;
 
-    /* 输出内容 */
-    if(RLOG_DEBUG == g_loglevel)
+    /* Output content */
+    if (RLOG_DEBUG == g_loglevel)
     {
-        elog(RLOG_DEBUG, "update %s.%s begin", colvalues->m_base.m_schemaname, colvalues->m_base.m_tbname);
-        for(index = 0; index < colvalues->m_valueCnt; index++)
+        elog(RLOG_DEBUG, "update %s.%s begin", colvalues->m_base.m_schemaname,
+             colvalues->m_base.m_tbname);
+        for (index = 0; index < colvalues->m_valueCnt; index++)
         {
             elog(RLOG_DEBUG, "column:%s, value:%s", colvalues->m_new_values[index].m_colName,
-                                                    colvalues->m_new_values[index].m_value == NULL ? "NULL" : (char*)(colvalues->m_new_values[index].m_value));
+                 colvalues->m_new_values[index].m_value == NULL
+                     ? "NULL"
+                     : (char*)(colvalues->m_new_values[index].m_value));
             elog(RLOG_DEBUG, "column:%s, value:%s", colvalues->m_old_values[index].m_colName,
-                                                    colvalues->m_old_values[index].m_value == NULL ? "NULL" : (char*)(colvalues->m_old_values[index].m_value));
+                 colvalues->m_old_values[index].m_value == NULL
+                     ? "NULL"
+                     : (char*)(colvalues->m_old_values[index].m_value));
         }
-        elog(RLOG_DEBUG, "update %s.%s end", colvalues->m_base.m_schemaname, colvalues->m_base.m_tbname);
+        elog(RLOG_DEBUG, "update %s.%s end", colvalues->m_base.m_schemaname,
+             colvalues->m_base.m_tbname);
     }
 
     return;
 }
 
-/* 将表数据加入到事务缓存中 */
+/* Add table data to transaction cache */
 bool parsertrail_txnupdateapply(parsertrail* parsertrail, void* data)
 {
     ff_txndata* txndata = NULL;
 
-    if(NULL == data)
+    if (NULL == data)
     {
         return true;
     }
 
     txndata = (ff_txndata*)data;
 
-    /* 将数据放入到缓存当中 */
+    /* Put data into cache */
     parsertrail_txnupdate2hash(parsertrail, txndata);
 
-    /* 查看是否发生了切换，发生切换那么需要清理缓存 */
-    if(FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
+    /* Check if file switch occurred, if so need to cleanup cache */
+    if (FFSMGR_STATUS_SHIFTFILE == parsertrail->ffsmgrstate->status)
     {
-        /* 交换 */
+        /* Swap */
         parsertrail_traildata_shiftfile(parsertrail);
     }
 
     return true;
 }
-

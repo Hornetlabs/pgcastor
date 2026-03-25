@@ -3,7 +3,7 @@
 
 txnstmt_prepared* txnstmt_prepared_init(void);
 
-/* 释放 */
+/* free */
 void txnstmt_prepared_free(void* data);
 
 #endif

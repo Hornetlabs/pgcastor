@@ -1,7 +1,7 @@
 #ifndef PG_PARSER_APP_INCL_H
 #define PG_PARSER_APP_INCL_H
 /*
- * 程序本身通用头文件
+ * Application's common header file
  * */
 #include "mcxt/pg_parser_mcxt.h"
 #include "common/pg_parser_errnodef.h"

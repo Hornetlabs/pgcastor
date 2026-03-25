@@ -3,17 +3,17 @@
 
 typedef struct TASK_REFRESH_SHARDING2FILE
 {
-    char*               snap_shot_name;     /* 快照名 */
-    char*               conn_info;          /* 连接字符串 */
-    char*               refresh_path;       /* refresh文件夹路径, 引用自mgr, 无需释放 */
-    PGconn*             conn;               /* libpq连接句柄 */
-    queue*       tqueue;             /* 任务队列 */
+    char*   snap_shot_name; /* Snapshot name */
+    char*   conn_info;      /* Connection string */
+    char*   refresh_path;   /* Refresh folder path, Referenced from mgr, no need to release */
+    PGconn* conn;           /* libpq connection handle */
+    queue*  tqueue;         /* Task queue */
 } task_refresh_sharding2file;
 
 void* refresh_sharding2file_work(void* args);
 
 void refresh_sharding2file_free(void* args);
 
-task_refresh_sharding2file * refresh_sharding2file_init(void);
+task_refresh_sharding2file* refresh_sharding2file_init(void);
 
 #endif

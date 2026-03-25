@@ -22,20 +22,15 @@
 
 typedef struct XMANAGER_METRICNODEOP
 {
-    xmanager_metricnodetype                  type;
-    char*                                           name;
-    char*                                           desc;
-    xmanager_metricnode*                     (*init)(void);
-    bool                                            (*serial)(xmanager_metricnode* metricnode,
-                                                              uint8** blk,
-                                                              int* blksize,
-                                                              int* blkstart);
-    xmanager_metricnode*                     (*deserial)(uint8* blk,
-                                                                int* blkstart);
-    int                                             (*cmp)(void* s1, void* s2);
-    void                                            (*destroy)(xmanager_metricnode* xmetricnode);
+    xmanager_metricnodetype type;
+    char*                   name;
+    char*                   desc;
+    xmanager_metricnode* (*init)(void);
+    bool (*serial)(xmanager_metricnode* metricnode, uint8** blk, int* blksize, int* blkstart);
+    xmanager_metricnode* (*deserial)(uint8* blk, int* blkstart);
+    int (*cmp)(void* s1, void* s2);
+    void (*destroy)(xmanager_metricnode* xmetricnode);
 } xmanager_metricnodeop;
-
 
 /*----------------------------metricnode begin----------------------------*/
 
@@ -50,7 +45,7 @@ void xmanager_metricnode_reset(xmanager_metricnode* metricnode)
     metricnode->stat = XMANAGER_METRICNODESTAT_NOP;
 }
 
-/* 计算 metricnode 所占用的内存 */
+/* Calculate memory usage of metricnode */
 int xmanager_metricnode_serialsize(xmanager_metricnode* metricnode)
 {
     int len = 0;
@@ -59,7 +54,7 @@ int xmanager_metricnode_serialsize(xmanager_metricnode* metricnode)
         return 0;
     }
 
-    /* 计算总长度 */
+    /* Calculate total length */
     /* type 4 + remote 1 + stat 4 + namelen 4 + datalen 4 + conflen 4 + traillen 4*/
     len = 4 + 1 + 4 + 4 + 4 + 4 + 4;
     if (NULL != metricnode->name)
@@ -85,18 +80,16 @@ int xmanager_metricnode_serialsize(xmanager_metricnode* metricnode)
     return len;
 }
 
-/* 序列化 metricnode */
-void xmanager_metricnode_serial(xmanager_metricnode* metricnode,
-                                       uint8* blk,
-                                       int* blkstart)
+/* Serialize metricnode */
+void xmanager_metricnode_serial(xmanager_metricnode* metricnode, uint8* blk, int* blkstart)
 {
-    int len                 = 0;
-    int ivalue              = 0;
-    uint8* uptr             = NULL;
+    int    len = 0;
+    int    ivalue = 0;
+    uint8* uptr = NULL;
 
     uptr = blk + *blkstart;
 
-    /* 类型 */
+    /* Type */
     ivalue = metricnode->type;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
@@ -108,7 +101,7 @@ void xmanager_metricnode_serial(xmanager_metricnode* metricnode,
     uptr += 1;
     *blkstart += 1;
 
-    /* 状态 */
+    /* Status */
     ivalue = metricnode->stat;
     if (XMANAGER_METRICNODESTAT_ONLINE == ivalue)
     {
@@ -120,10 +113,10 @@ void xmanager_metricnode_serial(xmanager_metricnode* metricnode,
     uptr += 4;
     *blkstart += 4;
 
-    /* 
-     * 名称
-     *  1、先构建名称
-     *  2、再构建长度
+    /*
+     * Name
+     *  1. First build the name
+     *  2. Then build the length
      */
     uptr += 4;
     if (NULL == metricnode->name || '\0' == metricnode->name[0])
@@ -143,7 +136,7 @@ void xmanager_metricnode_serial(xmanager_metricnode* metricnode,
     *blkstart += 4;
     *blkstart += len;
 
-    /* data 目录 */
+    /* data directory */
     uptr += 4;
     if (NULL == metricnode->data || '\0' == metricnode->data[0])
     {
@@ -203,18 +196,16 @@ void xmanager_metricnode_serial(xmanager_metricnode* metricnode,
     return;
 }
 
-/* 反序列化 */
-bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode,
-                                         uint8* blk,
-                                         int* blkstart)
+/* Deserialization */
+bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode, uint8* blk, int* blkstart)
 {
-    int ivalue          = 0;
-    uint8* uptr         = NULL;
+    int    ivalue = 0;
+    uint8* uptr = NULL;
 
     uptr = blk;
     uptr += *blkstart;
 
-    /* 类型 */
+    /* Type */
     rmemcpy1(&ivalue, 0, uptr, 4);
     metricnode->type = r_ntoh32(ivalue);
     uptr += 4;
@@ -225,16 +216,16 @@ bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode,
     uptr += 1;
     *blkstart += 1;
 
-    /* 状态 */
+    /* Status */
     rmemcpy1(&ivalue, 0, uptr, 4);
     metricnode->stat = r_ntoh32(ivalue);
     uptr += 4;
     *blkstart += 4;
 
-    /* 
-     * 名称
-     *  1、获取长度
-     *  2、获取名称
+    /*
+     * Name
+     *  1. Get length
+     *  2. Get name
      */
     rmemcpy1(&ivalue, 0, uptr, 4);
     ivalue = r_ntoh32(ivalue);
@@ -257,10 +248,10 @@ bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode,
         *blkstart += ivalue;
     }
 
-    /* 
-     * data目录
-     *  1、获取长度
-     *  2、获取内容
+    /*
+     * data directory
+     *  1. Get length
+     *  2. Get content
      */
     rmemcpy1(&ivalue, 0, uptr, 4);
     ivalue = r_ntoh32(ivalue);
@@ -283,10 +274,10 @@ bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode,
         *blkstart += ivalue;
     }
 
-    /* 
-     * conf目录
-     *  1、获取长度
-     *  2、获取内容
+    /*
+     * conf directory
+     *  1. Get length
+     *  2. Get content
      */
     rmemcpy1(&ivalue, 0, uptr, 4);
     ivalue = r_ntoh32(ivalue);
@@ -309,10 +300,10 @@ bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode,
         *blkstart += ivalue;
     }
 
-    /* 
-     * trail目录
-     *  1、获取长度
-     *  2、获取内容
+    /*
+     * trail directory
+     *  1. Get length
+     *  2. Get content
      */
     rmemcpy1(&ivalue, 0, uptr, 4);
     ivalue = r_ntoh32(ivalue);
@@ -337,99 +328,26 @@ bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode,
     return true;
 }
 
-static xmanager_metricnodeop     m_xmetricnodeops[] =
-{
-    {
-        XMANAGER_METRICNODETYPE_NOP,
-        "nop",
-        "XManager Metric Node NOP",
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    },
-    {
-        XMANAGER_METRICNODETYPE_CAPTURE,
-        "capture",
-        "XManager Metric Capture Node",
-        xmanager_metriccapturenode_init,
-        xmanager_metriccapturenode_serial,
-        xmanager_metriccapturenode_deserial,
-        NULL,
-        xmanager_metriccapturenode_destroy
-    },
-    {
-        XMANAGER_METRICNODETYPE_INTEGRATE,
-        "integrate",
-        "XManager Metric Integrate Node",
-        xmanager_metricintegratenode_init,
-        xmanager_metricintegratenode_serial,
-        xmanager_metricintegratenode_deserial,
-        NULL,
-        xmanager_metricintegratenode_destroy
-    },
-    {
-        XMANAGER_METRICNODETYPE_PGRECEIVELOG,
-        "pgreceivelog",
-        "XManager Metric PGReceivelog Node",
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    },
-    {
-        XMANAGER_METRICNODETYPE_PROCESS,
-        "process",
-        "XManager Metric Process Node",
-        xmanager_metricprogressnode_init,
-        xmanager_metricprogressnode_serial,
-        xmanager_metricprogressnode_deserial,
-        NULL,
-        xmanager_metricprogressnode_destroy
-    },
-    {
-        XMANAGER_METRICNODETYPE_ALL,
-        "all",
-        "XManager Metric ALL Node",
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    },
-    {
-        XMANAGER_METRICNODETYPE_MANAGER,
-        "manager",
-        "XManager Metric Xmanager Node",
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    },
-    {
-        XMANAGER_METRICNODETYPE_XSCSCI,
-        "xscsci",
-        "XManager Metric XScsci Node",
-        xmanager_metricxscscinode_init,
-        NULL,
-        NULL,
-        xmanager_metricxscscinode_cmp,
-        xmanager_metricxscscinode_destroy
-    },
-    {
-        XMANAGER_METRICNODETYPE_MAX,
-        "max",
-        "XManager Metric Node Max",
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
-    }
-};
+static xmanager_metricnodeop m_xmetricnodeops[] = {
+    {XMANAGER_METRICNODETYPE_NOP, "nop", "XManager Metric Node NOP", NULL, NULL, NULL, NULL, NULL},
+    {XMANAGER_METRICNODETYPE_CAPTURE, "capture", "XManager Metric Capture Node",
+     xmanager_metriccapturenode_init, xmanager_metriccapturenode_serial,
+     xmanager_metriccapturenode_deserial, NULL, xmanager_metriccapturenode_destroy},
+    {XMANAGER_METRICNODETYPE_INTEGRATE, "integrate", "XManager Metric Integrate Node",
+     xmanager_metricintegratenode_init, xmanager_metricintegratenode_serial,
+     xmanager_metricintegratenode_deserial, NULL, xmanager_metricintegratenode_destroy},
+    {XMANAGER_METRICNODETYPE_PGRECEIVELOG, "pgreceivelog", "XManager Metric PGReceivelog Node",
+     NULL, NULL, NULL, NULL, NULL},
+    {XMANAGER_METRICNODETYPE_PROCESS, "process", "XManager Metric Process Node",
+     xmanager_metricprogressnode_init, xmanager_metricprogressnode_serial,
+     xmanager_metricprogressnode_deserial, NULL, xmanager_metricprogressnode_destroy},
+    {XMANAGER_METRICNODETYPE_ALL, "all", "XManager Metric ALL Node", NULL, NULL, NULL, NULL, NULL},
+    {XMANAGER_METRICNODETYPE_MANAGER, "manager", "XManager Metric Xmanager Node", NULL, NULL, NULL,
+     NULL, NULL},
+    {XMANAGER_METRICNODETYPE_XSCSCI, "xscsci", "XManager Metric XScsci Node",
+     xmanager_metricxscscinode_init, NULL, NULL, xmanager_metricxscscinode_cmp,
+     xmanager_metricxscscinode_destroy},
+    {XMANAGER_METRICNODETYPE_MAX, "max", "XManager Metric Node Max", NULL, NULL, NULL, NULL, NULL}};
 
 xmanager_metricnode* xmanager_metricnode_init(xmanager_metricnodetype nodetype)
 {
@@ -441,8 +359,7 @@ xmanager_metricnode* xmanager_metricnode_init(xmanager_metricnodetype nodetype)
 
     if (nodetype != m_xmetricnodeops[nodetype].type)
     {
-        elog(RLOG_WARNING,
-             "metric node init need type %d, but now type:%d ",
+        elog(RLOG_WARNING, "metric node init need type %d, but now type:%d ",
              m_xmetricnodeops[nodetype].type, nodetype);
         return NULL;
     }
@@ -455,7 +372,7 @@ char* xmanager_metricnode_getname(xmanager_metricnodetype nodetype)
     return m_xmetricnodeops[nodetype].name;
 }
 
-/* metricnode 比较函数 */
+/* Metricnode comparison function */
 int xmanager_metricnode_cmp(void* s1, void* s2)
 {
     xmanager_metricnode* mnode1 = NULL;
@@ -532,18 +449,18 @@ void xmanager_metricnode_destroyvoid(void* args)
     return xmanager_metricnode_destroy((xmanager_metricnode*)args);
 }
 
-/* 将 metricnode 落盘 */
+/* Persist metricnode to disk */
 void xmanager_metricnode_flush(dlist* dlmetricnodes)
 {
-    bool bfailed                            = false;
-    int fd                                  = -1;
-    int blkstart                            = 0;
-    int blksize                             = XMANAGER_METRICNODEBLKSIZE;
-    uint8* blk                              = NULL;
-    dlistnode* dlnode                       = NULL;
+    bool                 bfailed = false;
+    int                  fd = -1;
+    int                  blkstart = 0;
+    int                  blksize = XMANAGER_METRICNODEBLKSIZE;
+    uint8*               blk = NULL;
+    dlistnode*           dlnode = NULL;
     xmanager_metricnode* xmetricnode = NULL;
-    char metricfile[]                       = "metric/xmetricnode.dat";
-    char metricfiletmp[]                    = "metric/xmetricnode.dat.tmp";
+    char                 metricfile[] = "metric/xmetricnode.dat";
+    char                 metricfiletmp[] = "metric/xmetricnode.dat.tmp";
 
     if (dlist_isnull(dlmetricnodes))
     {
@@ -576,11 +493,9 @@ void xmanager_metricnode_flush(dlist* dlmetricnodes)
             continue;
         }
 
-        /* 执行序列化 */
-        if (false == m_xmetricnodeops[xmetricnode->type].serial(xmetricnode,
-                                                                &blk,
-                                                                &blksize,
-                                                                &blkstart))
+        /* Perform serialization */
+        if (false ==
+            m_xmetricnodeops[xmetricnode->type].serial(xmetricnode, &blk, &blksize, &blkstart))
         {
             bfailed = true;
             elog(RLOG_WARNING, "%s serial error", m_xmetricnodeops[xmetricnode->type].desc);
@@ -598,7 +513,7 @@ void xmanager_metricnode_flush(dlist* dlmetricnodes)
             }
         }
 
-        /* 将数据落盘 */
+        /* Write data to disk */
         if (blkstart != osal_file_write(fd, (char*)blk, blkstart))
         {
             bfailed = true;
@@ -626,39 +541,39 @@ void xmanager_metricnode_flush(dlist* dlmetricnodes)
         return;
     }
 
-    /* 重命名 */
+    /* Rename */
     osal_durable_rename(metricfiletmp, metricfile, RLOG_DEBUG);
     return;
 }
 
-/* 加载 metircnode.dat 文件 */
+/* Load metricnode.dat file */
 bool xmanager_metricnode_load(dlist** pdlmetricnodes)
 {
-    bool benlarge                           = false;
-    int fd                                  = -1;
-    int nodelen                             = 0;
-    int nodetype                            = 0;
+    bool benlarge = false;
+    int  fd = -1;
+    int  nodelen = 0;
+    int  nodetype = 0;
 
-    /* 读取的长度 */
-    int rlen                                = 0;
-    /* 文件总长度 */
-    int filesize                            = 0;
-    /* 解析到基于文件头的偏移 */
-    int fileoffset                          = 0;
-    /* blk 中解析到的位置 */
-    int blkstart                            = 0;
-    /* blk 中数据结束的位置 */
-    int blkend                              = 0;
-    /* blk 中的空间 */
-    int blksize                             = XMANAGER_METRICNODEBLKSIZE;
-    uint8* blk                              = NULL;
-    uint8* uptr                             = NULL;
-    dlist* dlmetricnodes                    = NULL;
+    /* Length read */
+    int rlen = 0;
+    /* Total file length */
+    int filesize = 0;
+    /* Offset from file header */
+    int fileoffset = 0;
+    /* Position parsed in blk */
+    int blkstart = 0;
+    /* End position of data in blk */
+    int blkend = 0;
+    /* Space in blk */
+    int                  blksize = XMANAGER_METRICNODEBLKSIZE;
+    uint8*               blk = NULL;
+    uint8*               uptr = NULL;
+    dlist*               dlmetricnodes = NULL;
     xmanager_metricnode* xmetricnode = NULL;
-    char metricfile[]                       = "metric/xmetricnode.dat";
-    
+    char                 metricfile[] = "metric/xmetricnode.dat";
+
     /*
-     * 查看文件是否存在, 文件不存在证明是首次
+     * Check if file exists, if not, this is the first run
      */
     if (false == osal_file_exist(metricfile))
     {
@@ -666,7 +581,7 @@ bool xmanager_metricnode_load(dlist** pdlmetricnodes)
         return true;
     }
 
-    /* 打开文件获取文件大小 */
+    /* Open file and get file size */
     fd = osal_file_open(metricfile, O_RDONLY, 0);
     if (-1 == fd)
     {
@@ -674,13 +589,13 @@ bool xmanager_metricnode_load(dlist** pdlmetricnodes)
         return false;
     }
 
-    /* 获取文件总长度 */
+    /* Get total file length */
     filesize = osal_file_size(fd);
 
-    /* 重置文件指针到头部 */
+    /* Reset file pointer to beginning */
     osal_file_seek(fd, 0);
 
-    /* 预先申请空间 */
+    /* Pre-allocate space */
     blk = rmalloc0(blksize);
     if (NULL == blk)
     {
@@ -689,11 +604,11 @@ bool xmanager_metricnode_load(dlist** pdlmetricnodes)
     }
     rmemset0(blk, 0, '\0', blksize);
 
-    /* 没有解析完 */
+    /* Not yet fully parsed */
     while (filesize > fileoffset)
     {
         benlarge = false;
-        /* 加载数据并解析 */
+        /* Load data and parse */
         if (blksize > (filesize - fileoffset))
         {
             rlen = filesize - fileoffset;
@@ -704,7 +619,7 @@ bool xmanager_metricnode_load(dlist** pdlmetricnodes)
         }
         fileoffset += rlen;
 
-        /* 校验是否需要扩容 */
+        /* Check if expansion is needed */
         while ((rlen + blkend) > blksize)
         {
             benlarge = true;
@@ -714,7 +629,7 @@ bool xmanager_metricnode_load(dlist** pdlmetricnodes)
 
         if (true == benlarge)
         {
-            /* 扩容并对扩容后的空间初始化 */
+            /* Expand and initialize the expanded space */
             uptr = rrealloc0(blk, blksize);
             if (NULL == uptr)
             {
@@ -731,42 +646,42 @@ bool xmanager_metricnode_load(dlist** pdlmetricnodes)
             goto xmanager_metricnode_load_error;
         }
 
-        /* blk 中数据的总长度 */
+        /* Total length of data in blk */
         blkend += rlen;
         while (blkstart != blkend)
         {
             uptr = blk + blkstart;
-            /* 
-             * 8 字节的含义为, 4 字节的总长度, 4 字节的类型
-             *  4 字节总长度查看数据是否足够
-             *  4 字节的类型用于分发
-            */
+            /*
+             * 8 bytes meaning: 4 bytes total length, 4 bytes type
+             *  4 bytes total length to check if data is sufficient
+             *  4 bytes type for dispatch
+             */
             if (8 >= (blkend - blkstart))
             {
                 if (0 == blkstart)
                 {
-                    /* 为0,那么证明需要更多的空间 */
+                    /* If 0, more space is needed */
                     break;
                 }
 
-                /* 
-                 * 不为0, 说明还有未解析的数据
-                 *  1、重置 blkend 的尾部长度
-                 *  2、搬运剩余空间
-                 *  3、设置 blkstart 为 0
+                /*
+                 * If not 0, there is unparsed data
+                 *  1. Reset blkend tail length
+                 *  2. Move remaining space
+                 *  3. Set blkstart to 0
                  */
-                blkend = blkend -blkstart;
+                blkend = blkend - blkstart;
                 memmove(blk, uptr, blkend);
                 blkstart = 0;
                 rmemset0(blk, blkend, '\0', blksize - blkend);
                 break;
             }
 
-            /* 获取 4 字节节点总长度 */
+            /* Get 4 bytes node total length */
             rmemcpy1(&nodelen, 0, uptr, 4);
             nodelen = r_ntoh32(nodelen);
 
-            /* 节点的长度 */
+            /* Node length */
             if (nodelen > (blkend - blkstart))
             {
                 if (0 == blkstart)
@@ -774,8 +689,8 @@ bool xmanager_metricnode_load(dlist** pdlmetricnodes)
                     break;
                 }
 
-                /* 搬运数据到头部 */
-                blkend = blkend -blkstart;
+                /* Move data to beginning */
+                blkend = blkend - blkstart;
                 memmove(blk, uptr, blkend);
                 blkstart = 0;
                 rmemset0(blk, blkend, '\0', blksize - blkend);
@@ -783,7 +698,7 @@ bool xmanager_metricnode_load(dlist** pdlmetricnodes)
             }
             uptr += 4;
 
-            /* 获取 4 字节类型 */
+            /* Get 4 bytes type */
             rmemcpy1(&nodetype, 0, uptr, 4);
             nodetype = r_ntoh32(nodetype);
 
@@ -793,7 +708,7 @@ bool xmanager_metricnode_load(dlist** pdlmetricnodes)
                 goto xmanager_metricnode_load_error;
             }
 
-            /* blkstart 需要跳过 4 字节的总长度 */
+            /* blkstart needs to skip 4 bytes total length */
             blkstart += 4;
             xmetricnode = m_xmetricnodeops[nodetype].deserial(blk, &blkstart);
             if (NULL == xmetricnode)
@@ -801,7 +716,6 @@ bool xmanager_metricnode_load(dlist** pdlmetricnodes)
                 elog(RLOG_WARNING, "%s deserial error.", m_xmetricnodeops[nodetype].desc);
                 goto xmanager_metricnode_load_error;
             }
-
 
             dlmetricnodes = dlist_put(dlmetricnodes, xmetricnode);
         }
@@ -837,7 +751,7 @@ xmanager_metricnode_load_error:
 
 /*----------------------------metricnode   end----------------------------*/
 
-/* 初始化 */
+/* Initialize */
 xmanager_metricregnode* xmanager_metricregnode_init(void)
 {
     xmanager_metricregnode* mregnode = NULL;
@@ -858,7 +772,7 @@ xmanager_metricregnode* xmanager_metricregnode_init(void)
     return mregnode;
 }
 
-/* 释放 */
+/* Destroy */
 void xmanager_metricregnode_destroy(xmanager_metricregnode* mregnode)
 {
     if (NULL == mregnode)
@@ -894,12 +808,12 @@ xmanager_metricfd2node* xmanager_metricfd2node_init(void)
 
 int xmanager_metricfd2node_cmp(void* s1, void* s2)
 {
-    int fd = -1;
+    int                     fd = -1;
     xmanager_metricfd2node* fd2node = NULL;
 
-    /* 比较 */
+    /* Compare */
     fd = (int)((uintptr_t)s1);
-    fd2node =  (xmanager_metricfd2node*)s2;
+    fd2node = (xmanager_metricfd2node*)s2;
     if (fd != fd2node->fd)
     {
         return 1;
@@ -907,10 +821,10 @@ int xmanager_metricfd2node_cmp(void* s1, void* s2)
     return 0;
 }
 
-/* 用 metricnode 进行比较 */
+/* Compare using metricnode */
 int xmanager_metricfd2node_cmp2(void* s1, void* s2)
 {
-    xmanager_metricnode* metricnode = NULL;
+    xmanager_metricnode*    metricnode = NULL;
     xmanager_metricfd2node* fd2node = NULL;
 
     metricnode = (xmanager_metricnode*)s1;

@@ -4,7 +4,6 @@
 #define NAMEDATALEN 64
 #define gettext_noop(x) (x)
 
-
 /* ----------------------------------------------------------------
  *				Section 2:	bool, true, false
  * ----------------------------------------------------------------
@@ -14,144 +13,139 @@ typedef int8_t bool;
 #endif
 
 #ifndef true
-#define true	((bool) 1)
+#define true ((bool)1)
 #endif
 
 #ifndef false
-#define false	((bool) 0)
+#define false ((bool)0)
 #endif
-
 
 /* ----------------------------------------------------------------
  *				Section 3:	standard system types
  * ----------------------------------------------------------------
  */
-typedef char*                           Pointer;
-
+typedef char* Pointer;
 
 #ifndef HAVE_INT8
-typedef signed char                     int8;		/* == 8 bits */
-typedef signed short                    int16;		/* == 16 bits */
-typedef signed int                      int32;		/* == 32 bits */
-#endif							/* not HAVE_INT8 */
+typedef signed char  int8;  /* == 8 bits */
+typedef signed short int16; /* == 16 bits */
+typedef signed int   int32; /* == 32 bits */
+#endif                      /* not HAVE_INT8 */
 
 #ifndef HAVE_UINT8
-typedef unsigned char                   uint8;	/* == 8 bits */
-typedef unsigned short                  uint16;	/* == 16 bits */
-typedef unsigned int                    uint32;	/* == 32 bits */
-#endif							/* not HAVE_UINT8 */
+typedef unsigned char  uint8;  /* == 8 bits */
+typedef unsigned short uint16; /* == 16 bits */
+typedef unsigned int   uint32; /* == 32 bits */
+#endif                         /* not HAVE_UINT8 */
 
-typedef uint8                           bits8;			/* >= 8 bits */
-typedef uint16                          bits16;			/* >= 16 bits */
-typedef uint32                          bits32;			/* >= 32 bits */
+typedef uint8  bits8;  /* >= 8 bits */
+typedef uint16 bits16; /* >= 16 bits */
+typedef uint32 bits32; /* >= 32 bits */
 
 #ifndef HAVE_INT64
-typedef long int                        int64;
+typedef long int int64;
 #endif
 #ifndef HAVE_UINT64
-typedef unsigned long int               uint64;
+typedef unsigned long int uint64;
 #endif
 
-#define INT64CONST(x)                   (x##L)
-#define UINT64CONST(x)                  (x##UL)
+#define INT64CONST(x) (x##L)
+#define UINT64CONST(x) (x##UL)
 
 #ifndef INT8_MIN
-#define INT8_MIN                 (-0x7F-1)
+#define INT8_MIN (-0x7F - 1)
 #endif
 #ifndef INT8_MAX
-#define INT8_MAX                 (0x7F)
+#define INT8_MAX (0x7F)
 #endif
 #ifndef UINT8_MAX
-#define UINT8_MAX                (0xFF)
+#define UINT8_MAX (0xFF)
 #endif
 #ifndef INT16_MIN
-#define INT16_MIN                (-0x7FFF-1)
+#define INT16_MIN (-0x7FFF - 1)
 #endif
 #ifndef INT16_MAX
-#define INT16_MAX                (0x7FFF)
+#define INT16_MAX (0x7FFF)
 #endif
 #ifndef UINT16_MAX
-#define UINT16_MAX               (0xFFFF)
+#define UINT16_MAX (0xFFFF)
 #endif
 #ifndef INT32_MIN
-#define INT32_MIN                (-0x7FFFFFFF-1)
+#define INT32_MIN (-0x7FFFFFFF - 1)
 #endif
 #ifndef INT32_MAX
-#define INT32_MAX                (0x7FFFFFFF)
+#define INT32_MAX (0x7FFFFFFF)
 #endif
 #ifndef UINT32_MAX
-#define UINT32_MAX               (0xFFFFFFFFU)
+#define UINT32_MAX (0xFFFFFFFFU)
 #endif
 #ifndef INT64_MIN
-#define INT64_MIN                (-INT64CONST(0x7FFFFFFFFFFFFFFF) - 1)
+#define INT64_MIN (-INT64CONST(0x7FFFFFFFFFFFFFFF) - 1)
 #endif
 #ifndef INT64_MAX
-#define INT64_MAX                INT64CONST(0x7FFFFFFFFFFFFFFF)
+#define INT64_MAX INT64CONST(0x7FFFFFFFFFFFFFFF)
 #endif
 #ifndef UINT64_MAX
-#define UINT64_MAX               UINT64CONST(0xFFFFFFFFFFFFFFFF)
+#define UINT64_MAX UINT64CONST(0xFFFFFFFFFFFFFFFF)
 #endif
 
-typedef size_t                          Size;
+typedef size_t Size;
 
-typedef int                             rsocket;
+typedef int rsocket;
 
-typedef unsigned int                    Index;
+typedef unsigned int Index;
 
-typedef signed int                      Offset;
+typedef signed int Offset;
 
-typedef float                           float4;
-typedef double                          float8;
+typedef float  float4;
+typedef double float8;
 
-typedef unsigned int                    Oid;
+typedef unsigned int Oid;
 
+#define INVALIDOID ((Oid)0)
+#define OID_MAX UINT_MAX
 
-#define InvalidOid                      ((Oid) 0)
-#define OID_MAX                         UINT_MAX
+typedef Oid regproc;
 
+typedef uint32 TransactionId;
 
-typedef Oid                             regproc;
+typedef uint64 FullTransactionId;
 
-typedef uint32                          TransactionId;
+typedef TransactionId MultiXactId;
 
-typedef uint64                          FullTransactionId;
+typedef uint32 MultiXactOffset;
 
-typedef TransactionId                   MultiXactId;
+typedef uint32 CommandId;
 
-typedef uint32                          MultiXactOffset;
+#define FirstCommandId ((CommandId)0)
+#define InvalidCommandId (~(CommandId)0)
 
-typedef uint32                          CommandId;
+#define InvalidTransactionId ((TransactionId)0)
 
-#define FirstCommandId                  ((CommandId) 0)
-#define InvalidCommandId                (~(CommandId)0)
+#define InvalidFullTransactionId ((FullTransactionId)0)
 
-#define InvalidTransactionId            ((TransactionId) 0)
+typedef uint32 TimeLineID;
 
-#define InvalidFullTransactionId        ((FullTransactionId) 0)
+typedef int64 TimestampTz;
 
-typedef uint32                          TimeLineID;
-
-typedef int64                           TimestampTz;
-
-#define InvalidTimeLineID               ((TimeLineID)0)
+#define InvalidTimeLineID ((TimeLineID)0)
 
 #define FLEXIBLE_ARRAY_MEMBER
 
-#define VARHDRSZ		((int32) sizeof(int32))
+#define VARHDRSZ ((int32)sizeof(int32))
 
 /*
- * Pointer to a location in the XLOG.  These pointers are 64 bits wide,
+ * Pointer to a location in the XLOG. These pointers are 64 bits wide,
  * because we don't want them ever to overflow.
  */
 typedef uint64 XLogRecPtr;
 
 typedef struct RelFileNode
 {
-	Oid			spcNode;		/* tablespace */
-	Oid			dbNode;			/* database */
-	Oid			relNode;		/* relation */
+    Oid spcNode; /* tablespace */
+    Oid dbNode;  /* database */
+    Oid relNode; /* relation */
 } RelFileNode;
-
 
 /* ----------------------------------------------------------------
  *				Section 4:	IsValid macros for system types
@@ -161,7 +155,7 @@ typedef struct RelFileNode
  * BoolIsValid
  *		True iff bool is valid.
  */
-#define BoolIsValid(boolean)	((boolean) == false || (boolean) == true)
+#define BoolIsValid(boolean) ((boolean) == false || (boolean) == true)
 
 /*
  * PointerIsValid
@@ -173,24 +167,21 @@ typedef struct RelFileNode
  * PointerIsAligned
  *		True iff pointer is properly aligned to point to the given type.
  */
-#define PointerIsAligned(pointer, type) \
-		(((uintptr_t)(pointer) % (sizeof (type))) == 0)
+#define PointerIsAligned(pointer, type) (((uintptr_t)(pointer) % (sizeof(type))) == 0)
 
-#define OffsetToPointer(base, offset) \
-		((void *)((char *) base + offset))
+#define OffsetToPointer(base, offset) ((void*)((char*)base + offset))
 
-#define OidIsValid(objectId)  ((bool) ((objectId) != InvalidOid))
+#define OidIsValid(objectId) ((bool)((objectId) != INVALIDOID))
 
-#define RegProcedureIsValid(p)	OidIsValid(p)
+#define RegProcedureIsValid(p) OidIsValid(p)
 
 /*
  * Zero is used indicate an invalid pointer. Bootstrap skips the first possible
  * WAL segment, initializing the first WAL page at WAL segment size, so no XLOG
  * record can begin at zero.
  */
-#define InvalidXLogRecPtr	0
-#define XLogRecPtrIsInvalid(r)	((r) == InvalidXLogRecPtr)
-
+#define InvalidXLogRecPtr 0
+#define XLogRecPtrIsInvalid(r) ((r) == InvalidXLogRecPtr)
 
 /*
  * XLogSegNo - physical log file sequence number.
@@ -199,8 +190,8 @@ typedef uint64 XLogSegNo;
 
 typedef uint8 RmgrId;
 
-typedef uint32          pg_crc32c;
-typedef pg_crc32c       r_crc32c;
+typedef uint32    pg_crc32c;
+typedef pg_crc32c r_crc32c;
 
 typedef enum RECPOS_TYPE
 {
@@ -211,25 +202,27 @@ typedef enum RECPOS_TYPE
 
 typedef union RECPOS
 {
-    struct{
-        int type;
-        TimeLineID              timeline;
-        XLogRecPtr              lsn;           /* commit时，父子事务排序     */
-    }wal;
+    struct
+    {
+        int        type;
+        TimeLineID timeline;
+        XLogRecPtr lsn; /* commitwhen parent transactionsort */
+    } wal;
 
-    struct{
-        int type;
-        uint64                  fileid;/* 文件 ID */
-        uint64                  offset;/* 偏移量 */
-    }trail;
-}recpos;
+    struct
+    {
+        int    type;
+        uint64 fileid; /* file ID */
+        uint64 offset; /* offsetamount */
+    } trail;
+} recpos;
 
 /*
  * TimeLineID (TLI) - identifies different database histories to prevent
  * confusion after restoring a prior state of a database installation.
  * TLI does not change in a normal stop/restart of the database (including
  * crash-and-recover cases); but we must assign a new TLI after doing
- * a recovery to a prior state, a/k/a point-in-time recovery.  This makes
+ * a recovery to a prior state, a/k/a point-in-time recovery. This makes
  * the new WAL logfile sequence we generate distinguishable from the
  * sequence that was generated in the previous incarnation.
  */
@@ -242,52 +235,49 @@ typedef union RECPOS
  * ----------------------------------------------------------------
  */
 #ifndef offsetof
-#define offsetof(type, field)	((long) &((type *)0)->field)
-#endif							/* offsetof */
+#define offsetof(type, field) ((long)&((type*)0)->field)
+#endif /* offsetof */
 
 /*
  * lengthof
  *		Number of elements in an array.
  */
-#define lengthof(array) (sizeof (array) / sizeof ((array)[0]))
+#define lengthof(array) (sizeof(array) / sizeof((array)[0]))
 
 #define MAXIMUM_ALIGNOF 8
 
-#define TYPEALIGN(ALIGNVAL,LEN)  \
-	(((uintptr_t) (LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t) ((ALIGNVAL) - 1)))
+#define TYPEALIGN(ALIGNVAL, LEN) \
+    (((uintptr_t)(LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t)((ALIGNVAL) - 1)))
 
-#define SHORTALIGN(LEN)			TYPEALIGN(ALIGNOF_SHORT, (LEN))
-#define INTALIGN(LEN)			TYPEALIGN(ALIGNOF_INT, (LEN))
-#define LONGALIGN(LEN)			TYPEALIGN(ALIGNOF_LONG, (LEN))
-#define DOUBLEALIGN(LEN)		TYPEALIGN(ALIGNOF_DOUBLE, (LEN))
-#define MAXALIGN(LEN)			TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
+#define SHORTALIGN(LEN) TYPEALIGN(ALIGNOF_SHORT, (LEN))
+#define INTALIGN(LEN) TYPEALIGN(ALIGNOF_INT, (LEN))
+#define LONGALIGN(LEN) TYPEALIGN(ALIGNOF_LONG, (LEN))
+#define DOUBLEALIGN(LEN) TYPEALIGN(ALIGNOF_DOUBLE, (LEN))
+#define MAXALIGN(LEN) TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
 /* MAXALIGN covers only built-in types, not buffers */
-#define BUFFERALIGN(LEN)		TYPEALIGN(ALIGNOF_BUFFER, (LEN))
-#define CACHELINEALIGN(LEN)		TYPEALIGN(PG_CACHE_LINE_SIZE, (LEN))
+#define BUFFERALIGN(LEN) TYPEALIGN(ALIGNOF_BUFFER, (LEN))
+#define CACHELINEALIGN(LEN) TYPEALIGN(PG_CACHE_LINE_SIZE, (LEN))
 
-#define TYPEALIGN_DOWN(ALIGNVAL,LEN)  \
-	(((uintptr_t) (LEN)) & ~((uintptr_t) ((ALIGNVAL) - 1)))
+#define TYPEALIGN_DOWN(ALIGNVAL, LEN) (((uintptr_t)(LEN)) & ~((uintptr_t)((ALIGNVAL) - 1)))
 
-#define SHORTALIGN_DOWN(LEN)	TYPEALIGN_DOWN(ALIGNOF_SHORT, (LEN))
-#define INTALIGN_DOWN(LEN)		TYPEALIGN_DOWN(ALIGNOF_INT, (LEN))
-#define LONGALIGN_DOWN(LEN)		TYPEALIGN_DOWN(ALIGNOF_LONG, (LEN))
-#define DOUBLEALIGN_DOWN(LEN)	TYPEALIGN_DOWN(ALIGNOF_DOUBLE, (LEN))
-#define MAXALIGN_DOWN(LEN)		TYPEALIGN_DOWN(MAXIMUM_ALIGNOF, (LEN))
-#define BUFFERALIGN_DOWN(LEN)	TYPEALIGN_DOWN(ALIGNOF_BUFFER, (LEN))
+#define SHORTALIGN_DOWN(LEN) TYPEALIGN_DOWN(ALIGNOF_SHORT, (LEN))
+#define INTALIGN_DOWN(LEN) TYPEALIGN_DOWN(ALIGNOF_INT, (LEN))
+#define LONGALIGN_DOWN(LEN) TYPEALIGN_DOWN(ALIGNOF_LONG, (LEN))
+#define DOUBLEALIGN_DOWN(LEN) TYPEALIGN_DOWN(ALIGNOF_DOUBLE, (LEN))
+#define MAXALIGN_DOWN(LEN) TYPEALIGN_DOWN(MAXIMUM_ALIGNOF, (LEN))
+#define BUFFERALIGN_DOWN(LEN) TYPEALIGN_DOWN(ALIGNOF_BUFFER, (LEN))
 
 /*
  * The above macros will not work with types wider than uintptr_t, like with
- * uint64 on 32-bit platforms.  That's not problem for the usual use where a
+ * uint64 on 32-bit platforms. That's not problem for the usual use where a
  * pointer or a length is aligned, but for the odd case that you need to
  * align something (potentially) wider, use TYPEALIGN64.
  */
-#define TYPEALIGN64(ALIGNVAL,LEN)  \
-	(((uint64) (LEN) + ((ALIGNVAL) - 1)) & ~((uint64) ((ALIGNVAL) - 1)))
+#define TYPEALIGN64(ALIGNVAL, LEN) \
+    (((uint64)(LEN) + ((ALIGNVAL) - 1)) & ~((uint64)((ALIGNVAL) - 1)))
 
 /* we don't currently need wider versions of the other ALIGN macros */
-#define MAXALIGN64(LEN)			TYPEALIGN64(MAXIMUM_ALIGNOF, (LEN))
-
-
+#define MAXALIGN64(LEN) TYPEALIGN64(MAXIMUM_ALIGNOF, (LEN))
 
 /* ----------------------------------------------------------------
  *				Section 6:	assertions
@@ -295,35 +285,35 @@ typedef union RECPOS
  */
 #ifndef USE_ASSERT_CHECKING
 
-#define Assert(condition)	((void)true)
-#define AssertMacro(condition)	((void)true)
-#define AssertArg(condition)	((void)true)
-#define AssertState(condition)	((void)true)
-#define AssertPointerAlignment(ptr, bndr)	((void)true)
-#define Trap(condition, errorType)	((void)true)
+#define Assert(condition) ((void)true)
+#define AssertMacro(condition) ((void)true)
+#define AssertArg(condition) ((void)true)
+#define AssertState(condition) ((void)true)
+#define AssertPointerAlignment(ptr, bndr) ((void)true)
+#define Trap(condition, errorType) ((void)true)
 #define TrapMacro(condition, errorType) (true)
 
 #elif defined(FRONTEND)
 
 #include <assert.h>
 #define Assert(p) assert(p)
-#define AssertMacro(p)	((void) assert(p))
+#define AssertMacro(p) ((void)assert(p))
 #define AssertArg(condition) assert(condition)
 #define AssertState(condition) assert(condition)
-#define AssertPointerAlignment(ptr, bndr)	((void)true)
+#define AssertPointerAlignment(ptr, bndr) ((void)true)
 
-#else							/* USE_ASSERT_CHECKING && !FRONTEND */
+#else /* USE_ASSERT_CHECKING && !FRONTEND */
 
 /*
  * Trap
  *		Generates an exception if the given condition is true.
  */
-#define Trap(condition, errorType) \
-	do { \
-		if (condition) \
-			ExceptionalCondition(CppAsString(condition), (errorType), \
-								 __FILE__, __LINE__); \
-	} while (0)
+#define Trap(condition, errorType)                                                         \
+    do                                                                                     \
+    {                                                                                      \
+        if (condition)                                                                     \
+            ExceptionalCondition(CppAsString(condition), (errorType), __FILE__, __LINE__); \
+    } while (0)
 
 /*
  *	TrapMacro is the same as Trap but it's intended for use in macros:
@@ -333,30 +323,24 @@ typedef union RECPOS
  *	Isn't CPP fun?
  */
 #define TrapMacro(condition, errorType) \
-	((bool) (! (condition) || \
-			 (ExceptionalCondition(CppAsString(condition), (errorType), \
-								   __FILE__, __LINE__), 0)))
+    ((bool)(!(condition) ||             \
+            (ExceptionalCondition(CppAsString(condition), (errorType), __FILE__, __LINE__), 0)))
 
-#define Assert(condition) \
-		Trap(!(condition), "FailedAssertion")
+#define Assert(condition) Trap(!(condition), "FailedAssertion")
 
-#define AssertMacro(condition) \
-		((void) TrapMacro(!(condition), "FailedAssertion"))
+#define AssertMacro(condition) ((void)TrapMacro(!(condition), "FailedAssertion"))
 
-#define AssertArg(condition) \
-		Trap(!(condition), "BadArgument")
+#define AssertArg(condition) Trap(!(condition), "BadArgument")
 
-#define AssertState(condition) \
-		Trap(!(condition), "BadState")
+#define AssertState(condition) Trap(!(condition), "BadState")
 
 /*
  * Check that `ptr' is `bndr' aligned.
  */
 #define AssertPointerAlignment(ptr, bndr) \
-	Trap(TYPEALIGN(bndr, (uintptr_t)(ptr)) != (uintptr_t)(ptr), \
-		 "UnalignedPointer")
+    Trap(TYPEALIGN(bndr, (uintptr_t)(ptr)) != (uintptr_t)(ptr), "UnalignedPointer")
 
-#endif							/* USE_ASSERT_CHECKING && !FRONTEND */
+#endif /* USE_ASSERT_CHECKING && !FRONTEND */
 
 /* ----------------------------------------------------------------
  *				Section 7:	widely useful macros
@@ -366,27 +350,27 @@ typedef union RECPOS
  * Max
  *		Return the maximum of two numbers.
  */
-#define Max(x, y)		((x) > (y) ? (x) : (y))
+#define Max(x, y) ((x) > (y) ? (x) : (y))
 
 /*
  * Min
  *		Return the minimum of two numbers.
  */
-#define Min(x, y)		((x) < (y) ? (x) : (y))
+#define Min(x, y) ((x) < (y) ? (x) : (y))
 
 /*
  * Abs
  *		Return the absolute value of the argument.
  */
-#define Abs(x)			((x) >= 0 ? (x) : -(x))
+#define Abs(x) ((x) >= 0 ? (x) : -(x))
 
 #if defined(WIN32) || defined(__CYGWIN__)
-#define BINARY	O_BINARY
+#define BINARY O_BINARY
 #define BINARY_A "ab"
 #define BINARY_R "rb"
 #define BINARY_W "wb"
 #else
-#define BINARY	0
+#define BINARY 0
 #define BINARY_A "a"
 #define BINARY_R "r"
 #define BINARY_W "w"
@@ -399,30 +383,29 @@ typedef union RECPOS
 #define MEMSET_LOOP_LIMIT 1024
 
 #define PG_PRINTF_ATTRIBUTE gnu_printf
-#define pg_attribute_printf(f,a) __attribute__((format(PG_PRINTF_ATTRIBUTE, f, a)))
+#define pg_attribute_printf(f, a) __attribute__((format(PG_PRINTF_ATTRIBUTE, f, a)))
 
-
-#define CONCAT(x,y)                  x##y
+#define CONCAT(x, y) x##y
 
 /*-------------------align begin--------------------------------*/
 #define MAXIMUM_ALIGNOF 8
 
-#define TYPEALIGN(ALIGNVAL,LEN)  \
-    (((uintptr_t) (LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t) ((ALIGNVAL) - 1)))
+#define TYPEALIGN(ALIGNVAL, LEN) \
+    (((uintptr_t)(LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t)((ALIGNVAL) - 1)))
 
-/* 8 字节对齐 */
-#define MAXALIGN(LEN)            TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
+/* charsectionto */
+#define MAXALIGN(LEN) TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
 
-/*-------------------align   end--------------------------------*/
+/*-------------------align end--------------------------------*/
 
-/* 主机字节序到网络字节序 */
-#define r_hton16(x)		__builtin_bswap16(x)
-#define r_hton32(x)		__builtin_bswap32(x)
-#define r_hton64(x)		__builtin_bswap64(x)
+/* mainmachinecharsectionsequencetonetworkcharsectionsequence */
+#define r_hton16(x) __builtin_bswap16(x)
+#define r_hton32(x) __builtin_bswap32(x)
+#define r_hton64(x) __builtin_bswap64(x)
 
-/* 网络字节序到主机字节序 */
-#define r_ntoh16(x)		__builtin_bswap16(x)
-#define r_ntoh32(x)		__builtin_bswap32(x)
-#define r_ntoh64(x)     __builtin_bswap64(x)
+/* networkcharsectionsequencetomainmachinecharsectionsequence */
+#define r_ntoh16(x) __builtin_bswap16(x)
+#define r_ntoh32(x) __builtin_bswap32(x)
+#define r_ntoh64(x) __builtin_bswap64(x)
 
 #endif

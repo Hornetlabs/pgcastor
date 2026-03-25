@@ -5,38 +5,37 @@ typedef bool (*netclient_packets_handler)(void* netclient, netpacket* netpacket)
 
 typedef enum NETCLIENT_PROTOCOLTYPE
 {
-    NETCLIENT_PROTOCOLTYPE_NOP               = 0x00,
-    NETCLIENT_PROTOCOLTYPE_UNIXDOMAIN        ,
+    NETCLIENT_PROTOCOLTYPE_NOP = 0x00,
+    NETCLIENT_PROTOCOLTYPE_UNIXDOMAIN,
     NETCLIENT_PROTOCOLTYPE_IPTCP
 } netclient_protocoltype;
 
 typedef enum NETCLIENTCONN_STATUS
 {
-    NETCLIENTCONN_STATUS_NOP                 = 0x00,                     /* 待连接服务端         */
-    NETCLIENTCONN_STATUS_INPROCESS           = 0x01,                     /* 正在连接服务端       */
-    NETCLIENTCONN_STATUS_CONNECTED           = 0x02                      /* 连接上了服务端       */
+    NETCLIENTCONN_STATUS_NOP = 0x00,       /* Waiting to connect to server         */
+    NETCLIENTCONN_STATUS_INPROCESS = 0x01, /* Connecting to server       */
+    NETCLIENTCONN_STATUS_CONNECTED = 0x02  /* Connected to server       */
 } netclientconn_status;
 
 typedef struct NETCLIENT
 {
-    int                                             hbtimeout;
-    int                                             timeout;
-    netclient_protocoltype                   protocoltype;           /* 协议类型 */
-    netclientconn_status                     status;                 /* 连接状态 */
-    rsocket                                         fd;                     /* 网络描述符 */
-    int                                             pos;                    /* 在模型中的位置下标 */
-    char                                            svrhost[128];            /* 服务端监听地址 */
-    char                                            svrport[128];           /* 服务端监听端口 */
-    netiompbase*                             base;                   /* IO复用基础信息 */
-    netiompops*                              ops;                    /* IO 复用模型 */
-    char                                            szport[128];            /* 端口 */
-    queue*                                   rpackets;               /* 读到的数据 */
-    queue*                                   wpackets;               /* 待发送数据 */
-    netclient_packets_handler                       callback;               /* 回调函数 */
+    int                       hbtimeout;
+    int                       timeout;
+    netclient_protocoltype    protocoltype; /* Protocol type */
+    netclientconn_status      status;       /* Connection status */
+    rsocket                   fd;           /* Network descriptor */
+    int                       pos;          /* Position index in model */
+    char                      svrhost[128]; /* Server listening address */
+    char                      svrport[128]; /* Server listening port */
+    netiompbase*              base;         /* IO multiplexing base information */
+    netiompops*               ops;          /* IO multiplexing model */
+    char                      szport[128];  /* Port */
+    queue*                    rpackets;     /* Data read */
+    queue*                    wpackets;     /* Data to send */
+    netclient_packets_handler callback;     /* Callback function */
 } netclient;
 
-
-/* 重置状态、超时时间、关闭描述符、清理packets内存、设置 iompbase和iompops等 */
+/* Reset status, timeout, close descriptor, clean packets memory, set iompbase and iompops etc */
 void netclient_reset(netclient* netclient);
 
 void netclient_type_set(netclient* netclient, int type);
@@ -51,36 +50,35 @@ void netclient_setsvrhost(netclient* netclient, char* host);
 
 void netclient_setsvrport(netclient* netclient, char* port);
 
-/* 连接服务端 */
+/* Connect to server */
 bool netclient_conn(netclient* netclient);
 
-/* 用于查看是否连接上目标端, 当状态为 INPROCESS 时,检测是否可以转化状态为 CONNECTED */
+/* Used to check if connected to target, when status is INPROCESS, check if can convert status to
+ * CONNECTED */
 bool netclient_isconnect(netclient* netclient);
 
-/* 
- * 尝试连接服务端
+/*
+ * Try to connect to server
  *  conn
  *  sleep(1)
  *  is conn ?
- * 
- *  true    连接上
- *  false   未连接上
+ *
+ *  true    Connected
+ *  false   Not connected
  */
 bool netclient_tryconn(netclient* netclient);
 
-/* 创建连接并发送数据 */
-bool netclient_senddata(netclient_protocoltype ptype,
-                               char* host,
-                               char* port,
-                               uint8* data,
-                               int datalen);
+/* Create connection and send data */
+bool netclient_senddata(netclient_protocoltype ptype, char* host, char* port, uint8* data,
+                        int datalen);
 
-/* 创建监听事件并等待事件触发,处理触发的事件 */
+/* Create listen event and wait for event trigger, process triggered event */
 bool netclient_desc(netclient* netclient);
 
 /*
- * 创建监听事件并等待事件触发, 接收或发送数据,仅接收或发送, 不做业务处理
-*/
+ * Create listen event and wait for event trigger, receive or send data, only receive or send, no
+ * business processing
+ */
 bool netclient_desc2(netclient* netclient);
 
 bool netclient_addwpacket(netclient* netclient, void* packet);
@@ -91,10 +89,10 @@ bool netclient_rpacketisnull(netclient* netclient);
 
 bool netclient_default_packets_handler(void* netclient, netpacket* netpacket);
 
-/* 清理描述符/队列 */
+/* Clean up descriptor/queue */
 void netclient_clear(netclient* netclient);
 
-/* 资源回收 */
+/* Resource cleanup */
 void netclient_destroy(netclient* netclient);
 
 #endif

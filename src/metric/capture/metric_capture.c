@@ -17,19 +17,19 @@
 
 static bool metric_capture_onlinerefresh(metric_capture* mcapture, netpacket* npacket)
 {
-    int ivalue                          = 0;
-    int index                           = 0;
-    int tablecnt                        = 0;
-    refresh_table* rtable        = NULL;
-    refresh_tables* rtables      = NULL;
-    uint8* uptr                         = NULL;
+    int             ivalue = 0;
+    int             index = 0;
+    int             tablecnt = 0;
+    refresh_table*  rtable = NULL;
+    refresh_tables* rtables = NULL;
+    uint8*          uptr = NULL;
 
     uptr = npacket->data;
 
-    /* 跳过 msglen + crc32 + cmdtype */
+    /* Skip msglen + crc32 + cmdtype */
     uptr += 12;
 
-    /* 总行数 */
+    /* Total row count */
     rmemcpy1(&tablecnt, 0, uptr, 4);
     tablecnt = r_ntoh32(tablecnt);
     uptr += 4;
@@ -99,23 +99,21 @@ metric_capture_onlinerefresh_error:
     return false;
 }
 
-/* 解析网络包 */
+/* Parse network packet */
 static bool metric_capture_parsenetpacket(metric_capture* mcapture, netpacket* npacket)
 {
-    int msgtype     = 0;
-    uint8* uptr     = NULL;
+    int    msgtype = 0;
+    uint8* uptr = NULL;
 
-    /* 根据 msgtype 做分发 */
+    /* Dispatch based on msgtype */
     uptr = npacket->data;
     uptr += 8;
 
     rmemcpy1(&msgtype, 0, uptr, 4);
     msgtype = r_ntoh32(msgtype);
 
-    if (XMANAGER_MSG_IDENTITYCMD != msgtype
-        && XMANAGER_MSG_CAPTUREINCREMENT != msgtype
-        && XMANAGER_MSG_CAPTUREREFRESH != msgtype
-        && XMANAGER_MSG_CAPTUREBIGTXN)
+    if (XMANAGER_MSG_IDENTITYCMD != msgtype && XMANAGER_MSG_CAPTUREINCREMENT != msgtype &&
+        XMANAGER_MSG_CAPTUREREFRESH != msgtype && XMANAGER_MSG_CAPTUREBIGTXN)
     {
         elog(RLOG_WARNING, "capture metric got unknown msg type from xmanager:%d", msgtype);
         return false;
@@ -123,17 +121,17 @@ static bool metric_capture_parsenetpacket(metric_capture* mcapture, netpacket* n
 
     if (XMANAGER_MSG_CAPTUREREFRESH == msgtype)
     {
-        /* 解析数据库包, 生成 onlinerefresh 文件 */
+        /* Parse database packet, generate onlinerefresh file */
         metric_capture_onlinerefresh(mcapture, npacket);
     }
 
     return true;
 }
 
-/* 尝试解析解析包 */
+/* Attempt to parse packets */
 static bool metric_capture_tryparsepacket(metric_capture* mcapture, netclient* netclient)
 {
-    netpacket* npacket       = NULL;
+    netpacket* npacket = NULL;
 
     while (1)
     {
@@ -165,15 +163,15 @@ static bool metric_capture_tryparsepacket(metric_capture* mcapture, netclient* n
     return true;
 }
 
-/* 增量消息 */
+/* Incremental message */
 static bool metric_capture_assembleincrementpacket(metric_capture* mcapture, netclient* netclient)
 {
-    int len                     = 0;
-    int ivalue                  = 0;
-    XLogRecPtr lsnvalue         = 0;
-    uint8* uptr                 = NULL;
-    char* jobname               = NULL;
-    netpacket* npacket   = NULL;
+    int        len = 0;
+    int        ivalue = 0;
+    XLogRecPtr lsnvalue = 0;
+    uint8*     uptr = NULL;
+    char*      jobname = NULL;
+    netpacket* npacket = NULL;
 
     npacket = netpacket_init();
     if (NULL == npacket)
@@ -208,13 +206,13 @@ static bool metric_capture_assembleincrementpacket(metric_capture* mcapture, net
     }
     uptr = npacket->data;
 
-    /* 长度 */
+    /* Length */
     ivalue = len;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
 
-    /* crc32 暂不处理 */
+    /* crc32 not processed for now */
     uptr += 4;
 
     /* msgtype */
@@ -302,22 +300,22 @@ static bool metric_capture_assembleincrementpacket(metric_capture* mcapture, net
     return true;
 }
 
-/* 组装 identity 消息 */
+/* Assemble identity message */
 static bool metric_capture_assembleidentitypacket(metric_capture* mcapture, netclient* netclient)
 {
-    int8 result                 = 0;
-    int len                     = 0;
-    int ivalue                  = 0;
-    uint8* uptr                 = NULL;
-    char* jobname               = NULL;
-    char* data                  = NULL;
-    netpacket* npacket   = NULL;
+    int8       result = 0;
+    int        len = 0;
+    int        ivalue = 0;
+    uint8*     uptr = NULL;
+    char*      jobname = NULL;
+    char*      data = NULL;
+    netpacket* npacket = NULL;
 
     jobname = guc_getConfigOption(CFG_KEY_JOBNAME);
     data = guc_getdata();
 
     /*
-     * 内容
+     * Content
      *  jobname + data dir + config dir
      */
     /* len + crc32 + msgtype + jobtype */
@@ -417,7 +415,7 @@ static bool metric_capture_assembleidentitypacket(metric_capture* mcapture, netc
     return true;
 }
 
-/* 组建消息包 */
+/* Assemble message packet */
 static bool metric_capture_assemblepacket(metric_capture* mcapture, netclient* netclient)
 {
     if (false == metric_capture_assembleincrementpacket(mcapture, netclient))
@@ -428,49 +426,50 @@ static bool metric_capture_assemblepacket(metric_capture* mcapture, netclient* n
     return true;
 }
 
-/* 添加待发送包 */
+/* Add packets to be sent */
 void metric_capture_addpackets(metric_capture* mcapture, netpacket* npacket)
 {
-    /* 获取锁 */
+    /* Acquire lock */
     osal_thread_lock(&mcapture->dlpacketslock);
     mcapture->dlpackets = dlist_put(mcapture->dlpackets, npacket);
     osal_thread_unlock(&mcapture->dlpacketslock);
 }
 
-/* 状态主线程 */
-void* metric_capture_main(void *args)
+/* Status main thread */
+void* metric_capture_main(void* args)
 {
-    int fd = -1;
-    int port = 0;
-    int interval                                = 5000;
-    int intervaltime                            = 0;
-    uint64 trailno                              = 0;
-    uint64 trailstart                           = 0;
-    uint64 parsetimestamp                       = 0;
-    uint64 flushtimestamp                       = 0;
-    XLogRecPtr redolsn                          = InvalidXLogRecPtr;
-    XLogRecPtr restartlsn                       = InvalidXLogRecPtr;
-    XLogRecPtr confirmlsn                       = InvalidXLogRecPtr;
-    XLogRecPtr loadlsn                          = InvalidXLogRecPtr;
-    XLogRecPtr parselsn                         = InvalidXLogRecPtr;
-    XLogRecPtr flushlsn                         = InvalidXLogRecPtr;
-    dlistnode* dlnode                           = NULL;
-    thrnode* thr_node                     = NULL;
-    metric_capture* mcapture             = NULL;
-    netclient netclient                  = { 0 };
+    int             fd = -1;
+    int             port = 0;
+    int             interval = 5000;
+    int             intervaltime = 0;
+    uint64          trailno = 0;
+    uint64          trailstart = 0;
+    uint64          parsetimestamp = 0;
+    uint64          flushtimestamp = 0;
+    XLogRecPtr      redolsn = InvalidXLogRecPtr;
+    XLogRecPtr      restartlsn = InvalidXLogRecPtr;
+    XLogRecPtr      confirmlsn = InvalidXLogRecPtr;
+    XLogRecPtr      loadlsn = InvalidXLogRecPtr;
+    XLogRecPtr      parselsn = InvalidXLogRecPtr;
+    XLogRecPtr      flushlsn = InvalidXLogRecPtr;
+    dlistnode*      dlnode = NULL;
+    thrnode*        thr_node = NULL;
+    metric_capture* mcapture = NULL;
+    netclient       netclient = {0};
 
     thr_node = (thrnode*)args;
     mcapture = (metric_capture*)thr_node->data;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "increment capture metric stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "increment capture metric stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
     port = guc_getConfigOptionInt(CFG_KEY_XMANAGER_PORT);
@@ -484,10 +483,10 @@ void* metric_capture_main(void *args)
     }
     elog(RLOG_DEBUG, "capture metric port:%s", netclient.svrport);
 
-    /* 设置使用的网络模型 */
+    /* Set the network model used */
     netclient.ops = netiomp_init(NETIOMP_TYPE_POLL);
 
-    /* 申请 base 信息，用于后续的描述符处理 */
+    /* Apply for base information for subsequent descriptor processing */
     if (false == netclient.ops->create(&netclient.base))
     {
         elog(RLOG_WARNING, "capture metric main iomp module error");
@@ -496,7 +495,7 @@ void* metric_capture_main(void *args)
         pthread_exit(NULL);
     }
 
-    /* 设置类型 */
+    /* Set type */
     netclient_setprotocoltype(&netclient, NETCLIENT_PROTOCOLTYPE_UNIXDOMAIN);
 
     netclient_sethbtimeout(&netclient, NET_HBTIME);
@@ -522,19 +521,19 @@ void* metric_capture_main(void *args)
     }
     netclient.callback = NULL;
 
-    while(1)
+    while (1)
     {
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
-            /* 解析器 */
+            /* Parser */
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
-        /* 尝试连接xmanager */
+        /* Attempt to connect to xmanager */
         if (NETCLIENTCONN_STATUS_NOP == netclient.status)
         {
-            /* 连接 xmanager */
+            /* Connect to xmanager */
             if (false == netclient_tryconn(&netclient))
             {
                 elog(RLOG_WARNING, "can not connect xmanager");
@@ -550,22 +549,22 @@ void* metric_capture_main(void *args)
             }
         }
 
-        /* 获取锁 */
+        /* Acquire lock */
         osal_thread_lock(&mcapture->dlpacketslock);
-        /* 合并 packets */
+        /* Merge packets */
         if (false == dlist_isnull(mcapture->dlpackets))
         {
-           for (dlnode = mcapture->dlpackets->head; NULL != dlnode; dlnode = dlnode->next)
-           {
+            for (dlnode = mcapture->dlpackets->head; NULL != dlnode; dlnode = dlnode->next)
+            {
                 queue_put(netclient.wpackets, dlnode->value);
-           }
+            }
 
-           dlist_free(mcapture->dlpackets, NULL);
-           mcapture->dlpackets = NULL;
+            dlist_free(mcapture->dlpackets, NULL);
+            mcapture->dlpackets = NULL;
         }
         osal_thread_unlock(&mcapture->dlpacketslock);
 
-        /* 未超时且没有数据需要发送 */
+        /* Not timed out and no data needs to be sent */
         if (intervaltime <= interval)
         {
             if (NETCLIENTCONN_STATUS_CONNECTED == netclient.status)
@@ -578,7 +577,7 @@ void* metric_capture_main(void *args)
 
                 if (false == metric_capture_tryparsepacket(mcapture, &netclient))
                 {
-                    /* 清理队列，关闭描述符 */
+                    /* Clear queue, close descriptor */
                     elog(RLOG_WARNING, "metric capture parse packet error");
                     netclient_clear(&netclient);
                 }
@@ -602,7 +601,7 @@ void* metric_capture_main(void *args)
 
             if (false == metric_capture_tryparsepacket(mcapture, &netclient))
             {
-                /* 清理队列，关闭描述符 */
+                /* Clear queue, close descriptor */
                 elog(RLOG_WARNING, "metric capture parse packet error");
                 netclient_clear(&netclient);
             }
@@ -614,27 +613,23 @@ void* metric_capture_main(void *args)
         }
         intervaltime = 0;
 
-        /* 在连接状态下构建发送包 */
+        /* Build send packet in connected state */
         if (NETCLIENTCONN_STATUS_CONNECTED == netclient.status)
         {
             if (false == metric_capture_assemblepacket(mcapture, &netclient))
             {
-                /* 清理队列，关闭描述符 */
+                /* Clear queue, close descriptor */
                 elog(RLOG_WARNING, "metric capture assemble packet error");
                 netclient_clear(&netclient);
             }
         }
 
-        if (redolsn != mcapture->redolsn 
-            || restartlsn != mcapture->restartlsn
-            || confirmlsn != mcapture->confirmlsn
-            || loadlsn != mcapture->loadlsn
-            || parselsn != mcapture->parselsn
-            || flushlsn != mcapture->flushlsn
-            || parsetimestamp != mcapture->parsetimestamp
-            || flushtimestamp != mcapture->flushtimestamp
-            || trailno != mcapture->trailno
-            || trailstart != mcapture->trailstart)
+        if (redolsn != mcapture->redolsn || restartlsn != mcapture->restartlsn ||
+            confirmlsn != mcapture->confirmlsn || loadlsn != mcapture->loadlsn ||
+            parselsn != mcapture->parselsn || flushlsn != mcapture->flushlsn ||
+            parsetimestamp != mcapture->parsetimestamp ||
+            flushtimestamp != mcapture->flushtimestamp || trailno != mcapture->trailno ||
+            trailstart != mcapture->trailstart)
         {
             redolsn = mcapture->redolsn;
             restartlsn = mcapture->restartlsn;
@@ -647,32 +642,41 @@ void* metric_capture_main(void *args)
             trailno = mcapture->trailno;
             trailstart = mcapture->trailstart;
 
-            elog(RLOG_INFO, "XSYNCH Capture RedoLSN:            %X/%X", (uint32)(mcapture->redolsn >> 32), (uint32)(mcapture->redolsn));
-            elog(RLOG_INFO, "XSYNCH Capture RestartLSN:         %X/%X", (uint32)(mcapture->restartlsn >> 32), (uint32)(mcapture->restartlsn));
-            elog(RLOG_INFO, "XSYNCH Capture ConfirmLSN:         %X/%X", (uint32)(mcapture->confirmlsn >> 32), (uint32)(mcapture->confirmlsn));
-            elog(RLOG_INFO, "XSYNCH Capture LoadLSN:            %X/%X", (uint32)(mcapture->loadlsn >> 32), (uint32)(mcapture->loadlsn));
-            elog(RLOG_INFO, "XSYNCH Capture ParseLSN:           %X/%X", (uint32)(mcapture->parselsn >> 32), (uint32)(mcapture->parselsn));
-            elog(RLOG_INFO, "XSYNCH Capture FlushLSN:           %X/%X", (uint32)(mcapture->flushlsn >> 32), (uint32)(mcapture->flushlsn));
+            elog(RLOG_INFO, "XSYNCH Capture RedoLSN:            %X/%X",
+                 (uint32)(mcapture->redolsn >> 32), (uint32)(mcapture->redolsn));
+            elog(RLOG_INFO, "XSYNCH Capture RestartLSN:         %X/%X",
+                 (uint32)(mcapture->restartlsn >> 32), (uint32)(mcapture->restartlsn));
+            elog(RLOG_INFO, "XSYNCH Capture ConfirmLSN:         %X/%X",
+                 (uint32)(mcapture->confirmlsn >> 32), (uint32)(mcapture->confirmlsn));
+            elog(RLOG_INFO, "XSYNCH Capture LoadLSN:            %X/%X",
+                 (uint32)(mcapture->loadlsn >> 32), (uint32)(mcapture->loadlsn));
+            elog(RLOG_INFO, "XSYNCH Capture ParseLSN:           %X/%X",
+                 (uint32)(mcapture->parselsn >> 32), (uint32)(mcapture->parselsn));
+            elog(RLOG_INFO, "XSYNCH Capture FlushLSN:           %X/%X",
+                 (uint32)(mcapture->flushlsn >> 32), (uint32)(mcapture->flushlsn));
             elog(RLOG_INFO, "XSYNCH Capture ParseTimestamp:     %lu", mcapture->parsetimestamp);
             elog(RLOG_INFO, "XSYNCH Capture FlushTimestamp:     %lu", mcapture->flushtimestamp);
-            elog(RLOG_INFO, "XSYNCH Capture Trail:              %lX/%lX", mcapture->trailno, mcapture->trailstart);
+            elog(RLOG_INFO, "XSYNCH Capture Trail:              %lX/%lX", mcapture->trailno,
+                 mcapture->trailstart);
 
-            /* 将数据落盘 */
-            fd = osal_basic_open_file(CAPTURE_STATUS_FILE_TEMP,
-                                    O_RDWR | O_CREAT | BINARY);
-            if(-1 == fd)
+            /* Persist data to disk */
+            fd = osal_basic_open_file(CAPTURE_STATUS_FILE_TEMP, O_RDWR | O_CREAT | BINARY);
+            if (-1 == fd)
             {
-                elog(RLOG_WARNING, "open file:capture/%s error, %s", CAPTURE_STATUS_FILE_TEMP, strerror(errno));
+                elog(RLOG_WARNING, "open file:capture/%s error, %s", CAPTURE_STATUS_FILE_TEMP,
+                     strerror(errno));
                 continue;
             }
             osal_file_write(fd, (char*)mcapture, sizeof(metric_capture));
 
             osal_file_close(fd);
 
-            /* 重命名 */
-            if (osal_durable_rename(CAPTURE_STATUS_FILE_TEMP, CAPTURE_STATUS_FILE, RLOG_WARNING) != 0)
+            /* Rename */
+            if (osal_durable_rename(CAPTURE_STATUS_FILE_TEMP, CAPTURE_STATUS_FILE, RLOG_WARNING) !=
+                0)
             {
-                elog(RLOG_WARNING, "Error renaming capture file %s 2 %s", CAPTURE_STATUS_FILE_TEMP, CAPTURE_STATUS_FILE);
+                elog(RLOG_WARNING, "Error renaming capture file %s 2 %s", CAPTURE_STATUS_FILE_TEMP,
+                     CAPTURE_STATUS_FILE);
             }
         }
     }
@@ -682,12 +686,12 @@ void* metric_capture_main(void *args)
     return NULL;
 }
 
-/* 初始化状态结构 */
+/* Initialize status structure */
 metric_capture* metric_capture_init(void)
 {
     metric_capture* mcapture = NULL;
     mcapture = rmalloc0(sizeof(metric_capture));
-    if(NULL == mcapture)
+    if (NULL == mcapture)
     {
         elog(RLOG_WARNING, "metric capture init error, out of memory");
         return NULL;
@@ -709,10 +713,10 @@ metric_capture* metric_capture_init(void)
     return mcapture;
 }
 
-/* 缓存清理 */
+/* Cache cleanup */
 void metric_capture_destroy(metric_capture* mcapture)
 {
-    if(NULL == mcapture)
+    if (NULL == mcapture)
     {
         return;
     }
@@ -723,4 +727,3 @@ void metric_capture_destroy(metric_capture* mcapture)
     rfree(mcapture);
     mcapture = NULL;
 }
-

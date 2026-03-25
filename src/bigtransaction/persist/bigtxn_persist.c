@@ -49,22 +49,21 @@ bigtxn_persist* bigtxn_persist_init(void)
     return persist;
 }
 
-
-/* 筛选新的 rewind 节点 */
+/* Select new rewind node */
 void bigtxn_persist_electionrewindbyxid(bigtxn_persist* persist, FullTransactionId xid)
 {
-    dlistnode* dlnode = NULL;
+    dlistnode*          dlnode = NULL;
     bigtxn_persistnode* persistnode = NULL;
     if (NULL == persist)
     {
         return;
     }
 
-    for(dlnode = persist->dpersistnodes->head; NULL != dlnode; )
+    for (dlnode = persist->dpersistnodes->head; NULL != dlnode;)
     {
         persistnode = (bigtxn_persistnode*)dlnode->value;
 
-        if(persistnode->xid != xid)
+        if (persistnode->xid != xid)
         {
             return;
         }
@@ -72,17 +71,18 @@ void bigtxn_persist_electionrewindbyxid(bigtxn_persist* persist, FullTransaction
         persist->rewind.trail.fileid = persistnode->begin.trail.fileid;
         persist->rewind.trail.offset = persistnode->begin.trail.offset + 1;
 
-        persist->dpersistnodes = dlist_delete(persist->dpersistnodes, dlnode, bigtxn_persistnode_free);
+        persist->dpersistnodes =
+            dlist_delete(persist->dpersistnodes, dlnode, bigtxn_persistnode_free);
         persist->count -= 1;
         break;
     }
 
-
-    for(dlnode = persist->dpersistnodes->head; NULL != dlnode; dlnode = persist->dpersistnodes->head)
+    for (dlnode = persist->dpersistnodes->head; NULL != dlnode;
+         dlnode = persist->dpersistnodes->head)
     {
         persistnode = (bigtxn_persistnode*)dlnode->value;
-        if(BIGTXN_PERSISTNODE_STAT_DONE != persistnode->stat 
-           && BIGTXN_PERSISTNODE_STAT_ABANDON != persistnode->stat)
+        if (BIGTXN_PERSISTNODE_STAT_DONE != persistnode->stat &&
+            BIGTXN_PERSISTNODE_STAT_ABANDON != persistnode->stat)
         {
             persist->rewind.trail.fileid = persistnode->begin.trail.fileid;
             persist->rewind.trail.offset = persistnode->begin.trail.offset;
@@ -91,18 +91,18 @@ void bigtxn_persist_electionrewindbyxid(bigtxn_persist* persist, FullTransaction
 
         persist->rewind.trail.fileid = persistnode->begin.trail.fileid;
         persist->rewind.trail.offset = persistnode->begin.trail.offset + 1;
-        persist->dpersistnodes = dlist_delete(persist->dpersistnodes, dlnode, bigtxn_persistnode_free);
+        persist->dpersistnodes =
+            dlist_delete(persist->dpersistnodes, dlnode, bigtxn_persistnode_free);
         persist->count -= 1;
     }
     return;
 }
 
-
-/* 筛选新的 rewind 节点 */
+/* Select new rewind node */
 void bigtxn_persist_electionrewind(bigtxn_persist* persist, recpos* pos)
 {
-    dlistnode* dlnode = NULL;
-    dlistnode* dlnodetmp = NULL;
+    dlistnode*          dlnode = NULL;
+    dlistnode*          dlnodetmp = NULL;
     bigtxn_persistnode* persistnode = NULL;
     if (NULL == persist)
     {
@@ -118,7 +118,7 @@ void bigtxn_persist_electionrewind(bigtxn_persist* persist, recpos* pos)
         return;
     }
 
-    for(dlnode = persist->dpersistnodes->head; NULL != dlnode; dlnode = dlnodetmp)
+    for (dlnode = persist->dpersistnodes->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
 
@@ -138,7 +138,7 @@ void bigtxn_persist_electionrewind(bigtxn_persist* persist, recpos* pos)
     return;
 }
 
-/* 清理xid对应的大事务 */
+/* Clean up big transaction for xid */
 void bigtxn_persist_removebyxid(bigtxn_persist* persist, FullTransactionId xid)
 {
     if (NULL == persist || NULL == persist->dpersistnodes)
@@ -146,21 +146,20 @@ void bigtxn_persist_removebyxid(bigtxn_persist* persist, FullTransactionId xid)
         return;
     }
 
-    persist->dpersistnodes = dlist_deletebyvalue(persist->dpersistnodes,
-                                                 (void*)&xid,
-                                                 bigtxn_integratepersist_delectbyxidcmp,
-                                                 bigtxn_persistnode_free);
+    persist->dpersistnodes =
+        dlist_deletebyvalue(persist->dpersistnodes, (void*)&xid,
+                            bigtxn_integratepersist_delectbyxidcmp, bigtxn_persistnode_free);
     persist->count = persist->dpersistnodes->length;
 
     return;
-
 }
 
 int bigtxn_integratepersist_delectbyxidcmp(void* vala, void* valb)
 {
-    FullTransactionId* xida = NULL;
-    bigtxn_persistnode* persistnode = NULL;;
-    
+    FullTransactionId*  xida = NULL;
+    bigtxn_persistnode* persistnode = NULL;
+    ;
+
     if (NULL == vala || NULL == valb)
     {
         return 1;
@@ -174,14 +173,13 @@ int bigtxn_integratepersist_delectbyxidcmp(void* vala, void* valb)
     }
 
     return 1;
-
 }
 
-/* 清理未完成的事务 */
+/* Clean up unfinished transactions */
 void bigtxn_integratepersist_cleannotdone(bigtxn_persist* persist)
 {
-    dlistnode* dlnode = NULL;
-    dlistnode* dlnodetmp = NULL;
+    dlistnode*          dlnode = NULL;
+    dlistnode*          dlnodetmp = NULL;
     bigtxn_persistnode* persistnode = NULL;
 
     if (NULL == persist || NULL == persist->dpersistnodes)
@@ -189,7 +187,7 @@ void bigtxn_integratepersist_cleannotdone(bigtxn_persist* persist)
         return;
     }
 
-    for(dlnode = persist->dpersistnodes->head; NULL != dlnode; dlnode = dlnodetmp)
+    for (dlnode = persist->dpersistnodes->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
 
@@ -204,10 +202,9 @@ void bigtxn_integratepersist_cleannotdone(bigtxn_persist* persist)
     }
 
     return;
-
 }
 
-/* 清理内存 */
+/* Clean up memory */
 void bigtxn_persist_free(bigtxn_persist* persist)
 {
     if (NULL == persist)
@@ -224,7 +221,7 @@ void bigtxn_persist_free(bigtxn_persist* persist)
     return;
 }
 
-/* 清理未完成的事务 */
+/* Clean up unfinished transactions */
 void bigtxn_persistnode_free(void* persistnode)
 {
     if (NULL == persistnode)
@@ -247,36 +244,38 @@ void bigtxn_persistnode_free(void* persistnode)
  * beginfileid + beginoffset + endfileid + endoffset + xid + stat
  *      8      +      8      +     8     +     8     +  8  +   4
  */
-#define BIGTRANSACTION_FILE_NODE_LEN (sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + sizeof(FullTransactionId) + sizeof(bigtxn_persistnode_stat))
+#define BIGTRANSACTION_FILE_NODE_LEN                                     \
+    (sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + \
+     sizeof(FullTransactionId) + sizeof(bigtxn_persistnode_stat))
 
-bool bigtxn_write_persist(bigtxn_persist *persist)
+bool bigtxn_write_persist(bigtxn_persist* persist)
 {
-    char path[MAXPATH] = {'\0'};
-    char temp_path[MAXPATH] = {'\0'};
-    int fd = -1;
-    uint8 *buffer = NULL;
-    uint8 *buffer_cursor = NULL;
-    size_t buffer_sz = 0;
-    dlistnode *dnode = NULL;
-    bigtxn_persistnode *persistnode = NULL;
+    char                path[MAXPATH] = {'\0'};
+    char                temp_path[MAXPATH] = {'\0'};
+    int                 fd = -1;
+    uint8*              buffer = NULL;
+    uint8*              buffer_cursor = NULL;
+    size_t              buffer_sz = 0;
+    dlistnode*          dnode = NULL;
+    bigtxn_persistnode* persistnode = NULL;
 
-    /* 生成路径 */
+    /* Generate path */
     snprintf(path, MAXPATH, "%s", BIGTRANSACTION_FILE);
     snprintf(temp_path, MAXPATH, "%s", BIGTRANSACTION_FILE_TEMP);
 
-    /* 删除临时文件 */
+    /* Delete temporary file */
     unlink(temp_path);
 
-    /* 打开临时文件 */
-    fd = osal_basic_open_file(temp_path, O_RDWR | O_CREAT| BINARY);
-    if (fd  < 0)
+    /* Open temporary file */
+    fd = osal_basic_open_file(temp_path, O_RDWR | O_CREAT | BINARY);
+    if (fd < 0)
     {
         elog(RLOG_WARNING, "open file %s error %s", temp_path, strerror(errno));
         return false;
     }
 
-    /* 计算 buffer 大小 */
-    buffer_sz = BIGTRANSACTION_FILE_HEAD_LEN; 
+    /* Calculate buffer size */
+    buffer_sz = BIGTRANSACTION_FILE_HEAD_LEN;
     buffer_sz += persist->count * BIGTRANSACTION_FILE_NODE_LEN;
 
     buffer = rmalloc0(buffer_sz);
@@ -286,7 +285,7 @@ bool bigtxn_write_persist(bigtxn_persist *persist)
     }
     rmemset0(buffer, 0, 0, buffer_sz);
 
-    /* 填充buffer */
+    /* Fill buffer */
     buffer_cursor = buffer;
 
     /* rewind fileid, offset */
@@ -298,10 +297,10 @@ bool bigtxn_write_persist(bigtxn_persist *persist)
 
     dnode = persist->dpersistnodes ? persist->dpersistnodes->head : NULL;
 
-    /* 遍历persist, 放置相关信息 */
+    /* Traverse persist, place related information */
     for (; dnode; dnode = dnode->next)
     {
-        persistnode = (bigtxn_persistnode *)dnode->value;
+        persistnode = (bigtxn_persistnode*)dnode->value;
 
         /* persistnode begin fileid, offset */
         put64bit(&buffer_cursor, persistnode->begin.trail.fileid);
@@ -326,8 +325,8 @@ bool bigtxn_write_persist(bigtxn_persist *persist)
 
     rfree(buffer);
 
-    /* 重命名文件 */
-    if (osal_durable_rename(temp_path, path, RLOG_DEBUG)) 
+    /* Rename file */
+    if (osal_durable_rename(temp_path, path, RLOG_DEBUG))
     {
         elog(RLOG_WARNING, "Error renaming file %s to %s", temp_path, path);
         return false;
@@ -336,24 +335,24 @@ bool bigtxn_write_persist(bigtxn_persist *persist)
     return true;
 }
 
-bigtxn_persist *bigtxn_read_persist(void)
+bigtxn_persist* bigtxn_read_persist(void)
 {
-    bigtxn_persist *result = NULL;
-    char path[MAXPATH] = {'\0'};
-    uint8_t head_s[BIGTRANSACTION_FILE_HEAD_LEN] = {'\0'};
-    uint8_t node_buff_s[BIGTRANSACTION_FILE_NODE_LEN] = {'\0'};
-    uint8_t *head = head_s;
-    uint8_t *node_buff = node_buff_s;
-    int fd = -1;
-    int read_size = 0;
-    int node_index = 0;
-    size_t offset = 0;
-    struct stat st;
+    bigtxn_persist* result = NULL;
+    char            path[MAXPATH] = {'\0'};
+    uint8_t         head_s[BIGTRANSACTION_FILE_HEAD_LEN] = {'\0'};
+    uint8_t         node_buff_s[BIGTRANSACTION_FILE_NODE_LEN] = {'\0'};
+    uint8_t*        head = head_s;
+    uint8_t*        node_buff = node_buff_s;
+    int             fd = -1;
+    int             read_size = 0;
+    int             node_index = 0;
+    size_t          offset = 0;
+    struct stat     st;
 
-    /* 生成路径 */
+    /* Generate path */
     snprintf(path, MAXPATH, "%s", BIGTRANSACTION_FILE);
 
-    /* 分配返回值 */
+    /* Allocate return value */
     result = rmalloc0(sizeof(bigtxn_persist));
     if (!result)
     {
@@ -362,23 +361,24 @@ bigtxn_persist *bigtxn_read_persist(void)
     }
     rmemset0(result, 0, 0, sizeof(bigtxn_persist));
 
-    /* 检测文件是否存在, 第一次启动是文件不存在, 因此简单返回分配好的结构体 */
-    if(0 != stat(path, &st))
+    /* Check if file exists, first startup file does not exist, so simply return allocated structure
+     */
+    if (0 != stat(path, &st))
     {
         return result;
     }
 
-    /* 只读方式打开文件 */
+    /* Open file in read-only mode */
     fd = osal_basic_open_file(path, O_RDONLY | BINARY);
-    if (fd  < 0)
+    if (fd < 0)
     {
         elog(RLOG_WARNING, "open bigtxn persist file %s error %s", path, strerror(errno));
         bigtxn_persistnode_free(result);
         return NULL;
     }
 
-    /* 读取文件, 从文件开始获取persist的rewind信息和count */
-    read_size = osal_file_pread(fd, (char *)head, BIGTRANSACTION_FILE_HEAD_LEN, 0);
+    /* Read file, get rewind information and count from file start */
+    read_size = osal_file_pread(fd, (char*)head, BIGTRANSACTION_FILE_HEAD_LEN, 0);
     if (read_size <= 0)
     {
         elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path, strerror(errno));
@@ -387,19 +387,19 @@ bigtxn_persist *bigtxn_read_persist(void)
         return NULL;
     }
 
-    /* 获取rewind和count信息 */
+    /* Get rewind and count information */
     result->rewind.trail.fileid = get64bit(&head);
     result->rewind.trail.offset = get64bit(&head);
     result->count = get32bit(&head);
 
     offset = BIGTRANSACTION_FILE_HEAD_LEN;
 
-    /* 根据count获取剩余的persistnode */
+    /* Get remaining persistnode according to count */
     for (node_index = 0; node_index < result->count; node_index++)
     {
-        bigtxn_persistnode *persistnode = NULL;
+        bigtxn_persistnode* persistnode = NULL;
 
-        read_size = osal_file_pread(fd, (char *)node_buff, BIGTRANSACTION_FILE_NODE_LEN, offset);
+        read_size = osal_file_pread(fd, (char*)node_buff, BIGTRANSACTION_FILE_NODE_LEN, offset);
         if (read_size <= 0)
         {
             elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path, strerror(errno));
@@ -418,7 +418,7 @@ bigtxn_persist *bigtxn_read_persist(void)
         }
         rmemset0(persistnode, 0, 0, sizeof(bigtxn_persistnode));
 
-        /* 获取begin, end的fileid, offset */
+        /* Get begin, end fileid, offset */
         persistnode->begin.trail.fileid = get64bit(&node_buff);
         persistnode->begin.trail.offset = get64bit(&node_buff);
         persistnode->end.trail.fileid = get64bit(&node_buff);
@@ -433,22 +433,22 @@ bigtxn_persist *bigtxn_read_persist(void)
         offset += BIGTRANSACTION_FILE_NODE_LEN;
     }
 
-    /* 处理完毕, 关闭文件 */
+    /* Processing complete, close file */
     osal_file_close(fd);
     return result;
 }
 
 void bigtxn_persist_set_state_by_xid(bigtxn_persist* persist, FullTransactionId xid, int state)
 {
-    dlistnode *dnode = NULL;
-    bigtxn_persistnode *persistnode = NULL;
+    dlistnode*          dnode = NULL;
+    bigtxn_persistnode* persistnode = NULL;
 
     dnode = persist->dpersistnodes ? persist->dpersistnodes->head : NULL;
 
-    /* 遍历persist, 查找node */
+    /* Traverse persist, find node */
     for (; dnode; dnode = dnode->next)
     {
-        persistnode = (bigtxn_persistnode *)dnode->value;
+        persistnode = (bigtxn_persistnode*)dnode->value;
         if (persistnode->xid == xid)
         {
             persistnode->stat = state;
@@ -458,24 +458,24 @@ void bigtxn_persist_set_state_by_xid(bigtxn_persist* persist, FullTransactionId 
     return;
 }
 
-void bigtxn_persistnode_set_begin(bigtxn_persistnode *node, recpos *pos)
+void bigtxn_persistnode_set_begin(bigtxn_persistnode* node, recpos* pos)
 {
     node->begin.trail.fileid = pos->trail.fileid;
     node->begin.trail.offset = pos->trail.offset;
 }
 
-void bigtxn_persistnode_set_end(bigtxn_persistnode *node, recpos *pos)
+void bigtxn_persistnode_set_end(bigtxn_persistnode* node, recpos* pos)
 {
     node->end.trail.fileid = pos->trail.fileid;
     node->end.trail.offset = pos->trail.offset;
 }
 
-void bigtxn_persistnode_set_xid(bigtxn_persistnode *node, FullTransactionId xid)
+void bigtxn_persistnode_set_xid(bigtxn_persistnode* node, FullTransactionId xid)
 {
     node->xid = xid;
 }
 
-void bigtxn_persistnode_set_stat_init(bigtxn_persistnode *node)
+void bigtxn_persistnode_set_stat_init(bigtxn_persistnode* node)
 {
     node->stat = BIGTXN_PERSISTNODE_STAT_INIT;
 }

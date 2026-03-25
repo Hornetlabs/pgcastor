@@ -7,7 +7,7 @@
 #include "utils/guc/guc.h"
 #include "misc/misc_lockfiles.h"
 
-static bool cmd_onlinerefresh_append_result(char *input, StringInfo str)
+static bool cmd_onlinerefresh_append_result(char* input, StringInfo str)
 {
     if (strlen(input) > 129)
     {
@@ -23,17 +23,17 @@ static bool cmd_onlinerefresh_append_result(char *input, StringInfo str)
     return true;
 }
 
-static char *cmd_onlinerefresh_format_table_info(List *source)
+static char* cmd_onlinerefresh_format_table_info(List* source)
 {
     StringInfoData str = {'\0'};
-    ListCell *cell = NULL;
-    char *result = NULL;
+    ListCell*      cell = NULL;
+    char*          result = NULL;
 
     initStringInfo(&str);
 
-    foreach(cell, source)
+    foreach (cell, source)
     {
-        char *table = (char *) lfirst(cell);
+        char* table = (char*)lfirst(cell);
 
         if (!cmd_onlinerefresh_append_result(table, &str))
         {
@@ -47,13 +47,13 @@ static char *cmd_onlinerefresh_format_table_info(List *source)
     return result;
 }
 
-/* 输出 */
+/* Output */
 static void onlinerefresh_status_print(void)
 {
-    FILE *fp = NULL;
-    char fline[1024] = {'\0'};
+    FILE*          fp = NULL;
+    char           fline[1024] = {'\0'};
     StringInfoData str = {"\0"};
-    bool first = true;
+    bool           first = true;
 
     initStringInfo(&str);
 
@@ -66,36 +66,36 @@ static void onlinerefresh_status_print(void)
         return;
     }
 
-    while(fgets(fline, 130, fp))
+    while (fgets(fline, 130, fp))
     {
         int line_len = 0;
 
         line_len = strlen(fline);
-        /* 排除换行符 */
+        /* Remove newline character */
         if ('\n' == fline[line_len - 1])
         {
             fline[line_len - 1] = '\0';
             line_len--;
             if (0 == line_len)
             {
-                /* 空行 */
+                /* Empty line */
                 continue;
             }
         }
-        /* windos文本排除回车符 */
+        /* Windows text: remove carriage return */
         if ('\r' == fline[line_len - 1])
         {
             fline[line_len - 1] = '\0';
             line_len--;
             if (0 == line_len)
             {
-                /* 空行 */
+                /* Empty line */
                 continue;
             }
         }
         if (0 == line_len)
         {
-            /* 空行 */
+            /* Empty line */
             continue;
         }
 
@@ -105,7 +105,7 @@ static void onlinerefresh_status_print(void)
             {
                 printf("success send online refresh signal to capture!\n");
                 rfree(str.data);
-                /* 删除文件 */
+                /* Delete files */
                 unlink(ONLINEREFRESH_STATUS);
                 unlink(ONLINEREFRESH_DAT);
                 return;
@@ -122,41 +122,42 @@ static void onlinerefresh_status_print(void)
     printf("\t%s\n", str.data);
 
     rfree(str.data);
-    /* 删除文件 */
+    /* Delete files */
     unlink(ONLINEREFRESH_STATUS);
     unlink(ONLINEREFRESH_DAT);
 }
 
-/* 获取onlinerefresh状态信息 */
+/* Get onlinerefresh status information */
 static void cmd_onlinerefresh_get_onlinerefresh_status(void)
 {
-    int cnt = 0;
-    long    ripplepid;
+    int         cnt = 0;
+    long        ripplepid;
     struct stat statbuf;
-    char    szMsg[256] = { 0 };
+    char        szMsg[256] = {0};
 
     ripplepid = misc_lockfiles_getpid();
-    if(0 == ripplepid)
+    if (0 == ripplepid)
     {
         printf("Is ripple running?\n");
         return;
     }
 
-    if(0 != kill((pid_t) ripplepid, SIGUSR1))
+    if (0 != kill((pid_t)ripplepid, SIGUSR1))
     {
-        snprintf(szMsg, 128, "could not send status signal (PID:%ld) : %s\n", ripplepid, strerror(errno));
+        snprintf(szMsg, 128, "could not send status signal (PID:%ld) : %s\n", ripplepid,
+                 strerror(errno));
         printf("%s\n", szMsg);
     }
 
-    /* 检测onlinerefresh */
-    for(cnt = 0; cnt < (WAIT*WAITS_PER_SEC); cnt++)
+    /* Check onlinerefresh */
+    for (cnt = 0; cnt < (WAIT * WAITS_PER_SEC); cnt++)
     {
-        /* 检测文件是否存在 */
+        /* Check if file exists */
         if (0 != stat(ONLINEREFRESH_STATUS, &statbuf))
         {
             if (errno != ENOENT)
             {
-                /* 读取数据并输出 */
+                /* Read and output data */
                 printf("get %s stat error, %s\n", ONLINEREFRESH_STATUS, strerror(errno));
                 exit(-1);
             }
@@ -175,34 +176,34 @@ static void cmd_onlinerefresh_get_onlinerefresh_status(void)
     printf("can not get online refresh status\n");
 }
 
-bool cmd_onlinerefresh(void *extra_config)
+bool cmd_onlinerefresh(void* extra_config)
 {
-    char   *wdata = NULL;
-    char   *rewrite = NULL;
-    int     fd = -1;
-    List   *table_list = NULL;
+    char* wdata = NULL;
+    char* rewrite = NULL;
+    int   fd = -1;
+    List* table_list = NULL;
 
     if (!extra_config)
     {
         printf("online refresh tables is NULL, please check your input\n");
         return false;
     }
-    table_list = (List *) extra_config;
+    table_list = (List*)extra_config;
 
-    /* 获取工作目录 */
+    /* Get working directory */
     wdata = guc_getdata();
 
-    /* 检测 data 目录是否存在 */
-    if(false == osal_dir_exist(wdata))
+    /* Check if data directory exists */
+    if (false == osal_dir_exist(wdata))
     {
         printf("work data not exist:%s\n", wdata);
         return false;
     }
 
-    /* 切换工作目录 */
+    /* Change working directory */
     chdir(wdata);
 
-    /* 格式化输入 */
+    /* Format input */
     rewrite = cmd_onlinerefresh_format_table_info(table_list);
     if (!rewrite)
     {
@@ -211,7 +212,7 @@ bool cmd_onlinerefresh(void *extra_config)
     }
 
     fd = osal_basic_open_file(ONLINEREFRESH_DAT, O_RDWR | O_CREAT | BINARY);
-    if(-1 == fd)
+    if (-1 == fd)
     {
         printf("open file:%s error, %s\n", ONLINEREFRESH_DAT, strerror(errno));
         return false;

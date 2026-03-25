@@ -2,13 +2,12 @@
 #define _XMANAGER_METRICMSGCREATE_H_
 
 /*
- * 处理 create 命令
- *  1、jobtype 需要小于 ALL
- *  2、校验 job 是否已经存在
- *  3、将 job 加入到 xmetric->metricnodes 中
-*/
-extern bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
-                                                  netpoolentry* npoolentry,
-                                                  netpacket* npacket);
+ * Handle create command
+ *  1. jobtype must be less than ALL
+ *  2. Verify if job already exists
+ *  3. Add job to xmetric->metricnodes
+ */
+extern bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                           netpacket* npacket);
 
 #endif

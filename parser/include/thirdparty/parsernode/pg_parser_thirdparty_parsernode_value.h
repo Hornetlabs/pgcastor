@@ -3,12 +3,12 @@
 
 typedef struct pg_parser_Value
 {
-    pg_parser_NodeTag type;            /* tag appropriately (eg. T_String) */
+    pg_parser_NodeTag type; /* tag appropriately (eg. T_String) */
     union ValUnion
     {
-        int         ival;        /* machine integer */
-        char       *str;        /* string */
-    }val;
+        int   ival; /* machine integer */
+        char* str;  /* string */
+    } val;
 } pg_parser_Value;
 
 #endif

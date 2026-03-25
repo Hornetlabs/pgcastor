@@ -6,8 +6,8 @@
  *
  * All Copyright (c) 2024-2024, Byte Sync Development Group
  *
- * Author: liuzihe  Date: 2024/07/09 
- * 
+ * Author: liuzihe  Date: 2024/07/09
+ *
  * incl/utils/hash/hash_utils.h
  *
  *-------------------------------------------------------------------------
@@ -15,9 +15,8 @@
 #ifndef HASH_UTILS_H
 #define HASH_UTILS_H
 
-extern uint32 uint32_hash(const void *key, Size keysize);
-extern uint32 tag_hash(const void *key, Size keysize);
-extern uint32 string_hash(const void *key, Size keysize);
+extern uint32 uint32_hash(const void* key, Size keysize);
+extern uint32 tag_hash(const void* key, Size keysize);
+extern uint32 string_hash(const void* key, Size keysize);
 
 #endif
-

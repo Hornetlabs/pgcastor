@@ -14,32 +14,32 @@
 
 typedef enum TRANSLOG_RECVLOG_STAT
 {
-    TRANSLOG_RECVLOG_STAT_NOP                    = 0x00,
+    TRANSLOG_RECVLOG_STAT_NOP = 0x00,
 
-    /* 连接数据库 */
-    TRANSLOG_RECVLOG_STAT_CONN                   ,
+    /* connect to database */
+    TRANSLOG_RECVLOG_STAT_CONN,
 
-    /* 获取数据库时间线和pos */
-    TRANSLOG_RECVLOG_STAT_IDENTIFY_SYSTEM        ,
+    /* get database timeline and pos */
+    TRANSLOG_RECVLOG_STAT_IDENTIFY_SYSTEM,
 
-    /* 读取时间线 */
-    TRANSLOG_RECVLOG_STAT_TIMELINE               ,
+    /* read timeline */
+    TRANSLOG_RECVLOG_STAT_TIMELINE,
 
-    /* 启动流复制 */
-    TRANSLOG_RECVLOG_STAT_STARTREPLICATION            ,
+    /* start streaming replication */
+    TRANSLOG_RECVLOG_STAT_STARTREPLICATION,
 
-    /* 流复制 */
-    TRANSLOG_RECVLOG_STAT_STREAMING              ,
+    /* streaming replication */
+    TRANSLOG_RECVLOG_STAT_STREAMING,
 
 } translog_recvlog_stat;
 
-/* 初始化结构 */
+/* initialize structure */
 translog_recvlog* translog_recvlog_init(void)
 {
     translog_recvlog* recvwal = NULL;
 
     recvwal = rmalloc0(sizeof(translog_recvlog));
-    if(NULL == recvwal)
+    if (NULL == recvwal)
     {
         elog(RLOG_WARNING, "recwal init error");
         return NULL;
@@ -66,31 +66,31 @@ void translog_recvlog_settli(translog_recvlog* recvwal, TimeLineID tli)
     recvwal->tli = tli;
 }
 
-/* 数据库 timeline */
+/* database timeline */
 void translog_recvlog_setdbtli(translog_recvlog* recvwal, TimeLineID tli)
 {
     recvwal->dbtli = tli;
 }
 
-/* 设置 startpos */
+/* set startpos */
 void translog_recvlog_setstartpos(translog_recvlog* recvwal, XLogRecPtr lsn)
 {
     recvwal->startpos = lsn;
 }
 
-/* 设置 segsize */
+/* set segsize */
 void translog_recvlog_setsegsize(translog_recvlog* recvwal, uint32 segsize)
 {
     recvwal->segsize = segsize;
 }
 
-/* 设置 dbtype */
+/* set dbtype */
 void translog_recvlog_setdbtype(translog_recvlog* recvwal, translog_recvlog_dbtype dbtype)
 {
     recvwal->dbtype = dbtype;
 }
 
-/* 设置 data 目录 */
+/* set data directory */
 bool translog_recvlog_setdata(translog_recvlog* recvwal, char* data)
 {
     int dlen = 0;
@@ -98,7 +98,7 @@ bool translog_recvlog_setdata(translog_recvlog* recvwal, char* data)
     dlen = strlen(data);
     dlen += 1;
     recvwal->data = rmalloc0(dlen);
-    if(NULL == recvwal->data)
+    if (NULL == recvwal->data)
     {
         elog(RLOG_WARNING, "set data error");
         return false;
@@ -110,7 +110,7 @@ bool translog_recvlog_setdata(translog_recvlog* recvwal, char* data)
     return true;
 }
 
-/* 设置 slotname 目录 */
+/* set slotname directory */
 bool translog_recvlog_setslotname(translog_recvlog* recvwal, char* slotname)
 {
     int dlen = 0;
@@ -118,7 +118,7 @@ bool translog_recvlog_setslotname(translog_recvlog* recvwal, char* slotname)
     dlen = strlen(slotname);
     dlen += 1;
     recvwal->slotname = rmalloc0(dlen);
-    if(NULL == recvwal->slotname)
+    if (NULL == recvwal->slotname)
     {
         elog(RLOG_WARNING, "set slotname error");
         return false;
@@ -130,15 +130,15 @@ bool translog_recvlog_setslotname(translog_recvlog* recvwal, char* slotname)
     return true;
 }
 
-/* 设置 restorcommand 目录 */
+/* set restore command directory */
 bool translog_recvlog_setrestorecmd(translog_recvlog* recvwal, char* restorecmd)
 {
     bool charf = false;
     bool charp = false;
-    int dlen = 0;
-    int index = 0;
+    int  dlen = 0;
+    int  index = 0;
 
-    if(NULL == restorecmd || '\0' == restorecmd[0])
+    if (NULL == restorecmd || '\0' == restorecmd[0])
     {
         return true;
     }
@@ -146,7 +146,7 @@ bool translog_recvlog_setrestorecmd(translog_recvlog* recvwal, char* restorecmd)
     dlen = strlen(restorecmd);
     dlen += 1;
     recvwal->restorecmd = rmalloc0(dlen);
-    if(NULL == recvwal->restorecmd)
+    if (NULL == recvwal->restorecmd)
     {
         elog(RLOG_WARNING, "set restorecmd error");
         return false;
@@ -156,7 +156,7 @@ bool translog_recvlog_setrestorecmd(translog_recvlog* recvwal, char* restorecmd)
 
     rmemcpy0(recvwal->restorecmd, 0, restorecmd, dlen);
 
-    /* 替换命令中的 %f 和 %p 为 %s */
+    /* replace %f and %p with %s in command */
     for (index = 0; index < dlen; index++)
     {
         if ('%' != recvwal->restorecmd[index])
@@ -167,13 +167,17 @@ bool translog_recvlog_setrestorecmd(translog_recvlog* recvwal, char* restorecmd)
         index++;
         if (index >= dlen)
         {
-            elog(RLOG_WARNING, "config item restore_command:%s is incorrectly configured.", restorecmd);
+            elog(RLOG_WARNING, "config item restore_command:%s is incorrectly configured.",
+                 restorecmd);
             return false;
         }
 
         if ('f' != recvwal->restorecmd[index] && 'p' != recvwal->restorecmd[index])
         {
-            elog(RLOG_WARNING, "config item restore_command:%s is incorrectly configured, only support \%f or \%p", restorecmd);
+            elog(
+                RLOG_WARNING,
+                "config item restore_command:%s is incorrectly configured, only support \%f or \%p",
+                restorecmd);
             return false;
         }
 
@@ -187,7 +191,7 @@ bool translog_recvlog_setrestorecmd(translog_recvlog* recvwal, char* restorecmd)
         }
     }
 
-    if(false == charf || false == charp)
+    if (false == charf || false == charp)
     {
         elog(RLOG_WARNING, "config item restore_command:%s must include \%f \%p", restorecmd);
         return false;
@@ -195,7 +199,7 @@ bool translog_recvlog_setrestorecmd(translog_recvlog* recvwal, char* restorecmd)
     return true;
 }
 
-/* 设置 sysidentifier */
+/* set sysidentifier */
 bool translog_recvlog_setsysidentifier(translog_recvlog* recvwal, char* sysidentifier)
 {
     int dlen = 0;
@@ -203,7 +207,7 @@ bool translog_recvlog_setsysidentifier(translog_recvlog* recvwal, char* sysident
     dlen = strlen(sysidentifier);
     dlen += 1;
     recvwal->sysidentifier = rmalloc0(dlen);
-    if(NULL == recvwal->sysidentifier)
+    if (NULL == recvwal->sysidentifier)
     {
         elog(RLOG_WARNING, "set sysidentifier error");
         return false;
@@ -215,16 +219,17 @@ bool translog_recvlog_setsysidentifier(translog_recvlog* recvwal, char* sysident
     return true;
 }
 
-/*------------------------------------执行语句操作 begin-------------------------*/
+/*------------------------------------execute statement operations begin-------------------------*/
 
 /*
- * 执行 SHOW wal_segment_size 获取事务日志大小
-*/
-static bool translog_recvlog_showwalsegsize(translog_recvlog* recvwal, PGconn*conn, translog_walcontrol* walctrl)
+ * execute SHOW wal_segment_size to get transaction log size
+ */
+static bool translog_recvlog_showwalsegsize(translog_recvlog* recvwal, PGconn* conn,
+                                            translog_walcontrol* walctrl)
 {
     uint32 segsize = 0;
 
-    if(false == databaserecv_showwalsegmentsize(conn, &segsize))
+    if (false == databaserecv_showwalsegmentsize(conn, &segsize))
     {
         elog(RLOG_WARNING, "SHOW wal_segment_size error");
         return false;
@@ -236,37 +241,39 @@ static bool translog_recvlog_showwalsegsize(translog_recvlog* recvwal, PGconn*co
 }
 
 /*
- * 执行 identify system
- *  1、更新 timeline 和 startpos
- *  2、设置 control 文件的状态为 work
- *  3、将 control 文件落盘
-*/
-static bool translog_recvlog_identifysystem(translog_recvlog* recvwal, PGconn* conn, translog_walcontrol* walctrl)
+ * execute identify system
+ *  1. update timeline and startpos
+ *  2. set control file status to work
+ *  3. flush control file to disk
+ */
+static bool translog_recvlog_identifysystem(translog_recvlog* recvwal, PGconn* conn,
+                                            translog_walcontrol* walctrl)
 {
-    TimeLineID dbtli                    = InvalidTimeLineID;
-    XLogRecPtr dblsn                    = InvalidXLogRecPtr;
+    TimeLineID dbtli = InvalidTimeLineID;
+    XLogRecPtr dblsn = InvalidXLogRecPtr;
 
-    /* 执行 identify system 命令, 获取 startpos 和 数据库时间线 */
+    /* execute identify system command, get startpos and database timeline */
     if (false == databaserecv_identifysystem(conn, &dbtli, &dblsn))
     {
         elog(RLOG_WARNING, "identify system error");
         return false;
     }
 
-    /* 计算 startpos 和 segno */
+    /* calculate startpos and segno */
     if (InvalidXLogRecPtr == recvwal->startpos)
     {
         recvwal->startpos = dblsn;
     }
 
-    /* 在文件头开始 */
+    /* start from file header */
     recvwal->startpos -= PGWALSEGMENTOFFSET(recvwal->startpos, recvwal->segsize);
     translog_walcontrol_setstartpos(walctrl, recvwal->startpos);
     recvwal->segno = PGWALBYTETOSEG(recvwal->startpos, recvwal->segsize);
 
     if (recvwal->dbtli > dbtli)
     {
-        elog(RLOG_WARNING, "recvwal's database timeline %u large than database timeline %u", recvwal->dbtli, dbtli);
+        elog(RLOG_WARNING, "recvwal's database timeline %u large than database timeline %u",
+             recvwal->dbtli, dbtli);
         return false;
     }
     translog_recvlog_setdbtli(recvwal, dbtli);
@@ -281,28 +288,28 @@ static bool translog_recvlog_identifysystem(translog_recvlog* recvwal, PGconn* c
 }
 
 /*
- * 获取时间线文件
- *  1、当时间线为 1 时, 不需要处理
- *  2、获取时间线文件
- *      2.1 本地存在则不获取
- *      2.2 本地不存在时执行命令获取
-*/
+ * get timeline file
+ *  1. when timeline is 1, no processing needed
+ *  2. get timeline file
+ *      2.1 if exists locally, don't fetch
+ *      2.2 if not exists locally, execute command to fetch
+ */
 static bool translog_recvlog_timelinehistory(translog_recvlog* recvwal, PGconn* conn)
 {
     char* filename = NULL;
     char* content = NULL;
-    if(1 == recvwal->tli)
+    if (1 == recvwal->tli)
     {
         return true;
     }
 
-    /* 查看文件是否存在 */
+    /* check if file exists */
     if (true == translog_waltimeline_exist(recvwal->data, recvwal->tli))
     {
         return true;
     }
 
-    /* 获取时间线 */
+    /* get timeline */
     if (false == databaserecv_timelinehistory(conn, recvwal->tli, &filename, &content))
     {
         elog(RLOG_WARNING, "exec timline history command error");
@@ -318,7 +325,7 @@ static bool translog_recvlog_timelinehistory(translog_recvlog* recvwal, PGconn* 
         return false;
     }
 
-    /* 写时间线文件 */
+    /* write timeline file */
     if (false == translog_waltimeline_flush(recvwal->data, filename, content))
     {
         elog(RLOG_WARNING, "write timeline history file error");
@@ -332,11 +339,12 @@ static bool translog_recvlog_timelinehistory(translog_recvlog* recvwal, PGconn* 
 }
 
 /*
- * 启动流复制
-*/
-static bool translog_recvlog_startreplication(translog_recvlog* recvwal, PGconn*conn)
+ * start streaming replication
+ */
+static bool translog_recvlog_startreplication(translog_recvlog* recvwal, PGconn* conn)
 {
-    if(false == databaserecv_startreplication(conn, recvwal->tli, recvwal->startpos, recvwal->slotname))
+    if (false ==
+        databaserecv_startreplication(conn, recvwal->tli, recvwal->startpos, recvwal->slotname))
     {
         elog(RLOG_WARNING, "start replication error");
         return false;
@@ -344,27 +352,26 @@ static bool translog_recvlog_startreplication(translog_recvlog* recvwal, PGconn*
     return true;
 }
 
+/*------------------------------------execute statement operations   end-------------------------*/
 
-/*------------------------------------执行语句操作   end-------------------------*/
-
-/* 在归档文件中获取数据 */
+/* get data from archive file */
 static bool translog_recvlog_execrestorecmd(translog_recvlog* recvwal)
 {
     /*
-     * 1、组装 restorecommand 
-     * 2、执行 restorecommand
-     * 3、获取执行结果
+     * 1. assemble restorecommand
+     * 2. execute restorecommand
+     * 3. get execution result
      */
-    int ret                             = 0;
-    int index                           = 0;
-    int cindex                          = 0;
-    int clen                            = 0;
-    char* cptr                          = NULL;
-    FILE* fp                            = NULL;
-    char walfile[NAMEDATALEN]    = { 0 };
-    char resultfile[NAMEDATALEN] = { 0 };
-    char command[COMMANDSIZE]    = { 0 };
-    char fileline[LINESIZE]      = { 0 };
+    int   ret = 0;
+    int   index = 0;
+    int   cindex = 0;
+    int   clen = 0;
+    char* cptr = NULL;
+    FILE* fp = NULL;
+    char  walfile[NAMEDATALEN] = {0};
+    char  resultfile[NAMEDATALEN] = {0};
+    char  command[COMMANDSIZE] = {0};
+    char  fileline[LINESIZE] = {0};
 
     if (NULL == recvwal->restorecmd || '\0' == recvwal->restorecmd[0])
     {
@@ -372,18 +379,15 @@ static bool translog_recvlog_execrestorecmd(translog_recvlog* recvwal)
         return false;
     }
 
-    /* 文件名 */
-    snprintf(walfile,
-             NAMEDATALEN,
-             "%08X%08X%08X",                         /* 目录/timeline segno size */
-             recvwal->tli,
-             (uint32)(( recvwal->segno) / PGWALSEGMENTSPERXLOGID(recvwal->segsize)),
-             (uint32)(( recvwal->segno) % PGWALSEGMENTSPERXLOGID(recvwal->segsize)));
+    /* filename */
+    snprintf(walfile, NAMEDATALEN, "%08X%08X%08X", /* directory/timeline segno size */
+             recvwal->tli, (uint32)((recvwal->segno) / PGWALSEGMENTSPERXLOGID(recvwal->segsize)),
+             (uint32)((recvwal->segno) % PGWALSEGMENTSPERXLOGID(recvwal->segsize)));
 
-    /* 命令 */
+    /* command */
     snprintf(resultfile, NAMEDATALEN, "%s", "rcmd.result");
 
-    /* 替换 %f 和 %p */
+    /* replace %f and %p */
     cptr = command;
     clen = strlen(recvwal->restorecmd);
     for (index = 0; index < clen; index++)
@@ -403,26 +407,23 @@ static bool translog_recvlog_execrestorecmd(translog_recvlog* recvwal)
         }
         else if ('p' == recvwal->restorecmd[index])
         {
-            snprintf(cptr + cindex,
-                     COMMANDSIZE - cindex,
-                     "%s/%s",
-                     recvwal->data, walfile);
+            snprintf(cptr + cindex, COMMANDSIZE - cindex, "%s/%s", recvwal->data, walfile);
             cindex = strlen(cptr);
         }
     }
 
-    /* 添加输出文件 */
+    /* add output file */
     snprintf(cptr + cindex, COMMANDSIZE - cindex, " >%s 2>&1", resultfile);
 
 translog_recvwal_execrestorecmd_retry:
-    /* 执行命令 */
+    /* execute command */
     ret = system(command);
     if (0 == ret)
     {
         return true;
     }
 
-    /* 没有执行成功, 那么查看 rcmd.result 文件 */
+    /* execution failed, check rcmd.result file */
     fp = osal_file_fopen(resultfile, "r");
     if (NULL == fp)
     {
@@ -430,22 +431,22 @@ translog_recvwal_execrestorecmd_retry:
         return false;
     }
 
-    while(NULL != fgets(fileline, LINESIZE, fp))
+    while (NULL != fgets(fileline, LINESIZE, fp))
     {
         break;
     }
     osal_free_file(fp);
     fp = NULL;
 
-    if('\0' == fileline)
+    if ('\0' == fileline[0])
     {
         elog(RLOG_WARNING, "can not got %s result", command);
         return false;
     }
 
-    if(NULL != strstr(fileline, "Connection timed out"))
+    if (NULL != strstr(fileline, "Connection timed out"))
     {
-        /* 超时 */
+        /* timeout */
         elog(RLOG_WARNING, "%s", fileline);
         goto translog_recvwal_execrestorecmd_retry;
     }
@@ -457,37 +458,37 @@ translog_recvwal_execrestorecmd_retry:
     return true;
 }
 
-/* 流复制获取日志 */
+/* streaming replication log receive */
 bool translog_recvlog_main(translog_recvlog* recvwal)
 {
     /*
-     * 1、连接数据库
-     * 2、获取 segsize
-     * 3、执行 identity system
-     *      根据执行结果更新 control 文件
-     * 4、获取时间线文件
-     * 5、启动流复制
+     * 1. connect to database
+     * 2. get segsize
+     * 3. execute identity system
+     *      update control file based on execution result
+     * 4. get timeline file
+     * 5. start streaming replication
      */
-    translog_recvlog_stat jobstat        = TRANSLOG_RECVLOG_STAT_NOP;
-    /* 用于标识接收到源端发送的接收 end command 的标识 */
-    bool endcmd                                 = false;
-    int error                                   = 0;
-    int dberror                                 = 0;
-    int recvlen                                 = 0;
-    char* buffer                                = NULL;
-    char* conninfo                              = NULL;
-    PGconn* conn                                = NULL;
-    translog_recvlog_amroutine* method   = NULL;
-    translog_walcontrol walctrl          = { 0 };
+    translog_recvlog_stat jobstat = TRANSLOG_RECVLOG_STAT_NOP;
+    /* flag to indicate receiving end command from source */
+    bool                        endcmd = false;
+    int                         error = 0;
+    int                         dberror = 0;
+    int                         recvlen = 0;
+    char*                       buffer = NULL;
+    char*                       conninfo = NULL;
+    PGconn*                     conn = NULL;
+    translog_recvlog_amroutine* method = NULL;
+    translog_walcontrol         walctrl = {0};
 
     conninfo = guc_getConfigOption(CFG_KEY_PRIMARY_CONN_INFO);
-    if(NULL == conninfo || '\0' == conninfo[0])
+    if (NULL == conninfo || '\0' == conninfo[0])
     {
         elog(RLOG_WARNING, "receivewal need %s config item", CFG_KEY_PRIMARY_CONN_INFO);
         return false;
     }
 
-    /* 设置 walctrl 内的信息 */
+    /* set walctrl information */
     translog_walcontrol_setstartpos(&walctrl, recvwal->startpos);
     translog_walcontrol_settli(&walctrl, recvwal->tli);
     translog_walcontrol_setdbtli(&walctrl, recvwal->dbtli);
@@ -497,19 +498,19 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
     walctrl.stat = TRANSLOG_WALCONTROL_STAT_INIT;
 
     jobstat = TRANSLOG_RECVLOG_STAT_CONN;
-    while(1)
+    while (1)
     {
-        if(true == g_gotsigterm)
+        if (true == g_gotsigterm)
         {
-            /* 若为连接数据库的状态, 那么需要发送 ‘c' 消息 */
-            if(NULL == conn || CONNECTION_OK != PQstatus(conn) || true == endcmd)
+            /* if in database connection state, need to send 'c' message */
+            if (NULL == conn || CONNECTION_OK != PQstatus(conn) || true == endcmd)
             {
                 break;
             }
 
-            if(0 == recvwal->senddone)
+            if (0 == recvwal->senddone)
             {
-                if(false == translog_walmsg_senddone(conn))
+                if (false == translog_walmsg_senddone(conn))
                 {
                     elog(RLOG_WARNING, "send replica done error");
                     break;
@@ -520,13 +521,13 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
 
         if (TRANSLOG_RECVLOG_STAT_CONN == jobstat)
         {
-            /* 使用流复制模式连接数据库 */
-            /* 
-             * 重置标识
+            /* connect to database using streaming replication mode */
+            /*
+             * reset flag
              */
             endcmd = false;
             recvwal->senddone = 0;
-            /* 关闭描述符, 每次都在文件头重新获取数据 */
+            /* close descriptor, re-fetch data from file header each time */
             if (-1 != recvwal->fd)
             {
                 osal_file_close(recvwal->fd);
@@ -540,21 +541,22 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
                 continue;
             }
 
-            /* 获取数据库版本 */
+            /* get database version */
             if (false == translog_recvlog_getdbversion(recvwal->dbtype, conn, &recvwal->dbversion))
             {
                 elog(RLOG_WARNING, "get dbversion error");
                 goto translog_recvwallog_done;
             }
 
-            /* 查看是否开启 FDE 加密 */
-            if (false == translog_recvlog_getconfigurefde(recvwal->dbtype, conninfo, &recvwal->enablefde))
+            /* check if FDE encryption is enabled */
+            if (false ==
+                translog_recvlog_getconfigurefde(recvwal->dbtype, conninfo, &recvwal->enablefde))
             {
                 elog(RLOG_WARNING, "get configure enable-fde error");
                 goto translog_recvwallog_done;
             }
 
-            /* 根据数据库版本获取处理器 */
+            /* get handler based on database version */
             method = translog_recvlog_getroutine(recvwal->dbversion);
             if (NULL == method)
             {
@@ -564,7 +566,7 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
 
             if (0 == recvwal->segsize)
             {
-                /* 在获取中获取事务日志大小 */
+                /* get transaction log size */
                 if (false == translog_recvlog_showwalsegsize(recvwal, conn, &walctrl))
                 {
                     elog(RLOG_WARNING, "got walsize error");
@@ -575,16 +577,17 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
                 }
             }
 
-            /* 转入下阶段 */
+            /* move to next stage */
             jobstat = TRANSLOG_RECVLOG_STAT_IDENTIFY_SYSTEM;
             continue;
         }
-        else if(TRANSLOG_RECVLOG_STAT_IDENTIFY_SYSTEM == jobstat)
+        else if (TRANSLOG_RECVLOG_STAT_IDENTIFY_SYSTEM == jobstat)
         {
             /*
-             * 在数据库中获取到时间线和 lsn 后, 查看是否需要更新 startpos 和 timeline
+             * after getting timeline and lsn from database, check if startpos and timeline need
+             * update
              */
-            if(false == translog_recvlog_identifysystem(recvwal, conn, &walctrl))
+            if (false == translog_recvlog_identifysystem(recvwal, conn, &walctrl))
             {
                 jobstat = TRANSLOG_RECVLOG_STAT_CONN;
                 conn_close(conn);
@@ -598,8 +601,8 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
         }
         else if (TRANSLOG_RECVLOG_STAT_TIMELINE == jobstat)
         {
-            /* 补充时间线逻辑 */
-            if(false == translog_recvlog_timelinehistory(recvwal, conn))
+            /* supplement timeline logic */
+            if (false == translog_recvlog_timelinehistory(recvwal, conn))
             {
                 jobstat = TRANSLOG_RECVLOG_STAT_CONN;
                 conn_close(conn);
@@ -612,14 +615,11 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
         }
         else if (TRANSLOG_RECVLOG_STAT_STARTREPLICATION == jobstat)
         {
-            elog(RLOG_INFO,
-                 "start replication at timeline:%u, pos:%08X/%08X,",
-                 recvwal->tli,
-                 (uint32)(recvwal->startpos>>32),
-                 (uint32)recvwal->startpos);
+            elog(RLOG_INFO, "start replication at timeline:%u, pos:%08X/%08X,", recvwal->tli,
+                 (uint32)(recvwal->startpos >> 32), (uint32)recvwal->startpos);
 
-            /* 执行 start replication */
-            if(false == translog_recvlog_startreplication(recvwal, conn))
+            /* execute start replication */
+            if (false == translog_recvlog_startreplication(recvwal, conn))
             {
                 jobstat = TRANSLOG_RECVLOG_STAT_CONN;
                 conn_close(conn);
@@ -628,20 +628,21 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
                 continue;
             }
 
-            /* 落盘 control 文件 */
+            /* flush control file */
             walctrl.stat = TRANSLOG_WALCONTROL_STAT_WORK;
             translog_walcontrol_flush(&walctrl, recvwal->data);
 
             jobstat = TRANSLOG_RECVLOG_STAT_STREAMING;
             continue;
         }
-        else if(TRANSLOG_RECVLOG_STAT_STREAMING == jobstat)
+        else if (TRANSLOG_RECVLOG_STAT_STREAMING == jobstat)
         {
             /*
-             * 1、当服务端主动断开连接时, 那么会发送 'c' 消息, 那么此时需要反馈 'c' 消息
-             * 2、发送完 'c' 消息后需要判断服务端发送的消息为: 'T' 还是 'C'
-             *      'T'         上个时间线的数据发送完了, 此时需要使用新的时间线发送
-             *      'C'         退出, 有两个选择, 继续等待或退出
+             * 1. when server actively disconnects, it sends 'c' message, then need to respond with
+             * 'c' message
+             * 2. after sending 'c' message, need to determine if server sent 'T' or 'C'
+             *      'T'         last timeline data sent, need to use new timeline to send
+             *      'C'         exit, two choices: continue waiting or exit
              */
             if (false == translog_walmsg_getdata(conn, &buffer, &error, &recvlen))
             {
@@ -662,10 +663,10 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
 
             if (ERROR_SUCCESS == error)
             {
-                /* 处理消息 */
+                /* process message */
                 if (false == method->msgop(recvwal, conn, buffer, recvlen))
                 {
-                    /* 再次连接 */
+                    /* reconnect */
                     jobstat = TRANSLOG_RECVLOG_STAT_CONN;
                     conn_close(conn);
                     conn = NULL;
@@ -678,11 +679,12 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
                     continue;
                 }
 
-                if (0 == PGWALSEGMENTOFFSET(recvwal->startpos, recvwal->segsize) && recvwal->startpos != walctrl.startpos)
+                if (0 == PGWALSEGMENTOFFSET(recvwal->startpos, recvwal->segsize) &&
+                    recvwal->startpos != walctrl.startpos)
                 {
                     walctrl.startpos = recvwal->startpos;
 
-                    /* 更新 control 文件 */
+                    /* update control file */
                     translog_walcontrol_flush(&walctrl, recvwal->data);
                 }
             }
@@ -692,32 +694,33 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
             }
             else if (ERROR_ENDREPLICATION == error)
             {
-                /* 接收到了数据库发送的 'c' 命令 */
-                if(true == method->endreplication(recvwal, &walctrl, conn, &endcmd, &dberror))
+                /* received 'c' command from database */
+                if (true == method->endreplication(recvwal, &walctrl, conn, &endcmd, &dberror))
                 {
                     if (false == endcmd)
                     {
-                        /* 没有结束, 那么还有消息需要处理 */
+                        /* not ended, there are still messages to process */
                         continue;
                     }
                 }
                 else
                 {
-                    /* 出错了, 那么重新设置起点 */
-                    if(ERROR_FILEREMOVED == dberror)
+                    /* error occurred, reset start position */
+                    if (ERROR_FILEREMOVED == dberror)
                     {
-                        /* 执行 restore command 在归档中尝试获取 */
-                        if(false == translog_recvlog_execrestorecmd(recvwal))
+                        /* execute restore command to try get from archive */
+                        if (false == translog_recvlog_execrestorecmd(recvwal))
                         {
                             elog(RLOG_WARNING,
-                                 "exec restore command error, stop replication at timeline:%u, pos:%08X/%08X",
-                                 recvwal->tli,
-                                 (uint32)(recvwal->startpos>>32),
+                                 "exec restore command error, stop replication at timeline:%u, "
+                                 "pos:%08X/%08X",
+                                 recvwal->tli, (uint32)(recvwal->startpos >> 32),
                                  (uint32)recvwal->startpos);
                             goto translog_recvwallog_done;
                         }
 
-                        recvwal->startpos -= PGWALSEGMENTOFFSET(recvwal->startpos, recvwal->segsize);
+                        recvwal->startpos -=
+                            PGWALSEGMENTOFFSET(recvwal->startpos, recvwal->segsize);
                         recvwal->startpos += recvwal->segsize;
                         walctrl.startpos = recvwal->startpos;
                         dberror = 0;
@@ -728,17 +731,17 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
                     }
                 }
 
-                /* 
-                 * 1、接收到了 end command 标识
-                 * 2、流程处理错误
-                 * 
-                 * 那么做如下处理:
-                 *  1、需要打开的文件
-                 *  2、关闭连接
-                 *  3、释放内存
-                 *  4、设置状态为连接数据库
+                /*
+                 * 1. received end command flag
+                 * 2. process error
+                 *
+                 * do the following:
+                 *  1. open file needed
+                 *  2. close connection
+                 *  3. free memory
+                 *  4. set state to connect database
                  */
-                if(-1 != recvwal->fd)
+                if (-1 != recvwal->fd)
                 {
                     osal_file_close(recvwal->fd);
                     recvwal->fd = -1;
@@ -756,7 +759,7 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
             }
         }
     }
-    
+
 translog_recvwallog_done:
     if (NULL != buffer)
     {
@@ -764,7 +767,7 @@ translog_recvwallog_done:
         buffer = NULL;
     }
 
-    if(NULL != conn)
+    if (NULL != conn)
     {
         conn_close(conn);
         conn = NULL;
@@ -773,33 +776,33 @@ translog_recvwallog_done:
     return true;
 }
 
-/* 释放 */
+/* free resources */
 void translog_recvlog_free(translog_recvlog* recvwal)
 {
-    if(NULL == recvwal)
+    if (NULL == recvwal)
     {
         return;
     }
 
-    if(NULL != recvwal->data)
+    if (NULL != recvwal->data)
     {
         rfree(recvwal->data);
         recvwal->data = NULL;
     }
 
-    if(NULL != recvwal->sysidentifier)
+    if (NULL != recvwal->sysidentifier)
     {
         rfree(recvwal->sysidentifier);
         recvwal->sysidentifier = NULL;
     }
 
-    if(NULL != recvwal->slotname)
+    if (NULL != recvwal->slotname)
     {
         rfree(recvwal->slotname);
         recvwal->slotname = NULL;
     }
 
-    if(NULL != recvwal->restorecmd)
+    if (NULL != recvwal->restorecmd)
     {
         rfree(recvwal->restorecmd);
         recvwal->restorecmd = NULL;

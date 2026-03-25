@@ -14,58 +14,57 @@
 #include "xscsci_input.h"
 #include "xscsci_tabcomplete.h"
 
+#define XSCSCI_RLHISTORY ".xscsci_history"
+#define XSCSCI_NL_IN_HISTORY 0x01
+#define XSCSCI_HISTORY_MAXLINE 500
 
-#define XSCSCI_RLHISTORY                        ".xscsci_history"
-#define XSCSCI_NL_IN_HISTORY                    0x01
-#define XSCSCI_HISTORY_MAXLINE                  500
+static int  m_historylinesadded = 0;
+static char m_rlhistory[MAXPGPATH] = {0};
 
-
-static int m_historylinesadded                  = 0;
-static char m_rlhistory[MAXPGPATH]              = { 0 };
-
-#define BEGIN_ITERATE_HISTORY(VARNAME) \
-	do { \
-		HIST_ENTRY *VARNAME; \
-		bool		use_prev_; \
-		\
-		history_set_pos(0); \
-		use_prev_ = (previous_history() != NULL); \
-		history_set_pos(0); \
-		for (VARNAME = current_history(); VARNAME != NULL; \
-			 VARNAME = use_prev_ ? previous_history() : next_history()) \
-		{ \
-			(void) 0
+#define BEGIN_ITERATE_HISTORY(VARNAME)                                  \
+    do                                                                  \
+    {                                                                   \
+        HIST_ENTRY* VARNAME;                                            \
+        bool        use_prev_;                                          \
+                                                                        \
+        history_set_pos(0);                                             \
+        use_prev_ = (previous_history() != NULL);                       \
+        history_set_pos(0);                                             \
+        for (VARNAME = current_history(); VARNAME != NULL;              \
+             VARNAME = use_prev_ ? previous_history() : next_history()) \
+        {                                                               \
+            (void)0
 
 #define END_ITERATE_HISTORY() \
-		} \
-	} while(0)
-
+    }                         \
+    }                         \
+    while (0)
 
 /*
- * 添加 XSCSCI_NL_IN_HISTORY 行
+ * add XSCSCI_NL_IN_HISTORY line
  */
-static void
-xscsci_input_encodehistory(void)
+static void xscsci_input_encodehistory(void)
 {
     BEGIN_ITERATE_HISTORY(cur_hist);
     {
-        char	   *cur_ptr;
+        char* cur_ptr;
 
         /* some platforms declare HIST_ENTRY.line as const char * */
-        for (cur_ptr = (char *) cur_hist->line; *cur_ptr; cur_ptr++)
+        for (cur_ptr = (char*)cur_hist->line; *cur_ptr; cur_ptr++)
         {
             if (*cur_ptr == '\n')
+            {
                 *cur_ptr = XSCSCI_NL_IN_HISTORY;
+            }
         }
     }
     END_ITERATE_HISTORY();
 }
 
-
 /*
- * 保存历史文件
-*/
-static bool xscsci_input_savehistory(char *fname)
+ * save history file
+ */
+static bool xscsci_input_savehistory(char* fname)
 {
     int fd = -1;
     int nlines = 0;
@@ -77,7 +76,7 @@ static bool xscsci_input_savehistory(char *fname)
 
     history_truncate_file(fname, nlines);
 
-    /* 打开文件, 打开后立即关闭, 若文件不存在 append_history 会失败 */
+    /* open file, close immediately after opening, append_history will fail if file doesn't exist */
     fd = open(fname, O_CREAT | O_WRONLY | BINARY, 0600);
     if (0 < fd)
     {
@@ -95,55 +94,55 @@ static bool xscsci_input_savehistory(char *fname)
     return false;
 }
 
-
 /*
- * xscsci 退出时, 保存记录到文件中
-*/
+ * when xscsci exits, save records to file
+ */
 static void xscsci_input_finish(void)
 {
     /*
-     * 保存文件
+     * save file
      */
     xscsci_input_savehistory(m_rlhistory);
     return;
 }
 
-
-/* 将历史记录反转 */
+/* reverse history records */
 static void xscsci_input_decodehistory()
 {
     BEGIN_ITERATE_HISTORY(cur_hist);
     {
-        char	   *cur_ptr;
+        char* cur_ptr;
 
         /* some platforms declare HIST_ENTRY.line as const char * */
-        for (cur_ptr = (char *) cur_hist->line; *cur_ptr; cur_ptr++)
+        for (cur_ptr = (char*)cur_hist->line; *cur_ptr; cur_ptr++)
         {
             if (*cur_ptr == XSCSCI_NL_IN_HISTORY)
+            {
                 *cur_ptr = '\n';
+            }
         }
     }
     END_ITERATE_HISTORY();
 }
 
 /*
- * readline 初始化设置
-*/
+ * readline initialization settings
+ */
 bool xscsci_input_init(void)
 {
-    struct passwd* pwd              = NULL;
+    struct passwd* pwd = NULL;
 
-    /* 设置 readline 补全函数和单词分割符号 */
+    /* set readline completion function and word delimiter */
     xscsci_tabcomplete_initreadline();
 
-    /* readline 内置函数初始化 */
+    /* readline builtin function initialization */
     rl_initialize();
 
-    /* 启用历史记录功能 */
+    /* enable history recording */
     using_history();
     m_historylinesadded = 0;
 
-    /* 加载历史文件 */
+    /* load history file */
     pwd = getpwuid(geteuid());
     if (NULL == pwd)
     {
@@ -159,8 +158,8 @@ bool xscsci_input_init(void)
 }
 
 /*
- * 通过 readline 获取数据
-*/
+ * get data through readline
+ */
 char* xscsci_input_getsinteractive(char* prefix)
 {
     char* line = NULL;
@@ -169,7 +168,7 @@ char* xscsci_input_getsinteractive(char* prefix)
     return line;
 }
 
-void xscsci_input_appendhistory(const char *s, xsynch_exbuffer historybuf)
+void xscsci_input_appendhistory(const char* s, xsynch_exbuffer historybuf)
 {
     xsynch_exbufferdata_appendstr(historybuf, s);
     if (!s[0] || s[strlen(s) - 1] != '\n')
@@ -180,7 +179,7 @@ void xscsci_input_appendhistory(const char *s, xsynch_exbuffer historybuf)
 
 void xscsci_input_sendhistory(xsynch_exbuffer historybuf, char** prevhistorybuf)
 {
-    int index = 0;
+    int   index = 0;
     char* s = historybuf->data;
     for (index = strlen(s) - 1; index >= 0 && s[index] == '\n'; index--)
     {

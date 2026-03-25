@@ -20,71 +20,57 @@
 #include "xmanager/xmanager.h"
 #include "command/cmd_startxmanager.h"
 
-
-/* 启动常驻线程 */
+/* Start resident threads */
 static bool cmd_startxmanagerthreads(xmanager* xmgr)
 {
-    thrnode* thrnode                 = NULL;
+    thrnode* thrnode = NULL;
 
-    /*-------------------------------启动常驻工作线程 begin---------------------------------*/
-    /* 启动的顺序为退出的逆序, 即先启动的后退出 */
+    /*-------------------------------Start resident worker threads
+     * begin---------------------------------*/
+    /* Threads are started in reverse order of exit, i.e., first started exits last */
 
-    /* 启动metric线程 */
-    if (false == threads_addpersistthread(xmgr->threads,
-                                                 &thrnode,
-                                                 THRNODE_IDENTITY_XMANAGER_METRIC,
-                                                 xmgr->persistno,
-                                                 (void*)xmgr->metric,
-                                                 NULL,
-                                                 NULL,
-                                                 xmanager_metric_main))
+    /* Start metric thread */
+    if (false == threads_addpersistthread(xmgr->threads, &thrnode, THRNODE_IDENTITY_XMANAGER_METRIC,
+                                          xmgr->persistno, (void*)xmgr->metric, NULL, NULL,
+                                          xmanager_metric_main))
     {
         elog(RLOG_WARNING, "add xmanager metric module persist to threads error");
         return false;
     }
 
-    /* 启动auth线程 */
-    if (false == threads_addpersistthread(xmgr->threads,
-                                                 &thrnode,
-                                                 THRNODE_IDENTITY_XMANAGER_AUTH,
-                                                 xmgr->persistno,
-                                                 (void*)xmgr->auth,
-                                                 NULL,
-                                                 NULL,
-                                                 xmanager_auth_main))
+    /* Start auth thread */
+    if (false == threads_addpersistthread(xmgr->threads, &thrnode, THRNODE_IDENTITY_XMANAGER_AUTH,
+                                          xmgr->persistno, (void*)xmgr->auth, NULL, NULL,
+                                          xmanager_auth_main))
     {
         elog(RLOG_WARNING, "add xmanager auth module persist to threads error");
         return false;
     }
 
-    /* 启动监听线程 */
-    if (false == threads_addpersistthread(xmgr->threads,
-                                                 &thrnode,
-                                                 THRNODE_IDENTITY_XMANAGER_LISTEN,
-                                                 xmgr->persistno,
-                                                 (void*)xmgr->listens,
-                                                 NULL,
-                                                 NULL,
-                                                 xmanager_listen_main))
+    /* Start listen thread */
+    if (false == threads_addpersistthread(xmgr->threads, &thrnode, THRNODE_IDENTITY_XMANAGER_LISTEN,
+                                          xmgr->persistno, (void*)xmgr->listens, NULL, NULL,
+                                          xmanager_listen_main))
     {
         elog(RLOG_WARNING, "add xmanager listen module persist to threads error");
         return false;
     }
 
-    /*-------------------------------启动常驻工作线程   end---------------------------------*/
+    /*-------------------------------Start resident worker threads
+     * end---------------------------------*/
     return true;
 }
 
-/* xmanager 启动 */
+/* xmanager startup */
 bool cmd_startxmanager(void)
 {
-    char* wdata                 = NULL;
-    xmanager* xmgr       = NULL;
+    char*     wdata = NULL;
+    xmanager* xmgr = NULL;
 
     /*
-     * 1、获取工作目录
-     * 2、校验是否存在
-     * 3、切换工作目录
+     * 1. Get working directory
+     * 2. Check if it exists
+     * 3. Change working directory
      */
     wdata = guc_getdata();
     if (false == osal_dir_exist(wdata))
@@ -93,19 +79,19 @@ bool cmd_startxmanager(void)
         return false;
     }
 
-    /* 切换工作目录 */
+    /* Change working directory */
     chdir(wdata);
 
-    /* 设置为后台运行 */
+    /* Set to daemon mode */
     makedaemon();
 
-    /* 获取主线程号 */
+    /* Get main thread ID */
     g_mainthrid = pthread_self();
 
-    /* 在 wdata 查看锁文件是否存在,不存在则创建,存在则检测进程是否启动 */
+    /* Check if lock file exists in wdata, create if not, check if process is running if exists */
     misc_lockfiles_create(LOCK_FILE);
 
-    /* log 初始化 */
+    /* Initialize log */
     log_init();
 
     xmgr = xmanager_init();
@@ -115,14 +101,14 @@ bool cmd_startxmanager(void)
         return false;
     }
 
-    /* 
-     * 启动工作线程
+    /*
+     * Start worker threads
      */
-    /* 设置信号处理函数 */
+    /* Set signal handler */
     signal_init();
 
     /*
-     * 添加主常驻线程
+     * Add main resident thread
      */
     if (false == threads_addpersist(xmgr->threads, &xmgr->persistno, "XMANAGER"))
     {
@@ -130,46 +116,46 @@ bool cmd_startxmanager(void)
         return false;
     }
 
-    /* 启动常驻工作线程 */
+    /* Start resident worker threads */
     if (false == cmd_startxmanagerthreads(xmgr))
     {
         elog(RLOG_WARNING, "start capture increment persist job threads error");
         return false;
     }
 
-    /* 解除信号屏蔽 */
+    /* Unblock signals */
     singal_setmask();
 
     elog(RLOG_INFO, "xmanager start, pid:%d", getpid());
 
     log_destroyerrorstack();
 
-    /* 关闭标准输入/输出/错误 */
+    /* Close stdin/stdout/stderr */
     closestd();
 
-    while(1)
+    while (1)
     {
-        /* 日志信息打印 */
+        /* Print log information */
         if (true == g_gotsigterm)
         {
-            /* 捕获到 sigterm 信号, 设置线程退出 */
+            /* Caught sigterm signal, set thread to exit */
             threads_exit(xmgr->threads);
             break;
         }
 
-        /* 启动线程 */
+        /* Start threads */
         threads_startthread(xmgr->threads);
 
-        /* 尝试捕获异常线程 */
+        /* Try to capture abnormal threads */
         threads_tryjoin(xmgr->threads);
 
-        /* 回收 FREE 节点 */
+        /* Recycle FREE nodes */
         threads_thrnoderecycle(xmgr->threads);
 
         if (false == threads_hasthrnode(xmgr->threads))
         {
-            /* 所有的线程退出, 主线程退出 */
-            /* TODO 内容文件落盘 */
+            /* All threads exit, main thread exits */
+            /* TODO: Persist content files to disk */
 
             break;
         }
@@ -181,7 +167,7 @@ bool cmd_startxmanager(void)
 
     misc_lockfiles_unlink(0, NULL);
 
-    /* 泄露内存打印 */
+    /* Print leaked memory */
     mem_print(MEMPRINT_ALL);
     return true;
 }

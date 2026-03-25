@@ -10,63 +10,64 @@
 #include "storage/ff_detail.h"
 #include "onlinerefresh/capture/flush/onlinerefresh_captureflush.h"
 
-/* 初始化文件 */
-static void onlinerefresh_captureflush_initfile(onlinerefresh_captureflush* cflush, ff_fileinfo* finfo)
+/* Initialize file */
+static void onlinerefresh_captureflush_initfile(onlinerefresh_captureflush* cflush,
+                                                ff_fileinfo*                finfo)
 {
-    int fd = -1;
-    int index = 0;
-    int blockcnt = 0;
+    int         fd = -1;
+    int         index = 0;
+    int         blockcnt = 0;
     struct stat st;
-    char    path[MAXPATH] = { 0 };
-    char    tmppath[MAXPATH] = { 0 };
-    uint8   block[FILE_BUFFER_SIZE] = { 0 };
+    char        path[MAXPATH] = {0};
+    char        tmppath[MAXPATH] = {0};
+    uint8       block[FILE_BUFFER_SIZE] = {0};
 
-    /* 关闭已经打开的描述符 */
-    if(-1 != cflush->fd)
+    /* Close already opened descriptor */
+    if (-1 != cflush->fd)
     {
         close(cflush->fd);
         cflush->fd = -1;
     }
 
-    /* 生成路径 */
+    /* Generate path */
     snprintf(path, MAXPATH, "%s/%016lX", cflush->trail, finfo->fileid);
 
-    /* 校验文件是否存在，存在则打开 */
-    if(0 == stat(path, &st))
+    /* Check if file exists, if exists then open */
+    if (0 == stat(path, &st))
     {
-        /* 打开文件 */
+        /* Open file */
         cflush->fd = osal_basic_open_file(path, O_RDWR | BINARY);
-        if (cflush->fd  < 0)
+        if (cflush->fd < 0)
         {
             elog(RLOG_ERROR, "open file %s error %s", path, strerror(errno));
         }
         return;
     }
 
-    /* 查看错误是否为文件不存在 */
-    if(ENOENT != errno)
+    /* Check if error is file not exists */
+    if (ENOENT != errno)
     {
         elog(RLOG_ERROR, "stat %s error, %s", path, strerror(errno));
     }
 
-    /* 创建临时文件 */
+    /* Create temporary file */
     snprintf(tmppath, MAXPATH, "%s/%016lX.tmp", cflush->trail, finfo->fileid);
     unlink(tmppath);
 
     fd = osal_basic_open_file(tmppath, O_RDWR | O_CREAT | O_EXCL | BINARY);
-    if(0 > fd)
+    if (0 > fd)
     {
         elog(RLOG_ERROR, "open file %s error:%s", tmppath, strerror(errno));
     }
     blockcnt = (cflush->maxsize / FILE_BUFFER_SIZE);
 
-//    elog(RLOG_WARNING, "blockcnt:%d", blockcnt);
-    for(index = 0; index < blockcnt; index++)
+    //    elog(RLOG_WARNING, "blockcnt:%d", blockcnt);
+    for (index = 0; index < blockcnt; index++)
     {
         if (write(fd, block, FILE_BUFFER_SIZE) != FILE_BUFFER_SIZE)
         {
             /* if write didn't set errno, assume no disk space */
-            if(errno == ENOSPC)
+            if (errno == ENOSPC)
             {
                 elog(RLOG_WARNING, "The disk is full and there is no available space");
                 sleep(10);
@@ -82,22 +83,22 @@ static void onlinerefresh_captureflush_initfile(onlinerefresh_captureflush* cflu
     osal_file_sync(fd);
 
     osal_file_close(fd);
-    
-    /* 重命名文件 */
+
+    /* Rename file */
     osal_durable_rename(tmppath, path, RLOG_DEBUG);
 
-    /* 打开文件 */
+    /* Open file */
     cflush->fd = osal_basic_open_file(path, O_RDWR | BINARY);
-    if (cflush->fd  < 0)
+    if (cflush->fd < 0)
     {
         elog(RLOG_ERROR, "open file %s error %s", path, strerror(errno));
     }
     return;
 }
 
-onlinerefresh_captureflush *onlinerefresh_captureflush_init(void)
+onlinerefresh_captureflush* onlinerefresh_captureflush_init(void)
 {
-    onlinerefresh_captureflush *result = NULL;
+    onlinerefresh_captureflush* result = NULL;
 
     result = rmalloc0(sizeof(onlinerefresh_captureflush));
     if (!result)
@@ -111,97 +112,96 @@ onlinerefresh_captureflush *onlinerefresh_captureflush_init(void)
     return result;
 }
 
-void *onlinerefresh_captureflush_main(void *args)
+void* onlinerefresh_captureflush_main(void* args)
 {
-    int timeout                                 = 0;
-    thrnode* thr_node                     = NULL;
-    ff_fileinfo* finfo                   = NULL;
-    file_buffer* fbuffer                 = NULL;
-    onlinerefresh_captureflush *cflush   = NULL;
+    int                         timeout = 0;
+    thrnode*                    thr_node = NULL;
+    ff_fileinfo*                finfo = NULL;
+    file_buffer*                fbuffer = NULL;
+    onlinerefresh_captureflush* cflush = NULL;
 
     thr_node = (thrnode*)args;
-    cflush = (onlinerefresh_captureflush* )thr_node->data;
+    cflush = (onlinerefresh_captureflush*)thr_node->data;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "onlinerefresh capture flush stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "onlinerefresh capture flush stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
-    while(1)
+    while (1)
     {
-        /* 首先判断是否接收到退出信号 */
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        /* First check if exit signal is received */
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
         /*
-         * 1、在缓存中获取数据
-         * 2、写数据
+         * 1、Get data from cache
+         * 2、Write data
          */
         fbuffer = file_buffer_waitflush_get(cflush->txn2filebuffer, &timeout);
-        if(NULL == fbuffer)
+        if (NULL == fbuffer)
         {
             if (ERROR_TIMEOUT != timeout)
             {
-                /* 处理失败, 退出 */
+                /* Processing failed, exit */
                 elog(RLOG_WARNING, "get file buffer error");
                 thr_node->stat = THRNODE_STAT_ABORT;
                 break;
             }
-            
-            /* 超时没有获取到数据,继续等待获取 */
+
+            /* Timeout without getting data, continue waiting to get */
             continue;
         }
 
-        /* 将数据落盘 */
-        if(FILE_BUFFER_FLAG_DATA == (FILE_BUFFER_FLAG_DATA&fbuffer->flag)
-            && 0 != fbuffer->start)
+        /* Write data to disk */
+        if (FILE_BUFFER_FLAG_DATA == (FILE_BUFFER_FLAG_DATA & fbuffer->flag) && 0 != fbuffer->start)
         {
-            /* 含有数据内容，那么将数据落盘 */
+            /* Contains data content, write data to disk */
             finfo = (ff_fileinfo*)fbuffer->privdata;
 
-            if(cflush->trailno != finfo->fileid
-                || -1 == cflush->fd)
+            if (cflush->trailno != finfo->fileid || -1 == cflush->fd)
             {
                 onlinerefresh_captureflush_initfile(cflush, finfo);
                 cflush->trailno = finfo->fileid;
             }
 
-            /* 写数据 */
-            osal_file_pwrite(cflush->fd, (char*)fbuffer->data, fbuffer->maxsize, ((finfo->blknum - 1)*FILE_BUFFER_SIZE));
+            /* Write data */
+            osal_file_pwrite(cflush->fd, (char*)fbuffer->data, fbuffer->maxsize,
+                             ((finfo->blknum - 1) * FILE_BUFFER_SIZE));
             osal_file_data_sync(cflush->fd);
         }
 
-        if (FILE_BUFFER_FLAG_ONLINREFRESHEND == (FILE_BUFFER_FLAG_ONLINREFRESHEND&fbuffer->flag))
+        if (FILE_BUFFER_FLAG_ONLINREFRESHEND == (FILE_BUFFER_FLAG_ONLINREFRESHEND & fbuffer->flag))
         {
-            /* 放入到空闲队列中 */
+            /* Put into idle queue */
             file_buffer_free(cflush->txn2filebuffer, fbuffer);
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
-        /* 放入到空闲队列中 */
+        /* Put into idle queue */
         file_buffer_free(cflush->txn2filebuffer, fbuffer);
     }
-
     pthread_exit(NULL);
     return NULL;
 }
 
-void onlinerefresh_captureflush_free(void *args)
+void onlinerefresh_captureflush_free(void* args)
 {
-    onlinerefresh_captureflush *cflush = NULL;
-    cflush = (onlinerefresh_captureflush *)args;
+    onlinerefresh_captureflush* cflush = NULL;
+    cflush = (onlinerefresh_captureflush*)args;
 
-    if(NULL == cflush)
+    if (NULL == cflush)
     {
         return;
     }

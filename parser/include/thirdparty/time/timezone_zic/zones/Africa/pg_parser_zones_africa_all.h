@@ -1,7 +1,7 @@
 /**
  * @file                PG_parser_zones_africa_all.h
  * @author              ByteSynch
- * @brief               定义所有的非洲时区名称
+ * @brief               Define all Africa timezone names
  * @version             0.1
  * @date                2023-09-18
  *

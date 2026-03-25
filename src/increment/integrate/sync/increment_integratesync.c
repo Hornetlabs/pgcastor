@@ -21,61 +21,64 @@
 #include "onlinerefresh/integrate/dataset/onlinerefresh_integratefilterdataset.h"
 #include "increment/integrate/sync/increment_integratesync.h"
 
-/* 获取目的端状体表中已应用到的fileid 和 lsn */
+/* Get the applied fileid and lsn from the target-end status table */
 static bool increment_integratesync_trailnoandlsn_get(increment_integratesyncstate* syncworkstate)
 {
-    PGresult*    res;
-    uint64 emitoffset = 0;
+    PGresult*  res;
+    uint64     emitoffset = 0;
     syncstate* sync_state;
-    char        sql_exec[1024] = {'\0'};
+    char       sql_exec[1024] = {'\0'};
 
     sync_state = (syncstate*)syncworkstate;
 
     rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec,"select rewind_fileid, rewind_offset, lsn from %s.sync_status where name = '%s';",
-                        guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
-                        syncworkstate->base.name);
-    res = PQexec(sync_state->conn,sql_exec);
+    sprintf(sql_exec,
+            "select rewind_fileid, rewind_offset, lsn from %s.sync_status where name = '%s';",
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), syncworkstate->base.name);
+    res = PQexec(sync_state->conn, sql_exec);
     if (PGRES_TUPLES_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING,"Failed to select sync_status: %s", PQerrorMessage(sync_state->conn));
+        elog(RLOG_WARNING, "Failed to select sync_status: %s", PQerrorMessage(sync_state->conn));
         PQclear(res);
         PQfinish(sync_state->conn);
         sync_state->conn = NULL;
         return false;
     }
-    /* 将获取的 fileid 和 offset 设置为 read 中的信息 */
-    if (PQntuples(res) != 0 )
+    /* Set the obtained fileid and offset as read information */
+    if (PQntuples(res) != 0)
     {
         syncworkstate->trailno = strtoul(PQgetvalue(res, 0, 0), NULL, 10);
 
         emitoffset = strtoul(PQgetvalue(res, 0, 1), NULL, 10);
 
-        /*lsn信息*/
+        /* LSN information */
         syncworkstate->lsn = strtoul(PQgetvalue(res, 0, 2), NULL, 10);
         elog(RLOG_DEBUG, "get record sync_status, trailno:%lu, emitoffset:%lu, lsn:%lu",
-                                                         syncworkstate->trailno,
-                                                         emitoffset,
-                                                         syncworkstate->lsn);
-        syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata, syncworkstate->trailno);
+             syncworkstate->trailno, emitoffset, syncworkstate->lsn);
+        syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata,
+                                                     syncworkstate->trailno);
         syncworkstate->callback.setmetricsynclsn(syncworkstate->privdata, syncworkstate->lsn);
         syncworkstate->callback.setmetricsynctrailstart(syncworkstate->privdata, emitoffset);
-        /* 设置 splittrail的fileid和emitoffset */
-        syncworkstate->callback.splittrail_fileid_emitoffse_set(syncworkstate->privdata, syncworkstate->trailno, emitoffset);
-        syncworkstate->callback.integratestate_rebuildfilter_set(syncworkstate->privdata, syncworkstate->lsn);
+        /* Set splittrail fileid and emitoffset */
+        syncworkstate->callback.splittrail_fileid_emitoffse_set(syncworkstate->privdata,
+                                                                syncworkstate->trailno, emitoffset);
+        syncworkstate->callback.integratestate_rebuildfilter_set(syncworkstate->privdata,
+                                                                 syncworkstate->lsn);
         PQclear(res);
     }
     else
     {
         PQclear(res);
         rmemset1(sql_exec, 0, '\0', 1024);
-        sprintf(sql_exec, "INSERT INTO %s.sync_status (name, type, stat, emit_fileid, emit_offset, rewind_fileid, rewind_offset, lsn, xid) VALUES ('%s', 0, 0, 0, 0, 0, 0, 0, 0);",
-                          guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
-                          syncworkstate->base.name);
-        res = PQexec(sync_state->conn,sql_exec);
+        sprintf(sql_exec,
+                "INSERT INTO %s.sync_status (name, type, stat, emit_fileid, emit_offset, "
+                "rewind_fileid, rewind_offset, lsn, xid) VALUES ('%s', 0, 0, 0, 0, 0, 0, 0, 0);",
+                guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), syncworkstate->base.name);
+        res = PQexec(sync_state->conn, sql_exec);
         if (PGRES_COMMAND_OK != PQresultStatus(res))
         {
-            elog(RLOG_WARNING,"Failed to INSERT INTO sync_status: %s", PQerrorMessage(sync_state->conn));
+            elog(RLOG_WARNING, "Failed to INSERT INTO sync_status: %s",
+                 PQerrorMessage(sync_state->conn));
             PQclear(res);
             PQfinish(sync_state->conn);
             sync_state->conn = NULL;
@@ -86,9 +89,11 @@ static bool increment_integratesync_trailnoandlsn_get(increment_integratesyncsta
         syncworkstate->trailno = 0;
         syncworkstate->lsn = InvalidXLogRecPtr;
         syncworkstate->callback.splittrail_fileid_emitoffse_set(syncworkstate->privdata, 0, 0);
-        syncworkstate->callback.integratestate_rebuildfilter_set(syncworkstate->privdata, syncworkstate->lsn);
+        syncworkstate->callback.integratestate_rebuildfilter_set(syncworkstate->privdata,
+                                                                 syncworkstate->lsn);
         syncworkstate->callback.setmetricsynclsn(syncworkstate->privdata, syncworkstate->lsn);
-        syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata, syncworkstate->trailno);
+        syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata,
+                                                     syncworkstate->trailno);
         syncworkstate->callback.setmetricsynctrailstart(syncworkstate->privdata, 0);
         syncworkstate->callback.setmetricsynctimestamp(syncworkstate->privdata, (TimestampTz)0);
     }
@@ -96,40 +101,42 @@ static bool increment_integratesync_trailnoandlsn_get(increment_integratesyncsta
     return true;
 }
 
-static void increment_integratesync_state_set(increment_integratesyncstate* syncworkstate, int state)
+static void increment_integratesync_state_set(increment_integratesyncstate* syncworkstate,
+                                              int                           state)
 {
     syncworkstate->state = state;
 }
-/* 增量应用 */
-void* increment_integratesync_main(void *args)
+/* Incremental apply */
+void* increment_integratesync_main(void* args)
 {
-    int extra                                               = 0;
-    txn* entry                                       = NULL;
-    thrnode* thr_node                                 = NULL;
-    syncstate* sync_state                             = NULL;
-    increment_integratesyncstate* syncworkstate      = NULL;
+    int                           extra = 0;
+    txn*                          entry = NULL;
+    thrnode*                      thr_node = NULL;
+    syncstate*                    sync_state = NULL;
+    increment_integratesyncstate* syncworkstate = NULL;
 
     thr_node = (thrnode*)args;
 
-    syncworkstate = (increment_integratesyncstate* )thr_node->data;
-    sync_state = (syncstate*) syncworkstate;
+    syncworkstate = (increment_integratesyncstate*)thr_node->data;
+    sync_state = (syncstate*)syncworkstate;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check state */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "increment integrate sync exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "increment integrate sync exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         osal_thread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to work state */
     thr_node->stat = THRNODE_STAT_WORK;
 
     while (syncstate_conn(sync_state, thr_node))
     {
-            usleep(50000);
+        usleep(50000);
 
-        /* 获取状态表中的fileid和lsn */
+        /* Get fileid and lsn from status table */
         if (false == increment_integratesync_trailnoandlsn_get(syncworkstate))
         {
             continue;
@@ -138,35 +145,35 @@ void* increment_integratesync_main(void *args)
         syncstate_update_statustb(sync_state, NULL, false);
         break;
     }
-    
-    if(THRNODE_STAT_TERM == thr_node->stat)
+
+    if (THRNODE_STAT_TERM == thr_node->stat)
     {
-        /* 退出 */
+        /* Exit */
         thr_node->stat = THRNODE_STAT_EXIT;
         osal_thread_exit(NULL);
     }
 
-    while(1)
+    while (1)
     {
         entry = NULL;
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
-            /* 序列化/落盘 */
+            /* Serialize/checkpoint */
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
-        /* 获取数据 */
+        /* Get data */
         entry = cache_txn_get(syncworkstate->rebuild2sync, &extra);
-        if(NULL == entry)
+        if (NULL == entry)
         {
-            /* 设置为空闲状态 */
+            /* Set to idle state */
             increment_integratesync_state_set(syncworkstate, INCREMENT_INTEGRATESYNC_STATE_IDLE);
 
-            /* 需要退出，等待 thr_node->stat 变为 TERM 后退出*/
-            if(THRNODE_STAT_TERM != thr_node->stat)
+            /* Need to exit, wait for thr_node->stat to become TERM then exit*/
+            if (THRNODE_STAT_TERM != thr_node->stat)
             {
-                /* 睡眠 10 毫秒 */
+                /* Sleep 10 milliseconds */
                 usleep(10000);
                 continue;
             }
@@ -174,14 +181,14 @@ void* increment_integratesync_main(void *args)
             break;
         }
 
-        /* 获取到entry，设置为工作状态 */
+        /* Got entry, set to working state */
         increment_integratesync_state_set(syncworkstate, INCREMENT_INTEGRATESYNC_STATE_WORK);
 
-        /* 同步数据 */
+        /* Sync data */
         // elog(RLOG_DEBUG, "[DEBUG] xid:%lu, %d", entry->xid, entry->stmts->length);
-        if(NULL != entry->stmts)
+        if (NULL != entry->stmts)
         {
-            while(false == syncstate_applytxn(sync_state, thr_node, (void*)entry, true))
+            while (false == syncstate_applytxn(sync_state, thr_node, (void*)entry, true))
             {
                 sleep(1);
                 syncstate_reset(sync_state);
@@ -189,7 +196,7 @@ void* increment_integratesync_main(void *args)
                 {
                     usleep(50000);
 
-                    /* 获取状态表中的fileid和lsn */
+                    /* Get fileid and lsn from status table */
                     if (false == increment_integratesync_trailnoandlsn_get(syncworkstate))
                     {
                         continue;
@@ -198,9 +205,9 @@ void* increment_integratesync_main(void *args)
                     break;
                 }
 
-                if(THRNODE_STAT_TERM == thr_node->stat)
+                if (THRNODE_STAT_TERM == thr_node->stat)
                 {
-                    /* 内存释放 */
+                    /* Memory release */
                     txn_free(entry);
                     rfree(entry);
                     thr_node->stat = THRNODE_STAT_EXIT;
@@ -212,17 +219,19 @@ void* increment_integratesync_main(void *args)
             if (entry->confirm.wal.lsn != InvalidXLogRecPtr)
             {
                 syncworkstate->lsn = entry->confirm.wal.lsn;
-                syncworkstate->callback.setmetricsynclsn(syncworkstate->privdata, entry->confirm.wal.lsn);
+                syncworkstate->callback.setmetricsynclsn(syncworkstate->privdata,
+                                                         entry->confirm.wal.lsn);
             }
 
             syncworkstate->trailno = entry->segno;
             syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata, entry->segno);
-            syncworkstate->callback.setmetricsynctimestamp(syncworkstate->privdata, entry->endtimestamp);
-            syncworkstate->callback.setmetricsynctrailstart(syncworkstate->privdata, entry->end.trail.offset);
-
+            syncworkstate->callback.setmetricsynctimestamp(syncworkstate->privdata,
+                                                           entry->endtimestamp);
+            syncworkstate->callback.setmetricsynctrailstart(syncworkstate->privdata,
+                                                            entry->end.trail.offset);
         }
 
-        /* TODO entry 释放 */
+        /* TODO entry release */
         txn_free(entry);
         rfree(entry);
     }
@@ -231,22 +240,22 @@ void* increment_integratesync_main(void *args)
     return NULL;
 }
 
-/* 增量应用结构初始化 */
+/* Incremental apply structure initialization */
 increment_integratesyncstate* increment_integratesync_init(void)
 {
     increment_integratesyncstate* syncworkstate = NULL;
 
     syncworkstate = (increment_integratesyncstate*)rmalloc0(sizeof(increment_integratesyncstate));
-    if(NULL == syncworkstate)
+    if (NULL == syncworkstate)
     {
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(syncworkstate, 0, '\0', sizeof(increment_integratesyncstate));
-    syncstate_reset((syncstate*) syncworkstate);
+    syncstate_reset((syncstate*)syncworkstate);
 
-    /* 设置syncstate->name */
+    /* Set syncstate->name */
     syncworkstate->base.name = (char*)rmalloc0(NAMEDATALEN);
-    if(NULL == syncworkstate->base.name)
+    if (NULL == syncworkstate->base.name)
     {
         elog(RLOG_WARNING, "malloc syncname out of memory");
         increment_integratesync_destroy(syncworkstate);
@@ -258,7 +267,7 @@ increment_integratesyncstate* increment_integratesync_init(void)
     return syncworkstate;
 }
 
-/* 增量应用结构资源释放 */
+/* Incremental apply structure resource release */
 void increment_integratesync_destroy(increment_integratesyncstate* syncworkstate)
 {
     if (NULL == syncworkstate)
@@ -266,11 +275,10 @@ void increment_integratesync_destroy(increment_integratesyncstate* syncworkstate
         return;
     }
 
-    syncstate_destroy((syncstate*) syncworkstate);
+    syncstate_destroy((syncstate*)syncworkstate);
 
     syncworkstate->privdata = NULL;
     syncworkstate->rebuild2sync = NULL;
 
     rfree(syncworkstate);
-
 }

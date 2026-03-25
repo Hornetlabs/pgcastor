@@ -11,50 +11,50 @@
 #include "storage/trail/data/fftrail_data.h"
 #include "storage/trail/data/fftrail_txnbigtxn_begin.h"
 
-
-/* bigtxn begin 语句序列化 */
+/* Serialize bigtxn begin statement */
 bool fftrail_txnbigtxn_begin_serial(void* data, void* state)
 {
     /*
-     * Record格式为:
+     * Record format:
      *  GroupToken
      *  RecHead
      *  RecData
-     *      xid            8 字节
+     *      xid            8 bytes
      *  RecTail
      */
-    int hdrlen = 0;
-    uint32 tlen = 0;
-    FullTransactionId *xid = NULL;
+    int                hdrlen = 0;
+    uint32             tlen = 0;
+    FullTransactionId* xid = NULL;
 
-    uint8* uptr = NULL;
-    txnstmt* rstmt = NULL;                      /* 需要写入 trail 文件的内容 */
-    ff_txndata*  txndata = NULL;
-    file_buffer* fbuffer = NULL;
-    ffsmgr_state* ffstate = NULL;            /* state 数据信息 */
+    uint8*        uptr = NULL;
+    txnstmt*      rstmt = NULL; /* Content to write to trail file */
+    ff_txndata*   txndata = NULL;
+    file_buffer*  fbuffer = NULL;
+    ffsmgr_state* ffstate = NULL; /* state data info */
 
     txndata = (ff_txndata*)data;
     rstmt = (txnstmt*)txndata->data;
     ffstate = (ffsmgr_state*)state;
 
-    /* 获取 xid 信息 */
+    /* Get xid info */
     xid = (FullTransactionId*)rstmt->stmt;
 
-    /* 检验并切换block */
+    /* Validate and switch block */
     fftrail_serialpreshiftblock(state);
-    if(FFSMGR_STATUS_SHIFTFILE == ffstate->status)
+    if (FFSMGR_STATUS_SHIFTFILE == ffstate->status)
     {
         ffstate->status = FFSMGR_STATUS_USED;
     }
 
-    /* 将 bigtxn_begin 写入到trail文件中 */
-    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    /* Write bigtxn_begin to trail file */
+    fbuffer =
+        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     ffstate->recptr = fbuffer->data + fbuffer->start;
 
-    /* 计算长度 大事务xid 8 */
+    /* Calculate length bigtxn xid 8 */
     txndata->header.totallength = 8;
 
-    /* 设置record头信息 */
+    /* Set record header info */
     txndata->header.reccount = 1;
     txndata->header.reclength = 0;
     txndata->header.subtype = FF_DATA_TYPE_BIGTXN_BEGIN;
@@ -63,94 +63,82 @@ bool fftrail_txnbigtxn_begin_serial(void* data, void* state)
     txndata->header.tbmdno = 0;
     txndata->header.orgpos = rstmt->extra0.wal.lsn;
 
-    /* 跳过record token 和 头长度 */
-    /* 增加偏移 */
+    /* Skip record token and header length */
+    /* Add offset */
     hdrlen = TOKENHDRSIZE;
     hdrlen += fftrail_data_headlen(ffstate->compatibility);
     fbuffer->start += hdrlen;
 
     /* bigtxn begin txid */
-    fftrail_data_data2buffer(&txndata->header,
-                                    ffstate,
-                                    &fbuffer,
-                                    FTRAIL_TOKENDATATYPE_BIGINT,
-                                    8,
-                                    (uint8*)xid);
+    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_BIGINT, 8,
+                             (uint8*)xid);
 
-    /* 填充头部信息 */
-    if(FFSMGR_STATUS_SHIFTFILE == ffstate->status)
+    /* Fill header info */
+    if (FFSMGR_STATUS_SHIFTFILE == ffstate->status)
     {
         ffstate->status = FFSMGR_STATUS_USED;
     }
 
-    /* 写在 Record token 中的长度 */
-    tlen = txndata->header.reclength;               /* 数据长度 */
-    tlen += hdrlen;                                 /* 头部长度 */
+    /* Length written in Record token */
+    tlen = txndata->header.reclength; /* Data length */
+    tlen += hdrlen;                   /* Header length */
 
-    /* 增加rectail */
+    /* Add rectail */
     uptr = fbuffer->data + fbuffer->start;
-    FTRAIL_GROUP2BUFFER(put,
-                                TRAIL_TOKENDATA_RECTAIL,
-                                FFTRAIL_INFOTYPE_TOKEN,
-                                0,
-                                uptr)
+    FTRAIL_GROUP2BUFFER(put, TRAIL_TOKENDATA_RECTAIL, FFTRAIL_INFOTYPE_TOKEN, 0, uptr)
 
-    /* 添加尾部长度 */
+    /* Add tail length */
     tlen += TOKENHDRSIZE;
     fbuffer->start += TOKENHDRSIZE;
 
-    /* 字节对齐 */
+    /* Byte alignment */
     tlen = MAXALIGN(tlen);
     fbuffer->start = MAXALIGN(fbuffer->start);
 
-    /* 写头部数据 */
-    /* 增加GROUP信息 */
-    FTRAIL_GROUP2BUFFER(put,
-                                FFTRAIL_GROUPTYPE_DATA,
-                                FFTRAIL_INFOTYPE_GROUP,
-                                tlen,
-                                ffstate->recptr)
+    /* Write header data */
+    /* Add GROUP info */
+    FTRAIL_GROUP2BUFFER(put, FFTRAIL_GROUPTYPE_DATA, FFTRAIL_INFOTYPE_GROUP, tlen, ffstate->recptr)
 
-    /* 增加头部信息 */
+    /* Add header info */
     fftrail_data_hdrserail(&txndata->header, ffstate);
 
     return true;
 }
 
-/* bigtxn begin 信息反序列化 */
+/* Deserialize bigtxn begin info */
 bool fftrail_txnbigtxn_begin_deserial(void** data, void* state)
 {
-    uint8   tokenid = 0;                        /* token 标识 */
-    uint8   tokeninfo = 0;                      /* token 的详情 */
-    uint32  recoffset = 0;
-    uint32  dataoffset = 0;
-    uint16  subtype = FF_DATA_TYPE_NOP;
-    uint32  tokenlen = 0;                       /* token 长度 */
-    uint64  totallen = 0;
-    FullTransactionId *xid = NULL;
+    uint8              tokenid = 0;   /* token id */
+    uint8              tokeninfo = 0; /* token details */
+    uint32             recoffset = 0;
+    uint32             dataoffset = 0;
+    uint16             subtype = FF_DATA_TYPE_NOP;
+    uint32             tokenlen = 0; /* token length */
+    uint64             totallen = 0;
+    FullTransactionId* xid = NULL;
 
-    uint8*  uptr = NULL;
-    uint8*  tokendata = NULL;                   /* token 数据区 */
-    ff_txndata*  txndata = NULL;
+    uint8*        uptr = NULL;
+    uint8*        tokendata = NULL; /* token data area */
+    ff_txndata*   txndata = NULL;
     ffsmgr_state* ffstate = NULL;
-    txnstmt* rstmt = NULL;
+    txnstmt*      rstmt = NULL;
 
-    /* 类型强转 */
+    /* Type cast */
     ffstate = (ffsmgr_state*)state;
     uptr = ffstate->recptr;
 
-    /* 申请空间 */
+    /* Allocate space */
     txndata = (ff_txndata*)rmalloc0(sizeof(ff_txndata));
-    if(NULL == txndata)
+    if (NULL == txndata)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
     rmemset0(txndata, 0, '\0', sizeof(ff_txndata));
     *data = txndata;
 
-    /* 申请空间 */
+    /* Allocate space */
     rstmt = txnstmt_init();
-    if(NULL == rstmt)
+    if (NULL == rstmt)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return false;
@@ -160,16 +148,15 @@ bool fftrail_txnbigtxn_begin_deserial(void** data, void* state)
     rstmt->len = txndata->header.totallength;
 
     xid = (FullTransactionId*)rmalloc0(sizeof(FullTransactionId));
-    if(NULL == xid)
+    if (NULL == xid)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
     rmemset0(xid, 0, '\0', sizeof(FullTransactionId));
 
-    /* 获取头部标识 */
+    /* Get header id */
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(FFTRAIL_GROUPTYPE_DATA != tokenid
-        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    if (FFTRAIL_GROUPTYPE_DATA != tokenid || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         /* make gcc happy */
         uptr = tokendata;
@@ -177,31 +164,26 @@ bool fftrail_txnbigtxn_begin_deserial(void** data, void* state)
     }
     recoffset = TOKENHDRSIZE;
 
-    /* 解析头部数据 */
+    /* Parse header data */
     uptr = ffstate->recptr;
     ffstate->recptr += recoffset;
     fftrail_data_hdrdeserail(&txndata->header, ffstate);
 
-    /* rstmt添加orgpos */ 
+    /* Add orgpos to rstmt */
     rstmt->extra0.wal.lsn = txndata->header.orgpos;
 
-    /* 保留信息，因为在后续的处理逻辑中，这些数据可能会被清理 */
+    /* Preserve info, because these data may be cleared in subsequent processing */
     subtype = txndata->header.subtype;
 
-    /* 重新指向头部 */
+    /* Re-point to header */
     ffstate->recptr = uptr;
     recoffset += (uint16)fftrail_data_headlen(ffstate->compatibility);
 
     totallen = txndata->header.totallength;
 
-    /* 获取xid */
-    if(false  == fftrail_data_buffer2data(&txndata->header,
-                                                 ffstate,
-                                                 &recoffset,
-                                                 &dataoffset,
-                                                 FTRAIL_TOKENDATATYPE_BIGINT,
-                                                 8,
-                                                 (uint8*)xid))
+    /* Get xid */
+    if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)xid))
     {
         elog(RLOG_WARNING, "big txn begin deserial error");
         return false;
@@ -209,7 +191,8 @@ bool fftrail_txnbigtxn_begin_deserial(void** data, void* state)
     rstmt->stmt = (void*)xid;
     totallen -= 8;
 
-    /* 重设，因为在切换block或file时，subtype的值为:FF_DATA_SUBTYPE_REC_CONTRECORD */
+    /* Reset, because when switching block or file, subtype value is: FF_DATA_SUBTYPE_REC_CONTRECORD
+     */
     txndata->header.subtype = subtype;
     return true;
 }

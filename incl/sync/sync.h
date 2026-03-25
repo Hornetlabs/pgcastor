@@ -1,20 +1,20 @@
 #ifndef _SYNC_H
 #define _SYNC_H
 
-
 typedef struct SYNCSTATE
 {
-    HTAB*           hpreparedno;        /* oid 为 prepared, 在 hash 中的不需要在数据库中执行 prepared 语句,当断开连接时,需要清空 */
-    PGconn*         conn;
-    char*           conninfo;
-    char*           name;
-}syncstate;
+    HTAB* hpreparedno; /* oid-based prepared statements; those in hash don't need to be re-prepared
+                          on database; cleared on disconnect */
+    PGconn* conn;
+    char*   conninfo;
+    char*   name;
+} syncstate;
 
-/* hash不需要在数据库中执行 prepared 语句 */
+/* hash of prepared statements that don't need to be re-prepared on database */
 typedef struct SYNCSTATE_PREPARED
 {
-    uint64                      number;                              /* 预解析语句编号 */
-    char                        preparename[64];                     /* 预解析语句名称 */
+    uint64 number;          /* prepared statement sequence number */
+    char   preparename[64]; /* prepared statement name */
 } syncstate_prepared;
 
 HTAB* syncstate_hpreparedno_init(void);

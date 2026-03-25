@@ -47,7 +47,7 @@ typedef struct HISTORY_TIMELINE_ENDLSN
 
 typedef struct HISTORY_TIMELINE_FILE
 {
-    uint32_t len;
+    uint32_t                 len;
     history_timeline_endlsn* vector;
 } history_timeline_file;
 
@@ -58,21 +58,21 @@ static void wal_usleep(long microsec)
         struct timeval delay;
         delay.tv_sec = microsec / 1000000L;
         delay.tv_usec = microsec % 1000000L;
-        (void) select(0, NULL, NULL, NULL, &delay);
+        (void)select(0, NULL, NULL, NULL, &delay);
     }
 }
 
 static history_timeline_file* splitwork_wal_history_file_parser(char* buffer, size_t len)
 {
-    char* start_ptr = buffer;
-    TimeLineID timeline = 0;
-    uint32_t hi = 0;
-    uint32_t low = 0;
-    uint32_t vector_len = 0;
+    char*                  start_ptr = buffer;
+    TimeLineID             timeline = 0;
+    uint32_t               hi = 0;
+    uint32_t               low = 0;
+    uint32_t               vector_len = 0;
     history_timeline_file* result = NULL;
-    uint32_t index_vector = 0;
+    uint32_t               index_vector = 0;
 
-    /* 先遍历一遍, 获取行数 */
+    /* First pass, count number of lines */
     while (*start_ptr)
     {
         start_ptr = strstr(start_ptr, "\n");
@@ -89,7 +89,7 @@ static history_timeline_file* splitwork_wal_history_file_parser(char* buffer, si
         }
     }
 
-    /* 重置指针 */
+    /* Reset pointer */
     start_ptr = buffer;
 
     result = rmalloc0(sizeof(history_timeline_file));
@@ -107,13 +107,13 @@ static history_timeline_file* splitwork_wal_history_file_parser(char* buffer, si
     }
     rmemset0(result->vector, 0, 0, sizeof(history_timeline_endlsn) * vector_len);
 
-    /* 获取数据 */
+    /* Get data */
     while (*start_ptr)
     {
         sscanf(start_ptr, "%u\t%X/%X\t", &timeline, &hi, &low);
 
         result->vector[index_vector].timeline = timeline;
-        result->vector[index_vector].endlsn = (uint64_t)((uint64_t) hi << 32 | low);
+        result->vector[index_vector].endlsn = (uint64_t)((uint64_t)hi << 32 | low);
         index_vector++;
 
         start_ptr = strstr(start_ptr, "\n");
@@ -134,12 +134,12 @@ static history_timeline_file* splitwork_wal_history_file_parser(char* buffer, si
 
 static TimeLineID splitwork_wal_get_timelineid_from_file(char* buffer, size_t len, XLogRecPtr lsn)
 {
-    history_timeline_file *history = splitwork_wal_history_file_parser(buffer, len);
-    TimeLineID result = 0;
-    uint32_t left = 0;
-    uint32_t right = history->len;
+    history_timeline_file* history = splitwork_wal_history_file_parser(buffer, len);
+    TimeLineID             result = 0;
+    uint32_t               left = 0;
+    uint32_t               right = history->len;
 
-    /* 二分法查找 */
+    /* Binary search */
     while (left < right)
     {
         uint32_t mid = left + (right - left) / 2;
@@ -154,7 +154,7 @@ static TimeLineID splitwork_wal_get_timelineid_from_file(char* buffer, size_t le
         }
     }
 
-    /* 如果 left == history->len 则是最后一个时间线 */
+    /* If left == history->len, it is the last timeline */
     if (left == history->len)
     {
         result = history->vector[history->len - 1].timeline + 1;
@@ -164,33 +164,35 @@ static TimeLineID splitwork_wal_get_timelineid_from_file(char* buffer, size_t le
         result = history->vector[history->len - 1].timeline;
     }
 
-    /* 清理 */
+    /* Cleanup */
     rfree(history->vector);
     rfree(history);
 
     return result;
 }
 
-
-static bool splitwork_wal_history_file_read(char **buffer, size_t *len, char *dpath, uint32_t timeline)
+static bool splitwork_wal_history_file_read(char** buffer, size_t* len, char* dpath,
+                                            uint32_t timeline)
 {
-    int fd = -1;
+    int  fd = -1;
     char fpath[MAXPGPATH];
 
     snprintf(fpath, MAXPGPATH, "%s/%08X.history", dpath, timeline);
 
     fd = osal_file_open(fpath, O_RDONLY, 0);
 
-    /* 不存在history文件的情况下返回false */
+    /* Return false if history file does not exist */
     if (fd < 0)
+    {
         return false;
+    }
 
     *len = osal_file_size(fd);
     *buffer = rmalloc0(*len);
     rmemset0(*buffer, 0, 0, *len);
     lseek(fd, 0, SEEK_SET);
 
-    /* 无法读取文件的情况下返回false */
+    /* Return false if cannot read file */
     if (osal_file_read(fd, *buffer, *len) < 0)
     {
         osal_file_close(fd);
@@ -201,29 +203,29 @@ static bool splitwork_wal_history_file_read(char **buffer, size_t *len, char *dp
     return true;
 }
 
-static void tryUpdateTimeLine(loadwalrecords *readCtl)
+static void tryUpdateTimeLine(loadwalrecords* readCtl)
 {
-    char *his_buffer = NULL;
-    size_t len = 0;
-    TimeLineID history_num = readCtl->timeline;
-    TimeLineID timeline = 0;
+    char*             his_buffer = NULL;
+    size_t            len = 0;
+    TimeLineID        history_num = readCtl->timeline;
+    TimeLineID        timeline = 0;
     loadpagefromfile* loadpage = NULL;
-    bool rewind = (readCtl->startptr && readCtl->endptr) ? true : false;
+    bool              rewind = (readCtl->startptr && readCtl->endptr) ? true : false;
 
     loadpage = (loadpagefromfile*)readCtl->loadpage;
 
     if (!rewind)
     {
-        /* 不是rewind状态尝试查找下一个时间线的history文件 */
+        /* If not in rewind state, try to find the next timeline's history file */
         history_num += 1;
     }
 
-    /* 获取history文件 */
+    /* Get history file */
     if (splitwork_wal_history_file_read(&his_buffer, &len, loadpage->fdir, history_num))
     {
         timeline = splitwork_wal_get_timelineid_from_file(his_buffer, len, readCtl->startptr);
         readCtl->timeline = timeline;
-        /* 关闭文件 */
+        /* Close file */
         readCtl->loadpageroutine->loadpageclose(readCtl->loadpage);
     }
 
@@ -233,24 +235,23 @@ static void tryUpdateTimeLine(loadwalrecords *readCtl)
     }
 }
 
-static void splitwork_wal_freerecorddlist(void *dlist_v)
+static void splitwork_wal_freerecorddlist(void* dlist_v)
 {
     dlist* list = (dlist*)dlist_v;
 
-    /* record 双向链表 内存释放 */
-    dlist_free(list, (dlistvaluefree )record_free);
+    /* Free record doubly-linked list memory */
+    dlist_free(list, (dlistvaluefree)record_free);
 }
 
-/* 将 records 加入到队列中 */
-static bool splitwork_wal_addrecords2queue(splitwalcontext *walctx,
-                                                  thrnode* thrnode)
+/* Add records to queue */
+static bool splitwork_wal_addrecords2queue(splitwalcontext* walctx, thrnode* thrnode)
 {
-    /* 加入到队列中 */
-    while(THRNODE_STAT_WORK == thrnode->stat)
+    /* Add to queue */
+    while (THRNODE_STAT_WORK == thrnode->stat)
     {
-        if(false == queue_put(walctx->recordqueue, walctx->loadrecords->records))
+        if (false == queue_put(walctx->recordqueue, walctx->loadrecords->records))
         {
-            if(ERROR_QUEUE_FULL == walctx->recordqueue->error)
+            if (ERROR_QUEUE_FULL == walctx->recordqueue->error)
             {
                 usleep(50000);
                 continue;
@@ -265,62 +266,68 @@ static bool splitwork_wal_addrecords2queue(splitwalcontext *walctx,
     return false;
 }
 
-void* splitwork_wal_main(void *args)
+void* splitwork_wal_main(void* args)
 {
-    bool delay                                  = false;
-    uint32 waitCount                            = 0;
-    thrnode* thrnode_ptr                     = NULL;
-    splitwalcontext *walctx              = NULL;
-    loadwalrecords *loadrecords          = NULL;
+    bool             delay = false;
+    uint32           waitCount = 0;
+    thrnode*         thrnode_ptr = NULL;
+    splitwalcontext* walctx = NULL;
+    loadwalrecords*  loadrecords = NULL;
 
     thrnode_ptr = (thrnode*)args;
-    walctx = (splitwalcontext *) thrnode_ptr->data;
+    walctx = (splitwalcontext*)thrnode_ptr->data;
 
     loadrecords = walctx->loadrecords;
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thrnode_ptr->stat)
+    /* Check state */
+    if (THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING, "increment capture split stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "increment capture split stat exception, expected state is THRNODE_STAT_STARTING");
         thrnode_ptr->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thrnode_ptr->stat = THRNODE_STAT_WORK;
 
-    while(1)
+    while (1)
     {
-        if(THRNODE_STAT_TERM == thrnode_ptr->stat)
+        if (THRNODE_STAT_TERM == thrnode_ptr->stat)
         {
-            /* 解析器 */
+            /* Parser exiting */
             thrnode_ptr->stat = THRNODE_STAT_EXIT;
             break;
         }
 
         if (SPLITWORK_WAL_STATUS_INIT == walctx->status)
         {
-            /* 睡眠20ms */
+            /* Sleep 20ms */
             wal_usleep(20 * 1000);
             continue;
         }
         else if (SPLITWORK_WAL_STATUS_REWIND == walctx->status)
         {
-            /* 如果此时start ptr超过了endlsn, 则重新指定start和end */
+            /* If start ptr exceeds endlsn, reassign start and end */
             if (!loadwalrecords_checkend(loadrecords->startptr, loadrecords))
             {
-                /* 关闭文件描述符 */
+                /* Close file descriptor */
                 loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
 
-                /* 重定位startptr为上一个wal日志开始, 如果此时startptr为下一个wal日志开始, 则定位到上上个wal文件开始 */
+                /* Reposition startptr to the beginning of the previous WAL log.
+                 * If startptr is at the beginning of the next WAL log,
+                 * position it to the beginning of the one before that. */
                 if (walctx->rewind_start)
                 {
-                    loadrecords->startptr = GetLastXlogSegmentBegin((walctx->rewind_start + loadrecords->loadpage->filesize), loadrecords->loadpage->filesize);
+                    loadrecords->startptr = GetLastXlogSegmentBegin(
+                        (walctx->rewind_start + loadrecords->loadpage->filesize),
+                        loadrecords->loadpage->filesize);
                     loadrecords->endptr = loadrecords->startptr + loadrecords->loadpage->filesize;
                     walctx->rewind_start = InvalidXLogRecPtr;
                 }
                 else
                 {
-                    loadrecords->startptr = GetLastXlogSegmentBegin(loadrecords->startptr, loadrecords->loadpage->filesize);
+                    loadrecords->startptr = GetLastXlogSegmentBegin(
+                        loadrecords->startptr, loadrecords->loadpage->filesize);
                     loadrecords->endptr = loadrecords->startptr + loadrecords->loadpage->filesize;
                 }
                 loadrecords->prev = InvalidXLogRecPtr;
@@ -329,70 +336,72 @@ void* splitwork_wal_main(void *args)
 
         if (walctx->change)
         {
-            /* 先清理queue缓存 */
+            /* Clear queue cache first */
             queue_clear(walctx->recordqueue, splitwork_wal_freerecorddlist);
 
             walctx->callback.parserwal_rewindstat_setemiting(walctx->privdata);
             walctx->change = false;
 
-            /* 重置loadrecord */
+            /* Reset loadrecord */
             loadwalrecords_clean(loadrecords);
 
-            /* 设置起点为新起点 */
+            /* Set start point to new start */
             loadrecords->startptr = walctx->change_startptr;
             loadrecords->endptr = InvalidFullTransactionId;
             elog(RLOG_DEBUG, "rewind finish, start lsn:%lu", loadrecords->startptr);
 
             walctx->status = SPLITWORK_WAL_STATUS_NORMAL;
-            /* 重新获取timeline */
+            /* Re-fetch timeline */
             tryUpdateTimeLine(loadrecords);
             continue;
         }
 
         delay = false;
 
-        /* 根据已知信息获取wal文件的一个block的数据 */
+        /* Get a block of data from WAL file based on known information */
         if (!loadwalrecords_load(loadrecords))
         {
             delay = true;
         }
 
-        /* 当划分到了endlsn时 */
-        if (SPLITWORK_WAL_STATUS_REWIND == walctx->status
-         && loadrecords->startptr >= loadrecords->endptr)
+        /* When splitting reaches endlsn */
+        if (SPLITWORK_WAL_STATUS_REWIND == walctx->status &&
+            loadrecords->startptr >= loadrecords->endptr)
         {
-            /* 存在下一个文件开始第一条不完整record */
+            /* The first incomplete record at the beginning of the next file exists */
             if (loadrecords->seg_first_incomplete_next)
             {
-                /* 尝试合并 */
+                /* Try to merge */
                 loadwalrecords_merge_seg_last_record(loadrecords);
             }
-            /* 合并结束后, 不应存在页最后一个不完整record和下一个文件开始不完整record */
+            /* After merge, there should be no incomplete record at the end of the page
+             * and incomplete record at the start of the next file */
             if (loadrecords->seg_first_incomplete_next && loadrecords->page_last_record_incomplete)
             {
                 elog(RLOG_ERROR, "have incomplete record when split rewinding");
             }
 
-            /* 第一次时可能遇到这种情况, 后面的record不再读取, 清理即可 */
+            /* This may happen on the first time, subsequent records won't be read, just clean up */
             if (loadrecords->page_last_record_incomplete)
             {
-                /* 直接释放 */
+                /* Free directly */
                 recordcross_free(loadrecords->page_last_record_incomplete);
-                /* 置空 */
+                /* Set to NULL */
                 loadrecords->page_last_record_incomplete = NULL;
             }
 
-            /* merge结束, 将当前文件的第一条不完整record转到readCtl->seg_first_incomplete_next中 */
+            /* Merge done, move the first incomplete record of current file to
+             * seg_first_incomplete_next */
             loadrecords->seg_first_incomplete_next = loadrecords->seg_first_incomplete;
 
-            /* 置空 */
+            /* Set to NULL */
             loadrecords->seg_first_incomplete = NULL;
         }
 
-        /* 判断是否存在划分完的record */
+        /* Check if there are completed split records */
         if (loadrecords->records)
         {
-            /* 添加到queue中 */
+            /* Add to queue */
             splitwork_wal_addrecords2queue(walctx, thrnode_ptr);
         }
 
@@ -418,14 +427,14 @@ void* splitwork_wal_main(void *args)
     return NULL;
 }
 
-void splitwal_destroy(splitwalcontext *split_wal_ctx)
+void splitwal_destroy(splitwalcontext* split_wal_ctx)
 {
     if (NULL == split_wal_ctx)
     {
         return;
     }
 
-    /* 释放loadwalrecords */
+    /* Free loadwalrecords */
     if (NULL != split_wal_ctx->loadrecords)
     {
         loadwalrecords_free(split_wal_ctx->loadrecords);
@@ -440,9 +449,9 @@ void splitwal_destroy(splitwalcontext *split_wal_ctx)
     return;
 }
 
-splitwalcontext *splitwal_init(void)
+splitwalcontext* splitwal_init(void)
 {
-    splitwalcontext *split_wal_ctx = NULL;
+    splitwalcontext* split_wal_ctx = NULL;
 
     split_wal_ctx = rmalloc0(sizeof(splitwalcontext));
     if (NULL == split_wal_ctx)
@@ -451,7 +460,7 @@ splitwalcontext *splitwal_init(void)
     }
     rmemset0(split_wal_ctx, 0, 0, sizeof(splitwalcontext));
 
-    /* 初始化loadrecords, loadpage相关也在此内初始化 */
+    /* Initialize loadrecords, loadpage related also initialized here */
     split_wal_ctx->loadrecords = loadwalrecords_init();
 
     split_wal_ctx->rewind_start = InvalidXLogRecPtr;
@@ -459,41 +468,43 @@ splitwalcontext *splitwal_init(void)
     return split_wal_ctx;
 }
 
-void *onlinerefresh_captureloadrecord_main(void *args)
+void* onlinerefresh_captureloadrecord_main(void* args)
 {
-    uint32 waitCount                                    = 0;
-    thrnode* thrnode_ptr                             = NULL;
-    splitwalcontext *walctx                      = NULL;
-    loadwalrecords *loadrecords                  = NULL;
-    recpos pos = {{'\0'}};
-    onlinerefresh_captureloadrecord *split_task  = NULL;
-    bool delay = false;
+    uint32                           waitCount = 0;
+    thrnode*                         thrnode_ptr = NULL;
+    splitwalcontext*                 walctx = NULL;
+    loadwalrecords*                  loadrecords = NULL;
+    recpos                           pos = {{'\0'}};
+    onlinerefresh_captureloadrecord* split_task = NULL;
+    bool                             delay = false;
 
     thrnode_ptr = (thrnode*)args;
-    split_task = (onlinerefresh_captureloadrecord *)thrnode_ptr->data;
+    split_task = (onlinerefresh_captureloadrecord*)thrnode_ptr->data;
     walctx = split_task->splitwalctx;
     loadrecords = walctx->loadrecords;
     pos.wal.type = RECPOS_TYPE_WAL;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thrnode_ptr->stat)
+    /* Check state */
+    if (THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING, "onlinerefresh capture loadrecord stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "onlinerefresh capture loadrecord stat exception, expected state is "
+             "THRNODE_STAT_STARTING");
         thrnode_ptr->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;
     }
     thrnode_ptr->stat = THRNODE_STAT_WORK;
 
-    while(1)
+    while (1)
     {
-        /* 首先判断是否接收到退出信号 */
-        if(THRNODE_STAT_TERM == thrnode_ptr->stat)
+        /* First check if exit signal is received */
+        if (THRNODE_STAT_TERM == thrnode_ptr->stat)
         {
             thrnode_ptr->stat = THRNODE_STAT_EXIT;
             break;
         }
-    
+
         pos.wal.lsn = loadrecords->startptr;
         pos.wal.timeline = loadrecords->timeline;
 
@@ -501,7 +512,7 @@ void *onlinerefresh_captureloadrecord_main(void *args)
 
         delay = false;
 
-        /* 根据已知信息获取wal文件的一个block的数据 */
+        /* Get a block of data from WAL file based on known information */
         if (!loadwalrecords_load(loadrecords))
         {
             delay = true;
@@ -509,41 +520,45 @@ void *onlinerefresh_captureloadrecord_main(void *args)
 
         if (loadrecords->records)
         {
-            /* 当划分到了endlsn时 */
-            if (walctx->status == SPLITWORK_WAL_STATUS_REWIND
-             && loadrecords->startptr >= loadrecords->endptr)
+            /* When splitting reaches endlsn */
+            if (walctx->status == SPLITWORK_WAL_STATUS_REWIND &&
+                loadrecords->startptr >= loadrecords->endptr)
             {
-                /* 存在下一个文件开始第一条不完整record */
+                /* The first incomplete record at the beginning of the next file exists */
                 if (loadrecords->seg_first_incomplete_next)
                 {
-                    /* 尝试合并 */
+                    /* Try to merge */
                     loadwalrecords_merge_seg_last_record(loadrecords);
                 }
-                /* 合并结束后, 不应存在任何不完整的record */
-                if (loadrecords->seg_first_incomplete_next && loadrecords->page_last_record_incomplete)
+                /* After merge, there should be no incomplete records at all */
+                if (loadrecords->seg_first_incomplete_next &&
+                    loadrecords->page_last_record_incomplete)
                 {
                     elog(RLOG_WARNING, "have incomplete record when split rewinding");
                     thrnode_ptr->stat = THRNODE_STAT_ABORT;
                     break;
                 }
 
-                /* 第一次时可能遇到这种情况, 后面的record不再读取, 清理即可 */
+                /* This may happen on the first time, subsequent records won't be read, just clean
+                 * up */
                 if (loadrecords->page_last_record_incomplete)
                 {
-                    /* 直接释放 */
+                    /* Free directly */
                     recordcross_free(loadrecords->page_last_record_incomplete);
-                    /* 置空 */
+                    /* Set to NULL */
                     loadrecords->page_last_record_incomplete = NULL;
                 }
 
-                /* merge结束, 将当前文件的第一条不完整record转到readCtl->seg_first_incomplete_next中 */
+                /* Merge done, move the first incomplete record of current file to
+                 * seg_first_incomplete_next
+                 */
                 loadrecords->seg_first_incomplete_next = loadrecords->seg_first_incomplete;
 
-                /* 置空 */
+                /* Set to NULL */
                 loadrecords->seg_first_incomplete = NULL;
             }
 
-            /* 添加到queue中 */
+            /* Add to queue */
             splitwork_wal_addrecords2queue(walctx, thrnode_ptr);
         }
 
@@ -569,26 +584,25 @@ void *onlinerefresh_captureloadrecord_main(void *args)
     return NULL;
 }
 
-void onlinerefresh_captureloadrecord_free(void *args)
+void onlinerefresh_captureloadrecord_free(void* args)
 {
-    splitwalcontext *split_wal_ctx = NULL;
-    onlinerefresh_captureloadrecord *split_task = NULL;
+    splitwalcontext*                 split_wal_ctx = NULL;
+    onlinerefresh_captureloadrecord* split_task = NULL;
 
-    split_task = (onlinerefresh_captureloadrecord *) args;
-    if(NULL == split_task)
+    split_task = (onlinerefresh_captureloadrecord*)args;
+    if (NULL == split_task)
     {
         return;
     }
 
-
     split_wal_ctx = split_task->splitwalctx;
-    if(NULL == split_wal_ctx)
+    if (NULL == split_wal_ctx)
     {
         rfree(split_task);
         return;
     }
 
-    /* 释放loadwalrecords */
+    /* Free loadwalrecords */
     if (NULL != split_wal_ctx->loadrecords)
     {
         loadwalrecords_free(split_wal_ctx->loadrecords);

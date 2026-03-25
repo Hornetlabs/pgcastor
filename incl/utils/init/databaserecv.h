@@ -3,10 +3,10 @@
 
 typedef struct CHECKPOINT
 {
-    XLogRecPtr              redolsn;
-    TimeLineID              tlid;
-    TransactionId           nextfullxid;
-}checkpoint;
+    XLogRecPtr    redolsn;
+    TimeLineID    tlid;
+    TransactionId nextfullxid;
+} checkpoint;
 
 checkpoint* databaserecv_checkpoint_get(PGconn* conn);
 
@@ -34,25 +34,26 @@ bool databaserecv_synctable_set(PGconn* conn);
 
 bool databaserecv_integrate_dbinit(void);
 
-/* 执行 IDENTIFY_SYSTEM 并获取返回值 */
+/* Execute IDENTIFY_SYSTEM and get return value */
 bool databaserecv_identifysystem(PGconn* conn, TimeLineID* tli, XLogRecPtr* dblsn);
 
-/* 执行 SHOW wal_segment_size 并获取返回值 */
+/* Execute SHOW wal_segment_size and get return value */
 bool databaserecv_showwalsegmentsize(PGconn* conn, uint32* segsize);
 
-/* 获取 xlogblocksize */
+/* Get xlogblocksize */
 bool databaserecv_showwalblocksize(PGconn* conn, int* blksize);
 
-/* 获取 server version */
+/* Get server version */
 bool databaserecv_showserverversion(PGconn* conn, char** strversion);
 
-/* 编译时是否开启 FDE */
-bool databaserecv_getconfigurefde(PGconn* conn, bool *fde);
+/* Whether FDE is enabled at compile time */
+bool databaserecv_getconfigurefde(PGconn* conn, bool* fde);
 
-/* 获取时间线文件数据 */
+/* Get timeline file data */
 bool databaserecv_timelinehistory(PGconn* conn, TimeLineID tli, char** pfilename, char** pcontent);
 
-/* 执行 start replication */
-bool databaserecv_startreplication(PGconn* conn, TimeLineID tli, XLogRecPtr startpos, char* slotname);
+/* Execute start replication */
+bool databaserecv_startreplication(PGconn* conn, TimeLineID tli, XLogRecPtr startpos,
+                                   char* slotname);
 
 #endif

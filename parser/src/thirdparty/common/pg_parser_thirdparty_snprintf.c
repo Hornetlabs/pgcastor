@@ -6,11 +6,11 @@
 
 #define Min(x, y) ((x) < (y) ? (x) : (y))
 
-static void dostr(const char *str, int32_t slen, PrintfTarget *target);
-static void flushbuffer(PrintfTarget *target);
-static void dopr_outch(int32_t c, PrintfTarget *target);
+static void dostr(const char* str, int32_t slen, PrintfTarget* target);
+static void flushbuffer(PrintfTarget* target);
+static void dopr_outch(int32_t c, PrintfTarget* target);
 
-static void dostr(const char *str, int32_t slen, PrintfTarget *target)
+static void dostr(const char* str, int32_t slen, PrintfTarget* target)
 {
     /* fast path for common case of slen == 1 */
     if (slen == 1)
@@ -24,9 +24,13 @@ static void dostr(const char *str, int32_t slen, PrintfTarget *target)
         int32_t avail;
 
         if (target->bufend != NULL)
+        {
             avail = target->bufend - target->bufptr;
+        }
         else
+        {
             avail = slen;
+        }
         if (avail <= 0)
         {
             /* buffer full, can we dump to stream? */
@@ -46,7 +50,7 @@ static void dostr(const char *str, int32_t slen, PrintfTarget *target)
     }
 }
 
-static void flushbuffer(PrintfTarget *target)
+static void flushbuffer(PrintfTarget* target)
 {
     size_t nc = target->bufptr - target->bufstart;
 
@@ -61,19 +65,21 @@ static void flushbuffer(PrintfTarget *target)
         written = fwrite(target->bufstart, 1, nc, target->stream);
         target->nchars += written;
         if (written != nc)
+        {
             target->failed = true;
+        }
     }
     target->bufptr = target->bufstart;
 }
 
-static void dopr_outch(int32_t c, PrintfTarget *target)
+static void dopr_outch(int32_t c, PrintfTarget* target)
 {
     if (target->bufend != NULL && target->bufptr >= target->bufend)
     {
         /* buffer full, can we dump to stream? */
         if (target->stream == NULL)
         {
-            target->nchars++;    /* no, lose the data */
+            target->nchars++; /* no, lose the data */
             return;
         }
         flushbuffer(target);
@@ -90,7 +96,7 @@ static void dopr_outch(int32_t c, PrintfTarget *target)
  * However, the target buffer must be nonempty (i.e. count > 0), and
  * the precision is silently bounded to a sane range.
  */
-int32_t pg_parser_strfromd(char *str, size_t count, int32_t precision, double value)
+int32_t pg_parser_strfromd(char* str, size_t count, int32_t precision, double value)
 {
     PrintfTarget target;
     int32_t      signvalue = 0;
@@ -111,9 +117,13 @@ int32_t pg_parser_strfromd(char *str, size_t count, int32_t precision, double va
      * convert[] buffer to be reasonably small.
      */
     if (precision < 1)
+    {
         precision = 1;
+    }
     else if (precision > 32)
+    {
         precision = 32;
+    }
 
     /*
      * The rest is just an inlined version of the fmtfloat() logic above,
@@ -128,9 +138,7 @@ int32_t pg_parser_strfromd(char *str, size_t count, int32_t precision, double va
     {
         static const double dzero = 0.0;
 
-        if (value < 0.0 ||
-            (value == 0.0 &&
-             memcmp(&value, &dzero, sizeof(double)) != 0))
+        if (value < 0.0 || (value == 0.0 && memcmp(&value, &dzero, sizeof(double)) != 0))
         {
             signvalue = '-';
             value = -value;
@@ -156,9 +164,7 @@ int32_t pg_parser_strfromd(char *str, size_t count, int32_t precision, double va
             }
 
 #ifdef WIN32
-            if (vallen >= 6 &&
-                convert[vallen - 5] == 'e' &&
-                convert[vallen - 3] == '0')
+            if (vallen >= 6 && convert[vallen - 5] == 'e' && convert[vallen - 3] == '0')
             {
                 convert[vallen - 3] = convert[vallen - 2];
                 convert[vallen - 2] = convert[vallen - 1];
@@ -169,12 +175,13 @@ int32_t pg_parser_strfromd(char *str, size_t count, int32_t precision, double va
     }
 
     if (signvalue)
+    {
         dopr_outch(signvalue, &target);
+    }
 
     dostr(convert, vallen, &target);
 
 pg_parser_thirdparty_snprintf_fail:
     *(target.bufptr) = '\0';
-    return target.failed ? -1 : (target.bufptr - target.bufstart
-                                 + target.nchars);
+    return target.failed ? -1 : (target.bufptr - target.bufstart + target.nchars);
 }

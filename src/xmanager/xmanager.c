@@ -45,9 +45,9 @@ xmanager* xmanager_init(void)
     xmanager* xmgr = NULL;
 
     /*
-     * 管理初始化
-     *  1、结构初始化
-     *  2、启动常驻线程
+     * Manager initialization
+     *1. Structure initialization
+     *2. Start daemon thread
      */
     xmgr = rmalloc0(sizeof(xmanager));
     if (NULL == xmgr)
@@ -65,14 +65,14 @@ xmanager* xmanager_init(void)
     }
 
     xmgr->threads = threads_init();
-    if(NULL == xmgr->threads)
+    if (NULL == xmgr->threads)
     {
         elog(RLOG_WARNING, "xmanager init threads error");
         xmanager_destroy(xmgr);
         return NULL;
     }
 
-    /* 队列初始化 */
+    /* Queue initialization */
     xmgr->authqueue = queue_init();
     if (NULL == xmgr->authqueue)
     {
@@ -89,7 +89,7 @@ xmanager* xmanager_init(void)
         return NULL;
     }
 
-    /* 常驻线程 */
+    /* Daemon thread */
     xmgr->listens = xmanager_listen_init();
     if (NULL == xmgr->listens)
     {
@@ -99,7 +99,7 @@ xmanager* xmanager_init(void)
     }
     xmgr->listens->authqueue = xmgr->authqueue;
 
-    /* auth 初始化 */
+    /* Auth initialization */
     xmgr->auth = xmanager_auth_init();
     if (NULL == xmgr->auth)
     {
@@ -110,7 +110,7 @@ xmanager* xmanager_init(void)
     xmgr->auth->authqueue = xmgr->authqueue;
     xmgr->auth->metricqueue = xmgr->metricqueue;
 
-    /* metric 初始化 */
+    /* Metric initialization */
     xmgr->metric = xmanager_metric_init();
     if (NULL == xmgr->metric)
     {
@@ -130,4 +130,3 @@ xmanager* xmanager_init(void)
 
     return xmgr;
 }
-

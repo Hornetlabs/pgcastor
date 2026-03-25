@@ -27,64 +27,62 @@ typedef void (*decode_prefunc)(decodingcontext* decodingctx, pg_parser_translog_
 
 typedef struct DECODE_PREMGR
 {
-    int                 type;
-    char*               name;
-    decode_prefunc      func;
+    int            type;
+    char*          name;
+    decode_prefunc func;
 } decode_premgr;
 
-static decode_premgr m_decodepremgr[] =
-{
-    { PG_PARSER_TRANSLOG_INVALID,               "INVALID"        , NULL },
-    { PG_PARSER_TRANSLOG_HEAP_INSERT,           "INSERT"         , decode_heap },
-    { PG_PARSER_TRANSLOG_HEAP_UPDATE,           "UPDATE"         , decode_heap },
-    { PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,       "HOT UPDATE"     , decode_heap },
-    { PG_PARSER_TRANSLOG_HEAP_DELETE,           "DELETE"         , decode_heap },
-    { PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,    "MULTI INSERT"   , decode_heap },
-    { PG_PARSER_TRANSLOG_XACT_COMMIT,           "COMMIT"         , decode_xact_commit },
-    { PG_PARSER_TRANSLOG_XACT_ABORT,            "ABORT"          , decode_xact_abort },
-    { PG_PARSER_TRANSLOG_XLOG_SWITCH,           "SWITCH"         , NULL },
-    { PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,       "ONLINE"         , decode_chkpt },
-    { PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,     "SHUTDOWN"       , decode_chkpt },
-    { PG_PARSER_TRANSLOG_FPW_TUPLE,             "FPW_TUPLE"      , heap_fpw_tuples },
-    { PG_PARSER_TRANSLOG_RELMAP,                "RELMAP"         , decode_relmap },
-    { PG_PARSER_TRANSLOG_RUNNING_XACTS,         "RUNNING_XACTS"  , NULL },
-    { PG_PARSER_TRANSLOG_XLOG_RECOVERY,         "RECOVERY"       , decode_recovery },
-    { PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE,   "COMMIT_PREPARE" , NULL },
-    { PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE,    "ABORT_PREPARE"  , NULL },
-    { PG_PARSER_TRANSLOG_XACT_ASSIGNMENT,       "ASSIGNMENT"     , NULL },
-    { PG_PARSER_TRANSLOG_XACT_PREPARE,          "PREPARE"        , NULL },
-    { PG_PARSER_TRANSLOG_HEAP_TRUNCATE,         "TRUNCATE"       , heap_truncate },
-    {PG_PARSER_TRANSLOG_SEQ,                    "SEQUENCE"       , decode_seq }
-};
+static decode_premgr m_decodepremgr[] = {
+    {PG_PARSER_TRANSLOG_INVALID, "INVALID", NULL},
+    {PG_PARSER_TRANSLOG_HEAP_INSERT, "INSERT", decode_heap},
+    {PG_PARSER_TRANSLOG_HEAP_UPDATE, "UPDATE", decode_heap},
+    {PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE, "HOT UPDATE", decode_heap},
+    {PG_PARSER_TRANSLOG_HEAP_DELETE, "DELETE", decode_heap},
+    {PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT, "MULTI INSERT", decode_heap},
+    {PG_PARSER_TRANSLOG_XACT_COMMIT, "COMMIT", decode_xact_commit},
+    {PG_PARSER_TRANSLOG_XACT_ABORT, "ABORT", decode_xact_abort},
+    {PG_PARSER_TRANSLOG_XLOG_SWITCH, "SWITCH", NULL},
+    {PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE, "ONLINE", decode_chkpt},
+    {PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN, "SHUTDOWN", decode_chkpt},
+    {PG_PARSER_TRANSLOG_FPW_TUPLE, "FPW_TUPLE", heap_fpw_tuples},
+    {PG_PARSER_TRANSLOG_RELMAP, "RELMAP", decode_relmap},
+    {PG_PARSER_TRANSLOG_RUNNING_XACTS, "RUNNING_XACTS", NULL},
+    {PG_PARSER_TRANSLOG_XLOG_RECOVERY, "RECOVERY", decode_recovery},
+    {PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE, "COMMIT_PREPARE", NULL},
+    {PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE, "ABORT_PREPARE", NULL},
+    {PG_PARSER_TRANSLOG_XACT_ASSIGNMENT, "ASSIGNMENT", NULL},
+    {PG_PARSER_TRANSLOG_XACT_PREPARE, "PREPARE", NULL},
+    {PG_PARSER_TRANSLOG_HEAP_TRUNCATE, "TRUNCATE", heap_truncate},
+    {PG_PARSER_TRANSLOG_SEQ, "SEQUENCE", decode_seq}};
 
-static int              m_precnt = (sizeof(m_decodepremgr))/(sizeof(decode_premgr));
-static XLogRecPtr       m_parserlsn = 0;
-
+static int        m_precnt = (sizeof(m_decodepremgr)) / (sizeof(decode_premgr));
+static XLogRecPtr m_parserlsn = 0;
 
 void parserwork_waldecode(decodingcontext* decodingctx)
 {
-    int32 rippleerrno = 0;
+    int32                        rippleerrno = 0;
     pg_parser_translog_pre_base* preparserresutl = NULL;
 
     decodingctx->walpre.m_record = decodingctx->decode_record->data;
 
     m_parserlsn = decodingctx->decode_record->start.wal.lsn;
-    /* 调用预解析，根据预解析内容，分发处理 */
-    if(false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
+    /* Call pre-parsing and dispatch based on pre-parsed content */
+    if (false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
     {
-        elog(RLOG_ERROR, "pg_parser_trans_preTrans error, %08X, %s",
-                            rippleerrno, pg_parser_errno_getErrInfo(rippleerrno));
+        elog(RLOG_ERROR, "pg_parser_trans_preTrans error, %08X, %s", rippleerrno,
+             pg_parser_errno_getErrInfo(rippleerrno));
     }
 
-    /* 调用分发函数 */
-    if(m_precnt <= preparserresutl->m_type)
+    /* Call dispatch function */
+    if (m_precnt <= preparserresutl->m_type)
     {
         elog(RLOG_ERROR, "pg_parser_trans_preTrans unknown type:%u", preparserresutl->m_type);
     }
 
-    if(NULL == m_decodepremgr[preparserresutl->m_type].func)
+    if (NULL == m_decodepremgr[preparserresutl->m_type].func)
     {
-        /* 查看事务号是否有效，无效则手动添加一个事务号，并放入到缓存中处理 */
+        /* Check if transaction number is valid, if not, manually add one and put into cache for
+         * processing */
         pg_parser_trans_preTrans_free(preparserresutl);
         return;
     }
@@ -97,4 +95,3 @@ void decode_getparserlsn(XLogRecPtr* plsn)
 {
     *plsn = m_parserlsn;
 }
-

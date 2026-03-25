@@ -5,7 +5,7 @@
 
 void txnstmt_shiftfilefree(void* data)
 {
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }

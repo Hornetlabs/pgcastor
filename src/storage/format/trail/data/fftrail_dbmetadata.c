@@ -10,77 +10,78 @@
 #include "storage/trail/data/fftrail_data.h"
 #include "storage/trail/data/fftrail_dbmetadata.h"
 
-/* 数据库信息序列化 */
+/* Database metadata serialization */
 bool fftrail_dbmetadata_serial(void* data, void* state)
 {
     /*
-     * 1、首先将数据部分写入到 buffer 中
-     * 2、增加 rectail 尾部
-     * 3、写GROUP信息
-     * 4、写头部
-    */
-    uint16 reclen = 0;                          /* 数据长度 */
-    int hdrlen = 0;                             /* 头长度 */
-    int tmplen = 0;                             /* 计算过程中使用的临时变量 */
+     * 1. First write data part to buffer
+     * 2. Add rectail
+     * 3. Write GROUP info
+     * 4. Write header
+     */
+    uint16 reclen = 0; /* Data length */
+    int    hdrlen = 0; /* Header length */
+    int    tmplen = 0; /* Temp variable used in calculation */
 
-    uint8* uptr = NULL;
+    uint8*         uptr = NULL;
     ff_dbmetadata* ffdbmd = NULL;
-    ffsmgr_state* ffstate = NULL;
-    file_buffer* rfbuffer = NULL;
+    ffsmgr_state*  ffstate = NULL;
+    file_buffer*   rfbuffer = NULL;
 
-    /* 类型转换 */
+    /* Type cast */
     ffdbmd = (ff_dbmetadata*)data;
     ffstate = (ffsmgr_state*)state;
 
-    /* 获取 buffer */
-    rfbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    /* Get buffer */
+    rfbuffer =
+        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
 
-    /* 向 buffer 中设置数据 */
+    /* Set data to buffer */
     ffstate->recptr = uptr = rfbuffer->data + rfbuffer->start;
 
-    /* 增加偏移 */
+    /* Increase offset */
     hdrlen = TOKENHDRSIZE;
     hdrlen += fftrail_data_headlen(ffstate->compatibility);
 
-    /* 数据偏移 */
+    /* Data offset */
     uptr += hdrlen;
 
-    /* 填充数据 */
-    /* 数据库编号 */
-    CONCAT(put,16bit)(&uptr, ffdbmd->dbmdno);
+    /* Fill data */
+    /* Database number */
+    CONCAT(put, 16bit)(&uptr, ffdbmd->dbmdno);
     reclen += 2;
 
-    /* 数据库唯一标识 */
-    CONCAT(put,32bit)(&uptr, ffdbmd->oid);
+    /* Database unique identifier */
+    CONCAT(put, 32bit)(&uptr, ffdbmd->oid);
     reclen += 4;
 
-    /* 数据库名称 */
+    /* Database name */
     tmplen = strlen(ffdbmd->dbname);
-    CONCAT(put,16bit)(&uptr, tmplen);
+    CONCAT(put, 16bit)(&uptr, tmplen);
     reclen += 2;
     rmemcpy1(uptr, 0, ffdbmd->dbname, tmplen);
     uptr += tmplen;
     reclen += tmplen;
 
-    /* 数据库编码 */
+    /* Database encoding */
     tmplen = strlen(ffdbmd->charset);
-    CONCAT(put,16bit)(&uptr, tmplen);
+    CONCAT(put, 16bit)(&uptr, tmplen);
     reclen += 2;
     rmemcpy1(uptr, 0, ffdbmd->charset, tmplen);
     uptr += tmplen;
     reclen += tmplen;
 
-    /* 时区 */
+    /* Timezone */
     tmplen = strlen(ffdbmd->timezone);
-    CONCAT(put,16bit)(&uptr, tmplen);
+    CONCAT(put, 16bit)(&uptr, tmplen);
     reclen += 2;
     rmemcpy1(uptr, 0, ffdbmd->timezone, tmplen);
     uptr += tmplen;
     reclen += tmplen;
 
-    /* 币种 */
+    /* Currency */
     tmplen = strlen(ffdbmd->money);
-    CONCAT(put,16bit)(&uptr, tmplen);
+    CONCAT(put, 16bit)(&uptr, tmplen);
     reclen += 2;
     rmemcpy1(uptr, 0, ffdbmd->money, tmplen);
     uptr += tmplen;
@@ -89,98 +90,90 @@ bool fftrail_dbmetadata_serial(void* data, void* state)
     ffdbmd->header.reclength = reclen;
     ffdbmd->header.totallength = reclen;
 
-    /* 增加rectail */
-    FTRAIL_GROUP2BUFFER(put,
-                                TRAIL_TOKENDATA_RECTAIL,
-                                FFTRAIL_INFOTYPE_TOKEN,
-                                0,
-                                uptr)
+    /* Increase rectail */
+    FTRAIL_GROUP2BUFFER(put, TRAIL_TOKENDATA_RECTAIL, FFTRAIL_INFOTYPE_TOKEN, 0, uptr)
     reclen += TOKENHDRSIZE;
 
-    /* 总长度信息，包含 group 长度 */
+    /* Total length info, includes group length */
     reclen += hdrlen;
 
-    /* record 总长度 */
+    /* Record total length */
     reclen = MAXALIGN(reclen);
 
     rfbuffer->start += reclen;
 
-    /* 增加GROUP信息 */
-    FTRAIL_GROUP2BUFFER(put,
-                                FFTRAIL_GROUPTYPE_DATA,
-                                FFTRAIL_INFOTYPE_GROUP,
-                                reclen,
-                                ffstate->recptr)
+    /* Increase GROUP info */
+    FTRAIL_GROUP2BUFFER(put, FFTRAIL_GROUPTYPE_DATA, FFTRAIL_INFOTYPE_GROUP, reclen,
+                        ffstate->recptr)
 
-    /* 增加头信息 */
+    /* Increase header info */
     fftrail_data_hdrserail(&ffdbmd->header, ffstate);
 
     ffstate->recptr = NULL;
     return true;
 }
 
-/* 数据库信息反序列化 */
+/* Database metadata deserialization */
 bool fftrail_dbmetadata_deserial(void** data, void* state)
 {
-    uint8   tokenid = 0;                        /* token 标识 */
-    uint8   tokeninfo = 0;                      /* token 的详情 */
-    uint16  blkoffset = 0;
-    uint16  tmplen = 0;                         /* 数据临时长度 */
-    uint32  tokenlen = 0;                       /* token 长度 */
-    uint8*  tokendata = NULL;                   /* token 数据区 */
+    uint8  tokenid = 0;   /* token ID */
+    uint8  tokeninfo = 0; /* token info */
+    uint16 blkoffset = 0;
+    uint16 tmplen = 0;       /* Data temp length */
+    uint32 tokenlen = 0;     /* Token length */
+    uint8* tokendata = NULL; /* Token data area */
 
-    uint8*  uptr = NULL;
+    uint8*         uptr = NULL;
     ff_dbmetadata* ffdbmd = NULL;
-    ffsmgr_state* ffstate = NULL;
+    ffsmgr_state*  ffstate = NULL;
 
-    /* 类型强转 */
+    /* Type cast */
     ffstate = (ffsmgr_state*)state;
 
-    /* 在 buffer 中组装内容 */
+    /* Assemble content in buffer */
     uptr = ffstate->recptr;
 
-    /* 申请空间 */
+    /* Allocate space */
     ffdbmd = (ff_dbmetadata*)rmalloc0(sizeof(ff_dbmetadata));
-    if(NULL == ffdbmd)
+    if (NULL == ffdbmd)
     {
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(ffdbmd, 0, '\0', sizeof(ff_dbmetadata));
     *data = ffdbmd;
 
-    /* 获取头部标识 */
+    /* Get header token */
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(FFTRAIL_GROUPTYPE_DATA != tokenid
-        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    if (FFTRAIL_GROUPTYPE_DATA != tokenid || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         /* make gcc happy */
         uptr = tokendata;
         elog(RLOG_ERROR, "trail file format error");
     }
 
-    /* 解析头部数据 */
+    /* Parse header data */
     blkoffset = TOKENHDRSIZE;
 
-    /* 解析头部数据 */
+    /* Parse header data */
     uptr = ffstate->recptr;
     ffstate->recptr += blkoffset;
     fftrail_data_hdrdeserail(&ffdbmd->header, ffstate);
     ffstate->recptr = uptr;
     blkoffset += fftrail_data_headlen(ffstate->compatibility);
 
-    /* 解析真实数据 */
+    /* Parse real data */
     uptr += blkoffset;
 
-    /* 获取数据库编号 */
-    ffdbmd->dbmdno = CONCAT(get,16bit)(&uptr);
+    /* Get database number */
+    ffdbmd->dbmdno = CONCAT(get, 16bit)(&uptr);
 
-    /* 数据库唯一标识 */
-    ffdbmd->oid = CONCAT(get,32bit)(&uptr);
+    /* Database unique identifier */
+    ffdbmd->oid = CONCAT(get, 32bit)(&uptr);
 
-    /* 获取数据库名称 */
-    tmplen = CONCAT(get,16bit)(&uptr);
+    /* Get database name */
+    tmplen = CONCAT(get, 16bit)(&uptr);
     ffdbmd->dbname = (char*)rmalloc0(tmplen + 1);
-    if(NULL == ffdbmd->dbname)
+    if (NULL == ffdbmd->dbname)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -189,10 +182,10 @@ bool fftrail_dbmetadata_deserial(void** data, void* state)
     ffdbmd->dbname[tmplen] = '\0';
     uptr += tmplen;
 
-    /* 获取数据库编码 */
-    tmplen = CONCAT(get,16bit)(&uptr);
+    /* Get database encoding */
+    tmplen = CONCAT(get, 16bit)(&uptr);
     ffdbmd->charset = (char*)rmalloc0(tmplen + 1);
-    if(NULL == ffdbmd->charset)
+    if (NULL == ffdbmd->charset)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -201,10 +194,10 @@ bool fftrail_dbmetadata_deserial(void** data, void* state)
     ffdbmd->charset[tmplen] = '\0';
     uptr += tmplen;
 
-    /* 获取数据库时区 */
-    tmplen = CONCAT(get,16bit)(&uptr);
+    /* Get database timezone */
+    tmplen = CONCAT(get, 16bit)(&uptr);
     ffdbmd->timezone = (char*)rmalloc0(tmplen + 1);
-    if(NULL == ffdbmd->timezone)
+    if (NULL == ffdbmd->timezone)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -213,10 +206,10 @@ bool fftrail_dbmetadata_deserial(void** data, void* state)
     ffdbmd->timezone[tmplen] = '\0';
     uptr += tmplen;
 
-    /* 获取数据库币种 */
-    tmplen = CONCAT(get,16bit)(&uptr);
+    /* Get database currency */
+    tmplen = CONCAT(get, 16bit)(&uptr);
     ffdbmd->money = (char*)rmalloc0(tmplen + 1);
-    if(NULL == ffdbmd->money)
+    if (NULL == ffdbmd->money)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -225,13 +218,13 @@ bool fftrail_dbmetadata_deserial(void** data, void* state)
     ffdbmd->money[tmplen] = '\0';
     uptr += tmplen;
 
-    /* 获取结尾 */
+    /* Get tail */
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
 
-    /* 日志级别为 debug */
-    if(RLOG_DEBUG == g_loglevel)
+    /* Log level is debug */
+    if (RLOG_DEBUG == g_loglevel)
     {
-        /* 输出调试日志 */
+        /* Output debug log */
         elog(RLOG_DEBUG, "----------Trail MetaDB Begin----------------");
         elog(RLOG_DEBUG, "dbmdno:           %u", ffdbmd->header.dbmdno);
         elog(RLOG_DEBUG, "tbmdno:           %u", ffdbmd->header.tbmdno);

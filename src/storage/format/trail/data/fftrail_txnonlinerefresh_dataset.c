@@ -12,21 +12,21 @@
 #include "refresh/refresh_tables.h"
 #include "storage/trail/data/fftrail_txnonlinerefresh_dataset.h"
 
-/* online refresh dataset 语句将链表设置到中 */
+/* Set linked list in online refresh dataset statement */
 bool fftrail_txnonlinerefresh_dataset(void* data, void* state)
 
 {
-    txnstmt* rstmt = NULL;                      /* 需要写入 trail 文件的内容 */
-    ff_txndata*  txndata = NULL;
-    ffsmgr_state* ffstate = NULL;            /* state 数据信息 */
-    List *dataset_list = NULL;
+    txnstmt*      rstmt = NULL; /* Content to write to trail file */
+    ff_txndata*   txndata = NULL;
+    ffsmgr_state* ffstate = NULL; /* state data info */
+    List*         dataset_list = NULL;
 
     txndata = (ff_txndata*)data;
     rstmt = (txnstmt*)txndata->data;
     dataset_list = (List*)rstmt->stmt;
     ffstate = (ffsmgr_state*)state;
 
-    /* 保存 lsit */
+    /* Save list */
     if (NULL != ffstate->callback.setredosysdicts)
     {
         ffstate->callback.setonlinerefreshdataset(ffstate->privdata, (void*)dataset_list);

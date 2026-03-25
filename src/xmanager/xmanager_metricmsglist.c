@@ -17,63 +17,57 @@
 
 typedef struct XMANAGER_METRICNODESTAT_NAME
 {
-    xmanager_metricnodestat      stat;      /* 状态 */
-    char                                *name;      /* 状态名称 */
+    xmanager_metricnodestat stat; /* Status */
+    char*                   name; /* Status name */
 } xmanager_metricnodestat_name;
 
-static xmanager_metricnodestat_name metricnodestat_name[] =
-{
-    { XMANAGER_METRICNODESTAT_NOP,       "NOP" },
-    { XMANAGER_METRICNODESTAT_INIT,      "INIT" },
-    { XMANAGER_METRICNODESTAT_ONLINE,    "ONLINE" },
-    { XMANAGER_METRICNODESTAT_OFFLINE,   "OFFLIN" },
-    { XMANAGER_METRICNODESTAT_MAX,       "MAX" },
+static xmanager_metricnodestat_name metricnodestat_name[] = {
+    {XMANAGER_METRICNODESTAT_NOP, "NOP"},       {XMANAGER_METRICNODESTAT_INIT, "INIT"},
+    {XMANAGER_METRICNODESTAT_ONLINE, "ONLINE"}, {XMANAGER_METRICNODESTAT_OFFLINE, "OFFLIN"},
+    {XMANAGER_METRICNODESTAT_MAX, "MAX"},
 };
-
 
 typedef struct XMANAGER_METRICNODETYPE_NAME
 {
-    xmanager_metricnodetype      stat;      /* 状态 */
-    char                                *name;      /* 状态名称 */
+    xmanager_metricnodetype stat; /* Status */
+    char*                   name; /* Status name */
 } xmanager_metricnodetype_name;
 
-static xmanager_metricnodestat_name metricnodetype_name[] =
+static xmanager_metricnodestat_name metricnodetype_name[] = {
+    {XMANAGER_METRICNODETYPE_NOP, "NOP"},
+    {XMANAGER_METRICNODETYPE_CAPTURE, "CAPTURE"},
+    {XMANAGER_METRICNODETYPE_INTEGRATE, "INTEGRATE"},
+    {XMANAGER_METRICNODETYPE_PGRECEIVELOG, "PGRECEIVELOG"},
+    {XMANAGER_METRICNODETYPE_PROCESS, "PROGRESS"}};
+
+/* Handle list command */
+static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric, netpoolentry* npoolentry)
 {
-    { XMANAGER_METRICNODETYPE_NOP,           "NOP" },
-    { XMANAGER_METRICNODETYPE_CAPTURE,       "CAPTURE" },
-    { XMANAGER_METRICNODETYPE_INTEGRATE,     "INTEGRATE" },
-    { XMANAGER_METRICNODETYPE_PGRECEIVELOG,  "PGRECEIVELOG" },
-    { XMANAGER_METRICNODETYPE_PROCESS,       "PROGRESS" }
-};
+    uint8                u8value = 0;
+    uint16               u16value = 0;
+    int                  rowlen = 0;
+    int                  msglen = 0;
+    int                  ivalue = 0;
+    int                  valuelen = 0;
+    int                  nodecnt = 0;
+    int                  maxoptionlen = 0;
+    uint8*               nullmap = NULL;
+    uint8*               rowuptr = NULL;
+    uint8*               uptr = NULL;
+    dlistnode*           opdlnode = NULL;
+    dlistnode*           dlnode = NULL;
+    StringInfo           option = NULL;
+    netpacket*           npacket = NULL;
+    xmanager_metricnode* pxmetricnode = NULL;
 
-/* list 命令处理 */
-static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
-                                                   netpoolentry* npoolentry)
-{
-    uint8 u8value                                           = 0;
-    uint16 u16value                                         = 0;
-    int rowlen                                              = 0;
-    int msglen                                              = 0;
-    int ivalue                                              = 0;
-    int valuelen                                            = 0;
-    int nodecnt                                             = 0;
-    int maxoptionlen                                        = 0;
-    uint8* nullmap                                          = NULL;
-    uint8* rowuptr                                          = NULL;
-    uint8* uptr                                             = NULL;
-    dlistnode* opdlnode                                     = NULL;
-    dlistnode* dlnode                                       = NULL;
-    StringInfo option                                       = NULL;
-    netpacket* npacket                               = NULL;
-    xmanager_metricnode* pxmetricnode                = NULL;
+    /* 4 total length + 4 crc32 + 4 msgtype + 1 success or fail + 4 rowcnt */
+    msglen = (4 + 4 + 4 + 1 + 4);
 
-    /* 4 总长度 + 4 crc32 + 4 msgtype + 1 成功/失败 + 4 rowcnt */
-    msglen =( 4 + 4 + 4 + 1 + 4);
+    /* First row name + state + type + option */
+    msglen +=
+        (4 + strlen("state") + 4 + strlen("name") + 4 + strlen("state") + 4 + strlen("option"));
 
-    /* 第一行 name + state + type + option */
-    msglen += (4 + strlen("state") + 4 + strlen("name") + 4 + strlen("state")+ 4 + strlen("option"));
-
-    /* 计算option长度，和node个数 */
+    /* Calculate option length and node count */
     for (dlnode = xmetric->metricnodes->head; NULL != dlnode; dlnode = dlnode->next)
     {
         pxmetricnode = (xmanager_metricnode*)dlnode->value;
@@ -82,13 +76,13 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
             continue;
         }
 
-        if(XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
+        if (XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
         {
             xmanager_metricprogressnode* xmetricprogressnode = NULL;
             xmetricprogressnode = (xmanager_metricprogressnode*)pxmetricnode;
             if (false == dlist_isnull(xmetricprogressnode->progressjop))
             {
-                /* 类型 16 + jobname 128 */
+                /* Type 16 + jobname 128 */
                 ivalue = ((16 + 128) * xmetricprogressnode->progressjop->length);
                 if (ivalue > maxoptionlen)
                 {
@@ -108,7 +102,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
                 }
             }
         }
-        nodecnt ++;
+        nodecnt++;
     }
 
     if (0 == nodecnt)
@@ -117,7 +111,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
         return false;
     }
 
-    /* rowlen 4 + nullmapcnt 2 + nullmap 1 */
+    /* Row length 4 + nullmap count 2 + nullmap 1 */
     rowlen += (4 + 2 + 1);
 
     /* type */
@@ -138,7 +132,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
 
     msglen += (rowlen * nodecnt);
 
-    /* 申请空间 */
+    /* Allocate space */
     npacket = netpacket_init();
     if (NULL == npacket)
     {
@@ -155,10 +149,10 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
     }
     msglen -= 1;
 
-    /* 组装数据 */
+    /* Assemble data */
     uptr = npacket->data;
 
-    /* 数据总长度 */
+    /* Total data length */
     uptr += 4;
     npacket->used += 4;
 
@@ -166,14 +160,14 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
     uptr += 4;
     npacket->used += 4;
 
-    /* 类型 */
+    /* Type */
     ivalue = XMANAGER_MSG_LISTCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
     npacket->used += 4;
 
-    /* 类型成功标识 */
+    /* Type success flag */
     u8value = 0;
     rmemcpy1(uptr, 0, &u8value, 1);
     uptr += 1;
@@ -189,14 +183,14 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
     rowlen = 0;
     rowuptr = uptr;
 
-    /* 偏过行长度 */
+    /* Skip row length */
     uptr += 4;
     rowlen = 4;
     npacket->used += 4;
 
-    /* 列头组装 */
+    /* Assemble column header */
     /* type len */
-    ivalue = strlen("type") ;
+    ivalue = strlen("type");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -210,8 +204,8 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
     rowlen += ivalue;
     npacket->used += ivalue;
 
-    /* name len */
-    ivalue = strlen("name") ;
+    /* name length */
+    ivalue = strlen("name");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -226,7 +220,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
     npacket->used += ivalue;
 
     /* state len */
-    ivalue = strlen("state") ;
+    ivalue = strlen("state");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -241,7 +235,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
     npacket->used += ivalue;
 
     /* option len */
-    ivalue = strlen("option") ;
+    ivalue = strlen("option");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -255,7 +249,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
     rowlen += ivalue;
     npacket->used += ivalue;
 
-    /* 行总长度 */
+    /* Total row length */
     rowlen = r_hton32(rowlen);
     rmemcpy1(rowuptr, 0, &rowlen, 4);
 
@@ -273,12 +267,12 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
         rowlen = 0;
         rowuptr = uptr;
 
-        /* 跳过行长度 */
+        /* Skip row length */
         uptr += 4;
         rowlen = 4;
         npacket->used += 4;
 
-        /* 空列map的个数 */
+        /* Null column map count */
         u16value = 1;
         u16value = r_hton16(u16value);
         rmemcpy1(uptr, 0, &u16value, 2);
@@ -286,7 +280,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
         rowlen += 2;
         npacket->used += 2;
 
-        /* 空列 map */
+        /* Null column map */
         u16value = 1;
         uptr += u16value;
         rowlen += u16value;
@@ -317,7 +311,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
         rowlen += valuelen;
         npacket->used += valuelen;
 
-        /* name len */
+        /* name length */
         valuelen = strlen(pxmetricnode->name);
         ivalue = valuelen;
         ivalue = r_hton32(ivalue);
@@ -347,14 +341,15 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
         rowlen += valuelen;
         npacket->used += valuelen;
 
-        if(XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
+        if (XMANAGER_METRICNODETYPE_PROCESS == pxmetricnode->type)
         {
-            xmanager_metricnode* metricnode                  = NULL;
+            xmanager_metricnode*         metricnode = NULL;
             xmanager_metricprogressnode* xmetricprogressnode = NULL;
 
             xmetricprogressnode = (xmanager_metricprogressnode*)pxmetricnode;
 
-            opdlnode = xmetricprogressnode->progressjop ? xmetricprogressnode->progressjop->head : NULL;
+            opdlnode =
+                xmetricprogressnode->progressjop ? xmetricprogressnode->progressjop->head : NULL;
             while (opdlnode != NULL)
             {
                 metricnode = (xmanager_metricnode*)opdlnode->value;
@@ -391,7 +386,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
         if (0 == option->len)
         {
             nullmap[3 / 8] |= (1U << (3 % 8));
-            /* 行总长度 */
+            /* Total row length */
             rowlen = r_hton32(rowlen);
             rmemcpy1(rowuptr, 0, &rowlen, 4);
             rowuptr += 4;
@@ -421,7 +416,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
         npacket->used += valuelen;
         npacket->used += valuelen;
 
-        /* 行总长度 */
+        /* Total row length */
         rowlen = r_hton32(rowlen);
         rmemcpy1(rowuptr, 0, &rowlen, 4);
         rowuptr += 4;
@@ -433,13 +428,13 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
         nullmap = NULL;
     }
 
-    /* 数据总长度 */
+    /* Total data length */
     ivalue = npacket->used;
     ivalue = r_hton32(ivalue);
     rmemcpy1(npacket->data, 0, &ivalue, 4);
     deleteStringInfo(option);
 
-    /* 将 netpacket 挂载到待发送队列中 */
+    /* Mount netpacket to send queue */
     if (false == queue_put(npoolentry->wpackets, (void*)npacket))
     {
         elog(RLOG_WARNING, "xmanager metric assemble edit msg add message to queue error");
@@ -451,20 +446,19 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric,
 }
 
 /*
- * 处理 list 命令
- *  1、返回metricnode信息
-*/
-bool xmanager_metricmsg_parselist(xmanager_metric* xmetric,
-                                         netpoolentry* npoolentry,
-                                         netpacket* npacket)
+ * Handle list command
+ *1. Return metricnode info
+ */
+bool xmanager_metricmsg_parselist(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                  netpacket* npacket)
 {
-    /* 错误码 */
-    int errcode                                         = 0;
-    int commandtype                                     = 0;
-    uint8* uptr                                         = NULL;
-    char errormsg[512]                                  = { 0 };
+    /* Error code */
+    int    errcode = 0;
+    int    commandtype = 0;
+    uint8* uptr = NULL;
+    char   errormsg[512] = {0};
 
-    /* 获取作业类型 */
+    /* Get job type */
     uptr = npacket->data;
 
     /* msglen + crc32 */
@@ -482,8 +476,8 @@ bool xmanager_metricmsg_parselist(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parselist_error;
     }
 
-    /* 组装返回信息 */
-    if(false == xmanager_metricmsg_assemblelist(xmetric, npoolentry))
+    /* Assemble return info */
+    if (false == xmanager_metricmsg_assemblelist(xmetric, npoolentry))
     {
         errcode = ERROR_OOM;
         snprintf(errormsg, 2048, "ERROR: does not assemble list result.");
@@ -495,9 +489,6 @@ bool xmanager_metricmsg_parselist(xmanager_metric* xmetric,
 xmanager_metricmsg_parselist_error:
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_LISTCMD,
-                                                      errcode,
-                                                      errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_LISTCMD,
+                                               errcode, errormsg);
 }

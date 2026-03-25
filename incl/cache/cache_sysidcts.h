@@ -3,75 +3,76 @@
 
 typedef struct CACHE_SYSDICTS
 {
-    /* 字典表缓存 */
-    HTAB*                       by_class;           /* pg_class 表信息,             oid */
-    HTAB*                       by_attribute;       /* pg_attribute, hash+list, atttrelid, list属性表信息       */
-    HTAB*                       by_type;            /* pg_type 表信息 */
-    HTAB*                       by_proc;            /* pg_proc 表信息 */
+    /* system dictionary table caches */
+    HTAB* by_class;     /* pg_class table info,             key: oid */
+    HTAB* by_attribute; /* pg_attribute, hash+list, key: atttrelid, list of attribute info */
+    HTAB* by_type;      /* pg_type table info, key: oid */
+    HTAB* by_proc;      /* pg_proc table info, key: oid */
 
-    /* tablespace 表信息 */
-    HTAB*                       by_tablespace;      /* pg_tablespace hash 表， key = id */
+    /* pg_tablespace table info */
+    HTAB* by_tablespace; /* pg_tablespace hash table, key: id */
 
-    /* namespace 表信息 */
-    HTAB*                       by_namespace;       /* pg_namespace hash 表, key = id */
+    /* pg_namespace table info */
+    HTAB* by_namespace; /* pg_namespace hash table, key: id */
 
-    /* range */
-    HTAB*                       by_range;           /* pg_range  hash 表 key =rangtypid 对应关系 */
+    /* pg_range info */
+    HTAB* by_range; /* pg_range hash table, key: rangetypid */
 
-    /* enum */
-    HTAB*                       by_enum;            /* pg_enum, hash+list, enumtypid      */
+    /* pg_enum info */
+    HTAB* by_enum; /* pg_enum, hash+list, key: enumtypid */
 
-    /* operator */
-    HTAB*                       by_operator;        /* pg_operator, 表信息,             oid*/
+    /* pg_operator info */
+    HTAB* by_operator; /* pg_operator table info, key: oid */
 
-    /* authid */
-    HTAB*                       by_authid;          /* pg_authid, 表信息,             oid*/
+    /* pg_authid info */
+    HTAB* by_authid; /* pg_authid table info, key: oid */
 
-    /* database */
-    HTAB*                       by_database;        /* pg_database, 表信息,             oid*/
+    /* pg_database info */
+    HTAB* by_database; /* pg_database table info, key: oid */
 
-    /* constraint */
-    HTAB*                       by_constraint;        /* pg_database, 表信息,             oid*/
+    /* pg_constraint info */
+    HTAB* by_constraint; /* pg_constraint table info, key: oid */
 
-    /* datname2oid */
-    HTAB*                       by_datname2oid;     /* pg_database, 表信息,             datname*/
+    /* database name to oid mapping */
+    HTAB* by_datname2oid; /* pg_database table info, key: datname */
 
-    HTAB*                       by_relfilenode;     /* relfilenode 与 oid 对应关系, key: relfilenode, entry: relfilenode2oid */
+    /* relfilenode to oid mapping, key: relfilenode, entry: relfilenode2oid */
+    HTAB* by_relfilenode;
 
-    /* index */
-    HTAB*                       by_index;           /* pg_index, 索引信息,             oid*/
+    /* pg_index info */
+    HTAB* by_index; /* pg_index, index info, key: oid */
 } cache_sysdicts;
 
-/* 加载数据 */
+/* load data into cache */
 void cache_sysdictsload(void** ref_sysdicts);
 
-cache_sysdicts *cache_sysdicts_integrate_init(void);
+cache_sysdicts* cache_sysdicts_integrate_init(void);
 
 void cache_sysdicts_free(void* args);
 
-/* 将修改后的字典表缓存信息落盘 */
+/* flush modified system dictionary cache to disk */
 void sysdictscache_write(cache_sysdicts* sysdicts, XLogRecPtr redolsn);
 
-/* 按照 relfilenode 的结构构建hash表,用于在解析的过程中快速查找relfilenode到表oid */
+/* build hash table keyed by relfilenode for fast lookups during WAL parsing */
 HTAB* cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data);
 
-/* 在事务提交或回滚时，将历史的字典表结构释放 */
+/* free historical system dictionary data on transaction commit or rollback */
 void cache_sysdicts_txnsysdicthisfree(List* sysdicthis);
 
-/* 将 sysdict 字典表结构释放 */
+/* free system dictionary data structure */
 void cache_sysdicts_catalogdatafreevoid(void* args);
 
-/* 在事务提交, 将历史的字典表应用到缓存中 */
+/* apply historical system dictionary changes to cache on transaction commit */
 void cache_sysdicts_txnsysdicthis2cache(cache_sysdicts* sysdicts, List* sysdicthis);
 
 /*
- * 根据class清理系统表中相关数据
-*/
+ * clear system table data by class
+ */
 void cache_sysdicts_clearsysdicthisbyclass(cache_sysdicts* sysdicts, ListCell* lc);
 
 /*
- * 单个系统表应用
-*/
+ * apply a single system table change to cache
+ */
 void cache_sysdicts_txnsysdicthisitem2cache(cache_sysdicts* sysdicts, ListCell* lc);
 
 #endif

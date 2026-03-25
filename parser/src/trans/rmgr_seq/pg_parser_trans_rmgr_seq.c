@@ -18,31 +18,29 @@ typedef struct pg_parser_xl_seq_rec
 
 typedef struct pg_parser_FormData_pg_sequence_data
 {
-    int64_t     last_value;
-    int64_t     log_cnt;
-    bool        is_called;
+    int64_t last_value;
+    int64_t log_cnt;
+    bool    is_called;
 } pg_parser_FormData_pg_sequence_data;
 
-typedef pg_parser_FormData_pg_sequence_data *pg_parser_Form_pg_sequence_data;
+typedef pg_parser_FormData_pg_sequence_data* pg_parser_Form_pg_sequence_data;
 
 #define SEQ_REC_SIZE sizeof(pg_parser_xl_seq_rec)
 
-bool pg_parser_trans_rmgr_seq_pre(pg_parser_trans_transrec_decode_XLogReaderState *state,
-                                     pg_parser_translog_pre_base **result, 
-                                     int32_t *pg_parser_errno)
+bool pg_parser_trans_rmgr_seq_pre(pg_parser_trans_transrec_decode_XLogReaderState* state,
+                                  pg_parser_translog_pre_base** result, int32_t* pg_parser_errno)
 {
-    char *main_data = state->main_data;
+    char* main_data = state->main_data;
 
-    pg_parser_xl_seq_rec *seq_rec = (pg_parser_xl_seq_rec *) main_data;
-    pg_parser_HeapTupleHeader seq_tuple = (pg_parser_HeapTupleHeader) (main_data + SEQ_REC_SIZE);
+    pg_parser_xl_seq_rec*     seq_rec = (pg_parser_xl_seq_rec*)main_data;
+    pg_parser_HeapTupleHeader seq_tuple = (pg_parser_HeapTupleHeader)(main_data + SEQ_REC_SIZE);
     pg_parser_Form_pg_sequence_data seq = NULL;
-    pg_parser_translog_pre_seq *pre_seq = NULL;
+    pg_parser_translog_pre_seq*     pre_seq = NULL;
 
-    seq = (pg_parser_Form_pg_sequence_data) (((char *)seq_tuple) + seq_tuple->t_hoff);
+    seq = (pg_parser_Form_pg_sequence_data)(((char*)seq_tuple) + seq_tuple->t_hoff);
 
-    if (!pg_parser_mcxt_malloc(RMGR_SEQ_MCXT,
-                                 (void **) (&pre_seq),
-                                  sizeof(pg_parser_translog_pre_seq)))
+    if (!pg_parser_mcxt_malloc(RMGR_SEQ_MCXT, (void**)(&pre_seq),
+                               sizeof(pg_parser_translog_pre_seq)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_STANDBY_MEMALLOC_ERROR1;
         return false;
@@ -54,6 +52,6 @@ bool pg_parser_trans_rmgr_seq_pre(pg_parser_trans_transrec_decode_XLogReaderStat
     pre_seq->m_tbspcoid = seq_rec->node.spcNode;
     pre_seq->m_base.m_xid = state->decoded_record->xl_xid;
     pre_seq->m_base.m_originid = state->record_origin;
-    *result = (pg_parser_translog_pre_base *) pre_seq;
+    *result = (pg_parser_translog_pre_base*)pre_seq;
     return true;
 }

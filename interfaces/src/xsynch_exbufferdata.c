@@ -10,10 +10,10 @@
 #include "app_c.h"
 #include "xsynch_exbufferdata.h"
 
-/* 初始化内容 */
+/* initialize content */
 bool xsynch_exbufferdata_initdata(xsynch_exbuffer exbuffer)
 {
-    exbuffer->data = (char *) malloc(XSYNCH_EXPBUFFER_DEFAULTSIZE);
+    exbuffer->data = (char*)malloc(XSYNCH_EXPBUFFER_DEFAULTSIZE);
     if (NULL == exbuffer->data)
     {
         return false;
@@ -25,7 +25,7 @@ bool xsynch_exbufferdata_initdata(xsynch_exbuffer exbuffer)
     return true;
 }
 
-/* 生成一个ex buffer */
+/* create an ex buffer */
 xsynch_exbuffer xsynch_exbufferdata_init(void)
 {
     xsynch_exbuffer exbuffer = NULL;
@@ -46,7 +46,7 @@ xsynch_exbuffer xsynch_exbufferdata_init(void)
     return exbuffer;
 }
 
-/* 重置 */
+/* reset */
 bool xsynch_exbufferdata_reset(xsynch_exbuffer exbuffer)
 {
     if (NULL == exbuffer)
@@ -67,17 +67,16 @@ bool xsynch_exbufferdata_reset(xsynch_exbuffer exbuffer)
     return true;
 }
 
-
-/* 
- * 扩容
- *  不做长度和入参检测
-*/
+/*
+ * expand buffer
+ *  no length or input parameter checking
+ */
 bool xsynch_exbufferdata_enlarge(xsynch_exbuffer exbuffer, size_t needed)
 {
-    size_t newlen           = 0;
-    char* newdata           = NULL;
+    size_t newlen = 0;
+    char*  newdata = NULL;
 
-    /* 需要的空间 */
+    /* required space */
     needed += exbuffer->len + 1;
     if (needed <= exbuffer->maxlen)
     {
@@ -90,7 +89,7 @@ bool xsynch_exbufferdata_enlarge(xsynch_exbuffer exbuffer, size_t needed)
         newlen = 2 * newlen;
     }
 
-    newdata = (char *) realloc(exbuffer->data, newlen);
+    newdata = (char*)realloc(exbuffer->data, newlen);
     if (newdata != NULL)
     {
         exbuffer->data = newdata;
@@ -101,13 +100,10 @@ bool xsynch_exbufferdata_enlarge(xsynch_exbuffer exbuffer, size_t needed)
     return false;
 }
 
-
-static bool xsynch_exbufferdata_appendva(xsynch_exbuffer exbuffer,
-                                         const char *fmt,
-                                         bool* enlargememory,
-                                         va_list args)
+static bool xsynch_exbufferdata_appendva(xsynch_exbuffer exbuffer, const char* fmt,
+                                         bool* enlargememory, va_list args)
 {
-    int nprinted;
+    int    nprinted;
     size_t avail;
     size_t needed;
 
@@ -116,7 +112,7 @@ static bool xsynch_exbufferdata_appendva(xsynch_exbuffer exbuffer,
     {
         avail = exbuffer->maxlen - exbuffer->len;
         nprinted = vsnprintf(exbuffer->data + exbuffer->len, avail, fmt, args);
-        if ((size_t) nprinted < avail)
+        if ((size_t)nprinted < avail)
         {
             exbuffer->len += nprinted;
             return true;
@@ -139,15 +135,14 @@ static bool xsynch_exbufferdata_appendva(xsynch_exbuffer exbuffer,
     return false;
 }
 
-
-/* 添加内容 */
-bool xsynch_exbufferdata_append(xsynch_exbuffer exbuffer, const char *fmt,...)
+/* append content */
+bool xsynch_exbufferdata_append(xsynch_exbuffer exbuffer, const char* fmt, ...)
 {
-    bool done           = false;
-    bool enlargememory  = true;
-    int save_errno      = errno;
+    bool    done = false;
+    bool    enlargememory = true;
+    int     save_errno = errno;
     va_list args;
-    
+
     do
     {
         errno = save_errno;
@@ -164,9 +159,8 @@ bool xsynch_exbufferdata_append(xsynch_exbuffer exbuffer, const char *fmt,...)
     return true;
 }
 
-
-/* 添加字符串 */
-bool xsynch_exbufferdata_appendbinary(xsynch_exbuffer exbuffer, const char *data, size_t datalen)
+/* append string data */
+bool xsynch_exbufferdata_appendbinary(xsynch_exbuffer exbuffer, const char* data, size_t datalen)
 {
     if (false == xsynch_exbufferdata_enlarge(exbuffer, datalen))
     {
@@ -178,21 +172,21 @@ bool xsynch_exbufferdata_appendbinary(xsynch_exbuffer exbuffer, const char *data
     exbuffer->len += datalen;
 
     /*
-        * Keep a trailing null in place, even though it's probably useless for
-        * binary data...
-        */
+     * Keep a trailing null in place, even though it's probably useless for
+     * binary data...
+     */
     exbuffer->data[exbuffer->len] = '\0';
 
     return true;
 }
 
-/* 合并字符串 */
-bool xsynch_exbufferdata_appendstr(xsynch_exbuffer exbuffer, const char *data)
+/* append string */
+bool xsynch_exbufferdata_appendstr(xsynch_exbuffer exbuffer, const char* data)
 {
     return xsynch_exbufferdata_appendbinary(exbuffer, data, strlen(data));
 }
 
-/* 添加字符 */
+/* append character */
 bool xsynch_exbufferdata_appendchar(xsynch_exbuffer exbuffer, char ch)
 {
     if (false == xsynch_exbufferdata_enlarge(exbuffer, 1))
@@ -206,7 +200,7 @@ bool xsynch_exbufferdata_appendchar(xsynch_exbuffer exbuffer, char ch)
     return true;
 }
 
-/* 释放空间 */
+/* free buffer */
 void xsynch_exbufferdata_free(xsynch_exbuffer exbuffer)
 {
     if (NULL == exbuffer)

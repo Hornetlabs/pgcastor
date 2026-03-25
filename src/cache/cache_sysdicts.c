@@ -50,115 +50,38 @@ typedef void (*sysdicthiscopy)(catalogdata* src, catalogdata* dst);
 
 typedef struct SYSDICT2CACHENODE
 {
-    int                 type;
-    sysdict2cachefunc   func;
-    sysdicthisfree      freefunc;
-    sysdicthiscopy      copyfunc;
+    int               type;
+    sysdict2cachefunc func;
+    sysdicthisfree    freefunc;
+    sysdicthiscopy    copyfunc;
 } sysdict2cachenode;
 
-static sysdict2cachenode m_sysdict2cache[] =
-{
-    {
-        CATALOG_TYPE_NOP,
-        NULL,
-        NULL,
-        NULL
-    },
-    { 
-        CATALOG_TYPE_CLASS,
-        class_catalogdata2transcache,
-        class_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_ATTRIBUTE,
-        attribute_catalogdata2transcache,
-        attribute_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_TYPE,
-        type_catalogdata2transcache,
-        type_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_NAMESPACE,
-        namespace_catalogdata2transcache,
-        namespace_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_TABLESPACE,
-        NULL,
-        NULL,
-        NULL
-    },
-    {
-        CATALOG_TYPE_ENUM,
-        enum_catalogdata2transcache,
-        enum_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_RANGE,
-         range_catalogdata2transcache,
-         range_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_PROC,
-        proc_catalogdata2transcache,
-        proc_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_CONSTRAINT,
-        constraint_catalogdata2transcache,
-        constraint_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_OPERATOR,
-        NULL,
-        NULL,
-        NULL
-    },
-    {
-        CATALOG_TYPE_AUTHID,
-        authid_catalogdata2transcache,
-        authid_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_DATABASE,
-        database_catalogdata2transcache,
-        database_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_INDEX,
-        index_catalogdata2transcache,
-        index_catalogdatafree,
-        NULL
-    },
-    {
-        CATALOG_TYPE_RELMAPFILE,
-        relmapfile_catalogdata2transcache,
-        relmapfile_catalogdatafree,
-        NULL
-    }
-};
+static sysdict2cachenode m_sysdict2cache[] = {
+    {CATALOG_TYPE_NOP, NULL, NULL, NULL},
+    {CATALOG_TYPE_CLASS, class_catalogdata2transcache, class_catalogdatafree, NULL},
+    {CATALOG_TYPE_ATTRIBUTE, attribute_catalogdata2transcache, attribute_catalogdatafree, NULL},
+    {CATALOG_TYPE_TYPE, type_catalogdata2transcache, type_catalogdatafree, NULL},
+    {CATALOG_TYPE_NAMESPACE, namespace_catalogdata2transcache, namespace_catalogdatafree, NULL},
+    {CATALOG_TYPE_TABLESPACE, NULL, NULL, NULL},
+    {CATALOG_TYPE_ENUM, enum_catalogdata2transcache, enum_catalogdatafree, NULL},
+    {CATALOG_TYPE_RANGE, range_catalogdata2transcache, range_catalogdatafree, NULL},
+    {CATALOG_TYPE_PROC, proc_catalogdata2transcache, proc_catalogdatafree, NULL},
+    {CATALOG_TYPE_CONSTRAINT, constraint_catalogdata2transcache, constraint_catalogdatafree, NULL},
+    {CATALOG_TYPE_OPERATOR, NULL, NULL, NULL},
+    {CATALOG_TYPE_AUTHID, authid_catalogdata2transcache, authid_catalogdatafree, NULL},
+    {CATALOG_TYPE_DATABASE, database_catalogdata2transcache, database_catalogdatafree, NULL},
+    {CATALOG_TYPE_INDEX, index_catalogdata2transcache, index_catalogdatafree, NULL},
+    {CATALOG_TYPE_RELMAPFILE, relmapfile_catalogdata2transcache, relmapfile_catalogdatafree, NULL}};
 
-static int m_sysdict2cachecnt = (sizeof(m_sysdict2cache))/(sizeof(sysdict2cachenode));
+static int m_sysdict2cachecnt = (sizeof(m_sysdict2cache)) / (sizeof(sysdict2cachenode));
 
-/* 加载系统表信息 */
+/* Load system catalog information */
 void cache_sysdictsload(void** ref_sysdicts)
 {
-    int r = 0;
-    int fd = -1;
-    char buffer[FILE_BLK_SIZE];
-    cache_sysdicts* sysdicts = NULL;
+    int                   r = 0;
+    int                   fd = -1;
+    char                  buffer[FILE_BLK_SIZE];
+    cache_sysdicts*       sysdicts = NULL;
     sysdict_header_array* array = NULL;
 
     array = (sysdict_header_array*)rmalloc0((CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
@@ -171,10 +94,10 @@ void cache_sysdictsload(void** ref_sysdicts)
     rmemset1(buffer, 0, '\0', FILE_BLK_SIZE);
 
     sysdicts = (cache_sysdicts*)*ref_sysdicts;
-    if(NULL == sysdicts)
+    if (NULL == sysdicts)
     {
         sysdicts = (cache_sysdicts*)rmalloc1(sizeof(cache_sysdicts));
-        if(NULL == sysdicts)
+        if (NULL == sysdicts)
         {
             elog(RLOG_ERROR, "out of memeory");
         }
@@ -183,21 +106,20 @@ void cache_sysdictsload(void** ref_sysdicts)
     }
 
     /*
-    * Read data...
-    */
-    fd = osal_basic_open_file(SYSDICTS_FILE,
-                        O_RDWR | BINARY);
+     * Read data...
+     */
+    fd = osal_basic_open_file(SYSDICTS_FILE, O_RDWR | BINARY);
     if (fd < 0)
     {
         elog(RLOG_ERROR, "could not open file %s", SYSDICTS_FILE);
     }
-    if ((r = osal_file_read(fd, buffer, FILE_BLK_SIZE)) > 0) 
+    if ((r = osal_file_read(fd, buffer, FILE_BLK_SIZE)) > 0)
     {
-        rmemcpy0(array, 0, buffer + sizeof(sysdict_header), (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
-        
+        rmemcpy0(array, 0, buffer + sizeof(sysdict_header),
+                 (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
     }
 
-    if(osal_file_close(fd))
+    if (osal_file_close(fd))
     {
         elog(RLOG_ERROR, "could not close file %s", SYSDICTS_FILE);
     }
@@ -230,110 +152,92 @@ void cache_sysdictsload(void** ref_sysdicts)
     rfree(array);
     array = NULL;
 
-
     return;
 }
 
-/* 初始化integrate端系统字典 */
-cache_sysdicts *cache_sysdicts_integrate_init(void)
+/* Initialize integrate-side system dictionary */
+cache_sysdicts* cache_sysdicts_integrate_init(void)
 {
     cache_sysdicts* sysdicts = NULL;
-    HASHCTL hctl = {'\0'};
+    HASHCTL         hctl = {'\0'};
 
-    if(NULL == sysdicts)
+    if (NULL == sysdicts)
     {
         sysdicts = (cache_sysdicts*)rmalloc0(sizeof(cache_sysdicts));
-        if(NULL == sysdicts)
+        if (NULL == sysdicts)
         {
             elog(RLOG_ERROR, "out of memeory");
         }
         rmemset0(sysdicts, 0, '\0', sizeof(cache_sysdicts));
     }
 
-    /* pg_class初始化 */
+    /* pg_class initialization */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(catalog_class_value);
-    sysdicts->by_class = hash_create("integrate_class",
-                                      1024,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_class = hash_create("integrate_class", 1024, &hctl, HASH_ELEM | HASH_BLOBS);
 
-    /* pg_attribute初始化 */
+    /* pg_attribute initialization */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(catalog_attribute_value);
-    sysdicts->by_attribute = hash_create("integrate_attr",
-                                      2048,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_attribute = hash_create("integrate_attr", 2048, &hctl, HASH_ELEM | HASH_BLOBS);
 
-    /* pg_database初始化 */
+    /* pg_database initialization */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(catalog_database_value);
-    sysdicts->by_database = hash_create("integrate_database",
-                                      256,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_database = hash_create("integrate_database", 256, &hctl, HASH_ELEM | HASH_BLOBS);
 
-    /* pg_datname2oid初始化 */
+    /* pg_datname2oid initialization */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(pg_parser_NameData);
     hctl.entrysize = sizeof(catalog_datname2oid_value);
-    sysdicts->by_datname2oid = hash_create("integrate_datname2oid",
-                                      256,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_datname2oid =
+        hash_create("integrate_datname2oid", 256, &hctl, HASH_ELEM | HASH_BLOBS);
 
-    /* pg_index初始化 */
+    /* pg_index initialization */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(catalog_index_hash_entry);
-    sysdicts->by_index = hash_create("integrate_index",
-                                      1024,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_index = hash_create("integrate_index", 1024, &hctl, HASH_ELEM | HASH_BLOBS);
 
-    /* pg_type初始化 */
+    /* pg_type initialization */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(catalog_type_value);
-    sysdicts->by_type = hash_create("integrate_type",
-                                      1024,
-                                     &hctl,
-                                      HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_type = hash_create("integrate_type", 1024, &hctl, HASH_ELEM | HASH_BLOBS);
 
     return sysdicts;
 }
 
-/* 清理系统字典 */
+/* Clean up system dictionary */
 void cache_sysdicts_free(void* args)
 {
     HASH_SEQ_STATUS status;
-    ListCell* lc                    = NULL;
+    ListCell*       lc = NULL;
     cache_sysdicts* sysdicts = NULL;
 
     sysdicts = (cache_sysdicts*)args;
 
-    if(NULL == sysdicts)
+    if (NULL == sysdicts)
     {
         return;
     }
 
-    /* relfilenode 缓存清理 */
-    if(NULL != sysdicts->by_relfilenode)
+    /* Clean up relfilenode cache */
+    if (NULL != sysdicts->by_relfilenode)
     {
         hash_destroy(sysdicts->by_relfilenode);
     }
 
-    if(NULL != sysdicts->by_class)
+    if (NULL != sysdicts->by_class)
     {
-        catalog_class_value *catalogclassentry;
-        hash_seq_init(&status,sysdicts->by_class);
+        catalog_class_value* catalogclassentry;
+        hash_seq_init(&status, sysdicts->by_class);
         while (NULL != (catalogclassentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogclassentry->class)
+            if (NULL != catalogclassentry->class)
             {
                 rfree(catalogclassentry->class);
             }
@@ -342,16 +246,16 @@ void cache_sysdicts_free(void* args)
         hash_destroy(sysdicts->by_class);
     }
 
-    /* attributes 表删除 */
-    if(NULL != sysdicts->by_attribute)
+    /* Delete attributes table */
+    if (NULL != sysdicts->by_attribute)
     {
         catalog_attribute_value* catalogattrentry = NULL;
-        hash_seq_init(&status,sysdicts->by_attribute);
-        while(NULL != (catalogattrentry = hash_seq_search(&status)))
+        hash_seq_init(&status, sysdicts->by_attribute);
+        while (NULL != (catalogattrentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogattrentry->attrs)
+            if (NULL != catalogattrentry->attrs)
             {
-                foreach(lc, catalogattrentry->attrs)
+                foreach (lc, catalogattrentry->attrs)
                 {
                     rfree(lfirst(lc));
                 }
@@ -361,14 +265,14 @@ void cache_sysdicts_free(void* args)
         hash_destroy(sysdicts->by_attribute);
     }
 
-    /* type 表删除 */
-    if(NULL != sysdicts->by_type)
+    /* Delete type table */
+    if (NULL != sysdicts->by_type)
     {
         catalog_type_value* catalogtypeentry = NULL;
-        hash_seq_init(&status,sysdicts->by_type);
-        while(NULL != (catalogtypeentry = hash_seq_search(&status)))
+        hash_seq_init(&status, sysdicts->by_type);
+        while (NULL != (catalogtypeentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogtypeentry->type)
+            if (NULL != catalogtypeentry->type)
             {
                 rfree(catalogtypeentry->type);
             }
@@ -377,14 +281,14 @@ void cache_sysdicts_free(void* args)
         hash_destroy(sysdicts->by_type);
     }
 
-    /* proc 表删除 */
-    if(NULL != sysdicts->by_proc)
+    /* Delete proc table */
+    if (NULL != sysdicts->by_proc)
     {
         catalog_proc_value* catalogprocentry = NULL;
-        hash_seq_init(&status,sysdicts->by_proc);
-        while(NULL != (catalogprocentry = hash_seq_search(&status)))
+        hash_seq_init(&status, sysdicts->by_proc);
+        while (NULL != (catalogprocentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogprocentry->proc)
+            if (NULL != catalogprocentry->proc)
             {
                 rfree(catalogprocentry->proc);
             }
@@ -393,21 +297,21 @@ void cache_sysdicts_free(void* args)
         hash_destroy(sysdicts->by_proc);
     }
 
-    /* tablespace 表删除 */
-    if(NULL != sysdicts->by_tablespace)
+    /* Delete tablespace table */
+    if (NULL != sysdicts->by_tablespace)
     {
-        /* tablespace 表在当前程序中没有用到 */
+        /* tablespace table is not used in current program */
         hash_destroy(sysdicts->by_tablespace);
     }
 
-    /* namespace 表删除 */
-    if(NULL != sysdicts->by_namespace)
+    /* Delete namespace table */
+    if (NULL != sysdicts->by_namespace)
     {
         catalog_namespace_value* catalognamespaceentry = NULL;
-        hash_seq_init(&status,sysdicts->by_namespace);
-        while(NULL != (catalognamespaceentry = hash_seq_search(&status)))
+        hash_seq_init(&status, sysdicts->by_namespace);
+        while (NULL != (catalognamespaceentry = hash_seq_search(&status)))
         {
-            if(NULL != catalognamespaceentry->namespace)
+            if (NULL != catalognamespaceentry->namespace)
             {
                 rfree(catalognamespaceentry->namespace);
             }
@@ -415,14 +319,14 @@ void cache_sysdicts_free(void* args)
         hash_destroy(sysdicts->by_namespace);
     }
 
-    /* range 表删除 */
-    if(NULL != sysdicts->by_range)
+    /* Delete range table */
+    if (NULL != sysdicts->by_range)
     {
         catalog_range_value* catalograngeentry = NULL;
-        hash_seq_init(&status,sysdicts->by_range);
-        while(NULL != (catalograngeentry = hash_seq_search(&status)))
+        hash_seq_init(&status, sysdicts->by_range);
+        while (NULL != (catalograngeentry = hash_seq_search(&status)))
         {
-            if(NULL != catalograngeentry->range)
+            if (NULL != catalograngeentry->range)
             {
                 rfree(catalograngeentry->range);
             }
@@ -430,16 +334,16 @@ void cache_sysdicts_free(void* args)
         hash_destroy(sysdicts->by_range);
     }
 
-    /* enum 表删除 */
-    if(NULL != sysdicts->by_enum)
+    /* Delete enum table */
+    if (NULL != sysdicts->by_enum)
     {
         catalog_enum_value* catalogenumentry = NULL;
-        hash_seq_init(&status,sysdicts->by_enum);
-        while(NULL != (catalogenumentry = hash_seq_search(&status)))
+        hash_seq_init(&status, sysdicts->by_enum);
+        while (NULL != (catalogenumentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogenumentry->enums)
+            if (NULL != catalogenumentry->enums)
             {
-                foreach(lc, catalogenumentry->enums)
+                foreach (lc, catalogenumentry->enums)
                 {
                     rfree(lfirst(lc));
                 }
@@ -449,14 +353,14 @@ void cache_sysdicts_free(void* args)
         hash_destroy(sysdicts->by_enum);
     }
 
-    /* operator 表删除 */
-    if(NULL != sysdicts->by_operator)
+    /* Delete operator table */
+    if (NULL != sysdicts->by_operator)
     {
         catalog_operator_value* catalogoperatorentry = NULL;
-        hash_seq_init(&status,sysdicts->by_operator);
-        while(NULL != (catalogoperatorentry = hash_seq_search(&status)))
+        hash_seq_init(&status, sysdicts->by_operator);
+        while (NULL != (catalogoperatorentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogoperatorentry->operator)
+            if (NULL != catalogoperatorentry->operator)
             {
                 rfree(catalogoperatorentry->operator);
             }
@@ -465,13 +369,13 @@ void cache_sysdicts_free(void* args)
     }
 
     /* by_authid */
-    if(NULL != sysdicts->by_authid)
+    if (NULL != sysdicts->by_authid)
     {
         catalog_authid_value* catalogauthidentry = NULL;
-        hash_seq_init(&status,sysdicts->by_authid);
-        while(NULL != (catalogauthidentry = hash_seq_search(&status)))
+        hash_seq_init(&status, sysdicts->by_authid);
+        while (NULL != (catalogauthidentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogauthidentry->authid)
+            if (NULL != catalogauthidentry->authid)
             {
                 rfree(catalogauthidentry->authid);
             }
@@ -479,13 +383,13 @@ void cache_sysdicts_free(void* args)
         hash_destroy(sysdicts->by_authid);
     }
 
-    if(NULL != sysdicts->by_constraint)
+    if (NULL != sysdicts->by_constraint)
     {
-        catalog_constraint_value *catalogconentry;
-        hash_seq_init(&status,sysdicts->by_constraint);
+        catalog_constraint_value* catalogconentry;
+        hash_seq_init(&status, sysdicts->by_constraint);
         while (NULL != (catalogconentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogconentry->constraint)
+            if (NULL != catalogconentry->constraint)
             {
                 if (0 != catalogconentry->constraint->conkeycnt)
                 {
@@ -498,13 +402,13 @@ void cache_sysdicts_free(void* args)
     }
 
     /*by_database*/
-    if(NULL != sysdicts->by_database)
+    if (NULL != sysdicts->by_database)
     {
         catalog_database_value* catalogdatabaseentry = NULL;
-        hash_seq_init(&status,sysdicts->by_database);
-        while(NULL != (catalogdatabaseentry = hash_seq_search(&status)))
+        hash_seq_init(&status, sysdicts->by_database);
+        while (NULL != (catalogdatabaseentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogdatabaseentry->database)
+            if (NULL != catalogdatabaseentry->database)
             {
                 rfree(catalogdatabaseentry->database);
             }
@@ -513,23 +417,23 @@ void cache_sysdicts_free(void* args)
     }
 
     /* by_datname2oid */
-    if(NULL != sysdicts->by_datname2oid)
+    if (NULL != sysdicts->by_datname2oid)
     {
         hash_destroy(sysdicts->by_datname2oid);
         sysdicts->by_datname2oid = NULL;
     }
 
     /* by_index */
-    if(NULL != sysdicts->by_index)
+    if (NULL != sysdicts->by_index)
     {
-        catalog_index_value* index = NULL;
+        catalog_index_value*      index = NULL;
         catalog_index_hash_entry* catalogindexentry = NULL;
-        hash_seq_init(&status,sysdicts->by_index);
-        while(NULL != (catalogindexentry = hash_seq_search(&status)))
+        hash_seq_init(&status, sysdicts->by_index);
+        while (NULL != (catalogindexentry = hash_seq_search(&status)))
         {
-            if(NULL != catalogindexentry->index_list)
+            if (NULL != catalogindexentry->index_list)
             {
-                foreach(lc, catalogindexentry->index_list)
+                foreach (lc, catalogindexentry->index_list)
                 {
                     index = (catalog_index_value*)lfirst(lc);
                     if (index->index)
@@ -552,18 +456,18 @@ void cache_sysdicts_free(void* args)
 }
 
 /*
- * 根据class清理系统表中相关数据
- * 入参：sysdicts字典表， lc metadata数据
-*/
+ * Clean up related data in system catalog based on class
+ * Input: sysdicts dictionary table, lc metadata data
+ */
 void cache_sysdicts_clearsysdicthisbyclass(cache_sysdicts* sysdicts, ListCell* lc)
 {
-    bool found                                      = false;
-    ListCell* cell                                  = NULL;
-    catalogdata* catalog_data                 = NULL;
-    pg_sysdict_Form_pg_class class               = NULL;
-    catalog_attribute_value* attrInHash      = NULL;
-    catalog_index_value* index_value         = NULL;
-    catalog_index_hash_entry* indexInHash    = NULL;
+    bool                      found = false;
+    ListCell*                 cell = NULL;
+    catalogdata*              catalog_data = NULL;
+    pg_sysdict_Form_pg_class  class = NULL;
+    catalog_attribute_value*  attrInHash = NULL;
+    catalog_index_value*      index_value = NULL;
+    catalog_index_hash_entry* indexInHash = NULL;
 
     catalog_data = (catalogdata*)lfirst(lc);
 
@@ -574,11 +478,11 @@ void cache_sysdicts_clearsysdicthisbyclass(cache_sysdicts* sysdicts, ListCell* l
 
     class = (pg_sysdict_Form_pg_class)catalog_data->catalog;
 
-    /* 清理attribute */
+    /* Clean up attribute */
     attrInHash = hash_search(sysdicts->by_attribute, &class->oid, HASH_FIND, &found);
-    if(true == found)
+    if (true == found)
     {
-        if(NULL != attrInHash->attrs)
+        if (NULL != attrInHash->attrs)
         {
             list_free_deep(attrInHash->attrs);
         }
@@ -586,13 +490,13 @@ void cache_sysdicts_clearsysdicthisbyclass(cache_sysdicts* sysdicts, ListCell* l
         hash_search(sysdicts->by_attribute, &attrInHash->attrelid, HASH_REMOVE, NULL);
     }
 
-    /* 清理index */
+    /* Clean up index */
     indexInHash = hash_search(sysdicts->by_index, &class->oid, HASH_FIND, &found);
-    if(true == found)
+    if (true == found)
     {
-        if(NULL != indexInHash->index_list)
+        if (NULL != indexInHash->index_list)
         {
-            foreach(cell, indexInHash->index_list)
+            foreach (cell, indexInHash->index_list)
             {
                 index_value = (catalog_index_value*)lfirst(cell);
                 if (index_value->index)
@@ -614,21 +518,22 @@ void cache_sysdicts_clearsysdicthisbyclass(cache_sysdicts* sysdicts, ListCell* l
 }
 
 /*
- * 单个系统表应用
-*/
+ * Single system catalog application
+ */
 void cache_sysdicts_txnsysdicthisitem2cache(cache_sysdicts* sysdicts, ListCell* lc)
 {
     catalogdata* catalog_data = NULL;
 
     catalog_data = (catalogdata*)lfirst(lc);
 
-    /* 根据不同的数据类型处理 */
-    if((m_sysdict2cachecnt - 1) < catalog_data->type)
+    /* Process based on different data types */
+    if ((m_sysdict2cachecnt - 1) < catalog_data->type)
     {
-        elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d", catalog_data->type);
+        elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d",
+             catalog_data->type);
     }
 
-    if(NULL == m_sysdict2cache[catalog_data->type].func)
+    if (NULL == m_sysdict2cache[catalog_data->type].func)
     {
         elog(RLOG_ERROR, "logical error, please check catalog type:%d", catalog_data->type);
     }
@@ -636,50 +541,50 @@ void cache_sysdicts_txnsysdicthisitem2cache(cache_sysdicts* sysdicts, ListCell* 
     m_sysdict2cache[catalog_data->type].func(sysdicts, catalog_data);
 }
 
-/* 在事务提交, 将历史的字典表应用到缓存中 */
+/* On transaction commit, apply historical dictionary tables to cache */
 void cache_sysdicts_txnsysdicthis2cache(cache_sysdicts* sysdicts, List* sysdicthis)
 {
     ListCell* lc = NULL;
-    foreach(lc, sysdicthis)
+    foreach (lc, sysdicthis)
     {
         cache_sysdicts_txnsysdicthisitem2cache(sysdicts, lc);
     }
 }
 
-/* 按照 relfilenode 的结构构建hash表,用于在解析的过程中快速查找relfilenode到表oid */
+/* Build hash table based on relfilenode structure, for quickly finding relfilenode to table oid
+ * during parsing */
 HTAB* cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data)
 {
-    bool found = false;
-    HASHCTL hctl;
-    HASH_SEQ_STATUS status;
-    RelFileNode relfilenode;
-    HTAB* by_relfilenode = NULL;
-    cache_sysdicts* sysdicts = NULL;
-    catalog_class_value *entry = NULL;
+    bool                     found = false;
+    HASHCTL                  hctl;
+    HASH_SEQ_STATUS          status;
+    RelFileNode              relfilenode;
+    HTAB*                    by_relfilenode = NULL;
+    cache_sysdicts*          sysdicts = NULL;
+    catalog_class_value*     entry = NULL;
     pg_sysdict_Form_pg_class class = NULL;
-    relfilenode2oid* relfdentry = NULL;
+    relfilenode2oid*         relfdentry = NULL;
 
     sysdicts = (cache_sysdicts*)data;
 
-    /* 创建 hash */
+    /* Create hash */
     rmemset1(&hctl, 0, '\0', sizeof(hctl));
     hctl.keysize = sizeof(RelFileNode);
     hctl.entrysize = sizeof(relfilenode2oid);
-    by_relfilenode = hash_create("xsynch_relfilenode2oid", 2048, &hctl,
-                                             HASH_ELEM | HASH_BLOBS);
+    by_relfilenode = hash_create("xsynch_relfilenode2oid", 2048, &hctl, HASH_ELEM | HASH_BLOBS);
 
-    /* 加载对应关系 */
+    /* Load corresponding relationship */
     hash_seq_init(&status, sysdicts->by_class);
     while ((entry = hash_seq_search(&status)) != NULL)
     {
         class = entry->class;
 
-        if(PG_SYSDICT_RELKIND_PARTITIONED_TABLE == class->relkind)
+        if (PG_SYSDICT_RELKIND_PARTITIONED_TABLE == class->relkind)
         {
             continue;
         }
 
-        if(0 == class->reltablespace)
+        if (0 == class->reltablespace)
         {
             relfilenode.spcNode = PG_DFAULT_TABLESPACE;
         }
@@ -691,7 +596,7 @@ HTAB* cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data)
         relfilenode.dbNode = dbid;
         relfilenode.relNode = class->relfilenode;
         relfdentry = hash_search(by_relfilenode, &relfilenode, HASH_ENTER, &found);
-        if(found)
+        if (found)
         {
             elog(RLOG_ERROR, "relfilenode:%u already exist in by_relfilenode", relfdentry->oid);
         }
@@ -701,28 +606,29 @@ HTAB* cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data)
     return by_relfilenode;
 }
 
-/* 在事务提交或回滚时，将历史的字典表结构释放 */
+/* On transaction commit or rollback, release historical dictionary table structure */
 void cache_sysdicts_txnsysdicthisfree(List* sysdicthis)
 {
-    ListCell* lc = NULL;
+    ListCell*    lc = NULL;
     catalogdata* catalog_data = NULL;
 
-    foreach(lc, sysdicthis)
+    foreach (lc, sysdicthis)
     {
         catalog_data = (catalogdata*)lfirst(lc);
 
-        if(NULL == catalog_data)
+        if (NULL == catalog_data)
         {
             continue;
         }
 
-        /* 根据不同的数据类型处理 */
-        if((m_sysdict2cachecnt - 1) < catalog_data->type)
+        /* Process based on different data types */
+        if ((m_sysdict2cachecnt - 1) < catalog_data->type)
         {
-            elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d", catalog_data->type);
+            elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d",
+                 catalog_data->type);
         }
 
-        if(NULL == m_sysdict2cache[catalog_data->type].freefunc)
+        if (NULL == m_sysdict2cache[catalog_data->type].freefunc)
         {
             elog(RLOG_ERROR, "logical error, please check catalog type:%d", catalog_data->type);
         }
@@ -731,30 +637,31 @@ void cache_sysdicts_txnsysdicthisfree(List* sysdicthis)
     }
 }
 
-/* 将 sysdict 字典表结构释放 */
+/* Release sysdict dictionary table structure */
 void cache_sysdicts_catalogdatafreevoid(void* args)
 {
     catalogdata* catalog_data = NULL;
 
-    if(NULL == args)
+    if (NULL == args)
     {
         return;
     }
     catalog_data = (catalogdata*)args;
 
-    if(NULL == catalog_data)
+    if (NULL == catalog_data)
     {
         return;
     }
 
-    /* 根据不同的数据类型处理 */
-    if((m_sysdict2cachecnt - 1) < catalog_data->type)
+    /* Process based on different data types */
+    if ((m_sysdict2cachecnt - 1) < catalog_data->type)
     {
-        elog(RLOG_WARNING, "sysdicthis 2 transcache logical error, unknown type:%d", catalog_data->type);
+        elog(RLOG_WARNING, "sysdicthis 2 transcache logical error, unknown type:%d",
+             catalog_data->type);
         return;
     }
 
-    if(NULL == m_sysdict2cache[catalog_data->type].func)
+    if (NULL == m_sysdict2cache[catalog_data->type].func)
     {
         elog(RLOG_WARNING, "logical error, please check catalog type:%d", catalog_data->type);
         return;
@@ -763,13 +670,13 @@ void cache_sysdicts_catalogdatafreevoid(void* args)
     m_sysdict2cache[catalog_data->type].freefunc(catalog_data);
 }
 
-/* 将修改后的字典表缓存信息落盘 传入redlsn*/
+/* Write modified dictionary table cache information to disk, pass in redlsn*/
 void sysdictscache_write(cache_sysdicts* sysdicts, XLogRecPtr redolsn)
 {
-    int	 fd;
-    uint64 offset = 0;
-    char buffer[FILE_BLK_SIZE];
-    sysdict_header* header = NULL;
+    int                   fd;
+    uint64                offset = 0;
+    char                  buffer[FILE_BLK_SIZE];
+    sysdict_header*       header = NULL;
     sysdict_header_array* array = NULL;
 
     array = (sysdict_header_array*)rmalloc0((CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
@@ -816,41 +723,41 @@ void sysdictscache_write(cache_sysdicts* sysdicts, XLogRecPtr redolsn)
 
     indexcache_write(sysdicts->by_index, &offset, array);
 
-    rmemcpy1(buffer, sizeof(sysdict_header), array, (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
+    rmemcpy1(buffer, sizeof(sysdict_header), array,
+             (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
 
-    fd = osal_basic_open_file(SYSDICTS_TMP_FILE,
-                        O_RDWR | O_CREAT | BINARY);
+    fd = osal_basic_open_file(SYSDICTS_TMP_FILE, O_RDWR | O_CREAT | BINARY);
 
     if (fd < 0)
     {
         elog(RLOG_ERROR, "could not create file %s", SYSDICTS_TMP_FILE);
     }
 
-    if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, 0) != FILE_BLK_SIZE) {
+    if (osal_file_pwrite(fd, buffer, FILE_BLK_SIZE, 0) != FILE_BLK_SIZE)
+    {
         elog(RLOG_ERROR, "could not write to file %s", SYSDICTS_TMP_FILE);
         osal_file_close(fd);
         return;
     }
 
-    if(0 != osal_file_sync(fd))
+    if (0 != osal_file_sync(fd))
     {
         elog(RLOG_ERROR, "could not fsync file %s", SYSDICTS_TMP_FILE);
     }
 
-    if(osal_file_close(fd))
+    if (osal_file_close(fd))
     {
         elog(RLOG_ERROR, "could not close file %s", SYSDICTS_TMP_FILE);
     }
 
-    if (osal_durable_rename(SYSDICTS_TMP_FILE, SYSDICTS_FILE, RLOG_DEBUG) != 0) 
-	{
-		elog(RLOG_WARNING, "Error renaming file %s", SYSDICTS_TMP_FILE);
-	}
+    if (osal_durable_rename(SYSDICTS_TMP_FILE, SYSDICTS_FILE, RLOG_DEBUG) != 0)
+    {
+        elog(RLOG_WARNING, "Error renaming file %s", SYSDICTS_TMP_FILE);
+    }
 
     rfree(array);
     rfree(header);
     array = NULL;
     header = NULL;
     return;
-    
 }

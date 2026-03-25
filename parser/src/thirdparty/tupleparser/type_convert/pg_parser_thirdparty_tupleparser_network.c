@@ -1,12 +1,12 @@
 /**
  * @file pg_parser_thirdparty_tupleparser_network.c
  * @author bytesync
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2023-08-03
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  */
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -18,7 +18,7 @@
 
 #define PGFUNC_NETWORK_MCXT NULL
 
-#define PGSQL_AF_INET  (AF_INET + 0)
+#define PGSQL_AF_INET (AF_INET + 0)
 #define PGSQL_AF_INET6 (AF_INET + 1)
 
 #define NS_IN6ADDRSZ 16
@@ -26,51 +26,45 @@
 
 #define SPRINTF(x) ((size_t)sprintf x)
 
-#define ip_family(inetptr) \
-    (((inet_struct *) PG_PARSER_VARDATA_ANY(inetptr))->family)
+#define ip_family(inetptr) (((inet_struct*)PG_PARSER_VARDATA_ANY(inetptr))->family)
 
-#define ip_bits(inetptr) \
-    (((inet_struct *) PG_PARSER_VARDATA_ANY(inetptr))->bits)
+#define ip_bits(inetptr) (((inet_struct*)PG_PARSER_VARDATA_ANY(inetptr))->bits)
 
-#define ip_addr(inetptr) \
-    (((inet_struct *) PG_PARSER_VARDATA_ANY(inetptr))->ipaddr)
+#define ip_addr(inetptr) (((inet_struct*)PG_PARSER_VARDATA_ANY(inetptr))->ipaddr)
 
 typedef struct
 {
-    unsigned char family;        /* PGSQL_AF_INET or PGSQL_AF_INET6 */
-    unsigned char bits;          /* number of bits in netmask */
-    unsigned char ipaddr[16];    /* up to 128 bits of address */
+    unsigned char family;     /* PGSQL_AF_INET or PGSQL_AF_INET6 */
+    unsigned char bits;       /* number of bits in netmask */
+    unsigned char ipaddr[16]; /* up to 128 bits of address */
 } inet_struct;
 
 typedef struct
 {
-    char        vl_len_[4];      /* Do not touch this field directly! */
+    char        vl_len_[4]; /* Do not touch this field directly! */
     inet_struct inet_data;
 } inet;
 
-static char *pg_parser_inet_net_ntop(int32_t af, const void *src, int32_t bits, char *dst, size_t size);
-static int32_t decoct(const unsigned char *src,int32_t bytes, char *dst, size_t size);
+static char*   pg_parser_inet_net_ntop(int32_t af, const void* src, int32_t bits, char* dst,
+                                       size_t size);
+static int32_t decoct(const unsigned char* src, int32_t bytes, char* dst, size_t size);
 
-static char *inet_net_ntop_ipv4(const unsigned char *src,
-                                int32_t bits,
-                                char *dst,
-                                size_t size);
+static char* inet_net_ntop_ipv4(const unsigned char* src, int32_t bits, char* dst, size_t size);
 
-static char *inet_net_ntop_ipv6(const unsigned char *src,
-                                int32_t bits,
-                                char *dst,
-                                size_t size);
+static char* inet_net_ntop_ipv6(const unsigned char* src, int32_t bits, char* dst, size_t size);
 
-static int32_t decoct(const unsigned char *src,int32_t bytes, char *dst, size_t size)
+static int32_t decoct(const unsigned char* src, int32_t bytes, char* dst, size_t size)
 {
-    char       *odst = dst;
-    char       *t;
-    int32_t         b;
+    char*   odst = dst;
+    char*   t;
+    int32_t b;
 
     for (b = 1; b <= bytes; b++)
     {
         if (size <= sizeof "255.")
+        {
             return (0);
+        }
         t = dst;
         dst += SPRINTF((dst, "%u", *src++));
         if (b != bytes)
@@ -78,7 +72,7 @@ static int32_t decoct(const unsigned char *src,int32_t bytes, char *dst, size_t 
             *dst++ = '.';
             *dst = '\0';
         }
-        size -= (size_t) (dst - t);
+        size -= (size_t)(dst - t);
     }
     return (dst - odst);
 }
@@ -96,15 +90,12 @@ static int32_t decoct(const unsigned char *src,int32_t bytes, char *dst, size_t 
  * author:
  *    Paul Vixie (ISC), October 1998
  */
-static char *inet_net_ntop_ipv4(const unsigned char *src,
-                                int32_t bits,
-                                char *dst,
-                                size_t size)
+static char* inet_net_ntop_ipv4(const unsigned char* src, int32_t bits, char* dst, size_t size)
 {
-    char       *odst = dst;
-    char       *t;
-    int32_t         len = 4;
-    int32_t         b;
+    char*   odst = dst;
+    char*   t;
+    int32_t len = 4;
+    int32_t b;
 
     if (bits < 0 || bits > 32)
     {
@@ -116,19 +107,25 @@ static char *inet_net_ntop_ipv4(const unsigned char *src,
     for (b = len; b > 0; b--)
     {
         if (size <= sizeof ".255")
+        {
             goto network_emsgsize;
+        }
         t = dst;
         if (dst != odst)
+        {
             *dst++ = '.';
+        }
         dst += SPRINTF((dst, "%u", *src++));
-        size -= (size_t) (dst - t);
+        size -= (size_t)(dst - t);
     }
 
     /* don't print masklen if 32 bits */
     if (bits != 32)
     {
         if (size <= sizeof "/32")
+        {
             goto network_emsgsize;
+        }
         dst += SPRINTF((dst, "/%u", bits));
     }
 
@@ -139,10 +136,7 @@ network_emsgsize:
     return (NULL);
 }
 
-static char *inet_net_ntop_ipv6(const unsigned char *src,
-                                int32_t bits,
-                                char *dst,
-                                size_t size)
+static char* inet_net_ntop_ipv6(const unsigned char* src, int32_t bits, char* dst, size_t size)
 {
     /*
      * Note that int32_t and int16_t need only be "at least" large enough to
@@ -151,15 +145,14 @@ static char *inet_net_ntop_ipv6(const unsigned char *src,
      * in mind if you think this function should have been coded to use
      * pointer overlays.  All the world's not a VAX.
      */
-    char        tmp[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255/128"];
-    char       *tp;
+    char  tmp[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255/128"];
+    char* tp;
     struct
     {
-        int32_t base,
-            len;
-    }best, cur;
+        int32_t base, len;
+    } best, cur;
     uint32_t words[NS_IN6ADDRSZ / NS_INT16SZ];
-    int32_t            i;
+    int32_t  i;
 
     if ((bits < -1) || (bits > 128))
     {
@@ -173,7 +166,9 @@ static char *inet_net_ntop_ipv6(const unsigned char *src,
      */
     rmemset1(words, 0, '\0', sizeof words);
     for (i = 0; i < NS_IN6ADDRSZ; i++)
+    {
         words[i / 2] |= (src[i] << ((1 - (i % 2)) << 3));
+    }
     best.base = -1;
     cur.base = -1;
     best.len = 0;
@@ -183,16 +178,22 @@ static char *inet_net_ntop_ipv6(const unsigned char *src,
         if (words[i] == 0)
         {
             if (cur.base == -1)
+            {
                 cur.base = i, cur.len = 1;
+            }
             else
+            {
                 cur.len++;
+            }
         }
         else
         {
             if (cur.base != -1)
             {
                 if (best.base == -1 || cur.len > best.len)
+                {
                     best = cur;
+                }
                 cur.base = -1;
             }
         }
@@ -200,10 +201,14 @@ static char *inet_net_ntop_ipv6(const unsigned char *src,
     if (cur.base != -1)
     {
         if (best.base == -1 || cur.len > best.len)
+        {
             best = cur;
+        }
     }
     if (best.base != -1 && best.len < 2)
+    {
         best.base = -1;
+    }
 
     /*
      * Format the result.
@@ -212,20 +217,23 @@ static char *inet_net_ntop_ipv6(const unsigned char *src,
     for (i = 0; i < (NS_IN6ADDRSZ / NS_INT16SZ); i++)
     {
         /* Are we inside the best run of 0x00's? */
-        if (best.base != -1 && i >= best.base &&
-            i < (best.base + best.len))
+        if (best.base != -1 && i >= best.base && i < (best.base + best.len))
         {
             if (i == best.base)
+            {
                 *tp++ = ':';
+            }
             continue;
         }
         /* Are we following an initial run of 0x00s or any real hex? */
         if (i != 0)
+        {
             *tp++ = ':';
+        }
         /* Is this address an encapsulated IPv4? */
-        if (i == 6 && best.base == 0 && (best.len == 6 ||
-                                         (best.len == 7 && words[7] != 0x0001) ||
-                                         (best.len == 5 && words[5] == 0xffff)))
+        if (i == 6 && best.base == 0 &&
+            (best.len == 6 || (best.len == 7 && words[7] != 0x0001) ||
+             (best.len == 5 && words[5] == 0xffff)))
         {
             int32_t n;
 
@@ -242,18 +250,21 @@ static char *inet_net_ntop_ipv6(const unsigned char *src,
     }
 
     /* Was it a trailing run of 0x00's? */
-    if (best.base != -1 && (best.base + best.len) ==
-        (NS_IN6ADDRSZ / NS_INT16SZ))
+    if (best.base != -1 && (best.base + best.len) == (NS_IN6ADDRSZ / NS_INT16SZ))
+    {
         *tp++ = ':';
+    }
     *tp = '\0';
 
     if (bits != -1 && bits != 128)
+    {
         tp += SPRINTF((tp, "/%u", bits));
+    }
 
     /*
      * Check for overflow, copy, and we're done.
      */
-    if ((size_t) (tp - tmp) > size)
+    if ((size_t)(tp - tmp) > size)
     {
         errno = EMSGSIZE;
         return (NULL);
@@ -276,7 +287,8 @@ static char *inet_net_ntop_ipv6(const unsigned char *src,
  * author:
  *    Paul Vixie (ISC), October 1998
  */
-static char *pg_parser_inet_net_ntop(int32_t af, const void *src, int32_t bits, char *dst, size_t size)
+static char* pg_parser_inet_net_ntop(int32_t af, const void* src, int32_t bits, char* dst,
+                                     size_t size)
 {
     /*
      * We need to cover both the address family constants used by the PG inet
@@ -303,14 +315,13 @@ static char *pg_parser_inet_net_ntop(int32_t af, const void *src, int32_t bits, 
 /*
  * Common INET/CIDR output routine
  */
-static char *network_out(inet *src, bool is_cidr)
+static char* network_out(inet* src, bool is_cidr)
 {
-    char        tmp[sizeof("xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:255.255.255.255/128")];
-    char       *dst;
-    int32_t         len;
+    char    tmp[sizeof("xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:255.255.255.255/128")];
+    char*   dst;
+    int32_t len;
 
-    dst = pg_parser_inet_net_ntop(ip_family(src), ip_addr(src), ip_bits(src),
-                                     tmp, sizeof(tmp));
+    dst = pg_parser_inet_net_ntop(ip_family(src), ip_addr(src), ip_bits(src), tmp, sizeof(tmp));
     if (dst == NULL)
     {
         /* ereport(ERROR,
@@ -331,14 +342,14 @@ static char *network_out(inet *src, bool is_cidr)
 
 pg_parser_Datum inet_out(pg_parser_Datum attr)
 {
-    inet       *src = (inet *) attr;
+    inet* src = (inet*)attr;
 
-    return (pg_parser_Datum) network_out(src, false);
+    return (pg_parser_Datum)network_out(src, false);
 }
 
 pg_parser_Datum cidr_out(pg_parser_Datum attr)
 {
-    inet       *src = (inet *) attr;
+    inet* src = (inet*)attr;
 
-    return (pg_parser_Datum) network_out(src, true);
+    return (pg_parser_Datum)network_out(src, true);
 }

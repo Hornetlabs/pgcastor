@@ -8,43 +8,42 @@
 #include "image/pg_parser_image.h"
 
 #define HEAP_TUPLE_MCXT NULL
-#define PG_PARSER_RECORDOID       2249
+#define PG_PARSER_RECORDOID 2249
 
 /* sysattr */
-#define pg_parser_SelfItemPointerAttributeNumber             (-1)
-#define pg_parser_MinTransactionIdAttributeNumber            (-2)
-#define pg_parser_MinCommandIdAttributeNumber                (-3)
-#define pg_parser_MaxTransactionIdAttributeNumber            (-4)
-#define pg_parser_MaxCommandIdAttributeNumber                (-5)
-#define pg_parser_TableOidAttributeNumber                    (-6)
-#define pg_parser_FirstLowInvalidHeapAttributeNumber         (-7)
+#define pg_parser_SelfItemPointerAttributeNumber (-1)
+#define pg_parser_MinTransactionIdAttributeNumber (-2)
+#define pg_parser_MinCommandIdAttributeNumber (-3)
+#define pg_parser_MaxTransactionIdAttributeNumber (-4)
+#define pg_parser_MaxCommandIdAttributeNumber (-5)
+#define pg_parser_TableOidAttributeNumber (-6)
+#define pg_parser_FirstLowInvalidHeapAttributeNumber (-7)
 
-#define Min(x,y) ((x) < (y) ? (x) : (y))
+#define Min(x, y) ((x) < (y) ? (x) : (y))
 
-pg_parser_ReorderBufferTupleBuf * pg_parser_heaptuple_get_tuple_space(size_t tuple_len,
-                                                                            int16_t dbtype,
-                                                                            char *dbversion)
+pg_parser_ReorderBufferTupleBuf* pg_parser_heaptuple_get_tuple_space(size_t  tuple_len,
+                                                                     int16_t dbtype,
+                                                                     char*   dbversion)
 {
-    pg_parser_ReorderBufferTupleBuf *tuple;
-    size_t alloc_len;
+    pg_parser_ReorderBufferTupleBuf* tuple;
+    size_t                           alloc_len;
 
     alloc_len = tuple_len + pg_parser_SizeofHeapTupleHeader;
 
-    if (!pg_parser_mcxt_malloc(HEAP_TUPLE_MCXT, (void **)&tuple,
-                                sizeof(pg_parser_ReorderBufferTupleBuf)
-                            + PG_PARSER_MAXIMUM_ALIGNOF + alloc_len))
+    if (!pg_parser_mcxt_malloc(
+            HEAP_TUPLE_MCXT, (void**)&tuple,
+            sizeof(pg_parser_ReorderBufferTupleBuf) + PG_PARSER_MAXIMUM_ALIGNOF + alloc_len))
+    {
         return NULL;
+    }
     tuple->alloc_tuple_size = alloc_len;
     tuple->tuple.t_data = pg_parser_ReorderBufferTupleBufData(tuple);
     return tuple;
 }
 
-void pg_parser_reassemble_tuple_from_heap_tuple_header(
-                                             void *hth,
-                                             size_t len,
-                                             pg_parser_ReorderBufferTupleBuf *tuple,
-                                             int16_t dbtype,
-                                             char *dbversion)
+void pg_parser_reassemble_tuple_from_heap_tuple_header(void* hth, size_t len,
+                                                       pg_parser_ReorderBufferTupleBuf* tuple,
+                                                       int16_t dbtype, char* dbversion)
 {
     pg_parser_HeapTupleHeader header = NULL;
 
@@ -57,18 +56,14 @@ void pg_parser_reassemble_tuple_from_heap_tuple_header(
     rmemcpy1(header, 0, hth, len);
 }
 
-void pg_parser_reassemble_tuple_from_wal_data(char *data,
-                                    size_t len,
-                                    pg_parser_ReorderBufferTupleBuf *tup,
-                                    uint32_t xmin,
-                                    uint32_t xmax,
-                                    int16_t dbtype,
-                                    char *dbversion)
+void pg_parser_reassemble_tuple_from_wal_data(char* data, size_t len,
+                                              pg_parser_ReorderBufferTupleBuf* tup, uint32_t xmin,
+                                              uint32_t xmax, int16_t dbtype, char* dbversion)
 {
-    pg_parser_xl_heap_header xlhdr;
-    int32_t datalen = len - pg_parser_SizeOfHeapHeader;
-    pg_parser_HeapTupleHeader header;
-    pg_parser_ReorderBufferTupleBuf *tuple = tup;
+    pg_parser_xl_heap_header         xlhdr;
+    int32_t                          datalen = len - pg_parser_SizeOfHeapHeader;
+    pg_parser_HeapTupleHeader        header;
+    pg_parser_ReorderBufferTupleBuf* tuple = tup;
 
     tuple->tuple.t_len = datalen + pg_parser_SizeofHeapTupleHeader;
     header = tuple->tuple.t_data;
@@ -80,31 +75,29 @@ void pg_parser_reassemble_tuple_from_wal_data(char *data,
     tuple->tuple.t_tableOid = pg_parser_InvalidOid;
 
     /* data is not stored aligned, copy to aligned storage. */
-    rmemcpy1((char *)&xlhdr,
-        0,
-        data,
-        pg_parser_SizeOfHeapHeader);
+    rmemcpy1((char*)&xlhdr, 0, data, pg_parser_SizeOfHeapHeader);
 
     rmemset1(header, 0, 0, pg_parser_SizeofHeapTupleHeader);
 
-    rmemcpy1(((char *)tuple->tuple.t_data) + pg_parser_SizeofHeapTupleHeader,
-        0,
-        data + pg_parser_SizeOfHeapHeader,
-        datalen);
+    rmemcpy1(((char*)tuple->tuple.t_data) + pg_parser_SizeofHeapTupleHeader, 0,
+             data + pg_parser_SizeOfHeapHeader, datalen);
 
     header->t_infomask = xlhdr.t_infomask;
     header->t_infomask2 = xlhdr.t_infomask2;
     header->t_hoff = xlhdr.t_hoff;
     if (pg_parser_InvalidTransactionId != xmin)
+    {
         pg_parser_HeapTupleHeaderSetXmin(header, xmin);
+    }
     if (pg_parser_InvalidTransactionId != xmax)
+    {
         pg_parser_HeapTupleHeaderSetXmax(header, xmax);
+    }
 }
 
-static pg_parser_TupleDesc
-CreateTemplateTupleDesc(int32_t natts)
+static pg_parser_TupleDesc CreateTemplateTupleDesc(int32_t natts)
 {
-    pg_parser_TupleDesc    desc;
+    pg_parser_TupleDesc desc;
     /*
      * Allocate enough memory for the tuple descriptor, including the
      * attribute rows.
@@ -117,11 +110,12 @@ CreateTemplateTupleDesc(int32_t natts)
      * could be less due to trailing padding, although with the current
      * definition of pg_attribute there probably isn't any padding.
      */
-    if (!pg_parser_mcxt_malloc(HEAP_TUPLE_MCXT,
-                                 (void **)&desc,
-                                  offsetof(struct pg_parser_TupleDescData, attrs) +
-                                  natts * sizeof(pg_parser_sysdict_pgattributes)))
+    if (!pg_parser_mcxt_malloc(HEAP_TUPLE_MCXT, (void**)&desc,
+                               offsetof(struct pg_parser_TupleDescData, attrs) +
+                                   natts * sizeof(pg_parser_sysdict_pgattributes)))
+    {
         return NULL;
+    }
 
     /*
      * Initialize other fields of the tupdesc.
@@ -130,19 +124,21 @@ CreateTemplateTupleDesc(int32_t natts)
     desc->constr = NULL;
     desc->tdtypeid = PG_PARSER_RECORDOID;
     desc->tdtypmod = -1;
-    desc->tdrefcount = -1;        /* assume not reference-counted */
+    desc->tdrefcount = -1; /* assume not reference-counted */
 
     return desc;
 }
 
 pg_parser_TupleDesc pg_parser_get_desc(pg_parser_sysdict_tableInfo* tbinfo)
 {
-    pg_parser_TupleDesc tupdesc = NULL;
+    pg_parser_TupleDesc          tupdesc = NULL;
     pg_sysdict_Form_pg_attribute fpa = NULL;
-    int32_t i = 0;
+    int32_t                      i = 0;
     tupdesc = CreateTemplateTupleDesc(tbinfo->natts);
     if (!tupdesc)
+    {
         return NULL;
+    }
     for (i = 0; i < tbinfo->natts; i++)
     {
         fpa = tbinfo->pgattr[i];
@@ -151,10 +147,8 @@ pg_parser_TupleDesc pg_parser_get_desc(pg_parser_sysdict_tableInfo* tbinfo)
     return tupdesc;
 }
 
-pg_parser_Datum pg_parser_getmissingattr(pg_parser_TupleDesc tupleDesc,
-                                  int32_t attnum,
-                                  bool *isnull,
-                                  bool *ismissing)
+pg_parser_Datum pg_parser_getmissingattr(pg_parser_TupleDesc tupleDesc, int32_t attnum,
+                                         bool* isnull, bool* ismissing)
 {
     pg_sysdict_Form_pg_attribute att;
 
@@ -166,21 +160,21 @@ pg_parser_Datum pg_parser_getmissingattr(pg_parser_TupleDesc tupleDesc,
         *ismissing = true;
     }
     else
+    {
         *isnull = true;
+    }
     return pg_parser_PointerGetDatum(NULL);
 }
 
-pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
-                                  int32_t attnum,
-                                  pg_parser_TupleDesc tupleDesc,
-                                  int16_t dbtype,
-                                  char *dbversion)
+pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple, int32_t attnum,
+                                         pg_parser_TupleDesc tupleDesc, int16_t dbtype,
+                                         char* dbversion)
 {
     pg_parser_HeapTupleHeader tup = NULL;
-    char            *tp;                    /* ptr to data part of tuple */
-    uint8_t         *bp = NULL;             /* ptr to null bitmap in tuple */
-    bool             slow = false;          /* do we have to walk attrs? */
-    int32_t          off;                   /* current offset within data */
+    char*                     tp;           /* ptr to data part of tuple */
+    uint8_t*                  bp = NULL;    /* ptr to null bitmap in tuple */
+    bool                      slow = false; /* do we have to walk attrs? */
+    int32_t                   off;          /* current offset within data */
 
     /* ----------------
      *     Three cases:
@@ -203,16 +197,18 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
          *
          * check to see if any preceding bits are null...
          */
-        int32_t            byte = attnum >> 3;
-        int32_t            finalbit = attnum & 0x07;
+        int32_t byte = attnum >> 3;
+        int32_t finalbit = attnum & 0x07;
 
         /* check for nulls "before" final bit of last byte */
         if ((~bp[byte]) & ((1 << finalbit) - 1))
+        {
             slow = true;
+        }
         else
         {
             /* check for nulls in any "earlier" bytes */
-            int32_t            i;
+            int32_t i;
 
             for (i = 0; i < byte; i++)
             {
@@ -225,7 +221,7 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
         }
     }
 
-    tp = (char *) tup + tup->t_hoff;
+    tp = (char*)tup + tup->t_hoff;
 
     if (!slow)
     {
@@ -237,7 +233,9 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
          */
         att = pg_parser_TupleDescAttr(tupleDesc, attnum);
         if (att->attcacheoff >= 0)
+        {
             return pg_parser_fetchatt(att, tp + att->attcacheoff);
+        }
 
         /*
          * Otherwise, check for non-fixed-length attrs up to and including
@@ -246,7 +244,7 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
          */
         if (pg_parser_HeapTupleHasVarWidth(tuple))
         {
-            int32_t            j;
+            int32_t j;
 
             for (j = 0; j <= attnum; j++)
             {
@@ -261,8 +259,8 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
 
     if (!slow)
     {
-        int32_t            natts = tupleDesc->natts;
-        int32_t            j = 1;
+        int32_t natts = tupleDesc->natts;
+        int32_t j = 1;
 
         /*
          * If we get here, we have a tuple with no nulls or var-widths up to
@@ -277,17 +275,21 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
 
         /* we might have set some offsets in the slow path previously */
         while (j < natts && pg_parser_TupleDescAttr(tupleDesc, j)->attcacheoff > 0)
+        {
             j++;
+        }
 
         off = pg_parser_TupleDescAttr(tupleDesc, j - 1)->attcacheoff +
-            pg_parser_TupleDescAttr(tupleDesc, j - 1)->attlen;
+              pg_parser_TupleDescAttr(tupleDesc, j - 1)->attlen;
 
         for (; j < natts; j++)
         {
             pg_sysdict_Form_pg_attribute att = pg_parser_TupleDescAttr(tupleDesc, j);
 
             if (att->attlen <= 0)
+            {
                 break;
+            }
 
             off = pg_parser_att_align_nominal(off, att->attalign);
 
@@ -300,8 +302,8 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
     }
     else
     {
-        bool        usecache = true;
-        int32_t            i;
+        bool    usecache = true;
+        int32_t i;
 
         /*
          * Now we know that we have to walk the tuple CAREFULLY.  But we still
@@ -314,19 +316,21 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
          * attcacheoff until we reach either a null or a var-width attribute.
          */
         off = 0;
-        for (i = 0;; i++)        /* loop exit is at "break" */
+        for (i = 0;; i++) /* loop exit is at "break" */
         {
             pg_sysdict_Form_pg_attribute att = pg_parser_TupleDescAttr(tupleDesc, i);
 
             if (pg_parser_HeapTupleHasNulls(tuple) && pg_parser_att_isnull(i, bp))
             {
                 usecache = false;
-                continue;        /* this cannot be the target att */
+                continue; /* this cannot be the target att */
             }
 
             /* If we know the next offset, we can skip the rest */
             if (usecache && att->attcacheoff >= 0)
+            {
                 off = att->attcacheoff;
+            }
             else if (att->attlen == -1)
             {
                 /*
@@ -335,13 +339,13 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
                  * no pad bytes in any case: then the offset will be valid for
                  * either an aligned or unaligned value.
                  */
-                if (usecache &&
-                    (uint32_t) off == pg_parser_att_align_nominal(off, att->attalign))
+                if (usecache && (uint32_t)off == pg_parser_att_align_nominal(off, att->attalign))
+                {
                     att->attcacheoff = off;
+                }
                 else
                 {
-                    off = pg_parser_att_align_pointer(off, att->attalign, -1,
-                                            tp + off);
+                    off = pg_parser_att_align_pointer(off, att->attalign, -1, tp + off);
                     usecache = false;
                 }
             }
@@ -351,30 +355,33 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
                 off = pg_parser_att_align_nominal(off, att->attalign);
 
                 if (usecache)
+                {
                     att->attcacheoff = off;
+                }
             }
 
             if (i == attnum)
+            {
                 break;
+            }
 
             off = pg_parser_att_addlength_pointer(off, att->attlen, tp + off);
 
             if (usecache && att->attlen <= 0)
+            {
                 usecache = false;
+            }
         }
     }
 
     return pg_parser_fetchatt(pg_parser_TupleDescAttr(tupleDesc, attnum), tp + off);
 }
 
-pg_parser_Datum pg_parser_heap_getsysattr(pg_parser_HeapTuple tuple,
-                                   int32_t attnum,
-                                   pg_parser_TupleDesc tupleDesc,
-                                   bool *isnull,
-                                   int16_t dbtype,
-                                   char *dbversion)
+pg_parser_Datum pg_parser_heap_getsysattr(pg_parser_HeapTuple tuple, int32_t attnum,
+                                          pg_parser_TupleDesc tupleDesc, bool* isnull,
+                                          int16_t dbtype, char* dbversion)
 {
-    pg_parser_Datum        result;
+    pg_parser_Datum     result;
     pg_parser_HeapTuple tup = tuple;
 
     PG_PARSER_UNUSED(tupleDesc);
@@ -389,43 +396,43 @@ pg_parser_Datum pg_parser_heap_getsysattr(pg_parser_HeapTuple tuple,
             result = pg_parser_PointerGetDatum(&(tup->t_self));
             break;
         case pg_parser_MinTransactionIdAttributeNumber:
-            result = pg_parser_TransactionIdGetDatum(pg_parser_HeapTupleHeaderGetRawXmin(tup->t_data));
+            result =
+                pg_parser_TransactionIdGetDatum(pg_parser_HeapTupleHeaderGetRawXmin(tup->t_data));
             break;
         case pg_parser_MaxTransactionIdAttributeNumber:
-            result = pg_parser_TransactionIdGetDatum(pg_parser_HeapTupleHeaderGetRawXmax(tup->t_data));
+            result =
+                pg_parser_TransactionIdGetDatum(pg_parser_HeapTupleHeaderGetRawXmax(tup->t_data));
             break;
         case pg_parser_MinCommandIdAttributeNumber:
         case pg_parser_MaxCommandIdAttributeNumber:
 
             /*
-            * cmin and cmax are now both aliases for the same field, which
-            * can in fact also be a combo command id.  XXX perhaps we should
-            * return the "real" cmin or cmax if possible, that is if we are
-            * inside the originating transaction?
-            */
-            result = pg_parser_CommandIdGetDatum(pg_parser_HeapTupleHeaderGetRawCommandId(tup->t_data));
+             * cmin and cmax are now both aliases for the same field, which
+             * can in fact also be a combo command id.  XXX perhaps we should
+             * return the "real" cmin or cmax if possible, that is if we are
+             * inside the originating transaction?
+             */
+            result =
+                pg_parser_CommandIdGetDatum(pg_parser_HeapTupleHeaderGetRawCommandId(tup->t_data));
             break;
         case pg_parser_TableOidAttributeNumber:
             result = pg_parser_ObjectIdGetDatum(tup->t_tableOid);
             break;
         default:
-            result = 0;            /* keep compiler quiet */
+            result = 0; /* keep compiler quiet */
             break;
     }
 
     return result;
 }
 
-void pg_parser_DecodeXLogTuple(char *data,
-                                  size_t len,
-                                  pg_parser_ReorderBufferTupleBuf *tup,
-                                  int16_t dbtype,
-                                  char *dbversion)
+void pg_parser_DecodeXLogTuple(char* data, size_t len, pg_parser_ReorderBufferTupleBuf* tup,
+                               int16_t dbtype, char* dbversion)
 {
-    pg_parser_xl_heap_header xlhdr;
-    int32_t datalen = len - pg_parser_SizeOfHeapHeader;
-    pg_parser_HeapTupleHeader header;
-    pg_parser_ReorderBufferTupleBuf *tuple = tup;
+    pg_parser_xl_heap_header         xlhdr;
+    int32_t                          datalen = len - pg_parser_SizeOfHeapHeader;
+    pg_parser_HeapTupleHeader        header;
+    pg_parser_ReorderBufferTupleBuf* tuple = tup;
 
     tuple->tuple.t_len = datalen + pg_parser_SizeofHeapTupleHeader;
     header = tuple->tuple.t_data;
@@ -437,17 +444,12 @@ void pg_parser_DecodeXLogTuple(char *data,
     tuple->tuple.t_tableOid = pg_parser_InvalidOid;
 
     /* data is not stored aligned, copy to aligned storage */
-    rmemcpy1((char *) &xlhdr,
-        0,
-        data,
-        pg_parser_SizeOfHeapHeader);
+    rmemcpy1((char*)&xlhdr, 0, data, pg_parser_SizeOfHeapHeader);
 
     rmemset1(header, 0, 0, pg_parser_SizeofHeapTupleHeader);
 
-    rmemcpy1(((char *) tuple->tuple.t_data) + pg_parser_SizeofHeapTupleHeader,
-        0,
-        data + pg_parser_SizeOfHeapHeader,
-        datalen);
+    rmemcpy1(((char*)tuple->tuple.t_data) + pg_parser_SizeofHeapTupleHeader, 0,
+             data + pg_parser_SizeOfHeapHeader, datalen);
 
     header->t_infomask = xlhdr.t_infomask;
     header->t_infomask2 = xlhdr.t_infomask2;
@@ -471,20 +473,18 @@ void pg_parser_DecodeXLogTuple(char *data,
  *        heap_getattr; the loop will become O(N^2) as soon as any
  *        noncacheable attribute offsets are involved.
  */
-void pg_parser_heap_deform_tuple(pg_parser_HeapTuple tuple,
-                               pg_parser_TupleDesc tupleDesc,
-                               pg_parser_Datum *values,
-                               bool *isnull)
+void pg_parser_heap_deform_tuple(pg_parser_HeapTuple tuple, pg_parser_TupleDesc tupleDesc,
+                                 pg_parser_Datum* values, bool* isnull)
 {
     pg_parser_HeapTupleHeader tup = tuple->t_data;
-    bool                         hasnulls = pg_parser_HeapTupleHasNulls(tuple);
-    int                          tdesc_natts = tupleDesc->natts;
-    int                          natts;            /* number of atts to extract */
-    int                          attnum;
-    char                        *tp;                /* ptr to tuple data */
-    uint32_t        off;            /* offset in tuple data */
-    uint8_t       *bp = tup->t_bits;    /* ptr to null bitmap in tuple */
-    bool        slow = false;    /* can we use/set attcacheoff? */
+    bool                      hasnulls = pg_parser_HeapTupleHasNulls(tuple);
+    int                       tdesc_natts = tupleDesc->natts;
+    int                       natts; /* number of atts to extract */
+    int                       attnum;
+    char*                     tp;               /* ptr to tuple data */
+    uint32_t                  off;              /* offset in tuple data */
+    uint8_t*                  bp = tup->t_bits; /* ptr to null bitmap in tuple */
+    bool                      slow = false;     /* can we use/set attcacheoff? */
 
     natts = pg_parser_HeapTupleHeaderGetNatts(tup);
 
@@ -495,7 +495,7 @@ void pg_parser_heap_deform_tuple(pg_parser_HeapTuple tuple,
      */
     natts = Min(natts, tdesc_natts);
 
-    tp = (char *) tup + tup->t_hoff;
+    tp = (char*)tup + tup->t_hoff;
 
     off = 0;
 
@@ -505,16 +505,18 @@ void pg_parser_heap_deform_tuple(pg_parser_HeapTuple tuple,
 
         if (hasnulls && pg_parser_att_isnull(attnum, bp))
         {
-            values[attnum] = (pg_parser_Datum) 0;
+            values[attnum] = (pg_parser_Datum)0;
             isnull[attnum] = true;
-            slow = true;        /* can't use attcacheoff anymore */
+            slow = true; /* can't use attcacheoff anymore */
             continue;
         }
 
         isnull[attnum] = false;
 
         if (!slow && thisatt->attcacheoff >= 0)
+        {
             off = thisatt->attcacheoff;
+        }
         else if (thisatt->attlen == -1)
         {
             /*
@@ -523,13 +525,13 @@ void pg_parser_heap_deform_tuple(pg_parser_HeapTuple tuple,
              * pad bytes in any case: then the offset will be valid for either
              * an aligned or unaligned value.
              */
-            if (!slow &&
-                off == pg_parser_att_align_nominal(off, thisatt->attalign))
+            if (!slow && off == pg_parser_att_align_nominal(off, thisatt->attalign))
+            {
                 thisatt->attcacheoff = off;
+            }
             else
             {
-                off = pg_parser_att_align_pointer(off, thisatt->attalign, -1,
-                                        tp + off);
+                off = pg_parser_att_align_pointer(off, thisatt->attalign, -1, tp + off);
                 slow = true;
             }
         }
@@ -539,7 +541,9 @@ void pg_parser_heap_deform_tuple(pg_parser_HeapTuple tuple,
             off = pg_parser_att_align_nominal(off, thisatt->attalign);
 
             if (!slow)
+            {
                 thisatt->attcacheoff = off;
+            }
         }
 
         values[attnum] = pg_parser_fetchatt(thisatt, tp + off);
@@ -547,7 +551,9 @@ void pg_parser_heap_deform_tuple(pg_parser_HeapTuple tuple,
         off = pg_parser_att_addlength_pointer(off, thisatt->attlen, tp + off);
 
         if (thisatt->attlen <= 0)
-            slow = true;        /* can't use attcacheoff anymore */
+        {
+            slow = true; /* can't use attcacheoff anymore */
+        }
     }
 
     /*
@@ -556,37 +562,34 @@ void pg_parser_heap_deform_tuple(pg_parser_HeapTuple tuple,
      */
     for (; attnum < tdesc_natts; attnum++)
     {
-        values[attnum] = (pg_parser_Datum) 0;
+        values[attnum] = (pg_parser_Datum)0;
         isnull[attnum] = true;
     }
 }
 
-static pg_parser_ReorderBufferTupleBuf *pg_parser_assemble_tuple_pg(char* page, uint16_t offnum)
+static pg_parser_ReorderBufferTupleBuf* pg_parser_assemble_tuple_pg(char* page, uint16_t offnum)
 {
-    pg_parser_ReorderBufferTupleBuf *tuple = NULL;
-    pg_parser_ItemId id = NULL;
-    pg_parser_HeapTupleHeader tuphdr = NULL;
-    size_t tuplelen = 0;
+    pg_parser_ReorderBufferTupleBuf* tuple = NULL;
+    pg_parser_ItemId                 id = NULL;
+    pg_parser_HeapTupleHeader        tuphdr = NULL;
+    size_t                           tuplelen = 0;
 
     id = pg_parser_PageGetItemId(page, offnum);
     tuphdr = (pg_parser_HeapTupleHeader)pg_parser_PageGetItem(page, id);
     tuplelen = (size_t)id->lp_len;
     tuple = pg_parser_heaptuple_get_tuple_space(tuplelen, DATABASE_TYPE_POSTGRESQL, DATABASE_PG127);
     if (!tuple)
+    {
         return NULL;
-    pg_parser_reassemble_tuple_from_heap_tuple_header(tuphdr,
-                                                         tuplelen,
-                                                         tuple,
-                                                         DATABASE_TYPE_POSTGRESQL,
-                                                         DATABASE_PG127);
+    }
+    pg_parser_reassemble_tuple_from_heap_tuple_header(tuphdr, tuplelen, tuple,
+                                                      DATABASE_TYPE_POSTGRESQL, DATABASE_PG127);
     return tuple;
 }
 
-pg_parser_ReorderBufferTupleBuf *pg_parser_assemble_tuple(int32_t dbtype,
-                                                                char* dbversion,
-                                                                uint32_t pagesize,
-                                                                char* page,
-                                                                uint16_t offnum)
+pg_parser_ReorderBufferTupleBuf* pg_parser_assemble_tuple(int32_t dbtype, char* dbversion,
+                                                          uint32_t pagesize, char* page,
+                                                          uint16_t offnum)
 {
     PG_PARSER_UNUSED(pagesize);
 
@@ -602,4 +605,3 @@ pg_parser_ReorderBufferTupleBuf *pg_parser_assemble_tuple(int32_t dbtype,
         }
     }
 }
-

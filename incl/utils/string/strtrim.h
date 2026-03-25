@@ -1,10 +1,10 @@
 #ifndef _STRTRIM_H_
 #define _STRTRIM_H_
 
-/* 清除左面的空格和制表符 */
+/* Clear left spaces and tabs */
 char* leftstrtrim(char* str, int maxsize);
 
-/* 清除右边的空格和制表符 */
+/* Clear right spaces and tabs */
 char* rightstrtrim(char* str);
 
 #endif

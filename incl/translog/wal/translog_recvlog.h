@@ -1,91 +1,91 @@
 #ifndef _TRANSLOG_RECVLOG_H_
 #define _TRANSLOG_RECVLOG_H_
 
-#define XLOG_BLKSIZE                     8192
-#define PGWALSEGMENTSPERXLOGID(segsize)         (UINT64CONST(0x100000000)/(segsize))
-#define PGWALBYTETOSEG(lsn, segsize)            (lsn / segsize)
-#define PGWALSEGMENTOFFSET(lsn, segsize)        ((lsn) & ((segsize) - 1))
+#define XLOG_BLKSIZE 8192
+#define PGWALSEGMENTSPERXLOGID(segsize) (UINT64CONST(0x100000000) / (segsize))
+#define PGWALBYTETOSEG(lsn, segsize) (lsn / segsize)
+#define PGWALSEGMENTOFFSET(lsn, segsize) ((lsn) & ((segsize) - 1))
 
 typedef struct TRANSLOG_RECVLOG
 {
-    /* fde 加密 */
-    bool                                enablefde;
+    /* FDE encryption */
+    bool enablefde;
 
-    /* 用于标记是否为主动发起 done, 0 未发送, 1 已发送 */
-    bool                                senddone;
+    /* flag for whether DONE was actively sent, 0 = not sent, 1 = sent */
+    bool senddone;
 
-    /* 数据库类型 */
-    translog_recvlog_dbtype      dbtype;
+    /* database type */
+    translog_recvlog_dbtype dbtype;
 
-    /* 数据库版本 */
-    translog_recvlog_dbversion   dbversion;
+    /* database version */
+    translog_recvlog_dbversion dbversion;
 
-    /* 日志文件描述符 */
-    int                                 fd;
+    /* log file descriptor */
+    int fd;
 
-    /* 事务日志大小 */
-    uint32                              segsize;
+    /* transaction log size */
+    uint32 segsize;
 
-    /* 同步时间线 */
-    TimeLineID                          tli;
+    /* sync timeline */
+    TimeLineID tli;
 
-    /* 数据库时间线 */
-    TimeLineID                          dbtli;
+    /* database timeline */
+    TimeLineID dbtli;
 
-    /* 事务日志编号 */
-    uint64                              segno;
+    /* transaction log sequence number */
+    uint64 segno;
 
-    /* 同步的 LSN */
-    XLogRecPtr                          startpos;
+    /* sync LSN */
+    XLogRecPtr startpos;
 
-    /* 数据库连接串 */
-    /* 工作目录 */
-    char*                               data;
+    /* database connection string */
+    /* working directory */
+    char* data;
 
-    /* 数据库实例标识 */
-    char*                               sysidentifier;
+    /* database instance identifier */
+    char* sysidentifier;
 
     /* slotname */
-    char*                               slotname;
+    char* slotname;
 
     /* restorecommand */
-    char*                               restorecmd;
+    char* restorecmd;
 } translog_recvlog;
 
-/* 初始化结构 */
+/* initialize structure */
 translog_recvlog* translog_recvlog_init(void);
 
 /* timeline */
 void translog_recvlog_settli(translog_recvlog* recvwal, TimeLineID tli);
 
-/* 设置 startpos */
+/* set startpos */
 void translog_recvlog_setstartpos(translog_recvlog* recvwal, XLogRecPtr lsn);
 
-/* 数据库 timeline */
+/* database timeline */
 void translog_recvlog_setdbtli(translog_recvlog* recvwal, TimeLineID tli);
 
-/* 设置 segsize */
+/* set segsize */
 void translog_recvlog_setsegsize(translog_recvlog* recvwal, uint32 segsize);
 
-/* 设置 dbtype */
+/* set dbtype */
 void translog_recvlog_setdbtype(translog_recvlog* recvwal, translog_recvlog_dbtype dbtype);
 
-/* 设置 data 目录 */
+/* set data directory */
 bool translog_recvlog_setdata(translog_recvlog* recvwal, char* data);
 
-/* 设置 sysidentifier */
+/* set sysidentifier */
 bool translog_recvlog_setsysidentifier(translog_recvlog* recvwal, char* sysidentifier);
 
-/* 设置 slotname 目录 */
+/* set slotname */
 bool translog_recvlog_setslotname(translog_recvlog* recvwal, char* slotname);
 
-/* 设置 restorcommand 目录 */
+/* set restore command */
 bool translog_recvlog_setrestorecmd(translog_recvlog* recvwal, char* restorecmd);
 
-/* 流复制接收日志 */
+/* streaming replication log receiver */
 bool translog_recvlog_main(translog_recvlog* recvwal);
 
-/* 释放 */
+/* free resources */
 void translog_recvlog_free(translog_recvlog* recvwal);
 
 #endif

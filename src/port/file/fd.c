@@ -9,19 +9,16 @@ int g_file_create_mode = FILE_MODE_OWNER;
 
 #define FILE_CLOSED (-1)
 
-#define FileIsNotOpen(file) (file== FILE_CLOSED)
+#define FileIsNotOpen(file) (file == FILE_CLOSED)
 
-#define IS_DIR_SEP(ch)    ((ch) == '/')
+#define IS_DIR_SEP(ch) ((ch) == '/')
 
-#define is_absolute_path(filename) \
-( \
-    IS_DIR_SEP((filename)[0]) \
-)
+#define is_absolute_path(filename) (IS_DIR_SEP((filename)[0]))
 
-/*----------------------------------FILE 操作-------------------------------------------*/
-FILE* osal_allocate_file(const char *name, const char *mode)
+/*----------------------------------FILE OPERATIONS-------------------------------------------*/
+FILE* osal_allocate_file(const char* name, const char* mode)
 {
-    FILE       *file;
+    FILE* file;
     if ((file = fopen(name, mode)) != NULL)
     {
         return file;
@@ -31,11 +28,11 @@ FILE* osal_allocate_file(const char *name, const char *mode)
     {
         elog(RLOG_ERROR, "out of file descriptors");
     }
-    else if(ENOENT == errno)
+    else if (ENOENT == errno)
     {
         elog(RLOG_ERROR, "file %s not exist", name);
     }
-    else if(ENOTDIR == errno)
+    else if (ENOTDIR == errno)
     {
         elog(RLOG_ERROR, "%s not dir", name);
     }
@@ -47,7 +44,7 @@ FILE* osal_allocate_file(const char *name, const char *mode)
     return NULL;
 }
 
-FILE* osal_file_fopen(const char *name, const char *mode)
+FILE* osal_file_fopen(const char* name, const char* mode)
 {
     return fopen(name, mode);
 }
@@ -62,56 +59,56 @@ char* osal_file_fgets(FILE* fp, int size, char* s)
     return fgets(s, size, fp);
 }
 
-int
-osal_free_file(FILE *file)
+int osal_free_file(FILE* file)
 {
     return fclose(file);
 }
 
-
-/*----------------------------------基于文件名打开文件操作-------------------------------------------*/
-static int osal_basic_open_file_perm(const char *fileName, int fileFlags, mode_t fileMode)
+/*----------------------------------FILE OPEN BY NAME
+ * OPERATIONS-------------------------------------------*/
+static int osal_basic_open_file_perm(const char* fileName, int fileFlags, mode_t fileMode)
 {
-    int            fd;
+    int fd;
 
     fd = open(fileName, fileFlags, fileMode);
 
     if (fd >= 0)
-        return fd;                /* success! */
+    {
+        return fd; /* success! */
+    }
 
     if (errno == EMFILE || errno == ENFILE)
     {
         elog(RLOG_ERROR, "out of file descriptors: %s; release and retry", fileName);
     }
 
-    return -1;                    /* failure */
+    return -1; /* failure */
 }
 
 /*
  * Open a file with osal_basic_open_file_perm() and pass default file mode for the
  * fileMode parameter.
  */
-int osal_basic_open_file(const char *fileName, int fileFlags)
+int osal_basic_open_file(const char* fileName, int fileFlags)
 {
     return osal_basic_open_file_perm(fileName, fileFlags, g_file_create_mode);
 }
 
-static int osal_open_transient_file_perm(const char *fileName, int fileFlags, mode_t fileMode)
+static int osal_open_transient_file_perm(const char* fileName, int fileFlags, mode_t fileMode)
 {
-    int            fd;
+    int fd;
 
     fd = osal_basic_open_file_perm(fileName, fileFlags, fileMode);
 
     if (fd >= 0)
     {
-
         return fd;
     }
 
-    return -1;                    /* failure */
+    return -1; /* failure */
 }
 
-int osal_open_transient_file(const char *fileName, int fileFlags)
+int osal_open_transient_file(const char* fileName, int fileFlags)
 {
     return osal_open_transient_file_perm(fileName, fileFlags, g_file_create_mode);
 }
@@ -121,17 +118,19 @@ int osal_close_transient_file(int fd)
     return close(fd);
 }
 
-static File osal_path_name_open_file_perm(const char *fileName, int fileFlags, mode_t fileMode)
+static File osal_path_name_open_file_perm(const char* fileName, int fileFlags, mode_t fileMode)
 {
-    char       *fnamecopy;
-    File        file;
+    char* fnamecopy;
+    File  file;
 
     /*
      * We need a malloc'd copy of the file name; fail cleanly if no room.
      */
     fnamecopy = rstrdup(fileName);
     if (fnamecopy == NULL)
+    {
         elog(RLOG_ERROR, "out of memory");
+    }
 
     file = osal_basic_open_file_perm(fileName, fileFlags, fileMode);
 
@@ -143,17 +142,16 @@ static File osal_path_name_open_file_perm(const char *fileName, int fileFlags, m
     return file;
 }
 
-
 /*
  * Open a file with osal_path_name_open_file_perm() and pass default file mode for the
  * fileMode parameter.
  */
-File osal_path_name_open_file(const char *fileName, int fileFlags)
+File osal_path_name_open_file(const char* fileName, int fileFlags)
 {
     return osal_path_name_open_file_perm(fileName, fileFlags, g_file_create_mode);
 }
 
-File osal_file_open(const char *fileName, int oflag, mode_t mode)
+File osal_file_open(const char* fileName, int oflag, mode_t mode)
 {
     return open(fileName, oflag, mode);
 }
@@ -163,10 +161,10 @@ int osal_file_close(File file)
     return close(file);
 }
 
-/* 读文件 */
-int osal_file_pread(File file, char *buffer, int amount, off_t offset)
+/* Read file */
+int osal_file_pread(File file, char* buffer, int amount, off_t offset)
 {
-    int            returnCode;
+    int returnCode;
 
     if (FileIsNotOpen(file))
     {
@@ -181,7 +179,7 @@ retry:
         /* OK to retry if interrupted */
         if (errno == EINTR)
         {
-            if(true != g_gotsigterm)
+            if (true != g_gotsigterm)
             {
                 goto retry;
             }
@@ -191,9 +189,9 @@ retry:
     return returnCode;
 }
 
-int osal_file_read(File file, char *buffer, int amount)
+int osal_file_read(File file, char* buffer, int amount)
 {
-    int            returnCode;
+    int returnCode;
 
     if (FileIsNotOpen(file))
     {
@@ -207,17 +205,18 @@ retry:
     {
         /* OK to retry if interrupted */
         if (errno == EINTR)
+        {
             goto retry;
+        }
     }
 
     return returnCode;
 }
 
-
-/* 写文件 */
-int osal_file_pwrite(File file, char *buffer, int amount, off_t offset)
+/* Write file */
+int osal_file_pwrite(File file, char* buffer, int amount, off_t offset)
 {
-    int            returnCode;
+    int returnCode;
 
     if (FileIsNotOpen(file))
     {
@@ -229,21 +228,25 @@ retry:
 
     /* if write didn't set errno, assume problem is no disk space */
     if (returnCode != amount && errno == 0)
+    {
         errno = ENOSPC;
+    }
 
     if (returnCode < 0)
     {
         /* OK to retry if interrupted */
         if (errno == EINTR)
+        {
             goto retry;
+        }
     }
 
     return returnCode;
 }
 
-int osal_file_write(File file, char *buffer, int amount)
+int osal_file_write(File file, char* buffer, int amount)
 {
-    int            returnCode;
+    int returnCode;
 
     if (FileIsNotOpen(file))
     {
@@ -255,13 +258,17 @@ retry:
 
     /* if write didn't set errno, assume problem is no disk space */
     if (returnCode != amount && errno == 0)
+    {
         errno = ENOSPC;
+    }
 
     if (returnCode < 0)
     {
         /* OK to retry if interrupted */
         if (errno == EINTR)
+        {
             goto retry;
+        }
     }
 
     return returnCode;
@@ -287,18 +294,18 @@ int osal_file_data_sync(File file)
     return fdatasync(file);
 }
 
-/* 获取文件大小 */
+/* Get file size */
 off_t osal_file_size(File file)
 {
     if (FileIsNotOpen(file))
     {
-        return (off_t) -1;
+        return (off_t)-1;
     }
 
     return lseek(file, 0, SEEK_END);
 }
 
-/* 截断文件 */
+/* Truncate file */
 int osal_file_truncate(File file, off_t offset)
 {
     if (FileIsNotOpen(file))
@@ -309,23 +316,23 @@ int osal_file_truncate(File file, off_t offset)
     return ftruncate(file, offset);
 }
 
-/* 设置偏移 */
+/* Set offset */
 off_t osal_file_seek(File file, off_t offset)
 {
     if (FileIsNotOpen(file))
     {
-        return (off_t) -1;
+        return (off_t)-1;
     }
 
     return lseek(file, offset, SEEK_SET);
 }
 
-/* 文件是否存在检测 */
+/* Check if file exists */
 bool osal_file_exist(char* filepath)
 {
     int fd = -1;
 
-    /* 打开文件 */
+    /* Open file */
     fd = open(filepath, O_RDONLY | BINARY, 0);
     if (0 > fd)
     {
@@ -335,12 +342,13 @@ bool osal_file_exist(char* filepath)
     return true;
 }
 
-/*----------------------------------文件夹相关-------------------------------------------*/
+/*----------------------------------DIRECTORY
+ * OPERATIONS-------------------------------------------*/
 
-/* 打开文件 */
-DIR* osal_open_dir(const char *dirname)
+/* Open directory */
+DIR* osal_open_dir(const char* dirname)
 {
-    DIR *dir = NULL;
+    DIR* dir = NULL;
 
     if ((dir = opendir(dirname)) != NULL)
     {
@@ -355,9 +363,9 @@ DIR* osal_open_dir(const char *dirname)
     return NULL;
 }
 
-static struct dirent* osal_read_dir_extended(DIR *dir, const char *dirname, int elevel)
+static struct dirent* osal_read_dir_extended(DIR* dir, const char* dirname, int elevel)
 {
-    struct dirent *dent;
+    struct dirent* dent;
 
     /* Give a generic message for AllocateDir failure, if caller didn't */
     if (dir == NULL)
@@ -368,7 +376,9 @@ static struct dirent* osal_read_dir_extended(DIR *dir, const char *dirname, int 
 
     errno = 0;
     if ((dent = readdir(dir)) != NULL)
+    {
         return dent;
+    }
 
     if (errno)
     {
@@ -377,13 +387,12 @@ static struct dirent* osal_read_dir_extended(DIR *dir, const char *dirname, int 
     return NULL;
 }
 
-struct dirent* osal_read_dir(DIR *dir, const char *dirname)
+struct dirent* osal_read_dir(DIR* dir, const char* dirname)
 {
     return osal_read_dir_extended(dir, dirname, RLOG_ERROR);
 }
 
-
-int osal_free_dir(DIR *dir)
+int osal_free_dir(DIR* dir)
 {
     /* Nothing to do if AllocateDir failed */
     if (dir == NULL)
@@ -394,14 +403,12 @@ int osal_free_dir(DIR *dir)
     return closedir(dir);
 }
 
-int osal_make_dir(char *path)
+int osal_make_dir(char* path)
 {
     struct stat sb;
-    mode_t        numask,
-                oumask;
-    int            last,
-                retval;
-    char       *p;
+    mode_t      numask, oumask;
+    int         last, retval;
+    char*       p;
 
     retval = 0;
     p = path;
@@ -418,20 +425,20 @@ int osal_make_dir(char *path)
      */
     oumask = umask(0);
     numask = oumask & ~(S_IWUSR | S_IXUSR);
-    (void) umask(numask);
+    (void)umask(numask);
 
-    /* 跳过首部的 '/' */
-    if (p[0] == '/')            /* Skip leading '/'. */
+    /* Skip leading '/' */
+    if (p[0] == '/')
     {
         ++p;
     }
 
-    /* 遍历创建目录 */
+    /* Iterate and create directories */
     for (last = 0; !last; ++p)
     {
         if (p[0] == '\0')
         {
-            /* 标识为结束 */
+            /* Mark as end */
             last = 1;
         }
         else if (p[0] != '/')
@@ -439,24 +446,24 @@ int osal_make_dir(char *path)
             continue;
         }
 
-        /* 在目录的后面添加 ‘\0’ */
+        /* Append '\0' after directory */
         *p = '\0';
         if (!last && p[1] == '\0')
         {
-            /* 向前多探一个 */
+            /* Peek one ahead */
             last = 1;
         }
 
         if (last)
         {
-            (void) umask(oumask);
+            (void)umask(oumask);
         }
 
         /* check for pre-existing directory */
-        /* 查看目录是否存在, 存在则不用创建 */
+        /* Check if directory exists, skip if already exists */
         if (stat(path, &sb) == 0)
         {
-            /* 已经存在,那么判断是否为文件夹 */
+            /* Already exists, check if it's a directory */
             if (!S_ISDIR(sb.st_mode))
             {
                 if (last)
@@ -473,35 +480,37 @@ int osal_make_dir(char *path)
         }
         else if (mkdir(path, last ? g_dir_create_mode : S_IRWXU | S_IRWXG | S_IRWXO) < 0)
         {
-            /* 创建文件夹出错,那么判断错误的原因，如果是已经存在，那么不做处理，继续后面的创建 */
-            if(EEXIST != errno)
+            /* If directory creation fails, check error reason - if already exists, continue */
+            if (EEXIST != errno)
             {
                 retval = -1;
                 break;
             }
         }
         if (!last)
+        {
             *p = '/';
+        }
     }
 
     /* ensure we restored umask */
-    (void) umask(oumask);
+    (void)umask(oumask);
 
     return retval;
 }
 
 /*
- * 查看目录是否存在
- * true  存在
- * false 不存在
-*/
+ * Check if directory exists
+ * true  exists
+ * false does not exist
+ */
 bool osal_dir_exist(char* wdata)
 {
     DIR* datadir = NULL;
     datadir = osal_open_dir(wdata);
-    if(NULL == datadir)
+    if (NULL == datadir)
     {
-        if(errno == ENOENT)
+        if (errno == ENOENT)
         {
             return false;
         }
@@ -515,9 +524,9 @@ bool osal_dir_exist(char* wdata)
 }
 
 /*----------------------------------RENAME/UNLINK-------------------------------------------*/
-int osal_durable_rename(const char *oldfile, const char *newfile, int elevel)
+int osal_durable_rename(const char* oldfile, const char* newfile, int elevel)
 {
-    int            fd;
+    int fd;
 
     fd = osal_open_transient_file(newfile, BINARY | O_RDWR);
     if (fd < 0)
@@ -537,14 +546,14 @@ int osal_durable_rename(const char *oldfile, const char *newfile, int elevel)
     /* Time to do the real deal... */
     if (rename(oldfile, newfile) < 0)
     {
-        elog(elevel,"could not rename file %s to %s", oldfile, newfile);
+        elog(elevel, "could not rename file %s to %s", oldfile, newfile);
         return -1;
     }
 
     return 0;
 }
 
-int osal_durable_unlink(const char *fname, int elevel)
+int osal_durable_unlink(const char* fname, int elevel)
 {
     if (unlink(fname) < 0)
     {
@@ -555,18 +564,20 @@ int osal_durable_unlink(const char *fname, int elevel)
     return 0;
 }
 
-char* osal_make_absolute_path(const char *path)
+char* osal_make_absolute_path(const char* path)
 {
-    char    *new;
+    char* new;
 
     /* Returning null for null input is convenient for some callers */
     if (path == NULL)
+    {
         return NULL;
+    }
 
     if (!is_absolute_path(path))
     {
-        char        *buf;
-        size_t        buflen;
+        char*  buf;
+        size_t buflen;
 
         buflen = MAXPGPATH;
         for (;;)
@@ -574,10 +585,12 @@ char* osal_make_absolute_path(const char *path)
             buf = rmalloc0(buflen);
             if (!buf)
             {
-                elog(RLOG_ERROR,"out of memory");
+                elog(RLOG_ERROR, "out of memory");
             }
             if (getcwd(buf, buflen))
+            {
                 break;
+            }
             else if (errno == ERANGE)
             {
                 rfree(buf);
@@ -586,7 +599,7 @@ char* osal_make_absolute_path(const char *path)
             }
             else
             {
-                int            save_errno = errno;
+                int save_errno = errno;
 
                 rfree(buf);
                 errno = save_errno;
@@ -598,8 +611,7 @@ char* osal_make_absolute_path(const char *path)
         if (!new)
         {
             rfree(buf);
-            elog(RLOG_ERROR,"out of memory");
-
+            elog(RLOG_ERROR, "out of memory");
         }
         sprintf(new, "%s/%s", buf, path);
         rfree(buf);
@@ -609,7 +621,7 @@ char* osal_make_absolute_path(const char *path)
         new = rstrdup(path);
         if (!new)
         {
-            elog(RLOG_ERROR,"out of memory");
+            elog(RLOG_ERROR, "out of memory");
         }
     }
 
@@ -619,20 +631,21 @@ char* osal_make_absolute_path(const char *path)
     return new;
 }
 
-/* 创建指定大小的文件 */
-bool osal_create_file_with_size(char* filepath, int fileFlags, uint64_t filesize, uint32_t blksize, uint8* blkdata)
+/* Create file with specified size */
+bool osal_create_file_with_size(char* filepath, int fileFlags, uint64_t filesize, uint32_t blksize,
+                                uint8* blkdata)
 {
-    int fd              = -1;
-    uint64_t index      = 0;
-    uint64_t blockcnt   = 0;
-    char tpath[1024]    = { 0 };
+    int      fd = -1;
+    uint64_t index = 0;
+    uint64_t blockcnt = 0;
+    char     tpath[1024] = {0};
 
-    /* 创建临时文件 */
+    /* Create temp file */
     rmemset1(tpath, 0, '\0', 1024);
     snprintf(tpath, 1024, "%s.tmp", filepath);
 
     fd = osal_basic_open_file(tpath, fileFlags);
-    if(0 > fd)
+    if (0 > fd)
     {
         elog(RLOG_WARNING, "open file %s error:%s", tpath, strerror(errno));
         return false;
@@ -640,7 +653,7 @@ bool osal_create_file_with_size(char* filepath, int fileFlags, uint64_t filesize
 
     blockcnt = (filesize / (uint64_t)blksize);
 
-    for(index = 0; index < blockcnt; index++)
+    for (index = 0; index < blockcnt; index++)
     {
         if (blksize != osal_file_write(fd, (char*)blkdata, blksize))
         {
@@ -651,16 +664,16 @@ bool osal_create_file_with_size(char* filepath, int fileFlags, uint64_t filesize
         }
     }
 
-    osal_file_sync(fd); 
+    osal_file_sync(fd);
     osal_file_close(fd);
-    
-    /* 重命名文件 */
+
+    /* Rename file */
     osal_durable_rename(tpath, filepath, RLOG_DEBUG);
     return true;
 }
 
-/* 判断是否为目录 */
-static bool osal_is_dir(const char *path)
+/* Check if path is a directory */
+static bool osal_is_dir(const char* path)
 {
     struct stat statbuf;
     if (lstat(path, &statbuf) == 0)
@@ -670,40 +683,42 @@ static bool osal_is_dir(const char *path)
     return false;
 }
 
-/* 判断是否为常规文件 */
-static bool osal_is_file(const char *path)
+/* Check if path is a regular file */
+static bool osal_is_file(const char* path)
 {
     struct stat statbuf;
-    if(lstat(path, &statbuf) == 0)
+    if (lstat(path, &statbuf) == 0)
     {
-        return S_ISREG(statbuf.st_mode) != 0;//判断文件是否为常规文件
+        return S_ISREG(statbuf.st_mode) != 0;
     }
     return false;
 }
 
-/* 判断是否是特殊目录 */
-static bool osal_is_special_dir(const char *path)
+/* Check if path is a special directory */
+static bool osal_is_special_dir(const char* path)
 {
     return strcmp(path, ".") == 0 || strcmp(path, "..") == 0;
 }
 
-/* 生成完整的文件路径 */
-static void osal_get_file_path(const char *path, const char *file_name,  char *file_path)
+/* Generate full file path */
+static void osal_get_file_path(const char* path, const char* file_name, char* file_path)
 {
     strcpy(file_path, path);
-    if(file_path[strlen(path) - 1] != '/')
+    if (file_path[strlen(path) - 1] != '/')
+    {
         strcat(file_path, "/");
+    }
     strcat(file_path, file_name);
 }
 
-/* 复制文件 */
+/* Copy file */
 bool osal_copy_file(char* srcfile, char* dstfile)
 {
     size_t rlen = 0;
-    FILE *srcfd = NULL;
-    FILE *dstfd = NULL;
-    char buf [2048] = {'\0'};
-    
+    FILE*  srcfd = NULL;
+    FILE*  dstfd = NULL;
+    char   buf[2048] = {'\0'};
+
     srcfd = fopen(srcfile, "rb");
     if (NULL == srcfd)
     {
@@ -735,30 +750,30 @@ bool osal_copy_file(char* srcfile, char* dstfile)
     return true;
 }
 
-bool osal_remove_dir(const char *path)
+bool osal_remove_dir(const char* path)
 {
-    DIR *dir;
-    struct dirent *dir_info;
-    char file_path[1024];
+    DIR*           dir;
+    struct dirent* dir_info;
+    char           file_path[1024];
 
-    if(osal_is_file(path))
+    if (osal_is_file(path))
     {
         remove(path);
         return false;
     }
 
-    if(osal_is_dir(path))
+    if (osal_is_dir(path))
     {
-        if((dir = opendir(path)) == NULL)
+        if ((dir = opendir(path)) == NULL)
         {
             return false;
         }
 
-        while((dir_info = readdir(dir)) != NULL)
+        while ((dir_info = readdir(dir)) != NULL)
         {
             osal_get_file_path(path, dir_info->d_name, file_path);
 
-            if(osal_is_special_dir(dir_info->d_name))
+            if (osal_is_special_dir(dir_info->d_name))
             {
                 continue;
             }

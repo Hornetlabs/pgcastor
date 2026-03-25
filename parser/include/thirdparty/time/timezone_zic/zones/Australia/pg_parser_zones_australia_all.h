@@ -1,7 +1,7 @@
 /**
  * @file                pg_parser_zones_australia_all.h
  * @author              ByteSynch
- * @brief               定义所有大洋洲的时区名称
+ * @brief               Define all Oceania timezone names
  * @version             0.1
  * @date                2023-09-18
  *

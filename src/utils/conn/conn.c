@@ -2,34 +2,35 @@
 #include "libpq-fe.h"
 #include "utils/conn/conn.h"
 
-/* 连接数据库 */
-PGconn *conn_get(const char *conninfo) 
+/* Connect to database */
+PGconn* conn_get(const char* conninfo)
 {
-	PGconn *conn = PQconnectdb(conninfo);
+    PGconn* conn = PQconnectdb(conninfo);
 
-	if (PQstatus(conn) != CONNECTION_OK) {
-		elog(RLOG_WARNING, "Connection to database failed: %s", PQerrorMessage(conn));
-		PQfinish(conn);
-		conn = NULL;
-	}
-	elog(RLOG_DEBUG, "Connection to database success");
-	return conn;
+    if (PQstatus(conn) != CONNECTION_OK)
+    {
+        elog(RLOG_WARNING, "Connection to database failed: %s", PQerrorMessage(conn));
+        PQfinish(conn);
+        conn = NULL;
+    }
+    elog(RLOG_DEBUG, "Connection to database success");
+    return conn;
 }
 
-/* 连接数据库/流复制 */
+/* Connect to database/streaming replication */
 PGconn* conn_getphysical(const char* conninfo, char* appname)
 {
     /* dbname/replication/fallback_app_name/host/user/port/password */
-    int index                   = 0;
-    int argcnt                  = 7;
-    char *errmsg                = NULL;
-    const char** keywords       = NULL;
-	const char** values         = NULL;
-    PGconn* conn                = NULL;
-    PQconninfoOption* connopt   = NULL;
-    PQconninfoOption* connopts  = NULL;
+    int               index = 0;
+    int               argcnt = 7;
+    char*             errmsg = NULL;
+    const char**      keywords = NULL;
+    const char**      values = NULL;
+    PGconn*           conn = NULL;
+    PQconninfoOption* connopt = NULL;
+    PQconninfoOption* connopts = NULL;
 
-    /* 解析 conninfo */
+    /* Parse conninfo */
     connopts = PQconninfoParse(conninfo, &errmsg);
     if (connopts == NULL)
     {
@@ -37,17 +38,17 @@ PGconn* conn_getphysical(const char* conninfo, char* appname)
         return NULL;
     }
 
-    /* 遍历每个配置项 */
-    for(connopt = connopts; connopt->keyword != NULL; connopt++)
+    /* Iterate each configuration item */
+    for (connopt = connopts; connopt->keyword != NULL; connopt++)
     {
-        if (NULL != connopt->val && '\0' != connopt->val[0]
-            && 0 != strcmp(connopt->keyword, "dbname"))
+        if (NULL != connopt->val && '\0' != connopt->val[0] &&
+            0 != strcmp(connopt->keyword, "dbname"))
         {
             argcnt++;
         }
     }
 
-    /* 申请空间 */
+    /* Allocate space */
     keywords = rmalloc0((argcnt + 1) * sizeof(*keywords));
     if (NULL == keywords)
     {
@@ -66,8 +67,8 @@ PGconn* conn_getphysical(const char* conninfo, char* appname)
 
     for (connopt = connopts; connopt->keyword != NULL; connopt++)
     {
-        if (connopt->val != NULL && '\0' != connopt->val[0]
-            && 0 != strcmp(connopt->keyword, "dbname"))
+        if (connopt->val != NULL && '\0' != connopt->val[0] &&
+            0 != strcmp(connopt->keyword, "dbname"))
         {
             keywords[index] = connopt->keyword;
             values[index] = connopt->val;
@@ -84,9 +85,9 @@ PGconn* conn_getphysical(const char* conninfo, char* appname)
     keywords[index] = "fallback_application_name";
     values[index] = appname;
 
-    /* 连接数据库 */
+    /* Connect to database */
     conn = PQconnectdbParams(keywords, values, true);
-    if(NULL == conn)
+    if (NULL == conn)
     {
         elog(RLOG_WARNING, "can not connect server %s", conninfo);
         goto conn_getphysical_error;
@@ -111,119 +112,123 @@ conn_getphysical_error:
     return NULL;
 }
 
-/* 关闭数据库 */
-void conn_close(PGconn *conn)
+/* Close database */
+void conn_close(PGconn* conn)
 {
-	PQfinish(conn);
+    PQfinish(conn);
 }
 
-/* 执行并获取结果 */
-PGresult *conn_exec(PGconn *conn, const char *query) 
+/* Execute and get result */
+PGresult* conn_exec(PGconn* conn, const char* query)
 {
-	PGresult *res = PQexec(conn, query);
+    PGresult* res = PQexec(conn, query);
 
-	if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK) {
-		elog(RLOG_WARNING, "SQL query execution failed: %s", PQerrorMessage(conn));
-		PQclear(res);
-		PQfinish(conn);
-		return NULL;
-	}
+    if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        elog(RLOG_WARNING, "SQL query execution failed: %s", PQerrorMessage(conn));
+        PQclear(res);
+        PQfinish(conn);
+        return NULL;
+    }
 
-	return res;
+    return res;
 }
 
-/* 开启事务 */
+/* Begin transaction */
 bool conn_begin(PGconn* conn)
 {
-	PGresult *res = PQexec(conn, "BEGIN");
+    PGresult* res = PQexec(conn, "BEGIN");
 
-	if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK) {
-		elog(RLOG_WARNING, "SQL query execution failed: %s", PQerrorMessage(conn));
-		PQclear(res);
-		return false;
-	}
+    if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        elog(RLOG_WARNING, "SQL query execution failed: %s", PQerrorMessage(conn));
+        PQclear(res);
+        return false;
+    }
 
-	PQclear(res);
+    PQclear(res);
 
-	return true;
+    return true;
 }
 
-/* 提交事务 */
+/* Commit transaction */
 bool conn_commit(PGconn* conn)
 {
-	PGresult *res = PQexec(conn, "COMMIT");
+    PGresult* res = PQexec(conn, "COMMIT");
 
-	if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK) {
-		elog(RLOG_WARNING, "SQL query execution failed: %s", PQerrorMessage(conn));
-		PQclear(res);
-		return false;
-	}
+    if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        elog(RLOG_WARNING, "SQL query execution failed: %s", PQerrorMessage(conn));
+        PQclear(res);
+        return false;
+    }
 
-	PQclear(res);
+    PQclear(res);
 
-	return true;
+    return true;
 }
 
-/* 回滚事务 */
+/* Rollback transaction */
 bool conn_rollback(PGconn* conn)
 {
-	PGresult *res = PQexec(conn, "ROLLBACK");
+    PGresult* res = PQexec(conn, "ROLLBACK");
 
-	if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK) {
-		elog(RLOG_WARNING, "SQL query execution failed: %s", PQerrorMessage(conn));
-		PQclear(res);
-		return false;
-	}
+    if (PQresultStatus(res) != PGRES_TUPLES_OK && PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        elog(RLOG_WARNING, "SQL query execution failed: %s", PQerrorMessage(conn));
+        PQclear(res);
+        return false;
+    }
 
-	PQclear(res);
+    PQclear(res);
 
-	return true;
+    return true;
 }
 
-/* 开启事务并设置事务隔离级别 */
+/* Begin transaction and set isolation level */
 void conn_settxnisolationlevel(PGconn* conn, int level)
 {
-	PGresult *res = NULL;
-	char	stmtsql[1024] = {'\0'};
+    PGresult* res = NULL;
+    char      stmtsql[1024] = {'\0'};
 
-	res = conn_exec(conn,"begin");
-	if (NULL == res)
-	{
-		elog(RLOG_ERROR, "Execute begin failed");
-	}
+    res = conn_exec(conn, "begin");
+    if (NULL == res)
+    {
+        elog(RLOG_ERROR, "Execute begin failed");
+    }
 
-	PQclear(res);
+    PQclear(res);
 
-	/* 获取数据库的标识 */
-	rmemset1(stmtsql, 0, 0, 1024);
-	switch (level)
-	{
-		case TXNISOLVL_READ_UNCOMMITTED:
-			sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;");
-			break;
-		case TXNISOLVL_READ_COMMITTED:
-			sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL READ COMMITTED;");
-			break;
-		case TXNISOLVL_REPEATABLE_READ:
-			sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;");
-			break;
-		case TXNISOLVL_SERIALIZABLE:
-			sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;");
-			break;
-		
-		default:
-			PQclear(res);
-			PQfinish(conn);
-			elog(RLOG_ERROR, "Invalid transaction isolation level");
-			break;
-	}
-	res = conn_exec(conn,stmtsql);
-	if (NULL == res)
-	{
-		elog(RLOG_ERROR, "Set transaction isolation level failed");
-	}
+    /* Get database identifier */
+    rmemset1(stmtsql, 0, 0, 1024);
+    switch (level)
+    {
+        case TXNISOLVL_READ_UNCOMMITTED:
+            sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;");
+            break;
+        case TXNISOLVL_READ_COMMITTED:
+            sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL READ COMMITTED;");
+            break;
+        case TXNISOLVL_REPEATABLE_READ:
+            sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;");
+            break;
+        case TXNISOLVL_SERIALIZABLE:
+            sprintf(stmtsql, "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;");
+            break;
 
-	PQclear(res);
+        default:
+            PQclear(res);
+            PQfinish(conn);
+            elog(RLOG_ERROR, "Invalid transaction isolation level");
+            break;
+    }
+    res = conn_exec(conn, stmtsql);
+    if (NULL == res)
+    {
+        elog(RLOG_ERROR, "Set transaction isolation level failed");
+    }
 
-	return;
+    PQclear(res);
+
+    return;
 }

@@ -24,15 +24,15 @@
 
 static bool xsynch_fenet_desc(int sock, uint16 flag, short int* prevent, int* perror)
 {
-    int pos                 = 0;
-    int iret                = 0;
-    int timeout             = 10000;
+    int           pos = 0;
+    int           iret = 0;
+    int           timeout = 10000;
     struct pollfd events[2];
 
     while (1)
     {
         pos = 0;
-        memset(events, '\0', sizeof(struct pollfd)*2);
+        memset(events, '\0', sizeof(struct pollfd) * 2);
         events[pos].fd = sock;
         events[pos].revents = 0;
         events[pos].events |= flag;
@@ -40,8 +40,8 @@ static bool xsynch_fenet_desc(int sock, uint16 flag, short int* prevent, int* pe
         iret = poll(events, 1, timeout);
         if (-1 == iret)
         {
-            /* 查看错误是否为信号引起的，若为信号引起那么继续监测 */
-            if(errno == EINTR)
+            /* check if error is caused by signal, if so continue monitoring */
+            if (errno == EINTR)
             {
                 continue;
             }
@@ -50,7 +50,7 @@ static bool xsynch_fenet_desc(int sock, uint16 flag, short int* prevent, int* pe
             return false;
         }
 
-        /* 检测状态，查看是否连接正常 */
+        /* check status, see if connection is normal */
         if (0 == iret)
         {
             continue;
@@ -63,12 +63,12 @@ static bool xsynch_fenet_desc(int sock, uint16 flag, short int* prevent, int* pe
     return true;
 }
 
-/* 查看连接状态 */
+/* check connection status */
 bool xsynch_fenet_isconn(xsynch_conn* conn)
 {
-    uint16 flag             = 0;
-    short int revent        = 0;    
-    int rerror              = 0;
+    uint16    flag = 0;
+    short int revent = 0;
+    int       rerror = 0;
 
     if (XSYNCHCONN_STATUS_NOP == conn->connstatus)
     {
@@ -93,8 +93,7 @@ bool xsynch_fenet_isconn(xsynch_conn* conn)
         return false;
     }
 
-    if (POLLHUP == (revent&POLLHUP)
-        || POLLERR == (revent&POLLERR))
+    if (POLLHUP == (revent & POLLHUP) || POLLERR == (revent & POLLERR))
     {
         close(conn->sock);
         conn->sock = -1;
@@ -106,27 +105,24 @@ bool xsynch_fenet_isconn(xsynch_conn* conn)
     return true;
 }
 
-
-/* 获取可用地址 */
-static int xsynch_getaddrinfo(const char* node,
-                              const char* service,
-                              const struct addrinfo *hints,
-                              struct addrinfo **res)
+/* get available address */
+static int xsynch_getaddrinfo(const char* node, const char* service, const struct addrinfo* hints,
+                              struct addrinfo** res)
 {
-    if(NULL != node && node[0] == '*')
+    if (NULL != node && node[0] == '*')
     {
         node = NULL;
     }
-    else if(NULL == node || '\0' == node[0])
+    else if (NULL == node || '\0' == node[0])
     {
         node = NULL;
     }
 
-    if(NULL != service && service[0] == '*')
+    if (NULL != service && service[0] == '*')
     {
         service = NULL;
     }
-    else if(NULL == service || '\0' == service[0])
+    else if (NULL == service || '\0' == service[0])
     {
         service = NULL;
     }
@@ -136,18 +132,13 @@ static int xsynch_getaddrinfo(const char* node,
 }
 
 /*
- * 根据名称或ip地址获取地址
+ * get address by name or ip address
  * */
-static bool xsynch_host2sockaddr(struct sockaddr_in *addr,
-                                 const char *host,
-                                 const char *service,
-                                 int family,
-                                 int socktype,
-                                 int protocol,
-                                 int passive)
+static bool xsynch_host2sockaddr(struct sockaddr_in* addr, const char* host, const char* service,
+                                 int family, int socktype, int protocol, int passive)
 {
-    int ret = 0;
-    struct addrinfo hints;
+    int              ret = 0;
+    struct addrinfo  hints;
     struct addrinfo *res, *reshead;
     memset(&hints, 0, sizeof(struct addrinfo));
     res = NULL;
@@ -156,24 +147,23 @@ static bool xsynch_host2sockaddr(struct sockaddr_in *addr,
     hints.ai_family = family;
     hints.ai_protocol = protocol;
     hints.ai_socktype = socktype;
-    if(passive)
+    if (passive)
     {
         hints.ai_flags |= AI_PASSIVE;
     }
 
     ret = xsynch_getaddrinfo(host, service, &hints, &reshead);
-    if(0 != ret)
+    if (0 != ret)
     {
         return false;
     }
 
-    for(res = reshead; res; res = res->ai_next)
+    for (res = reshead; res; res = res->ai_next)
     {
-        if(family == res->ai_family 
-            && socktype == res->ai_socktype
-            && sizeof(struct sockaddr_in) == res->ai_addrlen)
+        if (family == res->ai_family && socktype == res->ai_socktype &&
+            sizeof(struct sockaddr_in) == res->ai_addrlen)
         {
-            *addr= *((struct sockaddr_in *)(res->ai_addr));
+            *addr = *((struct sockaddr_in*)(res->ai_addr));
             freeaddrinfo(reshead);
             return true;
         }
@@ -183,24 +173,24 @@ static bool xsynch_host2sockaddr(struct sockaddr_in *addr,
     return false;
 }
 
-/* 设置为非阻塞模式 */
+/* set to non-blocking mode */
 static bool xsynch_setunblock(int sockfd)
 {
-    /* 
-     * 1、获取 描述符的状态
-     * 2、设置为 unblock
+    /*
+     * 1. get descriptor status
+     * 2. set to unblock
      */
     int flags;
 
-    /* 获取状态 */
+    /* get status */
     flags = fcntl(sockfd, F_GETFL);
-    if(0 > flags)
+    if (0 > flags)
     {
         return false;
     }
 
     flags &= (~O_NONBLOCK);
-    if(-1 == fcntl(sockfd, F_SETFL, flags))
+    if (-1 == fcntl(sockfd, F_SETFL, flags))
     {
         return false;
     }
@@ -208,28 +198,23 @@ static bool xsynch_setunblock(int sockfd)
     return true;
 }
 
-/* 连接 xmanager */
+/* connect to xmanager */
 bool xsynch_fenet_conn(xsynch_conn* conn)
 {
-    int yes = 1;
-    int addrlen = 0;
-    int domain = AF_INET;
-    struct sockaddr* connaddr = NULL;
+    int                yes = 1;
+    int                addrlen = 0;
+    int                domain = AF_INET;
+    struct sockaddr*   connaddr = NULL;
     struct sockaddr_in addrin;
     struct sockaddr_un addrun;
-    char unixdoamin[512] = { 0 };
+    char               unixdoamin[512] = {0};
 
     conn->errcode = 0;
     if (XSYNCH_SOCKTYPE_TCP == conn->socktype)
     {
         domain = AF_INET;
-        if (false == xsynch_host2sockaddr(&addrin,
-                                          conn->host,
-                                          conn->port,
-                                          domain,
-                                          SOCK_STREAM,
-                                          IPPROTO_TCP,
-                                          1))
+        if (false == xsynch_host2sockaddr(&addrin, conn->host, conn->port, domain, SOCK_STREAM,
+                                          IPPROTO_TCP, 1))
         {
             conn->errcode = 1;
             xsynch_exbufferdata_reset(conn->errmsg);
@@ -243,7 +228,8 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
     else if (XSYNCH_SOCKTYPE_UNIXDOMAIN == conn->socktype)
     {
         domain = AF_LOCAL;
-        snprintf(unixdoamin, 512, "%s/%s%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX, conn->port);
+        snprintf(unixdoamin, 512, "%s/%s%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX,
+                 conn->port);
         if (sizeof(addrun.sun_path) <= strlen(unixdoamin))
         {
             conn->errcode = 1;
@@ -267,7 +253,7 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
         return false;
     }
 
-    /* 设置为非阻塞模式 */
+    /* set to non-blocking mode */
     xsynch_setunblock(conn->sock);
     if (XSYNCH_SOCKTYPE_TCP == conn->socktype)
     {
@@ -275,42 +261,27 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
 
         if (1 == conn->keepalive)
         {
-            setsockopt(conn->sock,
-                       SOL_SOCKET,
-                       SO_KEEPALIVE,
-                       (char *) &conn->keepalive,
+            setsockopt(conn->sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&conn->keepalive,
                        sizeof(conn->keepalive));
 
-            setsockopt(conn->sock,
-                       IPPROTO_TCP,
-                       TCP_KEEPIDLE,
-                       (char *) &conn->keepaliveidle,
+            setsockopt(conn->sock, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&conn->keepaliveidle,
                        sizeof(conn->keepaliveidle));
 
-            setsockopt(conn->sock,
-                       IPPROTO_TCP,
-                       TCP_KEEPINTVL,
-                       (char *) &conn->keepaliveinterval,
+            setsockopt(conn->sock, IPPROTO_TCP, TCP_KEEPINTVL, (char*)&conn->keepaliveinterval,
                        sizeof(conn->keepaliveinterval));
 
-            setsockopt(conn->sock,
-                       IPPROTO_TCP,
-                       TCP_KEEPCNT,
-                       (char *) &conn->keepalivecount,
+            setsockopt(conn->sock, IPPROTO_TCP, TCP_KEEPCNT, (char*)&conn->keepalivecount,
                        sizeof(conn->keepalivecount));
 
-            setsockopt(conn->sock,
-                       IPPROTO_TCP,
-                       TCP_USER_TIMEOUT,
-                       (char *) &conn->usertimeout,
+            setsockopt(conn->sock, IPPROTO_TCP, TCP_USER_TIMEOUT, (char*)&conn->usertimeout,
                        sizeof(conn->usertimeout));
         }
     }
 
-    /* 连接 */
+    /* connect */
     if (-1 == connect(conn->sock, connaddr, addrlen))
     {
-        if(errno != EINPROGRESS)
+        if (errno != EINPROGRESS)
         {
             conn->errcode = 1;
             xsynch_exbufferdata_reset(conn->errmsg);
@@ -337,22 +308,22 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
     return true;
 }
 
-/* 发送数据并获取返回结果 */
+/* send data and get return result */
 bool xsynch_fenet_sendcmd(xsynch_conn* conn)
 {
-    bool bhdr           = 0;
-    uint16 flag         = 0;
-    short int revent    = 0;
-    int rerror          = 0;
-    int sendlen         = 0;
-    int recvlen         = 0;
-    int hdrlen          = 4;
-    int rlen            = 0;
-    char* cptr          = NULL;
+    bool      bhdr = 0;
+    uint16    flag = 0;
+    short int revent = 0;
+    int       rerror = 0;
+    int       sendlen = 0;
+    int       recvlen = 0;
+    int       hdrlen = 4;
+    int       rlen = 0;
+    char*     cptr = NULL;
 
-    conn->errcode       = 0;
+    conn->errcode = 0;
 
-    /* 检测是否连接 */
+    /* check if connected */
     if (false == xsynch_fenet_isconn(conn))
     {
         conn->errcode = 1;
@@ -361,14 +332,14 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
         return false;
     }
 
-    /* 发送数据 */
+    /* send data */
     sendlen = conn->sendmsg->len;
     cptr = conn->sendmsg->data;
     while (0 != sendlen)
     {
         flag = POLLOUT;
 
-        /* 监听 */
+        /* monitor */
         if (false == xsynch_fenet_desc(conn->sock, flag, &revent, &rerror))
         {
             xsynch_exbufferdata_reset(conn->errmsg);
@@ -381,26 +352,25 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
             continue;
         }
 
-        if (POLLHUP == (revent&POLLHUP)
-            || POLLERR == (revent&POLLERR))
+        if (POLLHUP == (revent & POLLHUP) || POLLERR == (revent & POLLERR))
         {
             xsynch_exbufferdata_reset(conn->errmsg);
             xsynch_exbufferdata_append(conn->errmsg, "%s", "net status error.");
             goto xsynch_fenet_sendcmd_error;
         }
 
-        /* 触发 POLLIN 事件 */
-        if (POLLIN == (POLLIN&revent))
+        /* trigger POLLIN event */
+        if (POLLIN == (POLLIN & revent))
         {
             /* never come here */
             continue;
         }
 
-        /* 发送数据 */
+        /* send data */
         rlen = write(conn->sock, cptr, sendlen);
         if (rlen < 0)
         {
-            /* 被信号中断，那么继续读取 */
+            /* interrupted by signal, continue reading */
             if (errno == EINTR)
             {
                 continue;
@@ -411,9 +381,9 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
             goto xsynch_fenet_sendcmd_error;
         }
 
-        if(0 == rlen)
+        if (0 == rlen)
         {
-            /* 已关闭 */
+            /* already closed */
             xsynch_exbufferdata_reset(conn->errmsg);
             xsynch_exbufferdata_append(conn->errmsg, "%s", "xmanager closed sock.");
             goto xsynch_fenet_sendcmd_error;
@@ -424,7 +394,7 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
     xsynch_exbufferdata_reset(conn->sendmsg);
 
     /*
-     * 获取数据
+     * get data
      */
     xsynch_exbufferdata_reset(conn->recvmsg);
     cptr = conn->recvmsg->data;
@@ -434,7 +404,7 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
     {
         flag = POLLIN;
 
-        /* 监听 */
+        /* monitor */
         if (false == xsynch_fenet_desc(conn->sock, flag, &revent, &rerror))
         {
             xsynch_exbufferdata_reset(conn->errmsg);
@@ -447,26 +417,25 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
             continue;
         }
 
-        if (POLLHUP == (revent&POLLHUP)
-            || POLLERR == (revent&POLLERR))
+        if (POLLHUP == (revent & POLLHUP) || POLLERR == (revent & POLLERR))
         {
             xsynch_exbufferdata_reset(conn->errmsg);
             xsynch_exbufferdata_append(conn->errmsg, "%s", "net status error.");
             goto xsynch_fenet_sendcmd_error;
         }
 
-        /* 触发 POLLOUT 事件 */
-        if (POLLOUT == (POLLOUT&revent))
+        /* trigger POLLOUT event */
+        if (POLLOUT == (POLLOUT & revent))
         {
             /* never come here */
             continue;
         }
 
-        /* 发送数据 */
+        /* send data */
         rlen = read(conn->sock, cptr, recvlen);
         if (rlen < 0)
         {
-            /* 被信号中断，那么继续读取 */
+            /* interrupted by signal, continue reading */
             if (errno == EINTR)
             {
                 continue;
@@ -476,9 +445,9 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
             goto xsynch_fenet_sendcmd_error;
         }
 
-        if(0 == rlen)
+        if (0 == rlen)
         {
-            /* 已关闭 */
+            /* already closed */
             xsynch_exbufferdata_reset(conn->errmsg);
             xsynch_exbufferdata_append(conn->errmsg, "%s", "xmanager closed sock.");
             goto xsynch_fenet_sendcmd_error;
@@ -510,4 +479,3 @@ xsynch_fenet_sendcmd_error:
     conn->connstatus = XSYNCHCONN_STATUS_NOP;
     return false;
 }
-

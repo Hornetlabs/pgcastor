@@ -21,27 +21,27 @@ typedef void (*precommandfunc)(xsciscistat* xscisc, xsynch_cmd* cmd);
 
 typedef struct XSCSCI_PRECOMMANDOPS
 {
-    xsynch_cmdtag                   type;
-    char*                           desc;
-    precommandfunc                  func;
+    xsynch_cmdtag  type;
+    char*          desc;
+    precommandfunc func;
 } xscsci_precommandops;
 
-/* 根据模板文件创建xmanager配置文件 */
-static bool xscsci_precommand_createconf_fromsample(const char *src, const char *dst)
+/* create xmanager config file from template file */
+static bool xscsci_precommand_createconf_fromsample(const char* src, const char* dst)
 {
     size_t rlen = 0;
-    char buf [8192] = {'\0'};
-    FILE *fd = NULL;
-    FILE *fs = NULL;
+    char   buf[8192] = {'\0'};
+    FILE*  fd = NULL;
+    FILE*  fs = NULL;
 
     fs = fopen(src, "rb");
-    if (!fs) 
+    if (!fs)
     {
         return false;
     }
 
     fd = fopen(dst, "wb");
-    if (!fd) 
+    if (!fd)
     {
         fclose(fs);
         return false;
@@ -62,43 +62,42 @@ static bool xscsci_precommand_createconf_fromsample(const char *src, const char 
     return true;
 }
 
-/* 删除文件夹 */
-static bool xscsci_precommand_removedir(const char *path)
+/* remove directory */
+static bool xscsci_precommand_removedir(const char* path)
 {
-    DIR *dir;
-    struct stat statbuf;
-    struct dirent *dir_info;
-    char file_path[1024];
+    DIR*           dir;
+    struct stat    statbuf;
+    struct dirent* dir_info;
+    char           file_path[1024];
 
     if (0 != stat(path, &statbuf))
     {
         return false;
     }
 
-    if(S_ISREG(statbuf.st_mode))
+    if (S_ISREG(statbuf.st_mode))
     {
         remove(path);
         return true;
     }
 
-    if(S_ISDIR(statbuf.st_mode))
+    if (S_ISDIR(statbuf.st_mode))
     {
-        if((dir = opendir(path)) == NULL)
+        if ((dir = opendir(path)) == NULL)
         {
             return false;
         }
 
-        while((dir_info = readdir(dir)) != NULL)
+        while ((dir_info = readdir(dir)) != NULL)
         {
             strcpy(file_path, path);
-            if(file_path[strlen(path) - 1] != '/')
+            if (file_path[strlen(path) - 1] != '/')
             {
                 strcat(file_path, "/");
             }
             strcat(file_path, dir_info->d_name);
 
-            if(strcmp(dir_info->d_name, ".") == 0 
-               || strcmp(dir_info->d_name, "..") == 0)
+            if (strcmp(dir_info->d_name, ".") == 0 || strcmp(dir_info->d_name, "..") == 0)
             {
                 continue;
             }
@@ -111,11 +110,11 @@ static bool xscsci_precommand_removedir(const char *path)
     return true;
 }
 
-/* 从配置文件中获取key--valve */
-static bool xscsci_precommand_getdatafromcfgfile(const char *config_file, char* key, char* data)
+/* get key-value from config file */
+static bool xscsci_precommand_getdatafromcfgfile(const char* config_file, char* key, char* data)
 {
-    FILE *fp = NULL;
-    char fline[1024];
+    FILE* fp = NULL;
+    char  fline[1024];
 
     fp = fopen(config_file, "r");
     if (!fp)
@@ -124,22 +123,19 @@ static bool xscsci_precommand_getdatafromcfgfile(const char *config_file, char* 
         return false;
     }
 
-    /* 读取一行数据 */
+    /* read one line of data */
     memset(fline, '\0', sizeof(fline));
     while (fgets(fline, sizeof(fline), fp) != NULL)
     {
-        bool quota = false;
+        bool  quota = false;
         char* uptr = fline;
-        int pos = 0;
-        int len = 0;
+        int   pos = 0;
+        int   len = 0;
 
-        /* 跳过 开头的 空字符等信息 */
-        while('\0' != *uptr)
+        /* skip leading whitespace characters */
+        while ('\0' != *uptr)
         {
-            if(' ' != *uptr
-                && '\t' != *uptr
-                && '\r' != *uptr
-                && '\n' != *uptr)
+            if (' ' != *uptr && '\t' != *uptr && '\r' != *uptr && '\n' != *uptr)
             {
                 break;
             }
@@ -147,21 +143,17 @@ static bool xscsci_precommand_getdatafromcfgfile(const char *config_file, char* 
             pos++;
         }
 
-        /* 跳过空行和注释行 */
-        if('\0' == *uptr || '#' == *uptr)
+        /* skip empty lines and comment lines */
+        if ('\0' == *uptr || '#' == *uptr)
         {
             memset(fline, '\0', sizeof(fline));
             continue;
         }
 
-        /* 获取key */
-        while('\0' != *uptr)
+        /* get key */
+        while ('\0' != *uptr)
         {
-            if(' ' == *uptr
-                || '\t' == *uptr
-                || '\r' == *uptr
-                || '\n' == *uptr
-                || '=' == *uptr)
+            if (' ' == *uptr || '\t' == *uptr || '\r' == *uptr || '\n' == *uptr || '=' == *uptr)
             {
                 break;
             }
@@ -169,25 +161,21 @@ static bool xscsci_precommand_getdatafromcfgfile(const char *config_file, char* 
             uptr++;
         }
 
-        /* 获取名称 */
-        if ( len != strlen(key)
-            || 0 != memcmp(key, fline + pos, len))
+        /* get name */
+        if (len != strlen(key) || 0 != memcmp(key, fline + pos, len))
         {
             memset(fline, '\0', sizeof(fline));
             continue;
         }
         pos += len;
 
-        /* 获取 value */
+        /* get value */
         len = 0;
 
-        /* 跳过 SPACE TABE 和 换行 */
-        while('\0'!= *uptr)
+        /* skip SPACE TAB and newline */
+        while ('\0' != *uptr)
         {
-            if(' ' != *uptr
-                && '\t' != *uptr
-                && '\r' != *uptr
-                && '\n' != *uptr)
+            if (' ' != *uptr && '\t' != *uptr && '\r' != *uptr && '\n' != *uptr)
             {
                 break;
             }
@@ -195,26 +183,23 @@ static bool xscsci_precommand_getdatafromcfgfile(const char *config_file, char* 
             uptr++;
         }
 
-        //table 获取;
-        if('=' != *uptr)
+        // table get;
+        if ('=' != *uptr)
         {
-            /* 结束了 */
+            /* ended */
             printf("config data error\n");
             return false;
         }
 
-        /* 获取 value 值 */
-        /* 跳过 '=' 字符 */
+        /* get value */
+        /* skip '=' character */
         pos++;
         uptr++;
 
-        /* 跳过 空格 等字符 */
-        while('\0' != *uptr)
+        /* skip spaces and other characters */
+        while ('\0' != *uptr)
         {
-            if(' ' != *uptr
-                && '\t' != *uptr
-                && '\r' != *uptr
-                && '\n' != *uptr)
+            if ((' ' != *uptr && '\t' != *uptr) || '\r' != *uptr || '\n' != *uptr)
             {
                 break;
             }
@@ -222,25 +207,25 @@ static bool xscsci_precommand_getdatafromcfgfile(const char *config_file, char* 
             pos++;
         }
 
-        /* 跳过空行和注释行 */
-        if('\0' == *uptr || '#' == *uptr)
+        /* skip empty lines and comment lines */
+        if ('\0' == *uptr || '#' == *uptr)
         {
-            /* 结束了 */
+            /* ended */
             printf("config data error\n");
             return false;
         }
 
-        /* 跳过 空格 等字符 */
-        /* 查看字符类型 */
-        if(*uptr == '"')
+        /* skip spaces and other characters */
+        /* check character type */
+        if (*uptr == '"')
         {
             uptr++;
             pos++;
             quota = true;
-            /* 获取去下一个 " 字符 */
-            while('\0' != *uptr)
+            /* get next " character */
+            while ('\0' != *uptr)
             {
-                if('"' == *uptr)
+                if ('"' == *uptr)
                 {
                     quota = false;
                     break;
@@ -249,20 +234,17 @@ static bool xscsci_precommand_getdatafromcfgfile(const char *config_file, char* 
                 uptr++;
             }
 
-            if(true == quota)
+            if (true == quota)
             {
-                 printf("configuration data is incorrect, missing double quotation marks\n");
-                 return false;
+                printf("configuration data is incorrect, missing double quotation marks\n");
+                return false;
             }
         }
         else
         {
-            while('\0'!= *uptr)
+            while ('\0' != *uptr)
             {
-                if(' ' == *uptr
-                    || '\t' == *uptr
-                    || '\r' == *uptr
-                    || '\n' == *uptr)
+                if (' ' == *uptr || '\t' == *uptr || '\r' == *uptr || '\n' == *uptr)
                 {
                     break;
                 }
@@ -279,20 +261,20 @@ static bool xscsci_precommand_getdatafromcfgfile(const char *config_file, char* 
     return true;
 }
 
-/* deit读取配置文件生成xsynch_cfgfilecmd->data */
-static bool  xscsci_precommand_edit_setcmddata(FILE *fp, xsynch_cfgfilecmd* cfgcmd)
+/* edit: read config file to generate xsynch_cfgfilecmd->data */
+static bool xscsci_precommand_edit_setcmddata(FILE* fp, xsynch_cfgfilecmd* cfgcmd)
 {
-    size_t rlen         = 0;
-    size_t offset       = 0;
-    size_t filesize     = 0;
-    char buf [8192]     = {'\0'};
+    size_t rlen = 0;
+    size_t offset = 0;
+    size_t filesize = 0;
+    char   buf[8192] = {'\0'};
 
     if (!fp || !cfgcmd)
     {
         return false;
     }
 
-    if(0 != fseek(fp, 0, SEEK_END))
+    if (0 != fseek(fp, 0, SEEK_END))
     {
         return false;
     }
@@ -305,7 +287,7 @@ static bool  xscsci_precommand_edit_setcmddata(FILE *fp, xsynch_cfgfilecmd* cfgc
         return false;
     }
 
-    if(0 != fseek(fp, 0, SEEK_SET))
+    if (0 != fseek(fp, 0, SEEK_SET))
     {
         return false;
     }
@@ -327,12 +309,12 @@ static bool  xscsci_precommand_edit_setcmddata(FILE *fp, xsynch_cfgfilecmd* cfgc
 
 static void xscsci_precommand_create(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    struct stat st;
-    int rownum                      = 0;
-    char samplepath[512]            = {'\0'};
-    char confpath[512]              = {'\0'};
-    xsynchrow* rows                 = NULL;
-    xsynch_createcmd* createcmd     = NULL;
+    struct stat       st;
+    int               rownum = 0;
+    char              samplepath[512] = {'\0'};
+    char              confpath[512] = {'\0'};
+    xsynchrow*        rows = NULL;
+    xsynch_createcmd* createcmd = NULL;
 
     if (cmd == NULL)
     {
@@ -343,29 +325,28 @@ static void xscsci_precommand_create(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     if (XSYNCH_JOBKIND_MANAGER == createcmd->kind)
     {
-        /* 根据模板文件创建xmanager配置文件 */
-        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg",
-                                              xscisc->xsynchhome,
-                                              "config",
-                                              "manager",
-                                              createcmd->name);
-        if(0 == stat(confpath, &st))
+        /* create xmanager config file from template */
+        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config",
+                 "manager", createcmd->name);
+        if (0 == stat(confpath, &st))
         {
             printf("xmanager %s already exists\n", createcmd->name);
-            return ;
+            return;
         }
 
-        snprintf(samplepath, sizeof(samplepath), "%s/%s/%s/%s", xscisc->xsynchhome, "config", "sample", "manager.cfg.sample");
+        snprintf(samplepath, sizeof(samplepath), "%s/%s/%s/%s", xscisc->xsynchhome, "config",
+                 "sample", "manager.cfg.sample");
 
         if (false == xscsci_precommand_createconf_fromsample(samplepath, confpath))
         {
-            printf("Create xmanager:%s configuration file from template file error \n", createcmd->name);
-            return ;
+            printf("Create xmanager:%s configuration file from template file error \n",
+                   createcmd->name);
+            return;
         }
 
         printf("Create xmanager %s\n", createcmd->name);
 
-        return ;
+        return;
     }
 
     if (false == XSynchSendCmd(xscisc->conn, cmd))
@@ -379,14 +360,13 @@ static void xscsci_precommand_create(xsciscistat* xscisc, xsynch_cmd* cmd)
     xscsci_output(rownum, rows);
 
     return;
-
 }
 
 static void xscsci_precommand_alter(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum                  = 0;
-    xsynchrow* rows             = NULL;
-    xsynch_altercmd* altercmd   = NULL;
+    int              rownum = 0;
+    xsynchrow*       rows = NULL;
+    xsynch_altercmd* altercmd = NULL;
 
     if (cmd == NULL)
     {
@@ -418,15 +398,14 @@ static void xscsci_precommand_alter(xsciscistat* xscisc, xsynch_cmd* cmd)
     xscsci_output(rownum, rows);
 
     return;
-
 }
 
 static void xscsci_precommand_remove(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum                      = 0;
-    char confpath[512]              = {'\0'};
-    xsynchrow* rows                 = NULL;
-    xsynch_removecmd* removecmd     = NULL;
+    int               rownum = 0;
+    char              confpath[512] = {'\0'};
+    xsynchrow*        rows = NULL;
+    xsynch_removecmd* removecmd = NULL;
 
     if (cmd == NULL)
     {
@@ -435,8 +414,7 @@ static void xscsci_precommand_remove(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     removecmd = (xsynch_removecmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS == removecmd->kind
-        || XSYNCH_JOBKIND_ALL == removecmd->kind)
+    if (XSYNCH_JOBKIND_PROCESS == removecmd->kind || XSYNCH_JOBKIND_ALL == removecmd->kind)
     {
         printf("Remove not supports all or progress\n");
         return;
@@ -444,19 +422,16 @@ static void xscsci_precommand_remove(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     if (XSYNCH_JOBKIND_MANAGER == removecmd->kind)
     {
-        /* 删除配置文件 */
-        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", 
-                                              xscisc->xsynchhome, 
-                                              "config",
-                                              "manager",
-                                              removecmd->name);
+        /* delete config file */
+        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config",
+                 "manager", removecmd->name);
         if (0 == unlink(confpath))
         {
             printf("Remove xmanager %s\n", removecmd->name);
         }
         else
         {
-             printf(" %s remove failed: %s\n", removecmd->name, strerror(errno));
+            printf(" %s remove failed: %s\n", removecmd->name, strerror(errno));
         }
         return;
     }
@@ -472,14 +447,13 @@ static void xscsci_precommand_remove(xsciscistat* xscisc, xsynch_cmd* cmd)
     xscsci_output(rownum, rows);
 
     return;
-
 }
 
 static void xscsci_precommand_reload(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum                      = 0;
-    xsynchrow* rows                 = NULL;
-    xsynch_reloadcmd* reloadcmd     = NULL;
+    int               rownum = 0;
+    xsynchrow*        rows = NULL;
+    xsynch_reloadcmd* reloadcmd = NULL;
 
     if (cmd == NULL)
     {
@@ -488,8 +462,7 @@ static void xscsci_precommand_reload(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     reloadcmd = (xsynch_reloadcmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS == reloadcmd->kind
-        || XSYNCH_JOBKIND_ALL == reloadcmd->kind)
+    if (XSYNCH_JOBKIND_PROCESS == reloadcmd->kind || XSYNCH_JOBKIND_ALL == reloadcmd->kind)
     {
         printf("Reload not supports all or progress\n");
         return;
@@ -505,16 +478,15 @@ static void xscsci_precommand_reload(xsciscistat* xscisc, xsynch_cmd* cmd)
     xscsci_output(rownum, rows);
 
     return;
-
 }
 
 static void xscsci_precommand_drop(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum                  = 0;
-    xsynchrow* rows             = NULL;
-    xsynch_dropcmd* dropcmd     = NULL;
-    char data[512]              = {'\0'};
-    char confpath[512]          = {'\0'};
+    int             rownum = 0;
+    xsynchrow*      rows = NULL;
+    xsynch_dropcmd* dropcmd = NULL;
+    char            data[512] = {'\0'};
+    char            confpath[512] = {'\0'};
 
     if (cmd == NULL)
     {
@@ -531,12 +503,9 @@ static void xscsci_precommand_drop(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     if (XSYNCH_JOBKIND_MANAGER == dropcmd->kind)
     {
-        /* 删除data目录 */
-        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", 
-                                              xscisc->xsynchhome, 
-                                              "config",
-                                              "manager",
-                                              dropcmd->name);
+        /* delete data directory */
+        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config",
+                 "manager", dropcmd->name);
         xscsci_precommand_getdatafromcfgfile(confpath, "data", data);
 
         if (false == xscsci_precommand_removedir(data))
@@ -545,14 +514,14 @@ static void xscsci_precommand_drop(xsciscistat* xscisc, xsynch_cmd* cmd)
             return;
         }
 
-        /* 删除配置文件 */
+        /* delete config file */
         if (0 == unlink(confpath))
         {
             printf("Drop xmanager %s\n", dropcmd->name);
         }
         else
         {
-             printf(" Drop xmanager %s configure failed: %s\n", dropcmd->name, strerror(errno));
+            printf(" Drop xmanager %s configure failed: %s\n", dropcmd->name, strerror(errno));
         }
         return;
     }
@@ -568,13 +537,12 @@ static void xscsci_precommand_drop(xsciscistat* xscisc, xsynch_cmd* cmd)
     xscsci_output(rownum, rows);
 
     return;
-
 }
 
 static void xscsci_precommand_info(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum                  = 0;
-    xsynchrow* rows             = NULL;
+    int        rownum = 0;
+    xsynchrow* rows = NULL;
 
     if (cmd == NULL)
     {
@@ -600,11 +568,11 @@ static void xscsci_precommand_info(xsciscistat* xscisc, xsynch_cmd* cmd)
     return;
 }
 
-/* refresh 命令 */
+/* refresh command */
 static void xscsci_precommand_refresh(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum                  = 0;
-    xsynchrow* rows             = NULL;
+    int        rownum = 0;
+    xsynchrow* rows = NULL;
 
     if (false == XSynchSendCmd(xscisc->conn, cmd))
     {
@@ -618,11 +586,11 @@ static void xscsci_precommand_refresh(xsciscistat* xscisc, xsynch_cmd* cmd)
     return;
 }
 
-/* list 命令 */
+/* list command */
 static void xscsci_precommand_list(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum                  = 0;
-    xsynchrow* rows             = NULL;
+    int        rownum = 0;
+    xsynchrow* rows = NULL;
 
     if (false == XSynchSendCmd(xscisc->conn, cmd))
     {
@@ -638,9 +606,9 @@ static void xscsci_precommand_list(xsciscistat* xscisc, xsynch_cmd* cmd)
 
 static void xscsci_precommand_watch(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum                  = 0;
-    xsynchrow* rows             = NULL;
-    xsynch_watchcmd* watch      = NULL;
+    int              rownum = 0;
+    xsynchrow*       rows = NULL;
+    xsynch_watchcmd* watch = NULL;
 
     if (cmd == NULL)
     {
@@ -677,18 +645,18 @@ static void xscsci_precommand_watch(xsciscistat* xscisc, xsynch_cmd* cmd)
 
 static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    time_t now;
-    int fd                      = -1;
-    int rownum                  = 0;
-    FILE *fp                    = NULL;
-    struct tm *pcnow            = NULL;
-    xsynchrow* rows             = NULL;
-    xsynch_editcmd* editcmd     = NULL;
-    xsynch_cfgfilecmd cfgcmd    = {{'\0'}};
-    char cfgpath[512]           = {'\0'};
-    char filename[512]          = {'\0'};
-    char confpath[512]          = {'\0'};
-    char syscmd[1024]           = {'\0'};
+    time_t            now;
+    int               fd = -1;
+    int               rownum = 0;
+    FILE*             fp = NULL;
+    struct tm*        pcnow = NULL;
+    xsynchrow*        rows = NULL;
+    xsynch_editcmd*   editcmd = NULL;
+    xsynch_cfgfilecmd cfgcmd = {{'\0'}};
+    char              cfgpath[512] = {'\0'};
+    char              filename[512] = {'\0'};
+    char              confpath[512] = {'\0'};
+    char              syscmd[1024] = {'\0'};
 
     if (cmd == NULL)
     {
@@ -697,8 +665,7 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     editcmd = (xsynch_editcmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS == editcmd->kind
-        || XSYNCH_JOBKIND_ALL == editcmd->kind)
+    if (XSYNCH_JOBKIND_PROCESS == editcmd->kind || XSYNCH_JOBKIND_ALL == editcmd->kind)
     {
         printf("Edit not supports all or progress\n");
         return;
@@ -706,11 +673,8 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     if (XSYNCH_JOBKIND_MANAGER == editcmd->kind)
     {
-        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", 
-                                              xscisc->xsynchhome,
-                                              "config",
-                                              "manager",
-                                              editcmd->name);
+        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config",
+                 "manager", editcmd->name);
         sprintf(syscmd, "vim %s", confpath);
         system(syscmd);
         printf("Edit manager %s\n", editcmd->name);
@@ -725,7 +689,7 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     XSynchGetResult(xscisc->conn, &rownum, &rows);
 
-    /* 出现错误 */
+    /* error occurred */
     if (0 == rownum)
     {
         printf("Edit %s get conf file failed\n", editcmd->name);
@@ -734,30 +698,17 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     time(&now);
     pcnow = localtime(&now);
-    if(pcnow == NULL)
+    if (pcnow == NULL)
     {
         printf("Edit %s get time failed\n", editcmd->name);
         return;
     }
 
-    snprintf(cfgpath, 512, "%s/%s/.%s_%d-%d-%d-%02d%02d%02d.conf",
-                                                xscisc->xsynchhome,
-                                                "config",
-                                                editcmd->name,
-                                                pcnow->tm_year + 1900,
-                                                pcnow->tm_mon + 1,
-                                                pcnow->tm_mday,
-                                                pcnow->tm_hour,
-                                                pcnow->tm_min,
-                                                pcnow->tm_sec);
-    snprintf(filename, 512, "%s_%d-%d-%d-%02d%02d%02d.conf",
-                                                editcmd->name,
-                                                pcnow->tm_year + 1900,
-                                                pcnow->tm_mon + 1,
-                                                pcnow->tm_mday,
-                                                pcnow->tm_hour,
-                                                pcnow->tm_min,
-                                                pcnow->tm_sec);
+    snprintf(cfgpath, 512, "%s/%s/.%s_%d-%d-%d-%02d%02d%02d.conf", xscisc->xsynchhome, "config",
+             editcmd->name, pcnow->tm_year + 1900, pcnow->tm_mon + 1, pcnow->tm_mday,
+             pcnow->tm_hour, pcnow->tm_min, pcnow->tm_sec);
+    snprintf(filename, 512, "%s_%d-%d-%d-%02d%02d%02d.conf", editcmd->name, pcnow->tm_year + 1900,
+             pcnow->tm_mon + 1, pcnow->tm_mday, pcnow->tm_hour, pcnow->tm_min, pcnow->tm_sec);
     fd = open(cfgpath, O_WRONLY | O_CREAT | O_EXCL, 0644);
     if (fd < 0)
     {
@@ -767,13 +718,14 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
     close(fd);
 
     fp = fopen(cfgpath, "wb");
-    if (!fp) 
+    if (!fp)
     {
         printf("Edit %s open file failed %s\n", editcmd->name, strerror(errno));
-        return ;
+        return;
     }
 
-    if (fwrite(rows->columns->value, 1, rows->columns->valuelen, fp) != (size_t)rows->columns->valuelen)
+    if (fwrite(rows->columns->value, 1, rows->columns->valuelen, fp) !=
+        (size_t)rows->columns->valuelen)
     {
         return;
     }
@@ -784,10 +736,10 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
     system(syscmd);
 
     fp = fopen(cfgpath, "rb");
-    if (!fp) 
+    if (!fp)
     {
         printf("Edit %s open file failed %s\n", editcmd->name, strerror(errno));
-        return ;
+        return;
     }
 
     cfgcmd.type.type = T_XSYNCH_CFGfILECMD;
@@ -816,16 +768,15 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
     printf("Edit %s success \n", editcmd->name);
 
     return;
-
 }
 
 static void xscsci_precommand_init(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum = 0;
-    xsynchrow* rows = NULL;
+    int             rownum = 0;
+    xsynchrow*      rows = NULL;
     xsynch_initcmd* initcmd = NULL;
-    char cwd[512]           = {'\0'};
-    char syscmd[1024]       = {'\0'};
+    char            cwd[512] = {'\0'};
+    char            syscmd[1024] = {'\0'};
 
     if (cmd == NULL)
     {
@@ -834,8 +785,7 @@ static void xscsci_precommand_init(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     initcmd = (xsynch_initcmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS == initcmd->kind
-        || XSYNCH_JOBKIND_ALL == initcmd->kind)
+    if (XSYNCH_JOBKIND_PROCESS == initcmd->kind || XSYNCH_JOBKIND_ALL == initcmd->kind)
     {
         printf("Init not supports all or progress\n");
         return;
@@ -843,19 +793,15 @@ static void xscsci_precommand_init(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     if (XSYNCH_JOBKIND_MANAGER == initcmd->kind)
     {
-        /* system 初始化xmanager */
+        /* system initialize xmanager */
 
         if (getcwd(cwd, sizeof(cwd)) == NULL)
         {
             printf("Init xmanager %s getcwd failed \n", initcmd->name);
             return;
         }
-        snprintf(syscmd, sizeof(syscmd), "%s/xmanager -f  %s/%s/%s_%s.cfg init", 
-                                          cwd,
-                                          xscisc->xsynchhome,
-                                          "config",
-                                          "manager",
-                                          initcmd->name);
+        snprintf(syscmd, sizeof(syscmd), "%s/xmanager -f  %s/%s/%s_%s.cfg init", cwd,
+                 xscisc->xsynchhome, "config", "manager", initcmd->name);
         if (0 == system(syscmd))
         {
             printf("Init xmanager %s\n", initcmd->name);
@@ -874,16 +820,15 @@ static void xscsci_precommand_init(xsciscistat* xscisc, xsynch_cmd* cmd)
     xscsci_output(rownum, rows);
 
     return;
-
 }
 
 static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum                  = 0;
-    xsynchrow* rows             = NULL;
-    xsynch_startcmd* startcmd   = NULL;
-    char cwd[512]               = {'\0'};
-    char syscmd[1024]           = {'\0'};
+    int              rownum = 0;
+    xsynchrow*       rows = NULL;
+    xsynch_startcmd* startcmd = NULL;
+    char             cwd[512] = {'\0'};
+    char             syscmd[1024] = {'\0'};
 
     if (cmd == NULL)
     {
@@ -900,18 +845,14 @@ static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     if (XSYNCH_JOBKIND_MANAGER == startcmd->kind)
     {
-        /* system 启动xmanager */
+        /* system start xmanager */
         if (getcwd(cwd, sizeof(cwd)) == NULL)
         {
             printf("start xmanager %s getcwd failed \n", startcmd->name);
             return;
         }
-        snprintf(syscmd, sizeof(syscmd), "%s/xmanager -f  %s/%s/%s_%s.cfg start", 
-                                          cwd,
-                                          xscisc->xsynchhome,
-                                          "config",
-                                          "manager",
-                                          startcmd->name);
+        snprintf(syscmd, sizeof(syscmd), "%s/xmanager -f  %s/%s/%s_%s.cfg start", cwd,
+                 xscisc->xsynchhome, "config", "manager", startcmd->name);
         if (0 == system(syscmd))
         {
             printf("start xmanager %s\n", startcmd->name);
@@ -925,12 +866,8 @@ static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
             printf("start xmanager %s getcwd failed \n", startcmd->name);
             return;
         }
-        snprintf(syscmd, sizeof(syscmd), "%s/xmanager -f  %s/%s/%s_%s.cfg start", 
-                                          cwd,
-                                          xscisc->xsynchhome,
-                                          "config",
-                                          "manager",
-                                          startcmd->name);
+        snprintf(syscmd, sizeof(syscmd), "%s/xmanager -f  %s/%s/%s_%s.cfg start", cwd,
+                 xscisc->xsynchhome, "config", "manager", startcmd->name);
         if (0 == system(syscmd))
         {
             printf("start xmanager %s\n", startcmd->name);
@@ -948,14 +885,13 @@ static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
     xscsci_output(rownum, rows);
 
     return;
-
 }
 
 static void xscsci_precommand_stop(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    int rownum                  = 0;
-    xsynchrow* rows             = NULL;
-    xsynch_stopcmd* stopcmd     = NULL;
+    int             rownum = 0;
+    xsynchrow*      rows = NULL;
+    xsynch_stopcmd* stopcmd = NULL;
 
     if (cmd == NULL)
     {
@@ -983,109 +919,38 @@ static void xscsci_precommand_stop(xsciscistat* xscisc, xsynch_cmd* cmd)
     return;
 }
 
-static xscsci_precommandops m_precommandops[] =
-{
-    {
-        T_XSYNCH_NOP,
-        "NOP",
-        NULL
-    },
-    {
-        T_XSYNCH_IDENTITYCMD,
-        "IDENTITY COMMAND",
-        NULL
-    },
-    {
-        T_XSYNCH_CREATECMD,
-        "CREATE COMMAND",
-        xscsci_precommand_create
-    },
-    {
-        T_XSYNCH_ALTERCMD,
-        "ALTER COMMAND",
-        xscsci_precommand_alter
-    },
-    {
-        T_XSYNCH_REMOVECMD,
-        "REMOVE COMMAND",
-        xscsci_precommand_remove
-    },
-    {
-        T_XSYNCH_DROPCMD,
-        "DROP COMMAND",
-        xscsci_precommand_drop
-    },
-    {
-        T_XSYNCH_INITCMD,
-        "INIT COMMAND",
-        xscsci_precommand_init
-    },
-    {
-        T_XSYNCH_EDITCMD,
-        "EDIT COMMAND",
-        xscsci_precommand_edit
-    },
-    {
-        T_XSYNCH_STARTCMD,
-        "START COMMAND",
-        xscsci_precommand_start
-    },
-    {
-        T_XSYNCH_STOPCMD,
-        "STOP COMMAND",
-        xscsci_precommand_stop
-    },
-    {
-        T_XSYNCH_RELOADCMD,
-        "RELOAD COMMAND",
-        xscsci_precommand_reload
-    },
-    {
-        T_XSYNCH_INFOCMD,
-        "INFO COMMAND",
-        xscsci_precommand_info
-    },
-    {
-        T_XSYNCH_WATCHCMD,
-        "WATCH COMMAND",
-        xscsci_precommand_watch
-    },
-    {
-        T_XSYNCH_CFGfILECMD,
-        "never trigger",
-        NULL
-    },
-    {
-        T_XSYNCH_REFRESHCMD,
-        "REFRESH COMMAND",
-        xscsci_precommand_refresh
-    },
-    {
-        T_XSYNCH_LISTCMD,
-        "LIST COMMAND",
-        xscsci_precommand_list
-    },
-    {
-        T_XSYNCH_MAX,
-        "MAX COMMAND",
-        NULL
-    }
-};
+static xscsci_precommandops m_precommandops[] = {
+    {T_XSYNCH_NOP, "NOP", NULL},
+    {T_XSYNCH_IDENTITYCMD, "IDENTITY COMMAND", NULL},
+    {T_XSYNCH_CREATECMD, "CREATE COMMAND", xscsci_precommand_create},
+    {T_XSYNCH_ALTERCMD, "ALTER COMMAND", xscsci_precommand_alter},
+    {T_XSYNCH_REMOVECMD, "REMOVE COMMAND", xscsci_precommand_remove},
+    {T_XSYNCH_DROPCMD, "DROP COMMAND", xscsci_precommand_drop},
+    {T_XSYNCH_INITCMD, "INIT COMMAND", xscsci_precommand_init},
+    {T_XSYNCH_EDITCMD, "EDIT COMMAND", xscsci_precommand_edit},
+    {T_XSYNCH_STARTCMD, "START COMMAND", xscsci_precommand_start},
+    {T_XSYNCH_STOPCMD, "STOP COMMAND", xscsci_precommand_stop},
+    {T_XSYNCH_RELOADCMD, "RELOAD COMMAND", xscsci_precommand_reload},
+    {T_XSYNCH_INFOCMD, "INFO COMMAND", xscsci_precommand_info},
+    {T_XSYNCH_WATCHCMD, "WATCH COMMAND", xscsci_precommand_watch},
+    {T_XSYNCH_CFGfILECMD, "never trigger", NULL},
+    {T_XSYNCH_REFRESHCMD, "REFRESH COMMAND", xscsci_precommand_refresh},
+    {T_XSYNCH_LISTCMD, "LIST COMMAND", xscsci_precommand_list},
+    {T_XSYNCH_MAX, "MAX COMMAND", NULL}};
 
 void xscsci_precommand(xsciscistat* xscisc, xsynch_cmd* cmd)
 {
-    if(T_XSYNCH_MAX < cmd->type)
+    if (T_XSYNCH_MAX < cmd->type)
     {
         printf("precommand unknown cmd type %d\n", cmd->type);
         return;
     }
 
-    if(NULL == m_precommandops[cmd->type].func)
+    if (NULL == m_precommandops[cmd->type].func)
     {
         printf("precommand unsupport %s\n", m_precommandops[cmd->type].desc);
-        return ;
+        return;
     }
 
     return m_precommandops[cmd->type].func(xscisc, cmd);
-
 }

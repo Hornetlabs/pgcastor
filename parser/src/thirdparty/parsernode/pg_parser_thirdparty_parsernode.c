@@ -16,46 +16,46 @@
 #define PARSERNODE_MCXT NULL
 #define PRETTYFLAG_INDENT 0x0002
 #define RIGHT_PAREN (1000000 + 1)
-#define LEFT_PAREN  (1000000 + 2)
-#define LEFT_BRACE  (1000000 + 3)
+#define LEFT_PAREN (1000000 + 2)
+#define LEFT_BRACE (1000000 + 3)
 #define OTHER_TOKEN (1000000 + 4)
-/* 函数声明 */
-static pg_parser_nodetree *pg_parser_get_expr_worker(char *expr, int32_t prettyFlags, pg_parser_translog_convertinfo_with_zic *zicinfo);
-static void *stringToNode(const char *str, int16_t dbtype, char *dbversion);
-static void *stringToNodeInternal(const char *str, int16_t dbtype, char *dbversion);
-static void *nodeRead(const char *token, int32_t tok_len, char **strtok_ptr, int16_t dbtype, char *dbversion);
-static const char *pg_parser_strtok(int32_t *length, char **strtok_ptr);
-static pg_parser_NodeTag nodeTokenType(const char *token, int32_t length);
-static pg_parser_Value *makeInteger(int32_t i);
-static pg_parser_Value *makeFloat(char *numericStr);
-static pg_parser_Value *makeString(char *str);
-static char *debackslash(const char *token, int32_t length);
-static pg_parser_Node *parseNodeString(char **strtok_ptr, int16_t dbtype, char *dbversion);
-static pg_parser_Datum readDatum(bool typbyval, char** strtok_ptr, bool *need_free);
-static pg_parser_AttrNumber *readAttrNumberCols(int32_t numCols, char **strtok_ptr);
-static uint32_t *readOidCols(int32_t numCols, char **strtok_ptr);
-static int32_t *readIntCols(int32_t numCols, char **strtok_ptr);
-static bool *readBoolCols(int32_t numCols, char **strtok_ptr);
-static void ReadCommonScan(pg_parser_Scan *local_node, char**strtok_ptr, int16_t dbtype, char *dbversion);
+/* Function declaration */
+static pg_parser_nodetree* pg_parser_get_expr_worker(
+    char* expr, int32_t prettyFlags, pg_parser_translog_convertinfo_with_zic* zicinfo);
+static void*       stringToNode(const char* str, int16_t dbtype, char* dbversion);
+static void*       stringToNodeInternal(const char* str, int16_t dbtype, char* dbversion);
+static void*       nodeRead(const char* token, int32_t tok_len, char** strtok_ptr, int16_t dbtype,
+                            char* dbversion);
+static const char* pg_parser_strtok(int32_t* length, char** strtok_ptr);
+static pg_parser_NodeTag     nodeTokenType(const char* token, int32_t length);
+static pg_parser_Value*      makeInteger(int32_t i);
+static pg_parser_Value*      makeFloat(char* numericStr);
+static pg_parser_Value*      makeString(char* str);
+static char*                 debackslash(const char* token, int32_t length);
+static pg_parser_Node*       parseNodeString(char** strtok_ptr, int16_t dbtype, char* dbversion);
+static pg_parser_Datum       readDatum(bool typbyval, char** strtok_ptr, bool* need_free);
+static pg_parser_AttrNumber* readAttrNumberCols(int32_t numCols, char** strtok_ptr);
+static uint32_t*             readOidCols(int32_t numCols, char** strtok_ptr);
+static int32_t*              readIntCols(int32_t numCols, char** strtok_ptr);
+static bool*                 readBoolCols(int32_t numCols, char** strtok_ptr);
+static void ReadCommonScan(pg_parser_Scan* local_node, char** strtok_ptr, int16_t dbtype,
+                           char* dbversion);
 
-
-pg_parser_nodetree *pg_parser_get_expr(char *expr, pg_parser_translog_convertinfo_with_zic *zicinfo)
+pg_parser_nodetree* pg_parser_get_expr(char* expr, pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
-    int32_t         prettyFlags = PRETTYFLAG_INDENT;
-    pg_parser_nodetree *result = pg_parser_get_expr_worker(expr, prettyFlags, zicinfo);
+    int32_t             prettyFlags = PRETTYFLAG_INDENT;
+    pg_parser_nodetree* result = pg_parser_get_expr_worker(expr, prettyFlags, zicinfo);
     if (NULL == result)
+    {
         return NULL;
+    }
     return result;
 }
 
 #define WRAP_COLUMN_DEFAULT 0
-static pg_parser_nodetree *deparse_expression_pretty(pg_parser_Node *expr,
-                                       pg_parser_List *dpcontext,
-                                       bool forceprefix,
-                                       bool showimplicit,
-                                       int32_t prettyFlags,
-                                       int32_t startIndent,
-                                       pg_parser_translog_convertinfo_with_zic *zicinfo)
+static pg_parser_nodetree* deparse_expression_pretty(
+    pg_parser_Node* expr, pg_parser_List* dpcontext, bool forceprefix, bool showimplicit,
+    int32_t prettyFlags, int32_t startIndent, pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
     pg_parser_deparse_context context;
 
@@ -71,11 +71,11 @@ static pg_parser_nodetree *deparse_expression_pretty(pg_parser_Node *expr,
     context.nodetree = NULL;
     if (!get_rule_expr(expr, &context, showimplicit))
     {
-        /* 清理 */
+        /* Cleanup */
         if (context.nodetree)
         {
-            pg_parser_nodetree *nodetree = context.nodetree;
-            pg_parser_nodetree *nodetree_now = nodetree;
+            pg_parser_nodetree* nodetree = context.nodetree;
+            pg_parser_nodetree* nodetree_now = nodetree;
             while (nodetree)
             {
                 nodetree_now = nodetree;
@@ -88,28 +88,34 @@ static pg_parser_nodetree *deparse_expression_pretty(pg_parser_Node *expr,
                         {
                             case PG_PARSER_NODETYPE_CONST:
                             {
-                                pg_parser_node_const *node_const =
-                                    (pg_parser_node_const *)nodetree_now->m_node;
+                                pg_parser_node_const* node_const =
+                                    (pg_parser_node_const*)nodetree_now->m_node;
                                 if (node_const->m_char_value)
+                                {
                                     pg_parser_mcxt_free(NODE_MCXT, node_const->m_char_value);
+                                }
                                 pg_parser_mcxt_free(NODE_MCXT, nodetree_now->m_node);
                                 break;
                             }
                             case PG_PARSER_NODETYPE_FUNC:
                             {
-                                pg_parser_node_func *node_func =
-                                    (pg_parser_node_func *)nodetree_now->m_node;
+                                pg_parser_node_func* node_func =
+                                    (pg_parser_node_func*)nodetree_now->m_node;
                                 if (node_func->m_funcname)
+                                {
                                     pg_parser_mcxt_free(NODE_MCXT, node_func->m_funcname);
+                                }
                                 pg_parser_mcxt_free(NODE_MCXT, nodetree_now->m_node);
                                 break;
                             }
                             case PG_PARSER_NODETYPE_OP:
                             {
-                                pg_parser_node_op *node_op =
-                                    (pg_parser_node_op *)nodetree_now->m_node;
+                                pg_parser_node_op* node_op =
+                                    (pg_parser_node_op*)nodetree_now->m_node;
                                 if (node_op->m_opname)
+                                {
                                     pg_parser_mcxt_free(NODE_MCXT, node_op->m_opname);
+                                }
                                 pg_parser_mcxt_free(NODE_MCXT, nodetree_now->m_node);
                                 break;
                             }
@@ -128,35 +134,37 @@ static pg_parser_nodetree *deparse_expression_pretty(pg_parser_Node *expr,
     return context.nodetree;
 }
 
-static pg_parser_nodetree *pg_parser_get_expr_worker(char *expr, int32_t prettyFlags, pg_parser_translog_convertinfo_with_zic *zicinfo)
+static pg_parser_nodetree* pg_parser_get_expr_worker(
+    char* expr, int32_t prettyFlags, pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
-    pg_parser_Node       *node;
-    pg_parser_nodetree   *result = NULL;
+    pg_parser_Node*     node;
+    pg_parser_nodetree* result = NULL;
 
     /* Convert expression to node tree */
-    node = (pg_parser_Node *) stringToNode(expr, zicinfo->dbtype, zicinfo->dbversion);
+    node = (pg_parser_Node*)stringToNode(expr, zicinfo->dbtype, zicinfo->dbversion);
 
     if (NULL == node)
+    {
         return NULL;
+    }
     /* Deparse */
-    result = deparse_expression_pretty(node, NIL, false, false,
-                                    prettyFlags, 0, zicinfo);
+    result = deparse_expression_pretty(node, NIL, false, false, prettyFlags, 0, zicinfo);
 
-    /* node已经边解析边释放了 */
+    /* node has been released while parsing */
     return result;
 }
 
-static void *stringToNode(const char *str, int16_t dbtype, char *dbversion)
+static void* stringToNode(const char* str, int16_t dbtype, char* dbversion)
 {
     return stringToNodeInternal(str, dbtype, dbversion);
 }
 
-static void *stringToNodeInternal(const char *str, int16_t dbtype, char *dbversion)
+static void* stringToNodeInternal(const char* str, int16_t dbtype, char* dbversion)
 {
-    void       *retval;
-    char       *strtok_ptr;
+    void* retval;
+    char* strtok_ptr;
 
-    strtok_ptr = (char*)str;        /* point pg_parser_strtok at the string to read */
+    strtok_ptr = (char*)str; /* point pg_parser_strtok at the string to read */
 
     /*
      * If enabled, likewise save/restore the location field handling flag.
@@ -167,11 +175,11 @@ static void *stringToNodeInternal(const char *str, int16_t dbtype, char *dbversi
     return retval;
 }
 
-static pg_parser_NodeTag nodeTokenType(const char *token, int32_t length)
+static pg_parser_NodeTag nodeTokenType(const char* token, int32_t length)
 {
-    pg_parser_NodeTag        retval;
-    const char *numptr;
-    int32_t            numlen;
+    pg_parser_NodeTag retval;
+    const char*       numptr;
+    int32_t           numlen;
 
     /*
      * Check if the token is a number
@@ -179,9 +187,11 @@ static pg_parser_NodeTag nodeTokenType(const char *token, int32_t length)
     numptr = token;
     numlen = length;
     if (*numptr == '+' || *numptr == '-')
+    {
         numptr++, numlen--;
-    if ((numlen > 0 && isdigit((unsigned char) *numptr)) ||
-        (numlen > 1 && *numptr == '.' && isdigit((unsigned char) numptr[1])))
+    }
+    if ((numlen > 0 && isdigit((unsigned char)*numptr)) ||
+        (numlen > 1 && *numptr == '.' && isdigit((unsigned char)numptr[1])))
     {
         /*
          * Yes.  Figure out whether it is integral or float; this requires
@@ -189,12 +199,14 @@ static pg_parser_NodeTag nodeTokenType(const char *token, int32_t length)
          * us. We know the token will end at a character that strtoint will
          * stop at, so we do not need to modify the string.
          */
-        char       *endptr;
+        char* endptr;
 
         errno = 0;
-        (void) strtoint(token, &endptr, 10);
+        (void)strtoint(token, &endptr, 10);
         if (endptr != token + length || errno == ERANGE)
+        {
             return T_pg_parser_Float;
+        }
         return T_pg_parser_Integer;
     }
 
@@ -203,17 +215,29 @@ static pg_parser_NodeTag nodeTokenType(const char *token, int32_t length)
      * always treat them as single-byte tokens
      */
     else if (*token == '(')
+    {
         retval = LEFT_PAREN;
+    }
     else if (*token == ')')
+    {
         retval = RIGHT_PAREN;
+    }
     else if (*token == '{')
+    {
         retval = LEFT_BRACE;
+    }
     else if (*token == '"' && length > 1 && token[length - 1] == '"')
+    {
         retval = T_pg_parser_String;
+    }
     else if (*token == 'b')
+    {
         retval = T_pg_parser_BitString;
+    }
     else
+    {
         retval = OTHER_TOKEN;
+    }
     return retval;
 }
 
@@ -222,31 +246,34 @@ static pg_parser_NodeTag nodeTokenType(const char *token, int32_t length)
  *
  * Caller is responsible for passing a palloc'd string.
  */
-static pg_parser_Value *makeBitString(char *str)
+static pg_parser_Value* makeBitString(char* str)
 {
-    pg_parser_Value       *v = pg_parser_makeNode(pg_parser_Value);
+    pg_parser_Value* v = pg_parser_makeNode(pg_parser_Value);
 
     v->type = T_pg_parser_BitString;
     v->val.str = str;
     return v;
 }
 
-static void *nodeRead(const char *token, int32_t tok_len, char **strtok_ptr, int16_t dbtype, char *dbversion)
+static void* nodeRead(const char* token, int32_t tok_len, char** strtok_ptr, int16_t dbtype,
+                      char* dbversion)
 {
-    pg_parser_Node       *result;
-    pg_parser_NodeTag     type;
+    pg_parser_Node*   result;
+    pg_parser_NodeTag type;
 
-    if (token == NULL)            /* need to read a token? */
+    if (token == NULL) /* need to read a token? */
     {
         token = pg_parser_strtok(&tok_len, strtok_ptr);
 
-        if (token == NULL)        /* end of input */
+        if (token == NULL) /* end of input */
+        {
             return NULL;
+        }
     }
 
     type = nodeTokenType(token, tok_len);
 
-    switch ((int32_t) type)
+    switch ((int32_t)type)
     {
         case LEFT_BRACE:
             result = parseNodeString(strtok_ptr, dbtype, dbversion);
@@ -258,84 +285,101 @@ static void *nodeRead(const char *token, int32_t tok_len, char **strtok_ptr, int
             }
             break;
         case LEFT_PAREN:
+        {
+            pg_parser_List* l = NIL;
+
+            /*----------
+             * Could be an integer list:    (i int32_t int32_t ...)
+             * or an OID list:                (o int32_t int32_t ...)
+             * or a list of nodes/values:    (node node ...)
+             *----------
+             */
+            token = pg_parser_strtok(&tok_len, strtok_ptr);
+            if (token == NULL)
             {
-                pg_parser_List       *l = NIL;
-
-                /*----------
-                 * Could be an integer list:    (i int32_t int32_t ...)
-                 * or an OID list:                (o int32_t int32_t ...)
-                 * or a list of nodes/values:    (node node ...)
-                 *----------
-                 */
-                token = pg_parser_strtok(&tok_len, strtok_ptr);
-                if (token == NULL)
-                    return NULL;
-                if (tok_len == 1 && token[0] == 'i')
-                {
-                    /* List of integers */
-                    for (;;)
-                    {
-                        int32_t    val;
-                        char       *endptr;
-
-                        token = pg_parser_strtok(&tok_len, strtok_ptr);
-                        if (token == NULL)
-                            return NULL;
-                        if (token[0] == ')')
-                            break;
-                        val = (int32_t) strtol(token, &endptr, 10);
-                        if (endptr != token + tok_len)
-                            return NULL;
-                        l = pg_parser_list_lappend_int(l, val);
-                    }
-                }
-                else if (tok_len == 1 && token[0] == 'o')
-                {
-                    /* List of OIDs */
-                    for (;;)
-                    {
-                        uint32_t    val;
-                        char       *endptr;
-
-                        token = pg_parser_strtok(&tok_len, strtok_ptr);
-                        if (token == NULL)
-                            return NULL;
-                        if (token[0] == ')')
-                            break;
-                        val = (uint32_t) strtoul(token, &endptr, 10);
-                        if (endptr != token + tok_len)
-                            return NULL;
-                        l = pg_parser_list_lappend_oid(l, val);
-                    }
-                }
-                else
-                {
-                    /* List of other node types */
-                    for (;;)
-                    {
-                        /* We have already scanned next token... */
-                        if (token[0] == ')')
-                            break;
-                        l = pg_parser_list_lappend(l, nodeRead(token, tok_len, strtok_ptr, dbtype, dbversion));
-                        token = pg_parser_strtok(&tok_len, strtok_ptr);
-                        if (token == NULL)
-                        {
-                            pg_parser_ListCell *cell = NULL;
-                            pg_parser_foreach(cell, l)
-                            {
-                                void *ptr = (void *)pg_parser_lfirst(cell);
-                                pg_parser_mcxt_free(NODE_MCXT, ptr);
-                            }
-                            pg_parser_list_free(l);
-                            return NULL;
-                        }
-                    }
-                }
-                result = (pg_parser_Node *) l;
-                break;
+                return NULL;
             }
+            if (tok_len == 1 && token[0] == 'i')
+            {
+                /* List of integers */
+                for (;;)
+                {
+                    int32_t val;
+                    char*   endptr;
+
+                    token = pg_parser_strtok(&tok_len, strtok_ptr);
+                    if (token == NULL)
+                    {
+                        return NULL;
+                    }
+                    if (token[0] == ')')
+                    {
+                        break;
+                    }
+                    val = (int32_t)strtol(token, &endptr, 10);
+                    if (endptr != token + tok_len)
+                    {
+                        return NULL;
+                    }
+                    l = pg_parser_list_lappend_int(l, val);
+                }
+            }
+            else if (tok_len == 1 && token[0] == 'o')
+            {
+                /* List of OIDs */
+                for (;;)
+                {
+                    uint32_t val;
+                    char*    endptr;
+
+                    token = pg_parser_strtok(&tok_len, strtok_ptr);
+                    if (token == NULL)
+                    {
+                        return NULL;
+                    }
+                    if (token[0] == ')')
+                    {
+                        break;
+                    }
+                    val = (uint32_t)strtoul(token, &endptr, 10);
+                    if (endptr != token + tok_len)
+                    {
+                        return NULL;
+                    }
+                    l = pg_parser_list_lappend_oid(l, val);
+                }
+            }
+            else
+            {
+                /* List of other node types */
+                for (;;)
+                {
+                    /* We have already scanned next token... */
+                    if (token[0] == ')')
+                    {
+                        break;
+                    }
+                    l = pg_parser_list_lappend(
+                        l, nodeRead(token, tok_len, strtok_ptr, dbtype, dbversion));
+                    token = pg_parser_strtok(&tok_len, strtok_ptr);
+                    if (token == NULL)
+                    {
+                        pg_parser_ListCell* cell = NULL;
+                        pg_parser_foreach(cell, l)
+                        {
+                            void* ptr = (void*)pg_parser_lfirst(cell);
+                            pg_parser_mcxt_free(NODE_MCXT, ptr);
+                        }
+                        pg_parser_list_free(l);
+                        return NULL;
+                    }
+                }
+            }
+            result = (pg_parser_Node*)l;
+            break;
+        }
         case RIGHT_PAREN:
-            result = NULL;        /* keep compiler happy */
+            result = NULL; /* keep compiler happy */
             break;
         case OTHER_TOKEN:
             if (tok_len == 0)
@@ -345,7 +389,7 @@ static void *nodeRead(const char *token, int32_t tok_len, char **strtok_ptr, int
             }
             else
             {
-                result = NULL;    /* keep compiler happy */
+                result = NULL; /* keep compiler happy */
             }
             break;
         case T_pg_parser_Integer:
@@ -353,64 +397,65 @@ static void *nodeRead(const char *token, int32_t tok_len, char **strtok_ptr, int
             /*
              * we know that the token terminates on a char atoi will stop at
              */
-            result = (pg_parser_Node *) makeInteger(atoi(token));
+            result = (pg_parser_Node*)makeInteger(atoi(token));
             break;
         case T_pg_parser_Float:
+        {
+            char* fval = NULL;
+
+            if (!pg_parser_mcxt_malloc(PARSERNODE_MCXT, (void**)&fval, tok_len + 1))
             {
-                char       *fval = NULL;
-
-                if(!pg_parser_mcxt_malloc(PARSERNODE_MCXT,
-                                                 (void **)&fval,
-                                                  tok_len + 1))
-                    return NULL;
-
-
-                rmemcpy0(fval, 0, token, tok_len);
-                fval[tok_len] = '\0';
-                result = (pg_parser_Node *) makeFloat(fval);
+                return NULL;
             }
-            break;
+
+            rmemcpy0(fval, 0, token, tok_len);
+            fval[tok_len] = '\0';
+            result = (pg_parser_Node*)makeFloat(fval);
+        }
+        break;
         case T_pg_parser_String:
             /* need to remove leading and trailing quotes, and backslashes */
-            result = (pg_parser_Node *) makeString(debackslash(token + 1, tok_len - 2));
+            result = (pg_parser_Node*)makeString(debackslash(token + 1, tok_len - 2));
             break;
         case T_pg_parser_BitString:
-            {
-                char       *val = NULL;
+        {
+            char* val = NULL;
 
-                if(!pg_parser_mcxt_malloc(PARSERNODE_MCXT,
-                                                 (void **)&val,
-                                                  tok_len))
-                    return NULL;
-                /* skip leading 'b' */
-                rmemcpy0(val, 0, token + 1, tok_len - 1);
-                val[tok_len - 1] = '\0';
-                result = (pg_parser_Node *) makeBitString(val);
-                break;
+            if (!pg_parser_mcxt_malloc(PARSERNODE_MCXT, (void**)&val, tok_len))
+            {
+                return NULL;
             }
+            /* skip leading 'b' */
+            rmemcpy0(val, 0, token + 1, tok_len - 1);
+            val[tok_len - 1] = '\0';
+            result = (pg_parser_Node*)makeBitString(val);
+            break;
+        }
         default:
-            result = NULL;        /* keep compiler happy */
+            result = NULL; /* keep compiler happy */
             break;
     }
 
-    return (void *) result;
+    return (void*)result;
 }
 
-static const char *pg_parser_strtok(int32_t *length, char **strtok_ptr)
+static const char* pg_parser_strtok(int32_t* length, char** strtok_ptr)
 {
-    const char *local_str;        /* working pointer to string */
-    const char *ret_str;          /* start of token to return */
+    const char* local_str; /* working pointer to string */
+    const char* ret_str;   /* start of token to return */
 
     local_str = *strtok_ptr;
 
     while (*local_str == ' ' || *local_str == '\n' || *local_str == '\t')
+    {
         local_str++;
+    }
 
     if (*local_str == '\0')
     {
         *length = 0;
         *strtok_ptr = (char*)local_str;
-        return NULL;            /* no more tokens */
+        return NULL; /* no more tokens */
     }
 
     /*
@@ -418,8 +463,7 @@ static const char *pg_parser_strtok(int32_t *length, char **strtok_ptr)
      */
     ret_str = local_str;
 
-    if (*local_str == '(' || *local_str == ')' ||
-        *local_str == '{' || *local_str == '}')
+    if (*local_str == '(' || *local_str == ')' || *local_str == '{' || *local_str == '}')
     {
         /* special 1-character token */
         local_str++;
@@ -427,16 +471,18 @@ static const char *pg_parser_strtok(int32_t *length, char **strtok_ptr)
     else
     {
         /* Normal token, possibly containing backslashes */
-        while (*local_str != '\0' &&
-               *local_str != ' ' && *local_str != '\n' &&
-               *local_str != '\t' &&
-               *local_str != '(' && *local_str != ')' &&
-               *local_str != '{' && *local_str != '}')
+        while (*local_str != '\0' && *local_str != ' ' && *local_str != '\n' &&
+               *local_str != '\t' && *local_str != '(' && *local_str != ')' && *local_str != '{' &&
+               *local_str != '}')
         {
             if (*local_str == '\\' && local_str[1] != '\0')
+            {
                 local_str += 2;
+            }
             else
+            {
                 local_str++;
+            }
         }
     }
 
@@ -444,55 +490,57 @@ static const char *pg_parser_strtok(int32_t *length, char **strtok_ptr)
 
     /* Recognize special case for "empty" token */
     if (*length == 2 && ret_str[0] == '<' && ret_str[1] == '>')
+    {
         *length = 0;
+    }
 
     *strtok_ptr = (char*)local_str;
 
     return ret_str;
 }
 
-static pg_parser_Value *makeInteger(int32_t i)
+static pg_parser_Value* makeInteger(int32_t i)
 {
-    pg_parser_Value *v = pg_parser_makeNode(pg_parser_Value);
+    pg_parser_Value* v = pg_parser_makeNode(pg_parser_Value);
 
     v->type = T_pg_parser_Integer;
     v->val.ival = i;
     return v;
 }
 
-static pg_parser_Value *makeFloat(char *numericStr)
+static pg_parser_Value* makeFloat(char* numericStr)
 {
-    pg_parser_Value *v = pg_parser_makeNode(pg_parser_Value);
+    pg_parser_Value* v = pg_parser_makeNode(pg_parser_Value);
 
     v->type = T_pg_parser_Float;
     v->val.str = numericStr;
     return v;
 }
 
-static pg_parser_Value *makeString(char *str)
+static pg_parser_Value* makeString(char* str)
 {
-    pg_parser_Value *v = pg_parser_makeNode(pg_parser_Value);
+    pg_parser_Value* v = pg_parser_makeNode(pg_parser_Value);
 
     v->type = T_pg_parser_String;
     v->val.str = str;
     return v;
 }
 
-static char *debackslash(const char *token, int32_t length)
+static char* debackslash(const char* token, int32_t length)
 {
-    char       *result = NULL;
-    char       *ptr = NULL;
+    char* result = NULL;
+    char* ptr = NULL;
 
-    pg_parser_mcxt_malloc(PARSERNODE_MCXT,
-                                     (void **)&result,
-                                      length + 1);
+    pg_parser_mcxt_malloc(PARSERNODE_MCXT, (void**)&result, length + 1);
 
     ptr = result;
 
     while (length > 0)
     {
         if (*token == '\\' && length > 1)
+        {
             token++, length--;
+        }
         *ptr++ = *token++;
         length--;
     }
@@ -502,153 +550,150 @@ static char *debackslash(const char *token, int32_t length)
 
 /* --------------------------- readfunc --------------------------- */
 
-#define atoui(x)  ((unsigned int) strtoul((x), NULL, 10))
-#define atooid(x) ((uint32_t) strtoul((x), NULL, 10))
-#define strtobool(x)  ((*(x) == 't') ? true : false)
-#define nullable_string(token,length)  \
-    ((length) == 0 ? NULL : debackslash(token, length))
+#define atoui(x) ((unsigned int)strtoul((x), NULL, 10))
+#define atooid(x) ((uint32_t)strtoul((x), NULL, 10))
+#define strtobool(x) ((*(x) == 't') ? true : false)
+#define nullable_string(token, length) ((length) == 0 ? NULL : debackslash(token, length))
 
 /* A few guys need only local_node */
 #define READ_LOCALS_NO_FIELDS(nodeTypeName) \
-    nodeTypeName *local_node = pg_parser_makeNode(nodeTypeName)
+    nodeTypeName* local_node = pg_parser_makeNode(nodeTypeName)
 
 /* And a few guys need only the pg_parser_strtok support fields */
-#define READ_TEMP_LOCALS()    \
-    const char *token;        \
-    int32_t            length
+#define READ_TEMP_LOCALS() \
+    const char* token;     \
+    int32_t     length
 
 /* ... but most need both */
-#define READ_LOCALS(nodeTypeName)            \
-    READ_LOCALS_NO_FIELDS(nodeTypeName);    \
+#define READ_LOCALS(nodeTypeName)        \
+    READ_LOCALS_NO_FIELDS(nodeTypeName); \
     READ_TEMP_LOCALS()
 
 /* Read an integer field (anything written as ":fldname %d") */
-#define READ_INT_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define READ_INT_FIELD(fldname)                                          \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */ \
     local_node->fldname = atoi(token)
 
 /* Read an unsigned integer field (anything written as ":fldname %u") */
-#define READ_UINT_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define READ_UINT_FIELD(fldname)                                         \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */ \
     local_node->fldname = atoui(token)
 
 /* Read an unsigned integer field (anything written using UINT64_FORMAT) */
-#define READ_UINT64_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define READ_UINT64_FIELD(fldname)                                       \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */ \
     local_node->fldname = strtoul(token, NULL, 10)
 
 /* Read a long integer field (anything written as ":fldname %ld") */
-#define READ_LONG_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define READ_LONG_FIELD(fldname)                                         \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */ \
     local_node->fldname = atol(token)
 
 /* Read an OID field (don't hard-wire assumption that OID is same as uint) */
-#define READ_OID_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define READ_OID_FIELD(fldname)                                          \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */ \
     local_node->fldname = atooid(token)
 
-#define SKIP_OID_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define SKIP_OID_FIELD(fldname)                                        \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */ \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */
 
-#define SKIP_INT_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define SKIP_INT_FIELD(fldname)                                        \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */ \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */
 
 /* Read a char field (ie, one ascii character) */
-#define READ_CHAR_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
-    /* avoid overhead of calling debackslash() for one char */ \
+#define READ_CHAR_FIELD(fldname)                                         \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */ \
+    /* avoid overhead of calling debackslash() for one char */           \
     local_node->fldname = (length == 0) ? '\0' : (token[0] == '\\' ? token[1] : token[0])
 
 /* Read an enumerated-type field that was written as an integer code */
-#define READ_ENUM_FIELD(fldname, enumtype) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
-    local_node->fldname = (enumtype) atoi(token)
+#define READ_ENUM_FIELD(fldname, enumtype)                               \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */ \
+    local_node->fldname = (enumtype)atoi(token)
 
 /* Read a float field */
-#define READ_FLOAT_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define READ_FLOAT_FIELD(fldname)                                        \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */ \
     local_node->fldname = atof(token)
 
 /* Read a boolean field */
-#define READ_BOOL_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define READ_BOOL_FIELD(fldname)                                         \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */ \
     local_node->fldname = strtobool(token)
 
-#define SKIP_BOOL_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define SKIP_BOOL_FIELD(fldname)                                       \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */ \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */
 
-#define SKIP_ANY_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define SKIP_ANY_FIELD(fldname)                                        \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */ \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */
 
 /* Read a character-string field */
-#define READ_STRING_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
+#define READ_STRING_FIELD(fldname)                                       \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */ \
     local_node->fldname = nullable_string(token, length)
 
 /* Read a parse location field (and possibly throw away the value) */
 #ifdef WRITE_READ_PARSE_PLAN_TREES
-#define READ_LOCATION_FIELD(fldname) \
-    token = strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = strtok(&length, strtok_ptr);        /* get field value */ \
+#define READ_LOCATION_FIELD(fldname)                           \
+    token = strtok(&length, strtok_ptr); /* skip :fldname */   \
+    token = strtok(&length, strtok_ptr); /* get field value */ \
     local_node->fldname = restore_location_fields ? atoi(token) : -1
 #else
-#define READ_LOCATION_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* get field value */ \
-    (void) token;                /* in case not used elsewhere */ \
-    local_node->fldname = -1    /* set field to "unknown" */
+#define READ_LOCATION_FIELD(fldname)                                                \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */              \
+    token = pg_parser_strtok(&length, strtok_ptr); /* get field value */            \
+    (void)token;                                   /* in case not used elsewhere */ \
+    local_node->fldname = -1                       /* set field to "unknown" */
 #endif
 
 /* Read a pg_parser_Node field */
-#define READ_NODE_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    (void) token;                /* in case not used elsewhere */ \
+#define READ_NODE_FIELD(fldname)                                                    \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */              \
+    (void)token;                                   /* in case not used elsewhere */ \
     local_node->fldname = nodeRead(NULL, 0, strtok_ptr, dbtype, dbversion)
 
 /* Read a bitmapset field */
-#define READ_BITMAPSET_FIELD(fldname) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
-    (void) token;                /* in case not used elsewhere */ \
+#define READ_BITMAPSET_FIELD(fldname)                                               \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */              \
+    (void)token;                                   /* in case not used elsewhere */ \
     local_node->fldname = _readBitmapset(strtok_ptr, dbtype, dbversion)
 
 /* Read an attribute number array */
-#define READ_ATTRNUMBER_ARRAY(fldname, len) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
+#define READ_ATTRNUMBER_ARRAY(fldname, len)                            \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */ \
     local_node->fldname = readAttrNumberCols(len, strtok_ptr)
 
 /* Read an oid array */
-#define READ_OID_ARRAY(fldname, len) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
+#define READ_OID_ARRAY(fldname, len)                                   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */ \
     local_node->fldname = readOidCols(len, strtok_ptr)
 
 /* Read an int32_t array */
-#define READ_INT_ARRAY(fldname, len) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
+#define READ_INT_ARRAY(fldname, len)                                   \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */ \
     local_node->fldname = readIntCols(len, strtok_ptr)
 
 /* Read a bool array */
-#define READ_BOOL_ARRAY(fldname, len) \
-    token = pg_parser_strtok(&length, strtok_ptr);        /* skip :fldname */ \
+#define READ_BOOL_ARRAY(fldname, len)                                  \
+    token = pg_parser_strtok(&length, strtok_ptr); /* skip :fldname */ \
     local_node->fldname = readBoolCols(len, strtok_ptr)
 
 /* Routine exit */
-#define READ_DONE() \
-    return local_node
-
+#define READ_DONE() return local_node
 
 /*
  * NOTE: use atoi() to read values written with %d, or atoui() to read
@@ -656,77 +701,82 @@ static char *debackslash(const char *token, int32_t length)
  * for which use atooid().  (As of 7.1, outfuncs.c writes OIDs as %u,
  * but this will probably change in the future.)
  */
-#define atoui(x)  ((unsigned int) strtoul((x), NULL, 10))
+#define atoui(x) ((unsigned int)strtoul((x), NULL, 10))
 
-#define strtobool(x)  ((*(x) == 't') ? true : false)
+#define strtobool(x) ((*(x) == 't') ? true : false)
 
-#define nullable_string(token,length)  \
-    ((length) == 0 ? NULL : debackslash(token, length))
+#define nullable_string(token, length) ((length) == 0 ? NULL : debackslash(token, length))
 
-#define PG_PARSER_WORDNUM(x)    ((x) / 64)
-#define PG_PARSER_BITNUM(x)     ((x) % 64)
+#define PG_PARSER_WORDNUM(x) ((x) / 64)
+#define PG_PARSER_BITNUM(x) ((x) % 64)
 
-#define PG_PARSER_BITMAPSET_SIZE(nwords)    \
+#define PG_PARSER_BITMAPSET_SIZE(nwords) \
     (offsetof(pg_parser_Bitmapset, words) + (nwords) * sizeof(pg_parser_bitmapword))
 
-static pg_parser_Bitmapset *bms_make_singleton(int x)
+static pg_parser_Bitmapset* bms_make_singleton(int x)
 {
-    pg_parser_Bitmapset  *result = NULL;
-    int            wordnum,
-                   bitnum;
+    pg_parser_Bitmapset* result = NULL;
+    int                  wordnum, bitnum;
 
     if (x < 0)
+    {
         return NULL;
+    }
     wordnum = PG_PARSER_WORDNUM(x);
     bitnum = PG_PARSER_BITNUM(x);
-    if (!pg_parser_mcxt_realloc(NODE_MCXT,
-                                  (void **)&result,
-                                   PG_PARSER_BITMAPSET_SIZE(wordnum + 1)))
+    if (!pg_parser_mcxt_realloc(NODE_MCXT, (void**)&result, PG_PARSER_BITMAPSET_SIZE(wordnum + 1)))
+    {
         return NULL;
+    }
     result->nwords = wordnum + 1;
-    result->words[wordnum] = ((pg_parser_bitmapword) 1 << bitnum);
+    result->words[wordnum] = ((pg_parser_bitmapword)1 << bitnum);
     return result;
 }
 
-static pg_parser_Bitmapset *bms_add_member(pg_parser_Bitmapset *a, int x)
+static pg_parser_Bitmapset* bms_add_member(pg_parser_Bitmapset* a, int x)
 {
-    int wordnum,
-        bitnum;
+    int wordnum, bitnum;
 
     if (x < 0)
+    {
         return NULL;
+    }
 
     if (a == NULL)
+    {
         return bms_make_singleton(x);
+    }
     wordnum = PG_PARSER_WORDNUM(x);
     bitnum = PG_PARSER_BITNUM(x);
 
     /* enlarge the set if necessary */
     if (wordnum >= a->nwords)
     {
-        int            oldnwords = a->nwords;
-        int            i;
+        int oldnwords = a->nwords;
+        int i;
 
-        if (!pg_parser_mcxt_realloc(NODE_MCXT,
-                                      (void **)&a,
-                                       PG_PARSER_BITMAPSET_SIZE(wordnum + 1)))
+        if (!pg_parser_mcxt_realloc(NODE_MCXT, (void**)&a, PG_PARSER_BITMAPSET_SIZE(wordnum + 1)))
+        {
             return NULL;
+        }
         a->nwords = wordnum + 1;
         /* zero out the enlarged portion */
         for (i = oldnwords; i < a->nwords; i++)
+        {
             a->words[i] = 0;
+        }
     }
 
-    a->words[wordnum] |= ((pg_parser_bitmapword) 1 << bitnum);
+    a->words[wordnum] |= ((pg_parser_bitmapword)1 << bitnum);
     return a;
 }
 
 /*
  * _readBitmapset
  */
-static pg_parser_Bitmapset *_readBitmapset(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Bitmapset* _readBitmapset(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
-    pg_parser_Bitmapset  *result = NULL;
+    pg_parser_Bitmapset* result = NULL;
     READ_TEMP_LOCALS();
 
     PG_PARSER_UNUSED(dbtype);
@@ -734,31 +784,45 @@ static pg_parser_Bitmapset *_readBitmapset(char **strtok_ptr, int16_t dbtype, ch
 
     token = pg_parser_strtok(&length, strtok_ptr);
     if (token == NULL)
+    {
         return NULL;
+    }
 
     if (length != 1 || token[0] != '(')
+    {
         return NULL;
+    }
 
     token = pg_parser_strtok(&length, strtok_ptr);
     if (token == NULL)
+    {
         return NULL;
+    }
 
     if (length != 1 || token[0] != 'b')
+    {
         return NULL;
+    }
 
     for (;;)
     {
-        int32_t            val;
-        char       *endptr;
+        int32_t val;
+        char*   endptr;
 
         token = pg_parser_strtok(&length, strtok_ptr);
         if (token == NULL)
+        {
             return NULL;
+        }
         if (length == 1 && token[0] == ')')
+        {
             break;
-        val = (int32_t) strtol(token, &endptr, 10);
+        }
+        val = (int32_t)strtol(token, &endptr, 10);
         if (endptr != token + length)
+        {
             return NULL;
+        }
         result = bms_add_member(result, val);
     }
 
@@ -768,13 +832,13 @@ static pg_parser_Bitmapset *_readBitmapset(char **strtok_ptr, int16_t dbtype, ch
 /*
  * _readQuery
  */
-static pg_parser_Query *_readQuery(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Query* _readQuery(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Query);
 
     READ_ENUM_FIELD(commandType, pg_parser_CmdType);
     READ_ENUM_FIELD(querySource, pg_parser_QuerySource);
-    local_node->queryId = PG_PARSER_UINT64CONST(0);    /* not saved in output format */
+    local_node->queryId = PG_PARSER_UINT64CONST(0); /* not saved in output format */
     READ_BOOL_FIELD(canSetTag);
     READ_NODE_FIELD(utilityStmt);
     READ_INT_FIELD(resultRelation);
@@ -815,7 +879,7 @@ static pg_parser_Query *_readQuery(char **strtok_ptr, int16_t dbtype, char *dbve
 /*
  * _readNotifyStmt
  */
-static pg_parser_NotifyStmt *_readNotifyStmt(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_NotifyStmt* _readNotifyStmt(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_NotifyStmt);
 
@@ -831,7 +895,8 @@ static pg_parser_NotifyStmt *_readNotifyStmt(char **strtok_ptr, int16_t dbtype, 
 /*
  * _readDeclareCursorStmt
  */
-static pg_parser_DeclareCursorStmt *_readDeclareCursorStmt(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_DeclareCursorStmt* _readDeclareCursorStmt(char** strtok_ptr, int16_t dbtype,
+                                                           char* dbversion)
 {
     READ_LOCALS(pg_parser_DeclareCursorStmt);
 
@@ -845,7 +910,8 @@ static pg_parser_DeclareCursorStmt *_readDeclareCursorStmt(char **strtok_ptr, in
 /*
  * _readWithCheckOption
  */
-static pg_parser_WithCheckOption *_readWithCheckOption(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_WithCheckOption* _readWithCheckOption(char** strtok_ptr, int16_t dbtype,
+                                                       char* dbversion)
 {
     READ_LOCALS(pg_parser_WithCheckOption);
 
@@ -861,7 +927,8 @@ static pg_parser_WithCheckOption *_readWithCheckOption(char **strtok_ptr, int16_
 /*
  * _readSortGroupClause
  */
-static pg_parser_SortGroupClause *_readSortGroupClause(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SortGroupClause* _readSortGroupClause(char** strtok_ptr, int16_t dbtype,
+                                                       char* dbversion)
 {
     READ_LOCALS(pg_parser_SortGroupClause);
 
@@ -880,7 +947,7 @@ static pg_parser_SortGroupClause *_readSortGroupClause(char **strtok_ptr, int16_
 /*
  * _readGroupingSet
  */
-static pg_parser_GroupingSet *_readGroupingSet(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_GroupingSet* _readGroupingSet(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_GroupingSet);
 
@@ -894,7 +961,7 @@ static pg_parser_GroupingSet *_readGroupingSet(char **strtok_ptr, int16_t dbtype
 /*
  * _readWindowClause
  */
-static pg_parser_WindowClause *_readWindowClause(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_WindowClause* _readWindowClause(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_WindowClause);
 
@@ -919,7 +986,8 @@ static pg_parser_WindowClause *_readWindowClause(char **strtok_ptr, int16_t dbty
 /*
  * _readRowMarkClause
  */
-static pg_parser_RowMarkClause *_readRowMarkClause(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_RowMarkClause* _readRowMarkClause(char** strtok_ptr, int16_t dbtype,
+                                                   char* dbversion)
 {
     READ_LOCALS(pg_parser_RowMarkClause);
 
@@ -937,7 +1005,8 @@ static pg_parser_RowMarkClause *_readRowMarkClause(char **strtok_ptr, int16_t db
 /*
  * _readCommonTableExpr
  */
-static pg_parser_CommonTableExpr *_readCommonTableExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CommonTableExpr* _readCommonTableExpr(char** strtok_ptr, int16_t dbtype,
+                                                       char* dbversion)
 {
     READ_LOCALS(pg_parser_CommonTableExpr);
 
@@ -959,7 +1028,8 @@ static pg_parser_CommonTableExpr *_readCommonTableExpr(char **strtok_ptr, int16_
 /*
  * _readSetOperationStmt
  */
-static pg_parser_SetOperationStmt *_readSetOperationStmt(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SetOperationStmt* _readSetOperationStmt(char** strtok_ptr, int16_t dbtype,
+                                                         char* dbversion)
 {
     READ_LOCALS(pg_parser_SetOperationStmt);
 
@@ -975,12 +1045,11 @@ static pg_parser_SetOperationStmt *_readSetOperationStmt(char **strtok_ptr, int1
     READ_DONE();
 }
 
-
 /*
  *    Stuff from primnodes.h.
  */
 
-static pg_parser_Alias *_readAlias(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Alias* _readAlias(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Alias);
 
@@ -990,7 +1059,7 @@ static pg_parser_Alias *_readAlias(char **strtok_ptr, int16_t dbtype, char *dbve
     READ_DONE();
 }
 
-static pg_parser_RangeVar *_readRangeVar(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_RangeVar* _readRangeVar(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_RangeVar);
 
@@ -1009,7 +1078,7 @@ static pg_parser_RangeVar *_readRangeVar(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readTableFunc
  */
-static pg_parser_TableFunc *_readTableFunc(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_TableFunc* _readTableFunc(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_TableFunc);
 
@@ -1030,7 +1099,7 @@ static pg_parser_TableFunc *_readTableFunc(char **strtok_ptr, int16_t dbtype, ch
     READ_DONE();
 }
 
-static pg_parser_IntoClause *_readIntoClause(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_IntoClause* _readIntoClause(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_IntoClause);
 
@@ -1049,7 +1118,7 @@ static pg_parser_IntoClause *_readIntoClause(char **strtok_ptr, int16_t dbtype, 
 /*
  * _readVar
  */
-static pg_parser_Var *_readVar(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Var* _readVar(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Var);
 
@@ -1072,7 +1141,7 @@ static pg_parser_Var *_readVar(char **strtok_ptr, int16_t dbtype, char *dbversio
 /*
  * _readConst
  */
-static pg_parser_Const *_readConst(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Const* _readConst(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Const);
 
@@ -1089,9 +1158,14 @@ static pg_parser_Const *_readConst(char **strtok_ptr, int16_t dbtype, char *dbve
 
     token = pg_parser_strtok(&length, strtok_ptr); /* skip :constvalue */
     if (local_node->constisnull)
+    {
         token = pg_parser_strtok(&length, strtok_ptr); /* skip "<>" */
+    }
     else
-        local_node->constvalue = readDatum(local_node->constbyval, strtok_ptr, &local_node->constneedfree);
+    {
+        local_node->constvalue =
+            readDatum(local_node->constbyval, strtok_ptr, &local_node->constneedfree);
+    }
 
     READ_DONE();
 }
@@ -1099,7 +1173,7 @@ static pg_parser_Const *_readConst(char **strtok_ptr, int16_t dbtype, char *dbve
 /*
  * _readParam
  */
-static pg_parser_Param *_readParam(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Param* _readParam(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Param);
 
@@ -1119,7 +1193,7 @@ static pg_parser_Param *_readParam(char **strtok_ptr, int16_t dbtype, char *dbve
 /*
  * _readAggref
  */
-static pg_parser_Aggref *_readAggref(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Aggref* _readAggref(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Aggref);
 
@@ -1147,7 +1221,7 @@ static pg_parser_Aggref *_readAggref(char **strtok_ptr, int16_t dbtype, char *db
 /*
  * _readGroupingFunc
  */
-static pg_parser_GroupingFunc *_readGroupingFunc(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_GroupingFunc* _readGroupingFunc(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_GroupingFunc);
 
@@ -1163,7 +1237,7 @@ static pg_parser_GroupingFunc *_readGroupingFunc(char **strtok_ptr, int16_t dbty
 /*
  * _readWindowFunc
  */
-static pg_parser_WindowFunc *_readWindowFunc(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_WindowFunc* _readWindowFunc(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_WindowFunc);
 
@@ -1184,7 +1258,8 @@ static pg_parser_WindowFunc *_readWindowFunc(char **strtok_ptr, int16_t dbtype, 
 /*
  * _readSubscriptingRef
  */
-static pg_parser_SubscriptingRef *_readSubscriptingRef(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SubscriptingRef* _readSubscriptingRef(char** strtok_ptr, int16_t dbtype,
+                                                       char* dbversion)
 {
     READ_LOCALS(pg_parser_SubscriptingRef);
 
@@ -1203,7 +1278,7 @@ static pg_parser_SubscriptingRef *_readSubscriptingRef(char **strtok_ptr, int16_
 /*
  * _readFuncExpr
  */
-static pg_parser_FuncExpr *_readFuncExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_FuncExpr* _readFuncExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_FuncExpr);
 
@@ -1223,7 +1298,7 @@ static pg_parser_FuncExpr *_readFuncExpr(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readNamedArgExpr
  */
-static pg_parser_NamedArgExpr *_readNamedArgExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_NamedArgExpr* _readNamedArgExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_NamedArgExpr);
 
@@ -1238,7 +1313,7 @@ static pg_parser_NamedArgExpr *_readNamedArgExpr(char **strtok_ptr, int16_t dbty
 /*
  * _readOpExpr
  */
-static pg_parser_OpExpr *_readOpExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_OpExpr* _readOpExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_OpExpr);
 
@@ -1257,7 +1332,7 @@ static pg_parser_OpExpr *_readOpExpr(char **strtok_ptr, int16_t dbtype, char *db
 /*
  * _readDistinctExpr
  */
-static pg_parser_DistinctExpr *_readDistinctExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_DistinctExpr* _readDistinctExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_DistinctExpr);
 
@@ -1276,7 +1351,7 @@ static pg_parser_DistinctExpr *_readDistinctExpr(char **strtok_ptr, int16_t dbty
 /*
  * _readNullIfExpr
  */
-static pg_parser_NullIfExpr *_readNullIfExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_NullIfExpr* _readNullIfExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_NullIfExpr);
 
@@ -1295,7 +1370,8 @@ static pg_parser_NullIfExpr *_readNullIfExpr(char **strtok_ptr, int16_t dbtype, 
 /*
  * _readScalarArrayOpExpr
  */
-static pg_parser_ScalarArrayOpExpr *_readScalarArrayOpExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_ScalarArrayOpExpr* _readScalarArrayOpExpr(char** strtok_ptr, int16_t dbtype,
+                                                           char* dbversion)
 {
     READ_LOCALS(pg_parser_ScalarArrayOpExpr);
 
@@ -1312,7 +1388,7 @@ static pg_parser_ScalarArrayOpExpr *_readScalarArrayOpExpr(char **strtok_ptr, in
 /*
  * _readBoolExpr
  */
-static pg_parser_BoolExpr *_readBoolExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_BoolExpr* _readBoolExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_BoolExpr);
 
@@ -1320,14 +1396,20 @@ static pg_parser_BoolExpr *_readBoolExpr(char **strtok_ptr, int16_t dbtype, char
     token = pg_parser_strtok(&length, strtok_ptr); /* skip :boolop */
     token = pg_parser_strtok(&length, strtok_ptr); /* get field value */
     if (strncmp(token, "and", 3) == 0)
+    {
         local_node->boolop = AND_EXPR;
+    }
     else if (strncmp(token, "or", 2) == 0)
+    {
         local_node->boolop = OR_EXPR;
+    }
     else if (strncmp(token, "not", 3) == 0)
+    {
         local_node->boolop = NOT_EXPR;
+    }
     else
     {
-        //printf("ERROR: unrecognized boolop \"%.*s\"\n", length, token);
+        // printf("ERROR: unrecognized boolop \"%.*s\"\n", length, token);
     }
 
     READ_NODE_FIELD(args);
@@ -1339,7 +1421,7 @@ static pg_parser_BoolExpr *_readBoolExpr(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readSubLink
  */
-static pg_parser_SubLink *_readSubLink(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SubLink* _readSubLink(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_SubLink);
 
@@ -1360,7 +1442,7 @@ static pg_parser_SubLink *_readSubLink(char **strtok_ptr, int16_t dbtype, char *
 /*
  * _readFieldSelect
  */
-static pg_parser_FieldSelect *_readFieldSelect(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_FieldSelect* _readFieldSelect(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_FieldSelect);
 
@@ -1376,7 +1458,7 @@ static pg_parser_FieldSelect *_readFieldSelect(char **strtok_ptr, int16_t dbtype
 /*
  * _readFieldStore
  */
-static pg_parser_FieldStore *_readFieldStore(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_FieldStore* _readFieldStore(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_FieldStore);
 
@@ -1391,7 +1473,7 @@ static pg_parser_FieldStore *_readFieldStore(char **strtok_ptr, int16_t dbtype, 
 /*
  * _readRelabelType
  */
-static pg_parser_RelabelType *_readRelabelType(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_RelabelType* _readRelabelType(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_RelabelType);
 
@@ -1408,7 +1490,7 @@ static pg_parser_RelabelType *_readRelabelType(char **strtok_ptr, int16_t dbtype
 /*
  * _readCoerceViaIO
  */
-static pg_parser_CoerceViaIO *_readCoerceViaIO(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CoerceViaIO* _readCoerceViaIO(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CoerceViaIO);
 
@@ -1424,7 +1506,8 @@ static pg_parser_CoerceViaIO *_readCoerceViaIO(char **strtok_ptr, int16_t dbtype
 /*
  * _readArrayCoerceExpr
  */
-static pg_parser_ArrayCoerceExpr *_readArrayCoerceExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_ArrayCoerceExpr* _readArrayCoerceExpr(char** strtok_ptr, int16_t dbtype,
+                                                       char* dbversion)
 {
     READ_LOCALS(pg_parser_ArrayCoerceExpr);
 
@@ -1442,7 +1525,8 @@ static pg_parser_ArrayCoerceExpr *_readArrayCoerceExpr(char **strtok_ptr, int16_
 /*
  * _readConvertRowtypeExpr
  */
-static pg_parser_ConvertRowtypeExpr *_readConvertRowtypeExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_ConvertRowtypeExpr* _readConvertRowtypeExpr(char** strtok_ptr, int16_t dbtype,
+                                                             char* dbversion)
 {
     READ_LOCALS(pg_parser_ConvertRowtypeExpr);
 
@@ -1457,7 +1541,7 @@ static pg_parser_ConvertRowtypeExpr *_readConvertRowtypeExpr(char **strtok_ptr, 
 /*
  * _readCollateExpr
  */
-static pg_parser_CollateExpr *_readCollateExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CollateExpr* _readCollateExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CollateExpr);
 
@@ -1471,7 +1555,7 @@ static pg_parser_CollateExpr *_readCollateExpr(char **strtok_ptr, int16_t dbtype
 /*
  * _readCaseExpr
  */
-static pg_parser_CaseExpr *_readCaseExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CaseExpr* _readCaseExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CaseExpr);
 
@@ -1488,7 +1572,7 @@ static pg_parser_CaseExpr *_readCaseExpr(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readCaseWhen
  */
-static pg_parser_CaseWhen *_readCaseWhen(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CaseWhen* _readCaseWhen(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CaseWhen);
 
@@ -1502,7 +1586,7 @@ static pg_parser_CaseWhen *_readCaseWhen(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readCaseTestExpr
  */
-static pg_parser_CaseTestExpr *_readCaseTestExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CaseTestExpr* _readCaseTestExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CaseTestExpr);
 
@@ -1519,7 +1603,7 @@ static pg_parser_CaseTestExpr *_readCaseTestExpr(char **strtok_ptr, int16_t dbty
 /*
  * _readArrayExpr
  */
-static pg_parser_ArrayExpr *_readArrayExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_ArrayExpr* _readArrayExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_ArrayExpr);
 
@@ -1536,7 +1620,7 @@ static pg_parser_ArrayExpr *_readArrayExpr(char **strtok_ptr, int16_t dbtype, ch
 /*
  * _readRowExpr
  */
-static pg_parser_RowExpr *_readRowExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_RowExpr* _readRowExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_RowExpr);
 
@@ -1552,7 +1636,8 @@ static pg_parser_RowExpr *_readRowExpr(char **strtok_ptr, int16_t dbtype, char *
 /*
  * _readRowCompareExpr
  */
-static pg_parser_RowCompareExpr *_readRowCompareExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_RowCompareExpr* _readRowCompareExpr(char** strtok_ptr, int16_t dbtype,
+                                                     char* dbversion)
 {
     READ_LOCALS(pg_parser_RowCompareExpr);
 
@@ -1569,7 +1654,7 @@ static pg_parser_RowCompareExpr *_readRowCompareExpr(char **strtok_ptr, int16_t 
 /*
  * _readCoalesceExpr
  */
-static pg_parser_CoalesceExpr *_readCoalesceExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CoalesceExpr* _readCoalesceExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CoalesceExpr);
 
@@ -1584,7 +1669,7 @@ static pg_parser_CoalesceExpr *_readCoalesceExpr(char **strtok_ptr, int16_t dbty
 /*
  * _readMinMaxExpr
  */
-static pg_parser_MinMaxExpr *_readMinMaxExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_MinMaxExpr* _readMinMaxExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_MinMaxExpr);
 
@@ -1601,7 +1686,8 @@ static pg_parser_MinMaxExpr *_readMinMaxExpr(char **strtok_ptr, int16_t dbtype, 
 /*
  * _readSQLValueFunction
  */
-static pg_parser_SQLValueFunction *_readSQLValueFunction(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SQLValueFunction* _readSQLValueFunction(char** strtok_ptr, int16_t dbtype,
+                                                         char* dbversion)
 {
     READ_LOCALS(pg_parser_SQLValueFunction);
 
@@ -1619,7 +1705,7 @@ static pg_parser_SQLValueFunction *_readSQLValueFunction(char **strtok_ptr, int1
 /*
  * _readXmlExpr
  */
-static pg_parser_XmlExpr *_readXmlExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_XmlExpr* _readXmlExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_XmlExpr);
 
@@ -1639,7 +1725,7 @@ static pg_parser_XmlExpr *_readXmlExpr(char **strtok_ptr, int16_t dbtype, char *
 /*
  * _readNullTest
  */
-static pg_parser_NullTest *_readNullTest(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_NullTest* _readNullTest(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_NullTest);
 
@@ -1654,7 +1740,7 @@ static pg_parser_NullTest *_readNullTest(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readBooleanTest
  */
-static pg_parser_BooleanTest *_readBooleanTest(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_BooleanTest* _readBooleanTest(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_BooleanTest);
 
@@ -1668,7 +1754,8 @@ static pg_parser_BooleanTest *_readBooleanTest(char **strtok_ptr, int16_t dbtype
 /*
  * _readCoerceToDomain
  */
-static pg_parser_CoerceToDomain *_readCoerceToDomain(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CoerceToDomain* _readCoerceToDomain(char** strtok_ptr, int16_t dbtype,
+                                                     char* dbversion)
 {
     READ_LOCALS(pg_parser_CoerceToDomain);
 
@@ -1685,7 +1772,8 @@ static pg_parser_CoerceToDomain *_readCoerceToDomain(char **strtok_ptr, int16_t 
 /*
  * _readCoerceToDomainValue
  */
-static pg_parser_CoerceToDomainValue *_readCoerceToDomainValue(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CoerceToDomainValue* _readCoerceToDomainValue(char** strtok_ptr, int16_t dbtype,
+                                                               char* dbversion)
 {
     READ_LOCALS(pg_parser_CoerceToDomainValue);
 
@@ -1703,7 +1791,7 @@ static pg_parser_CoerceToDomainValue *_readCoerceToDomainValue(char **strtok_ptr
 /*
  * _readSetToDefault
  */
-static pg_parser_SetToDefault *_readSetToDefault(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SetToDefault* _readSetToDefault(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_SetToDefault);
 
@@ -1721,7 +1809,8 @@ static pg_parser_SetToDefault *_readSetToDefault(char **strtok_ptr, int16_t dbty
 /*
  * _readCurrentOfExpr
  */
-static pg_parser_CurrentOfExpr *_readCurrentOfExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CurrentOfExpr* _readCurrentOfExpr(char** strtok_ptr, int16_t dbtype,
+                                                   char* dbversion)
 {
     READ_LOCALS(pg_parser_CurrentOfExpr);
 
@@ -1738,7 +1827,8 @@ static pg_parser_CurrentOfExpr *_readCurrentOfExpr(char **strtok_ptr, int16_t db
 /*
  * _readNextValueExpr
  */
-static pg_parser_NextValueExpr *_readNextValueExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_NextValueExpr* _readNextValueExpr(char** strtok_ptr, int16_t dbtype,
+                                                   char* dbversion)
 {
     READ_LOCALS(pg_parser_NextValueExpr);
 
@@ -1754,7 +1844,8 @@ static pg_parser_NextValueExpr *_readNextValueExpr(char **strtok_ptr, int16_t db
 /*
  * _readInferenceElem
  */
-static pg_parser_InferenceElem *_readInferenceElem(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_InferenceElem* _readInferenceElem(char** strtok_ptr, int16_t dbtype,
+                                                   char* dbversion)
 {
     READ_LOCALS(pg_parser_InferenceElem);
 
@@ -1768,7 +1859,7 @@ static pg_parser_InferenceElem *_readInferenceElem(char **strtok_ptr, int16_t db
 /*
  * _readTargetEntry
  */
-static pg_parser_TargetEntry *_readTargetEntry(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_TargetEntry* _readTargetEntry(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_TargetEntry);
 
@@ -1786,7 +1877,7 @@ static pg_parser_TargetEntry *_readTargetEntry(char **strtok_ptr, int16_t dbtype
 /*
  * _readRangeTblRef
  */
-static pg_parser_RangeTblRef *_readRangeTblRef(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_RangeTblRef* _readRangeTblRef(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_RangeTblRef);
 
@@ -1801,7 +1892,7 @@ static pg_parser_RangeTblRef *_readRangeTblRef(char **strtok_ptr, int16_t dbtype
 /*
  * _readJoinExpr
  */
-static pg_parser_JoinExpr *_readJoinExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_JoinExpr* _readJoinExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_JoinExpr);
 
@@ -1820,7 +1911,7 @@ static pg_parser_JoinExpr *_readJoinExpr(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readFromExpr
  */
-static pg_parser_FromExpr *_readFromExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_FromExpr* _readFromExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_FromExpr);
 
@@ -1833,7 +1924,8 @@ static pg_parser_FromExpr *_readFromExpr(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readOnConflictExpr
  */
-static pg_parser_OnConflictExpr *_readOnConflictExpr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_OnConflictExpr* _readOnConflictExpr(char** strtok_ptr, int16_t dbtype,
+                                                     char* dbversion)
 {
     READ_LOCALS(pg_parser_OnConflictExpr);
 
@@ -1856,7 +1948,8 @@ static pg_parser_OnConflictExpr *_readOnConflictExpr(char **strtok_ptr, int16_t 
 /*
  * _readRangeTblEntry
  */
-static pg_parser_RangeTblEntry *_readRangeTblEntry(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_RangeTblEntry* _readRangeTblEntry(char** strtok_ptr, int16_t dbtype,
+                                                   char* dbversion)
 {
     READ_LOCALS(pg_parser_RangeTblEntry);
 
@@ -1890,7 +1983,7 @@ static pg_parser_RangeTblEntry *_readRangeTblEntry(char **strtok_ptr, int16_t db
             /* The RTE must have a copy of the column type info, if any */
             if (local_node->tablefunc)
             {
-                pg_parser_TableFunc  *tf = local_node->tablefunc;
+                pg_parser_TableFunc* tf = local_node->tablefunc;
 
                 local_node->coltypes = tf->coltypes;
                 local_node->coltypmods = tf->coltypmods;
@@ -1923,8 +2016,8 @@ static pg_parser_RangeTblEntry *_readRangeTblEntry(char **strtok_ptr, int16_t db
             /* no extra fields */
             break;
         default:
-            //printf("ERROR: unrecognized RTE kind: %d\n",
-            //      (int32_t) local_node->rtekind);
+            // printf("ERROR: unrecognized RTE kind: %d\n",
+            //       (int32_t) local_node->rtekind);
             break;
     }
 
@@ -1945,7 +2038,8 @@ static pg_parser_RangeTblEntry *_readRangeTblEntry(char **strtok_ptr, int16_t db
 /*
  * _readRangeTblFunction
  */
-static pg_parser_RangeTblFunction *_readRangeTblFunction(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_RangeTblFunction* _readRangeTblFunction(char** strtok_ptr, int16_t dbtype,
+                                                         char* dbversion)
 {
     READ_LOCALS(pg_parser_RangeTblFunction);
 
@@ -1963,7 +2057,8 @@ static pg_parser_RangeTblFunction *_readRangeTblFunction(char **strtok_ptr, int1
 /*
  * _readTableSampleClause
  */
-static pg_parser_TableSampleClause *_readTableSampleClause(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_TableSampleClause* _readTableSampleClause(char** strtok_ptr, int16_t dbtype,
+                                                           char* dbversion)
 {
     READ_LOCALS(pg_parser_TableSampleClause);
 
@@ -1977,7 +2072,7 @@ static pg_parser_TableSampleClause *_readTableSampleClause(char **strtok_ptr, in
 /*
  * _readDefElem
  */
-static pg_parser_DefElem *_readDefElem(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_DefElem* _readDefElem(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_DefElem);
 
@@ -1997,7 +2092,7 @@ static pg_parser_DefElem *_readDefElem(char **strtok_ptr, int16_t dbtype, char *
 /*
  * _readPlannedStmt
  */
-static pg_parser_PlannedStmt *_readPlannedStmt(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_PlannedStmt* _readPlannedStmt(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_PlannedStmt);
 
@@ -2031,7 +2126,8 @@ static pg_parser_PlannedStmt *_readPlannedStmt(char **strtok_ptr, int16_t dbtype
  * ReadCommonPlan
  *    Assign the basic stuff of all nodes that inherit from Plan
  */
-static void ReadCommonPlan(pg_parser_Plan *local_node, char **strtok_ptr, int16_t dbtype, char *dbversion)
+static void ReadCommonPlan(pg_parser_Plan* local_node, char** strtok_ptr, int16_t dbtype,
+                           char* dbversion)
 {
     READ_TEMP_LOCALS();
 
@@ -2054,7 +2150,7 @@ static void ReadCommonPlan(pg_parser_Plan *local_node, char **strtok_ptr, int16_
 /*
  * _readPlan
  */
-static pg_parser_Plan *_readPlan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Plan* _readPlan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS_NO_FIELDS(pg_parser_Plan);
 
@@ -2066,7 +2162,7 @@ static pg_parser_Plan *_readPlan(char **strtok_ptr, int16_t dbtype, char *dbvers
 /*
  * _readResult
  */
-static pg_parser_Result *_readResult(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Result* _readResult(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Result);
 
@@ -2080,7 +2176,7 @@ static pg_parser_Result *_readResult(char **strtok_ptr, int16_t dbtype, char *db
 /*
  * _readProjectSet
  */
-static pg_parser_ProjectSet *_readProjectSet(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_ProjectSet* _readProjectSet(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS_NO_FIELDS(pg_parser_ProjectSet);
 
@@ -2092,7 +2188,7 @@ static pg_parser_ProjectSet *_readProjectSet(char **strtok_ptr, int16_t dbtype, 
 /*
  * _readModifyTable
  */
-static pg_parser_ModifyTable *_readModifyTable(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_ModifyTable* _readModifyTable(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_ModifyTable);
 
@@ -2126,7 +2222,7 @@ static pg_parser_ModifyTable *_readModifyTable(char **strtok_ptr, int16_t dbtype
 /*
  * _readAppend
  */
-static pg_parser_Append *_readAppend(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Append* _readAppend(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Append);
 
@@ -2142,7 +2238,7 @@ static pg_parser_Append *_readAppend(char **strtok_ptr, int16_t dbtype, char *db
 /*
  * _readMergeAppend
  */
-static pg_parser_MergeAppend *_readMergeAppend(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_MergeAppend* _readMergeAppend(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_MergeAppend);
 
@@ -2162,11 +2258,12 @@ static pg_parser_MergeAppend *_readMergeAppend(char **strtok_ptr, int16_t dbtype
 /*
  * _readRecursiveUnion
  */
-static pg_parser_RecursiveUnion *_readRecursiveUnion(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_RecursiveUnion* _readRecursiveUnion(char** strtok_ptr, int16_t dbtype,
+                                                     char* dbversion)
 {
     READ_LOCALS(pg_parser_RecursiveUnion);
 
-        ReadCommonPlan(&local_node->plan, strtok_ptr, dbtype, dbversion);
+    ReadCommonPlan(&local_node->plan, strtok_ptr, dbtype, dbversion);
 
     READ_INT_FIELD(wtParam);
     READ_INT_FIELD(numCols);
@@ -2181,7 +2278,7 @@ static pg_parser_RecursiveUnion *_readRecursiveUnion(char **strtok_ptr, int16_t 
 /*
  * _readBitmapAnd
  */
-static pg_parser_BitmapAnd *_readBitmapAnd(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_BitmapAnd* _readBitmapAnd(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_BitmapAnd);
 
@@ -2195,11 +2292,11 @@ static pg_parser_BitmapAnd *_readBitmapAnd(char **strtok_ptr, int16_t dbtype, ch
 /*
  * _readBitmapOr
  */
-static pg_parser_BitmapOr *_readBitmapOr(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_BitmapOr* _readBitmapOr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_BitmapOr);
 
-        ReadCommonPlan(&local_node->plan, strtok_ptr, dbtype, dbversion);
+    ReadCommonPlan(&local_node->plan, strtok_ptr, dbtype, dbversion);
 
     READ_BOOL_FIELD(isshared);
     READ_NODE_FIELD(bitmapplans);
@@ -2211,7 +2308,8 @@ static pg_parser_BitmapOr *_readBitmapOr(char **strtok_ptr, int16_t dbtype, char
  * ReadCommonScan
  *    Assign the basic stuff of all nodes that inherit from Scan
  */
-static void ReadCommonScan(pg_parser_Scan *local_node, char**strtok_ptr, int16_t dbtype, char *dbversion)
+static void ReadCommonScan(pg_parser_Scan* local_node, char** strtok_ptr, int16_t dbtype,
+                           char* dbversion)
 {
     READ_TEMP_LOCALS();
 
@@ -2223,7 +2321,7 @@ static void ReadCommonScan(pg_parser_Scan *local_node, char**strtok_ptr, int16_t
 /*
  * _readScan
  */
-static pg_parser_Scan *_readScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Scan* _readScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS_NO_FIELDS(pg_parser_Scan);
 
@@ -2235,7 +2333,7 @@ static pg_parser_Scan *_readScan(char **strtok_ptr, int16_t dbtype, char *dbvers
 /*
  * _readSeqScan
  */
-static pg_parser_SeqScan *_readSeqScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SeqScan* _readSeqScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS_NO_FIELDS(pg_parser_SeqScan);
 
@@ -2247,7 +2345,7 @@ static pg_parser_SeqScan *_readSeqScan(char **strtok_ptr, int16_t dbtype, char *
 /*
  * _readSampleScan
  */
-static pg_parser_SampleScan *_readSampleScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SampleScan* _readSampleScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_SampleScan);
 
@@ -2261,7 +2359,7 @@ static pg_parser_SampleScan *_readSampleScan(char **strtok_ptr, int16_t dbtype, 
 /*
  * _readIndexScan
  */
-static pg_parser_IndexScan *_readIndexScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_IndexScan* _readIndexScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_IndexScan);
 
@@ -2281,7 +2379,8 @@ static pg_parser_IndexScan *_readIndexScan(char **strtok_ptr, int16_t dbtype, ch
 /*
  * _readIndexOnlyScan
  */
-static pg_parser_IndexOnlyScan *_readIndexOnlyScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_IndexOnlyScan* _readIndexOnlyScan(char** strtok_ptr, int16_t dbtype,
+                                                   char* dbversion)
 {
     READ_LOCALS(pg_parser_IndexOnlyScan);
 
@@ -2299,7 +2398,8 @@ static pg_parser_IndexOnlyScan *_readIndexOnlyScan(char **strtok_ptr, int16_t db
 /*
  * _readBitmapIndexScan
  */
-static pg_parser_BitmapIndexScan *_readBitmapIndexScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_BitmapIndexScan* _readBitmapIndexScan(char** strtok_ptr, int16_t dbtype,
+                                                       char* dbversion)
 {
     READ_LOCALS(pg_parser_BitmapIndexScan);
 
@@ -2316,7 +2416,8 @@ static pg_parser_BitmapIndexScan *_readBitmapIndexScan(char **strtok_ptr, int16_
 /*
  * _readBitmapHeapScan
  */
-static pg_parser_BitmapHeapScan *_readBitmapHeapScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_BitmapHeapScan* _readBitmapHeapScan(char** strtok_ptr, int16_t dbtype,
+                                                     char* dbversion)
 {
     READ_LOCALS(pg_parser_BitmapHeapScan);
 
@@ -2330,7 +2431,7 @@ static pg_parser_BitmapHeapScan *_readBitmapHeapScan(char **strtok_ptr, int16_t 
 /*
  * _readTidScan
  */
-static pg_parser_TidScan *_readTidScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_TidScan* _readTidScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_TidScan);
 
@@ -2344,7 +2445,7 @@ static pg_parser_TidScan *_readTidScan(char **strtok_ptr, int16_t dbtype, char *
 /*
  * _readSubqueryScan
  */
-static pg_parser_SubqueryScan *_readSubqueryScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SubqueryScan* _readSubqueryScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_SubqueryScan);
 
@@ -2358,7 +2459,7 @@ static pg_parser_SubqueryScan *_readSubqueryScan(char **strtok_ptr, int16_t dbty
 /*
  * _readFunctionScan
  */
-static pg_parser_FunctionScan *_readFunctionScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_FunctionScan* _readFunctionScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_FunctionScan);
 
@@ -2373,7 +2474,7 @@ static pg_parser_FunctionScan *_readFunctionScan(char **strtok_ptr, int16_t dbty
 /*
  * _readValuesScan
  */
-static pg_parser_ValuesScan *_readValuesScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_ValuesScan* _readValuesScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_ValuesScan);
 
@@ -2387,7 +2488,8 @@ static pg_parser_ValuesScan *_readValuesScan(char **strtok_ptr, int16_t dbtype, 
 /*
  * _readTableFuncScan
  */
-static pg_parser_TableFuncScan *_readTableFuncScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_TableFuncScan* _readTableFuncScan(char** strtok_ptr, int16_t dbtype,
+                                                   char* dbversion)
 {
     READ_LOCALS(pg_parser_TableFuncScan);
 
@@ -2401,7 +2503,7 @@ static pg_parser_TableFuncScan *_readTableFuncScan(char **strtok_ptr, int16_t db
 /*
  * _readCteScan
  */
-static pg_parser_CteScan *_readCteScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_CteScan* _readCteScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CteScan);
 
@@ -2416,7 +2518,8 @@ static pg_parser_CteScan *_readCteScan(char **strtok_ptr, int16_t dbtype, char *
 /*
  * _readNamedTuplestoreScan
  */
-static pg_parser_NamedTuplestoreScan *_readNamedTuplestoreScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_NamedTuplestoreScan* _readNamedTuplestoreScan(char** strtok_ptr, int16_t dbtype,
+                                                               char* dbversion)
 {
     READ_LOCALS(pg_parser_NamedTuplestoreScan);
 
@@ -2430,7 +2533,8 @@ static pg_parser_NamedTuplestoreScan *_readNamedTuplestoreScan(char **strtok_ptr
 /*
  * _readWorkTableScan
  */
-static pg_parser_WorkTableScan *_readWorkTableScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_WorkTableScan* _readWorkTableScan(char** strtok_ptr, int16_t dbtype,
+                                                   char* dbversion)
 {
     READ_LOCALS(pg_parser_WorkTableScan);
 
@@ -2444,7 +2548,7 @@ static pg_parser_WorkTableScan *_readWorkTableScan(char **strtok_ptr, int16_t db
 /*
  * _readForeignScan
  */
-static pg_parser_ForeignScan *_readForeignScan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_ForeignScan* _readForeignScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_ForeignScan);
 
@@ -2496,7 +2600,8 @@ static pg_parser_CustomScan *_readCustomScan(char **strtok_ptr, int16_t dbtype, 
  * ReadCommonJoin
  *    Assign the basic stuff of all nodes that inherit from Join
  */
-static void ReadCommonJoin(pg_parser_Join *local_node, char** strtok_ptr, int16_t dbtype, char *dbversion)
+static void ReadCommonJoin(pg_parser_Join* local_node, char** strtok_ptr, int16_t dbtype,
+                           char* dbversion)
 {
     READ_TEMP_LOCALS();
 
@@ -2510,7 +2615,7 @@ static void ReadCommonJoin(pg_parser_Join *local_node, char** strtok_ptr, int16_
 /*
  * _readJoin
  */
-static pg_parser_Join *_readJoin(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Join* _readJoin(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS_NO_FIELDS(pg_parser_Join);
 
@@ -2522,7 +2627,7 @@ static pg_parser_Join *_readJoin(char **strtok_ptr, int16_t dbtype, char *dbvers
 /*
  * _readNestLoop
  */
-static pg_parser_NestLoop *_readNestLoop(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_NestLoop* _readNestLoop(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_NestLoop);
 
@@ -2536,9 +2641,9 @@ static pg_parser_NestLoop *_readNestLoop(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readMergeJoin
  */
-static pg_parser_MergeJoin *_readMergeJoin(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_MergeJoin* _readMergeJoin(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
-    int32_t            numCols;
+    int32_t numCols;
 
     READ_LOCALS(pg_parser_MergeJoin);
 
@@ -2560,7 +2665,7 @@ static pg_parser_MergeJoin *_readMergeJoin(char **strtok_ptr, int16_t dbtype, ch
 /*
  * _readHashJoin
  */
-static pg_parser_HashJoin *_readHashJoin(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_HashJoin* _readHashJoin(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_HashJoin);
 
@@ -2577,7 +2682,7 @@ static pg_parser_HashJoin *_readHashJoin(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readMaterial
  */
-static pg_parser_Material *_readMaterial(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Material* _readMaterial(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS_NO_FIELDS(pg_parser_Material);
 
@@ -2589,7 +2694,7 @@ static pg_parser_Material *_readMaterial(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readSort
  */
-static pg_parser_Sort *_readSort(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Sort* _readSort(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Sort);
 
@@ -2607,7 +2712,7 @@ static pg_parser_Sort *_readSort(char **strtok_ptr, int16_t dbtype, char *dbvers
 /*
  * _readGroup
  */
-static pg_parser_Group *_readGroup(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Group* _readGroup(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Group);
 
@@ -2624,7 +2729,7 @@ static pg_parser_Group *_readGroup(char **strtok_ptr, int16_t dbtype, char *dbve
 /*
  * _readAgg
  */
-static pg_parser_Agg *_readAgg(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Agg* _readAgg(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Agg);
 
@@ -2647,7 +2752,7 @@ static pg_parser_Agg *_readAgg(char **strtok_ptr, int16_t dbtype, char *dbversio
 /*
  * _readWindowAgg
  */
-static pg_parser_WindowAgg *_readWindowAgg(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_WindowAgg* _readWindowAgg(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_WindowAgg);
 
@@ -2677,7 +2782,7 @@ static pg_parser_WindowAgg *_readWindowAgg(char **strtok_ptr, int16_t dbtype, ch
 /*
  * _readUnique
  */
-static pg_parser_Unique *_readUnique(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Unique* _readUnique(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Unique);
 
@@ -2694,7 +2799,7 @@ static pg_parser_Unique *_readUnique(char **strtok_ptr, int16_t dbtype, char *db
 /*
  * _readGather
  */
-static pg_parser_Gather *_readGather(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Gather* _readGather(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Gather);
 
@@ -2712,7 +2817,7 @@ static pg_parser_Gather *_readGather(char **strtok_ptr, int16_t dbtype, char *db
 /*
  * _readGatherMerge
  */
-static pg_parser_GatherMerge *_readGatherMerge(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_GatherMerge* _readGatherMerge(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_GatherMerge);
 
@@ -2733,7 +2838,7 @@ static pg_parser_GatherMerge *_readGatherMerge(char **strtok_ptr, int16_t dbtype
 /*
  * _readHash
  */
-static pg_parser_Hash *_readHash(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Hash* _readHash(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Hash);
 
@@ -2751,7 +2856,7 @@ static pg_parser_Hash *_readHash(char **strtok_ptr, int16_t dbtype, char *dbvers
 /*
  * _readSetOp
  */
-static pg_parser_SetOp *_readSetOp(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SetOp* _readSetOp(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_SetOp);
 
@@ -2773,7 +2878,7 @@ static pg_parser_SetOp *_readSetOp(char **strtok_ptr, int16_t dbtype, char *dbve
 /*
  * _readLockRows
  */
-static pg_parser_LockRows *_readLockRows(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_LockRows* _readLockRows(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_LockRows);
 
@@ -2788,7 +2893,7 @@ static pg_parser_LockRows *_readLockRows(char **strtok_ptr, int16_t dbtype, char
 /*
  * _readLimit
  */
-static pg_parser_Limit *_readLimit(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Limit* _readLimit(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_Limit);
 
@@ -2803,7 +2908,8 @@ static pg_parser_Limit *_readLimit(char **strtok_ptr, int16_t dbtype, char *dbve
 /*
  * _readNestLoopParam
  */
-static pg_parser_NestLoopParam *_readNestLoopParam(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_NestLoopParam* _readNestLoopParam(char** strtok_ptr, int16_t dbtype,
+                                                   char* dbversion)
 {
     READ_LOCALS(pg_parser_NestLoopParam);
 
@@ -2816,7 +2922,7 @@ static pg_parser_NestLoopParam *_readNestLoopParam(char **strtok_ptr, int16_t db
 /*
  * _readPlanRowMark
  */
-static pg_parser_PlanRowMark *_readPlanRowMark(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_PlanRowMark* _readPlanRowMark(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_PlanRowMark);
 
@@ -2835,7 +2941,8 @@ static pg_parser_PlanRowMark *_readPlanRowMark(char **strtok_ptr, int16_t dbtype
     READ_DONE();
 }
 
-static pg_parser_PartitionPruneInfo *_readPartitionPruneInfo(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_PartitionPruneInfo* _readPartitionPruneInfo(char** strtok_ptr, int16_t dbtype,
+                                                             char* dbversion)
 {
     READ_LOCALS(pg_parser_PartitionPruneInfo);
 
@@ -2845,7 +2952,9 @@ static pg_parser_PartitionPruneInfo *_readPartitionPruneInfo(char **strtok_ptr, 
     READ_DONE();
 }
 
-static pg_parser_PartitionedRelPruneInfo *_readPartitionedRelPruneInfo(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_PartitionedRelPruneInfo* _readPartitionedRelPruneInfo(char**  strtok_ptr,
+                                                                       int16_t dbtype,
+                                                                       char*   dbversion)
 {
     READ_LOCALS(pg_parser_PartitionedRelPruneInfo);
 
@@ -2862,7 +2971,8 @@ static pg_parser_PartitionedRelPruneInfo *_readPartitionedRelPruneInfo(char **st
     READ_DONE();
 }
 
-static pg_parser_PartitionPruneStepOp *_readPartitionPruneStepOp(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_PartitionPruneStepOp* _readPartitionPruneStepOp(char** strtok_ptr, int16_t dbtype,
+                                                                 char* dbversion)
 {
     READ_LOCALS(pg_parser_PartitionPruneStepOp);
 
@@ -2875,7 +2985,9 @@ static pg_parser_PartitionPruneStepOp *_readPartitionPruneStepOp(char **strtok_p
     READ_DONE();
 }
 
-static pg_parser_PartitionPruneStepCombine *_readPartitionPruneStepCombine(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_PartitionPruneStepCombine* _readPartitionPruneStepCombine(char**  strtok_ptr,
+                                                                           int16_t dbtype,
+                                                                           char*   dbversion)
 {
     READ_LOCALS(pg_parser_PartitionPruneStepCombine);
 
@@ -2889,7 +3001,8 @@ static pg_parser_PartitionPruneStepCombine *_readPartitionPruneStepCombine(char 
 /*
  * _readPlanInvalItem
  */
-static pg_parser_PlanInvalItem *_readPlanInvalItem(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_PlanInvalItem* _readPlanInvalItem(char** strtok_ptr, int16_t dbtype,
+                                                   char* dbversion)
 {
     READ_LOCALS(pg_parser_PlanInvalItem);
 
@@ -2905,7 +3018,7 @@ static pg_parser_PlanInvalItem *_readPlanInvalItem(char **strtok_ptr, int16_t db
 /*
  * _readSubPlan
  */
-static pg_parser_SubPlan *_readSubPlan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_SubPlan* _readSubPlan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_SubPlan);
 
@@ -2932,7 +3045,8 @@ static pg_parser_SubPlan *_readSubPlan(char **strtok_ptr, int16_t dbtype, char *
 /*
  * _readAlternativeSubPlan
  */
-static pg_parser_AlternativeSubPlan *_readAlternativeSubPlan(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_AlternativeSubPlan* _readAlternativeSubPlan(char** strtok_ptr, int16_t dbtype,
+                                                             char* dbversion)
 {
     READ_LOCALS(pg_parser_AlternativeSubPlan);
 
@@ -2941,7 +3055,7 @@ static pg_parser_AlternativeSubPlan *_readAlternativeSubPlan(char **strtok_ptr, 
     READ_DONE();
 }
 
-/* ExtensibleNode无法在前端解析 */
+/* ExtensibleNode cannot be parsed in frontend */
 #if 0
 /*
  * Get the methods for a given type of extensible node.
@@ -2988,7 +3102,8 @@ _readExtensibleNode(char **strtok_ptr)
 /*
  * _readPartitionBoundSpec
  */
-static pg_parser_PartitionBoundSpec *_readPartitionBoundSpec(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_PartitionBoundSpec* _readPartitionBoundSpec(char** strtok_ptr, int16_t dbtype,
+                                                             char* dbversion)
 {
     READ_LOCALS(pg_parser_PartitionBoundSpec);
 
@@ -3007,7 +3122,8 @@ static pg_parser_PartitionBoundSpec *_readPartitionBoundSpec(char **strtok_ptr, 
 /*
  * _readPartitionRangeDatum
  */
-static pg_parser_PartitionRangeDatum *_readPartitionRangeDatum(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_PartitionRangeDatum* _readPartitionRangeDatum(char** strtok_ptr, int16_t dbtype,
+                                                               char* dbversion)
 {
     READ_LOCALS(pg_parser_PartitionRangeDatum);
 
@@ -3026,268 +3142,498 @@ static pg_parser_PartitionRangeDatum *_readPartitionRangeDatum(char **strtok_ptr
  *
  * The string to be read must already have been loaded into pg_parser_strtok().
  */
-static pg_parser_Node *parseNodeString(char **strtok_ptr, int16_t dbtype, char *dbversion)
+static pg_parser_Node* parseNodeString(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
-    void       *return_value;
+    void* return_value;
 
     READ_TEMP_LOCALS();
 
     token = pg_parser_strtok(&length, strtok_ptr);
 
-#define MATCH(tokname, namelen) \
-    (length == namelen && memcmp(token, tokname, namelen) == 0)
+#define MATCH(tokname, namelen) (length == namelen && memcmp(token, tokname, namelen) == 0)
 
     if (MATCH("QUERY", 5))
+    {
         return_value = _readQuery(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("WITHCHECKOPTION", 15))
+    {
         return_value = _readWithCheckOption(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SORTGROUPCLAUSE", 15))
+    {
         return_value = _readSortGroupClause(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("GROUPINGSET", 11))
+    {
         return_value = _readGroupingSet(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("WINDOWCLAUSE", 12))
+    {
         return_value = _readWindowClause(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("ROWMARKCLAUSE", 13))
+    {
         return_value = _readRowMarkClause(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("COMMONTABLEEXPR", 15))
+    {
         return_value = _readCommonTableExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SETOPERATIONSTMT", 16))
+    {
         return_value = _readSetOperationStmt(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("ALIAS", 5))
+    {
         return_value = _readAlias(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("RANGEVAR", 8))
+    {
         return_value = _readRangeVar(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("INTOCLAUSE", 10))
+    {
         return_value = _readIntoClause(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("TABLEFUNC", 9))
+    {
         return_value = _readTableFunc(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("VAR", 3))
+    {
         return_value = _readVar(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("CONST", 5))
+    {
         return_value = _readConst(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PARAM", 5))
+    {
         return_value = _readParam(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("AGGREF", 6))
+    {
         return_value = _readAggref(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("GROUPINGFUNC", 12))
+    {
         return_value = _readGroupingFunc(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("WINDOWFUNC", 10))
+    {
         return_value = _readWindowFunc(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SUBSCRIPTINGREF", 15))
+    {
         return_value = _readSubscriptingRef(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("FUNCEXPR", 8))
+    {
         return_value = _readFuncExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("NAMEDARGEXPR", 12))
+    {
         return_value = _readNamedArgExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("OPEXPR", 6))
+    {
         return_value = _readOpExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("DISTINCTEXPR", 12))
+    {
         return_value = _readDistinctExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("NULLIFEXPR", 10))
+    {
         return_value = _readNullIfExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SCALARARRAYOPEXPR", 17))
+    {
         return_value = _readScalarArrayOpExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("BOOLEXPR", 8))
+    {
         return_value = _readBoolExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SUBLINK", 7))
+    {
         return_value = _readSubLink(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("FIELDSELECT", 11))
+    {
         return_value = _readFieldSelect(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("FIELDSTORE", 10))
+    {
         return_value = _readFieldStore(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("RELABELTYPE", 11))
+    {
         return_value = _readRelabelType(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("COERCEVIAIO", 11))
+    {
         return_value = _readCoerceViaIO(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("ARRAYCOERCEEXPR", 15))
+    {
         return_value = _readArrayCoerceExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("CONVERTROWTYPEEXPR", 18))
+    {
         return_value = _readConvertRowtypeExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("COLLATE", 7))
+    {
         return_value = _readCollateExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("CASE", 4))
+    {
         return_value = _readCaseExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("WHEN", 4))
+    {
         return_value = _readCaseWhen(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("CASETESTEXPR", 12))
+    {
         return_value = _readCaseTestExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("ARRAY", 5))
+    {
         return_value = _readArrayExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("ROW", 3))
+    {
         return_value = _readRowExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("ROWCOMPARE", 10))
+    {
         return_value = _readRowCompareExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("COALESCE", 8))
+    {
         return_value = _readCoalesceExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("MINMAX", 6))
+    {
         return_value = _readMinMaxExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SQLVALUEFUNCTION", 16))
+    {
         return_value = _readSQLValueFunction(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("XMLEXPR", 7))
+    {
         return_value = _readXmlExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("NULLTEST", 8))
+    {
         return_value = _readNullTest(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("BOOLEANTEST", 11))
+    {
         return_value = _readBooleanTest(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("COERCETODOMAIN", 14))
+    {
         return_value = _readCoerceToDomain(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("COERCETODOMAINVALUE", 19))
+    {
         return_value = _readCoerceToDomainValue(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SETTODEFAULT", 12))
+    {
         return_value = _readSetToDefault(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("CURRENTOFEXPR", 13))
+    {
         return_value = _readCurrentOfExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("NEXTVALUEEXPR", 13))
+    {
         return_value = _readNextValueExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("INFERENCEELEM", 13))
+    {
         return_value = _readInferenceElem(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("TARGETENTRY", 11))
+    {
         return_value = _readTargetEntry(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("RANGETBLREF", 11))
+    {
         return_value = _readRangeTblRef(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("JOINEXPR", 8))
+    {
         return_value = _readJoinExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("FROMEXPR", 8))
+    {
         return_value = _readFromExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("ONCONFLICTEXPR", 14))
+    {
         return_value = _readOnConflictExpr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("RTE", 3))
+    {
         return_value = _readRangeTblEntry(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("RANGETBLFUNCTION", 16))
+    {
         return_value = _readRangeTblFunction(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("TABLESAMPLECLAUSE", 17))
+    {
         return_value = _readTableSampleClause(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("NOTIFY", 6))
+    {
         return_value = _readNotifyStmt(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("DEFELEM", 7))
+    {
         return_value = _readDefElem(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("DECLARECURSOR", 13))
+    {
         return_value = _readDeclareCursorStmt(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PLANNEDSTMT", 11))
+    {
         return_value = _readPlannedStmt(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PLAN", 4))
+    {
         return_value = _readPlan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("RESULT", 6))
+    {
         return_value = _readResult(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PROJECTSET", 10))
+    {
         return_value = _readProjectSet(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("MODIFYTABLE", 11))
+    {
         return_value = _readModifyTable(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("APPEND", 6))
+    {
         return_value = _readAppend(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("MERGEAPPEND", 11))
+    {
         return_value = _readMergeAppend(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("RECURSIVEUNION", 14))
+    {
         return_value = _readRecursiveUnion(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("BITMAPAND", 9))
+    {
         return_value = _readBitmapAnd(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("BITMAPOR", 8))
+    {
         return_value = _readBitmapOr(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SCAN", 4))
+    {
         return_value = _readScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SEQSCAN", 7))
+    {
         return_value = _readSeqScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SAMPLESCAN", 10))
+    {
         return_value = _readSampleScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("INDEXSCAN", 9))
+    {
         return_value = _readIndexScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("INDEXONLYSCAN", 13))
+    {
         return_value = _readIndexOnlyScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("BITMAPINDEXSCAN", 15))
+    {
         return_value = _readBitmapIndexScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("BITMAPHEAPSCAN", 14))
+    {
         return_value = _readBitmapHeapScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("TIDSCAN", 7))
+    {
         return_value = _readTidScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SUBQUERYSCAN", 12))
+    {
         return_value = _readSubqueryScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("FUNCTIONSCAN", 12))
+    {
         return_value = _readFunctionScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("VALUESSCAN", 10))
+    {
         return_value = _readValuesScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("TABLEFUNCSCAN", 13))
+    {
         return_value = _readTableFuncScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("CTESCAN", 7))
+    {
         return_value = _readCteScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("NAMEDTUPLESTORESCAN", 19))
+    {
         return_value = _readNamedTuplestoreScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("WORKTABLESCAN", 13))
+    {
         return_value = _readWorkTableScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("FOREIGNSCAN", 11))
+    {
         return_value = _readForeignScan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("CUSTOMSCAN", 10))
     {
-        //printf("ERROR: can't parser CustomScan in front\n");
+        // printf("ERROR: can't parser CustomScan in front\n");
         return_value = NULL;
     }
     else if (MATCH("JOIN", 4))
+    {
         return_value = _readJoin(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("NESTLOOP", 8))
+    {
         return_value = _readNestLoop(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("MERGEJOIN", 9))
+    {
         return_value = _readMergeJoin(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("HASHJOIN", 8))
+    {
         return_value = _readHashJoin(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("MATERIAL", 8))
+    {
         return_value = _readMaterial(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SORT", 4))
+    {
         return_value = _readSort(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("GROUP", 5))
+    {
         return_value = _readGroup(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("AGG", 3))
+    {
         return_value = _readAgg(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("WINDOWAGG", 9))
+    {
         return_value = _readWindowAgg(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("UNIQUE", 6))
+    {
         return_value = _readUnique(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("GATHER", 6))
+    {
         return_value = _readGather(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("GATHERMERGE", 11))
+    {
         return_value = _readGatherMerge(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("HASH", 4))
+    {
         return_value = _readHash(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SETOP", 5))
+    {
         return_value = _readSetOp(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("LOCKROWS", 8))
+    {
         return_value = _readLockRows(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("LIMIT", 5))
+    {
         return_value = _readLimit(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("NESTLOOPPARAM", 13))
+    {
         return_value = _readNestLoopParam(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PLANROWMARK", 11))
+    {
         return_value = _readPlanRowMark(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PARTITIONPRUNEINFO", 18))
+    {
         return_value = _readPartitionPruneInfo(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PARTITIONEDRELPRUNEINFO", 23))
+    {
         return_value = _readPartitionedRelPruneInfo(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PARTITIONPRUNESTEPOP", 20))
+    {
         return_value = _readPartitionPruneStepOp(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PARTITIONPRUNESTEPCOMBINE", 25))
+    {
         return_value = _readPartitionPruneStepCombine(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PLANINVALITEM", 13))
+    {
         return_value = _readPlanInvalItem(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("SUBPLAN", 7))
+    {
         return_value = _readSubPlan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("ALTERNATIVESUBPLAN", 18))
+    {
         return_value = _readAlternativeSubPlan(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("EXTENSIBLENODE", 14))
     {
-        //printf("ERROR: can't parser extensiblenode in front\n");
+        // printf("ERROR: can't parser extensiblenode in front\n");
         return_value = NULL;
     }
     else if (MATCH("PARTITIONBOUNDSPEC", 18))
+    {
         return_value = _readPartitionBoundSpec(strtok_ptr, dbtype, dbversion);
+    }
     else if (MATCH("PARTITIONRANGEDATUM", 19))
+    {
         return_value = _readPartitionRangeDatum(strtok_ptr, dbtype, dbversion);
+    }
     else
     {
-        //printf("ERROR: badly formatted node string \"%.32s\"...", token);
-        return_value = NULL;    /* keep compiler quiet */
+        // printf("ERROR: badly formatted node string \"%.32s\"...", token);
+        return_value = NULL; /* keep compiler quiet */
     }
 
-    return (pg_parser_Node *) return_value;
+    return (pg_parser_Node*)return_value;
 }
-
 
 /*
  * readDatum
@@ -3296,14 +3642,13 @@ static pg_parser_Node *parseNodeString(char **strtok_ptr, int16_t dbtype, char *
  * Datum.  The string representation embeds length info, but not byValue,
  * so we must be told that.
  */
-static pg_parser_Datum readDatum(bool typbyval, char** strtok_ptr, bool *need_free)
+static pg_parser_Datum readDatum(bool typbyval, char** strtok_ptr, bool* need_free)
 {
-    size_t              length,
-                        i;
-    int32_t             tokenLength;
-    const char         *token;
-    pg_parser_Datum  res;
-    char               *s;
+    size_t          length, i;
+    int32_t         tokenLength;
+    const char*     token;
+    pg_parser_Datum res;
+    char*           s;
 
     /*
      * read the actual length of the value
@@ -3311,49 +3656,49 @@ static pg_parser_Datum readDatum(bool typbyval, char** strtok_ptr, bool *need_fr
     token = pg_parser_strtok(&tokenLength, strtok_ptr);
     length = atoui(token);
 
-    token = pg_parser_strtok(&tokenLength, strtok_ptr);    /* read the '[' */
+    token = pg_parser_strtok(&tokenLength, strtok_ptr); /* read the '[' */
     if (token == NULL || token[0] != '[')
     {
-        //printf("ERROR: expected \"[\" to start datum, but got \"%s\"; length = %zu\n",
-        //     token ? token : "[NULL]", length);
+        // printf("ERROR: expected \"[\" to start datum, but got \"%s\"; length = %zu\n",
+        //      token ? token : "[NULL]", length);
     }
-
 
     if (typbyval)
     {
-        if (length > (size_t) sizeof(pg_parser_Datum))
+        if (length > (size_t)sizeof(pg_parser_Datum))
         {
-            //printf("ERROR: byval datum but length = %zu\n", length);
+            // printf("ERROR: byval datum but length = %zu\n", length);
         }
-        res = (pg_parser_Datum) 0;
-        s = (char *) (&res);
-        for (i = 0; i < (size_t) sizeof(pg_parser_Datum); i++)
+        res = (pg_parser_Datum)0;
+        s = (char*)(&res);
+        for (i = 0; i < (size_t)sizeof(pg_parser_Datum); i++)
         {
             token = pg_parser_strtok(&tokenLength, strtok_ptr);
-            s[i] = (char) atoi(token);
+            s[i] = (char)atoi(token);
         }
     }
     else if (length <= 0)
-        res = (pg_parser_Datum) NULL;
+    {
+        res = (pg_parser_Datum)NULL;
+    }
     else
     {
-        pg_parser_mcxt_malloc(NODE_MCXT, (void **) &s, length);
+        pg_parser_mcxt_malloc(NODE_MCXT, (void**)&s, length);
         *need_free = true;
         for (i = 0; i < length; i++)
         {
             token = pg_parser_strtok(&tokenLength, strtok_ptr);
-            s[i] = (char) atoi(token);
+            s[i] = (char)atoi(token);
         }
         res = pg_parser_PointerGetDatum(s);
     }
 
-    token = pg_parser_strtok(&tokenLength, strtok_ptr);    /* read the ']' */
+    token = pg_parser_strtok(&tokenLength, strtok_ptr); /* read the ']' */
     if (token == NULL || token[0] != ']')
     {
-        //printf("ERROR: expected \"]\" to end datum, but got \"%s\"; length = %zu\n",
-        //     token ? token : "[NULL]", length);
+        // printf("ERROR: expected \"]\" to end datum, but got \"%s\"; length = %zu\n",
+        //      token ? token : "[NULL]", length);
     }
-
 
     return res;
 }
@@ -3361,15 +3706,16 @@ static pg_parser_Datum readDatum(bool typbyval, char** strtok_ptr, bool *need_fr
 /*
  * readAttrNumberCols
  */
-static pg_parser_AttrNumber *readAttrNumberCols(int32_t numCols, char **strtok_ptr)
+static pg_parser_AttrNumber* readAttrNumberCols(int32_t numCols, char** strtok_ptr)
 {
-    int32_t            tokenLength,
-                i;
-    const char *token;
-    pg_parser_AttrNumber *attr_vals;
+    int32_t               tokenLength, i;
+    const char*           token;
+    pg_parser_AttrNumber* attr_vals;
 
     if (numCols <= 0)
+    {
         return NULL;
+    }
     pg_parser_mcxt_malloc(NODE_MCXT, (void**)&attr_vals, numCols * sizeof(pg_parser_AttrNumber));
     for (i = 0; i < numCols; i++)
     {
@@ -3383,15 +3729,16 @@ static pg_parser_AttrNumber *readAttrNumberCols(int32_t numCols, char **strtok_p
 /*
  * readOidCols
  */
-static uint32_t *readOidCols(int32_t numCols, char **strtok_ptr)
+static uint32_t* readOidCols(int32_t numCols, char** strtok_ptr)
 {
-    int32_t         tokenLength,
-                    i;
-    const char     *token;
-    uint32_t       *oid_vals;
+    int32_t     tokenLength, i;
+    const char* token;
+    uint32_t*   oid_vals;
 
     if (numCols <= 0)
+    {
         return NULL;
+    }
     pg_parser_mcxt_malloc(NODE_MCXT, (void**)&oid_vals, numCols * sizeof(uint32_t));
     for (i = 0; i < numCols; i++)
     {
@@ -3405,16 +3752,17 @@ static uint32_t *readOidCols(int32_t numCols, char **strtok_ptr)
 /*
  * readIntCols
  */
-static int32_t *readIntCols(int32_t numCols, char **strtok_ptr)
+static int32_t* readIntCols(int32_t numCols, char** strtok_ptr)
 {
-    int32_t            tokenLength,
-                i;
-    const char *token;
-    int32_t           *int_vals;
+    int32_t     tokenLength, i;
+    const char* token;
+    int32_t*    int_vals;
 
     if (numCols <= 0)
+    {
         return NULL;
-    pg_parser_mcxt_malloc(NODE_MCXT, (void **)&int_vals, numCols * sizeof(int32_t));
+    }
+    pg_parser_mcxt_malloc(NODE_MCXT, (void**)&int_vals, numCols * sizeof(int32_t));
 
     for (i = 0; i < numCols; i++)
     {
@@ -3428,16 +3776,17 @@ static int32_t *readIntCols(int32_t numCols, char **strtok_ptr)
 /*
  * readBoolCols
  */
-static bool *readBoolCols(int32_t numCols, char **strtok_ptr)
+static bool* readBoolCols(int32_t numCols, char** strtok_ptr)
 {
-    int32_t            tokenLength,
-                i;
-    const char *token;
-    bool       *bool_vals;
+    int32_t     tokenLength, i;
+    const char* token;
+    bool*       bool_vals;
 
     if (numCols <= 0)
+    {
         return NULL;
-    pg_parser_mcxt_malloc(NODE_MCXT, (void **)&bool_vals, numCols * sizeof(bool));
+    }
+    pg_parser_mcxt_malloc(NODE_MCXT, (void**)&bool_vals, numCols * sizeof(bool));
     for (i = 0; i < numCols; i++)
     {
         token = pg_parser_strtok(&tokenLength, strtok_ptr);

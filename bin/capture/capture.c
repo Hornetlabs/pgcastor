@@ -1,7 +1,7 @@
 /*
  * All Copyright (c) 2024-2024, Byte Sync Development Group
  *
-*/
+ */
 
 #include "app_incl.h"
 #include "utils/guc/guc.h"
@@ -13,8 +13,7 @@
 #include "common/pg_parser_translog.h"
 #include "command/cmd.h"
 
-static void
-help()
+static void help()
 {
     printf("Usage:\n  capture [OPTION]\n");
     printf("Options:\n");
@@ -22,16 +21,16 @@ help()
     printf("  operation            init/start/stop/status/reload\n");
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    char* dbtype                    = NULL;
-    char* dbversion                 = NULL;
-    optype optype            = OPTYPE_NOP;
-    const char* loglevel            = NULL;
-    char* profilepath               = NULL;
-    List* extra_config              = NULL;
+    char*       dbtype = NULL;
+    char*       dbversion = NULL;
+    optype      optype = OPTYPE_NOP;
+    const char* loglevel = NULL;
+    char*       profilepath = NULL;
+    List*       extra_config = NULL;
 
-    if(1 < argc)
+    if (1 < argc)
     {
         if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0)
         {
@@ -39,39 +38,34 @@ int main(int argc, char **argv)
             exit(0);
         }
 
-        if(0 != strcmp(argv[1], "-f"))
+        if (0 != strcmp(argv[1], "-f"))
         {
             help();
             exit(0);
         }
 
-        if(strlen(argv[3]) == strlen("init")
-            && 0 == strcasecmp(argv[3], "init"))
+        if (strlen(argv[3]) == strlen("init") && 0 == strcasecmp(argv[3], "init"))
         {
             optype = OPTYPE_INIT;
         }
-        else if(strlen(argv[3]) == strlen("start")
-                && 0 == strcasecmp(argv[3], "start"))
+        else if (strlen(argv[3]) == strlen("start") && 0 == strcasecmp(argv[3], "start"))
         {
             optype = OPTYPE_START;
         }
-        else if(strlen(argv[3]) == strlen("stop")
-                && 0 == strcasecmp(argv[3], "stop"))
+        else if (strlen(argv[3]) == strlen("stop") && 0 == strcasecmp(argv[3], "stop"))
         {
             optype = OPTYPE_STOP;
         }
-        else if(strlen(argv[3]) == strlen("status")
-                && 0 == strcasecmp(argv[3], "status"))
+        else if (strlen(argv[3]) == strlen("status") && 0 == strcasecmp(argv[3], "status"))
         {
             optype = OPTYPE_STATUS;
         }
-        else if(strlen(argv[3]) == strlen("reload")
-                && 0 == strcasecmp(argv[3], "reload"))
+        else if (strlen(argv[3]) == strlen("reload") && 0 == strcasecmp(argv[3], "reload"))
         {
             optype = OPTYPE_RELOAD;
         }
-        else if(strlen(argv[3]) == strlen("onlinerefresh")
-                && 0 == strcasecmp(argv[3], "onlinerefresh"))
+        else if (strlen(argv[3]) == strlen("onlinerefresh") &&
+                 0 == strcasecmp(argv[3], "onlinerefresh"))
         {
             int index_guc = 0;
             optype = OPTYPE_ONLINEREFRESH;
@@ -94,7 +88,7 @@ int main(int argc, char **argv)
 
     if (!extra_config)
     {
-        /* 检查个数 */
+        /* check argument count */
         if (4 != argc)
         {
             help();
@@ -105,20 +99,20 @@ int main(int argc, char **argv)
     mem_init();
     g_proctype = PROC_TYPE_CAPTURE;
 
-    /* 保存配置文件路径绝对路径 */
+    /* save config file path as absolute path */
     profilepath = osal_make_absolute_path(argv[2]);
     rmemcpy1(g_profilepath, 0, profilepath, strlen(profilepath));
     rfree(profilepath);
 
-    /* 参数解析 */
+    /* parse parameters */
     guc_loadcfg(argv[2], false);
 
-    /* 查看解析内容是否正确 */
+    /* check if parsed content is correct */
     guc_debug();
 
-    /* 设置 日志级别 */
+    /* set log level */
     loglevel = guc_getConfigOption(CFG_KEY_LOG_LEVEL);
-    if(NULL == loglevel)
+    if (NULL == loglevel)
     {
         elog(RLOG_WARNING, "unrecognized configuration parameter:%s", loglevel);
         return 1;
@@ -126,16 +120,15 @@ int main(int argc, char **argv)
 
     elog_seteloglevel(loglevel);
 
-    /* 参数值校验 */
+    /* validate parameter values */
     dbtype = guc_getConfigOption(CFG_KEY_DBTYPE);
     dbversion = guc_getConfigOption(CFG_KEY_DBVERION);
 
-    if(strlen(dbtype) == strlen(DBTYPE_POSTGRES)
-        && 0 == strcmp(dbtype, DBTYPE_POSTGRES))
+    if (strlen(dbtype) == strlen(DBTYPE_POSTGRES) && 0 == strcmp(dbtype, DBTYPE_POSTGRES))
     {
         g_idbtype = DATABASE_TYPE_POSTGRESQL;
-        if(strlen(dbversion) == strlen(DBVERSION_POSTGRES_12)
-            && 0 == strcmp(dbversion, DBVERSION_POSTGRES_12))
+        if (strlen(dbversion) == strlen(DBVERSION_POSTGRES_12) &&
+            0 == strcmp(dbversion, DBVERSION_POSTGRES_12))
         {
             g_idbversion = PGDBVERSION_12;
         }
@@ -151,10 +144,9 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    /* 执行 */
+    /* execute */
     if (false == cmd(optype, extra_config))
     {
-        
         return 1;
     }
 

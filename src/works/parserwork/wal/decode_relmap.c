@@ -32,44 +32,45 @@
 #include "works/parserwork/wal/decode_relmap.h"
 #include "works/parserwork/wal/decode_ddl.h"
 
-/* 解析 relmap 提交 */
+/* Parse relmap commit */
 void decode_relmap(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
     /*
-     * relmapfile 也是为元数据的一部分，所以应该放在 catalogdata 当中，那么在事务中的逻辑位置如下
+     * relmapfile is also part of metadata, so it should be placed in catalogdata.
+     * The logical position in the transaction is as follows:
      *  txn
      *      --> txnstmt
      *                  ---->catalog
      *                                  ---->relmapfile
-    */
-    txn* txn = NULL;
-    txnstmt *stmt = NULL;
-    replmapfile* relmapfile = NULL;
-    catalogdata* catalogdata = NULL;
-    txnstmt_metadata *metadata = NULL;
+     */
+    txn*                           txn = NULL;
+    txnstmt*                       stmt = NULL;
+    replmapfile*                   relmapfile = NULL;
+    catalogdata*                   catalogdata = NULL;
+    txnstmt_metadata*              metadata = NULL;
     pg_parser_translog_pre_relmap* prerelmap = NULL;
 
     prerelmap = (pg_parser_translog_pre_relmap*)pbase;
 
-    if(ctx->decode_record->start.wal.lsn < ctx->base.restartlsn
-        || ctx->database != prerelmap->m_dboid)
+    if (ctx->decode_record->start.wal.lsn < ctx->base.restartlsn ||
+        ctx->database != prerelmap->m_dboid)
     {
         return;
     }
 
-    if(0 == prerelmap->m_count)
+    if (0 == prerelmap->m_count)
     {
         return;
     }
 
-    /* 获取 relmap 中的内容，并应用 */
-    if(InvalidTransactionId != prerelmap->m_base.m_xid)
+    /* Get content from relmap and apply */
+    if (InvalidTransactionId != prerelmap->m_base.m_xid)
     {
         txn = transcache_getTXNByXidFind(ctx->trans_cache, prerelmap->m_base.m_xid);
-        if(NULL == txn)
+        if (NULL == txn)
         {
-            /* 初始化 */
-            if(InvalidTransactionId == prerelmap->m_base.m_xid)
+            /* Initialize */
+            if (InvalidTransactionId == prerelmap->m_base.m_xid)
             {
                 elog(RLOG_ERROR, "relmap's xid is invalid, amazing");
             }
@@ -80,7 +81,7 @@ void decode_relmap(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
         }
     }
 
-    if(NULL == txn)
+    if (NULL == txn)
     {
         elog(RLOG_ERROR, "relmap's xid is invalid, amazing");
     }
@@ -91,32 +92,32 @@ void decode_relmap(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
     TXN_UNSET_TRANS_DDL(txn->flag);
 
     stmt = rmalloc0(sizeof(txnstmt));
-    if(NULL == stmt)
+    if (NULL == stmt)
     {
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(stmt, 0, 0, sizeof(txnstmt));
     stmt->type = TXNSTMT_TYPE_METADATA;
 
-    /* 指向性信息 */
+    /* Pointing information */
     metadata = rmalloc0(sizeof(txnstmt_metadata));
-    if(NULL == metadata)
+    if (NULL == metadata)
     {
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(metadata, 0, 0, sizeof(txnstmt_metadata));
     stmt->stmt = (void*)metadata;
 
-    /* 申请 catalogdata 放入到 sysdicthis 中 */
+    /* Allocate catalogdata and put into sysdicthis */
     catalogdata = rmalloc0(sizeof(catalogdata));
-    if(NULL == catalogdata)
+    if (NULL == catalogdata)
     {
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(catalogdata, 0, '\0', sizeof(catalogdata));
 
     relmapfile = (replmapfile*)rmalloc0(sizeof(replmapfile));
-    if(NULL == relmapfile)
+    if (NULL == relmapfile)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -128,7 +129,7 @@ void decode_relmap(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
     prerelmap->m_count = 0;
     prerelmap->m_mapping = NULL;
 
-    /* 设置 */
+    /* Set */
     txn->sysdictHis = lappend(txn->sysdictHis, catalogdata);
 
     metadata->begin = list_tail(txn->sysdictHis);

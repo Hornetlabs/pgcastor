@@ -15,7 +15,6 @@
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -27,10 +26,10 @@
  * ----------
  */
 
-void iso8859_1_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void iso8859_1_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
     unsigned short c;
 
@@ -45,7 +44,9 @@ void iso8859_1_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t 
             break;
         }
         if (!IS_HIGHBIT_SET(c))
+        {
             *dest++ = c;
+        }
         else
         {
             *dest++ = (c >> 6) | 0xc0;
@@ -57,13 +58,12 @@ void iso8859_1_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t 
     *dest = '\0';
 }
 
-void utf8_to_iso8859_1(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_iso8859_1(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
     int32_t        len = str_len;
-    unsigned short c,
-                c1;
+    unsigned short c, c1;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, LATIN1);
 
@@ -101,7 +101,7 @@ void utf8_to_iso8859_1(unsigned char *src_str, unsigned char *dest_str, int32_t 
             c = ((c & 0x1f) << 6) | c1;
             if (c >= 0x80 && c <= 0xff)
             {
-                *dest++ = (unsigned char) c;
+                *dest++ = (unsigned char)c;
                 src += 2;
                 len -= 2;
             }

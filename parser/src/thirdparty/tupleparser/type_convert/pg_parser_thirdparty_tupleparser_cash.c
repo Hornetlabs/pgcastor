@@ -1,12 +1,12 @@
 /**
  * @file pg_parser_thirdparty_tupleparser_cash.c
  * @author bytesync
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2023-08-03
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  */
 #include <locale.h>
 #include "pg_parser_os_incl.h"
@@ -22,30 +22,25 @@ typedef int64_t Cash;
  * Function to convert cash to a dollars and cents representation, using
  * the lc_monetary locale's formatting.
  */
-pg_parser_Datum cash_out(pg_parser_Datum attr,
-                            pg_parser_extraTypoutInfo *info)
+pg_parser_Datum cash_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
-    Cash        value = (Cash) attr;
-    char       *result;
-    char        buf[128];
-    char       *bufptr;
-    int32_t            digit_pos;
-    int32_t            points,
-                mon_group;
-    char        dsymbol;
-    const char *ssymbol,
-               *csymbol,
-               *signsymbol;
-    char        sign_posn,
-                cs_precedes,
-                sep_by_space;
-    struct lconv lconvert_tmp;
-    struct lconv *extlconv,
-                 *lconvert;
-    char *save_lc_monetary;
-    char *save_lc_numeric;
-    if (!pg_parser_mcxt_malloc(PGFUNC_CASH_MCXT, (void **) &result, 32))
-        return (pg_parser_Datum) 0;
+    Cash          value = (Cash)attr;
+    char*         result;
+    char          buf[128];
+    char*         bufptr;
+    int32_t       digit_pos;
+    int32_t       points, mon_group;
+    char          dsymbol;
+    const char *  ssymbol, *csymbol, *signsymbol;
+    char          sign_posn, cs_precedes, sep_by_space;
+    struct lconv  lconvert_tmp;
+    struct lconv *extlconv, *lconvert;
+    char*         save_lc_monetary;
+    char*         save_lc_numeric;
+    if (!pg_parser_mcxt_malloc(PGFUNC_CASH_MCXT, (void**)&result, 32))
+    {
+        return (pg_parser_Datum)0;
+    }
     rmemset1(&lconvert_tmp, 0, 0, sizeof(struct lconv));
     save_lc_monetary = setlocale(LC_MONETARY, NULL);
     save_lc_monetary = pg_parser_mcxt_strdup(save_lc_monetary);
@@ -85,7 +80,9 @@ pg_parser_Datum cash_out(pg_parser_Datum attr,
     /* see comments about frac_digits in cash_in() */
     points = lconvert->frac_digits;
     if (points < 0 || points > 10)
-        points = 2;                /* best guess in this case, I think */
+    {
+        points = 2; /* best guess in this case, I think */
+    }
 
     /*
      * As with frac_digits, must apply a range check to mon_grouping to avoid
@@ -93,18 +90,27 @@ pg_parser_Datum cash_out(pg_parser_Datum attr,
      */
     mon_group = *lconvert->mon_grouping;
     if (mon_group <= 0 || mon_group > 6)
+    {
         mon_group = 3;
+    }
 
     /* we restrict dsymbol to be a single byte, but not the other symbols */
-    if (*lconvert->mon_decimal_point != '\0' &&
-        lconvert->mon_decimal_point[1] == '\0')
+    if (*lconvert->mon_decimal_point != '\0' && lconvert->mon_decimal_point[1] == '\0')
+    {
         dsymbol = *lconvert->mon_decimal_point;
+    }
     else
+    {
         dsymbol = '.';
+    }
     if (*lconvert->mon_thousands_sep != '\0')
+    {
         ssymbol = lconvert->mon_thousands_sep;
-    else                        /* ssymbol should not equal dsymbol */
+    }
+    else /* ssymbol should not equal dsymbol */
+    {
         ssymbol = (dsymbol != ',') ? "," : ".";
+    }
     csymbol = (*lconvert->currency_symbol != '\0') ? lconvert->currency_symbol : "$";
 
     if (value < 0)
@@ -150,8 +156,8 @@ pg_parser_Datum cash_out(pg_parser_Datum attr,
             rmemcpy1(bufptr, 0, ssymbol, strlen(ssymbol));
         }
 
-        *(--bufptr) = ((uint64_t) value % 10) + '0';
-        value = ((uint64_t) value) / 10;
+        *(--bufptr) = ((uint64_t)value % 10) + '0';
+        value = ((uint64_t)value) / 10;
         digit_pos--;
     } while (value || digit_pos >= 0);
 
@@ -183,103 +189,105 @@ pg_parser_Datum cash_out(pg_parser_Datum attr,
     {
         case 0:
             if (cs_precedes)
-                sprintf(result, "(%s%s%s)",
-                                  csymbol,
-                                  (sep_by_space == 1) ? " " : "",
-                                  bufptr);
+            {
+                sprintf(result, "(%s%s%s)", csymbol, (sep_by_space == 1) ? " " : "", bufptr);
+            }
             else
-                sprintf(result, "(%s%s%s)",
-                                  bufptr,
-                                  (sep_by_space == 1) ? " " : "",
-                                  csymbol);
+            {
+                sprintf(result, "(%s%s%s)", bufptr, (sep_by_space == 1) ? " " : "", csymbol);
+            }
             break;
         case 1:
         default:
             if (cs_precedes)
-                sprintf(result, "%s%s%s%s%s",
-                                  signsymbol,
-                                  (sep_by_space == 2) ? " " : "",
-                                  csymbol,
-                                  (sep_by_space == 1) ? " " : "",
-                                  bufptr);
+            {
+                sprintf(result, "%s%s%s%s%s", signsymbol, (sep_by_space == 2) ? " " : "", csymbol,
+                        (sep_by_space == 1) ? " " : "", bufptr);
+            }
             else
-                sprintf(result, "%s%s%s%s%s",
-                                  signsymbol,
-                                  (sep_by_space == 2) ? " " : "",
-                                  bufptr,
-                                  (sep_by_space == 1) ? " " : "",
-                                  csymbol);
+            {
+                sprintf(result, "%s%s%s%s%s", signsymbol, (sep_by_space == 2) ? " " : "", bufptr,
+                        (sep_by_space == 1) ? " " : "", csymbol);
+            }
             break;
         case 2:
             if (cs_precedes)
-                sprintf(result, "%s%s%s%s%s",
-                                  csymbol,
-                                  (sep_by_space == 1) ? " " : "",
-                                  bufptr,
-                                  (sep_by_space == 2) ? " " : "",
-                                  signsymbol);
+            {
+                sprintf(result, "%s%s%s%s%s", csymbol, (sep_by_space == 1) ? " " : "", bufptr,
+                        (sep_by_space == 2) ? " " : "", signsymbol);
+            }
             else
-                sprintf(result, "%s%s%s%s%s",
-                                  bufptr,
-                                  (sep_by_space == 1) ? " " : "",
-                                  csymbol,
-                                  (sep_by_space == 2) ? " " : "",
-                                  signsymbol);
+            {
+                sprintf(result, "%s%s%s%s%s", bufptr, (sep_by_space == 1) ? " " : "", csymbol,
+                        (sep_by_space == 2) ? " " : "", signsymbol);
+            }
             break;
         case 3:
             if (cs_precedes)
-                sprintf(result, "%s%s%s%s%s",
-                                  signsymbol,
-                                  (sep_by_space == 2) ? " " : "",
-                                  csymbol,
-                                  (sep_by_space == 1) ? " " : "",
-                                  bufptr);
+            {
+                sprintf(result, "%s%s%s%s%s", signsymbol, (sep_by_space == 2) ? " " : "", csymbol,
+                        (sep_by_space == 1) ? " " : "", bufptr);
+            }
             else
-                sprintf(result, "%s%s%s%s%s",
-                                  bufptr,
-                                  (sep_by_space == 1) ? " " : "",
-                                  signsymbol,
-                                  (sep_by_space == 2) ? " " : "",
-                                  csymbol);
+            {
+                sprintf(result, "%s%s%s%s%s", bufptr, (sep_by_space == 1) ? " " : "", signsymbol,
+                        (sep_by_space == 2) ? " " : "", csymbol);
+            }
             break;
         case 4:
             if (cs_precedes)
-                sprintf(result, "%s%s%s%s%s",
-                                  csymbol,
-                                  (sep_by_space == 2) ? " " : "",
-                                  signsymbol,
-                                  (sep_by_space == 1) ? " " : "",
-                                  bufptr);
+            {
+                sprintf(result, "%s%s%s%s%s", csymbol, (sep_by_space == 2) ? " " : "", signsymbol,
+                        (sep_by_space == 1) ? " " : "", bufptr);
+            }
             else
-                sprintf(result, "%s%s%s%s%s",
-                                  bufptr,
-                                  (sep_by_space == 1) ? " " : "",
-                                  csymbol,
-                                  (sep_by_space == 2) ? " " : "",
-                                  signsymbol);
+            {
+                sprintf(result, "%s%s%s%s%s", bufptr, (sep_by_space == 1) ? " " : "", csymbol,
+                        (sep_by_space == 2) ? " " : "", signsymbol);
+            }
             break;
     }
 
     if (lconvert->decimal_point)
+    {
         pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->decimal_point);
+    }
     if (lconvert->thousands_sep)
+    {
         pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->thousands_sep);
+    }
     if (lconvert->grouping)
+    {
         pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->grouping);
+    }
     if (lconvert->int_curr_symbol)
+    {
         pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->int_curr_symbol);
+    }
     if (lconvert->currency_symbol)
+    {
         pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->currency_symbol);
+    }
     if (lconvert->mon_decimal_point)
+    {
         pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->mon_decimal_point);
+    }
     if (lconvert->mon_thousands_sep)
+    {
         pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->mon_thousands_sep);
+    }
     if (lconvert->mon_grouping)
+    {
         pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->mon_grouping);
+    }
     if (lconvert->positive_sign)
+    {
         pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->positive_sign);
+    }
     if (lconvert->negative_sign)
+    {
         pg_parser_mcxt_free(PGFUNC_CASH_MCXT, lconvert->negative_sign);
+    }
     info->valuelen = strlen(result);
-    return (pg_parser_Datum) result;
+    return (pg_parser_Datum)result;
 }

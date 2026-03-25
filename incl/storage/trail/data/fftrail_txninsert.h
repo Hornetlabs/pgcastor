@@ -1,5 +1,5 @@
 #ifndef _FFTRAIL_TXNINSERT_H
-#define _FFTRAIL_TXTINSERT_H
+#define _FFTRAIL_TXNINSERT_H
 
 bool fftrail_txninsert_serial(void* data, void* state);
 

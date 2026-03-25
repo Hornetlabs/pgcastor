@@ -3,13 +3,13 @@
 
 typedef struct BIGTXN
 {
-    FullTransactionId       xid;        /* 事务号 */
-    ffsmgr_fdata*    fdata;      /* 序列化结构 */
-    List*                   txndicts;   /* 系统字典 */
-    file_buffer      fbuffer;    /* 保存的临时页面，临时保存 */
+    FullTransactionId xid;      /* Transaction ID */
+    ffsmgr_fdata*     fdata;    /* Serialization structure */
+    List*             txndicts; /* System dictionary */
+    file_buffer       fbuffer;  /* Saved temporary page, temporary save */
 } bigtxn;
 
 extern bool bigtxn_reset(bigtxn* bigtxn);
-extern void bigtxn_clean(bigtxn *htxn);
+extern void bigtxn_clean(bigtxn* htxn);
 
 #endif

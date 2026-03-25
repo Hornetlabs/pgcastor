@@ -10,7 +10,7 @@
 
 /*
  * fileid + offset + cnt
- *    8   +   8    +  8 
+ *    8   +   8    +  8
  */
 #define ONLINEREFRESHPERSIST_FILE_HEAD_LEN (sizeof(uint64) + sizeof(uint64) + sizeof(uint64))
 
@@ -18,21 +18,22 @@
  * tabcnt + beginoffset + endfileid + endoffset + beginfileid + stat + incement + txid + uuid
  *    8   +      8      +     8     +     8     +      8      +  4   +    1     +   8  +  16
  */
-#define ONLINEREFRESHPERSIST_FILE_NODE_LEN (sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + sizeof(uint64)  + sizeof(uint64) + sizeof(int) + sizeof(bool)+ sizeof(FullTransactionId) + sizeof(uuid_t))
-
+#define ONLINEREFRESHPERSIST_FILE_NODE_LEN                                                \
+    (sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + \
+     sizeof(int) + sizeof(bool) + sizeof(FullTransactionId) + sizeof(uuid_t))
 
 /*
  * cnt + completecnt + tablestat + oid + schema + table + stat
  *  4  +      4      +     4     +  4  +   64   +  64   + cnt * 1
  */
-#define ONLINEREFRESHPERSIST_FILE_TABLE_LEN (sizeof(int) + sizeof(int) + sizeof(int) + sizeof(Oid) + NAMEDATALEN + NAMEDATALEN)
-
+#define ONLINEREFRESHPERSIST_FILE_TABLE_LEN \
+    (sizeof(int) + sizeof(int) + sizeof(int) + sizeof(Oid) + NAMEDATALEN + NAMEDATALEN)
 
 onlinerefresh_persistnode* onlinerefresh_persistnode_init(void)
 {
-    onlinerefresh_persistnode *persistnode = NULL;
+    onlinerefresh_persistnode* persistnode = NULL;
 
-    persistnode = (onlinerefresh_persistnode *)rmalloc0(sizeof(onlinerefresh_persistnode));
+    persistnode = (onlinerefresh_persistnode*)rmalloc0(sizeof(onlinerefresh_persistnode));
     if (NULL == persistnode)
     {
         elog(RLOG_WARNING, "onlinerefresh persistnode malloc out of memory, %s", strerror(errno));
@@ -54,9 +55,9 @@ onlinerefresh_persistnode* onlinerefresh_persistnode_init(void)
 
 onlinerefresh_persist* onlinerefresh_persist_init(void)
 {
-    onlinerefresh_persist *persist = NULL;
+    onlinerefresh_persist* persist = NULL;
 
-    persist = (onlinerefresh_persist *)rmalloc0(sizeof(onlinerefresh_persist));
+    persist = (onlinerefresh_persist*)rmalloc0(sizeof(onlinerefresh_persist));
     if (NULL == persist)
     {
         elog(RLOG_WARNING, "onlinerefresh persist malloc out of memory, %s", strerror(errno));
@@ -75,7 +76,8 @@ void onlinerefresh_persistnode_statset(onlinerefresh_persistnode* persistnode, i
     persistnode->stat = stat;
 }
 
-void onlinerefresh_persistnode_txidset(onlinerefresh_persistnode* persistnode, FullTransactionId txid)
+void onlinerefresh_persistnode_txidset(onlinerefresh_persistnode* persistnode,
+                                       FullTransactionId          txid)
 {
     persistnode->txid = txid;
 }
@@ -99,14 +101,14 @@ void onlinerefresh_persistnode_endset(onlinerefresh_persistnode* persistnode, re
 
 void onlinerefresh_persistnode_incrementset(onlinerefresh_persistnode* persistnode, bool incrment)
 {
-   persistnode->increment = incrment;
+    persistnode->increment = incrment;
 }
 
 int onlinerefresh_persist_delectbyuuidcmp(void* vala, void* valb)
 {
-    uuid_t* uuid = NULL;
+    uuid_t*                    uuid = NULL;
     onlinerefresh_persistnode* persistnode = NULL;
-    
+
     if (NULL == vala || NULL == valb)
     {
         return 1;
@@ -120,20 +122,19 @@ int onlinerefresh_persist_delectbyuuidcmp(void* vala, void* valb)
     }
 
     return 1;
-
 }
 
 void onlinerefresh_persist_statesetbyuuid(onlinerefresh_persist* persist, uuid_t* uuid, int state)
 {
-    dlistnode *dnode = NULL;
-    onlinerefresh_persistnode *persistnode = NULL;
+    dlistnode*                 dnode = NULL;
+    onlinerefresh_persistnode* persistnode = NULL;
 
     dnode = persist->dpersistnodes ? persist->dpersistnodes->head : NULL;
 
-    /* 遍历persist, 查找node */
+    /* Traverse persist to find node */
     for (; dnode; dnode = dnode->next)
     {
-        persistnode = (onlinerefresh_persistnode *)dnode->value;
+        persistnode = (onlinerefresh_persistnode*)dnode->value;
         if (0 == memcmp(uuid->data, persistnode->uuid.data, UUID_LEN))
         {
             persistnode->stat = state;
@@ -145,15 +146,15 @@ void onlinerefresh_persist_statesetbyuuid(onlinerefresh_persist* persist, uuid_t
 
 void onlinerefresh_persist_removerefreshtbsbyuuid(onlinerefresh_persist* persist, uuid_t* uuid)
 {
-    dlistnode *dnode = NULL;
-    onlinerefresh_persistnode *persistnode = NULL;
+    dlistnode*                 dnode = NULL;
+    onlinerefresh_persistnode* persistnode = NULL;
 
     dnode = persist->dpersistnodes ? persist->dpersistnodes->head : NULL;
 
-    /* 遍历persist, 查找node */
+    /* Traverse persist, find node */
     for (; dnode; dnode = dnode->next)
     {
-        persistnode = (onlinerefresh_persistnode *)dnode->value;
+        persistnode = (onlinerefresh_persistnode*)dnode->value;
         if (0 == memcmp(uuid->data, persistnode->uuid.data, UUID_LEN))
         {
             persistnode->refreshtbs = NULL;
@@ -165,44 +166,44 @@ void onlinerefresh_persist_removerefreshtbsbyuuid(onlinerefresh_persist* persist
 
 bool onlinerefresh_persist_write(onlinerefresh_persist* persist)
 {
-    int fd                                          = -1;
-    uint64 tbcnt                                    = 0;
-    uint64 tbsize                                   = 0;
-    uint64 offset                                   = 0;
-    uint64 nodeoffset                               = 0;
-    uint64 bufferoffset                             = 0;
-    uint8 *buffer                                   = NULL;
-    uint8 *buffer_tb                                = NULL;
-    dlistnode *dnode                                = NULL;
-    char head[ONLINEREFRESHPERSIST_FILE_HEAD_LEN]   = {'\0'};
-    char node[ONLINEREFRESHPERSIST_FILE_NODE_LEN]   = {'\0'};
-    char path[MAXPATH]                       = {'\0'};
-    char temp_path[MAXPATH]                  = {'\0'};
-    refresh_table_syncstat* table            = NULL;
-    onlinerefresh_persistnode* persistnode   = NULL;
+    int                        fd = -1;
+    uint64                     tbcnt = 0;
+    uint64                     tbsize = 0;
+    uint64                     offset = 0;
+    uint64                     nodeoffset = 0;
+    uint64                     bufferoffset = 0;
+    uint8*                     buffer = NULL;
+    uint8*                     buffer_tb = NULL;
+    dlistnode*                 dnode = NULL;
+    char                       head[ONLINEREFRESHPERSIST_FILE_HEAD_LEN] = {'\0'};
+    char                       node[ONLINEREFRESHPERSIST_FILE_NODE_LEN] = {'\0'};
+    char                       path[MAXPATH] = {'\0'};
+    char                       temp_path[MAXPATH] = {'\0'};
+    refresh_table_syncstat*    table = NULL;
+    onlinerefresh_persistnode* persistnode = NULL;
 
     if (NULL == persist)
     {
         return true;
     }
 
-    /* 生成路径 */
+    /* Generate path */
     snprintf(path, MAXPATH, "%s", ONLINEREFRESH_STATUS);
     snprintf(temp_path, MAXPATH, "%s.tmp", ONLINEREFRESH_STATUS);
 
-    /* 删除临时文件 */
+    /* Delete temporary file */
     unlink(temp_path);
 
-    /* 打开临时文件 */
-    fd = osal_basic_open_file(temp_path, O_RDWR | O_CREAT| BINARY);
-    if (fd  < 0)
+    /* Open temporary file */
+    fd = osal_basic_open_file(temp_path, O_RDWR | O_CREAT | BINARY);
+    if (fd < 0)
     {
         elog(RLOG_WARNING, "open file %s error %s", temp_path, strerror(errno));
         return false;
     }
 
     rmemset1(head, 0, '\0', ONLINEREFRESHPERSIST_FILE_HEAD_LEN);
-    buffer = (uint8 *)head;
+    buffer = (uint8*)head;
 
     /* rewind fileid, offset */
     put64bit(&buffer, persist->rewind.trail.fileid);
@@ -223,23 +224,27 @@ bool onlinerefresh_persist_write(onlinerefresh_persist* persist)
 
     dnode = persist->dpersistnodes ? persist->dpersistnodes->head : NULL;
 
-    /* 遍历persist, 放置相关信息 */
+    /* Traverse persist to write related info */
     for (; dnode; dnode = dnode->next)
     {
         tbcnt = 0;
         bufferoffset = 0;
-        persistnode = (onlinerefresh_persistnode *)dnode->value;
+        persistnode = (onlinerefresh_persistnode*)dnode->value;
 
         rmemset1(node, 0, '\0', ONLINEREFRESHPERSIST_FILE_NODE_LEN);
 
         bufferoffset += sizeof(tbcnt);
-        rmemcpy1(node, bufferoffset, &persistnode->begin.trail.fileid, sizeof(persistnode->begin.trail.fileid));
+        rmemcpy1(node, bufferoffset, &persistnode->begin.trail.fileid,
+                 sizeof(persistnode->begin.trail.fileid));
         bufferoffset += sizeof(persistnode->begin.trail.fileid);
-        rmemcpy1(node, bufferoffset, &persistnode->begin.trail.offset, sizeof(persistnode->begin.trail.offset));
+        rmemcpy1(node, bufferoffset, &persistnode->begin.trail.offset,
+                 sizeof(persistnode->begin.trail.offset));
         bufferoffset += sizeof(persistnode->begin.trail.offset);
-        rmemcpy1(node, bufferoffset, &persistnode->end.trail.fileid, sizeof(persistnode->end.trail.fileid));
+        rmemcpy1(node, bufferoffset, &persistnode->end.trail.fileid,
+                 sizeof(persistnode->end.trail.fileid));
         bufferoffset += sizeof(persistnode->end.trail.fileid);
-        rmemcpy1(node, bufferoffset, &persistnode->end.trail.offset, sizeof(persistnode->end.trail.offset));
+        rmemcpy1(node, bufferoffset, &persistnode->end.trail.offset,
+                 sizeof(persistnode->end.trail.offset));
         bufferoffset += sizeof(persistnode->end.trail.offset);
         rmemcpy1(node, bufferoffset, &persistnode->stat, sizeof(persistnode->stat));
         bufferoffset += sizeof(persistnode->stat);
@@ -276,7 +281,7 @@ bool onlinerefresh_persist_write(onlinerefresh_persist* persist)
             bufferoffset += NAMEDATALEN;
             rmemcpy0(buffer_tb, bufferoffset, table->table, strlen(table->table));
             bufferoffset += NAMEDATALEN;
-            /* 没有分片或还未加入到任务中 */
+            /* No shards or not yet added to task */
             if (0 != table->cnt && NULL != table->stat)
             {
                 rmemcpy0(buffer_tb, bufferoffset, table->stat, (table->cnt * sizeof(int8_t)));
@@ -296,8 +301,8 @@ bool onlinerefresh_persist_write(onlinerefresh_persist* persist)
     }
     osal_file_close(fd);
 
-    /* 重命名文件 */
-    if (osal_durable_rename(temp_path, path, RLOG_DEBUG)) 
+    /* Rename file */
+    if (osal_durable_rename(temp_path, path, RLOG_DEBUG))
     {
         elog(RLOG_WARNING, "Error renaming file %s to %s", temp_path, path);
         return false;
@@ -306,29 +311,29 @@ bool onlinerefresh_persist_write(onlinerefresh_persist* persist)
     return true;
 }
 
-onlinerefresh_persist *onlinerefresh_persist_read(void)
+onlinerefresh_persist* onlinerefresh_persist_read(void)
 {
-    struct stat st;
-    int fd                                              = -1;
-    int read_size                                       = 0;
-    int index_stat                                      = 0;
-    int node_index                                      = 0;
-    int table_index                                     = 0;
-    uint64 tbcnt                                        = 0;
-    uint64 offset                                       = 0;
-    uint64 persistcnt                                   = 0;
-    uint64 bufferoffset                                 = 0;
-    uint8 *buffer                                       = NULL;
-    char path[MAXPATH]                           = {'\0'};
-    char head[ONLINEREFRESHPERSIST_FILE_HEAD_LEN]       = {'\0'};
-    char node[ONLINEREFRESHPERSIST_FILE_NODE_LEN]       = {'\0'};
-    char synctable[ONLINEREFRESHPERSIST_FILE_TABLE_LEN] = {'\0'};
-    onlinerefresh_persist* persist               = NULL;
+    struct stat            st;
+    int                    fd = -1;
+    int                    read_size = 0;
+    int                    index_stat = 0;
+    int                    node_index = 0;
+    int                    table_index = 0;
+    uint64                 tbcnt = 0;
+    uint64                 offset = 0;
+    uint64                 persistcnt = 0;
+    uint64                 bufferoffset = 0;
+    uint8*                 buffer = NULL;
+    char                   path[MAXPATH] = {'\0'};
+    char                   head[ONLINEREFRESHPERSIST_FILE_HEAD_LEN] = {'\0'};
+    char                   node[ONLINEREFRESHPERSIST_FILE_NODE_LEN] = {'\0'};
+    char                   synctable[ONLINEREFRESHPERSIST_FILE_TABLE_LEN] = {'\0'};
+    onlinerefresh_persist* persist = NULL;
 
-    /* 生成路径 */
+    /* Generate path */
     snprintf(path, MAXPATH, "%s", ONLINEREFRESH_STATUS);
 
-    /* 分配返回值 */
+    /* Allocate return value */
     persist = onlinerefresh_persist_init();
     if (NULL == persist)
     {
@@ -336,22 +341,23 @@ onlinerefresh_persist *onlinerefresh_persist_read(void)
         return NULL;
     }
 
-    /* 检测文件是否存在, 第一次启动是文件不存在, 因此简单返回分配好的结构体 */
-    if(0 != stat(path, &st))
+    /* Check if file exists, on first startup file doesn't exist, so simply return allocated struct
+     */
+    if (0 != stat(path, &st))
     {
         return persist;
     }
 
-    /* 只读方式打开文件 */
+    /* Open file in read-only mode */
     fd = osal_basic_open_file(path, O_RDONLY | BINARY);
-    if (fd  < 0)
+    if (fd < 0)
     {
         elog(RLOG_WARNING, "open bigtxn persist file %s error %s", path, strerror(errno));
         onlinerefresh_persist_free(persist);
         return NULL;
     }
 
-    /* 读取文件, 从文件开始获取persist的rewind信息和count */
+    /* Read file to get persist's rewind info and count from file start */
     read_size = osal_file_pread(fd, head, ONLINEREFRESHPERSIST_FILE_HEAD_LEN, 0);
     if (read_size <= 0)
     {
@@ -360,20 +366,20 @@ onlinerefresh_persist *onlinerefresh_persist_read(void)
         onlinerefresh_persist_free(persist);
         return NULL;
     }
-    
+
     buffer = (uint8*)head;
 
-    /* 获取rewind和count信息 */
+    /* Get rewind and count info */
     persist->rewind.trail.fileid = get64bit(&buffer);
     persist->rewind.trail.offset = get64bit(&buffer);
     persistcnt = get64bit(&buffer);
 
     offset = ONLINEREFRESHPERSIST_FILE_HEAD_LEN;
 
-    /* 根据count获取剩余的persistnode */
+    /* Get remaining persistnodes based on count */
     for (node_index = 0; node_index < persistcnt; node_index++)
     {
-        onlinerefresh_persistnode *persistnode = NULL;
+        onlinerefresh_persistnode* persistnode = NULL;
         bufferoffset = 0;
 
         read_size = osal_file_pread(fd, node, ONLINEREFRESHPERSIST_FILE_NODE_LEN, offset);
@@ -399,7 +405,8 @@ onlinerefresh_persist *onlinerefresh_persist_read(void)
         persistnode->refreshtbs = refresh_table_syncstats_init();
         if (!persistnode->refreshtbs)
         {
-            elog(RLOG_WARNING, "open bigtxn persistnode refreshtbs malloc persistnode error %s", strerror(errno));
+            elog(RLOG_WARNING, "open bigtxn persistnode refreshtbs malloc persistnode error %s",
+                 strerror(errno));
             onlinerefresh_persistnode_free(persistnode);
             onlinerefresh_persist_free(persist);
             osal_file_close(fd);
@@ -408,17 +415,21 @@ onlinerefresh_persist *onlinerefresh_persist_read(void)
 
         buffer = (uint8*)node;
 
-        /* 获取begin, end的fileid, offset */
+        /* Get begin, end fileid and offset */
         // tbcnt = get64bit(&buffer);
         rmemcpy1(&tbcnt, 0, buffer + bufferoffset, sizeof(tbcnt));
         bufferoffset += sizeof(tbcnt);
-        rmemcpy1(&persistnode->begin.trail.fileid, 0, buffer + bufferoffset, sizeof(persistnode->begin.trail.fileid));
+        rmemcpy1(&persistnode->begin.trail.fileid, 0, buffer + bufferoffset,
+                 sizeof(persistnode->begin.trail.fileid));
         bufferoffset += sizeof(persistnode->begin.trail.fileid);
-        rmemcpy1(&persistnode->begin.trail.offset, 0, buffer + bufferoffset, sizeof(persistnode->begin.trail.offset));
+        rmemcpy1(&persistnode->begin.trail.offset, 0, buffer + bufferoffset,
+                 sizeof(persistnode->begin.trail.offset));
         bufferoffset += sizeof(persistnode->begin.trail.offset);
-        rmemcpy1(&persistnode->end.trail.fileid, 0, buffer + bufferoffset, sizeof(persistnode->end.trail.fileid));
+        rmemcpy1(&persistnode->end.trail.fileid, 0, buffer + bufferoffset,
+                 sizeof(persistnode->end.trail.fileid));
         bufferoffset += sizeof(persistnode->end.trail.fileid);
-        rmemcpy1(&persistnode->end.trail.offset, 0, buffer + bufferoffset, sizeof(persistnode->end.trail.offset));
+        rmemcpy1(&persistnode->end.trail.offset, 0, buffer + bufferoffset,
+                 sizeof(persistnode->end.trail.offset));
         bufferoffset += sizeof(persistnode->end.trail.offset);
         rmemcpy1(&persistnode->stat, 0, buffer + bufferoffset, sizeof(persistnode->stat));
         bufferoffset += sizeof(persistnode->stat);
@@ -431,16 +442,17 @@ onlinerefresh_persist *onlinerefresh_persist_read(void)
 
         for (table_index = 0; table_index < tbcnt; table_index++)
         {
-            char table[NAMEDATALEN] = {'\0'};
-            char schema[NAMEDATALEN] = {'\0'};
-            refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
-            
+            char                    table[NAMEDATALEN] = {'\0'};
+            char                    schema[NAMEDATALEN] = {'\0'};
+            refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
+
             bufferoffset = 0;
 
             read_size = osal_file_pread(fd, synctable, ONLINEREFRESHPERSIST_FILE_TABLE_LEN, offset);
             if (read_size <= 0)
             {
-                elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path, strerror(errno));
+                elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path,
+                     strerror(errno));
                 onlinerefresh_persistnode_free(persistnode);
                 onlinerefresh_persist_free(persist);
                 osal_file_close(fd);
@@ -451,9 +463,11 @@ onlinerefresh_persist *onlinerefresh_persist_read(void)
 
             rmemcpy1(&new_syncstat->cnt, 0, buffer + bufferoffset, sizeof(new_syncstat->cnt));
             bufferoffset += sizeof(new_syncstat->cnt);
-            rmemcpy1(&new_syncstat->completecnt , 0, buffer + bufferoffset, new_syncstat->completecnt);
-            bufferoffset += sizeof(new_syncstat->completecnt );
-            rmemcpy1(&new_syncstat->tablestat, 0, buffer + bufferoffset, sizeof(new_syncstat->tablestat));
+            rmemcpy1(&new_syncstat->completecnt, 0, buffer + bufferoffset,
+                     new_syncstat->completecnt);
+            bufferoffset += sizeof(new_syncstat->completecnt);
+            rmemcpy1(&new_syncstat->tablestat, 0, buffer + bufferoffset,
+                     sizeof(new_syncstat->tablestat));
             bufferoffset += sizeof(new_syncstat->tablestat);
             rmemcpy1(&new_syncstat->oid, 0, buffer + bufferoffset, sizeof(new_syncstat->oid));
             bufferoffset += sizeof(new_syncstat->oid);
@@ -464,7 +478,7 @@ onlinerefresh_persist *onlinerefresh_persist_read(void)
 
             offset += ONLINEREFRESHPERSIST_FILE_TABLE_LEN;
 
-            // 复制表信息
+            // Copy table info
             refresh_table_syncstat_schema_set(schema, new_syncstat);
             refresh_table_syncstat_table_set(table, new_syncstat);
 
@@ -473,17 +487,20 @@ onlinerefresh_persist *onlinerefresh_persist_read(void)
                 new_syncstat->stat = (int8_t*)rmalloc0(new_syncstat->cnt * sizeof(int8_t));
                 if (NULL == new_syncstat->stat)
                 {
-                    elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path, strerror(errno));
+                    elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path,
+                         strerror(errno));
                     onlinerefresh_persistnode_free(persist);
                     osal_file_close(fd);
                     return NULL;
                 }
                 rmemset0(new_syncstat->stat, 0, '\0', new_syncstat->cnt * sizeof(int8_t));
 
-                read_size = osal_file_pread(fd, (char*)new_syncstat->stat, (new_syncstat->cnt * sizeof(int8_t)), offset);
+                read_size = osal_file_pread(fd, (char*)new_syncstat->stat,
+                                            (new_syncstat->cnt * sizeof(int8_t)), offset);
                 if (read_size <= 0)
                 {
-                    elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path, strerror(errno));
+                    elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path,
+                         strerror(errno));
                     refresh_table_syncstat_free(new_syncstat);
                     onlinerefresh_persistnode_free(persist);
                     osal_file_close(fd);
@@ -512,11 +529,10 @@ onlinerefresh_persist *onlinerefresh_persist_read(void)
         persist->dpersistnodes = dlist_put(persist->dpersistnodes, persistnode);
     }
 
-    /* 处理完毕, 关闭文件 */
+    /* Done, close file */
     osal_file_close(fd);
     return persist;
 }
-
 
 void onlinerefresh_persist_removebyuuid(onlinerefresh_persist* persist, uuid_t* uuid)
 {
@@ -525,23 +541,21 @@ void onlinerefresh_persist_removebyuuid(onlinerefresh_persist* persist, uuid_t* 
         return;
     }
 
-    persist->dpersistnodes = dlist_deletebyvalue(persist->dpersistnodes,
-                                                 (void*)uuid,
-                                                 onlinerefresh_persist_delectbyuuidcmp,
-                                                 NULL);
+    persist->dpersistnodes = dlist_deletebyvalue(persist->dpersistnodes, (void*)uuid,
+                                                 onlinerefresh_persist_delectbyuuidcmp, NULL);
     return;
 }
 
 void onlinerefresh_persist_electionrewindbyuuid(onlinerefresh_persist* persist, uuid_t* uuid)
 {
-    dlistnode* dlnode = NULL;
+    dlistnode*                 dlnode = NULL;
     onlinerefresh_persistnode* persistnode = NULL;
     if (NULL == persist)
     {
         return;
     }
 
-    for(dlnode = persist->dpersistnodes->head; NULL != dlnode; )
+    for (dlnode = persist->dpersistnodes->head; NULL != dlnode;)
     {
         persistnode = (onlinerefresh_persistnode*)dlnode->value;
 
@@ -553,16 +567,17 @@ void onlinerefresh_persist_electionrewindbyuuid(onlinerefresh_persist* persist, 
         persist->rewind.trail.fileid = persistnode->begin.trail.fileid;
         persist->rewind.trail.offset = persistnode->begin.trail.offset + 1;
 
-        persist->dpersistnodes = dlist_delete(persist->dpersistnodes, dlnode, onlinerefresh_persistnode_free);
+        persist->dpersistnodes =
+            dlist_delete(persist->dpersistnodes, dlnode, onlinerefresh_persistnode_free);
         break;
     }
 
-
-    for(dlnode = persist->dpersistnodes->head; NULL != dlnode; dlnode = persist->dpersistnodes->head)
+    for (dlnode = persist->dpersistnodes->head; NULL != dlnode;
+         dlnode = persist->dpersistnodes->head)
     {
         persistnode = (onlinerefresh_persistnode*)dlnode->value;
-        if(ONLINEREFRESH_PERSISTNODE_STAT_DONE != persistnode->stat 
-           && ONLINEREFRESH_PERSISTNODE_STAT_ABANDON != persistnode->stat)
+        if (ONLINEREFRESH_PERSISTNODE_STAT_DONE != persistnode->stat &&
+            ONLINEREFRESH_PERSISTNODE_STAT_ABANDON != persistnode->stat)
         {
             persist->rewind.trail.fileid = persistnode->begin.trail.fileid;
             persist->rewind.trail.offset = persistnode->begin.trail.offset;
@@ -571,13 +586,13 @@ void onlinerefresh_persist_electionrewindbyuuid(onlinerefresh_persist* persist, 
 
         persist->rewind.trail.fileid = persistnode->begin.trail.fileid;
         persist->rewind.trail.offset = persistnode->begin.trail.offset + 1;
-        persist->dpersistnodes = dlist_delete(persist->dpersistnodes, dlnode, onlinerefresh_persistnode_free);
+        persist->dpersistnodes =
+            dlist_delete(persist->dpersistnodes, dlnode, onlinerefresh_persistnode_free);
     }
     return;
 }
 
-
-/* 清理persistnode内存 */
+/* Free persistnode memory */
 void onlinerefresh_persistnode_free(void* privdata)
 {
     if (NULL == privdata)
@@ -590,7 +605,7 @@ void onlinerefresh_persistnode_free(void* privdata)
     return;
 }
 
-/* 清理内存 */
+/* Free memory */
 void onlinerefresh_persist_free(onlinerefresh_persist* persist)
 {
     if (NULL == persist)
@@ -606,4 +621,3 @@ void onlinerefresh_persist_free(onlinerefresh_persist* persist)
     rfree(persist);
     return;
 }
-

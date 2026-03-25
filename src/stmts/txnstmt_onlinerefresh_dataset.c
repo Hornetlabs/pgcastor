@@ -11,10 +11,10 @@
 #include "refresh/refresh_tables.h"
 #include "cache/transcache.h"
 
-void *parserwork_build_onlinerefresh_dataset_txn(List *tables_list)
+void* parserwork_build_onlinerefresh_dataset_txn(List* tables_list)
 {
-    txn *dataset_txn = NULL;
-    txnstmt *stmt = NULL;
+    txn*     dataset_txn = NULL;
+    txnstmt* stmt = NULL;
 
     dataset_txn = txn_init(FROZEN_TXNID, InvalidXLogRecPtr, InvalidXLogRecPtr);
     if (NULL == dataset_txn)
@@ -22,7 +22,7 @@ void *parserwork_build_onlinerefresh_dataset_txn(List *tables_list)
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
 
-    stmt = (txnstmt *) rmalloc0(sizeof(txnstmt));
+    stmt = (txnstmt*)rmalloc0(sizeof(txnstmt));
     if (NULL == stmt)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
@@ -35,10 +35,10 @@ void *parserwork_build_onlinerefresh_dataset_txn(List *tables_list)
     dataset_txn->type = TXN_TYPE_ONLINEREFRESH_DATASET;
     dataset_txn->stmts = lappend(dataset_txn->stmts, stmt);
 
-    return (void *)dataset_txn;
+    return (void*)dataset_txn;
 }
 
 void txnstmt_onlinerefresh_dataset_free(void* data)
 {
-    /* 不在此释放 */
+    /* Do not release here */
 }

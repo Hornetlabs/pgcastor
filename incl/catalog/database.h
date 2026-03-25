@@ -1,16 +1,15 @@
 #ifndef _DATABASE_H
 #define _DATABASE_H
 
-void database_getfromdb(PGconn *conn, cache_sysdicts* sysdicts);
+void database_getfromdb(PGconn* conn, cache_sysdicts* sysdicts);
 
-void databasedata_write(List* database_list, uint64 *offset, sysdict_header_array* array);
+void databasedata_write(List* database_list, uint64* offset, sysdict_header_array* array);
 
 HTAB* databasecache_load(sysdict_header_array* array);
 
 HTAB* datname2oid_cache_load(sysdict_header_array* array);
 
-void databasecache_write(HTAB* databasecache, uint64 *offset, sysdict_header_array* array);
-
+void databasecache_write(HTAB* databasecache, uint64* offset, sysdict_header_array* array);
 
 /* colvalue2database */
 catalogdata* database_colvalue2database(void* in_colvalue);
@@ -19,13 +18,13 @@ catalogdata* database_colvalue2database(void* in_colvalue);
 /* catalogdata2transcache */
 void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata);
 
-/* 释放 */
+/* Release */
 void database_catalogdatafree(catalogdata* catalogdata);
 
-/* 获取数据库的名称 */
+/* Get database name */
 char* database_getdbname(Oid dbid, HTAB* by_database);
 
-/* 获取dboid */
+/* Get dboid */
 Oid database_getdbid(HTAB* by_database);
 
 #endif

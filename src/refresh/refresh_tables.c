@@ -15,7 +15,7 @@ refresh_table* refresh_table_init(void)
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
     rmemset0(refreshtable, 0, '\0', sizeof(refresh_tables));
-    refreshtable->oid = InvalidOid;
+    refreshtable->oid = INVALIDOID;
     refreshtable->schema = NULL;
     refreshtable->table = NULL;
     refreshtable->next = NULL;
@@ -46,7 +46,7 @@ bool refresh_tables_add(refresh_table* table, refresh_tables* tables)
         elog(RLOG_ERROR, "table or tables is NULL");
     }
 
-    // 插入到链表头部
+    // insert to list head
     table->next = tables->tables;
     table->prev = NULL;
     if (NULL != tables->tables)
@@ -56,7 +56,6 @@ bool refresh_tables_add(refresh_table* table, refresh_tables* tables)
     tables->tables = table;
     tables->cnt++;
     return true;
-
 }
 
 refresh_table* refresh_tables_get(refresh_tables* tables)
@@ -66,10 +65,10 @@ refresh_table* refresh_tables_get(refresh_tables* tables)
     {
         elog(RLOG_ERROR, "tables or tables->tables is NULL");
     }
-    
+
     table = tables->tables;
     tables->tables = table->next;
-    if(NULL != tables->tables)
+    if (NULL != tables->tables)
     {
         tables->tables->prev = NULL;
     }
@@ -109,9 +108,9 @@ void refresh_table_settable(char* table, refresh_table* refreshtable)
     return;
 }
 
-void refresh_freetable(refresh_table *refreshtable)
+void refresh_freetable(refresh_table* refreshtable)
 {
-    refresh_table *current = refreshtable;
+    refresh_table* current = refreshtable;
 
     if (NULL == refreshtable)
     {
@@ -120,13 +119,13 @@ void refresh_freetable(refresh_table *refreshtable)
 
     while (NULL != current)
     {
-        refresh_table *next = current->next;
+        refresh_table* next = current->next;
 
         if (current->schema)
         {
             rfree(current->schema);
         }
-        
+
         if (current->table)
         {
             rfree(current->table);
@@ -139,14 +138,14 @@ void refresh_freetable(refresh_table *refreshtable)
     return;
 }
 
-void refresh_freetables(refresh_tables *refreshtables)
+void refresh_freetables(refresh_tables* refreshtables)
 {
     if (NULL == refreshtables)
     {
         return;
     }
     refresh_freetable(refreshtables->tables);
-    
+
     rfree(refreshtables);
     refreshtables = NULL;
 }
@@ -154,8 +153,8 @@ void refresh_freetables(refresh_tables *refreshtables)
 refresh_tables* refresh_tables_copy(refresh_tables* refreshtables)
 {
     refresh_tables* new_tables = NULL;
-    refresh_table* table = NULL;
-    refresh_table* current_table = NULL;
+    refresh_table*  table = NULL;
+    refresh_table*  current_table = NULL;
 
     new_tables = refresh_tables_init();
 
@@ -163,7 +162,7 @@ refresh_tables* refresh_tables_copy(refresh_tables* refreshtables)
     {
         return new_tables;
     }
-    
+
     current_table = refreshtables->tables;
 
     while (current_table)
@@ -178,19 +177,17 @@ refresh_tables* refresh_tables_copy(refresh_tables* refreshtables)
 
         current_table = current_table->next;
     }
-    
-    return new_tables;
 
+    return new_tables;
 }
 
-bool refresh_tables_hasrepeat(refresh_tables* syncdataset,
-                                     refresh_tables* newdataset,
-                                     refresh_table** prepeattable)
+bool refresh_tables_hasrepeat(refresh_tables* syncdataset, refresh_tables* newdataset,
+                              refresh_table** prepeattable)
 {
-    refresh_table *table_new = NULL;
-    refresh_table *table_sync = NULL;
+    refresh_table* table_new = NULL;
+    refresh_table* table_sync = NULL;
 
-    /* 任何一个为空则没有新表 */
+    /* if either is empty, there are no new tables */
     if (!syncdataset || !newdataset)
     {
         return false;
@@ -199,7 +196,7 @@ bool refresh_tables_hasrepeat(refresh_tables* syncdataset,
     table_new = newdataset->tables;
     table_sync = syncdataset->tables;
 
-    /* 任何一个为空则没有新表 */
+    /* if either is empty, there are no new tables */
     if (!table_sync || !table_new)
     {
         return false;
@@ -217,19 +214,19 @@ bool refresh_tables_hasrepeat(refresh_tables* syncdataset,
             table_sync = table_sync->next;
         }
 
-        /* 重置 */
+        /* reset */
         table_sync = syncdataset->tables;
 
-        /* 推进 */
+        /* advance */
         table_new = table_new->next;
     }
     return false;
 }
 
-/* 从同步表哈希中查找是否存在 */
-bool refresh_tables_hasnew(HTAB *syncdataset, refresh_tables* newdataset)
+/* check if exists in sync table hash */
+bool refresh_tables_hasnew(HTAB* syncdataset, refresh_tables* newdataset)
 {
-    refresh_table *oltable = NULL; 
+    refresh_table* oltable = NULL;
 
     if (!newdataset || (newdataset->cnt == 0) || !syncdataset)
     {
@@ -250,13 +247,13 @@ bool refresh_tables_hasnew(HTAB *syncdataset, refresh_tables* newdataset)
     return false;
 }
 
-/* 从refresh文件夹中生成refresh tables */
-static void refresh_table_get_table_from_filename(char *filename, refresh_table *table)
+/* generate refresh tables from refresh folder */
+static void refresh_table_get_table_from_filename(char* filename, refresh_table* table)
 {
-    char *ptr_left = filename;
-    char *ptr_right = NULL;
-    char temp_name[65] = {'\0'};
-    int len = 0;
+    char* ptr_left = filename;
+    char* ptr_right = NULL;
+    char  temp_name[65] = {'\0'};
+    int   len = 0;
 
     /* schema */
     ptr_right = strstr(ptr_left, "_");
@@ -277,16 +274,16 @@ static void refresh_table_get_table_from_filename(char *filename, refresh_table 
     table->table = rstrdup(temp_name);
 }
 
-refresh_tables *refresh_tables_gen_from_file(char *path)
+refresh_tables* refresh_tables_gen_from_file(char* path)
 {
-    refresh_tables *result = NULL;
-    refresh_table *table_prev = NULL;
-    DIR* compdir = NULL;
-    int table_cnt = 0;
-    struct dirent *entry = NULL;
+    refresh_tables* result = NULL;
+    refresh_table*  table_prev = NULL;
+    DIR*            compdir = NULL;
+    int             table_cnt = 0;
+    struct dirent*  entry = NULL;
 
     compdir = osal_open_dir(path);
-    if(NULL == compdir)
+    if (NULL == compdir)
     {
         return result;
     }
@@ -295,10 +292,9 @@ refresh_tables *refresh_tables_gen_from_file(char *path)
 
     while (NULL != (entry = osal_read_dir(compdir, path)))
     {
-        refresh_table *table = NULL;
+        refresh_table* table = NULL;
 
-        if (0 == strcmp(".", entry->d_name)
-        || 0 == strcmp("..", entry->d_name))
+        if (0 == strcmp(".", entry->d_name) || 0 == strcmp("..", entry->d_name))
         {
             continue;
         }

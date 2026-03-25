@@ -47,138 +47,120 @@
 #include "increment/integrate/increment_integrate.h"
 #include "command/cmd_startintegrate.h"
 
-/* 启动常驻线程 */
+/* Start resident threads */
 static bool cmd_startintegratethreads(increment_integrate* incintegrate)
 {
-    thrnode* thrnode                 = NULL;
+    thrnode* thrnode = NULL;
 
-    /*-------------------------------启动常驻工作线程 begin---------------------------------*/
-    /* 启动的顺序为退出的逆序, 即先启动的后退出 */
-    /* 启动应用线程 */
-    if(false == threads_addpersistthread(incintegrate->threads,
-                                                &thrnode,
-                                                THRNODE_IDENTITY_INC_INTEGRATE_SYNC,
-                                                incintegrate->persistno,
-                                                (void*)incintegrate->syncworkstate,
-                                                NULL,
-                                                NULL,
-                                                increment_integratesync_main))
+    /*-------------------------------Start resident worker threads
+     * begin---------------------------------*/
+    /* Threads are started in reverse order of exit, i.e., first started exits last */
+    /* Start apply thread */
+    if (false == threads_addpersistthread(
+                     incintegrate->threads, &thrnode, THRNODE_IDENTITY_INC_INTEGRATE_SYNC,
+                     incintegrate->persistno, (void*)incintegrate->syncworkstate, NULL, NULL,
+                     increment_integratesync_main))
     {
         elog(RLOG_WARNING, "add integrate increment bigtxn sync persist to threads error");
         return false;
     }
 
-    /* 启动重组线程 */
-    if(false == threads_addpersistthread(incintegrate->threads,
-                                                &thrnode,
-                                                THRNODE_IDENTITY_INC_INTEGRATE_REBUILD,
-                                                incintegrate->persistno,
-                                                (void*)incintegrate->rebuild,
-                                                NULL,
-                                                NULL,
-                                                increment_integraterebuild_main))
+    /* Start rebuild thread */
+    if (false == threads_addpersistthread(incintegrate->threads, &thrnode,
+                                          THRNODE_IDENTITY_INC_INTEGRATE_REBUILD,
+                                          incintegrate->persistno, (void*)incintegrate->rebuild,
+                                          NULL, NULL, increment_integraterebuild_main))
     {
         elog(RLOG_WARNING, "add integrate increment rebuild persist to threads error");
         return false;
     }
 
-    /* 启动解析器线程 */
-    if(false == threads_addpersistthread(incintegrate->threads,
-                                                &thrnode,
-                                                THRNODE_IDENTITY_INC_INTEGRATE_PARSER,
-                                                incintegrate->persistno,
-                                                (void*)incintegrate->decodingctx,
-                                                NULL,
-                                                NULL,
-                                                increment_integrateparsertrail_main))
+    /* Start parser thread */
+    if (false == threads_addpersistthread(incintegrate->threads, &thrnode,
+                                          THRNODE_IDENTITY_INC_INTEGRATE_PARSER,
+                                          incintegrate->persistno, (void*)incintegrate->decodingctx,
+                                          NULL, NULL, increment_integrateparsertrail_main))
     {
         elog(RLOG_WARNING, "add integrate increment parser persist to threads error");
         return false;
     }
 
-    /* 启动spli trail线程 */
-    if(false == threads_addpersistthread(incintegrate->threads,
-                                                &thrnode,
-                                                THRNODE_IDENTITY_INC_INTEGRATE_LOADRECORDS,
-                                                incintegrate->persistno,
-                                                (void*)incintegrate->splittrailctx,
-                                                NULL,
-                                                NULL,
-                                                increment_integratesplitrail_main))
+    /* Start split trail thread */
+    if (false == threads_addpersistthread(
+                     incintegrate->threads, &thrnode, THRNODE_IDENTITY_INC_INTEGRATE_LOADRECORDS,
+                     incintegrate->persistno, (void*)incintegrate->splittrailctx, NULL, NULL,
+                     increment_integratesplitrail_main))
     {
         elog(RLOG_WARNING, "add integrate increment splittrail persist to threads error");
         return false;
     }
 
-    /* 启动 状态 线程 */
-    if(false == threads_addpersistthread(incintegrate->threads,
-                                                &thrnode,
-                                                THRNODE_IDENTITY_INTEGRATE_METRIC,
-                                                incintegrate->persistno,
-                                                (void*)incintegrate->integratestate,
-                                                NULL,
-                                                NULL,
-                                                metric_integrate_main))
+    /* Start metric thread */
+    if (false ==
+        threads_addpersistthread(incintegrate->threads, &thrnode, THRNODE_IDENTITY_INTEGRATE_METRIC,
+                                 incintegrate->persistno, (void*)incintegrate->integratestate, NULL,
+                                 NULL, metric_integrate_main))
     {
         elog(RLOG_WARNING, "add integrate increment metric persist to threads error");
         return false;
     }
 
-    /*-------------------------------启动常驻工作线程   end---------------------------------*/
+    /*-------------------------------Start resident worker threads
+     * end---------------------------------*/
     return true;
 }
 
-/* integrate 启动 */
+/* Integrate startup */
 bool cmd_startintegrate(void)
 {
     /*
-     * 1、切换工作目录
-     * 2、创建锁文件
-     * 3、初始化 log 信息
+     * 1. Change working directory
+     * 2. Create lock file
+     * 3. Initialize log
      */
-    bool bret                                   = true;
-    int gctime                                  = 0;
-    int forcefree                               = 0;
-    char* wdata                                 = NULL;
-    increment_integrate* incintegrate    = NULL;
+    bool                 bret = true;
+    int                  gctime = 0;
+    int                  forcefree = 0;
+    char*                wdata = NULL;
+    increment_integrate* incintegrate = NULL;
 
-    /* 获取工作目录 */
+    /* Get working directory */
     wdata = guc_getdata();
 
-    /* 检测 data 目录是否存在 */
-    if(false == osal_dir_exist(wdata))
+    /* Check if data directory exists */
+    if (false == osal_dir_exist(wdata))
     {
         elog(RLOG_WARNING, "work data not exist:%s", wdata);
         bret = false;
         goto cmd_startintegrate_done;
     }
 
-    /* 切换工作目录 */
+    /* Change working directory */
     chdir(wdata);
 
-    /* 设置为后台运行 */
+    /* Set to daemon mode */
     makedaemon();
 
-    /* 获取主线程号 */
+    /* Get main thread ID */
     g_mainthrid = pthread_self();
 
-    /* 在 wdata 查看锁文件是否存在,不存在则创建,存在则检测进程是否启动 */
+    /* Check if lock file exists in wdata, create if not, check if process is running if exists */
     misc_lockfiles_create(LOCK_FILE);
 
-    /* log 初始化 */
+    /* Initialize log */
     log_init();
 
-    /* 获取内存回收时间 */
+    /* Get memory reclaim time */
     gctime = guc_getConfigOptionInt(CFG_KEY_GCTIME);
 
     /* incintegrate */
     incintegrate = increment_integrate_init();
 
-    /* 设置信号处理函数 */
+    /* Set signal handler */
     signal_init();
 
-    /* 创建同步表 */
-    if(false == databaserecv_integrate_dbinit())
+    /* Create sync tables */
+    if (false == databaserecv_integrate_dbinit())
     {
         bret = false;
         goto cmd_startintegrate_done;
@@ -191,7 +173,7 @@ bool cmd_startintegrate(void)
         goto cmd_startintegrate_done;
     }
 
-    /* 加载onlinerefresh状态文件 生成 onlinerefresh节点 */
+    /* Load onlinerefresh state file and generate onlinerefresh node */
     if (false == increment_integrate_onlinerefreshload(incintegrate))
     {
         elog(RLOG_WARNING, "load onlinerefresh error");
@@ -200,126 +182,127 @@ bool cmd_startintegrate(void)
     }
 
     /*
-     * 添加主常驻线程
+     * Add main resident thread
      */
-    if(false == threads_addpersist(incintegrate->threads, &incintegrate->persistno, "INTEGRATE INCREMENT"))
+    if (false ==
+        threads_addpersist(incintegrate->threads, &incintegrate->persistno, "INTEGRATE INCREMENT"))
     {
         elog(RLOG_WARNING, "add integrate increment persist to threads error");
         bret = false;
         goto cmd_startintegrate_done;
     }
 
-    /* 启动常驻工作线程 */
-    if(false == cmd_startintegratethreads(incintegrate))
+    /* Start resident worker threads */
+    if (false == cmd_startintegratethreads(incintegrate))
     {
         bret = false;
         elog(RLOG_WARNING, "start integrate increment persist job threads error");
         goto cmd_startintegrate_done;
     }
 
-    /* 解除信号屏蔽 */
+    /* Unblock signals */
     singal_setmask();
 
     elog(RLOG_INFO, "xsynch integrate start, pid:%d", getpid());
 
     log_destroyerrorstack();
 
-    /* 关闭标准输入/输出/错误 */
+    /* Close stdin/stdout/stderr */
     closestd();
 
-    while(1)
+    while (1)
     {
-        /* 日志信息打印 */
-        if(true == g_gotsigterm)
+        /* Print log information */
+        if (true == g_gotsigterm)
         {
-            /* 捕获到 sigterm 信号, 设置线程退出 */
+            /* Caught sigterm signal, set thread to exit */
             threads_exit(incintegrate->threads);
             break;
         }
 
         /*
-         * refresh 处理
-         *  1、启动 refresh 节点
-         *  2、回收完成的 refresh 节点
+         * refresh processing
+         *  1. Start refresh node
+         *  2. Recycle completed refresh nodes
          */
-        /* 启动 refresh 节点 */
-        if(false == increment_integrate_startrefresh(incintegrate))
+        /* Start refresh node */
+        if (false == increment_integrate_startrefresh(incintegrate))
         {
             elog(RLOG_WARNING, "start refresh error");
             break;
         }
 
-        /* 尝试回收 refresh 节点 */
-        if(false == increment_integrate_tryjoinonrefresh(incintegrate))
+        /* Try to recycle refresh node */
+        if (false == increment_integrate_tryjoinonrefresh(incintegrate))
         {
             elog(RLOG_WARNING, "try join on refresh error");
             break;
         }
 
-        /* 
-         * onlinerefresh 处理
-         *  1、启动 onlinerefesh 节点
-         *  2、回收完成的 onlinerefresh 节点
+        /*
+         * onlinerefresh processing
+         *  1. Start onlinerefresh node
+         *  2. Recycle completed onlinerefresh nodes
          */
-        /* 启动 onlinerefesh 节点 */
-        if(false == increment_integrate_startonlinerefresh(incintegrate))
+        /* Start onlinerefresh node */
+        if (false == increment_integrate_startonlinerefresh(incintegrate))
         {
             elog(RLOG_WARNING, "start onlinerefresh error");
             break;
         }
 
-        /* 尝试回收 onlinerefresh 节点 */
-        if(false == increment_integrate_tryjoinononlinerefresh(incintegrate))
+        /* Try to recycle onlinerefresh node */
+        if (false == increment_integrate_tryjoinononlinerefresh(incintegrate))
         {
             elog(RLOG_WARNING, "try join on onlinerefresh error");
             break;
         }
 
-        /* 
-         * bigtxn 处理
-         *  1、启动 bigtxn 节点
-         *  2、回收完成的 bigtxn 节点
+        /*
+         * bigtxn processing
+         *  1. Start bigtxn node
+         *  2. Recycle completed bigtxn nodes
          */
-        /* 启动 bigtxn 节点 */
-        if(false == increment_integrate_startbigtxn(incintegrate))
+        /* Start bigtxn node */
+        if (false == increment_integrate_startbigtxn(incintegrate))
         {
             elog(RLOG_WARNING, "start bigtxn error");
             break;
         }
 
-        /* 尝试回收 bigtxn 节点 */
-        if(false == increment_integrate_tryjoinonbigtxn(incintegrate))
+        /* Try to recycle bigtxn node */
+        if (false == increment_integrate_tryjoinonbigtxn(incintegrate))
         {
             elog(RLOG_WARNING, "try join on bigtxn error");
             break;
         }
 
-        /* 启动线程 */
+        /* Start threads */
         threads_startthread(incintegrate->threads);
 
-        /* 尝试捕获异常线程 */
+        /* Try to capture abnormal threads */
         threads_tryjoin(incintegrate->threads);
 
-        /* 回收 FREE 节点 */
+        /* Recycle FREE nodes */
         threads_thrnoderecycle(incintegrate->threads);
 
-        if(false == threads_hasthrnode(incintegrate->threads))
+        if (false == threads_hasthrnode(incintegrate->threads))
         {
-            /* 所有的线程退出, 主线程退出 */
+            /* All threads exit, main thread exits */
             break;
         }
 
-        if(0 == gctime)
+        if (0 == gctime)
         {
             ;
         }
-        else if(gctime > forcefree)
+        else if (gctime > forcefree)
         {
             forcefree++;
         }
         else
         {
-            /* 回收内存 */
+            /* Reclaim memory */
             malloc_trim(0);
             forcefree = 0;
         }
@@ -327,28 +310,28 @@ bool cmd_startintegrate(void)
         continue;
     }
 
-    /* 所有的线程都退出了, 那么主线程也退出 */
+    /* All threads have exited, main thread also exits */
 cmd_startintegrate_done:
 
-    /* 落盘refresh信息 */
+    /* Persist refresh information */
     if (NULL != incintegrate)
     {
         increment_integrate_refreshflush(incintegrate);
 
-        /* 落盘onlinerefresh信息 */
+        /* Persist onlinerefresh information */
         if (NULL != incintegrate->rebuild)
         {
             onlinerefresh_persist_write(incintegrate->rebuild->olpersist);
         }
 
-        /* incintegrate 资源回收*/
+        /* incintegrate resource cleanup*/
         increment_integrate_destroy(incintegrate);
     }
 
-    /* 锁文件释放 */
+    /* Lock file release */
     misc_lockfiles_unlink(0, NULL);
 
-    /* 泄露内存打印 */
+    /* Print leaked memory */
     mem_print(MEMPRINT_ALL);
     return bret;
 }

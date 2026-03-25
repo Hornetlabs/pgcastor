@@ -17,7 +17,6 @@
 #include "./unicode_map/euc_jis_2004_to_utf8.map"
 #include "./unicode_map/utf8_to_euc_jis_2004.map"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -28,32 +27,26 @@
  * ) returns VOID;
  * ----------
  */
-void euc_jis_2004_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void euc_jis_2004_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(EUC_JIS_2004, UTF8);
 
-    LocalToUtf(src, len, dest,
-               &euc_jis_2004_to_unicode_tree,
-               LUmapEUC_JIS_2004_combined, conv_lengthof(LUmapEUC_JIS_2004_combined),
-               NULL,
-               EUC_JIS_2004);
+    LocalToUtf(src, len, dest, &euc_jis_2004_to_unicode_tree, LUmapEUC_JIS_2004_combined,
+               conv_lengthof(LUmapEUC_JIS_2004_combined), NULL, EUC_JIS_2004);
 }
 
-void utf8_to_euc_jis_2004(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_euc_jis_2004(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, EUC_JIS_2004);
 
-    UtfToLocal(src, len, dest,
-               &euc_jis_2004_from_unicode_tree,
-               ULmapEUC_JIS_2004_combined, conv_lengthof(ULmapEUC_JIS_2004_combined),
-               NULL,
-               EUC_JIS_2004);
+    UtfToLocal(src, len, dest, &euc_jis_2004_from_unicode_tree, ULmapEUC_JIS_2004_combined,
+               conv_lengthof(ULmapEUC_JIS_2004_combined), NULL, EUC_JIS_2004);
 }

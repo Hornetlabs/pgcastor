@@ -12,35 +12,35 @@
 #include "cache/transcache.h"
 
 /*
- * parser 线程与中转线程-写线程  共同维护
- *   1、parser 线程将 commit 的事务内容转移到此处
- *   2、中转线程将 commit 后的数据进行落盘或转移至 queuecache 中
-*/
+ * Maintained jointly by parser thread and relay-write thread
+ *   1. Parser thread transfers committed transaction content here
+ *   2. Relay thread flushes committed data to disk or transfers to queuecache
+ */
 
-/* 添加数据 */
+/* Add data */
 void cache_txn_add(cache_txn* stmtcache, txn* txn)
 {
     int iret = 0;
-    if(NULL == txn)
+    if (NULL == txn)
     {
         return;
     }
     txn->cachenext = NULL;
 
 stmtcache_add_retry:
-    /* 加入到链表中 */
+    /* Add to linked list */
     iret = osal_thread_lock(&stmtcache->mutex_lock);
-    if(0 != iret)
+    if (0 != iret)
     {
         elog(RLOG_ERROR, "get lock error:%s", strerror(errno));
     }
 
-    /* 检测超过 transmaxnum 大小 */
-    if((stmtcache->totalnum + 1) > g_transmaxnum)
+    /* Check if exceeds transmaxnum size */
+    if ((stmtcache->totalnum + 1) > g_transmaxnum)
     {
-        /* 缓存已满, 解锁，等缓存未满 */
-        /* 解锁,返回 */
-        if(true == stmtcache->wsignal)
+        /* Cache is full, unlock, wait for cache to be not full */
+        /* Unlock, return */
+        if (true == stmtcache->wsignal)
         {
             stmtcache->wsignal = false;
             osal_thread_cond_signal(&stmtcache->cond);
@@ -48,8 +48,7 @@ stmtcache_add_retry:
         osal_thread_unlock(&stmtcache->mutex_lock);
         usleep(10000);
         elog(RLOG_DEBUG, "stmtcache full,waiting space, totalnum:%d, maxnum:%d",
-                            stmtcache->totalnum,
-                            g_transmaxnum);
+             stmtcache->totalnum, g_transmaxnum);
         goto stmtcache_add_retry;
     }
 
@@ -57,7 +56,7 @@ stmtcache_add_retry:
     stmtcache->tail = &(txn->cachenext);
     stmtcache->totalnum++;
 
-    if(true == stmtcache->wsignal)
+    if (true == stmtcache->wsignal)
     {
         stmtcache->wsignal = false;
         osal_thread_cond_signal(&stmtcache->cond);
@@ -66,41 +65,42 @@ stmtcache_add_retry:
     osal_thread_unlock(&stmtcache->mutex_lock);
 }
 
-/* 
- * 获取数据
- *  extra 用于设置额外值信息，在当前的场景中设置了超时，当超过指定的时间后，返回NULL并设置extra的返回代码为超时
- *      extra           0               退出
- *      extra           1               超时
-*/
+/*
+ * Get data
+ *  extra
+ * Used to set extra value information, in current scenario timeout is set, when exceeds specified
+ * time, returns NULL and sets extra return code to timeout extra           0               Exit
+ *      extra           1               Timeout
+ */
 txn* cache_txn_get(cache_txn* stmtcache, int* timeout)
 {
-    int iret = 0;
-    txn* entry = NULL;
-    struct timespec ts = { 0 };
+    int             iret = 0;
+    txn*            entry = NULL;
+    struct timespec ts = {0};
 
     *timeout = 0;
-    while(1)
+    while (1)
     {
         iret = osal_thread_lock(&stmtcache->mutex_lock);
-        if(0 != iret)
+        if (0 != iret)
         {
             elog(RLOG_WARNING, "get lock error:%s", strerror(errno));
             return NULL;
         }
 
-        if(NULL == stmtcache->head)
+        if (NULL == stmtcache->head)
         {
-            /* 需要等待 */
-            /* 设置超时时间 */
+            /* Need to wait */
+            /* Set timeout */
             clock_gettime(CLOCK_REALTIME, &ts);
             ts.tv_sec += 1;
 
-            /* 设置标识，告知有线程等待 */
+            /* Set flag to notify waiting thread */
             stmtcache->wsignal = true;
             iret = osal_thread_cond_timewait(&stmtcache->cond, &stmtcache->mutex_lock, &ts);
-            if(0 != iret)
+            if (0 != iret)
             {
-                if(iret == ETIMEDOUT)
+                if (iret == ETIMEDOUT)
                 {
                     stmtcache->wsignal = false;
                     osal_thread_unlock(&(stmtcache->mutex_lock));
@@ -115,19 +115,19 @@ txn* cache_txn_get(cache_txn* stmtcache, int* timeout)
             stmtcache->wsignal = false;
         }
 
-        /* 获取数据 */
+        /* Get data */
         entry = stmtcache->head;
         stmtcache->head = entry->cachenext;
         stmtcache->totalnum--;
 
-        if(NULL == stmtcache->head)
+        if (NULL == stmtcache->head)
         {
             stmtcache->tail = &(stmtcache->head);
         }
 
-        /* 解锁 */
+        /* Unlock */
         iret = osal_thread_unlock(&stmtcache->mutex_lock);
-        if(0 != iret)
+        if (0 != iret)
         {
             elog(RLOG_WARNING, "unlock error:%s", strerror(errno));
             return NULL;
@@ -139,40 +139,41 @@ txn* cache_txn_get(cache_txn* stmtcache, int* timeout)
     return NULL;
 }
 
-/* 
- * 获取批量数据
- *  extra 用于设置额外值信息，在当前的场景中设置了超时，当超过指定的时间后，返回NULL并设置extra的返回代码为超时
- *      extra           0               退出
- *      extra           1               超时
-*/
+/*
+ * Get batch data
+ *  extra
+ * Used to set extra value information, in current scenario timeout is set, when exceeds specified
+ * time, returns NULL and sets extra return code to timeout extra           0               Exit
+ *      extra           1               Timeout
+ */
 txn* cache_txn_getbatch(cache_txn* stmtcache, int* timeout)
 {
-    int iret = 0;
-    txn* entry = NULL;
-    struct timespec ts = { 0 };
+    int             iret = 0;
+    txn*            entry = NULL;
+    struct timespec ts = {0};
 
     *timeout = 0;
-    while(1)
+    while (1)
     {
         iret = osal_thread_lock(&stmtcache->mutex_lock);
-        if(0 != iret)
+        if (0 != iret)
         {
             elog(RLOG_ERROR, "get lock error:%s", strerror(errno));
         }
 
-        if(NULL == stmtcache->head)
+        if (NULL == stmtcache->head)
         {
-            /* 需要等待 */
-            /* 设置超时时间 */
+            /* Need to wait */
+            /* Set timeout */
             clock_gettime(CLOCK_REALTIME, &ts);
             ts.tv_sec += 1;
 
-            /* 设置标识，告知有线程等待 */
+            /* Set flag to notify waiting thread */
             stmtcache->wsignal = true;
             iret = osal_thread_cond_timewait(&stmtcache->cond, &stmtcache->mutex_lock, &ts);
-            if(0 != iret)
+            if (0 != iret)
             {
-                if(iret == ETIMEDOUT)
+                if (iret == ETIMEDOUT)
                 {
                     stmtcache->wsignal = false;
                     osal_thread_unlock(&(stmtcache->mutex_lock));
@@ -187,18 +188,18 @@ txn* cache_txn_getbatch(cache_txn* stmtcache, int* timeout)
             stmtcache->wsignal = false;
         }
 
-        /* 获取数据 */
+        /* Get data */
         stmtcache->totalnum = 0;
         entry = stmtcache->head;
         stmtcache->head = NULL;
-        if(NULL == stmtcache->head)
+        if (NULL == stmtcache->head)
         {
             stmtcache->tail = &(stmtcache->head);
         }
 
-        /* 解锁 */
+        /* Unlock */
         iret = osal_thread_unlock(&stmtcache->mutex_lock);
-        if(0 != iret)
+        if (0 != iret)
         {
             elog(RLOG_ERROR, "unlock error:%s", strerror(errno));
         }
@@ -211,21 +212,21 @@ txn* cache_txn_getbatch(cache_txn* stmtcache, int* timeout)
 void cache_txn_clean(cache_txn* stmtcache)
 {
     txn* txn = NULL;
-    int iret = 0;
-    if(NULL == stmtcache)
+    int  iret = 0;
+    if (NULL == stmtcache)
     {
         return;
     }
 
-    /* 锁定 */
+    /* Lock */
     iret = osal_thread_lock(&stmtcache->mutex_lock);
-    if(0 != iret)
+    if (0 != iret)
     {
         elog(RLOG_ERROR, "get lock error:%s", strerror(errno));
     }
 
-    /* 清理 stmtcache 缓存 */
-    for(txn = stmtcache->head; NULL != txn; txn = stmtcache->head)
+    /* Clean up stmtcache cache */
+    for (txn = stmtcache->head; NULL != txn; txn = stmtcache->head)
     {
         stmtcache->head = txn->cachenext;
 
@@ -237,9 +238,9 @@ void cache_txn_clean(cache_txn* stmtcache)
     stmtcache->head = NULL;
     stmtcache->tail = &(stmtcache->head);
 
-    /* 解锁 */
+    /* Unlock */
     iret = osal_thread_unlock(&stmtcache->mutex_lock);
-    if(0 != iret)
+    if (0 != iret)
     {
         elog(RLOG_ERROR, "unlock error:%s", strerror(errno));
     }
@@ -248,7 +249,7 @@ void cache_txn_clean(cache_txn* stmtcache)
 void cache_txn_destroy(cache_txn* stmtcache)
 {
     txn* txn = NULL;
-    if(NULL == stmtcache)
+    if (NULL == stmtcache)
     {
         return;
     }
@@ -256,8 +257,8 @@ void cache_txn_destroy(cache_txn* stmtcache)
     osal_thread_mutex_destroy(&stmtcache->mutex_lock);
     osal_thread_cond_destroy(&stmtcache->cond);
 
-    /* 清理 stmtcache 缓存 */
-    for(txn = stmtcache->head; NULL != txn; txn = stmtcache->head)
+    /* Clean up stmtcache cache */
+    for (txn = stmtcache->head; NULL != txn; txn = stmtcache->head)
     {
         stmtcache->head = txn->cachenext;
 
@@ -268,10 +269,10 @@ void cache_txn_destroy(cache_txn* stmtcache)
     stmtcache = NULL;
 }
 
-/* 缓存是否为空 */
+/* Check if cache is empty */
 bool cache_txn_isnull(cache_txn* stmtcache)
 {
-    if(NULL == stmtcache)
+    if (NULL == stmtcache)
     {
         return true;
     }
@@ -283,27 +284,27 @@ bool cache_txn_isnull(cache_txn* stmtcache)
     return false;
 }
 
-/* stmt 缓存 */
+/* stmt cache */
 cache_txn* cache_txn_init(void)
 {
     cache_txn* stmtcache = NULL;
     stmtcache = (cache_txn*)rmalloc1(sizeof(cache_txn));
-    if(NULL == stmtcache)
+    if (NULL == stmtcache)
     {
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(stmtcache, 0, '\0', sizeof(cache_txn));
 
-    /* 初始化值信息 */
+    /* Initialize value information */
     stmtcache->wsignal = false;
     stmtcache->totalnum = 0;
     stmtcache->head = NULL;
     stmtcache->tail = &(stmtcache->head);
 
-    /* 锁和信号初始化 */
+    /* Initialize lock and signal */
     osal_thread_mutex_init(&stmtcache->mutex_lock, NULL);
 
-    if(0 != osal_thread_cond_init(&stmtcache->cond, NULL))
+    if (0 != osal_thread_cond_init(&stmtcache->cond, NULL))
     {
         elog(RLOG_ERROR, "can not init pthread cond, %s", strerror(errno));
     }

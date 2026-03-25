@@ -1,7 +1,7 @@
 /**
  * @file                pg_parser_thirdparty_timezone_tzdata_info.h
  * @author              ByteSynch
- * @brief               定义 zic 函数的调用 入口
+ * @brief               Define entry point for zic function calls
  * @version             0.1
  * @date                2023-09-18
  *
@@ -32,10 +32,10 @@
 #include "./zones/US/pg_parser_zones_us_all.h"
 #include "./zones/Top/pg_parser_zones_other_all.h"
 
-/* 获取时区数组 */
-char** pg_parser_get_tzdata_info(const char *tz_name, int32_t *tz_dataSize);
+/* Get timezone array */
+char** pg_parser_get_tzdata_info(const char* tz_name, int32_t* tz_dataSize);
 
-/* 获取时区数据的信息。 */
+/* Get timezone data information. */
 void pg_parser_zic_get_tzdata(const char* dbtz_name, pg_parser_StringInfo local_tzdata);
 
 #endif /* PG_PARSER_THIRDPARTY_TIMEZONE_TZDATA_INFO_H */

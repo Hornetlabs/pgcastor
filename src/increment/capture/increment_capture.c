@@ -47,22 +47,19 @@
 #include "metric/capture/metric_capture.h"
 #include "increment/capture/increment_capture.h"
 
-
-static void capturestate_write_set_misc_callback(void *state, 
-                                                        XLogRecPtr confirm,
-                                                        XLogRecPtr restart,
-                                                        XLogRecPtr redo)
+static void capturestate_write_set_misc_callback(void* state, XLogRecPtr confirm,
+                                                 XLogRecPtr restart, XLogRecPtr redo)
 {
-    increment_capture *inccapture = state;
+    increment_capture* inccapture = state;
     inccapture->writestate->base.confirmedlsn = confirm;
     inccapture->writestate->base.restartlsn = restart;
     inccapture->writestate->base.redolsn = redo;
     misc_stat_decodewrite(&(inccapture->writestate->base), &inccapture->writestate->basefd);
 }
 
-/*------------metric 信息设置   begin-------------------*/
+/*------------metric info set   begin-------------------*/
 
-/* capture端 设置capturestate解析到的lsn */
+/* Capture end set capturestate parsed lsn */
 static void capturestate_parselsn_set(void* privdata, XLogRecPtr pareslsn)
 {
     increment_capture* inccapture = NULL;
@@ -83,7 +80,7 @@ static void capturestate_parselsn_set(void* privdata, XLogRecPtr pareslsn)
     return;
 }
 
-/* capture端 设置capturestate拆分到的lsn */
+/* Capture end set capturestate split lsn */
 static void capturestate_loadlsn_set(void* privdata, XLogRecPtr loadlasn)
 {
     increment_capture* inccapture = NULL;
@@ -104,7 +101,7 @@ static void capturestate_loadlsn_set(void* privdata, XLogRecPtr loadlasn)
     return;
 }
 
-/* capture端 设置capturestate写入到文件中的 lsn */
+/* Capture end set capturestate flushed lsn */
 static void capturestate_flushlsn_set(void* privdata, XLogRecPtr flushlsn)
 {
     increment_capture* inccapture = NULL;
@@ -125,7 +122,7 @@ static void capturestate_flushlsn_set(void* privdata, XLogRecPtr flushlsn)
     return;
 }
 
-/* capture端 设置capturestate 的trail 文件编号*/
+/* Capture end set capturestate trail file number */
 static void capturestate_trailnoset(void* privdata, uint64 trailno)
 {
     increment_capture* inccapture = NULL;
@@ -146,7 +143,7 @@ static void capturestate_trailnoset(void* privdata, uint64 trailno)
     return;
 }
 
-/* capture端 设置capturestate的trail 文件内的偏移 */
+/* Capture end set capturestate trail file offset */
 static void capturestate_trailstartset(void* privdata, uint64 trailstart)
 {
     increment_capture* inccapture = NULL;
@@ -167,23 +164,23 @@ static void capturestate_trailstartset(void* privdata, uint64 trailstart)
     return;
 }
 
-/* capture端 设置capturestate的 confirmlsn */
-static void capturestate_walsynclsn_set(void* privdata, 
-                                               XLogRecPtr redolsn,
-                                               XLogRecPtr restartlsn,
-                                               XLogRecPtr confirmlsn)
+/* Capture end set capturestate confirmlsn */
+static void capturestate_walsynclsn_set(void* privdata, XLogRecPtr redolsn, XLogRecPtr restartlsn,
+                                        XLogRecPtr confirmlsn)
 {
     increment_capture* inccapture = NULL;
     if (NULL == privdata)
     {
-        elog(RLOG_ERROR, "increment capture metric walsynclsn set exception, privdata point is NULL");
+        elog(RLOG_ERROR,
+             "increment capture metric walsynclsn set exception, privdata point is NULL");
     }
 
     inccapture = (increment_capture*)privdata;
 
     if (NULL == inccapture->metric)
     {
-        elog(RLOG_ERROR, "increment capture metric walsynclsn set exception, capturestate point is NULL");
+        elog(RLOG_ERROR,
+             "increment capture metric walsynclsn set exception, capturestate point is NULL");
     }
 
     inccapture->metric->redolsn = redolsn;
@@ -193,7 +190,7 @@ static void capturestate_walsynclsn_set(void* privdata,
     return;
 }
 
-/* capture端 设置capturestate的trail 文件内的偏移 */
+/* Capture end set capturestate parse timestamp */
 static void capturestate_parsetimestamp_set(void* privdata, TimestampTz parsetimestamp)
 {
     increment_capture* inccapture = NULL;
@@ -216,7 +213,7 @@ static void capturestate_parsetimestamp_set(void* privdata, TimestampTz parsetim
     return;
 }
 
-/* capture端 设置capturestate的trail 文件内的偏移 */
+/* Capture end set capturestate flush timestamp */
 static void capturestate_flushtimestamp_set(void* privdata, TimestampTz flushtimestamp)
 {
     increment_capture* inccapture = NULL;
@@ -240,12 +237,12 @@ static void capturestate_flushtimestamp_set(void* privdata, TimestampTz flushtim
     return;
 }
 
-/*------------metric 信息设置  end-------------------*/
+/*------------metric info set  end-------------------*/
 
-/* capture端 设置splitwork的拆分的起点和终点 */
+/* capture end set splitwork split start and end points */
 void increment_capture_splitwal_lsn_set(void* privdata, XLogRecPtr startlsn, XLogRecPtr endlsn)
 {
-    loadwalrecords *loadrecords = NULL;
+    loadwalrecords*    loadrecords = NULL;
     increment_capture* inccapture = NULL;
 
     if (NULL == privdata)
@@ -274,7 +271,8 @@ void increment_capture_splitwal_lsn_set(void* privdata, XLogRecPtr startlsn, XLo
     }
     else if (startlsn && endlsn == InvalidXLogRecPtr)
     {
-        /* 如果是切换的, 此时还不能直接赋值startptr, 因为record可能还在划分 */
+        /* If switching, cannot directly assign startptr yet, because records may still be splitting
+         */
         if (inccapture->splitwalctx->status == SPLITWORK_WAL_STATUS_REWIND)
         {
             inccapture->splitwalctx->change = true;
@@ -294,10 +292,9 @@ void increment_capture_splitwal_lsn_set(void* privdata, XLogRecPtr startlsn, XLo
     }
 
     return;
-
 }
 
-/* splitwork 设置解析线程状态为emiting */
+/* splitwork set parser thread state to emitting */
 void increment_capture_parserwal_rewindingstat_setemiting(void* privdata)
 {
     increment_capture* inccapture = NULL;
@@ -318,7 +315,7 @@ void increment_capture_parserwal_rewindingstat_setemiting(void* privdata)
     return;
 }
 
-/* 获取parser中的curtlid */
+/* Get curtlid from parser */
 TimeLineID increment_capture_parserstat_curtlid_get(void* privdata)
 {
     increment_capture* inccapture = NULL;
@@ -337,7 +334,7 @@ TimeLineID increment_capture_parserstat_curtlid_get(void* privdata)
     return inccapture->decodingctx->base.curtlid;
 }
 
-/* 设置写入trail文件路径 */
+/* Set trail file path for writing */
 void increment_capture_writestate_set_trail(void* privdata, char* trail)
 {
     increment_capture* inccapture = NULL;
@@ -354,10 +351,10 @@ void increment_capture_writestate_set_trail(void* privdata, char* trail)
     return;
 }
 
-/* 添加 onlinerefresh 节点 */
+/* Add onlinerefresh node */
 static void increment_capture_addonlinerefresh(void* privdata, void* rtables)
 {
-    increment_capture* inccapture                    = NULL;
+    increment_capture* inccapture = NULL;
 
     inccapture = (increment_capture*)privdata;
 
@@ -365,7 +362,6 @@ static void increment_capture_addonlinerefresh(void* privdata, void* rtables)
     inccapture->olrefreshtables = dlist_put(inccapture->olrefreshtables, rtables);
     osal_thread_unlock(&inccapture->olrefreshlock);
 }
-
 
 increment_capture* increment_capture_init(void)
 {
@@ -380,7 +376,7 @@ increment_capture* increment_capture_init(void)
     inccapture->splitwalctx = splitwal_init();
 
     inccapture->recordsqueue = queue_init();
-    queue_setmax(inccapture->recordsqueue, g_walcachemaxsize*1024*1024);
+    queue_setmax(inccapture->recordsqueue, g_walcachemaxsize * 1024 * 1024);
 
     inccapture->decodingctx = parserwork_walinitphase1();
     inccapture->parser2serialtxns = cache_txn_init();
@@ -391,7 +387,7 @@ increment_capture* increment_capture_init(void)
     inccapture->bigtxnserialstate = bigtxn_captureserial_init();
     inccapture->bigtxnwritestate = bigtxn_captureflush_init();
     inccapture->threads = threads_init();
-    if(NULL == inccapture->threads)
+    if (NULL == inccapture->threads)
     {
         elog(RLOG_WARNING, "increment capture init threads error");
         return NULL;
@@ -400,16 +396,19 @@ increment_capture* increment_capture_init(void)
     osal_thread_mutex_init(&inccapture->olrefreshlock, NULL);
     inccapture->olrefreshing = NULL;
 
-    inccapture->bigtxnserialstate->privdata = (void *)inccapture;
-    inccapture->bigtxnserialstate->callback.bigtxn_parserstat_curtlid_get = increment_capture_parserstat_curtlid_get;
+    inccapture->bigtxnserialstate->privdata = (void*)inccapture;
+    inccapture->bigtxnserialstate->callback.bigtxn_parserstat_curtlid_get =
+        increment_capture_parserstat_curtlid_get;
 
-    inccapture->bigtxnwritestate->privdata = (void *)inccapture;
-    inccapture->bigtxnwritestate->txn2filebuffer = inccapture->bigtxnserialstate->base.txn2filebuffer;
+    inccapture->bigtxnwritestate->privdata = (void*)inccapture;
+    inccapture->bigtxnwritestate->txn2filebuffer =
+        inccapture->bigtxnserialstate->base.txn2filebuffer;
     inccapture->bigtxnwritestate->callback.setmetricflushlsn = NULL;
 
-    inccapture->splitwalctx->privdata = (void *)inccapture;
+    inccapture->splitwalctx->privdata = (void*)inccapture;
     inccapture->splitwalctx->recordqueue = inccapture->recordsqueue;
-    inccapture->splitwalctx->callback.parserwal_rewindstat_setemiting = increment_capture_parserwal_rewindingstat_setemiting;
+    inccapture->splitwalctx->callback.parserwal_rewindstat_setemiting =
+        increment_capture_parserwal_rewindingstat_setemiting;
     inccapture->splitwalctx->callback.capturestate_loadlsn_set = capturestate_loadlsn_set;
 
     inccapture->decodingctx->privdata = (void*)inccapture;
@@ -425,7 +424,8 @@ increment_capture* increment_capture_init(void)
     inccapture->serialstate->privdata = (void*)inccapture;
     inccapture->serialstate->parser2serialtxns = inccapture->parser2serialtxns;
     inccapture->serialstate->base.txn2filebuffer = inccapture->txn2filebuffer;
-    inccapture->serialstate->callback.parserstat_curtlid_get = increment_capture_parserstat_curtlid_get;
+    inccapture->serialstate->callback.parserstat_curtlid_get =
+        increment_capture_parserstat_curtlid_get;
 
     inccapture->writestate->privdata = (void*)inccapture;
     inccapture->writestate->txn2filebuffer = inccapture->txn2filebuffer;

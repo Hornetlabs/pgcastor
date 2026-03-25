@@ -2,7 +2,7 @@
 #include "port/file/fd.h"
 #include "port/thread/thread.h"
 
-static malloc_nodes m_nodes = { 0, PTHREAD_MUTEX_INITIALIZER, NULL, NULL};
+static malloc_nodes m_nodes = {0, PTHREAD_MUTEX_INITIALIZER, NULL, NULL};
 
 void mem_init(void)
 {
@@ -13,14 +13,14 @@ void mem_init(void)
 }
 
 /*
- * 分配 size 字节的内存
- * 参数说明:
- *  file            分配空间所在的文件
- *  line            分配空间所在的文件内的行号
- *  size            分配的空间
- *  local           用于标识分配的空间是局部空间还是全局空间
- *                      true            局部空间
- *                      false           全局空间
+ * allocate size bytes of memory
+ * parameters:
+ *  file            source file where allocation occurs
+ *  line            source line number where allocation occurs
+ *  size            size of memory to allocate
+ *  local           flag indicating whether allocation is local or global
+ *                      true            local space
+ *                      false           global space
  */
 void* rmalloc(char* file, uint32 line, size_t size, bool local)
 {
@@ -36,7 +36,7 @@ void* rmalloc(char* file, uint32 line, size_t size, bool local)
     {
         elog(RLOG_ERROR, "%s:%d out of memory, %s", file, line, strerror(errno));
     }
-    memset(addr,'\0', MALLOC_NODE_SIZE);
+    memset(addr, '\0', MALLOC_NODE_SIZE);
 
     node = (malloc_node*)addr;
 
@@ -69,19 +69,19 @@ void* rmalloc(char* file, uint32 line, size_t size, bool local)
     return addr;
 }
 
-/* 
- * 对指定内存设置初始值
- * 参数说明:
- *  s               待初始化的内存地址
- *  offset          基于 s 的偏移
- *  c               设置的字符
- *  n               长度
- *  heap            标识 s 的指向为堆还是栈
- *                      true            堆
- *                      false           栈
+/*
+ * set initial value for specified memory
+ * parameters:
+ *  s               memory address to initialize
+ *  offset          offset from s
+ *  c               character to set
+ *  n               length
+ *  heap            flag indicating whether s points to heap or stack
+ *                      true            heap
+ *                      false           stack
  */
 void* rmemset(void* s, uint64 offset, int c, size_t n, bool heap)
-{    
+{
 #ifdef MEMCHECK
     malloc_node* node = NULL;
     if (false == heap)
@@ -90,13 +90,12 @@ void* rmemset(void* s, uint64 offset, int c, size_t n, bool heap)
     }
     else
     {
-        
         node = (malloc_node*)(((uint8_t*)s) - MALLOC_NODE_SIZE);
         if (node->magic != MALLOC_MAGIC)
         {
             elog(RLOG_ERROR, "Memory failure or released");
         }
-        
+
         if (node->size < offset + n)
         {
             elog(RLOG_ERROR, " Memset out of memory, file %s: %u", node->file, node->line);
@@ -106,21 +105,21 @@ void* rmemset(void* s, uint64 offset, int c, size_t n, bool heap)
         memset(((uint8*)s) + offset, c, n);
     }
 #else
-     memset(((uint8*)s) + offset, c, n);
+    memset(((uint8*)s) + offset, c, n);
 #endif
     return s;
 }
 
-/* 
- * 对指定内存设置初始值
- * 参数说明:
- *  dest            目标地址
- *  offset          基于dest的偏移
- *  src             源地址
- *  n               长度
- *  heap            标识 s 的指向为堆还是栈
- *                      true            堆
- *                      false           栈
+/*
+ * copy memory from source to destination
+ * parameters:
+ *  dest            destination address
+ *  offset          offset from dest
+ *  src             source address
+ *  n               length
+ *  heap            flag indicating whether s points to heap or stack
+ *                      true            heap
+ *                      false           stack
  */
 void* rmemcpy(void* dest, uint64 offset, const void* src, size_t n, bool heap)
 {
@@ -137,7 +136,7 @@ void* rmemcpy(void* dest, uint64 offset, const void* src, size_t n, bool heap)
         {
             elog(RLOG_ERROR, "Memory failure or released");
         }
-        
+
         if (node->size < offset + n)
         {
             elog(RLOG_ERROR, "Memcpy out of memory, file %s: %u", node->file, node->line);
@@ -153,25 +152,25 @@ void* rmemcpy(void* dest, uint64 offset, const void* src, size_t n, bool heap)
 }
 
 /*
- * 分配 size 字节的内存
- * 参数说明:
- *  file            分配空间所在的文件
- *  line            分配空间所在的文件内的行号
- *  size            分配的空间
- *  local           用于标识分配的空间是局部空间还是全局空间
- *                      true            局部空间
- *                      false           全局空间
- * 
- * 备注:
- *  1、ptr 为空时，标识是新申请空间，功能与 rmalloc 相同
- *  2、在自写的逻辑里面判断待分配的空间是小于源空间，那么返回源空间即可
- * 
+ * reallocate size bytes of memory
+ * parameters:
+ *  file            source file where allocation occurs
+ *  line            source line number where allocation occurs
+ *  size            size of memory to allocate
+ *  local           flag indicating whether allocation is local or global
+ *                      true            local space
+ *                      false           global space
+ *
+ * notes:
+ *  1. when ptr is NULL, indicates new allocation, function behaves same as rmalloc
+ *  2. if requested size is smaller than original, returns original space
+ *
  */
 void* rrealloc(char* file, uint32 line, void* ptr, size_t size, bool local)
 {
     void* addr = NULL;
 #ifdef MEMCHECK
-    malloc_node new_node = {0};
+    malloc_node  new_node = {0};
     malloc_node* node = NULL;
 
     new_node.magic = MALLOC_MAGIC;
@@ -179,7 +178,7 @@ void* rrealloc(char* file, uint32 line, void* ptr, size_t size, bool local)
     new_node.line = line;
     memcpy(new_node.file, file, strlen(file));
     new_node.size = size;
-    
+
     osal_thread_lock(&m_nodes.listlock);
     if (ptr == NULL)
     {
@@ -212,10 +211,10 @@ void* rrealloc(char* file, uint32 line, void* ptr, size_t size, bool local)
     node = (malloc_node*)addr;
     if (ptr == NULL)
     {
-        if (NULL == m_nodes.head) 
+        if (NULL == m_nodes.head)
         {
             m_nodes.head = m_nodes.tail = node;
-        } 
+        }
         else
         {
             m_nodes.tail->next = node;
@@ -228,22 +227,22 @@ void* rrealloc(char* file, uint32 line, void* ptr, size_t size, bool local)
         if (node->prev)
         {
             node->prev->next = node;
-        } 
-        else 
+        }
+        else
         {
             m_nodes.head = node;
         }
 
-        if (node->next) 
+        if (node->next)
         {
             node->next->prev = node;
-        } 
-        else 
+        }
+        else
         {
             m_nodes.tail = node;
         }
     }
-    
+
     osal_thread_unlock(&m_nodes.listlock);
     addr = ((uint8_t*)addr) + MALLOC_NODE_SIZE;
 #else
@@ -252,26 +251,27 @@ void* rrealloc(char* file, uint32 line, void* ptr, size_t size, bool local)
     return addr;
 }
 
-/* 
- * 释放空间
- *  参数说明:
- *      ptr  待释放的空间
- * 
- * 备注:
- *  在自写逻辑中发现 ptr 无对应的内存时，那么表名内存已经被释放,此时则为 doublefree，报错即可
+/*
+ * free memory space
+ *  parameters:
+ *      ptr  memory space to free
+ *
+ * notes:
+ *  if ptr has no corresponding memory in custom logic, indicates memory was already freed,
+ *  which is a double-free error, report error
  */
 void rfree(void* ptr)
 {
 #ifdef MEMCHECK
     malloc_node* node = NULL;
     node = (malloc_node*)(((uint8_t*)ptr) - MALLOC_NODE_SIZE);
-    if(node->magic != MALLOC_MAGIC)
+    if (node->magic != MALLOC_MAGIC)
     {
-        elog(RLOG_ERROR,"doublefree");
+        elog(RLOG_ERROR, "doublefree");
         return;
     }
 
-    /* 添加到链表中 */
+    /* add to linked list */
     osal_thread_lock(&m_nodes.listlock);
     if (node->prev)
     {
@@ -299,18 +299,18 @@ void rfree(void* ptr)
 
 void mem_print(memprint_flag flag)
 {
-    uint64 totalsize = 0;
+    uint64       totalsize = 0;
     malloc_node* cur = m_nodes.head;
     osal_thread_lock(&m_nodes.listlock);
-    while (cur) {
+    while (cur)
+    {
         if ((flag == MEMPRINT_GLOBAL && cur->flag == 0) ||
-            (flag == MEMPRINT_LOCAL && cur->flag == 1) ||
-            (flag == MEMPRINT_ALL))
-            {
-                totalsize += cur->size;
-                elog(RLOG_INFO,"Allocated at %s:%u, size %lu, address %p, number %u\n",
-                    cur->file, cur->line, cur->size, cur , cur->number);
-            }
+            (flag == MEMPRINT_LOCAL && cur->flag == 1) || (flag == MEMPRINT_ALL))
+        {
+            totalsize += cur->size;
+            elog(RLOG_INFO, "Allocated at %s:%u, size %lu, address %p, number %u\n", cur->file,
+                 cur->line, cur->size, cur, cur->number);
+        }
 
         cur = cur->next;
     }
@@ -319,15 +319,15 @@ void mem_print(memprint_flag flag)
 }
 
 /*
- * 字符串拷贝函数
- * 参数说明:
- *  file            分配空间所在的文件
- *  line            分配空间所在的文件内的行号
- *  s               要拷贝的字符串
+ * string copy function
+ * parameters:
+ *  file            source file where allocation occurs
+ *  line            source line number where allocation occurs
+ *  s               string to copy
  */
-char * _rstrdup(char* file, uint32 line, const char* s)
+char* _rstrdup(char* file, uint32 line, const char* s)
 {
-    char* str = NULL;
+    char*  str = NULL;
     uint32 len = 0;
     if (!s)
     {
@@ -351,16 +351,16 @@ char * _rstrdup(char* file, uint32 line, const char* s)
 }
 
 /*
- * 字符串拷贝函数
- * 参数说明:
- *  file            分配空间所在的文件
- *  line            分配空间所在的文件内的行号
- *  s               要拷贝的字符串
- *  n               要拷贝的长度
+ * string copy function (with length limit)
+ * parameters:
+ *  file            source file where allocation occurs
+ *  line            source line number where allocation occurs
+ *  s               string to copy
+ *  n               maximum length to copy
  */
-char * _rstrndup(char* file, uint32 line, const char* s, uint32 n)
+char* _rstrndup(char* file, uint32 line, const char* s, uint32 n)
 {
-    char* str = NULL;
+    char*  str = NULL;
     uint32 len = 0;
     if (!s)
     {

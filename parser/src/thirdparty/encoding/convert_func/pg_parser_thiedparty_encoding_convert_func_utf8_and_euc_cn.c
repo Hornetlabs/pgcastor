@@ -17,7 +17,6 @@
 #include "./unicode_map/euc_cn_to_utf8.map"
 #include "./unicode_map/utf8_to_euc_cn.map"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -28,32 +27,24 @@
  * ) returns VOID;
  * ----------
  */
-void euc_cn_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void euc_cn_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(EUC_CN, UTF8);
 
-    LocalToUtf(src, len, dest,
-               &euc_cn_to_unicode_tree,
-               NULL, 0,
-               NULL,
-               EUC_CN);
+    LocalToUtf(src, len, dest, &euc_cn_to_unicode_tree, NULL, 0, NULL, EUC_CN);
 }
 
-void utf8_to_euc_cn(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_euc_cn(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, EUC_CN);
 
-    UtfToLocal(src, len, dest,
-               &euc_cn_from_unicode_tree,
-               NULL, 0,
-               NULL,
-               EUC_CN);
+    UtfToLocal(src, len, dest, &euc_cn_from_unicode_tree, NULL, 0, NULL, EUC_CN);
 }

@@ -6,20 +6,19 @@
 
 #define STRINGINFO_MCXT NULL
 
-#define STRINFO_MaxAllocSize    ((size_t) 0x3fffffff) /* 1 gigabyte - 1 */
+#define STRINFO_MaxAllocSize ((size_t)0x3fffffff) /* 1 gigabyte - 1 */
 
 /*
  * pg_parser_makeStringInfo
  *
  * Create an empty 'pg_parser_StringInfoData' & return a pointer to it.
  */
-pg_parser_StringInfo
-pg_parser_makeStringInfo(void)
+pg_parser_StringInfo pg_parser_makeStringInfo(void)
 {
     pg_parser_StringInfo res;
-    if (!pg_parser_mcxt_malloc(STRINGINFO_MCXT, (void **) &res, sizeof(pg_parser_StringInfoData)))
+    if (!pg_parser_mcxt_malloc(STRINGINFO_MCXT, (void**)&res, sizeof(pg_parser_StringInfoData)))
     {
-        //printf("something wrong in malloc stringinfp\n");
+        // printf("something wrong in malloc stringinfp\n");
         return NULL;
     }
     pg_parser_initStringInfo(res);
@@ -32,13 +31,12 @@ pg_parser_makeStringInfo(void)
  * Initialize a pg_parser_StringInfoData struct (with previously undefined contents)
  * to describe an empty string.
  */
-void
-pg_parser_initStringInfo(pg_parser_StringInfo str)
+void pg_parser_initStringInfo(pg_parser_StringInfo str)
 {
     int32_t size = 1024; /* initial default buffer size */
-    if (!pg_parser_mcxt_malloc(STRINGINFO_MCXT, (void **) &(str->data), size))
+    if (!pg_parser_mcxt_malloc(STRINGINFO_MCXT, (void**)&(str->data), size))
     {
-        //printf("something wrong in malloc stringinfp\n");
+        // printf("something wrong in malloc stringinfp\n");
         str->maxlen = 0;
     }
     else
@@ -54,8 +52,7 @@ pg_parser_initStringInfo(pg_parser_StringInfo str)
  * Reset the pg_parser_StringInfo: the data buffer remains valid, but its
  * previous content, if any, is cleared.
  */
-void
-pg_parser_resetStringInfo(pg_parser_StringInfo str)
+void pg_parser_resetStringInfo(pg_parser_StringInfo str)
 {
     str->data[0] = '\0';
     str->len = 0;
@@ -70,8 +67,7 @@ pg_parser_resetStringInfo(pg_parser_StringInfo str)
  * to str if necessary.  This is sort of like a combination of sprintf and
  * strcat.
  */
-void
-pg_parser_appendStringInfo(pg_parser_StringInfo str, const char *fmt, ...)
+void pg_parser_appendStringInfo(pg_parser_StringInfo str, const char* fmt, ...)
 {
     int32_t save_errno = errno;
 
@@ -87,7 +83,9 @@ pg_parser_appendStringInfo(pg_parser_StringInfo str, const char *fmt, ...)
         va_end(args);
 
         if (needed == 0)
+        {
             break; /* success */
+        }
 
         /* Increase the buffer size and try again. */
         pg_parser_enlargeStringInfo(str, needed);
@@ -112,11 +110,10 @@ pg_parser_appendStringInfo(pg_parser_StringInfo str, const char *fmt, ...)
  * to redo va_start before you can rescan the argument list, and we can't do
  * that from here.
  */
-int32_t
-pg_parser_appendStringInfoVA(pg_parser_StringInfo str, const char *fmt, va_list args)
+int32_t pg_parser_appendStringInfoVA(pg_parser_StringInfo str, const char* fmt, va_list args)
 {
     int32_t avail;
-    size_t nprinted;
+    size_t  nprinted;
 
     /*
      * If there's hardly any space, don't bother trying, just fail to make the
@@ -125,7 +122,9 @@ pg_parser_appendStringInfoVA(pg_parser_StringInfo str, const char *fmt, va_list 
      */
     avail = str->maxlen - str->len;
     if (avail < 16)
+    {
         return 32;
+    }
 
     nprinted = vsnprintf(str->data + str->len, (size_t)avail, fmt, args);
 
@@ -153,8 +152,7 @@ pg_parser_appendStringInfoVA(pg_parser_StringInfo str, const char *fmt, va_list 
  * Append a null-terminated string to str.
  * Like pg_parser_appendStringInfo(str, "%s", s) but faster.
  */
-void
-pg_parser_appendStringInfoString(pg_parser_StringInfo str, const char *s)
+void pg_parser_appendStringInfoString(pg_parser_StringInfo str, const char* s)
 {
     pg_parser_appendBinaryStringInfo(str, s, strlen(s));
 }
@@ -164,8 +162,7 @@ pg_parser_appendStringInfoString(pg_parser_StringInfo str, const char *s)
  *
  * Append the specified number of spaces to a buffer.
  */
-void
-pg_parser_appendStringInfoSpaces(pg_parser_StringInfo str, int32_t count)
+void pg_parser_appendStringInfoSpaces(pg_parser_StringInfo str, int32_t count)
 {
     if (count > 0)
     {
@@ -174,7 +171,9 @@ pg_parser_appendStringInfoSpaces(pg_parser_StringInfo str, int32_t count)
 
         /* OK, append the spaces */
         while (--count >= 0)
+        {
             str->data[str->len++] = ' ';
+        }
         str->data[str->len] = '\0';
     }
 }
@@ -185,8 +184,7 @@ pg_parser_appendStringInfoSpaces(pg_parser_StringInfo str, int32_t count)
  * Append arbitrary binary data to a pg_parser_StringInfo, allocating more space
  * if necessary. Ensures that a trailing null byte is present.
  */
-void
-pg_parser_appendBinaryStringInfo(pg_parser_StringInfo str, const char *data, int32_t datalen)
+void pg_parser_appendBinaryStringInfo(pg_parser_StringInfo str, const char* data, int32_t datalen)
 {
     /* Make more room if needed */
     pg_parser_enlargeStringInfo(str, datalen);
@@ -220,8 +218,7 @@ pg_parser_appendBinaryStringInfo(pg_parser_StringInfo str, const char *data, int
  * pg_parser_initStringInfo was called, even if another context is now current.
  * This is the desired and indeed critical behavior!
  */
-void
-pg_parser_enlargeStringInfo(pg_parser_StringInfo str, int32_t needed)
+void pg_parser_enlargeStringInfo(pg_parser_StringInfo str, int32_t needed)
 {
     int32_t newlen;
 
@@ -230,16 +227,22 @@ pg_parser_enlargeStringInfo(pg_parser_StringInfo str, int32_t needed)
      * an overflow or infinite loop in the following.
      */
     if (needed < 0) /* should not happen */
+    {
         return;
+    }
     if (((size_t)needed) >= (STRINFO_MaxAllocSize - (size_t)str->len))
+    {
         return;
+    }
 
     needed += str->len + 1; /* total space required now */
 
     /* Because of the above test, we now have needed <= MaxAllocSize */
 
     if (needed <= str->maxlen)
+    {
         return; /* got enough space already */
+    }
 
     /*
      * We don't want to allocate just a little more space with each append;
@@ -248,7 +251,9 @@ pg_parser_enlargeStringInfo(pg_parser_StringInfo str, int32_t needed)
      */
     newlen = 2 * str->maxlen;
     while (needed > newlen)
+    {
         newlen = 2 * newlen;
+    }
 
     /*
      * Clamp to MaxAllocSize in case we went past it.  Note we are assuming
@@ -256,15 +261,19 @@ pg_parser_enlargeStringInfo(pg_parser_StringInfo str, int32_t needed)
      * overflow.  We will still have newlen >= needed.
      */
     if (newlen > (int32_t)STRINFO_MaxAllocSize)
-        newlen = (int32_t)STRINFO_MaxAllocSize;
-
-    if (!pg_parser_mcxt_realloc(STRINGINFO_MCXT, (void **) &(str->data), newlen))
     {
-        //printf("something wrong in repalloc stringinfo\n");
+        newlen = (int32_t)STRINFO_MaxAllocSize;
+    }
+
+    if (!pg_parser_mcxt_realloc(STRINGINFO_MCXT, (void**)&(str->data), newlen))
+    {
+        // printf("something wrong in repalloc stringinfo\n");
         str->maxlen = 0;
     }
     else
+    {
         str->maxlen = newlen;
+    }
 }
 
 /*
@@ -273,12 +282,13 @@ pg_parser_enlargeStringInfo(pg_parser_StringInfo str, int32_t needed)
  * Append a single byte to str.
  * Like pg_parser_appendStringInfo(str, "%c", ch) but much faster.
  */
-void
-pg_parser_appendStringInfoChar(pg_parser_StringInfo str, char ch)
+void pg_parser_appendStringInfoChar(pg_parser_StringInfo str, char ch)
 {
     /* Make more room if needed */
     if (str->len + 1 >= str->maxlen)
+    {
         pg_parser_enlargeStringInfo(str, 1);
+    }
 
     /* OK, append the character */
     str->data[str->len] = ch;

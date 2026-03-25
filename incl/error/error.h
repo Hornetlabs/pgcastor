@@ -3,69 +3,69 @@
 
 typedef enum ERROR
 {
-    ERROR_SUCCESS                        = 0x00,
+    ERROR_SUCCESS = 0x00,
 
-    ERROR_APPENDMSG                      ,
+    ERROR_APPENDMSG,
 
-    /* 超时 */
-    ERROR_TIMEOUT                        ,
+    /* timeout */
+    ERROR_TIMEOUT,
 
     /* retry */
-    ERROR_RETRY                          ,
+    ERROR_RETRY,
 
-    /* 接收到了源端发送的 end replication */
-    ERROR_ENDREPLICATION                 ,
+    /* received end replication from source */
+    ERROR_ENDREPLICATION,
 
-    /* 接收源端的流复制错误 */
-    ERROR_REPLICATION                    ,
+    /* streaming replication error from source */
+    ERROR_REPLICATION,
 
-    /* 文件被删除 */
-    ERROR_FILEREMOVED                    ,
+    /* file was removed */
+    ERROR_FILEREMOVED,
 
-    /*----------在下面添加错误码-----------------*/
+    /*----------add error codes below-----------------*/
     /*                   |                      */
     /*                   |                      */
     /*                   |                      */
     /*                   |                      */
     /*                  \|/                     */
 
-    /* BLOCK 块不完整 */
-    ERROR_BLK_INCOMPLETE                 ,
+    /* block is incomplete */
+    ERROR_BLK_INCOMPLETE,
 
-    /* 队列已满 */
-    ERROR_QUEUE_FULL                     ,
+    /* queue is full */
+    ERROR_QUEUE_FULL,
 
-    /* 内存问题 */
-    ERROR_OOM                            ,
+    /* out of memory */
+    ERROR_OOM,
 
-    /* 文件不存在 */
-    ERROR_NOENT                          ,
+    /* file does not exist */
+    ERROR_NOENT,
 
-    /* 打开文件失败 */
-    ERROR_OPENFILEERROR                  ,
+    /* failed to open file */
+    ERROR_OPENFILEERROR,
 
-    /* 读取文件失败 */
-    ERROR_READFILEERROR                  ,
+    /* failed to read file */
+    ERROR_READFILEERROR,
 
-    /* 消息不支持 */
-    ERROR_MSGUNSPPORT                    ,
+    /* unsupported message */
+    ERROR_MSGUNSPPORT,
 
-    /* 命令执行失败 */
-    ERROR_MSGCOMMAND                     ,
+    /* command execution failed */
+    ERROR_MSGCOMMAND,
 
-    /* 命令不合法 */
-    ERROR_MSGCOMMANDUNVALID              ,
+    /* invalid command */
+    ERROR_MSGCOMMANDUNVALID,
 
-    /* 已存在 */
-    ERROR_MSGEXIST                       ,
+    /* already exists */
+    ERROR_MSGEXIST,
 
-    /* 未连接 */
-    ERROR_DISCONN                        ,
+    /* disconnected */
+    ERROR_DISCONN,
 
-    /* 工作线程启动失败 */
-    ERROR_STARTTHREAD                    ,
+    /* worker thread failed to start */
+    ERROR_STARTTHREAD,
 
-    /* 在此前添加 */
+    /* add new codes before this line */
     ERROR_MAX
 } error;
 

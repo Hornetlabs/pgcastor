@@ -20,26 +20,22 @@
 #include "xmanager/xmanager_metricmsgrefresh.h"
 #include "xmanager/xmanager_metricmsg.h"
 
-
-/* 组装 capture 的 refresh 消息 */
-static bool xmanager_metricmsg_assemblerefreshforcapture(xmanager_metric* xmetric,
-                                                                xmanager_metricnode* xmetricnode,
-                                                                int tableslen,
-                                                                uint8* tables)
+/* Assemble capture refresh message */
+static bool xmanager_metricmsg_assemblerefreshforcapture(xmanager_metric*     xmetric,
+                                                         xmanager_metricnode* xmetricnode,
+                                                         int tableslen, uint8* tables)
 {
-    int ivalue                                          = 0;
-    int msglen                                          = 0;
-    uint8* uptr                                         = NULL;
-    netpacket* npacket                           = NULL;
-    netpoolentry* npoolentry                     = NULL;
-    xmanager_metricfd2node* fd2node              = NULL;
+    int                     ivalue = 0;
+    int                     msglen = 0;
+    uint8*                  uptr = NULL;
+    netpacket*              npacket = NULL;
+    netpoolentry*           npoolentry = NULL;
+    xmanager_metricfd2node* fd2node = NULL;
 
-    /* 构建 onlinerefresh 消息 */
-    fd2node = dlist_get(xmetric->fd2metricnodes,
-                        xmetricnode,
-                        xmanager_metricfd2node_cmp2);
+    /* Build onlinerefresh message */
+    fd2node = dlist_get(xmetric->fd2metricnodes, xmetricnode, xmanager_metricfd2node_cmp2);
 
-    /* 获取 capture 节点的 netpoolentry */
+    /* Get capture node netpoolentry */
     npoolentry = NULL;
     npoolentry = netpool_getentrybyfd(xmetric->npool, fd2node->fd);
     if (NULL == npoolentry)
@@ -48,15 +44,15 @@ static bool xmanager_metricmsg_assemblerefreshforcapture(xmanager_metric* xmetri
         return false;
     }
 
-    /* 
-     * 长度计算
+    /*
+     * Length calculation
      *  4 + 4 + 4
      * msglen + crc32 + cmdtype
-    */
+     */
     msglen = 12;
     msglen += tableslen;
 
-    /* 构建消息挂载到 npoolentry 上 */
+    /* Build message and mount to npoolentry */
     npacket = netpacket_init();
     if (NULL == npacket)
     {
@@ -75,10 +71,10 @@ static bool xmanager_metricmsg_assemblerefreshforcapture(xmanager_metric* xmetri
     msglen -= 1;
     npacket->used = msglen;
 
-    /* 组装数据 */
+    /* Assemble data */
     uptr = npacket->data;
 
-    /* 数据总长度 */
+    /* Total data length */
     ivalue = msglen;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
@@ -87,7 +83,7 @@ static bool xmanager_metricmsg_assemblerefreshforcapture(xmanager_metric* xmetri
     /* crc32 */
     uptr += 4;
 
-    /* 类型 */
+    /* Type */
     ivalue = XMANAGER_MSG_CAPTUREREFRESH;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
@@ -95,10 +91,11 @@ static bool xmanager_metricmsg_assemblerefreshforcapture(xmanager_metric* xmetri
 
     rmemcpy1(uptr, 0, tables, tableslen);
 
-    /* 将 netpacket 挂载到待发送队列中 */
+    /* Mount netpacket to send queue */
     if (false == queue_put(npoolentry->wpackets, (void*)npacket))
     {
-        elog(RLOG_WARNING, "xmanager metric assemble refresh msg to capture add message to queue error");
+        elog(RLOG_WARNING,
+             "xmanager metric assemble refresh msg to capture add message to queue error");
         netpacket_destroy(npacket);
         return false;
     }
@@ -107,29 +104,28 @@ static bool xmanager_metricmsg_assemblerefreshforcapture(xmanager_metric* xmetri
 }
 
 /*
- * 处理 refresh 命令
- *  1、校验 job 是否存在, 不存在报错
- *  2、将 refresh 消息转发到 capture
- *  3、创建异步消息挂载到 xscsci 节点上
-*/
-bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric,
-                                            netpoolentry* npoolentry,
-                                            netpacket* npacket)
+ * Handle refresh command
+ *1. Verify job exists, error if not
+ *2. Forward refresh message to capture
+ *3. Create async message and mount to xscsci node
+ */
+bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                     netpacket* npacket)
 {
     int errcode = 0;
     int ivalue = 0;
     int msglen = 0;
 
-    uint8* uptr                                         = NULL;
-    char* jobname                                       = NULL;
-    xmanager_metricnode* pxmetricnode            = NULL;
-    xmanager_metricfd2node* fd2node              = NULL;
-    xmanager_metricasyncmsg* asyncmsg            = NULL;
+    uint8*                     uptr = NULL;
+    char*                      jobname = NULL;
+    xmanager_metricnode*       pxmetricnode = NULL;
+    xmanager_metricfd2node*    fd2node = NULL;
+    xmanager_metricasyncmsg*   asyncmsg = NULL;
     xmanager_metricxscscinode* xmetricxscscinode = NULL;
-    char errormsg[2048]                                 = { 0 };
-    xmanager_metricnode xmetricnode              = { 0 };
+    char                       errormsg[2048] = {0};
+    xmanager_metricnode        xmetricnode = {0};
 
-    /* 获取作业类型 */
+    /* Get job type */
     uptr = npacket->data;
 
     /* msglen + crc32 + commandtype */
@@ -138,7 +134,7 @@ bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric,
     uptr += 12;
     msglen -= 12;
 
-    /* 在 refresh 中是没有 jobtype 的 */
+    /* There is no jobtype in refresh */
 
     /* jobname */
     rmemcpy1(&ivalue, 0, uptr, 4);
@@ -160,7 +156,7 @@ bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric,
     msglen -= ivalue;
     uptr += ivalue;
 
-    /* 查看 node 是否存在 */
+    /* Check if node exists */
     xmetricnode.type = XMANAGER_METRICNODETYPE_CAPTURE;
     xmetricnode.name = jobname;
 
@@ -179,28 +175,24 @@ bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parserefresh_error;
     }
 
-    if (false == xmanager_metricmsg_assemblerefreshforcapture(xmetric,
-                                                                     pxmetricnode,
-                                                                     msglen,
-                                                                     uptr))
+    if (false == xmanager_metricmsg_assemblerefreshforcapture(xmetric, pxmetricnode, msglen, uptr))
     {
         errcode = ERROR_MSGCOMMAND;
         snprintf(errormsg, 2048, "ERROR: assemble refresh message to capture error.");
         goto xmanager_metricmsg_parserefresh_error;
     }
 
-    /* 
-     * 创建异步消息
-     *  1、获取 xscsci 节点
-     *  2、创建异步等待消息
+    /*
+     * Create async message
+     *  1、Get xscsci node
+     *  2、Create async wait message
      */
-    /* 获取 xscsci 节点 */
-    fd2node = dlist_get(xmetric->fd2metricnodes,
-                        (void*)((uintptr_t)npoolentry->fd),
+    /* Get xscsci node */
+    fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
                         xmanager_metricfd2node_cmp);
     xmetricxscscinode = (xmanager_metricxscscinode*)fd2node->metricnode;
 
-    /* 创建异步等待消息 */
+    /* Create async wait message */
     asyncmsg = xmanager_metricasyncmsg_init();
     if (NULL == asyncmsg)
     {
@@ -212,11 +204,11 @@ bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric,
     asyncmsg->errormsg = NULL;
     asyncmsg->msgtype = XMANAGER_MSG_REFRESHCMD;
     asyncmsg->type = XMANAGER_METRICNODETYPE_CAPTURE;
-    asyncmsg->name =jobname;
+    asyncmsg->name = jobname;
     jobname = NULL;
     asyncmsg->result = 0;
 
-    xmetricxscscinode->asyncmsgs->msgs =  dlist_put(xmetricxscscinode->asyncmsgs->msgs, asyncmsg);
+    xmetricxscscinode->asyncmsgs->msgs = dlist_put(xmetricxscscinode->asyncmsgs->msgs, asyncmsg);
     return true;
 
 xmanager_metricmsg_parserefresh_error:
@@ -231,41 +223,31 @@ xmanager_metricmsg_parserefresh_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_REFRESHCMD,
-                                                      errcode,
-                                                      errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
+                                               XMANAGER_MSG_REFRESHCMD, errcode, errormsg);
     return false;
 }
 
-
 /*
- * 组装 refresh 返回消息
-*/
-bool xmanager_metricmsg_assemblerefresh(xmanager_metric* xmetric,
-                                               netpoolentry* npoolentry,
-                                               dlist* dlmsgs)
+ * Assemble refresh response message
+ */
+bool xmanager_metricmsg_assemblerefresh(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                        dlist* dlmsgs)
 {
-    xmanager_metricasyncmsg* xmetricasyncmsg     = NULL;
-    char errmsg[2048]                                 = { 0 };
+    xmanager_metricasyncmsg* xmetricasyncmsg = NULL;
+    char                     errmsg[2048] = {0};
 
     if (true == dlist_isnull(dlmsgs) || 1 < dlist_getcount(dlmsgs))
     {
-        /* 组装错误消息 */
+        /* Assemble error message */
         elog(RLOG_WARNING, "metric msg assemble refresh too many async msgs.");
         snprintf(errmsg, 2048, "metric msg assemble refresh too many async msgs.");
-        return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                          npoolentry->wpackets,
-                                                          XMANAGER_MSG_REFRESHCMD,
-                                                          ERROR_MSGCOMMAND,
-                                                          errmsg);
+        return xmanager_metricmsg_assembleerrormsg(
+            xmetric, npoolentry->wpackets, XMANAGER_MSG_REFRESHCMD, ERROR_MSGCOMMAND, errmsg);
     }
 
     xmetricasyncmsg = (xmanager_metricasyncmsg*)dlmsgs->head->value;
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_REFRESHCMD,
-                                                      xmetricasyncmsg->errcode,
-                                                      xmetricasyncmsg->errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
+                                               XMANAGER_MSG_REFRESHCMD, xmetricasyncmsg->errcode,
+                                               xmetricasyncmsg->errormsg);
 }

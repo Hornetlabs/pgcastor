@@ -1,12 +1,12 @@
 /**
  * @file pg_parser_thirdparty_stringinfo.h
  * @author byresync
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2023-07-26
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  */
 #ifndef PG_PARSER_THIRDPARTY_STRINGINFO_H
 #define PG_PARSER_THIRDPARTY_STRINGINFO_H
@@ -28,13 +28,13 @@
  */
 typedef struct pg_parser_StringInfoData
 {
-    char           *data;
-    int32_t         len;
-    int32_t         maxlen;
-    int32_t         cursor;
+    char*   data;
+    int32_t len;
+    int32_t maxlen;
+    int32_t cursor;
 } pg_parser_StringInfoData;
 
-typedef pg_parser_StringInfoData *pg_parser_StringInfo;
+typedef pg_parser_StringInfoData* pg_parser_StringInfo;
 
 /*------------------------
  * There are two ways to create a pg_parser_StringInfo object initially:
@@ -85,7 +85,8 @@ extern void pg_parser_resetStringInfo(pg_parser_StringInfo str);
  * to str if necessary.  This is sort of like a combination of sprintf and
  * strcat.
  */
-extern void pg_parser_appendStringInfo(pg_parser_StringInfo str, const char *fmt,...) __attribute__((format(printf, 2, 3)));
+extern void pg_parser_appendStringInfo(pg_parser_StringInfo str, const char* fmt, ...)
+    __attribute__((format(printf, 2, 3)));
 
 /*------------------------
  * pg_parser_appendStringInfoVA
@@ -96,14 +97,15 @@ extern void pg_parser_appendStringInfo(pg_parser_StringInfo str, const char *fmt
  * pass the return value to pg_parser_enlargeStringInfo() before trying again; see
  * pg_parser_appendStringInfo for standard usage pattern.
  */
-extern int32_t    pg_parser_appendStringInfoVA(pg_parser_StringInfo str, const char *fmt, va_list args) __attribute__((format(printf, 2, 0)));
+extern int32_t pg_parser_appendStringInfoVA(pg_parser_StringInfo str, const char* fmt, va_list args)
+    __attribute__((format(printf, 2, 0)));
 
 /*------------------------
  * pg_parser_appendStringInfoString
  * Append a null-terminated string to str.
  * Like pg_parser_appendStringInfo(str, "%s", s) but faster.
  */
-extern void pg_parser_appendStringInfoString(pg_parser_StringInfo str, const char *s);
+extern void pg_parser_appendStringInfoString(pg_parser_StringInfo str, const char* s);
 
 /*------------------------
  * pg_parser_appendStringInfoChar
@@ -117,10 +119,10 @@ extern void pg_parser_appendStringInfoChar(pg_parser_StringInfo str, char ch);
  * As above, but a macro for even more speed where it matters.
  * Caution: str argument will be evaluated multiple times.
  */
-#define pg_parser_appendStringInfoCharMacro(str,ch) \
-    (((str)->len + 1 >= (str)->maxlen) ? \
-     pg_parser_appendStringInfoChar(str, ch) : \
-     (void)((str)->data[(str)->len] = (ch), (str)->data[++(str)->len] = '\0'))
+#define pg_parser_appendStringInfoCharMacro(str, ch) \
+    (((str)->len + 1 >= (str)->maxlen)               \
+         ? pg_parser_appendStringInfoChar(str, ch)   \
+         : (void)((str)->data[(str)->len] = (ch), (str)->data[++(str)->len] = '\0'))
 
 /*------------------------
  * pg_parser_appendStringInfoSpaces
@@ -133,8 +135,8 @@ extern void pg_parser_appendStringInfoSpaces(pg_parser_StringInfo str, int32_t c
  * Append arbitrary binary data to a pg_parser_StringInfo, allocating more space
  * if necessary.
  */
-extern void pg_parser_appendBinaryStringInfo(pg_parser_StringInfo str,
-                                   const char *data, int32_t datalen);
+extern void pg_parser_appendBinaryStringInfo(pg_parser_StringInfo str, const char* data,
+                                             int32_t datalen);
 
 /*------------------------
  * pg_parser_enlargeStringInfo
@@ -142,4 +144,4 @@ extern void pg_parser_appendBinaryStringInfo(pg_parser_StringInfo str,
  */
 extern void pg_parser_enlargeStringInfo(pg_parser_StringInfo str, int32_t needed);
 
-#endif                            /* PG_PARSER_THIRDPARTY_STRINGINFO_H */
+#endif /* PG_PARSER_THIRDPARTY_STRINGINFO_H */

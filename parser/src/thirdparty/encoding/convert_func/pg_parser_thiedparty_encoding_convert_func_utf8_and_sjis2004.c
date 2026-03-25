@@ -27,32 +27,26 @@
  * ) returns VOID;
  * ----------
  */
-void shift_jis_2004_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void shift_jis_2004_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(SHIFT_JIS_2004, UTF8);
 
-    LocalToUtf(src, len, dest,
-               &shift_jis_2004_to_unicode_tree,
-               LUmapSHIFT_JIS_2004_combined, conv_lengthof(LUmapSHIFT_JIS_2004_combined),
-               NULL,
-               SHIFT_JIS_2004);
+    LocalToUtf(src, len, dest, &shift_jis_2004_to_unicode_tree, LUmapSHIFT_JIS_2004_combined,
+               conv_lengthof(LUmapSHIFT_JIS_2004_combined), NULL, SHIFT_JIS_2004);
 }
 
-void utf8_to_shift_jis_2004(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_shift_jis_2004(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, SHIFT_JIS_2004);
 
-    UtfToLocal(src, len, dest,
-               &shift_jis_2004_from_unicode_tree,
-               ULmapSHIFT_JIS_2004_combined, conv_lengthof(ULmapSHIFT_JIS_2004_combined),
-               NULL,
-               SHIFT_JIS_2004);
+    UtfToLocal(src, len, dest, &shift_jis_2004_from_unicode_tree, ULmapSHIFT_JIS_2004_combined,
+               conv_lengthof(ULmapSHIFT_JIS_2004_combined), NULL, SHIFT_JIS_2004);
 }

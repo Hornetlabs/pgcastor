@@ -27,7 +27,6 @@
  */
 #include "./unicode_map/sjis.map"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -39,73 +38,73 @@
  * ----------
  */
 
-static void sjis2mic(const unsigned char *sjis, unsigned char *p, int32_t len);
-static void mic2sjis(const unsigned char *mic, unsigned char *p, int32_t len);
-static void euc_jp2mic(const unsigned char *euc, unsigned char *p, int32_t len);
-static void mic2euc_jp(const unsigned char *mic, unsigned char *p, int32_t len);
-static void euc_jp2sjis(const unsigned char *mic, unsigned char *p, int32_t len);
-static void sjis2euc_jp(const unsigned char *mic, unsigned char *p, int32_t len);
+static void sjis2mic(const unsigned char* sjis, unsigned char* p, int32_t len);
+static void mic2sjis(const unsigned char* mic, unsigned char* p, int32_t len);
+static void euc_jp2mic(const unsigned char* euc, unsigned char* p, int32_t len);
+static void mic2euc_jp(const unsigned char* mic, unsigned char* p, int32_t len);
+static void euc_jp2sjis(const unsigned char* mic, unsigned char* p, int32_t len);
+static void sjis2euc_jp(const unsigned char* mic, unsigned char* p, int32_t len);
 
-void euc_jp_to_sjis(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void euc_jp_to_sjis(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(EUC_JP, SJIS);
 
     euc_jp2sjis(src, dest, len);
 }
 
-void sjis_to_euc_jp(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void sjis_to_euc_jp(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(SJIS, EUC_JP);
 
     sjis2euc_jp(src, dest, len);
 }
 
-void euc_jp_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void euc_jp_to_mic(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(EUC_JP, MULE_INTERNAL);
 
     euc_jp2mic(src, dest, len);
 }
 
-void mic_to_euc_jp(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void mic_to_euc_jp(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, EUC_JP);
 
     mic2euc_jp(src, dest, len);
 }
 
-void sjis_to_mic(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void sjis_to_mic(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(SJIS, MULE_INTERNAL);
 
     sjis2mic(src, dest, len);
 }
 
-void mic_to_sjis(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void mic_to_sjis(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(MULE_INTERNAL, SJIS);
 
@@ -115,14 +114,9 @@ void mic_to_sjis(unsigned char *src_str, unsigned char *dest_str, int32_t str_le
 /*
  * SJIS ---> MIC
  */
-static void
-sjis2mic(const unsigned char *sjis, unsigned char *p, int32_t len)
+static void sjis2mic(const unsigned char* sjis, unsigned char* p, int32_t len)
 {
-    int32_t            c1,
-                c2,
-                i,
-                k,
-                k2;
+    int32_t c1, c2, i, k, k2;
 
     while (len > 0)
     {
@@ -154,7 +148,9 @@ sjis2mic(const unsigned char *sjis, unsigned char *p, int32_t len)
                 {
                     k2 = ibmkanji[i].nec;
                     if (k2 == 0xffff)
+                    {
                         break;
+                    }
                     if (k2 == k)
                     {
                         k = ibmkanji[i].sjis;
@@ -209,7 +205,9 @@ sjis2mic(const unsigned char *sjis, unsigned char *p, int32_t len)
                 {
                     k2 = ibmkanji[i].sjis;
                     if (k2 == 0xffff)
+                    {
                         break;
+                    }
                     if (k2 == k)
                     {
                         k = ibmkanji[i].euc;
@@ -232,7 +230,7 @@ sjis2mic(const unsigned char *sjis, unsigned char *p, int32_t len)
             len -= 2;
         }
         else
-        {                        /* should be ASCII */
+        { /* should be ASCII */
             if (c1 == 0)
             {
                 /* report_invalid_encoding(SJIS, (const char *) sjis, len); */
@@ -249,12 +247,9 @@ sjis2mic(const unsigned char *sjis, unsigned char *p, int32_t len)
 /*
  * MIC ---> SJIS
  */
-static void mic2sjis(const unsigned char *mic, unsigned char *p, int32_t len)
+static void mic2sjis(const unsigned char* mic, unsigned char* p, int32_t len)
 {
-    int32_t     c1,
-                c2,
-                k,
-                l;
+    int32_t c1, c2, k, l;
 
     while (len > 0)
     {
@@ -273,7 +268,7 @@ static void mic2sjis(const unsigned char *mic, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = character_encoding_verifymb(MULE_INTERNAL, (const char *) mic, len);
+        l = character_encoding_verifymb(MULE_INTERNAL, (const char*)mic, len);
         if (l < 0)
         {
             /* report_invalid_encoding(MULE_INTERNAL,
@@ -281,7 +276,9 @@ static void mic2sjis(const unsigned char *mic, unsigned char *p, int32_t len)
             break;
         }
         if (c1 == LC_JISX0201K)
+        {
             *p++ = mic[1];
+        }
         else if (c1 == LC_JISX0208)
         {
             c1 = mic[1];
@@ -294,13 +291,14 @@ static void mic2sjis(const unsigned char *mic, unsigned char *p, int32_t len)
                 *p++ = ((c1 - 0xa1) >> 1) + ((c1 < 0xdf) ? 0x81 : 0xc1) + 0x6f;
             }
             else
+            {
                 *p++ = ((c1 - 0xa1) >> 1) + ((c1 < 0xdf) ? 0x81 : 0xc1);
+            }
             *p++ = c2 - ((c1 & 1) ? ((c2 < 0xe0) ? 0x61 : 0x60) : 2);
         }
         else if (c1 == LC_JISX0212)
         {
-            int32_t     i,
-                        k2;
+            int32_t i, k2;
 
             c1 = mic[1];
             c2 = mic[2];
@@ -349,10 +347,10 @@ static void mic2sjis(const unsigned char *mic, unsigned char *p, int32_t len)
 /*
  * EUC_JP ---> MIC
  */
-static void euc_jp2mic(const unsigned char *euc, unsigned char *p, int32_t len)
+static void euc_jp2mic(const unsigned char* euc, unsigned char* p, int32_t len)
 {
-    int32_t            c1;
-    int32_t            l;
+    int32_t c1;
+    int32_t l;
 
     while (len > 0)
     {
@@ -371,7 +369,7 @@ static void euc_jp2mic(const unsigned char *euc, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = character_encoding_verifymb(EUC_JP, (const char *) euc, len);
+        l = character_encoding_verifymb(EUC_JP, (const char*)euc, len);
         if (l < 0)
         {
             /* report_invalid_encoding(EUC_JP,
@@ -379,18 +377,18 @@ static void euc_jp2mic(const unsigned char *euc, unsigned char *p, int32_t len)
             break;
         }
         if (c1 == SS2)
-        {                        /* 1 byte kana? */
+        { /* 1 byte kana? */
             *p++ = LC_JISX0201K;
             *p++ = euc[1];
         }
         else if (c1 == SS3)
-        {                        /* JIS X0212 kanji? */
+        { /* JIS X0212 kanji? */
             *p++ = LC_JISX0212;
             *p++ = euc[1];
             *p++ = euc[2];
         }
         else
-        {                        /* kanji? */
+        { /* kanji? */
             *p++ = LC_JISX0208;
             *p++ = c1;
             *p++ = euc[1];
@@ -404,10 +402,10 @@ static void euc_jp2mic(const unsigned char *euc, unsigned char *p, int32_t len)
 /*
  * MIC ---> EUC_JP
  */
-static void mic2euc_jp(const unsigned char *mic, unsigned char *p, int32_t len)
+static void mic2euc_jp(const unsigned char* mic, unsigned char* p, int32_t len)
 {
-    int32_t            c1;
-    int32_t            l;
+    int32_t c1;
+    int32_t l;
 
     while (len > 0)
     {
@@ -426,7 +424,7 @@ static void mic2euc_jp(const unsigned char *mic, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = character_encoding_verifymb(MULE_INTERNAL, (const char *) mic, len);
+        l = character_encoding_verifymb(MULE_INTERNAL, (const char*)mic, len);
         if (l < 0)
         {
             /* report_invalid_encoding(MULE_INTERNAL,
@@ -464,12 +462,10 @@ static void mic2euc_jp(const unsigned char *mic, unsigned char *p, int32_t len)
 /*
  * EUC_JP -> SJIS
  */
-static void euc_jp2sjis(const unsigned char *euc, unsigned char *p, int32_t len)
+static void euc_jp2sjis(const unsigned char* euc, unsigned char* p, int32_t len)
 {
-    int32_t            c1,
-                c2,
-                k;
-    int32_t            l;
+    int32_t c1, c2, k;
+    int32_t l;
 
     while (len > 0)
     {
@@ -488,7 +484,7 @@ static void euc_jp2sjis(const unsigned char *euc, unsigned char *p, int32_t len)
             len--;
             continue;
         }
-        l = character_encoding_verifymb(EUC_JP, (const char *) euc, len);
+        l = character_encoding_verifymb(EUC_JP, (const char*)euc, len);
         if (l < 0)
         {
             /* report_invalid_encoding(EUC_JP,
@@ -515,8 +511,7 @@ static void euc_jp2sjis(const unsigned char *euc, unsigned char *p, int32_t len)
             }
             else
             {
-                int32_t            i,
-                            k2;
+                int32_t i, k2;
 
                 /* IBM kanji */
                 for (i = 0;; i++)
@@ -550,7 +545,9 @@ static void euc_jp2sjis(const unsigned char *euc, unsigned char *p, int32_t len)
                 *p++ = ((c1 - 0xa1) >> 1) + ((c1 < 0xdf) ? 0x81 : 0xc1) + 0x6f;
             }
             else
+            {
                 *p++ = ((c1 - 0xa1) >> 1) + ((c1 < 0xdf) ? 0x81 : 0xc1);
+            }
             *p++ = c2 - ((c1 & 1) ? ((c2 < 0xe0) ? 0x61 : 0x60) : 2);
         }
         euc += l;
@@ -562,14 +559,10 @@ static void euc_jp2sjis(const unsigned char *euc, unsigned char *p, int32_t len)
 /*
  * SJIS ---> EUC_JP
  */
-static void sjis2euc_jp(const unsigned char *sjis, unsigned char *p, int32_t len)
+static void sjis2euc_jp(const unsigned char* sjis, unsigned char* p, int32_t len)
 {
-    int32_t            c1,
-                c2,
-                i,
-                k,
-                k2;
-    int32_t            l;
+    int32_t c1, c2, i, k, k2;
+    int32_t l;
 
     while (len > 0)
     {
@@ -588,7 +581,7 @@ static void sjis2euc_jp(const unsigned char *sjis, unsigned char *p, int32_t len
             len--;
             continue;
         }
-        l = character_encoding_verifymb(SJIS, (const char *) sjis, len);
+        l = character_encoding_verifymb(SJIS, (const char*)sjis, len);
         if (l < 0)
         {
             /* report_invalid_encoding(SJIS,
@@ -615,7 +608,9 @@ static void sjis2euc_jp(const unsigned char *sjis, unsigned char *p, int32_t len
                 {
                     k2 = ibmkanji[i].nec;
                     if (k2 == 0xffff)
+                    {
                         break;
+                    }
                     if (k2 == k)
                     {
                         k = ibmkanji[i].sjis;
@@ -668,7 +663,9 @@ static void sjis2euc_jp(const unsigned char *sjis, unsigned char *p, int32_t len
                 {
                     k2 = ibmkanji[i].sjis;
                     if (k2 == 0xffff)
+                    {
                         break;
+                    }
                     if (k2 == k)
                     {
                         k = ibmkanji[i].euc;

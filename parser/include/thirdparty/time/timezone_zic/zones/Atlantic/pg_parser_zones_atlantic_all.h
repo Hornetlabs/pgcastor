@@ -1,7 +1,7 @@
 /**
  * @file                pg_parser_zones_atlantic_all.h
  * @author              ByteSynch
- * @brief               定义所有大西洋时区的名称
+ * @brief               Define all Atlantic timezone names
  * @version             0.1
  * @date                2023-09-18
  *

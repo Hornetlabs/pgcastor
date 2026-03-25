@@ -10,104 +10,54 @@
 #include "xmanager/xmanager_msg.h"
 #include "xmanager/xmanager_metricnode.h"
 
-typedef bool (*cmdfunc)(void *extra_config);
+typedef bool (*cmdfunc)(void* extra_config);
 
 typedef enum PROC2CMDFLAG
 {
-    PROC2CMDFLAG_NOP            = 0x00,
+    PROC2CMDFLAG_NOP = 0x00,
 
-    /* 发送反馈消息到 xmanager */
-    PROC2CMDFLAG_XMANAGER       ,
+    /* Send feedback message to xmanager */
+    PROC2CMDFLAG_XMANAGER,
 } proc2cmdflag;
 
 typedef struct PROC2CMD
 {
-    optype               type;
-    proc2cmdflag                flag;
-    xmanager_msg         msgtype;
-    char*                       desc;
-    cmdfunc                     func;
-    char*                       errmsg;
+    optype       type;
+    proc2cmdflag flag;
+    xmanager_msg msgtype;
+    char*        desc;
+    cmdfunc      func;
+    char*        errmsg;
 } proc2cmd;
 
-static proc2cmd     m_typ2cmd[]=
-{
-    {
-        OPTYPE_NOP,
-        PROC2CMDFLAG_NOP,
-        XMANAGER_MSG_NOP,
-        "NOP",
-        NULL,
-        "op nop unsupport"
-    },
-    {
-        OPTYPE_INIT,
-        PROC2CMDFLAG_XMANAGER,
-        XMANAGER_MSG_INITCMD,
-        "init",
-        cmd_init,
-        "init error"
-    },
-    {
-        OPTYPE_START,
-        PROC2CMDFLAG_XMANAGER,
-        XMANAGER_MSG_STARTCMD,
-        "start",
-        cmd_start,
-        "start error"
-    },
-    {
-        OPTYPE_STOP,
-        PROC2CMDFLAG_XMANAGER,
-        XMANAGER_MSG_STOPCMD,
-        "stop",
-        cmd_stop,
-        "stop error"
-    },
-    {
-        OPTYPE_STATUS,
-        PROC2CMDFLAG_NOP,
-        XMANAGER_MSG_NOP,
-        "status",
-        cmd_status,
-        "status error"
-    },
-    {
-        OPTYPE_RELOAD,
-        PROC2CMDFLAG_NOP,
-        XMANAGER_MSG_RELOADCMD,
-        "reload",
-        cmd_reload,
-        "reload error"
-    },
-    {
-        OPTYPE_ONLINEREFRESH,
-        PROC2CMDFLAG_XMANAGER,
-        XMANAGER_MSG_CAPTUREREFRESH,
-        "onlinerefresh",
-        cmd_onlinerefresh,
-        "onlinerefresh error"
-    }
-};
+static proc2cmd m_typ2cmd[] = {
+    {OPTYPE_NOP, PROC2CMDFLAG_NOP, XMANAGER_MSG_NOP, "NOP", NULL, "op nop unsupport"},
+    {OPTYPE_INIT, PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_INITCMD, "init", cmd_init, "init error"},
+    {OPTYPE_START, PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_STARTCMD, "start", cmd_start, "start error"},
+    {OPTYPE_STOP, PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_STOPCMD, "stop", cmd_stop, "stop error"},
+    {OPTYPE_STATUS, PROC2CMDFLAG_NOP, XMANAGER_MSG_NOP, "status", cmd_status, "status error"},
+    {OPTYPE_RELOAD, PROC2CMDFLAG_NOP, XMANAGER_MSG_RELOADCMD, "reload", cmd_reload, "reload error"},
+    {OPTYPE_ONLINEREFRESH, PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_CAPTUREREFRESH, "onlinerefresh",
+     cmd_onlinerefresh, "onlinerefresh error"}};
 
-bool cmd(optype type, void *extra_config)
+bool cmd(optype type, void* extra_config)
 {
-    bool bret                               = false;
-    int8 flag                               = 0;
-    int port                                = 0;
-    int ivalue                              = 0;
-    int msglen                              = 0;
-    int valuelen                            = 0;
+    bool                    bret = false;
+    int8                    flag = 0;
+    int                     port = 0;
+    int                     ivalue = 0;
+    int                     msglen = 0;
+    int                     valuelen = 0;
     xmanager_metricnodetype nodetype = XMANAGER_METRICNODETYPE_NOP;
-    uint8* uptr                             = NULL;
-    char* datadir                           = NULL;
-    char* traildir                          = NULL;
-    char* jobname                           = NULL;
-    char* errormsg                          = NULL;
-    uint8* netdata                          = NULL;
-    char svrport[128]                       = { 0 };
+    uint8*                  uptr = NULL;
+    char*                   datadir = NULL;
+    char*                   traildir = NULL;
+    char*                   jobname = NULL;
+    char*                   errormsg = NULL;
+    uint8*                  netdata = NULL;
+    char                    svrport[128] = {0};
 
-    if(NULL == m_typ2cmd[type].func)
+    if (NULL == m_typ2cmd[type].func)
     {
         elog(RLOG_WARNING, "%s", m_typ2cmd[type].errmsg);
         return false;
@@ -115,9 +65,9 @@ bool cmd(optype type, void *extra_config)
 
     log_initerrorstack();
 
-    /* 执行 */
+    /* Execute */
     bret = m_typ2cmd[type].func(extra_config);
-    if(false == bret)
+    if (false == bret)
     {
         errormsg = log_geterrormsg();
         if (NULL == errormsg)
@@ -158,13 +108,13 @@ bool cmd(optype type, void *extra_config)
     }
     jobname = guc_getConfigOption(CFG_KEY_JOBNAME);
 
-    /* 
-     * 构建identity反馈消息
+    /*
+     * Construct identity feedback message
      */
     /* totallen + crc32 */
     msglen = 8;
 
-    /* 命令类型 */
+    /* Command type */
     msglen += 4;
 
     /* jobtype */
@@ -182,22 +132,22 @@ bool cmd(optype type, void *extra_config)
         msglen += strlen(jobname);
     }
 
-    /* 操作类型 */
+    /* Operation type */
     msglen += 4;
 
-    /* 成功失败 */
+    /* Success/failure flag */
     msglen += 1;
 
     if (false == bret)
     {
         flag = 1;
-        /* 总长度 */
+        /* Total length */
         msglen += 4;
 
-        /* 错误码 */
+        /* Error code */
         msglen += 4;
 
-        /* 错误信息 */
+        /* Error message */
         msglen += strlen(errormsg);
     }
     else
@@ -227,7 +177,7 @@ bool cmd(optype type, void *extra_config)
     rmemset0(netdata, 0, '\0', msglen);
     uptr = netdata;
 
-    /* 总长度 */
+    /* Total length */
     ivalue = msglen;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
@@ -236,7 +186,7 @@ bool cmd(optype type, void *extra_config)
     /* crc32 */
     uptr += 4;
 
-    /* 注册消息 */
+    /* Register message */
     ivalue = XMANAGER_MSG_IDENTITYCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
@@ -273,18 +223,18 @@ bool cmd(optype type, void *extra_config)
         ivalue = 4;
         ivalue += strlen(errormsg);
 
-        /* 总长度 */
+        /* Total length */
         ivalue = r_hton32(ivalue);
-        rmemcpy1(uptr,0, &ivalue, 4);
+        rmemcpy1(uptr, 0, &ivalue, 4);
         uptr += 4;
 
-        /* 错误码 */
+        /* Error code */
         ivalue = ERROR_MSGCOMMAND;
         ivalue = r_hton32(ivalue);
         rmemcpy1(uptr, 0, &ivalue, 4);
         uptr += 4;
 
-        /* 错误信息 */
+        /* Error message */
         rmemcpy1(uptr, 0, errormsg, strlen(errormsg));
     }
     else
@@ -301,7 +251,7 @@ bool cmd(optype type, void *extra_config)
             uptr -= 4;
         }
         ivalue = r_hton32(ivalue);
-        rmemcpy1(uptr,0, &ivalue, 4);
+        rmemcpy1(uptr, 0, &ivalue, 4);
         uptr += 4;
         uptr += valuelen;
 
@@ -348,7 +298,7 @@ char* cmd_getdesc(optype type)
     return m_typ2cmd[type].desc;
 }
 
-void cmd_printmsg(const char *msg)
+void cmd_printmsg(const char* msg)
 {
     fputs(msg, stdout);
     fflush(stdout);

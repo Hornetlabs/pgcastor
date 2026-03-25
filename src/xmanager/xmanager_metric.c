@@ -44,7 +44,7 @@ xmanager_metric* xmanager_metric_init(void)
     xmetric->metricqueue = NULL;
     xmetric->privdata = NULL;
 
-    /* 加载 metricnode */
+    /* Load metricnode */
     if (false == xmanager_metricnode_load(&xmetric->metricnodes))
     {
         elog(RLOG_WARNING, "xmanager metricnode init error, load metric node error");
@@ -54,7 +54,7 @@ xmanager_metric* xmanager_metric_init(void)
     return xmetric;
 }
 
-/* 设置 configpath */
+/* Set configpath */
 bool xmanager_metric_setxsynchpath(xmanager_metric* xmetric, char* xsynchpath)
 {
     int len = 0;
@@ -88,19 +88,19 @@ bool xmanager_metric_setxsynchpath(xmanager_metric* xmetric, char* xsynchpath)
 }
 
 /*
- * 读网络包处理
- *  返回 false 时, 需要在外围释放 index 对应的 npoolentry
-*/
+ * Parse network packet
+ * Returns false when caller needs to free index's npoolentry
+ */
 static bool xmanager_metric_parsepacket(xmanager_metric* xmetric, int index)
 {
-    int msgtype                     = 0;
-    uint8* uptr                     = NULL;
-    netpacket* npacket       = NULL;
+    int           msgtype = 0;
+    uint8*        uptr = NULL;
+    netpacket*    npacket = NULL;
     netpoolentry* npoolentry = NULL;
-    char errormsg[512]              = { 0 };
+    char          errormsg[512] = {0};
 
     npoolentry = xmetric->npool->fds[index];
-    while(1)
+    while (1)
     {
         npacket = queue_tryget(npoolentry->rpackets);
         if (NULL == npacket)
@@ -112,16 +112,13 @@ static bool xmanager_metric_parsepacket(xmanager_metric* xmetric, int index)
         {
             if (false == queue_puthead(npoolentry->rpackets, npacket))
             {
-                /* 组装一个 error packet 包 */
+                /* Assemble error packet */
                 uptr = npacket->data;
                 rmemcpy1(&msgtype, 0, uptr, 4);
                 msgtype = r_ntoh32(msgtype);
                 snprintf(errormsg, 512, "unknown error happend");
-                if (false == xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                                        npoolentry->wpackets,
-                                                                        msgtype,
-                                                                        ERROR_OOM,
-                                                                        errormsg))
+                if (false == xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
+                                                                 msgtype, ERROR_OOM, errormsg))
                 {
                     elog(RLOG_WARNING, "metric parse packet error");
                     return false;
@@ -131,7 +128,7 @@ static bool xmanager_metric_parsepacket(xmanager_metric* xmetric, int index)
             return true;
         }
 
-        /* 解析数据 */
+        /* Parse data */
         if (false == xmanager_metricmsg_parsenetpacket(xmetric, npoolentry, npacket))
         {
             netpacket_destroy(npacket);
@@ -144,43 +141,44 @@ static bool xmanager_metric_parsepacket(xmanager_metric* xmetric, int index)
 }
 
 /*
- * 接收到新节点后的预处理
- *  1、xscsci 节点无需处理
- * 
- *  2、根据连接的节点 在 metricnodes 中找到对应的 xscsci 节点
- *    2.1 在 metricnodes 中遍历查找 xscsci 节点
- *    2.2 匹配 xscsci->asyncmsgs->msg 中的消息，匹配原则: 操作类型/作业类型/名称一致
- * 
- *  3、匹配到 msg 后, 根据 regnode 的成功还是失败组装成功还是失败信息
- *  4、在 asyncmsgs->msg 删除匹配的 msg
- *  5、检测 asyncmsg 是否为空，若为空 重组 packets 包
-*/
-static bool xmanager_metric_newnodepre(xmanager_metric* xmetric,
-                                              xmanager_metricregnode* xmetricregnode)
+ * Preprocessing after receiving new node
+ *  1、xscsci node does not need processing
+ *
+ *  2、Find corresponding xscsci node in metricnodes based on connected node
+ *    2.1 Traverse metricnodes to find xscsci node
+ *    2.2 Match messages in xscsci->asyncmsgs->msg, matching principle: operation type/job type/name
+ * match
+ *
+ *  3、After matching msg, assemble success or failure message based on regnode success or failure
+ *  4、Delete matched msg from asyncmsgs->msg
+ *  5、Check if asyncmsg is empty, if empty reorganize packets
+ */
+static bool xmanager_metric_newnodepre(xmanager_metric*        xmetric,
+                                       xmanager_metricregnode* xmetricregnode)
 {
-    bool found                                          = false;
-    dlistnode* dlnodemsg                                = NULL;
-    dlistnode* dlnodemsgtmp                             = NULL;
-    dlistnode* dlnode                                   = NULL;
-    netpoolentry* npoolentry                     = NULL;
-    xmanager_metricfd2node* xmetricfd2node       = NULL;
+    bool                       found = false;
+    dlistnode*                 dlnodemsg = NULL;
+    dlistnode*                 dlnodemsgtmp = NULL;
+    dlistnode*                 dlnode = NULL;
+    netpoolentry*              npoolentry = NULL;
+    xmanager_metricfd2node*    xmetricfd2node = NULL;
     xmanager_metricxscscinode* xmetricxscscinode = NULL;
-    xmanager_metricasyncmsg* asyncmsg            = NULL;
+    xmanager_metricasyncmsg*   asyncmsg = NULL;
 
     if (true == dlist_isnull(xmetric->fd2metricnodes))
     {
         return true;
     }
 
-    /* xscsci 节点不处理 */
+    /* xscsci node does not process */
     if (XMANAGER_METRICNODETYPE_XSCSCI == xmetricregnode->nodetype)
     {
         return true;
     }
 
-    /* 
-     * 通过 xscsci 发送的消息中, 其中 init/stat/stop 消息需要异步返回
-     *  可立即返回的有:
+    /*
+     * Among messages sent via xscsci, init/stat/stop messages need async response
+     *  Can return immediately:
      *    XMANAGER_MSG_CREATECMD
      *    XMANAGER_MSG_ALTERCMD
      *    XMANAGER_MSG_REMOVECMD
@@ -190,16 +188,16 @@ static bool xmanager_metric_newnodepre(xmanager_metric* xmetric,
      *    XMANAGER_MSG_INFOCMD
      *    XMANAGER_MSG_WATCHCMD
      *    XMANAGER_MSG_LISTCMD
-     * 
-     *  需要等待反馈后的异步消息有:
+     *
+     *  Need to wait for feedback async messages:
      *    XMANAGER_MSG_INITCMD
      *    XMANAGER_MSG_STARTCMD
      *    XMANAGER_MSG_STOPCMD
      *    onlinerefresh
-    */
-    if (XMANAGER_MSG_INITCMD != xmetricregnode->msgtype
-        && XMANAGER_MSG_STARTCMD != xmetricregnode->msgtype
-        && XMANAGER_MSG_STOPCMD != xmetricregnode->msgtype)
+     */
+    if (XMANAGER_MSG_INITCMD != xmetricregnode->msgtype &&
+        XMANAGER_MSG_STARTCMD != xmetricregnode->msgtype &&
+        XMANAGER_MSG_STOPCMD != xmetricregnode->msgtype)
     {
         return true;
     }
@@ -213,14 +211,14 @@ static bool xmanager_metric_newnodepre(xmanager_metric* xmetric,
         }
 
         xmetricxscscinode = (xmanager_metricxscscinode*)xmetricfd2node->metricnode;
-        if (NULL == xmetricxscscinode->asyncmsgs
-            || true == dlist_isnull(xmetricxscscinode->asyncmsgs->msgs))
+        if (NULL == xmetricxscscinode->asyncmsgs ||
+            true == dlist_isnull(xmetricxscscinode->asyncmsgs->msgs))
         {
             continue;
         }
 
         dlnodemsg = xmetricxscscinode->asyncmsgs->msgs->head;
-        while(NULL != dlnodemsg)
+        while (NULL != dlnodemsg)
         {
             asyncmsg = (xmanager_metricasyncmsg*)dlnodemsg->value;
             dlnodemsgtmp = dlnodemsg->next;
@@ -249,10 +247,10 @@ static bool xmanager_metric_newnodepre(xmanager_metric* xmetric,
                 return true;
             }
 
-            /* 构建消息 */
+            /* Build message */
             found = true;
 
-            /* 将 asyncmsg 转移到 results 中 */
+            /* Move asyncmsg to results */
             asyncmsg->result = xmetricregnode->result;
             if (1 == xmetricregnode->result)
             {
@@ -261,18 +259,18 @@ static bool xmanager_metric_newnodepre(xmanager_metric* xmetric,
                 xmetricregnode->msg = NULL;
             }
 
-            /* 在消息中删除dlnodemsg */
-            xmetricxscscinode->asyncmsgs->msgs = dlist_delete(xmetricxscscinode->asyncmsgs->msgs,
-                                                              dlnodemsg,
-                                                              NULL);
+            /* Delete dlnodemsg from messages */
+            xmetricxscscinode->asyncmsgs->msgs =
+                dlist_delete(xmetricxscscinode->asyncmsgs->msgs, dlnodemsg, NULL);
 
-            /* 将 asyncmsg 加入到 result 中 */
-            xmetricxscscinode->asyncmsgs->results = dlist_put(xmetricxscscinode->asyncmsgs->results, asyncmsg);
+            /* Add asyncmsg to results */
+            xmetricxscscinode->asyncmsgs->results =
+                dlist_put(xmetricxscscinode->asyncmsgs->results, asyncmsg);
             break;
         }
     }
 
-    /* 设置 metricnode 的状态 */
+    /* Set metricnode status */
     if (0 == xmetricregnode->result)
     {
         if (XMANAGER_MSG_INITCMD == xmetricregnode->msgtype)
@@ -288,95 +286,88 @@ static bool xmanager_metric_newnodepre(xmanager_metric* xmetric,
             xmetricregnode->metricfd2node->metricnode->stat = XMANAGER_METRICNODESTAT_OFFLINE;
         }
 
-        /* 将 metricnode 落盘 */
+        /* Persist metricnode to disk */
         xmanager_metricnode_flush(xmetric->metricnodes);
     }
 
     if (false == found)
     {
-        /* 没有处理, 返回 */
+        /* Not processed, return */
         return true;
     }
 
-    /* 检测是否还有异步消息待反馈 */
+    /* Check if there are still async messages waiting for feedback */
     if (false == dlist_isnull(xmetricxscscinode->asyncmsgs->msgs))
     {
         elog(RLOG_WARNING, "un done");
         return true;
     }
 
-    /* 消息重组, init/start错误/stop 消息需要重组返回内容 */
-    if (false == xmanager_metricmsg_assembleresponse(xmetric,
-                                                            npoolentry,
-                                                            xmetricregnode->msgtype,
-                                                            xmetricxscscinode->asyncmsgs->results))
+    /* Message reorganization, init/start error/stop messages need to reorganize return content */
+    if (false == xmanager_metricmsg_assembleresponse(xmetric, npoolentry, xmetricregnode->msgtype,
+                                                     xmetricxscscinode->asyncmsgs->results))
     {
         elog(RLOG_WARNING, "assemble response to xscsci error, close xscsci connect");
 
-        /* netpool 中的节点移除 */
+        /* Remove node from netpool */
         netpool_del(xmetric->npool, npoolentry->fd);
 
-        /* metricnode 节点在链表中移除 */
-        xmetric->metricnodes = dlist_deletebyvaluefirstmatch(xmetric->metricnodes,
-                                                             xmetricxscscinode,
-                                                             xmanager_metricnode_cmp,
-                                                             xmanager_metricnode_destroyvoid);
+        /* Remove metricnode from list */
+        xmetric->metricnodes =
+            dlist_deletebyvaluefirstmatch(xmetric->metricnodes, xmetricxscscinode,
+                                          xmanager_metricnode_cmp, xmanager_metricnode_destroyvoid);
 
-        /* 在描述符映射链表中将数据移除 */
-        xmetric->fd2metricnodes = dlist_delete(xmetric->fd2metricnodes,
-                                               dlnode,
-                                               xmanager_metricfd2node_destroyvoid);
+        /* Remove data from fd mapping list */
+        xmetric->fd2metricnodes =
+            dlist_delete(xmetric->fd2metricnodes, dlnode, xmanager_metricfd2node_destroyvoid);
         return true;
     }
 
-    /* 清理 results */
+    /* Clean up results */
     dlist_free(xmetricxscscinode->asyncmsgs->results, xmanager_metricasyncmsg_destroyvoid);
     xmetricxscscinode->asyncmsgs->results = NULL;
     xmetricxscscinode->asyncmsgs->timeout = 0;
     return true;
 }
 
-/* 
- * 清理掉动态节点
+/*
+ * Clean up dynamic nodes
  *  xscsci
  *  xmanager
-*/
-static void xmanager_metric_removenode(xmanager_metric* xmetric,
-                                              xmanager_metricfd2node* xmetricfd2node)
+ */
+static void xmanager_metric_removenode(xmanager_metric*        xmetric,
+                                       xmanager_metricfd2node* xmetricfd2node)
 {
     xmanager_metricnode* xmetricnode = NULL;
 
     xmetricnode = xmetricfd2node->metricnode;
     xmetricfd2node->metricnode->stat = XMANAGER_METRICNODESTAT_OFFLINE;
-    xmetric->fd2metricnodes = dlist_deletebyvalue(xmetric->fd2metricnodes,
-                                                 (void*)((uintptr_t)xmetricfd2node->fd),
-                                                 xmanager_metricfd2node_cmp,
-                                                 xmanager_metricfd2node_destroyvoid);
+    xmetric->fd2metricnodes =
+        dlist_deletebyvalue(xmetric->fd2metricnodes, (void*)((uintptr_t)xmetricfd2node->fd),
+                            xmanager_metricfd2node_cmp, xmanager_metricfd2node_destroyvoid);
 
-    /* xscsci 和 xmanager 都需要在 xmanager 中移除 */
-    if (XMANAGER_METRICNODETYPE_XSCSCI != xmetricnode->type
-        && XMANAGER_METRICNODETYPE_MANAGER != xmetricnode->type)
+    /* xscsci and xmanager both need to be removed from xmanager */
+    if (XMANAGER_METRICNODETYPE_XSCSCI != xmetricnode->type &&
+        XMANAGER_METRICNODETYPE_MANAGER != xmetricnode->type)
     {
         return;
     }
 
-    xmetric->metricnodes = dlist_deletebyvaluefirstmatch(xmetric->metricnodes,
-                                                        (void*)xmetricnode,
-                                                        xmanager_metricnode_cmp,
-                                                        xmanager_metricnode_destroyvoid);
+    xmetric->metricnodes =
+        dlist_deletebyvaluefirstmatch(xmetric->metricnodes, (void*)xmetricnode,
+                                      xmanager_metricnode_cmp, xmanager_metricnode_destroyvoid);
 }
 
-
-/* 异步消息超时检测 */
+/* Async message timeout detection */
 static void xmanager_metric_asyncmsgtimeout(xmanager_metric* xmetric)
 {
-    int ilen                                            = 0;
-    dlist* dlmsgs                                       = NULL;
-    dlistnode* dlnode                                   = NULL;
-    dlistnode* dlnodemsg                                = NULL;
-    netpoolentry* npoolentry                     = NULL;
-    xmanager_metricfd2node* xmetricfd2node       = NULL;
-    xmanager_metricasyncmsg* xmetricasyncmsg     = NULL;
+    int                        ilen = 0;
+    dlist*                     dlmsgs = NULL;
+    dlistnode*                 dlnode = NULL;
+    dlistnode*                 dlnodemsg = NULL;
+    netpoolentry*              npoolentry = NULL;
+    xmanager_metricfd2node*    xmetricfd2node = NULL;
+    xmanager_metricasyncmsg*   xmetricasyncmsg = NULL;
     xmanager_metricxscscinode* xmetricxscscinode = NULL;
 
     if (true == dlist_isnull(xmetric->fd2metricnodes))
@@ -405,10 +396,10 @@ static void xmanager_metric_asyncmsgtimeout(xmanager_metric* xmetric)
             continue;
         }
 
-        /* 获取描述符信息 */
+        /* Get fd info */
         npoolentry = netpool_getentrybyfd(xmetric->npool, xmetricfd2node->fd);
 
-        /* 消息超时，将 asyncmsgs->msgs 转移到 asyncmsgs->result 中并设置为超时 */
+        /* Message timeout, move asyncmsgs->msgs to asyncmsgs->result and set to timeout */
         dlmsgs = xmetricxscscinode->asyncmsgs->msgs;
         for (dlnodemsg = dlmsgs->head; NULL != dlnodemsg; dlnodemsg = dlnodemsg->next)
         {
@@ -428,18 +419,16 @@ static void xmanager_metric_asyncmsgtimeout(xmanager_metric* xmetric)
             rmemcpy0(xmetricasyncmsg->errormsg, 0, "timeout", ilen);
         }
 
-        /* 合并 */
-        xmetricxscscinode->asyncmsgs->results = dlist_concat(xmetricxscscinode->asyncmsgs->results,
-                                                             xmetricxscscinode->asyncmsgs->msgs);
+        /* Merge */
+        xmetricxscscinode->asyncmsgs->results =
+            dlist_concat(xmetricxscscinode->asyncmsgs->results, xmetricxscscinode->asyncmsgs->msgs);
         xmetricxscscinode->asyncmsgs->msgs = NULL;
 
-        /* 组装信息 */
-        xmanager_metricmsg_assembleresponse(xmetric,
-                                                   npoolentry,
-                                                   xmetricasyncmsg->msgtype,
-                                                   xmetricxscscinode->asyncmsgs->results);
+        /* Assemble info */
+        xmanager_metricmsg_assembleresponse(xmetric, npoolentry, xmetricasyncmsg->msgtype,
+                                            xmetricxscscinode->asyncmsgs->results);
 
-        /* 清理 results */
+        /* Clean up results */
         dlist_free(xmetricxscscinode->asyncmsgs->results, xmanager_metricasyncmsg_destroyvoid);
         xmetricxscscinode->asyncmsgs->results = NULL;
         xmetricxscscinode->asyncmsgs->timeout = 0;
@@ -447,41 +436,42 @@ static void xmanager_metric_asyncmsgtimeout(xmanager_metric* xmetric)
     return;
 }
 
-/* 主流程 */
-void* xmanager_metric_main(void *args)
+/* Main loop */
+void* xmanager_metric_main(void* args)
 {
-    struct timespec last_flush_ts                       = { 0, 0 };
-    struct timespec now_ts                              = { 0, 0 };
-    int index                                           = 0;
-    int errorfdscnt                                     = 0;
-    int* errorfds                                       = NULL;
-    queueitem* item                              = NULL;
-    queueitem* items                             = NULL;
-    thrnode* thrnode_ptr                             = NULL;
-    netpoolentry* npoolentry                     = NULL;
-    xmanager_metric* xmetric                     = NULL;
-    xmanager_metricnode* metricnode              = NULL;
-    xmanager_metricfd2node* fd2node              = NULL;
-    xmanager_metricregnode* xmetricregnode       = NULL;
+    struct timespec         last_flush_ts = {0, 0};
+    struct timespec         now_ts = {0, 0};
+    int                     index = 0;
+    int                     errorfdscnt = 0;
+    int*                    errorfds = NULL;
+    queueitem*              item = NULL;
+    queueitem*              items = NULL;
+    thrnode*                thrnode_ptr = NULL;
+    netpoolentry*           npoolentry = NULL;
+    xmanager_metric*        xmetric = NULL;
+    xmanager_metricnode*    metricnode = NULL;
+    xmanager_metricfd2node* fd2node = NULL;
+    xmanager_metricregnode* xmetricregnode = NULL;
 
     thrnode_ptr = (thrnode*)args;
     xmetric = (xmanager_metric*)thrnode_ptr->data;
 
-    /* 查看状态 */
+    /* Check status */
     if (THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING, "xmanager metric stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "xmanager metric stat exception, expected state is THRNODE_STAT_STARTING");
         thrnode_ptr->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thrnode_ptr->stat = THRNODE_STAT_WORK;
 
     clock_gettime(CLOCK_MONOTONIC, &now_ts);
     last_flush_ts = now_ts;
 
-    while(1)
+    while (1)
     {
         items = NULL;
         if (THRNODE_STAT_TERM == thrnode_ptr->stat)
@@ -490,15 +480,15 @@ void* xmanager_metric_main(void *args)
             break;
         }
 
-        /* 在队列中获取描述符 */
+        /* Get fd from queue */
         items = queue_trygetbatch(xmetric->metricqueue);
         for (item = items; NULL != item; item = items)
         {
             items = item->next;
             xmetricregnode = (xmanager_metricregnode*)item->data;
             fd2node = xmetricregnode->metricfd2node;
-            
-            /* 预处理 */
+
+            /* Preprocessing */
             if (false == xmanager_metric_newnodepre(xmetric, xmetricregnode))
             {
                 close(fd2node->fd);
@@ -510,7 +500,7 @@ void* xmanager_metric_main(void *args)
 
             if (1 == xmetricregnode->result)
             {
-                /* 无需处理, 直接关闭 */
+                /* No need to process, just close */
                 close(fd2node->fd);
                 fd2node->fd = -1;
                 xmanager_metricnode_destroy(fd2node->metricnode);
@@ -520,8 +510,9 @@ void* xmanager_metric_main(void *args)
             xmetricregnode->metricfd2node = NULL;
             xmanager_metricregnode_destroy(xmetricregnode);
 
-            /* 检测在 metricnodes 中是否存在 */
-            metricnode = dlist_isexist(xmetric->metricnodes, fd2node->metricnode, xmanager_metricnode_cmp);
+            /* Check if exists in metricnodes */
+            metricnode =
+                dlist_isexist(xmetric->metricnodes, fd2node->metricnode, xmanager_metricnode_cmp);
             if (NULL != metricnode)
             {
                 if (NULL == metricnode->data)
@@ -529,7 +520,7 @@ void* xmanager_metric_main(void *args)
                     metricnode->data = fd2node->metricnode->data;
                     fd2node->metricnode->data = NULL;
                 }
-                
+
                 if (NULL == metricnode->traildir)
                 {
                     metricnode->traildir = fd2node->metricnode->traildir;
@@ -545,23 +536,23 @@ void* xmanager_metric_main(void *args)
             }
 
             /*
-             * 1、设置为在线状态
-             * 2、加入到队列中
+             * 1、Set to online state
+             * 2、Add to queue
              */
-            /* 设置为在线状态 */
+            /* Set to online state */
             fd2node->metricnode->stat = XMANAGER_METRICNODESTAT_ONLINE;
 
-            /* 将 fd2node 加入到队列中 */
+            /* Add fd2node to queue */
             xmetric->fd2metricnodes = dlist_put(xmetric->fd2metricnodes, fd2node);
 
             /*-----------------------add entry to pool   begin-----------------------------*/
-            /* 
-             * 将描述符加入到网络监听池中
-             *  1、申请空间
-             *  2、设置监听描述符
-             *  3、加入到池子中
+            /*
+             * Add fd to network listen pool
+             *  1、Allocate space
+             *  2、Set listen fd
+             *  3、Add to pool
              */
-            /* 申请空间 */
+            /* Allocate space */
             npoolentry = netpoolentry_init();
             if (NULL == npoolentry)
             {
@@ -573,10 +564,10 @@ void* xmanager_metric_main(void *args)
                 continue;
             }
 
-            /* 设置监听描述符 */
+            /* Set listen fd */
             netpoolentry_setfd(npoolentry, fd2node->fd);
 
-            /* 添加到监听队列中 */
+            /* Add to listen queue */
             if (false == netpool_add(xmetric->npool, npoolentry))
             {
                 elog(RLOG_WARNING, "xmanager metric add entry to net pool error");
@@ -587,13 +578,14 @@ void* xmanager_metric_main(void *args)
             }
             /*-----------------------add entry to pool end-----------------------------*/
 
-            /* 添加 identity 验证发送包 */
-            if (false == xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_IDENTITYCMD))
+            /* Add identity verification send packet */
+            if (false ==
+                xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_IDENTITYCMD))
             {
                 elog(RLOG_WARNING, "xmanager metric add entry to net pool error");
                 xmanager_metric_removenode(xmetric, fd2node);
 
-                /* 删除该描述符 */
+                /* Delete the fd */
                 netpool_del(xmetric->npool, npoolentry->fd);
                 queueitem_free(item, NULL);
                 continue;
@@ -602,7 +594,7 @@ void* xmanager_metric_main(void *args)
             queueitem_free(item, NULL);
         }
 
-        /* 监听 */
+        /* Monitor */
         errorfdscnt = 0;
         errorfds = NULL;
         if (false == netpool_desc(xmetric->npool, &errorfdscnt, &errorfds))
@@ -612,22 +604,23 @@ void* xmanager_metric_main(void *args)
             break;
         }
 
-        /* 先处理异常的描述符 */
+        /* Handle abnormal fds first */
         for (index = 0; index < errorfdscnt; index++)
         {
             /*
-             * 1、获取并设置为 offset
-             * 2、在活跃链表中移除
+             * 1. Get and set offset
+             * 2. Remove from active list
              */
-            fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)errorfds[index]), xmanager_metricfd2node_cmp);
+            fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)errorfds[index]),
+                                xmanager_metricfd2node_cmp);
             xmanager_metric_removenode(xmetric, fd2node);
 
-            /* 删除该描述符 */
+            /* Delete the fd */
             netpool_del(xmetric->npool, errorfds[index]);
             continue;
         }
 
-        /* 遍历读队列并处理 */
+        /* Iterate read queue and process */
         for (index = 0; index < xmetric->npool->fdcnt; index++)
         {
             if (NULL == xmetric->npool->fds[index])
@@ -638,10 +631,11 @@ void* xmanager_metric_main(void *args)
             npoolentry = xmetric->npool->fds[index];
             if (NETPOOLENTRY_STAT_CLOSEUTILWPACKETNULL == npoolentry->stat)
             {
-                fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
+                fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
+                                    xmanager_metricfd2node_cmp);
                 xmanager_metric_removenode(xmetric, fd2node);
 
-                /* 删除该描述符 */
+                /* Delete the fd */
                 netpool_del(xmetric->npool, npoolentry->fd);
                 continue;
             }
@@ -651,31 +645,31 @@ void* xmanager_metric_main(void *args)
                 continue;
             }
 
-            /* 处理读队列 */
+            /* Process read queue */
             if (false == xmanager_metric_parsepacket(xmetric, index))
             {
-                /* 处理读数据包有问题, 关闭掉连接并释放资源 */
+                /* Error processing read packet, close connection and release resources */
                 elog(RLOG_WARNING, "xmanager metric parse packet error");
-                fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
+                fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
+                                    xmanager_metricfd2node_cmp);
                 xmanager_metric_removenode(xmetric, fd2node);
 
-                /* 删除该描述符 */
+                /* Delete the fd */
                 netpool_del(xmetric->npool, npoolentry->fd);
                 continue;
             }
         }
 
-        /* 遍历 xscsci 节点, 查看是否有异步超时的消息 */
+        /* Traverse xscsci nodes to check for async timeout messages */
         xmanager_metric_asyncmsgtimeout(xmetric);
 
-        /* 定时落盘metricnode文件，每10秒落盘一次 */
+        /* Periodic flush metricnode file every 10 seconds */
         clock_gettime(CLOCK_MONOTONIC, &now_ts);
         if (now_ts.tv_sec - last_flush_ts.tv_sec >= 10)
         {
             xmanager_metricnode_flush(xmetric->metricnodes);
             last_flush_ts = now_ts;
         }
-        
     }
 
     pthread_exit(NULL);

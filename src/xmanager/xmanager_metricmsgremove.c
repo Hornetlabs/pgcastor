@@ -13,28 +13,27 @@
 #include "xmanager/xmanager_metricmsg.h"
 
 /*
- * 处理 remove 命令
- *  1、jobtype 需要小于 PROCESS
- *  2、校验 job 是否已经存在
- *  3、检验是否在运行中
- *  4、删除data和conf文件
- *  5、返回成功消息
-*/
-bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
-                                          netpoolentry* npoolentry,
-                                          netpacket* npacket)
+ * Handle remove command
+ *1. jobtype must be less than PROCESS
+ *2. Verify job already exists
+ *  3、Check if running
+ *4. Delete data and conf files
+ *5. Return success message
+ */
+bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                    netpacket* npacket)
 {
-    int len                                             = 0;
-    int jobtype                                         = 0;
-    int errcode                                         = 0;
-    uint8* uptr                                         = NULL;
-    char* jobname                                       = NULL;
-    xmanager_metricnode* pxmetricnode            = NULL;
-    xmanager_metricnode xmetricnode              = { 0 };
-    char errormsg[2048]                                 = { 0 };
-    char execcmd[1024]                                  = { 0 };
+    int                  len = 0;
+    int                  jobtype = 0;
+    int                  errcode = 0;
+    uint8*               uptr = NULL;
+    char*                jobname = NULL;
+    xmanager_metricnode* pxmetricnode = NULL;
+    xmanager_metricnode  xmetricnode = {0};
+    char                 errormsg[2048] = {0};
+    char                 execcmd[1024] = {0};
 
-    /* 获取作业类型 */
+    /* Get job type */
     uptr = npacket->data;
 
     /* msglen + crc32 + commandtype */
@@ -48,13 +47,12 @@ bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
     if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 2048, 
-                 "ERROR: xmanager parse remove command, unsupport %s",
+        snprintf(errormsg, 2048, "ERROR: xmanager parse remove command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parseremove_error;
     }
 
-    /* 获取 jobname */
+    /* Get jobname */
     rmemcpy1(&len, 0, uptr, 4);
     len = r_ntoh32(len);
     uptr += 4;
@@ -71,7 +69,7 @@ bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
     len -= 1;
     rmemcpy0(jobname, 0, uptr, len);
 
-    /* 查看节点是否存在 */
+    /* Check if node exists */
     xmetricnode.type = jobtype;
     xmetricnode.name = jobname;
 
@@ -83,7 +81,7 @@ bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parseremove_error;
     }
 
-    /* 检验是否在运行中，在运行中返回错误信息提示停止 */
+    /* Check if running, return error to stop */
     if (XMANAGER_METRICNODESTAT_INIT < pxmetricnode->stat)
     {
         errcode = ERROR_MSGCOMMAND;
@@ -91,7 +89,7 @@ bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parseremove_error;
     }
 
-    /* 删除文件 */
+    /* Delete file */
     if (NULL == pxmetricnode->conf)
     {
         errcode = ERROR_NOENT;
@@ -101,7 +99,7 @@ bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
 
     snprintf(execcmd, 1024, "rm -rf %s ;", pxmetricnode->conf);
 
-    /* 执行 execcmd 命令 */
+    /* Execute execcmd command */
     if (false == execcommand(execcmd, xmetric->privdata, xmetric->privdatadestroy))
     {
         errcode = ERROR_MSGCOMMAND;
@@ -109,11 +107,10 @@ bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parseremove_error;
     }
 
-    /* metricnode 节点在链表中移除 */
-    xmetric->metricnodes = dlist_deletebyvalue(xmetric->metricnodes,
-                                               &xmetricnode,
-                                               xmanager_metricnode_cmp,
-                                               xmanager_metricnode_destroyvoid);
+    /* Remove metricnode from list */
+    xmetric->metricnodes =
+        dlist_deletebyvalue(xmetric->metricnodes, &xmetricnode, xmanager_metricnode_cmp,
+                            xmanager_metricnode_destroyvoid);
 
     xmanager_metricnode_flush(xmetric->metricnodes);
 
@@ -132,10 +129,6 @@ xmanager_metricmsg_parseremove_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_REMOVECMD,
-                                                      errcode,
-                                                      errormsg);
-
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
+                                               XMANAGER_MSG_REMOVECMD, errcode, errormsg);
 }

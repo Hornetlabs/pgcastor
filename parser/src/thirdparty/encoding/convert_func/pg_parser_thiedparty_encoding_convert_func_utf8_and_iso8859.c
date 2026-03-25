@@ -41,7 +41,6 @@
 #include "./unicode_map/utf8_to_iso8859_9.map"
 #include "./unicode_map/iso8859_16_to_utf8.map"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -55,84 +54,64 @@
 
 typedef struct
 {
-    enc        encoding;
-    const character_mb_radix_tree *map1;    /* to UTF8 map name */
-    const character_mb_radix_tree *map2;    /* from UTF8 map name */
+    enc                            encoding;
+    const character_mb_radix_tree* map1; /* to UTF8 map name */
+    const character_mb_radix_tree* map2; /* from UTF8 map name */
 } pg_conv_map;
 
 static const pg_conv_map maps[] = {
-    {LATIN2, &iso8859_2_to_unicode_tree,
-    &iso8859_2_from_unicode_tree},    /* ISO-8859-2 Latin 2 */
-    {LATIN3, &iso8859_3_to_unicode_tree,
-    &iso8859_3_from_unicode_tree},    /* ISO-8859-3 Latin 3 */
-    {LATIN4, &iso8859_4_to_unicode_tree,
-    &iso8859_4_from_unicode_tree},    /* ISO-8859-4 Latin 4 */
-    {LATIN5, &iso8859_9_to_unicode_tree,
-    &iso8859_9_from_unicode_tree},    /* ISO-8859-9 Latin 5 */
-    {LATIN6, &iso8859_10_to_unicode_tree,
-    &iso8859_10_from_unicode_tree}, /* ISO-8859-10 Latin 6 */
-    {LATIN7, &iso8859_13_to_unicode_tree,
-    &iso8859_13_from_unicode_tree}, /* ISO-8859-13 Latin 7 */
-    {LATIN8, &iso8859_14_to_unicode_tree,
-    &iso8859_14_from_unicode_tree}, /* ISO-8859-14 Latin 8 */
-    {LATIN9, &iso8859_15_to_unicode_tree,
-    &iso8859_15_from_unicode_tree}, /* ISO-8859-15 Latin 9 */
+    {LATIN2, &iso8859_2_to_unicode_tree, &iso8859_2_from_unicode_tree},   /* ISO-8859-2 Latin 2 */
+    {LATIN3, &iso8859_3_to_unicode_tree, &iso8859_3_from_unicode_tree},   /* ISO-8859-3 Latin 3 */
+    {LATIN4, &iso8859_4_to_unicode_tree, &iso8859_4_from_unicode_tree},   /* ISO-8859-4 Latin 4 */
+    {LATIN5, &iso8859_9_to_unicode_tree, &iso8859_9_from_unicode_tree},   /* ISO-8859-9 Latin 5 */
+    {LATIN6, &iso8859_10_to_unicode_tree, &iso8859_10_from_unicode_tree}, /* ISO-8859-10 Latin 6 */
+    {LATIN7, &iso8859_13_to_unicode_tree, &iso8859_13_from_unicode_tree}, /* ISO-8859-13 Latin 7 */
+    {LATIN8, &iso8859_14_to_unicode_tree, &iso8859_14_from_unicode_tree}, /* ISO-8859-14 Latin 8 */
+    {LATIN9, &iso8859_15_to_unicode_tree, &iso8859_15_from_unicode_tree}, /* ISO-8859-15 Latin 9 */
     {LATIN10, &iso8859_16_to_unicode_tree,
-    &iso8859_16_from_unicode_tree}, /* ISO-8859-16 Latin 10 */
-    {ISO_8859_5, &iso8859_5_to_unicode_tree,
-    &iso8859_5_from_unicode_tree},    /* ISO-8859-5 */
-    {ISO_8859_6, &iso8859_6_to_unicode_tree,
-    &iso8859_6_from_unicode_tree},    /* ISO-8859-6 */
-    {ISO_8859_7, &iso8859_7_to_unicode_tree,
-    &iso8859_7_from_unicode_tree},    /* ISO-8859-7 */
-    {ISO_8859_8, &iso8859_8_to_unicode_tree,
-    &iso8859_8_from_unicode_tree},    /* ISO-8859-8 */
+     &iso8859_16_from_unicode_tree}, /* ISO-8859-16 Latin 10 */
+    {ISO_8859_5, &iso8859_5_to_unicode_tree, &iso8859_5_from_unicode_tree}, /* ISO-8859-5 */
+    {ISO_8859_6, &iso8859_6_to_unicode_tree, &iso8859_6_from_unicode_tree}, /* ISO-8859-6 */
+    {ISO_8859_7, &iso8859_7_to_unicode_tree, &iso8859_7_from_unicode_tree}, /* ISO-8859-7 */
+    {ISO_8859_8, &iso8859_8_to_unicode_tree, &iso8859_8_from_unicode_tree}, /* ISO-8859-8 */
 };
 
-void iso8859_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void iso8859_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
     /* int32_t            encoding = src_str; */
-    int32_t            encoding = ISO_8859_8;
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
-    int32_t            i;
+    int32_t        encoding = ISO_8859_8;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
+    int32_t        i;
 
     CHECK_ENCODING_CONVERSION_ARGS(-1, UTF8);
 
-    for (i = 0; i < (int32_t) (conv_lengthof(maps)); i++)
+    for (i = 0; i < (int32_t)(conv_lengthof(maps)); i++)
     {
-        if (encoding == (int32_t) maps[i].encoding)
+        if (encoding == (int32_t)maps[i].encoding)
         {
-            LocalToUtf(src, len, dest,
-                       maps[i].map1,
-                       NULL, 0,
-                       NULL,
-                       encoding);
+            LocalToUtf(src, len, dest, maps[i].map1, NULL, 0, NULL, encoding);
         }
     }
 }
 
-void utf8_to_iso8859(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_iso8859(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
     /* int32_t            encoding = PG_GETARG_INT32(1); */
-    int32_t            encoding = ISO_8859_8;
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
-    int32_t            i;
+    int32_t        encoding = ISO_8859_8;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
+    int32_t        i;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, -1);
 
-    for (i = 0; i < (int32_t) (conv_lengthof(maps)); i++)
+    for (i = 0; i < (int32_t)(conv_lengthof(maps)); i++)
     {
-        if (encoding == (int32_t) maps[i].encoding)
+        if (encoding == (int32_t)maps[i].encoding)
         {
-            UtfToLocal(src, len, dest,
-                       maps[i].map2,
-                       NULL, 0,
-                       NULL,
-                       encoding);
+            UtfToLocal(src, len, dest, maps[i].map2, NULL, 0, NULL, encoding);
         }
     }
 }

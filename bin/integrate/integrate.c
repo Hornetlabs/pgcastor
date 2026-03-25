@@ -1,7 +1,7 @@
 /*
  * All Copyright (c) 2024-2024, Byte Sync Development Group
  *
-*/
+ */
 
 #include "app_incl.h"
 #include "utils/guc/guc.h"
@@ -12,8 +12,7 @@
 #include "common/pg_parser_translog.h"
 #include "command/cmd.h"
 
-static void
-help()
+static void help()
 {
     printf("Usage:\n  integrate [OPTION]\n");
     printf("Options:\n");
@@ -21,13 +20,13 @@ help()
     printf("  operation            init/start/stop/status/reload\n");
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    optype   optype      = OPTYPE_NOP;
-    const char*     loglevel    = NULL;
-    char*           profilepath = NULL;
+    optype      optype = OPTYPE_NOP;
+    const char* loglevel = NULL;
+    char*       profilepath = NULL;
 
-    if(1 < argc)
+    if (1 < argc)
     {
         if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-?") == 0)
         {
@@ -35,41 +34,36 @@ int main(int argc, char **argv)
             exit(0);
         }
 
-        /* 检查个数 */
-        if(4 != argc)
-        {
-            help();
-            exit(0);
-        }
-        
-        if(0 != strcmp(argv[1], "-f"))
+        /* check argument count */
+        if (4 != argc)
         {
             help();
             exit(0);
         }
 
-        if(strlen(argv[3]) == strlen("init")
-            && 0 == strcasecmp(argv[3], "init"))
+        if (0 != strcmp(argv[1], "-f"))
+        {
+            help();
+            exit(0);
+        }
+
+        if (strlen(argv[3]) == strlen("init") && 0 == strcasecmp(argv[3], "init"))
         {
             optype = OPTYPE_INIT;
         }
-        else if(strlen(argv[3]) == strlen("start")
-                && 0 == strcasecmp(argv[3], "start"))
+        else if (strlen(argv[3]) == strlen("start") && 0 == strcasecmp(argv[3], "start"))
         {
             optype = OPTYPE_START;
         }
-        else if(strlen(argv[3]) == strlen("stop")
-                && 0 == strcasecmp(argv[3], "stop"))
+        else if (strlen(argv[3]) == strlen("stop") && 0 == strcasecmp(argv[3], "stop"))
         {
             optype = OPTYPE_STOP;
         }
-        else if(strlen(argv[3]) == strlen("status")
-                && 0 == strcasecmp(argv[3], "status"))
+        else if (strlen(argv[3]) == strlen("status") && 0 == strcasecmp(argv[3], "status"))
         {
             optype = OPTYPE_STATUS;
         }
-        else if(strlen(argv[3]) == strlen("reload")
-                && 0 == strcasecmp(argv[3], "reload"))
+        else if (strlen(argv[3]) == strlen("reload") && 0 == strcasecmp(argv[3], "reload"))
         {
             optype = OPTYPE_RELOAD;
         }
@@ -87,32 +81,31 @@ int main(int argc, char **argv)
 
     g_proctype = PROC_TYPE_INTEGRATE;
 
-    /* 保存配置文件路径绝对路径 */
+    /* save config file path as absolute path */
     profilepath = osal_make_absolute_path(argv[2]);
     rmemcpy1(g_profilepath, 0, profilepath, strlen(profilepath));
     rfree(profilepath);
 
-    /* 参数解析 */
+    /* parse parameters */
     guc_loadcfg(argv[2], false);
 
-    /* 查看解析内容是否正确 */
+    /* check if parsed content is correct */
     guc_debug();
 
-    /* 设置 日志级别 */
+    /* set log level */
     loglevel = guc_getConfigOption(CFG_KEY_LOG_LEVEL);
-    if(NULL == loglevel)
+    if (NULL == loglevel)
     {
         elog(RLOG_ERROR, "unrecognized configuration parameter:%s", loglevel);
     }
 
     elog_seteloglevel(loglevel);
 
-    /* 获取主线程号 */
+    /* get main thread id */
     g_mainthrid = pthread_self();
 
-    /* 执行 */
+    /* execute */
     cmd(optype, NULL);
 
     return 0;
 }
-

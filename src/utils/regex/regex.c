@@ -4,14 +4,14 @@
 bool cmp_regexbase(regex* regex, char* name)
 {
     size_t len = 0;
-    if(regex->blike == false)
+    if (regex->blike == false)
     {
-        /* 无通配符匹配 */
+        /* No wildcard matching */
         if (NULL == regex->tokenbefore)
         {
             return false;
         }
-        if(strcmp(regex->tokenbefore, name) == 0)
+        if (strcmp(regex->tokenbefore, name) == 0)
         {
             return true;
         }
@@ -20,23 +20,23 @@ bool cmp_regexbase(regex* regex, char* name)
             return false;
         }
     }
-    /*有通配符两边都为空‘_*_’*/
-    if(regex->tokenbefore == NULL && regex->tokenafter == NULL)
+    /* Wildcard with both sides empty '_*_' */
+    if (regex->tokenbefore == NULL && regex->tokenafter == NULL)
     {
         return true;
     }
-    else if(regex->tokenbefore == NULL && regex->tokenafter != NULL)
+    else if (regex->tokenbefore == NULL && regex->tokenafter != NULL)
     {
-        /* "*aaa"比较 */
+        /* "*aaa" comparison */
         len = strlen(name) - strlen(regex->tokenafter);
         if (strncmp(regex->tokenafter, name + len, strlen(regex->tokenafter)) == 0)
         {
             return true;
         }
     }
-    else if(regex->tokenbefore != NULL && regex->tokenafter == NULL)
+    else if (regex->tokenbefore != NULL && regex->tokenafter == NULL)
     {
-        /* "aaa*"比较 */
+        /* "aaa*" comparison */
         if (strncmp(regex->tokenbefore, name, strlen(regex->tokenbefore)) == 0)
         {
             return true;
@@ -44,10 +44,10 @@ bool cmp_regexbase(regex* regex, char* name)
     }
     else
     {
-        /* "aa*aa"比较 */
+        /* "aa*aa" comparison */
         if (strncmp(regex->tokenbefore, name, strlen(regex->tokenbefore)) == 0)
         {
-            len = strlen(name)-strlen(regex->tokenafter);
+            len = strlen(name) - strlen(regex->tokenafter);
             if (strncmp(regex->tokenafter, name + len, strlen(regex->tokenafter)) == 0)
             {
                 return true;
@@ -60,14 +60,14 @@ bool cmp_regexbase(regex* regex, char* name)
 void make_regexbase(regex* regex, char* rule)
 {
     char* uptr = rule;
-    int pos = 0;
-    int len = 0;
-    /* 找到*前的数据，记录长度 */
-    while('\0' != *uptr)
+    int   pos = 0;
+    int   len = 0;
+    /* Find data before *, record length */
+    while ('\0' != *uptr)
     {
-        if('*' == *uptr)
+        if ('*' == *uptr)
         {
-            /* 跳过* */
+            /* Skip * */
             regex->blike = true;
             uptr++;
             break;
@@ -75,41 +75,40 @@ void make_regexbase(regex* regex, char* rule)
         len++;
         uptr++;
     }
-    if(len == 0)
+    if (len == 0)
     {
         regex->tokenbefore = NULL;
         len += 1;
     }
     else
     {
-        /* tokenbefore赋值 */
+        /* Assign tokenbefore */
         len += 1;
         regex->tokenbefore = (char*)rmalloc0(len);
-        if(NULL == regex->tokenbefore)
+        if (NULL == regex->tokenbefore)
         {
             elog(RLOG_ERROR, "out of memory");
         }
         rmemset0(regex->tokenbefore, 0, '\0', len);
         rmemcpy0(regex->tokenbefore, 0, rule, len);
         regex->tokenbefore[len - 1] = '\0';
-
     }
 
-    if('\0' == *uptr)
+    if ('\0' == *uptr)
     {
         regex->tokenafter = NULL;
     }
     else
     {
-        while('\0' != *uptr)
+        while ('\0' != *uptr)
         {
-            /* 记录*之后长度 */
+            /* Record length after * */
             pos++;
             uptr++;
         }
         pos += 1;
         regex->tokenafter = (char*)rmalloc0(pos);
-        if(NULL == regex->tokenafter)
+        if (NULL == regex->tokenafter)
         {
             elog(RLOG_ERROR, "out of memory");
         }

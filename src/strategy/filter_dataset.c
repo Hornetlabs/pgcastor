@@ -15,35 +15,33 @@
 #include "refresh/refresh_table_sharding.h"
 #include "strategy/filter_dataset.h"
 
-
 #define FILTER_MAXLINE 129
 
-/* 全局变量 */
-extern List *g_table;
-extern List *g_tableexclude ;
-extern List *g_addtablepattern;
+/* global variable */
+extern List* g_table;
+extern List* g_tableexclude;
+extern List* g_addtablepattern;
 
-
-/* ----- static 函数声明 begin ----- */
+/* ----- static function declaration begin ----- */
 static bool filter_dataset_byoid(HTAB* oid2datasets, Oid oid);
-/* ----- static 函数声明 end ----- */
+/* ----- static function declaration end ----- */
 
-static void filter_dataset_str2table(char *line, char *nspname, char *relname)
+static void filter_dataset_str2table(char* line, char* nspname, char* relname)
 {
-    char *temp_nspname = line;
-    char *temp_relname = NULL;
+    char*  temp_nspname = line;
+    char*  temp_relname = NULL;
     size_t nsp_len = 0;
     size_t rel_len = 0;
-    int index = 0;
+    int    index = 0;
 
     temp_relname = strstr(line, ".");
     nsp_len = temp_relname - temp_nspname;
 
-    /* 跳过 . */
+    /* Skip the dot */
     temp_relname += 1;
     rel_len = strlen(line) - 1 - nsp_len;
 
-    /* name的最大有效长度为63, 包含\0为64 */
+    /* Maximum valid length for name is 63, including \\0 it's 64 */
     if (nsp_len > 63 || rel_len > 63)
     {
         elog(RLOG_ERROR, "when dealing filter dataset, invalid input: %s", line);
@@ -93,32 +91,32 @@ void filter_dataset_pairfree(filter_pair* filterpair)
     rfree(filterpair);
 }
 
-/* 根据 refreshtable 生成策略 */
+/* Build filter strategy based on refreshtable */
 List* filter_dataset_buildpairsbyrefreshtables(refresh_tables* rtables)
 {
-    List* filters                   = NULL;
-    ListCell* lc                    = NULL;
-    refresh_table* rtable    = NULL;
-    filter_pair* filterpair  = NULL;
+    List*          filters = NULL;
+    ListCell*      lc = NULL;
+    refresh_table* rtable = NULL;
+    filter_pair*   filterpair = NULL;
 
     for (rtable = rtables->tables; NULL != rtable; rtable = rtable->next)
     {
         filterpair = (filter_pair*)rmalloc0(sizeof(filter_pair));
-        if(NULL == filterpair)
+        if (NULL == filterpair)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
             goto filter_dataset_initpairslistbyrefreshtables_error;
         }
         rmemset0(filterpair, 0, '\0', sizeof(filter_pair));
         filterpair->sch = (regex*)rmalloc0(sizeof(regex));
-        if(NULL == filterpair->sch)
+        if (NULL == filterpair->sch)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
             goto filter_dataset_initpairslistbyrefreshtables_error;
         }
         rmemset0(filterpair->sch, 0, '\0', sizeof(regex));
         filterpair->table = (regex*)rmalloc0(sizeof(regex));
-        if(NULL == filterpair->table)
+        if (NULL == filterpair->table)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
             goto filter_dataset_initpairslistbyrefreshtables_error;
@@ -140,33 +138,31 @@ filter_dataset_initpairslistbyrefreshtables_error:
     return NULL;
 }
 
-/* 重新生成 refreshtables */
-bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables,
-                                                      List* filters,
-                                                      HTAB* hnamespace,
-                                                      HTAB* hclass)
+/* Rebuild refreshtables from filters */
+bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables, List* filters,
+                                                HTAB* hnamespace, HTAB* hclass)
 {
-    bool found                                      = false;
-    Oid nspoid                                      = InvalidOid;
-    ListCell* lc                                    = NULL;
-    filter_pair* filterpair                  = NULL;
-    refresh_table* rtable                    = NULL;
-    refresh_tables* rtables                  = NULL;
-    catalog_class_value *classentry          = NULL;
-    catalog_namespace_value *nspentry        = NULL;
-    pg_parser_sysdict_pgclass *sysdictclass      = NULL;
-    pg_parser_sysdict_pgnamespace *sysdictnsp    = NULL;
-    
+    bool                           found = false;
+    Oid                            nspoid = INVALIDOID;
+    ListCell*                      lc = NULL;
+    filter_pair*                   filterpair = NULL;
+    refresh_table*                 rtable = NULL;
+    refresh_tables*                rtables = NULL;
+    catalog_class_value*           classentry = NULL;
+    catalog_namespace_value*       nspentry = NULL;
+    pg_parser_sysdict_pgclass*     sysdictclass = NULL;
+    pg_parser_sysdict_pgnamespace* sysdictnsp = NULL;
+
     HASH_SEQ_STATUS status;
 
     hash_seq_init(&status, hclass);
     while (NULL != (classentry = hash_seq_search(&status)))
     {
         found = false;
-        nspoid = InvalidOid;
+        nspoid = INVALIDOID;
         sysdictclass = classentry->class;
 
-        /* 只保留r和p */
+        /* Only keep 'r' and 'p' */
         if (!(sysdictclass->relkind == 'r' || sysdictclass->relkind == 'p'))
         {
             continue;
@@ -184,9 +180,9 @@ bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables,
         found = false;
         foreach (lc, filters)
         {
-            filterpair = (filter_pair *) lfirst(lc);
-            if (cmp_regexbase(filterpair->sch, sysdictnsp->nspname.data)
-                && cmp_regexbase(filterpair->table, sysdictclass->relname.data))
+            filterpair = (filter_pair*)lfirst(lc);
+            if (cmp_regexbase(filterpair->sch, sysdictnsp->nspname.data) &&
+                cmp_regexbase(filterpair->table, sysdictclass->relname.data))
             {
                 found = true;
                 break;
@@ -198,7 +194,7 @@ bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables,
             continue;
         }
 
-        /* 符合规则, 那么生成 refreshtables */
+        /* If it matches the rules, generate refreshtables */
         if (NULL == rtables)
         {
             rtables = refresh_tables_init();
@@ -231,21 +227,21 @@ filter_dataset_genrefreshtablesbyfilters_error:
     return false;
 }
 
-/* 生成策略 */
+/* Build filter strategy */
 static List* filter_dataset_initpairslist(List* rulelist)
 {
-    char* cptr                      = NULL;
-    char* include                   = NULL;
-    ListCell* cell                  = NULL;
-    List* filter_list               = NULL;
+    char*        cptr = NULL;
+    char*        include = NULL;
+    ListCell*    cell = NULL;
+    List*        filter_list = NULL;
     filter_pair* filter_pair_obj = NULL;
 
-    char table[64]                  = {'\0'};
-    char schema[64]                 = {'\0'};
-    char temp[1024]                 = {'\0'};
+    char table[64] = {'\0'};
+    char schema[64] = {'\0'};
+    char temp[1024] = {'\0'};
 
-    /* 根据入参构造 同步策略 */
-    foreach(cell, rulelist)
+    /* Build sync strategy based on input parameters */
+    foreach (cell, rulelist)
     {
         include = (char*)lfirst(cell);
         rmemset1(temp, 0, '\0', 1024);
@@ -253,36 +249,36 @@ static List* filter_dataset_initpairslist(List* rulelist)
         rmemset1(table, 0, '\0', 64);
 
         strcpy(temp, include);
-        if (strlen(temp) == strlen("*") && 0 == strcmp(temp,"*"))
+        if (strlen(temp) == strlen("*") && 0 == strcmp(temp, "*"))
         {
             rmemcpy1(temp, 0, "*.*", strlen("*.*"));
         }
 
-        /* 无效字符清理(空格、制表符、换行符) */
+        /* Clean up invalid characters (spaces, tabs, newlines) */
         cptr = rightstrtrim(temp);
         if ('\0' == cptr[0])
         {
-            /* 空行 */
+            /* Empty line */
             continue;
         }
 
-        /* 拆分为 模式.表名 */
+        /* Split into schema.table format */
         filter_dataset_str2table(temp, schema, table);
 
         filter_pair_obj = (filter_pair*)rmalloc0(sizeof(filter_pair));
-        if(NULL == filter_pair_obj)
+        if (NULL == filter_pair_obj)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
         rmemset0(filter_pair_obj, 0, '\0', sizeof(filter_pair));
         filter_pair_obj->sch = (regex*)rmalloc0(sizeof(regex));
-        if(NULL == filter_pair_obj->sch)
+        if (NULL == filter_pair_obj->sch)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
         rmemset0(filter_pair_obj->sch, 0, '\0', sizeof(regex));
         filter_pair_obj->table = (regex*)rmalloc0(sizeof(regex));
-        if(NULL == filter_pair_obj->table)
+        if (NULL == filter_pair_obj->table)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
@@ -294,18 +290,18 @@ static List* filter_dataset_initpairslist(List* rulelist)
     return filter_list;
 }
 
-/* 删除策略 */
+/* Delete filter strategy */
 void filter_dataset_listpairsfree(List* rulelist)
 {
-    ListCell* lc = NULL;
+    ListCell*    lc = NULL;
     filter_pair* filter_pair_obj = NULL;
-    if(NULL == rulelist)
+    if (NULL == rulelist)
     {
         return;
     }
 
-    /* 删除 rulelist 中的内容 */
-    foreach(lc, rulelist)
+    /* Delete content in rulelist */
+    foreach (lc, rulelist)
     {
         filter_pair_obj = (filter_pair*)lfirst(lc);
         free_regexbase(filter_pair_obj->sch);
@@ -319,8 +315,8 @@ void filter_dataset_listpairsfree(List* rulelist)
 
 static bool filter_dataset_match_addtablepattern(List* addtablepattern, char* schema, char* table)
 {
-    bool result = false;
-    ListCell* lc = NULL;
+    bool         result = false;
+    ListCell*    lc = NULL;
     filter_pair* filter_pair_obj = NULL;
 
     if (NULL == addtablepattern)
@@ -328,22 +324,22 @@ static bool filter_dataset_match_addtablepattern(List* addtablepattern, char* sc
         return true;
     }
 
-    foreach(lc, addtablepattern)
+    foreach (lc, addtablepattern)
     {
         filter_pair_obj = (filter_pair*)lfirst(lc);
 
-        if (cmp_regexbase(filter_pair_obj->sch, schema)
-             && cmp_regexbase(filter_pair_obj->table, table))
+        if (cmp_regexbase(filter_pair_obj->sch, schema) &&
+            cmp_regexbase(filter_pair_obj->table, table))
         {
             result = true;
             break;
         }
     }
-    
+
     return result;
 }
 
-/* 从根据传入的oid从哈希表中查找是否存在 */
+/* Look up oid in hash table to check if it exists */
 static bool filter_dataset_byoid(HTAB* oid2datasets, Oid oid)
 {
     bool find = false;
@@ -352,20 +348,20 @@ static bool filter_dataset_byoid(HTAB* oid2datasets, Oid oid)
     return find;
 }
 
-/* 初始化同步数据集 */
+/* Initialize sync dataset */
 List* filter_dataset_inittableinclude(List* table)
 {
-    /* 清空过滤规则 */
+    /* Clear filter rules */
     filter_dataset_listpairsfree(table);
 
     table = filter_dataset_initpairslist(g_table);
     return table;
 }
 
-/* 初始化同步排除表 */
+/* Initialize sync exclusion table */
 List* filter_dataset_inittableexclude(List* tableexclude)
 {
-    /* 清空过滤规则 */
+    /* Clear filter rules */
     filter_dataset_listpairsfree(tableexclude);
 
     tableexclude = filter_dataset_initpairslist(g_tableexclude);
@@ -374,7 +370,7 @@ List* filter_dataset_inittableexclude(List* tableexclude)
 
 List* filter_dataset_initaddtablepattern(List* tablepattern)
 {
-    /* 清空过滤规则 */
+    /* Clear filter rules */
     filter_dataset_listpairsfree(tablepattern);
 
     tablepattern = filter_dataset_initpairslist(g_addtablepattern);
@@ -383,53 +379,53 @@ List* filter_dataset_initaddtablepattern(List* tablepattern)
 }
 
 /*
- * 生成同步数据集, 将同步结果落盘
- * 1. 获取guc参数的过滤策略
- * 2. 遍历pg_class哈希表, 获取记录, 只获取relkind为 r 和 p 的记录
- * 3. 根据记录, 查找pg_namespace表, 获取nspname
- * 4. 拼接名称 nspname.relname进行正则匹配
- * 5. 匹配通过, 将nspname.relname落盘
- * 6. 遍历完成后写入文件
+ * Generate sync dataset and persist to disk
+ * 1. Get filter strategy from GUC parameters
+ * 2. Iterate through pg_class hash table, get records, only get records with relkind 'r' and 'p'
+ * 3. Based on records, look up pg_namespace table to get nspname
+ * 4. Concatenate name nspname.relname for regex matching
+ * 5. If matched, persist nspname.relname to disk
+ * 6. Write to file after iteration completes
  */
 bool filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namespace, HTAB* class)
 {
-    HASH_SEQ_STATUS status;
-    catalog_class_value *class_value_entry = NULL;
-    catalog_namespace_value *nsp_value_entry = NULL;
-    pg_parser_sysdict_pgclass *temp_class = NULL;
-    pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
-    char filepath_tmp[MAXPATH] = {'\0'};
-    char filepath[MAXPATH] = {'\0'};
-    struct stat statbuf;
-    FILE *fp = NULL;
+    HASH_SEQ_STATUS                status;
+    catalog_class_value*           class_value_entry = NULL;
+    catalog_namespace_value*       nsp_value_entry = NULL;
+    pg_parser_sysdict_pgclass*     temp_class = NULL;
+    pg_parser_sysdict_pgnamespace* temp_nsp = NULL;
+    char                           filepath_tmp[MAXPATH] = {'\0'};
+    char                           filepath[MAXPATH] = {'\0'};
+    struct stat                    statbuf;
+    FILE*                          fp = NULL;
 
     /* 64 + 64 + 1 + 1 - 1 */
-    /* nspname + relname + . + \n - 1个\0 */
+    /* nspname + relname + . + \\n - 1 null terminator */
     char nsp_relname[129] = {'\0'};
 
     snprintf(filepath_tmp, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET_TMP);
     snprintf(filepath, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET);
 
-    /* 判断数据集临时文件是否存在 */
+    /* Check if dataset temporary file exists */
     if (0 == stat(filepath_tmp, &statbuf))
     {
-        /* 存在, 先unlink掉 */
+        /* Exists, unlink it first */
         osal_durable_unlink(filepath_tmp, RLOG_DEBUG);
     }
 
-    /* 打开数据集文件 */
+    /* Open dataset file */
     fp = osal_allocate_file(filepath_tmp, "w+");
 
-    /* 遍历pg_class系统表, 挑选符合过滤条件的数据集 */
+    /* Iterate through pg_class system table to select datasets matching filter conditions */
     hash_seq_init(&status, class);
     while (NULL != (class_value_entry = hash_seq_search(&status)))
     {
-        Oid temp_nsp_oid = InvalidOid;
+        Oid  temp_nsp_oid = INVALIDOID;
         bool temp_nsp_find = false;
 
         temp_class = class_value_entry->class;
 
-        /* 只保留r和p */
+        /* Only keep 'r' and 'p' */
         if (!(temp_class->relkind == 'r' || temp_class->relkind == 'p'))
         {
             continue;
@@ -447,21 +443,20 @@ bool filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namespace, HT
 
         if (tbexcludes)
         {
-            ListCell *temp_cell = NULL;
-            bool exclude = false;
+            ListCell* temp_cell = NULL;
+            bool      exclude = false;
 
-            foreach(temp_cell, tbexcludes)
+            foreach (temp_cell, tbexcludes)
             {
-                filter_pair *temp_pair = (filter_pair *) lfirst(temp_cell);
-                if (cmp_regexbase(temp_pair->sch, temp_nsp->nspname.data)
-                 && cmp_regexbase(temp_pair->table, temp_class->relname.data))
+                filter_pair* temp_pair = (filter_pair*)lfirst(temp_cell);
+                if (cmp_regexbase(temp_pair->sch, temp_nsp->nspname.data) &&
+                    cmp_regexbase(temp_pair->table, temp_class->relname.data))
                 {
                     exclude = true;
                     break;
                 }
-
             }
-            /* 符合exclude正则表达式, 排除 */
+            /* Matches exclude regex, skip this record */
             if (exclude)
             {
                 continue;
@@ -470,39 +465,38 @@ bool filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namespace, HT
 
         if (tbincludes)
         {
-            ListCell *temp_cell = NULL;
-            bool include = false;
+            ListCell* temp_cell = NULL;
+            bool      include = false;
 
-            foreach(temp_cell, tbincludes)
+            foreach (temp_cell, tbincludes)
             {
-                filter_pair *temp_pair = (filter_pair *) lfirst(temp_cell);
-                if (cmp_regexbase(temp_pair->sch, temp_nsp->nspname.data)
-                 && cmp_regexbase(temp_pair->table, temp_class->relname.data))
+                filter_pair* temp_pair = (filter_pair*)lfirst(temp_cell);
+                if (cmp_regexbase(temp_pair->sch, temp_nsp->nspname.data) &&
+                    cmp_regexbase(temp_pair->table, temp_class->relname.data))
                 {
                     include = true;
                     break;
                 }
-
             }
-            /* 不符合include正则表达式, 排除 */
+            /* Does not match include regex, exclude */
             if (!include)
             {
                 continue;
             }
         }
 
-        /* 写入该条记录 */
+        /* Write this record */
         fwrite(nsp_relname, strlen(nsp_relname), 1, fp);
 
-        /* 重置 */
+        /* Reset */
         rmemset1(nsp_relname, 0, 0, 129);
     }
 
-    /* 关闭临时文件 */
+    /* Close temporary file */
     osal_free_file(fp);
 
-    /* 将临时文件重命名 */
-    if (osal_durable_rename(filepath_tmp, filepath, RLOG_WARNING) != 0) 
+    /* Rename temporary file */
+    if (osal_durable_rename(filepath_tmp, filepath, RLOG_WARNING) != 0)
     {
         elog(RLOG_ERROR, "Error renaming file %s to %s", filepath_tmp, filepath);
     }
@@ -510,42 +504,44 @@ bool filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namespace, HT
 }
 
 /*
- * 加载同步数据集
- * 1. 初始化所需变量与结构, 初始化正则匹配结构, 打开过滤文件
- * 2. 从文件开始位置, 使用fgets()每次读取一行数据
- * 3. 保存数据到哈希表dataset2oid中, 直到fgets()返回NULL
- * 4. 遍历class哈希表, 查询namespace哈希表, 获取匹配的oid保存在dataset2oid中
- * 5. 遍历dataset2oid哈希表, 去除无效数据, 保存oid2dataset哈希表
- * 6. 清理dataset2oid哈希表, 返回oid2dataset哈希表
+ * Load sync dataset
+ * 1. Initialize required variables and structures, initialize regex matching structures, open
+ * filter file
+ * 2. From file start, use fgets() to read one line at a time
+ * 3. Save data to hash table dataset2oid until fgets() returns NULL
+ * 4. Iterate through class hash table, query namespace hash table, save matching oids to
+ * dataset2oid
+ * 5. Iterate through dataset2oid hash table, remove invalid data, save to oid2dataset hash table
+ * 6. Cleanup dataset2oid hash table, return oid2dataset hash table
  */
-HTAB *filter_dataset_load(HTAB* namespace, HTAB* class)
+HTAB* filter_dataset_load(HTAB* namespace, HTAB* class)
 {
-    FILE *fp = NULL;
-    HASH_SEQ_STATUS status_class;
-    HASH_SEQ_STATUS status_d2o;
-    catalog_class_value *class_value_entry = NULL;
-    catalog_namespace_value *nsp_value_entry = NULL;
-    pg_parser_sysdict_pgclass *temp_class = NULL;
-    pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
-    filter_dataset2oidnode *scan_d2o_entry = NULL;
-    HTAB *dataset2oid_htab = NULL;
-    HTAB *oid2dataset_htab = NULL;
-    HASHCTL hashCtl_d2o = {'\0'};
-    HASHCTL hashCtl_o2d = {'\0'};
-    struct stat st;
-    char filepath[MAXPATH] = {'\0'};
-    char fline[1024] = {'\0'};
-    char temp_nspname[64] = {'\0'};
-    char temp_relname[64] = {'\0'};
-    int line_num = 0;
+    FILE*                          fp = NULL;
+    HASH_SEQ_STATUS                status_class;
+    HASH_SEQ_STATUS                status_d2o;
+    catalog_class_value*           class_value_entry = NULL;
+    catalog_namespace_value*       nsp_value_entry = NULL;
+    pg_parser_sysdict_pgclass*     temp_class = NULL;
+    pg_parser_sysdict_pgnamespace* temp_nsp = NULL;
+    filter_dataset2oidnode*        scan_d2o_entry = NULL;
+    HTAB*                          dataset2oid_htab = NULL;
+    HTAB*                          oid2dataset_htab = NULL;
+    HASHCTL                        hashCtl_d2o = {'\0'};
+    HASHCTL                        hashCtl_o2d = {'\0'};
+    struct stat                    st;
+    char                           filepath[MAXPATH] = {'\0'};
+    char                           fline[1024] = {'\0'};
+    char                           temp_nspname[64] = {'\0'};
+    char                           temp_relname[64] = {'\0'};
+    int                            line_num = 0;
 
-    /* 获取文件路径 */
+    /* Get file path */
     snprintf(filepath, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET);
 
-    /* 查看文件是否存在 */
-    if(-1 == stat(filepath, &st))
+    /* Check if file exists */
+    if (-1 == stat(filepath, &st))
     {
-        if(ENOENT != errno)
+        if (ENOENT != errno)
         {
             elog(RLOG_ERROR, "stat %s error, %s", filepath, strerror(errno));
         }
@@ -563,47 +559,44 @@ HTAB *filter_dataset_load(HTAB* namespace, HTAB* class)
         return NULL;
     }
 
-    /* 首先读取数据集, 创建dataset2oid hash */
+    /* First read dataset, create dataset2oid hash */
     hashCtl_d2o.keysize = sizeof(filter_dataset);
     hashCtl_d2o.entrysize = sizeof(filter_dataset2oidnode);
 
-    dataset2oid_htab = hash_create("filter_d2o_htab",
-                               256,
-                              &hashCtl_d2o,
-                               HASH_ELEM | HASH_BLOBS);
+    dataset2oid_htab = hash_create("filter_d2o_htab", 256, &hashCtl_d2o, HASH_ELEM | HASH_BLOBS);
 
-    while(fgets(fline, FILTER_MAXLINE, fp))
+    while (fgets(fline, FILTER_MAXLINE, fp))
     {
-        int line_len = 0;
-        filter_dataset temp_dataset_key= {{'\0'}};
-        filter_dataset2oidnode *temp_d2o_entry = NULL;
+        int                     line_len = 0;
+        filter_dataset          temp_dataset_key = {{'\0'}};
+        filter_dataset2oidnode* temp_d2o_entry = NULL;
 
         line_len = strlen(fline);
-        /* 排除换行符 */
+        /* Remove newline character */
         if ('\n' == fline[line_len - 1])
         {
             fline[line_len - 1] = '\0';
             line_len--;
             if (0 == line_len)
             {
-                /* 空行 */
+                /* Empty line */
                 continue;
             }
         }
-        /* windos文本排除回车符 */
+        /* Windows text remove carriage return */
         if ('\r' == fline[line_len - 1])
         {
             fline[line_len - 1] = '\0';
             line_len--;
             if (0 == line_len)
             {
-                /* 空行 */
+                /* Empty line */
                 continue;
             }
         }
         if (0 == line_len)
         {
-            /* 空行 */
+            /* Empty line */
             continue;
         }
         filter_dataset_str2table(fline, temp_nspname, temp_relname);
@@ -618,38 +611,38 @@ HTAB *filter_dataset_load(HTAB* namespace, HTAB* class)
         strcpy(temp_d2o_entry->dataset.schema, temp_dataset_key.schema);
         strcpy(temp_d2o_entry->dataset.table, temp_dataset_key.table);
 
-        /* oid暂时赋值为0 */
-        temp_d2o_entry->oid = InvalidOid;
+        /* Oid temporarily assigned as 0 */
+        temp_d2o_entry->oid = INVALIDOID;
 
-        /* 重置 */
+        /* Reset */
         rmemset1(temp_nspname, 0, 0, 64);
         rmemset1(temp_relname, 0, 0, 64);
 
-        /* 计数 */
+        /* Count */
         line_num++;
     }
 
-    /* 没有数据集 */
+    /* No dataset */
     if (line_num == 0)
     {
-        /* 清理, 返回NULL */
+        /* Cleanup, return NULL */
         hash_destroy(dataset2oid_htab);
         return NULL;
     }
 
-    /* 遍历pg_class系统表, 填充dataset2oid哈希表的oid */
+    /* Iterate through pg_class system table to fill oid in dataset2oid hash table */
     hash_seq_init(&status_class, class);
     while (NULL != (class_value_entry = hash_seq_search(&status_class)))
     {
-        filter_dataset temp_dataset_key= {{'\0'}};
-        filter_dataset2oidnode *temp_d2o_entry = NULL;
-        Oid temp_nsp_oid = InvalidOid;
-        bool temp_nsp_find = false;
-        bool temp_d2o_find = false;
+        filter_dataset          temp_dataset_key = {{'\0'}};
+        filter_dataset2oidnode* temp_d2o_entry = NULL;
+        Oid                     temp_nsp_oid = INVALIDOID;
+        bool                    temp_nsp_find = false;
+        bool                    temp_d2o_find = false;
 
         temp_class = class_value_entry->class;
 
-        /* 只保留r和p */
+        /* Only keep 'r' and 'p' */
         if (!(temp_class->relkind == 'r' || temp_class->relkind == 'p'))
         {
             continue;
@@ -666,34 +659,31 @@ HTAB *filter_dataset_load(HTAB* namespace, HTAB* class)
         strcpy(temp_dataset_key.schema, temp_nsp->nspname.data);
         strcpy(temp_dataset_key.table, temp_class->relname.data);
 
-        temp_d2o_entry = hash_search(dataset2oid_htab, &temp_dataset_key, HASH_FIND, &temp_d2o_find);
+        temp_d2o_entry =
+            hash_search(dataset2oid_htab, &temp_dataset_key, HASH_FIND, &temp_d2o_find);
         if (temp_d2o_find)
         {
             temp_d2o_entry->oid = temp_class->oid;
         }
     }
 
-    /* 创建oid2dataset hash */
+    /* Create oid2dataset hash */
     hashCtl_o2d.keysize = sizeof(Oid);
     hashCtl_o2d.entrysize = sizeof(filter_oid2datasetnode);
 
-    oid2dataset_htab = hash_create("filter_o2d_htab",
-                               256,
-                              &hashCtl_o2d,
-                               HASH_ELEM | HASH_BLOBS);
+    oid2dataset_htab = hash_create("filter_o2d_htab", 256, &hashCtl_o2d, HASH_ELEM | HASH_BLOBS);
 
-    /* 遍历dataset2oid生成oid2dataset */
+    /* Iterate through dataset2oid to generate oid2dataset */
     hash_seq_init(&status_d2o, dataset2oid_htab);
     while (NULL != (scan_d2o_entry = hash_seq_search(&status_d2o)))
     {
-        Oid temp_oid = scan_d2o_entry->oid;
-        filter_oid2datasetnode *temp_o2d_entry = NULL;
+        Oid                     temp_oid = scan_d2o_entry->oid;
+        filter_oid2datasetnode* temp_o2d_entry = NULL;
 
-        if (temp_oid == InvalidOid)
+        if (temp_oid == INVALIDOID)
         {
             elog(RLOG_WARNING, "when convert dataset2oid to oid2dataset, oid invalid, table: %s.%s",
-                                scan_d2o_entry->dataset.schema,
-                                scan_d2o_entry->dataset.table);
+                 scan_d2o_entry->dataset.schema, scan_d2o_entry->dataset.table);
         }
 
         temp_o2d_entry = hash_search(oid2dataset_htab, &temp_oid, HASH_ENTER, NULL);
@@ -706,40 +696,36 @@ HTAB *filter_dataset_load(HTAB* namespace, HTAB* class)
         strcpy(temp_o2d_entry->dataset.table, scan_d2o_entry->dataset.table);
     }
 
-    /* 清理工作 */
+    /* Cleanup work */
     hash_destroy(dataset2oid_htab);
     return oid2dataset_htab;
 }
 
-
 /*
- * 加载事务过滤数据集
- * 1. 遍历namespace哈希表，获取namespaceoid
- * 2. 遍历class哈希表，查找namespaceoid和tablename匹配的table的oid
- * 3. 生成oid2dataset哈希表, 返回oid2dataset哈希表
+ * Load transaction filter dataset
+ * 1. Iterate through namespace hash table to get namespaceoid
+ * 2. Iterate through class hash table, find oid of table matching namespaceoid and tablename
+ * 3. Generate oid2dataset hash table, return oid2dataset hash table
  */
-HTAB *filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
+HTAB* filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
 {
-    HASH_SEQ_STATUS status_class;
-    HASH_SEQ_STATUS status_nap;
-    bool findnsp                                = false;
-    HASHCTL hashCtl_o2d                         = {'\0'};
-    char* schema                                = NULL;
-    HTAB *oid2dataset_htab                      = NULL;
-    catalog_class_value *class_entry     = NULL;
-    catalog_namespace_value *nsp_entry   = NULL;
-    pg_parser_sysdict_pgclass *temp_class    = NULL;
-    pg_parser_sysdict_pgnamespace *temp_nsp  = NULL;
-    filter_oid2datasetnode *o2d_entry    = NULL;
+    HASH_SEQ_STATUS                status_class;
+    HASH_SEQ_STATUS                status_nap;
+    bool                           findnsp = false;
+    HASHCTL                        hashCtl_o2d = {'\0'};
+    char*                          schema = NULL;
+    HTAB*                          oid2dataset_htab = NULL;
+    catalog_class_value*           class_entry = NULL;
+    catalog_namespace_value*       nsp_entry = NULL;
+    pg_parser_sysdict_pgclass*     temp_class = NULL;
+    pg_parser_sysdict_pgnamespace* temp_nsp = NULL;
+    filter_oid2datasetnode*        o2d_entry = NULL;
 
-    /* 创建oid2dataset hash */
+    /* Create oid2dataset hash */
     hashCtl_o2d.keysize = sizeof(Oid);
     hashCtl_o2d.entrysize = sizeof(filter_oid2datasetnode);
 
-    oid2dataset_htab = hash_create("filter_o2d_htab",
-                                    128,
-                                    &hashCtl_o2d,
-                                    HASH_ELEM | HASH_BLOBS);
+    oid2dataset_htab = hash_create("filter_o2d_htab", 128, &hashCtl_o2d, HASH_ELEM | HASH_BLOBS);
 
     schema = guc_getConfigOption(CFG_KEY_CATALOGSCHEMA);
     if (NULL == schema)
@@ -747,7 +733,8 @@ HTAB *filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
         return oid2dataset_htab;
     }
 
-    /* 遍历pg_namespace系统表, 根据schema获取pg_parser_sysdict_pgnamespace */
+    /* Iterate through pg_namespace system table, get pg_parser_sysdict_pgnamespace based on schema
+     */
     hash_seq_init(&status_nap, namespace);
     while (NULL != (nsp_entry = hash_seq_search(&status_nap)))
     {
@@ -765,13 +752,13 @@ HTAB *filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
         return oid2dataset_htab;
     }
 
-    /* 遍历pg_class系统表, 获取table的oid */
+    /* Iterate through pg_class system table to get table's oid */
     hash_seq_init(&status_class, class);
     while (NULL != (class_entry = hash_seq_search(&status_class)))
     {
         temp_class = class_entry->class;
-        if (0 == strcmp(temp_class->relname.data, SYNC_STATUSTABLE_NAME)
-            && temp_nsp->oid == temp_class->relnamespace)
+        if (0 == strcmp(temp_class->relname.data, SYNC_STATUSTABLE_NAME) &&
+            temp_nsp->oid == temp_class->relnamespace)
         {
             o2d_entry = hash_search(oid2dataset_htab, &temp_class->oid, HASH_ENTER, NULL);
             if (!o2d_entry)
@@ -789,20 +776,20 @@ HTAB *filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
 }
 
 /*
- * 重新加载数据集
- * 1. 调用filter_dataset_free释放原有数据集
- * 2. 调用filter_dataset_load加载数据库
- * 3. 返回读取的数据集哈希表
+ * Reload dataset
+ * 1. Call filter_dataset_free to release original dataset
+ * 2. Call filter_dataset_load to load from database
+ * 3. Return the loaded dataset hash table
  */
-HTAB *filter_dataset_reload(HTAB* namespace, HTAB* class, HTAB* oid2datasets)
+HTAB* filter_dataset_reload(HTAB* namespace, HTAB* class, HTAB* oid2datasets)
 {
     filter_dataset_free(oid2datasets);
     return filter_dataset_load(namespace, class);
 }
 
 /*
- * 判断DML是否存在于需要捕获的表记录中
- * 调用filter_dataset_byoid
+ * Check if DML exists in the table records that need to be captured
+ * Calls filter_dataset_byoid
  */
 bool filter_dataset_dml(HTAB* oid2datasets, Oid oid)
 {
@@ -814,8 +801,8 @@ bool filter_dataset_dml(HTAB* oid2datasets, Oid oid)
 }
 
 /*
- * 判断DDL是否存在于需要捕获的表记录中
- * 调用filter_dataset_byoid
+ * Check if DDL exists in the table records that need to be captured
+ * Calls filter_dataset_byoid
  */
 bool filter_dataset_ddl(HTAB* oid2datasets, Oid oid)
 {
@@ -827,23 +814,22 @@ bool filter_dataset_ddl(HTAB* oid2datasets, Oid oid)
 }
 
 /*
- * 判断CREATE TABLE语句的表是否符合捕获逻辑
+ * Check if the table in CREATE TABLE statement matches the capture logic
  */
 bool filter_dataset_matchforcreate(List* tablepattern, char* schema, char* table)
 {
-    bool result = false;
-    ListCell *lc = NULL;
-    if(NULL == tablepattern)
+    bool      result = false;
+    ListCell* lc = NULL;
+    if (NULL == tablepattern)
     {
         return true;
     }
 
-    foreach(lc, tablepattern)
+    foreach (lc, tablepattern)
     {
-        filter_pair *temp_pair = (filter_pair *) lfirst(lc);
-        /* 符合正则表达式 result 赋值为 true */
-        if (cmp_regexbase(temp_pair->sch, schema)
-            && cmp_regexbase(temp_pair->table, table))
+        filter_pair* temp_pair = (filter_pair*)lfirst(lc);
+        /* Matches regex, set result to true */
+        if (cmp_regexbase(temp_pair->sch, schema) && cmp_regexbase(temp_pair->table, table))
         {
             result = true;
             break;
@@ -854,15 +840,16 @@ bool filter_dataset_matchforcreate(List* tablepattern, char* schema, char* table
 }
 
 /*
- * 向数据集哈希中添加一条记录
+ * Add a record to dataset hash
  */
 bool filter_dataset_add(HTAB* oid2datasets, Oid oid, char* schema, char* table)
 {
-    filter_oid2datasetnode *o2d_entry = NULL;
+    filter_oid2datasetnode* o2d_entry = NULL;
     o2d_entry = hash_search(oid2datasets, &oid, HASH_ENTER, NULL);
     if (!o2d_entry)
     {
-        elog(RLOG_WARNING, "can't find entry to oid2datasets hash, oid: %u, %s.%s", oid, schema, table);
+        elog(RLOG_WARNING, "can't find entry to oid2datasets hash, oid: %u, %s.%s", oid, schema,
+             table);
     }
 
     o2d_entry->oid = oid;
@@ -873,15 +860,16 @@ bool filter_dataset_add(HTAB* oid2datasets, Oid oid, char* schema, char* table)
 }
 
 /*
- * 修改数据集哈希中的一条记录
+ * Modify a record in dataset hash
  */
 bool filter_dataset_modify(HTAB* oid2datasets, Oid oid, char* schema, char* table)
 {
-    filter_oid2datasetnode *o2d_entry = NULL;
+    filter_oid2datasetnode* o2d_entry = NULL;
     o2d_entry = hash_search(oid2datasets, &oid, HASH_FIND, NULL);
     if (!o2d_entry)
     {
-        elog(RLOG_DEBUG, "can't find entry from oid2datasets hash, oid: %u, %s.%s", oid, schema, table);
+        elog(RLOG_DEBUG, "can't find entry from oid2datasets hash, oid: %u, %s.%s", oid, schema,
+             table);
         return false;
     }
 
@@ -893,7 +881,7 @@ bool filter_dataset_modify(HTAB* oid2datasets, Oid oid, char* schema, char* tabl
 }
 
 /*
- * 删除数据集哈希中的一条记录
+ * Delete a record from dataset hash
  */
 bool filter_dataset_delete(HTAB* oid2datasets, Oid oid)
 {
@@ -909,52 +897,52 @@ bool filter_dataset_delete(HTAB* oid2datasets, Oid oid)
 }
 
 /*
- * 数据集落盘
+ * Persist dataset to disk
  */
 bool filter_dataset_flush(HTAB* oid2datasets)
 {
-    HASH_SEQ_STATUS status;
-    struct stat statbuf;
-    FILE *fp = NULL;
-    filter_oid2datasetnode *o2d_entry = NULL;
-    char filepath_tmp[MAXPATH] = {'\0'};
-    char filepath[MAXPATH] = {'\0'};
+    HASH_SEQ_STATUS         status;
+    struct stat             statbuf;
+    FILE*                   fp = NULL;
+    filter_oid2datasetnode* o2d_entry = NULL;
+    char                    filepath_tmp[MAXPATH] = {'\0'};
+    char                    filepath[MAXPATH] = {'\0'};
 
     /* 64 + 64 + 1 + 1 - 1 */
-    /* nspname + relname + . + \n - 1个\0 */
+    /* nspname + relname + . + \\n - 1 null terminator */
     char nsp_relname[129] = {'\0'};
 
     snprintf(filepath_tmp, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET_TMP);
     snprintf(filepath, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET);
 
-    /* 判断数据集临时文件是否存在 */
+    /* Check if dataset temporary file exists */
     if (0 == stat(filepath_tmp, &statbuf))
     {
-        /* 存在, 先unlink掉 */
+        /* Exists, unlink it first */
         osal_durable_unlink(filepath_tmp, RLOG_DEBUG);
     }
 
-    /* 打开数据集文件 */
+    /* Open dataset file */
     fp = osal_allocate_file(filepath_tmp, "w+");
 
-    /* 遍历pg_class系统表, 挑选符合过滤条件的数据集 */
+    /* Iterate through pg_class system table to select datasets matching filter conditions */
     hash_seq_init(&status, oid2datasets);
     while (NULL != (o2d_entry = hash_seq_search(&status)))
     {
         sprintf(nsp_relname, "%s.%s\n", o2d_entry->dataset.schema, o2d_entry->dataset.table);
 
-        /* 写入该条记录 */
+        /* Write this record */
         fwrite(nsp_relname, strlen(nsp_relname), 1, fp);
 
-        /* 重置 */
+        /* Reset */
         rmemset1(nsp_relname, 0, 0, 129);
     }
 
-    /* 关闭临时文件 */
+    /* Close temporary file */
     osal_free_file(fp);
 
-    /* 将临时文件重命名 */
-    if (osal_durable_rename(filepath_tmp, filepath, RLOG_WARNING) != 0) 
+    /* Rename temporary file */
+    if (osal_durable_rename(filepath_tmp, filepath, RLOG_WARNING) != 0)
     {
         elog(RLOG_ERROR, "Error renaming file %s to %s", filepath_tmp, filepath);
     }
@@ -962,7 +950,7 @@ bool filter_dataset_flush(HTAB* oid2datasets)
 }
 
 /*
- * 数据集哈希释放
+ * Free dataset hash
  */
 void filter_dataset_free(HTAB* oid2datasets)
 {
@@ -971,10 +959,10 @@ void filter_dataset_free(HTAB* oid2datasets)
 
 refresh_tables* filter_dataset_buildrefreshtables(HTAB* hfilters)
 {
-    HASH_SEQ_STATUS status;
-    filter_oid2datasetnode *entry = NULL;
-    refresh_table *table = NULL;
-    refresh_tables *refreshtables = NULL;
+    HASH_SEQ_STATUS         status;
+    filter_oid2datasetnode* entry = NULL;
+    refresh_table*          table = NULL;
+    refresh_tables*         refreshtables = NULL;
 
     refreshtables = refresh_tables_init();
 
@@ -982,7 +970,6 @@ refresh_tables* filter_dataset_buildrefreshtables(HTAB* hfilters)
     {
         return refreshtables;
     }
-    
 
     hash_seq_init(&status, hfilters);
     while ((entry = hash_seq_search(&status)) != NULL)
@@ -1002,38 +989,37 @@ refresh_tables* filter_dataset_buildrefreshtables(HTAB* hfilters)
     return refreshtables;
 }
 
-bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List* sysdicthis, HTAB* syncdatasets)
+bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List* sysdicthis,
+                                   HTAB* syncdatasets)
 {
-    bool found = false;
-    bool haschange = false;
-    char* table = NULL;
-    char* schema = NULL;
-    ListCell* lc = NULL;
-    catalogdata* catalog_data = NULL;
-    catalog_class_value* classvalue = NULL;
+    bool                     found = false;
+    bool                     haschange = false;
+    char*                    table = NULL;
+    char*                    schema = NULL;
+    ListCell*                lc = NULL;
+    catalogdata*             catalog_data = NULL;
+    catalog_class_value*     classvalue = NULL;
     catalog_namespace_value* nspvalue = NULL;
 
     if (NULL == syncdatasets)
     {
         return false;
     }
-    
-    foreach(lc, sysdicthis)
+
+    foreach (lc, sysdicthis)
     {
         catalog_data = (catalogdata*)lfirst(lc);
 
-        if(NULL == catalog_data || NULL == catalog_data->catalog)
+        if (NULL == catalog_data || NULL == catalog_data->catalog)
         {
             return false;
         }
-        if(CATALOG_TYPE_CLASS == catalog_data->type)
+        if (CATALOG_TYPE_CLASS == catalog_data->type)
         {
             classvalue = (catalog_class_value*)catalog_data->catalog;
-            elog(RLOG_DEBUG, "syncdatasets op:%d, classvalue, %s, %u.%u",
-                            catalog_data->op,
-                            classvalue->class->relname.data,
-                            classvalue->class->oid,
-                            classvalue->class->relnamespace);
+            elog(RLOG_DEBUG, "syncdatasets op:%d, classvalue, %s, %u.%u", catalog_data->op,
+                 classvalue->class->relname.data, classvalue->class->oid,
+                 classvalue->class->relnamespace);
 
             if ('p' != classvalue->class->relkind && 'r' != classvalue->class->relkind)
             {
@@ -1041,7 +1027,8 @@ bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List*
             }
 
             table = classvalue->class->relname.data;
-            nspvalue = hash_search(namespace, &(classvalue->class->relnamespace), HASH_FIND, &found);
+            nspvalue =
+                hash_search(namespace, &(classvalue->class->relnamespace), HASH_FIND, &found);
             if (found)
             {
                 schema = nspvalue->namespace->nspname.data;
@@ -1051,26 +1038,26 @@ bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List*
                 catalog_data->op = CATALOG_OP_DELETE;
             }
 
-            if(CATALOG_OP_INSERT == catalog_data->op)
+            if (CATALOG_OP_INSERT == catalog_data->op)
             {
                 if (filter_dataset_match_addtablepattern(addtablepattern, schema, table))
                 {
-                    if(filter_dataset_add(syncdatasets, classvalue->class->oid, schema, table))
+                    if (filter_dataset_add(syncdatasets, classvalue->class->oid, schema, table))
                     {
                         haschange = true;
                     }
                 }
             }
-            else if(CATALOG_OP_DELETE == catalog_data->op)
+            else if (CATALOG_OP_DELETE == catalog_data->op)
             {
-                if(filter_dataset_delete(syncdatasets, classvalue->class->oid))
+                if (filter_dataset_delete(syncdatasets, classvalue->class->oid))
                 {
                     haschange = true;
                 }
             }
-            else if(CATALOG_OP_UPDATE == catalog_data->op)
+            else if (CATALOG_OP_UPDATE == catalog_data->op)
             {
-                if(filter_dataset_modify(syncdatasets, classvalue->class->oid, schema, table))
+                if (filter_dataset_modify(syncdatasets, classvalue->class->oid, schema, table))
                 {
                     haschange = true;
                 }
@@ -1086,13 +1073,12 @@ bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List*
 
 void filter_dataset_updatedatasets_onlinerefresh(HTAB* dataset, List* tables_list)
 {
-    ListCell *cell = NULL;
+    ListCell* cell = NULL;
 
-    foreach(cell, tables_list)
+    foreach (cell, tables_list)
     {
-        refresh_table *table = lfirst(cell);
+        refresh_table* table = lfirst(cell);
 
         filter_dataset_add(dataset, table->oid, table->schema, table->table);
     }
 }
-

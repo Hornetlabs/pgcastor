@@ -21,7 +21,7 @@
 #include "xmanager/xmanager_metricintegratenode.h"
 #include "xmanager/xmanager_metric.h"
 #include "xmanager/xmanager_metricprogressnode.h"
-/* 初始化 node 节点 */
+/* Initialize node */
 xmanager_metricnode* xmanager_metricprogressnode_init(void)
 {
     xmanager_metricprogressnode* xprogressmetricnode = NULL;
@@ -40,7 +40,7 @@ xmanager_metricnode* xmanager_metricprogressnode_init(void)
     return (xmanager_metricnode*)xprogressmetricnode;
 }
 
-/* 清理 metric progress 节点内存 */
+/* Free metric progress node memory */
 void xmanager_metricprogressnode_destroy(xmanager_metricnode* metricnode)
 {
     xmanager_metricprogressnode* xprogressmetricnode = NULL;
@@ -52,24 +52,22 @@ void xmanager_metricprogressnode_destroy(xmanager_metricnode* metricnode)
     xprogressmetricnode = (xmanager_metricprogressnode*)metricnode;
 
     dlist_free(xprogressmetricnode->progressjop, xmanager_metricnode_destroyvoid);
-    
+
     rfree(metricnode);
 }
 
-/* 将 progress node 节点序列化 */
-bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
-                                               uint8** blk,
-                                               int* blksize,
-                                               int* blkstart)
+/* Serialize progress node */
+bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode, uint8** blk, int* blksize,
+                                        int* blkstart)
 {
-    bool bnew                                               = false;
-    int len                                                 = 0;
-    int freespace                                           = 0;
-    int ivalue                                              = 0;
-    int jobcnt                                              = 0;
-    uint8* uptr                                             = NULL;
-    dlistnode* dlnode                                       = NULL;
-    xmanager_metricnode* xmetricnode                 = NULL;
+    bool                         bnew = false;
+    int                          len = 0;
+    int                          freespace = 0;
+    int                          ivalue = 0;
+    int                          jobcnt = 0;
+    uint8*                       uptr = NULL;
+    dlistnode*                   dlnode = NULL;
+    xmanager_metricnode*         xmetricnode = NULL;
     xmanager_metricprogressnode* xmetricprogressnode = NULL;
 
     if (NULL == metricnode)
@@ -79,23 +77,23 @@ bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
 
     xmetricprogressnode = (xmanager_metricprogressnode*)metricnode;
 
-    /* node 节点的总长度 */
+    /* Total length of node */
     len = 4;
 
-    /* 
-     * 计算总长度 
-     *  1、metricnode 长度
-     *  2、progressnode 长度
+    /*
+     * Calculate total length
+     *  1、metricnode length
+     *  2、progressnode length
      */
-    /* metricnode 长度 */
+    /* metricnode length */
     len += xmanager_metricnode_serialsize(metricnode);
 
-    /* todo progress node 私有长度 */
+    /* TODO: progress node private length */
 
     /* job cnt */
     len += 4;
 
-    for(dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode; dlnode = dlnode->next)
+    for (dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode; dlnode = dlnode->next)
     {
         xmetricnode = (xmanager_metricnode*)dlnode->value;
 
@@ -119,17 +117,16 @@ bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
         {
             len += strlen(xmetricnode->conf);
         }
-        
 
         jobcnt++;
     }
 
-    /* 查看空间是否足够, 不够那么申请空间 */
+    /* Check if space is sufficient, allocate more if needed */
     uptr = *blk;
     freespace = *blksize - *blkstart;
     while (len > freespace)
     {
-        /* 重新申请空间 */
+        /* Reallocate space */
         bnew = true;
         *blksize = (*blksize) * 2;
         freespace = *blksize - *blkstart;
@@ -148,20 +145,20 @@ bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
         *blk = uptr;
     }
 
-    /* 总长度序列化 */
+    /* Serialize total length */
     uptr += *blkstart;
     ivalue = len;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     *blkstart += 4;
-    
-    /* 重新指向头部 */
+
+    /* Reset to head */
     uptr = *blk;
 
-    /* 通用内容格式化 */
+    /* Format common content */
     xmanager_metricnode_serial(&xmetricprogressnode->base, uptr, blkstart);
 
-    /* 将 progress node 节点的内容序列化 */
+    /* Serialize progress node content */
     uptr += *blkstart;
 
     /* jobcnt */
@@ -171,7 +168,7 @@ bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
     uptr += 4;
     *blkstart += 4;
 
-    for(dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode; dlnode = dlnode->next)
+    for (dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode; dlnode = dlnode->next)
     {
         xmetricnode = (xmanager_metricnode*)dlnode->value;
 
@@ -224,16 +221,16 @@ bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
     return true;
 }
 
-/* 反序列化为 progress node 节点 */
+/* Deserialize to progress node */
 xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkstart)
 {
-    int ivalue                                              = 0;
-    int jobcnt                                              = 0;
-    int jobtype                                             = 0;
-    int idx_jobcnt                                          = 0;
-    char* jobname                                           = NULL;
-    uint8* uptr                                             = NULL;
-    xmanager_metricnode* metricnode                  = NULL;
+    int                          ivalue = 0;
+    int                          jobcnt = 0;
+    int                          jobtype = 0;
+    int                          idx_jobcnt = 0;
+    char*                        jobname = NULL;
+    uint8*                       uptr = NULL;
+    xmanager_metricnode*         metricnode = NULL;
     xmanager_metricprogressnode* xmetricprogressnode = NULL;
 
     xmetricprogressnode = (xmanager_metricprogressnode*)xmanager_metricprogressnode_init();
@@ -243,7 +240,7 @@ xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkst
         return NULL;
     }
 
-    /* 获取基础信息 */
+    /* Get base information */
     if (false == xmanager_metricnode_deserial(&xmetricprogressnode->base, blk, blkstart))
     {
         elog(RLOG_WARNING, "xmanager metric progress deserial error");
@@ -307,7 +304,8 @@ xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkst
         *blkstart += 4;
         if (0 == ivalue)
         {
-            xmetricprogressnode->progressjop = dlist_put(xmetricprogressnode->progressjop, metricnode);
+            xmetricprogressnode->progressjop =
+                dlist_put(xmetricprogressnode->progressjop, metricnode);
             metricnode = NULL;
             continue;
         }
@@ -331,11 +329,12 @@ xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkst
     return (xmanager_metricnode*)xmetricprogressnode;
 }
 
-/* 从配置文件中获取key--valve */
-static bool xmanager_metricprogressnode_getdatafromcfgfile(const char *config_file, char* key, char* data)
+/* Get key-value pairs from configuration file */
+static bool xmanager_metricprogressnode_getdatafromcfgfile(const char* config_file, char* key,
+                                                           char* data)
 {
-    FILE *fp = NULL;
-    char fline[1024];
+    FILE* fp = NULL;
+    char  fline[1024];
 
     fp = osal_file_fopen(config_file, "rb");
     if (!fp)
@@ -344,22 +343,19 @@ static bool xmanager_metricprogressnode_getdatafromcfgfile(const char *config_fi
         return false;
     }
 
-    /* 读取一行数据 */
+    /* Read a line of data */
     rmemset1(fline, 0, '\0', sizeof(fline));
     while (osal_file_fgets(fp, sizeof(fline), fline) != NULL)
     {
-        bool quota = false;
+        bool  quota = false;
         char* uptr = fline;
-        int pos = 0;
-        int len = 0;
+        int   pos = 0;
+        int   len = 0;
 
-        /* 跳过 开头的 空字符等信息 */
-        while('\0' != *uptr)
+        /* Skip leading whitespace characters */
+        while ('\0' != *uptr)
         {
-            if(' ' != *uptr
-                && '\t' != *uptr
-                && '\r' != *uptr
-                && '\n' != *uptr)
+            if (' ' != *uptr && '\t' != *uptr && '\r' != *uptr && '\n' != *uptr)
             {
                 break;
             }
@@ -367,21 +363,17 @@ static bool xmanager_metricprogressnode_getdatafromcfgfile(const char *config_fi
             pos++;
         }
 
-        /* 跳过空行和注释行 */
-        if('\0' == *uptr || '#' == *uptr)
+        /* Skip empty lines and comments */
+        if ('\0' == *uptr || '#' == *uptr)
         {
             rmemset1(fline, 0, '\0', sizeof(fline));
             continue;
         }
 
-        /* 获取key */
-        while('\0' != *uptr)
+        /* Get key */
+        while ('\0' != *uptr)
         {
-            if(' ' == *uptr
-                || '\t' == *uptr
-                || '\r' == *uptr
-                || '\n' == *uptr
-                || '=' == *uptr)
+            if (' ' == *uptr || '\t' == *uptr || '\r' == *uptr || '\n' == *uptr || '=' == *uptr)
             {
                 break;
             }
@@ -389,25 +381,21 @@ static bool xmanager_metricprogressnode_getdatafromcfgfile(const char *config_fi
             uptr++;
         }
 
-        /* 获取名称 */
-        if ( len != strlen(key)
-            || 0 != memcmp(key, fline + pos, len))
+        /* Get key/name */
+        if (len != strlen(key) || 0 != memcmp(key, fline + pos, len))
         {
             rmemset1(fline, 0, '\0', sizeof(fline));
             continue;
         }
         pos += len;
 
-        /* 获取 value */
+        /* Get value */
         len = 0;
 
-        /* 跳过 SPACE TABE 和 换行 */
-        while('\0'!= *uptr)
+        /* Skip spaces, tabs, and newline characters */
+        while ('\0' != *uptr)
         {
-            if(' ' != *uptr
-                && '\t' != *uptr
-                && '\r' != *uptr
-                && '\n' != *uptr)
+            if (' ' != *uptr && '\t' != *uptr && '\r' != *uptr && '\n' != *uptr)
             {
                 break;
             }
@@ -415,25 +403,22 @@ static bool xmanager_metricprogressnode_getdatafromcfgfile(const char *config_fi
             uptr++;
         }
 
-        if('=' != *uptr)
+        if ('=' != *uptr)
         {
-            /* 结束了 */
+            /* End of data */
             elog(RLOG_WARNING, "config data error");
             return false;
         }
 
-        /* 获取 value 值 */
-        /* 跳过 '=' 字符 */
+        /* Get value */
+        /* Skip '=' character */
         pos++;
         uptr++;
 
-        /* 跳过 空格 等字符 */
-        while('\0' != *uptr)
+        /* Skip spaces and other characters */
+        while ('\0' != *uptr)
         {
-            if(' ' != *uptr
-                && '\t' != *uptr
-                && '\r' != *uptr
-                && '\n' != *uptr)
+            if (' ' != *uptr && '\t' != *uptr && '\r' != *uptr && '\n' != *uptr)
             {
                 break;
             }
@@ -441,25 +426,25 @@ static bool xmanager_metricprogressnode_getdatafromcfgfile(const char *config_fi
             pos++;
         }
 
-        /* 跳过空行和注释行 */
-        if('\0' == *uptr || '#' == *uptr)
+        /* Skip empty lines and comment lines */
+        if ('\0' == *uptr || '#' == *uptr)
         {
-            /* 结束了 */
+            /* End of data */
             elog(RLOG_WARNING, "config data error");
             return false;
         }
 
-        /* 跳过 空格 等字符 */
-        /* 查看字符类型 */
-        if(*uptr == '"')
+        /* Skip spaces and other characters */
+        /* Check character type */
+        if (*uptr == '"')
         {
             uptr++;
             pos++;
             quota = true;
-            /* 获取去下一个 " 字符 */
-            while('\0' != *uptr)
+            /* Get the next '"' character */
+            while ('\0' != *uptr)
             {
-                if('"' == *uptr)
+                if ('"' == *uptr)
                 {
                     quota = false;
                     break;
@@ -468,20 +453,18 @@ static bool xmanager_metricprogressnode_getdatafromcfgfile(const char *config_fi
                 uptr++;
             }
 
-            if(true == quota)
+            if (true == quota)
             {
-                elog(RLOG_WARNING, "configuration data is incorrect, missing double quotation marks");
+                elog(RLOG_WARNING,
+                     "configuration data is incorrect, missing double quotation marks");
                 return false;
             }
         }
         else
         {
-            while('\0'!= *uptr)
+            while ('\0' != *uptr)
             {
-                if(' ' == *uptr
-                    || '\t' == *uptr
-                    || '\r' == *uptr
-                    || '\n' == *uptr)
+                if (' ' == *uptr || '\t' == *uptr || '\r' == *uptr || '\n' == *uptr)
                 {
                     break;
                 }
@@ -498,27 +481,27 @@ static bool xmanager_metricprogressnode_getdatafromcfgfile(const char *config_fi
     return true;
 }
 
-/* progress capture info 组装 */
-static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric,
-                                                               xmanager_metricnode* xmetricnode,
-                                                               dlist* job)
+/* Assemble progress capture info */
+static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric*     xmetric,
+                                                        xmanager_metricnode* xmetricnode,
+                                                        dlist*               job)
 {
-    bool find                                               = false;
-    uint8 u8value                                           = 0;
-    int rowlen                                              = 0;
-    int msglen                                              = 0;
-    int ivalue                                              = 0;
-    int rowcnt                                              = 0;
-    uint32 hi                                               = 0;
-    uint32 lo                                               = 0;
-    int64 dbtime                                            = 0;
-    uint8* rowuptr                                          = NULL;
-    uint8* uptr                                             = NULL;
-    PGconn *conn                                            = NULL;
-    PGresult *res                                           = NULL;
-    netpacket* npacket                               = NULL;
-    char conninfo[512]                                      = {'\0'};
-    char sql_exec[1024]                                     = {'\0'};
+    bool       find = false;
+    uint8      u8value = 0;
+    int        rowlen = 0;
+    int        msglen = 0;
+    int        ivalue = 0;
+    int        rowcnt = 0;
+    uint32     hi = 0;
+    uint32     lo = 0;
+    int64      dbtime = 0;
+    uint8*     rowuptr = NULL;
+    uint8*     uptr = NULL;
+    PGconn*    conn = NULL;
+    PGresult*  res = NULL;
+    netpacket* npacket = NULL;
+    char       conninfo[512] = {'\0'};
+    char       sql_exec[1024] = {'\0'};
 
     rmemset1(conninfo, 0, 0, 512);
     xmanager_metricprogressnode_getdatafromcfgfile(xmetricnode->conf, CFG_KEY_URL, conninfo);
@@ -530,7 +513,7 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
     }
 
     rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec,"SELECT pg_current_wal_lsn();" );
+    sprintf(sql_exec, "SELECT pg_current_wal_lsn();");
     res = conn_exec(conn, sql_exec);
     if (NULL == res)
     {
@@ -545,20 +528,21 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
         return NULL;
     }
 
-    /*以"%X/%X"格式读取redolsn中数据，并把值赋给hi，lo*/
+    /* Read data from redolsn in "%X/%X" format and assign values to hi/lo */
     if (sscanf(PQgetvalue(res, 0, 0), "%X/%X", &hi, &lo) != 2)
     {
         PQfinish(conn);
         PQclear(res);
-        elog(RLOG_WARNING," could not parse end position ");
+        elog(RLOG_WARNING, " could not parse end position ");
         return NULL;
     }
     PQclear(res);
 
     rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec, "SELECT (EXTRACT(EPOCH\n"
-                      "FROM (CURRENT_TIMESTAMP - TIMESTAMPTZ '2000-01-01 00:00:00+00') ) * 1000000 )::int8\n"
-                      "AS pg_ts_usec;" );
+    sprintf(sql_exec,
+            "SELECT (EXTRACT(EPOCH\n"
+            "FROM (CURRENT_TIMESTAMP - TIMESTAMPTZ '2000-01-01 00:00:00+00') ) * 1000000 )::int8\n"
+            "AS pg_ts_usec;");
     res = conn_exec(conn, sql_exec);
     if (NULL == res)
     {
@@ -573,19 +557,19 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
         return NULL;
     }
 
-    /* 读取dbtime */
+    /* Read dbtime */
     if (sscanf(PQgetvalue(res, 0, 0), "%ld", &dbtime) != 1)
     {
         PQfinish(conn);
         PQclear(res);
-        elog(RLOG_WARNING,"dbtime could not parse end position ");
+        elog(RLOG_WARNING, "dbtime could not parse end position ");
         return NULL;
     }
 
     PQfinish(conn);
     PQclear(res);
 
-    /* 4 总长度 + 4 crc32 + 4 msgtype + 1 成功/失败 + 4 rowcnt */
+    /* 4 total length + 4 crc32 + 4 msgtype + 1 success/failure + 4 rowcnt */
     msglen = 4 + 4 + 4 + 1 + 4;
 
     /* rowlen */
@@ -626,7 +610,7 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
 
     msglen += (rowlen * (rowcnt - 1));
 
-    /* 申请空间 */
+    /* Allocate memory */
     npacket = netpacket_init();
     if (NULL == npacket)
     {
@@ -643,10 +627,10 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
     }
     msglen -= 1;
 
-    /* 组装数据 */
+    /* Assemble data */
     uptr = npacket->data;
 
-    /* 数据总长度 */
+    /* Total data length */
     uptr += 4;
     npacket->used += 4;
 
@@ -654,14 +638,14 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
     uptr += 4;
     npacket->used += 4;
 
-    /* 类型 */
+    /* Type */
     ivalue = XMANAGER_MSG_STARTCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
     npacket->used += 4;
 
-    /* 类型成功标识 */
+    /* Type success flag */
     u8value = 0;
     rmemcpy1(uptr, 0, &u8value, 1);
     uptr += 1;
@@ -677,14 +661,14 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
     rowlen = 0;
     rowuptr = uptr;
 
-    /* 偏过行长度 */
+    /* Skip row length */
     uptr += 4;
     rowlen = 4;
     npacket->used += 4;
 
-    /* 列头组装 */
+    /* Assemble column header */
     /* name len */
-    ivalue = strlen("name") ;
+    ivalue = strlen("name");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -699,7 +683,7 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
     npacket->used += ivalue;
 
     /* lsnlag len */
-    ivalue = strlen("lsnlag") ;
+    ivalue = strlen("lsnlag");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -714,7 +698,7 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
     npacket->used += ivalue;
 
     /* timelag len */
-    ivalue = strlen("timelag") ;
+    ivalue = strlen("timelag");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -743,7 +727,7 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
     rowlen += ivalue;
     npacket->used += ivalue;
 
-    /* 行总长度 */
+    /* Row total length */
     rowlen = r_hton32(rowlen);
     rmemcpy1(rowuptr, 0, &rowlen, 4);
 
@@ -754,23 +738,24 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric* xmetric
         return NULL;
     }
 
-    /* 数据总长度 */
-    ivalue = npacket->used ;
+    /* Total data length */
+    ivalue = npacket->used;
     ivalue = r_hton32(ivalue);
     rmemcpy1(npacket->data, 0, &ivalue, 4);
 
     return npacket;
 }
 
-/* progress info 组装 */
-void* xmanager_metricmsg_assembleprogress(xmanager_metric* xmetric, xmanager_metricnode* pxmetricnode)
+/* Assemble progress info */
+void* xmanager_metricmsg_assembleprogress(xmanager_metric*     xmetric,
+                                          xmanager_metricnode* pxmetricnode)
 {
-    dlistnode* dlnode                                       = NULL;
-    xmanager_metricnode* pmetricnode                 = NULL;
+    dlistnode*                   dlnode = NULL;
+    xmanager_metricnode*         pmetricnode = NULL;
     xmanager_metricprogressnode* xmetricprogressnode = NULL;
-    xmanager_metricnode tmpmetricnode                = {0};
+    xmanager_metricnode          tmpmetricnode = {0};
 
-    xmetricprogressnode = (xmanager_metricprogressnode*) pxmetricnode;
+    xmetricprogressnode = (xmanager_metricprogressnode*)pxmetricnode;
 
     if (true == dlist_isnull(xmetricprogressnode->progressjop))
     {
@@ -790,14 +775,15 @@ void* xmanager_metricmsg_assembleprogress(xmanager_metric* xmetric, xmanager_met
 
     if (NULL == pmetricnode)
     {
-        elog(RLOG_WARNING, "not find valid information in progress %s ", xmetricprogressnode->base.name);
+        elog(RLOG_WARNING, "not find valid information in progress %s ",
+             xmetricprogressnode->base.name);
         return NULL;
     }
 
     tmpmetricnode.name = pmetricnode->name;
     tmpmetricnode.type = pmetricnode->type;
 
-    /* 获取 metricnode */
+    /* Get metricnode */
     pmetricnode = dlist_get(xmetric->metricnodes, &tmpmetricnode, xmanager_metricnode_cmp);
     if (NULL == pmetricnode)
     {
@@ -805,7 +791,7 @@ void* xmanager_metricmsg_assembleprogress(xmanager_metric* xmetric, xmanager_met
         return NULL;
     }
 
-    /* 检验是否在运行中，没有运行不打印信息 */
+    /* Check if running, do not print info if not running */
     if (XMANAGER_METRICNODESTAT_ONLINE > pmetricnode->stat)
     {
         elog(RLOG_WARNING, "progress job %s not start", pmetricnode->name);
@@ -814,12 +800,13 @@ void* xmanager_metricmsg_assembleprogress(xmanager_metric* xmetric, xmanager_met
 
     if (XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
     {
-        return xmanager_metricmsg_assembleprogresscapture(xmetric, pmetricnode, xmetricprogressnode->progressjop);
+        return xmanager_metricmsg_assembleprogresscapture(xmetric, pmetricnode,
+                                                          xmetricprogressnode->progressjop);
     }
     else
     {
-        elog(RLOG_WARNING, "find invalid information in progress %s ", xmetricprogressnode->base.name);
+        elog(RLOG_WARNING, "find invalid information in progress %s ",
+             xmetricprogressnode->base.name);
         return NULL;
     }
 }
-

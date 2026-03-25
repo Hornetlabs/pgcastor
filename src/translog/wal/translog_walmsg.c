@@ -8,32 +8,32 @@
 #include "translog/wal/translog_walmsg.h"
 
 /*
- * 发送心跳包
-*/
+ * send keepalive packet
+ */
 bool translog_walmsg_sendkeepalivemsg(XLogRecPtr startpos, PGconn* conn)
 {
-    int msglen = 34;
-    XLogRecPtr nlsn     = 0;
-    TimestampTz tnow    = 0;
-    char* cptr = NULL;
+    int         msglen = 34;
+    XLogRecPtr  nlsn = 0;
+    TimestampTz tnow = 0;
+    char*       cptr = NULL;
     /*
      * 0                msgtype             'r'
-     * 1---8            write lsn           落盘 lsn
-     * 9---16           flush lsn           刷新到磁盘的 lsn
-     * 17---24          apply               备库应用到的 lsn
-     * 25               replyrequest        是否需要发送心跳
+     * 1---8            write lsn           write lsn
+     * 9---16           flush lsn           flush to disk lsn
+     * 17---24          apply               standby applied lsn
+     * 25               replyrequest        whether to send heartbeat
      */
     char replybuf[1 + 8 + 8 + 8 + 8 + 1];
 
-    /* 获取时间戳 */
+    /* get timestamp */
     tnow = dt_gettimestamp();
 
-    /* 设置消息类型为 'r' */
+    /* set message type to 'r' */
     cptr = replybuf;
     cptr[0] = PG_REPLICATION_MSGTYPE_LR;
     cptr++;
 
-    /* 主机字节序转网络字节序 */
+    /* convert host byte order to network byte order */
     nlsn = startpos;
     nlsn = r_hton64(nlsn);
 
@@ -57,8 +57,8 @@ bool translog_walmsg_sendkeepalivemsg(XLogRecPtr startpos, PGconn* conn)
 
     /* replyrequest */
     cptr[0] = 0;
-    
-    /* 发送数据 */
+
+    /* send data */
     if (0 >= PQputCopyData(conn, replybuf, msglen) || PQflush(conn))
     {
         elog(RLOG_WARNING, "could not send keepalive packet: %s", PQerrorMessage(conn));
@@ -68,27 +68,27 @@ bool translog_walmsg_sendkeepalivemsg(XLogRecPtr startpos, PGconn* conn)
     return true;
 }
 
-/* 发送结束标识 */
+/* send end flag */
 bool translog_walmsg_senddone(PGconn* conn)
 {
     if (0 >= PQputCopyEnd(conn, NULL) || PQflush(conn))
     {
-        /* 没有发送成功 */
+        /* failed to send */
         elog(RLOG_WARNING, "send done replication error");
         return false;
     }
     return true;
 }
 
-/* 异步 io, 临时使用此方式, 后续再改进 */
-static bool translog_walmsg_poll(PGconn *conn, long timeoutms, int* perror)
+/* async io, temporary approach, will be improved later */
+static bool translog_walmsg_poll(PGconn* conn, long timeoutms, int* perror)
 {
-    int ret             = 0;
-    fd_set input_mask;
-    int connsocket;
-    int maxfd;
-    struct timeval timeout;
-    struct timeval *timeoutptr;
+    int             ret = 0;
+    fd_set          input_mask;
+    int             connsocket;
+    int             maxfd;
+    struct timeval  timeout;
+    struct timeval* timeoutptr;
 
 translog_recvwallog_poll_retry:
     connsocket = PQsocket(conn);
@@ -113,7 +113,7 @@ translog_recvwallog_poll_retry:
         timeoutptr = &timeout;
     }
 
-    /* 监听读事件 */
+    /* listen for read events */
     ret = select(maxfd + 1, &input_mask, NULL, NULL, timeoutptr);
     if (ret < 0)
     {
@@ -126,22 +126,22 @@ translog_recvwallog_poll_retry:
     }
     if (ret > 0 && FD_ISSET(connsocket, &input_mask))
     {
-        /* 读事件触发 */
+        /* read event triggered */
         return true;
     }
 
-    /* 超时 */
+    /* timeout */
     *perror = ERROR_TIMEOUT;
     return false;
 }
 
-/* 获取数据 */
-bool translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, int *recvlen)
+/* get data */
+bool translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, int* recvlen)
 {
-    long sleeptime          = 1000;
+    long sleeptime = 1000;
 
-    /* 清理数据 */
-    if(NULL != *buffer)
+    /* clear data */
+    if (NULL != *buffer)
     {
         PQfreemem(*buffer);
         *buffer = NULL;
@@ -151,8 +151,8 @@ bool translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, int *recv
     *recvlen = PQgetCopyData(conn, buffer, 1);
     if (0 == *recvlen)
     {
-        /* 没有数据, 那么需要等待数据 */
-        if(false == translog_walmsg_poll(conn, sleeptime, perror))
+        /* no data available, need to wait for data */
+        if (false == translog_walmsg_poll(conn, sleeptime, perror))
         {
             if (ERROR_TIMEOUT == *perror)
             {
@@ -160,14 +160,14 @@ bool translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, int *recv
             }
             else
             {
-                /* 非超时错误, 那么证明连接出问题了 */
+                /* non-timeout error, connection issue */
                 elog(RLOG_WARNING, "recvwallog poll error");
                 *perror = ERROR_REPLICATION;
                 return false;
             }
         }
 
-        /* 有数据了, 那么尝试读数据 */
+        /* data available, try to read */
         if (0 == PQconsumeInput(conn))
         {
             elog(RLOG_WARNING, "could not receive data from WAL stream: %s", PQerrorMessage(conn));
@@ -175,23 +175,23 @@ bool translog_walmsg_getdata(PGconn* conn, char** buffer, int* perror, int *recv
             return false;
         }
 
-        /* 读取到了数据, 复制数据 */
+        /* data read, copy data */
         *recvlen = PQgetCopyData(conn, buffer, 1);
         if (0 == *recvlen)
         {
-            /* 没有读取到足够的数据, 那么还需要再此读取 */
+            /* not enough data read, need to retry */
             *perror = ERROR_RETRY;
             return false;
         }
     }
 
-    if(-1 == *recvlen)
+    if (-1 == *recvlen)
     {
         /*
-         * 这个 -1 包含的含义如下:
-         *  1、接收到了 'c' 消息
-         *  2、接收到了流复制不感兴趣的消息, 比如: 'C'
-         *      所以在外面应该对 ERROR_ENDREPLICATION 进行分类处理
+         * this -1 has the following meanings:
+         *  1. received 'c' message
+         *  2. received message not relevant to streaming replication, e.g. 'C'
+         *      so ERROR_ENDREPLICATION should be handled with classification outside
          */
         *perror = ERROR_ENDREPLICATION;
         return false;

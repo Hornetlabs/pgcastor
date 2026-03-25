@@ -3,41 +3,41 @@
 
 typedef struct VARSTR
 {
-    /* 使用的长度 */
-    uint64_t                start;
+    /* Used length */
+    uint64_t start;
 
-    /* data 长度 */
-    uint64_t                size;
+    /* data length */
+    uint64_t size;
 
-    /* 数据区 */
-    uint8_t*                data;
+    /* Data area */
+    uint8_t* data;
 } varstr;
 
-/* 初始化 */
+/* Initialize */
 extern varstr* varstr_init(uint64 len);
 
-/* 重置 */
+/* Reset */
 extern bool varstr_reset(varstr* vstr);
 
-/* 
- * 扩容
- *  不做长度和入参检测
-*/
+/*
+ * Expand
+ *  No length and input parameter check
+ */
 extern bool varstr_enlarge(varstr* vstr, uint64 needed);
 
-/* 添加内容 */
-extern bool varstr_append(varstr* vstr, const char *fmt,...);
+/* Add content */
+extern bool varstr_append(varstr* vstr, const char* fmt, ...);
 
-/* 添加字符串 */
-extern bool varstr_appendbinary(varstr* vstr, const char *data, uint64 datalen);
+/* Add string */
+extern bool varstr_appendbinary(varstr* vstr, const char* data, uint64 datalen);
 
-/* 合并字符串 */
-extern bool varstr_appendstr(varstr* vstr, const char *data);
+/* Merge string */
+extern bool varstr_appendstr(varstr* vstr, const char* data);
 
-/* 添加字符 */
+/* Add character */
 extern bool varstr_appendchar(varstr* vstr, char ch);
 
-/* 释放 */
+/* Release */
 extern void varstr_free(varstr* vstr);
 
 #endif

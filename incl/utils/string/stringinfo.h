@@ -6,8 +6,8 @@
  *
  * All Copyright (c) 2024-2024, Byte Sync Development Group
  *
- * Author: liuzihe  Date: 2024/07/10 
- * 
+ * Author: liuzihe  Date: 2024/07/10
+ *
  * incl/utils/string/stringinfo.h
  *
  *-------------------------------------------------------------------------
@@ -32,14 +32,13 @@
  */
 typedef struct StringInfoData
 {
-	char	   *data;
-	int			len;
-	int			maxlen;
-	int			cursor;
+    char* data;
+    int   len;
+    int   maxlen;
+    int   cursor;
 } StringInfoData;
 
-typedef StringInfoData *StringInfo;
-
+typedef StringInfoData* StringInfo;
 
 /*------------------------
  * There are two ways to create a StringInfo object initially:
@@ -75,7 +74,6 @@ extern StringInfo makeStringInfo(void);
  */
 extern void deleteStringInfo(StringInfo str);
 
-
 /*------------------------
  * initStringInfo
  * Initialize a StringInfoData struct (with previously undefined contents)
@@ -97,7 +95,7 @@ extern void resetStringInfo(StringInfo str);
  * to str if necessary.  This is sort of like a combination of sprintf and
  * strcat.
  */
-extern void appendStringInfo(StringInfo str, const char *fmt,...) pg_attribute_printf(2, 3);
+extern void appendStringInfo(StringInfo str, const char* fmt, ...) pg_attribute_printf(2, 3);
 
 /*------------------------
  * appendStringInfoVA
@@ -108,14 +106,15 @@ extern void appendStringInfo(StringInfo str, const char *fmt,...) pg_attribute_p
  * pass the return value to enlargeStringInfo() before trying again; see
  * appendStringInfo for standard usage pattern.
  */
-extern int	appendStringInfoVA(StringInfo str, const char *fmt, va_list args) pg_attribute_printf(2, 0);
+extern int appendStringInfoVA(StringInfo str, const char* fmt, va_list args)
+    pg_attribute_printf(2, 0);
 
 /*------------------------
  * appendStringInfoString
  * Append a null-terminated string to str.
  * Like appendStringInfo(str, "%s", s) but faster.
  */
-extern void appendStringInfoString(StringInfo str, const char *s);
+extern void appendStringInfoString(StringInfo str, const char* s);
 
 /*------------------------
  * appendStringInfoChar
@@ -129,10 +128,10 @@ extern void appendStringInfoChar(StringInfo str, char ch);
  * As above, but a macro for even more speed where it matters.
  * Caution: str argument will be evaluated multiple times.
  */
-#define appendStringInfoCharMacro(str,ch) \
-	(((str)->len + 1 >= (str)->maxlen) ? \
-	 appendStringInfoChar(str, ch) : \
-	 (void)((str)->data[(str)->len] = (ch), (str)->data[++(str)->len] = '\0'))
+#define appendStringInfoCharMacro(str, ch) \
+    (((str)->len + 1 >= (str)->maxlen)     \
+         ? appendStringInfoChar(str, ch)   \
+         : (void)((str)->data[(str)->len] = (ch), (str)->data[++(str)->len] = '\0'))
 
 /*------------------------
  * appendStringInfoSpaces
@@ -145,16 +144,14 @@ extern void appendStringInfoSpaces(StringInfo str, int count);
  * Append arbitrary binary data to a StringInfo, allocating more space
  * if necessary.
  */
-extern void appendBinaryStringInfo(StringInfo str,
-								   const char *data, int datalen);
+extern void appendBinaryStringInfo(StringInfo str, const char* data, int datalen);
 
 /*------------------------
  * appendBinaryStringInfoNT
  * Append arbitrary binary data to a StringInfo, allocating more space
  * if necessary. Does not ensure a trailing null-byte exists.
  */
-extern void appendBinaryStringInfoNT(StringInfo str,
-									 const char *data, int datalen);
+extern void appendBinaryStringInfoNT(StringInfo str, const char* data, int datalen);
 
 /*------------------------
  * enlargeStringInfo
@@ -162,6 +159,6 @@ extern void appendBinaryStringInfoNT(StringInfo str,
  */
 extern void enlargeStringInfo(StringInfo str, int needed);
 
-extern char *strSpecialCharReplace(char *input);
+extern char* strSpecialCharReplace(char* input);
 
 #endif

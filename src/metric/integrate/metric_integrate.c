@@ -12,23 +12,21 @@
 #include "xmanager/xmanager_msg.h"
 #include "metric/integrate/metric_integrate.h"
 
-/* 解析网络包 */
+/* Parse network packet */
 static bool metric_integrate_parsenetpacket(metric_integrate* mintegrate, netpacket* npacket)
 {
-    int msgtype     = 0;
-    uint8* uptr     = NULL;
+    int    msgtype = 0;
+    uint8* uptr = NULL;
 
-    /* 根据 msgtype 做分发 */
+    /* Dispatch based on msgtype */
     uptr = npacket->data;
     uptr += 8;
 
     rmemcpy1(&msgtype, 0, uptr, 4);
     msgtype = r_ntoh32(msgtype);
 
-    if (XMANAGER_MSG_IDENTITYCMD != msgtype
-        && XMANAGER_MSG_INTEGRATEINCREMENT != msgtype
-        && XMANAGER_MSG_INTEGRATEONLINEREFRESH != msgtype
-        && XMANAGER_MSG_INTEGRATEBIGTXN)
+    if (XMANAGER_MSG_IDENTITYCMD != msgtype && XMANAGER_MSG_INTEGRATEINCREMENT != msgtype &&
+        XMANAGER_MSG_INTEGRATEONLINEREFRESH != msgtype && XMANAGER_MSG_INTEGRATEBIGTXN)
     {
         elog(RLOG_WARNING, "integrate metric got unknown msg type from xmanager:%d", msgtype);
         return false;
@@ -37,11 +35,10 @@ static bool metric_integrate_parsenetpacket(metric_integrate* mintegrate, netpac
     return true;
 }
 
-
-/* 尝试解析解析包 */
+/* Attempt to parse packets */
 static bool metric_integrate_tryparsepacket(metric_integrate* mintegrate, netclient* netclient)
 {
-    netpacket* npacket       = NULL;
+    netpacket* npacket = NULL;
 
     while (1)
     {
@@ -73,15 +70,16 @@ static bool metric_integrate_tryparsepacket(metric_integrate* mintegrate, netcli
     return true;
 }
 
-/* 增量消息 */
-static bool metric_integrate_assembleincrementpacket(metric_integrate* mintegrate, netclient* netclient)
+/* Incremental message */
+static bool metric_integrate_assembleincrementpacket(metric_integrate* mintegrate,
+                                                     netclient*        netclient)
 {
-    int len                     = 0;
-    int ivalue                  = 0;
-    XLogRecPtr lsnvalue         = 0;
-    uint8* uptr                 = NULL;
-    char* jobname               = NULL;
-    netpacket* npacket   = NULL;
+    int        len = 0;
+    int        ivalue = 0;
+    XLogRecPtr lsnvalue = 0;
+    uint8*     uptr = NULL;
+    char*      jobname = NULL;
+    netpacket* npacket = NULL;
 
     npacket = netpacket_init();
     if (NULL == npacket)
@@ -116,13 +114,13 @@ static bool metric_integrate_assembleincrementpacket(metric_integrate* mintegrat
     }
     uptr = npacket->data;
 
-    /* 长度 */
+    /* Length */
     ivalue = len;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
 
-    /* crc32 暂不处理 */
+    /* crc32 not processed for now */
     uptr += 4;
 
     /* msgtype */
@@ -141,7 +139,7 @@ static bool metric_integrate_assembleincrementpacket(metric_integrate* mintegrat
     rmemcpy1(uptr, 0, jobname, strlen(jobname));
     uptr += strlen(jobname);
 
-    /* loadlsn */
+    /* load lsn */
     lsnvalue = mintegrate->loadlsn;
     lsnvalue = r_hton64(lsnvalue);
     rmemcpy1(uptr, 0, &lsnvalue, 8);
@@ -198,24 +196,25 @@ static bool metric_integrate_assembleincrementpacket(metric_integrate* mintegrat
     return true;
 }
 
-/* 组装 identity 消息 */
-static bool metric_integrate_assembleidentitypacket(metric_integrate* mintegrate, netclient* netclient)
+/* Assemble identity message */
+static bool metric_integrate_assembleidentitypacket(metric_integrate* mintegrate,
+                                                    netclient*        netclient)
 {
-    int8 result                 = 0;
-    int len                     = 0;
-    int ivalue                  = 0;
-    uint8* uptr                 = NULL;
-    char* jobname               = NULL;
-    char* data                  = NULL;
-    char* traildir              = NULL;
-    netpacket* npacket   = NULL;
+    int8       result = 0;
+    int        len = 0;
+    int        ivalue = 0;
+    uint8*     uptr = NULL;
+    char*      jobname = NULL;
+    char*      data = NULL;
+    char*      traildir = NULL;
+    netpacket* npacket = NULL;
 
     jobname = guc_getConfigOption(CFG_KEY_JOBNAME);
     traildir = guc_getConfigOption(CFG_KEY_TRAIL_DIR);
     data = guc_getdata();
 
     /*
-     * 内容
+     * Content
      *  jobname + data dir + config dir + trail dir
      */
     /* len + crc32 + msgtype + jobtype */
@@ -331,7 +330,7 @@ static bool metric_integrate_assembleidentitypacket(metric_integrate* mintegrate
     return true;
 }
 
-/* 组建消息包 */
+/* Assemble message packet */
 static bool metric_integrate_assemblepacket(metric_integrate* mintegrate, netclient* netclient)
 {
     if (false == metric_integrate_assembleincrementpacket(mintegrate, netclient))
@@ -342,38 +341,38 @@ static bool metric_integrate_assemblepacket(metric_integrate* mintegrate, netcli
     return true;
 }
 
-
-/* 状态主线程 */
-void* metric_integrate_main(void *args)
+/* Status main thread */
+void* metric_integrate_main(void* args)
 {
-    int fd                                      = -1;
-    int port                                    = 0;
-    int interval                                = 5000;
-    int intervaltime                            = 0;
-    XLogRecPtr loadlsn                          = InvalidXLogRecPtr;
-    XLogRecPtr synclsn                          = InvalidXLogRecPtr;
-    uint64 loadtrailno                          = 0;
-    uint64 loadtrailstart                       = 0;
-    uint64 synctrailno                          = 0;
-    uint64 synctrailstart                       = 0;
-    uint64 loadtimestamp                        = 0;
-    uint64 synctimestamp                        = 0;
-    thrnode* thr_node                     = NULL;
-    metric_integrate* mintegrate         = NULL;
-    netclient netclient                  = { 0 };
+    int               fd = -1;
+    int               port = 0;
+    int               interval = 5000;
+    int               intervaltime = 0;
+    XLogRecPtr        loadlsn = InvalidXLogRecPtr;
+    XLogRecPtr        synclsn = InvalidXLogRecPtr;
+    uint64            loadtrailno = 0;
+    uint64            loadtrailstart = 0;
+    uint64            synctrailno = 0;
+    uint64            synctrailstart = 0;
+    uint64            loadtimestamp = 0;
+    uint64            synctimestamp = 0;
+    thrnode*          thr_node = NULL;
+    metric_integrate* mintegrate = NULL;
+    netclient         netclient = {0};
 
     thr_node = (thrnode*)args;
     mintegrate = (metric_integrate*)thr_node->data;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "increment integrate metric stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "increment integrate metric stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
     port = guc_getConfigOptionInt(CFG_KEY_XMANAGER_PORT);
@@ -387,10 +386,10 @@ void* metric_integrate_main(void *args)
     }
     elog(RLOG_DEBUG, "integrate metric port:%s", netclient.svrport);
 
-    /* 设置使用的网络模型 */
+    /* Set the network model used */
     netclient.ops = netiomp_init(NETIOMP_TYPE_POLL);
 
-    /* 申请 base 信息，用于后续的描述符处理 */
+    /* Apply for base information for subsequent descriptor processing */
     if (false == netclient.ops->create(&netclient.base))
     {
         elog(RLOG_WARNING, "integrate metric main iomp module error");
@@ -399,7 +398,7 @@ void* metric_integrate_main(void *args)
         pthread_exit(NULL);
     }
 
-    /* 设置类型 */
+    /* Set type */
     netclient_setprotocoltype(&netclient, NETCLIENT_PROTOCOLTYPE_UNIXDOMAIN);
 
     netclient_sethbtimeout(&netclient, NET_HBTIME);
@@ -425,19 +424,19 @@ void* metric_integrate_main(void *args)
     }
     netclient.callback = NULL;
 
-    while(1)
+    while (1)
     {
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
-            /* 解析器 */
+            /* Parser */
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
-        /* 尝试连接xmanager */
+        /* Attempt to connect to xmanager */
         if (NETCLIENTCONN_STATUS_NOP == netclient.status)
         {
-            /* 连接 xmanager */
+            /* Connect to xmanager */
             if (false == netclient_tryconn(&netclient))
             {
                 elog(RLOG_WARNING, "can not connect xmanager");
@@ -453,10 +452,9 @@ void* metric_integrate_main(void *args)
             }
         }
 
-        /* 未超时且没有数据需要发送 */
-        if (intervaltime <= interval 
-            && true == queue_isnull(netclient.wpackets)
-            && true == queue_isnull(netclient.rpackets))
+        /* Not timed out and no data needs to be sent */
+        if (intervaltime <= interval && true == queue_isnull(netclient.wpackets) &&
+            true == queue_isnull(netclient.rpackets))
         {
             intervaltime += 1000;
             sleep(1);
@@ -472,7 +470,7 @@ void* metric_integrate_main(void *args)
             }
             else if (false == metric_integrate_tryparsepacket(mintegrate, &netclient))
             {
-                /* 清理队列，关闭描述符 */
+                /* Clear queue, close descriptor */
                 elog(RLOG_WARNING, "metric integrate parse packet error");
                 netclient_clear(&netclient);
             }
@@ -484,25 +482,24 @@ void* metric_integrate_main(void *args)
         }
         intervaltime = 0;
 
-        /* 在连接状态下构建发送包 */
+        /* Build send packet in connected state */
         if (NETCLIENTCONN_STATUS_CONNECTED == netclient.status)
         {
             if (false == metric_integrate_assemblepacket(mintegrate, &netclient))
             {
-                /* 清理队列，关闭描述符 */
+                /* Clear queue, close descriptor */
                 elog(RLOG_WARNING, "metric integrate assemble packet error");
                 netclient_clear(&netclient);
             }
         }
 
-        if (loadlsn != mintegrate->loadlsn 
-            || synclsn != mintegrate->synclsn
-            || loadtrailno != mintegrate->loadtrailno
-            || loadtrailstart != mintegrate->loadtrailstart
-            || synctrailno != mintegrate->synctrailno
-            || synctrailstart != mintegrate->synctrailstart
-            || loadtimestamp != mintegrate->loadtimestamp
-            || synctimestamp != mintegrate->synctimestamp)
+        if (loadlsn != mintegrate->loadlsn || synclsn != mintegrate->synclsn ||
+            loadtrailno != mintegrate->loadtrailno ||
+            loadtrailstart != mintegrate->loadtrailstart ||
+            synctrailno != mintegrate->synctrailno ||
+            synctrailstart != mintegrate->synctrailstart ||
+            loadtimestamp != mintegrate->loadtimestamp ||
+            synctimestamp != mintegrate->synctimestamp)
         {
             loadlsn = mintegrate->loadlsn;
             synclsn = mintegrate->synclsn;
@@ -513,28 +510,36 @@ void* metric_integrate_main(void *args)
             loadtimestamp = mintegrate->loadtimestamp;
             synctimestamp = mintegrate->synctimestamp;
 
-            elog(RLOG_INFO, "XSYNCH Integrate LoadLSN:              %X/%X", (uint32)(mintegrate->loadlsn >> 32), (uint32)(mintegrate->loadlsn));
-            elog(RLOG_INFO, "XSYNCH Integrate SyncLSN:              %X/%X", (uint32)(mintegrate->synclsn >> 32), (uint32)(mintegrate->synclsn));
-            elog(RLOG_INFO, "XSYNCH Integrate LoadTrail:            %lX/%lX", mintegrate->loadtrailno, mintegrate->loadtrailstart);
-            elog(RLOG_INFO, "XSYNCH Integrate SyncTrail:            %lX/%lX", mintegrate->synctrailno, mintegrate->synctrailstart);
-            elog(RLOG_INFO, "XSYNCH Integrate LoadTimestamp:        %lu", mintegrate->loadtimestamp);
-            elog(RLOG_INFO, "XSYNCH Integrate SyncTimestamp:        %lu", mintegrate->synctimestamp);
+            elog(RLOG_INFO, "XSYNCH Integrate LoadLSN:              %X/%X",
+                 (uint32)(mintegrate->loadlsn >> 32), (uint32)(mintegrate->loadlsn));
+            elog(RLOG_INFO, "XSYNCH Integrate SyncLSN:              %X/%X",
+                 (uint32)(mintegrate->synclsn >> 32), (uint32)(mintegrate->synclsn));
+            elog(RLOG_INFO, "XSYNCH Integrate LoadTrail:            %lX/%lX",
+                 mintegrate->loadtrailno, mintegrate->loadtrailstart);
+            elog(RLOG_INFO, "XSYNCH Integrate SyncTrail:            %lX/%lX",
+                 mintegrate->synctrailno, mintegrate->synctrailstart);
+            elog(RLOG_INFO, "XSYNCH Integrate LoadTimestamp:        %lu",
+                 mintegrate->loadtimestamp);
+            elog(RLOG_INFO, "XSYNCH Integrate SyncTimestamp:        %lu",
+                 mintegrate->synctimestamp);
 
-            /* 将数据落盘 */
-            fd = osal_basic_open_file(INTEGRATE_STATUS_FILE_TEMP,
-                                    O_RDWR | O_CREAT | BINARY);
-            if(-1 == fd)
+            /* Persist data to disk */
+            fd = osal_basic_open_file(INTEGRATE_STATUS_FILE_TEMP, O_RDWR | O_CREAT | BINARY);
+            if (-1 == fd)
             {
-                elog(RLOG_WARNING, "open file:integrate/%s error, %s", INTEGRATE_STATUS_FILE_TEMP, strerror(errno));
+                elog(RLOG_WARNING, "open file:integrate/%s error, %s", INTEGRATE_STATUS_FILE_TEMP,
+                     strerror(errno));
             }
             osal_file_write(fd, (char*)mintegrate, sizeof(metric_integrate));
 
             osal_file_close(fd);
 
-            /* 重命名 */
-            if (osal_durable_rename(INTEGRATE_STATUS_FILE_TEMP, INTEGRATE_STATUS_FILE, RLOG_WARNING) != 0)
+            /* Rename */
+            if (osal_durable_rename(INTEGRATE_STATUS_FILE_TEMP, INTEGRATE_STATUS_FILE,
+                                    RLOG_WARNING) != 0)
             {
-                elog(RLOG_WARNING, "Error renaming integrate file %s 2 %s", INTEGRATE_STATUS_FILE_TEMP, INTEGRATE_STATUS_FILE);
+                elog(RLOG_WARNING, "Error renaming integrate file %s 2 %s",
+                     INTEGRATE_STATUS_FILE_TEMP, INTEGRATE_STATUS_FILE);
             }
         }
     }
@@ -549,7 +554,7 @@ metric_integrate* metric_integrate_init(void)
     metric_integrate* mintegrate = NULL;
 
     mintegrate = rmalloc0(sizeof(metric_integrate));
-    if(NULL == mintegrate)
+    if (NULL == mintegrate)
     {
         elog(RLOG_WARNING, "metric integrate init out of memory");
         return NULL;
@@ -559,23 +564,23 @@ metric_integrate* metric_integrate_init(void)
     mintegrate->loadlsn = InvalidXLogRecPtr;
     mintegrate->synclsn = InvalidXLogRecPtr;
     mintegrate->loadtrailno = 0;
-    mintegrate->loadtrailstart= 0;
+    mintegrate->loadtrailstart = 0;
     mintegrate->synctrailno = 0;
-    mintegrate->synctrailstart= 0;
+    mintegrate->synctrailstart = 0;
     mintegrate->loadtimestamp = 0;
     mintegrate->synctimestamp = 0;
 
     return mintegrate;
 }
 
-/* 缓存清理 */
+/* Cache cleanup */
 void metric_integrate_destroy(void* args)
 {
     metric_integrate* mintegrate = NULL;
 
     mintegrate = (metric_integrate*)args;
 
-    if(NULL == mintegrate)
+    if (NULL == mintegrate)
     {
         return;
     }

@@ -20,34 +20,34 @@ onlinerefresh_integrateincsync* onlinerefresh_integrateincsync_init(void)
 {
     onlinerefresh_integrateincsync* syncworkstate = NULL;
 
-    syncworkstate = (onlinerefresh_integrateincsync*)rmalloc0(sizeof(onlinerefresh_integrateincsync));
-    if(NULL == syncworkstate)
+    syncworkstate =
+        (onlinerefresh_integrateincsync*)rmalloc0(sizeof(onlinerefresh_integrateincsync));
+    if (NULL == syncworkstate)
     {
         elog(RLOG_WARNING, "onlinerefresh integrateincsync malloc out of memory");
         return NULL;
     }
     rmemset0(syncworkstate, 0, '\0', sizeof(onlinerefresh_integrateincsync));
-    syncstate_reset((syncstate*) syncworkstate);
+    syncstate_reset((syncstate*)syncworkstate);
 
     return syncworkstate;
 }
 
-/* 删除状态表中增量数据 */
+/* Delete incremental data in status table */
 static bool onlinerefresh_integrateincsync_delinc(onlinerefresh_integrateincsync* syncwork)
 {
-    PGconn *conn            = NULL;
-    PGresult *res           = NULL;
-    char sql_exec[1024]     = {'\0'};
+    PGconn*   conn = NULL;
+    PGresult* res = NULL;
+    char      sql_exec[1024] = {'\0'};
 
     rmemset1(sql_exec, 0, '\0', 1024);
     sprintf(sql_exec, "DELETE FROM \"%s\".\"%s\" WHERE \"name\" = \'%s\';",
-                      guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
-                      SYNC_STATUSTABLE_NAME,
-                      syncwork->base.name);
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), SYNC_STATUSTABLE_NAME, syncwork->base.name);
     res = PQexec(syncwork->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING,"Failed to update status table in: %s", PQerrorMessage(syncwork->base.conn));
+        elog(RLOG_WARNING, "Failed to update status table in: %s",
+             PQerrorMessage(syncwork->base.conn));
         PQclear(res);
         return false;
     }
@@ -57,14 +57,14 @@ static bool onlinerefresh_integrateincsync_delinc(onlinerefresh_integrateincsync
     return true;
 }
 
-/* 增量应用 */
-void *onlinerefresh_integrateincsync_main(void* args)
+/* Incremental apply */
+void* onlinerefresh_integrateincsync_main(void* args)
 {
-    int timeout                                                 = 0;
-    txn* entry                                           = NULL;
-    thrnode* thr_node                                     = NULL;
-    syncstate* sync_state                                 = NULL;
-    onlinerefresh_integrateincsync* syncwork             = NULL;
+    int                             timeout = 0;
+    txn*                            entry = NULL;
+    thrnode*                        thr_node = NULL;
+    syncstate*                      sync_state = NULL;
+    onlinerefresh_integrateincsync* syncwork = NULL;
 
     thr_node = (thrnode*)args;
 
@@ -72,44 +72,46 @@ void *onlinerefresh_integrateincsync_main(void* args)
 
     sync_state = (syncstate*)syncwork;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "onlinerefresh integrate spliittrail stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "onlinerefresh integrate spliittrail stat exception, expected state is "
+             "THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
     while (syncstate_conn(sync_state, thr_node))
     {
         usleep(50000);
-        if(false == syncstate_update_statustb(sync_state, NULL, false))
+        if (false == syncstate_update_statustb(sync_state, NULL, false))
         {
             continue;
         }
         break;
     }
 
-    while(1)
+    while (1)
     {
-        /* 首先判断是否接收到退出信号 */
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        /* First check if exit signal is received */
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
         entry = NULL;
-        /* 获取数据 */
+        /* Get data */
         entry = cache_txn_get(syncwork->rebuild2sync, &timeout);
-        if(NULL == entry)
+        if (NULL == entry)
         {
-            /* 超时继续执行 */
-            if(ERROR_TIMEOUT == timeout)
+            /* Continue on timeout */
+            if (ERROR_TIMEOUT == timeout)
             {
                 continue;
             }
@@ -119,7 +121,8 @@ void *onlinerefresh_integrateincsync_main(void* args)
             break;
         }
 
-        /* 提前处理无法避免增量结束的lsn和xid无效，并且增量结束位置信息不需要更新 */
+        /* Process early lsn and xid invalid that cannot be avoided for incremental end, and
+         * incremental end position info does not need update */
         if (TXN_TYPE_ONLINEREFRESH_INC_END == entry->type)
         {
             onlinerefresh_integrateincsync_delinc(syncwork);
@@ -130,29 +133,29 @@ void *onlinerefresh_integrateincsync_main(void* args)
             break;
         }
 
-        /* 同步数据 */
-        while(false == syncstate_applytxn(sync_state, thr_node, (void*)entry, true))
+        /* Sync data */
+        while (false == syncstate_applytxn(sync_state, thr_node, (void*)entry, true))
         {
             sleep(1);
             syncstate_reset(sync_state);
             while (syncstate_conn(sync_state, thr_node))
             {
                 usleep(50000);
-                if(false == syncstate_update_statustb(sync_state, NULL, false))
+                if (false == syncstate_update_statustb(sync_state, NULL, false))
                 {
                     continue;
                 }
                 break;
             }
 
-            if(THRNODE_STAT_TERM == thr_node->stat)
+            if (THRNODE_STAT_TERM == thr_node->stat)
             {
                 thr_node->stat = THRNODE_STAT_EXIT;
                 break;
             }
         }
 
-        /* TODO entry 释放 */
+        /* TODO entry release */
         txn_free(entry);
         rfree(entry);
         entry = NULL;
@@ -162,7 +165,7 @@ void *onlinerefresh_integrateincsync_main(void* args)
     return NULL;
 }
 
-void onlinerefresh_integrateincsync_free(void *args)
+void onlinerefresh_integrateincsync_free(void* args)
 {
     onlinerefresh_integrateincsync* syncwork = NULL;
 
@@ -172,10 +175,9 @@ void onlinerefresh_integrateincsync_free(void *args)
     {
         return;
     }
-    syncstate_destroy((syncstate*) syncwork);
+    syncstate_destroy((syncstate*)syncwork);
 
     rfree(syncwork);
 
     return;
-
 }

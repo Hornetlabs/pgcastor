@@ -13,26 +13,26 @@
 #include "task/task_slot.h"
 #include "refresh/p2csharding/refresh_p2csharding.h"
 
-/* 增量应用结构初始化 */
+/* Initialize increment apply structure */
 refresh_integratesyncstate* refresh_integratesyncstate_init(void)
 {
     refresh_integratesyncstate* refreshsyncstate = NULL;
 
     refreshsyncstate = (refresh_integratesyncstate*)rmalloc0(sizeof(refresh_integratesyncstate));
-    if(NULL == refreshsyncstate)
+    if (NULL == refreshsyncstate)
     {
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(refreshsyncstate, 0, '\0', sizeof(refresh_integratesyncstate));
 
-    syncstate_reset((syncstate*) refreshsyncstate);
+    syncstate_reset((syncstate*)refreshsyncstate);
     refreshsyncstate->queue = NULL;
     refreshsyncstate->tablesyncstats = NULL;
 
     return refreshsyncstate;
 }
 
-/* 增量应用结构资源释放 */
+/* Release increment apply structure resources */
 void refresh_integratesync_destroy(refresh_integratesyncstate* syncworkstate)
 {
     if (NULL == syncworkstate)
@@ -40,8 +40,7 @@ void refresh_integratesync_destroy(refresh_integratesyncstate* syncworkstate)
         return;
     }
 
-    syncstate_destroy((syncstate*) syncworkstate);
+    syncstate_destroy((syncstate*)syncworkstate);
 
     rfree(syncworkstate);
-
 }

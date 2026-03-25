@@ -49,45 +49,45 @@
 #include "onlinerefresh/integrate/rebuild/onlinerefresh_integraterebuild.h"
 #include "increment/integrate/increment_integrate.h"
 
-
 typedef enum ONLINEREFRESH_INTEGRATE_STAT
 {
-    ONLINEREFRESH_INTEGRATE_STAT_JOBNOP                      = 0x00,
-    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILREFRESHSTARTING     ,               /* 工作线程启动中 */
-    ONLINEREFRESH_INTEGRATE_STAT_JOBWORKING                  ,               /* 存量工作线程工作状态 */
-    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTREFRESHDONE        ,               /* 等待存量工作线程工作完成 */
-    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTSTARTING  ,               /* 增量工作线程启动中 */
-    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTDONE                      /* 等待存量工作线程工作完成 */
+    ONLINEREFRESH_INTEGRATE_STAT_JOBNOP = 0x00,
+    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILREFRESHSTARTING, /* Job thread starting */
+    ONLINEREFRESH_INTEGRATE_STAT_JOBWORKING,              /* Bulk job thread working status */
+    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTREFRESHDONE, /* Waiting for bulk job thread to complete */
+    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTSTARTING, /* Incremental job thread starting */
+    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTDONE /* Waiting for bulk job thread to complete
+                                                         */
 } onlinerefresh_integrate_stat;
 
-/* 检测abandon文件是否存在 */
+/* Check if abandon file exists */
 static bool onlinerefresh_integrate_checkabandon(char* path)
 {
     struct stat st;
-    char file[MAXPATH] = {'\0'};
+    char        file[MAXPATH] = {'\0'};
 
     sprintf(file, "%s/%s", path, ONLINEREFRESHABANDON_DAT);
 
-    /* 校验文件是否存在，存在返回true */
-    if(0 == stat(file, &st))
+    /* Check if file exists, return true if exists */
+    if (0 == stat(file, &st))
     {
         return true;
     }
     return false;
 }
 
-/* 向sync状态表中refresh数据，并truncate存量表 */
-static bool onlinerefresh_integrate_gettrailno(onlinerefresh_integrate* onlinerefresh,
-                                                      onlinerefresh_integratesplittrail* oliloadrecord,
-                                                      char* name)
+/* Refresh data to sync status table and truncate bulk table */
+static bool onlinerefresh_integrate_gettrailno(onlinerefresh_integrate*           onlinerefresh,
+                                               onlinerefresh_integratesplittrail* oliloadrecord,
+                                               char*                              name)
 {
-    uint64 trailno          = 0;
-    uint64 emitoffset       = 0;
-    XLogRecPtr lsn          = InvalidXLogRecPtr;
-    char* catalog_schema    = NULL;
-    PGconn *conn            = NULL;
-    PGresult *res           = NULL;
-    StringInfo sql          = NULL;
+    uint64     trailno = 0;
+    uint64     emitoffset = 0;
+    XLogRecPtr lsn = InvalidXLogRecPtr;
+    char*      catalog_schema = NULL;
+    PGconn*    conn = NULL;
+    PGresult*  res = NULL;
+    StringInfo sql = NULL;
 
     conn = conn_get(onlinerefresh->conninfo);
     if (NULL == conn)
@@ -100,10 +100,9 @@ static bool onlinerefresh_integrate_gettrailno(onlinerefresh_integrate* onlinere
     catalog_schema = guc_getConfigOption(CFG_KEY_CATALOGSCHEMA);
 
     resetStringInfo(sql);
-    appendStringInfo(sql, "select rewind_fileid, rewind_offset, lsn from \"%s\".\"%s\" where name = '%s';",
-                            catalog_schema,
-                            SYNC_STATUSTABLE_NAME,
-                            name);
+    appendStringInfo(
+        sql, "select rewind_fileid, rewind_offset, lsn from \"%s\".\"%s\" where name = '%s';",
+        catalog_schema, SYNC_STATUSTABLE_NAME, name);
     res = conn_exec(conn, sql->data);
     if (NULL == res)
     {
@@ -112,19 +111,18 @@ static bool onlinerefresh_integrate_gettrailno(onlinerefresh_integrate* onlinere
         PQfinish(conn);
         return false;
     }
-    /* 将获取的 fileid 和 offset 设置为 read 中的信息 */
-    if (PQntuples(res) != 0 )
+    /* Set the obtained fileid and offset to read info */
+    if (PQntuples(res) != 0)
     {
         trailno = strtoul(PQgetvalue(res, 0, 0), NULL, 10);
         emitoffset = strtoul(PQgetvalue(res, 0, 1), NULL, 10);
         increment_integratesplittrail_emit_set(oliloadrecord->splittrailctx, trailno, emitoffset);
 
-        /*lsn信息*/
+        /* lsn info */
         lsn = strtoul(PQgetvalue(res, 0, 2), NULL, 10);
-        elog(RLOG_DEBUG, "onlinerefreshget record sync_status, trailno:%lu, emitoffset:%lu, lsn:%lu",
-                          trailno,
-                          emitoffset,
-                          lsn);
+        elog(RLOG_DEBUG,
+             "onlinerefreshget record sync_status, trailno:%lu, emitoffset:%lu, lsn:%lu", trailno,
+             emitoffset, lsn);
         PQclear(res);
     }
     PQfinish(conn);
@@ -133,19 +131,20 @@ static bool onlinerefresh_integrate_gettrailno(onlinerefresh_integrate* onlinere
     return true;
 }
 
-/* 向sync状态表中添加refresh数据，并truncate存量表 */
-static bool onlinerefresh_integrate_refsetsynctable(onlinerefresh_integrate* onlinerefresh, thrnode* thrnode)
+/* Add refresh data to sync status table and truncate bulk table */
+static bool onlinerefresh_integrate_refsetsynctable(onlinerefresh_integrate* onlinerefresh,
+                                                    thrnode*                 thrnode)
 {
-    int index               = 0;
-    char* uuid              = NULL;
-    char* catalog_schema    = NULL;
-    PGconn *conn            = NULL;
-    PGresult *res           = NULL;
-    StringInfo sql          = NULL;
+    int        index = 0;
+    char*      uuid = NULL;
+    char*      catalog_schema = NULL;
+    PGconn*    conn = NULL;
+    PGresult*  res = NULL;
+    StringInfo sql = NULL;
 
 onlinerefresh_integrate_setsynctableretry:
     sleep(1);
-    if(THRNODE_STAT_TERM == thrnode->stat)
+    if (THRNODE_STAT_TERM == thrnode->stat)
     {
         return false;
     }
@@ -170,17 +169,16 @@ onlinerefresh_integrate_setsynctableretry:
     for (index = 0; index < onlinerefresh->parallelcnt; index++)
     {
         resetStringInfo(sql);
-        appendStringInfo(sql, "INSERT INTO \"%s\".\"%s\" \n"
-                              "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) \n"
-                              "VALUES (\'%s-%s%d\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
-                              "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
-                              "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
-                              catalog_schema,
-                              SYNC_STATUSTABLE_NAME,
-                              uuid,
-                              REFRESH_REFRESH,
-                              index,
-                              2);
+        appendStringInfo(
+            sql,
+            "INSERT INTO \"%s\".\"%s\" \n"
+            "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) "
+            "\n"
+            "VALUES (\'%s-%s%d\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
+            "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
+            "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
+            "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
+            catalog_schema, SYNC_STATUSTABLE_NAME, uuid, REFRESH_REFRESH, index, 2);
         res = conn_exec(conn, sql->data);
         if (NULL == res)
         {
@@ -191,11 +189,12 @@ onlinerefresh_integrate_setsynctableretry:
         PQclear(res);
     }
 
-    /* 清空表信息 */
+    /* Clear table info */
     if (1 == guc_getConfigOptionInt(CFG_KEY_TRUNCATETABLE))
     {
-        /* 如果清空失败，重新连接数据库并执行 */
-        if (false == refresh_table_syncstats_truncatetable_fromsyncstats(onlinerefresh->tablesyncstats, (void*)conn))
+        /* If clear fails, reconnect database and execute */
+        if (false == refresh_table_syncstats_truncatetable_fromsyncstats(
+                         onlinerefresh->tablesyncstats, (void*)conn))
         {
             res = conn_exec(conn, "ROLLBACK");
             if (NULL == res)
@@ -228,18 +227,19 @@ onlinerefresh_integrate_setsynctableretry:
     return true;
 }
 
-/* 向sync状态表添加增量数据 */
-static bool onlinerefresh_integrate_incsetsynctable(onlinerefresh_integrate* onlinerefresh, thrnode* thrnode)
+/* Add incremental data to sync status table */
+static bool onlinerefresh_integrate_incsetsynctable(onlinerefresh_integrate* onlinerefresh,
+                                                    thrnode*                 thrnode)
 {
-    char* uuid              = NULL;
-    char* catalog_schema    = NULL;
-    PGconn *conn            = NULL;
-    PGresult *res           = NULL;
-    StringInfo sql          = NULL;
+    char*      uuid = NULL;
+    char*      catalog_schema = NULL;
+    PGconn*    conn = NULL;
+    PGresult*  res = NULL;
+    StringInfo sql = NULL;
 
 onlinerefresh_integrate_incsetsynctableretry:
     sleep(1);
-    if(THRNODE_STAT_TERM == thrnode->stat)
+    if (THRNODE_STAT_TERM == thrnode->stat)
     {
         return false;
     }
@@ -256,16 +256,15 @@ onlinerefresh_integrate_incsetsynctableretry:
     catalog_schema = guc_getConfigOption(CFG_KEY_CATALOGSCHEMA);
 
     resetStringInfo(sql);
-    appendStringInfo(sql, "INSERT INTO \"%s\".\"%s\" \n"
-                          "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) \n"
-                          "VALUES (\'%s-%s\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
-                          "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
-                          "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
-                          catalog_schema,
-                          SYNC_STATUSTABLE_NAME,
-                          uuid,
-                          REFRESH_INCREMENT,
-                          2);
+    appendStringInfo(
+        sql,
+        "INSERT INTO \"%s\".\"%s\" \n"
+        "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) \n"
+        "VALUES (\'%s-%s\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
+        "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
+        "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
+        "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
+        catalog_schema, SYNC_STATUSTABLE_NAME, uuid, REFRESH_INCREMENT, 2);
     res = conn_exec(conn, sql->data);
     if (NULL == res)
     {
@@ -282,25 +281,26 @@ onlinerefresh_integrate_incsetsynctableretry:
     return true;
 }
 
-/* 有正在发起 onlinerefresh 中的表,那么返回 true */
+/* If there is a table being processed in onlinerefresh, return true */
 bool onlinerefresh_integrate_isconflict(dlistnode* in_dlnode)
 {
-    dlistnode* dlnode = NULL;
+    dlistnode*               dlnode = NULL;
     onlinerefresh_integrate* onlinerefresh_node = NULL;
     onlinerefresh_integrate* current_node = NULL;
 
     dlnode = in_dlnode->prev;
-    if(NULL == dlnode)
+    if (NULL == dlnode)
     {
         return false;
     }
     current_node = (onlinerefresh_integrate*)in_dlnode->value;
 
-    for(; NULL != dlnode; dlnode = dlnode->prev)
+    for (; NULL != dlnode; dlnode = dlnode->prev)
     {
         onlinerefresh_node = (onlinerefresh_integrate*)dlnode->value;
-        
-        if (false == refresh_table_syncstats_compare(onlinerefresh_node->tablesyncstats, current_node->tablesyncstats))
+
+        if (false == refresh_table_syncstats_compare(onlinerefresh_node->tablesyncstats,
+                                                     current_node->tablesyncstats))
         {
             continue;
         }
@@ -314,11 +314,12 @@ bool onlinerefresh_integrate_isconflict(dlistnode* in_dlnode)
     return false;
 }
 
-bool onlinerefresh_integrate_persist2onlinerefreshmgr(onlinerefresh_persist *persist, void **onlinerefresh)
+bool onlinerefresh_integrate_persist2onlinerefreshmgr(onlinerefresh_persist* persist,
+                                                      void**                 onlinerefresh)
 {
-    dlist *result                           = NULL;
-    dlistnode *dnode                        = NULL;
-    onlinerefresh_integrate *olrmgr  = NULL;
+    dlist*                   result = NULL;
+    dlistnode*               dnode = NULL;
+    onlinerefresh_integrate* olrmgr = NULL;
 
     if (NULL == persist)
     {
@@ -331,22 +332,22 @@ bool onlinerefresh_integrate_persist2onlinerefreshmgr(onlinerefresh_persist *per
         return true;
     }
 
-    /* 遍历persist */
+    /* Traverse persist */
     for (dnode = persist->dpersistnodes->head; NULL != dnode; dnode = dnode->next)
     {
-        onlinerefresh_persistnode *persistnode = (onlinerefresh_persistnode *)dnode->value;
+        onlinerefresh_persistnode* persistnode = (onlinerefresh_persistnode*)dnode->value;
 
-        /* 已完成的和放弃掉的不再处理 */
-        if (ONLINEREFRESH_PERSISTNODE_STAT_DONE == persistnode->stat
-            || ONLINEREFRESH_PERSISTNODE_STAT_ABANDON == persistnode->stat)
+        /* Already completed and abandoned are not processed */
+        if (ONLINEREFRESH_PERSISTNODE_STAT_DONE == persistnode->stat ||
+            ONLINEREFRESH_PERSISTNODE_STAT_ABANDON == persistnode->stat)
         {
             continue;
         }
 
-        /* 包含了对txn的创建 */
-        /* 构建manager并初始化 设置xid 和 begin*/
+        /* Contains txn creation */
+        /* Build manager and init, set xid and begin */
         olrmgr = onlinerefresh_integrate_init(persistnode->increment);
-        if(NULL == olrmgr)
+        if (NULL == olrmgr)
         {
             elog(RLOG_WARNING, "onlinerefres init onlinerefresh error");
             return false;
@@ -368,24 +369,24 @@ bool onlinerefresh_integrate_persist2onlinerefreshmgr(onlinerefresh_persist *per
     return true;
 }
 
-/* 启动 refresh 工作线程 */
+/* Start refresh job thread */
 static bool onlinerefresh_integrate_startrefreshjob(onlinerefresh_integrate* olintegrate)
 {
-    int index                               = 0;
-    char* uuid                              = NULL;
-    refresh_sharding2db *shard2db    = NULL;
+    int                  index = 0;
+    char*                uuid = NULL;
+    refresh_sharding2db* shard2db = NULL;
 
-    /* 为每一个线程分配空间 */
+    /* Allocate space for each thread */
     for (index = 0; index < olintegrate->parallelcnt; index++)
     {
-        /* 分配空间和初始化 */
+        /* Allocate space and init */
         shard2db = refresh_sharding2db_init();
         if (NULL == shard2db)
         {
             return false;
         }
         shard2db->name = (char*)rmalloc0(NAMEDATALEN);
-        if(NULL == shard2db->name)
+        if (NULL == shard2db->name)
         {
             elog(RLOG_WARNING, "malloc sharding2dbname out of memory");
             refresh_sharding2db_free(shard2db);
@@ -401,14 +402,11 @@ static bool onlinerefresh_integrate_startrefreshjob(onlinerefresh_integrate* oli
         shard2db->syncstats->tablesyncstats = olintegrate->tablesyncstats;
         shard2db->syncstats->queue = olintegrate->tqueue;
 
-        /* 注册工作线程 */
-        if(false == threads_addjobthread(olintegrate->thrsmgr->parents,
-                                                THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_JOB,
-                                                olintegrate->thrsmgr->submgrref.no,
-                                                (void*)shard2db,
-                                                refresh_sharding2db_free,
-                                                NULL,
-                                                refresh_sharding2db_work))
+        /* Register job thread */
+        if (false == threads_addjobthread(olintegrate->thrsmgr->parents,
+                                          THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_JOB,
+                                          olintegrate->thrsmgr->submgrref.no, (void*)shard2db,
+                                          refresh_sharding2db_free, NULL, refresh_sharding2db_work))
         {
             elog(RLOG_WARNING, "refresh integrate start job error");
             return false;
@@ -417,30 +415,30 @@ static bool onlinerefresh_integrate_startrefreshjob(onlinerefresh_integrate* oli
     return true;
 }
 
-/* 启动增量工作线程 */
+/* Start incremental job thread */
 static bool onlinerefresh_integrate_startincrementjob(onlinerefresh_integrate* olintegrate)
 {
-    char* uuid                                                      = NULL;
-    onlinerefresh_integratesplittrail* oliloadrecord         = NULL;
-    onlinerefresh_integrateparsertrail* oliparsertrail       = NULL;
-    onlinerefresh_integrateincsync* olisync                  = NULL;
-    onlinerefresh_integraterebuild* olirebuild               = NULL;
+    char*                               uuid = NULL;
+    onlinerefresh_integratesplittrail*  oliloadrecord = NULL;
+    onlinerefresh_integrateparsertrail* oliparsertrail = NULL;
+    onlinerefresh_integrateincsync*     olisync = NULL;
+    onlinerefresh_integraterebuild*     olirebuild = NULL;
 
-    if(false == olintegrate->increment)
+    if (false == olintegrate->increment)
     {
-        /* 不需要启动增量 */
+        /* No need to start incremental */
         return true;
     }
 
-    /*---------------------应用线程 begin------------------*/
+    /*---------------------Apply thread begin------------------*/
     olisync = onlinerefresh_integrateincsync_init();
-    if(NULL == olisync)
+    if (NULL == olisync)
     {
         elog(RLOG_WARNING, "onlinerefresh integrate sync init error");
         return false;
     }
     olisync->base.name = (char*)rmalloc0(NAMEDATALEN);
-    if(NULL == olisync->base.name)
+    if (NULL == olisync->base.name)
     {
         elog(RLOG_WARNING, "malloc sharding2dbname out of memory");
         onlinerefresh_integrateincsync_free(olisync);
@@ -453,104 +451,98 @@ static bool onlinerefresh_integrate_startincrementjob(onlinerefresh_integrate* o
     olisync->rebuild2sync = olintegrate->rebuild2sync;
     olisync->base.conninfo = guc_getConfigOption(CFG_KEY_URL);
 
-    /*---------------------应用线程   end------------------*/
+    /*---------------------Apply thread   end------------------*/
 
-    /*---------------------事务重组线程 begin----------------*/
+    /*---------------------Rebuild thread begin----------------*/
     olirebuild = onlinerefresh_integraterebuild_init();
-    if(NULL == olirebuild)
+    if (NULL == olirebuild)
     {
         elog(RLOG_WARNING, "onlinerefresh integrate rebuild init error");
         return false;
     }
     olirebuild->parser2rebuild = olintegrate->parser2rebuild;
     olirebuild->rebuild2sync = olintegrate->rebuild2sync;
-    /*---------------------事务重组线程   end----------------*/
+    /*---------------------Rebuild thread   end----------------*/
 
-    /*---------------------解析器线程 begin----------------*/
-    /* 
-     * 解析器初始化
-     * parserwal回调设置
-    */
+    /*---------------------Parser thread begin----------------*/
+    /*
+     * Parser init
+     * parserwal callback set
+     */
     oliparsertrail = onlinerefresh_integrateparsertrail_init();
-    if(NULL == olirebuild)
+    if (NULL == olirebuild)
     {
         elog(RLOG_WARNING, "onlinerefresh integrate parsertrail init error");
         return false;
     }
     oliparsertrail->decodingctx->parsertrail.parser2txn = olintegrate->parser2rebuild;
     oliparsertrail->decodingctx->recordscache = olintegrate->recordscache;
-    /*---------------------解析器线程   end----------------*/
+    /*---------------------Parser thread   end----------------*/
 
-    /*---------------------trail拆分线程 begin--------------*/
+    /*---------------------Trail split thread begin--------------*/
     oliloadrecord = onlinerefresh_integratesplittrail_init();
-    if(NULL == oliloadrecord)
+    if (NULL == oliloadrecord)
     {
         elog(RLOG_WARNING, "onlinerefresh integrate init splittrail error");
         return false;
     }
     rmemset1(oliloadrecord->splittrailctx->capturedata, 0, '\0', MAXPGPATH);
-    snprintf(oliloadrecord->splittrailctx->capturedata, MAXPGPATH, "%s/%s" , olintegrate->data, STORAGE_TRAIL_DIR);
+    snprintf(oliloadrecord->splittrailctx->capturedata, MAXPGPATH, "%s/%s", olintegrate->data,
+             STORAGE_TRAIL_DIR);
 
-    /* 设置加载的路径 */
-    if(false == loadtrailrecords_setloadsource(oliloadrecord->splittrailctx->loadrecords, oliloadrecord->splittrailctx->capturedata))
+    /* Set load path */
+    if (false == loadtrailrecords_setloadsource(oliloadrecord->splittrailctx->loadrecords,
+                                                oliloadrecord->splittrailctx->capturedata))
     {
         elog(RLOG_WARNING, "integrate onlinerefresh set capture data error");
         return false;
     }
     oliloadrecord->splittrailctx->recordscache = olintegrate->recordscache;
     onlinerefresh_integrate_gettrailno(olintegrate, oliloadrecord, olisync->base.name);
-    /*---------------------trail拆分线程   end--------------*/
+    /*---------------------Trail split thread   end--------------*/
 
     /*
-     * 启动各线程
+     * Start all threads
      */
-    /* 注册应用线程 */
-    if(false == threads_addjobthread(olintegrate->thrsmgr->parents,
-                                            THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_SYNC,
-                                            olintegrate->thrsmgr->submgrref.no,
-                                            (void*)olisync,
-                                            onlinerefresh_integrateincsync_free,
-                                            NULL,
-                                            onlinerefresh_integrateincsync_main))
+    /* Register apply thread */
+    if (false == threads_addjobthread(olintegrate->thrsmgr->parents,
+                                      THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_SYNC,
+                                      olintegrate->thrsmgr->submgrref.no, (void*)olisync,
+                                      onlinerefresh_integrateincsync_free, NULL,
+                                      onlinerefresh_integrateincsync_main))
     {
         elog(RLOG_WARNING, "onlinerefresh integrate start increment sync job error");
         return false;
     }
-    
-    /* 注册事务重组线程 */
-    if(false == threads_addjobthread(olintegrate->thrsmgr->parents,
-                                            THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_REBUILD,
-                                            olintegrate->thrsmgr->submgrref.no,
-                                            (void*)olirebuild,
-                                            onlinerefresh_integraterebuild_free,
-                                            NULL,
-                                            onlinerefresh_integraterebuild_main))
+
+    /* Register rebuild thread */
+    if (false == threads_addjobthread(olintegrate->thrsmgr->parents,
+                                      THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_REBUILD,
+                                      olintegrate->thrsmgr->submgrref.no, (void*)olirebuild,
+                                      onlinerefresh_integraterebuild_free, NULL,
+                                      onlinerefresh_integraterebuild_main))
     {
         elog(RLOG_WARNING, "onlinerefresh integrate start increment rebuild job error");
         return false;
     }
 
-    /* 注册解析器线程 */
-    if(false == threads_addjobthread(olintegrate->thrsmgr->parents,
-                                            THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_PARSER,
-                                            olintegrate->thrsmgr->submgrref.no,
-                                            (void*)oliparsertrail,
-                                            onlinerefresh_integrateparsertrail_free,
-                                            NULL,
-                                            onlinerefresh_integrateparsertrail_main))
+    /* Register parser thread */
+    if (false == threads_addjobthread(olintegrate->thrsmgr->parents,
+                                      THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_PARSER,
+                                      olintegrate->thrsmgr->submgrref.no, (void*)oliparsertrail,
+                                      onlinerefresh_integrateparsertrail_free, NULL,
+                                      onlinerefresh_integrateparsertrail_main))
     {
         elog(RLOG_WARNING, "onlinerefresh integrate start increment parsertrail job error");
         return false;
     }
 
-    /* 注册 loadrecords线程 */
-    if(false == threads_addjobthread(olintegrate->thrsmgr->parents,
-                                            THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_LOADRECORDS,
-                                            olintegrate->thrsmgr->submgrref.no,
-                                            (void*)oliloadrecord,
-                                            onlinerefresh_integratesplittrail_free,
-                                            NULL,
-                                            onlinerefresh_integratesplittrail_main))
+    /* Register loadrecords thread */
+    if (false == threads_addjobthread(olintegrate->thrsmgr->parents,
+                                      THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_LOADRECORDS,
+                                      olintegrate->thrsmgr->submgrref.no, (void*)oliloadrecord,
+                                      onlinerefresh_integratesplittrail_free, NULL,
+                                      onlinerefresh_integratesplittrail_main))
     {
         elog(RLOG_WARNING, "onlinerefresh integrate start increment splittrail job error");
         return false;
@@ -558,37 +550,37 @@ static bool onlinerefresh_integrate_startincrementjob(onlinerefresh_integrate* o
     return true;
 }
 
-/* 线程处理入口 */
-void *onlinerefresh_integrate_manage(void* args)
+/* Thread processing entry */
+void* onlinerefresh_integrate_manage(void* args)
 {
-    int jobcnt                                      = 0;
-    onlinerefresh_integrate_stat jobstat     = ONLINEREFRESH_INTEGRATE_STAT_JOBNOP;
-    char* uuid                                      = NULL;
-    ListCell* lc                                    = NULL;
-    thrref* thr_ref                           = NULL;
-    thrnode* thr_node                         = NULL;
-    thrnode* incsync_thrnode                  = NULL;
-    thrnode* increbuild_thrnode               = NULL;
-    thrnode* incparser_thrnode                = NULL;
-    thrnode* incloadrec_thrnode               = NULL;
-    onlinerefresh_integrate *olintegrate     = NULL;
+    int                          jobcnt = 0;
+    onlinerefresh_integrate_stat jobstat = ONLINEREFRESH_INTEGRATE_STAT_JOBNOP;
+    char*                        uuid = NULL;
+    ListCell*                    lc = NULL;
+    thrref*                      thr_ref = NULL;
+    thrnode*                     thr_node = NULL;
+    thrnode*                     incsync_thrnode = NULL;
+    thrnode*                     increbuild_thrnode = NULL;
+    thrnode*                     incparser_thrnode = NULL;
+    thrnode*                     incloadrec_thrnode = NULL;
+    onlinerefresh_integrate*     olintegrate = NULL;
 
     elog(RLOG_INFO, "start integrate online refresh manage");
 
-    thr_node = (thrnode *)args;
-    olintegrate = (onlinerefresh_integrate *)thr_node->data;
+    thr_node = (thrnode*)args;
+    olintegrate = (onlinerefresh_integrate*)thr_node->data;
 
     uuid = uuid2string(&olintegrate->no);
     sprintf(olintegrate->data, "%s/%s/%s", guc_getConfigOption(CFG_KEY_TRAIL_DIR),
-                                             REFRESH_ONLINEREFRESH,
-                                             uuid);
+            REFRESH_ONLINEREFRESH, uuid);
 
     rfree(uuid);
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* Check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "onlinerefresh integrate stat exception, expected stat is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "onlinerefresh integrate stat exception, expected stat is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         osal_thread_exit(NULL);
         return NULL;
@@ -598,7 +590,7 @@ void *onlinerefresh_integrate_manage(void* args)
 
     olintegrate->stat = ONLINEREFRESH_INTEGRATE_RUNNING;
 
-    if(false == onlinerefresh_integrate_refsetsynctable(olintegrate, thr_node))
+    if (false == onlinerefresh_integrate_refsetsynctable(olintegrate, thr_node))
     {
         elog(RLOG_WARNING, "onlinerefresh integrate set synctable error");
         thr_node->stat = THRNODE_STAT_ABORT;
@@ -606,10 +598,10 @@ void *onlinerefresh_integrate_manage(void* args)
         return NULL;
     }
 
-    /* 
-     * 存量注册工作线程
+    /*
+     * Bulk register job thread
      */
-    if(false == onlinerefresh_integrate_startrefreshjob(olintegrate))
+    if (false == onlinerefresh_integrate_startrefreshjob(olintegrate))
     {
         elog(RLOG_WARNING, "onlinerefresh integrate start refresh job thread error");
         thr_node->stat = THRNODE_STAT_ABORT;
@@ -618,19 +610,19 @@ void *onlinerefresh_integrate_manage(void* args)
     }
 
     jobstat = ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILREFRESHSTARTING;
-    /* 主循环 */
+    /* Main loop */
     while (true)
     {
-        /* 
-         * 首先判断是否接收到退出信号
-         *  对于子管理线程，收到 TERM 信号有两种场景:
-         *  1、子管理线程的上级常驻线程退出
-         *  2、接收到了退出标识
-         * 
-         * 上述两种场景, 都不需要子管理线程设置工作线程为 FREE 状态
+        /*
+         * First check if exit signal is received
+         *  For child manager thread, receiving TERM signal has two scenarios:
+         *  1. Parent daemon thread of child manager thread exits
+         *  2. Exit flag is received
+         *
+         * In both cases, child manager thread does not need to set job thread to FREE state
          */
         usleep(50000);
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
             thr_node->stat = THRNODE_STAT_EXIT;
             osal_thread_exit(NULL);
@@ -641,19 +633,18 @@ void *onlinerefresh_integrate_manage(void* args)
         {
             if (ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTSTARTING > jobstat)
             {
-                /* 设置空闲的线程退出并统计退出的线程个数 */
+                /* Set idle threads to exit and count exited threads */
                 jobcnt = olintegrate->parallelcnt;
-                if(false == threads_setsubmgrjobthredstermandcountexit(olintegrate->thrsmgr->parents,
-                                                                            olintegrate->thrsmgr->childthrrefs,
-                                                                            0,
-                                                                            &jobcnt))
+                if (false == threads_setsubmgrjobthredstermandcountexit(
+                                 olintegrate->thrsmgr->parents, olintegrate->thrsmgr->childthrrefs,
+                                 0, &jobcnt))
                 {
                     elog(RLOG_WARNING, "integrate refresh set job threads term in idle error");
                     thr_node->stat = THRNODE_STAT_ABORT;
                     goto onlinerefresh_integrate_main_done;
                 }
 
-                if(jobcnt != olintegrate->parallelcnt)
+                if (jobcnt != olintegrate->parallelcnt)
                 {
                     continue;
                 }
@@ -666,44 +657,42 @@ void *onlinerefresh_integrate_manage(void* args)
                 olintegrate->stat = ONLINEREFRESH_INTEGRATE_ABANDONED;
                 break;
             }
-            
-            if (incsync_thrnode != NULL
-                && increbuild_thrnode != NULL
-                && incparser_thrnode != NULL
-                && incloadrec_thrnode != NULL)
+
+            if (incsync_thrnode != NULL && increbuild_thrnode != NULL &&
+                incparser_thrnode != NULL && incloadrec_thrnode != NULL)
             {
-                /* 设置 sync 线程退出 */
-                if(THRNODE_STAT_TERM > incsync_thrnode->stat)
+                /* Set sync thread to exit */
+                if (THRNODE_STAT_TERM > incsync_thrnode->stat)
                 {
                     incsync_thrnode->stat = THRNODE_STAT_TERM;
                     continue;
                 }
-                
-                /* 设置 rebuild 线程退出 */
-                if(THRNODE_STAT_TERM > increbuild_thrnode->stat)
+
+                /* Set rebuild thread to exit */
+                if (THRNODE_STAT_TERM > increbuild_thrnode->stat)
                 {
                     increbuild_thrnode->stat = THRNODE_STAT_TERM;
                     continue;
                 }
 
-                /* 设置 loadrecords 线程退出 */
-                if(THRNODE_STAT_TERM > incloadrec_thrnode->stat)
+                /* Set loadrecords thread to exit */
+                if (THRNODE_STAT_TERM > incloadrec_thrnode->stat)
                 {
                     incloadrec_thrnode->stat = THRNODE_STAT_TERM;
                     continue;
                 }
 
-                /* 设置 parsert 线程退出 */
-                if(THRNODE_STAT_TERM > incparser_thrnode->stat)
+                /* Set parser thread to exit */
+                if (THRNODE_STAT_TERM > incparser_thrnode->stat)
                 {
                     incparser_thrnode->stat = THRNODE_STAT_TERM;
                     continue;
                 }
 
-                if(THRNODE_STAT_EXITED != incloadrec_thrnode->stat
-                    || THRNODE_STAT_EXITED != incparser_thrnode->stat
-                    || THRNODE_STAT_EXITED != incsync_thrnode->stat
-                    || THRNODE_STAT_EXITED != increbuild_thrnode->stat)
+                if (THRNODE_STAT_EXITED != incloadrec_thrnode->stat ||
+                    THRNODE_STAT_EXITED != incparser_thrnode->stat ||
+                    THRNODE_STAT_EXITED != incsync_thrnode->stat ||
+                    THRNODE_STAT_EXITED != increbuild_thrnode->stat)
                 {
                     continue;
                 }
@@ -712,39 +701,42 @@ void *onlinerefresh_integrate_manage(void* args)
             break;
         }
 
-        /* 等待子线程全部启动成功 */
-        if(ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILREFRESHSTARTING == jobstat)
+        /* Wait for all child threads to start successfully */
+        if (ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILREFRESHSTARTING == jobstat)
         {
-            /* 查看是否已经启动成功 */
+            /* Check if already started successfully */
             jobcnt = 0;
-            if(false == threads_countsubmgrjobthredsabovework(olintegrate->thrsmgr->parents,
-                                                                     olintegrate->thrsmgr->childthrrefs,
-                                                                     &jobcnt))
+            if (false == threads_countsubmgrjobthredsabovework(olintegrate->thrsmgr->parents,
+                                                               olintegrate->thrsmgr->childthrrefs,
+                                                               &jobcnt))
             {
                 elog(RLOG_WARNING, "capture onlinerefresh count job thread above work stat error");
                 thr_node->stat = THRNODE_STAT_ABORT;
                 goto onlinerefresh_integrate_main_done;
             }
 
-            if(jobcnt != olintegrate->thrsmgr->childthrrefs->length)
+            if (jobcnt != olintegrate->thrsmgr->childthrrefs->length)
             {
                 continue;
             }
             jobstat = ONLINEREFRESH_INTEGRATE_STAT_JOBWORKING;
             continue;
         }
-        else if(ONLINEREFRESH_INTEGRATE_STAT_JOBWORKING == jobstat)
+        else if (ONLINEREFRESH_INTEGRATE_STAT_JOBWORKING == jobstat)
         {
-            /* 工作线程已经启动, 那么向队列中加入工作任务 */
-            if(false == refresh_table_syncstat_genqueue(olintegrate->tablesyncstats, (void*)olintegrate->tqueue, olintegrate->data))
+            /* Job threads have started, add job tasks to queue */
+            if (false == refresh_table_syncstat_genqueue(olintegrate->tablesyncstats,
+                                                         (void*)olintegrate->tqueue,
+                                                         olintegrate->data))
             {
-                /* 向队列中加入任务失败, 那么管理线程退出, 子线程的回收由主线程处理 */
+                /* Failed to add task to queue, management thread exits, child thread recovery
+                 * handled by main thread */
                 thr_node->stat = THRNODE_STAT_ABORT;
                 break;
             }
 
-            /* 首先判断是否存在任务和待同步表 */
-            if (NULL ==  olintegrate->tablesyncstats->tablesyncing)
+            /* First check if tasks and tables to be synced exist */
+            if (NULL == olintegrate->tablesyncstats->tablesyncing)
             {
                 jobstat = ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTREFRESHDONE;
             }
@@ -753,29 +745,28 @@ void *onlinerefresh_integrate_manage(void* args)
         else if (ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTREFRESHDONE == jobstat)
         {
             /*
-             * 等待存量线程退出
-             *  1、队列为空
-             *  2、存量线程完全退出
+             * Wait for stock data thread to exit
+             *  1、Queue is empty
+             *  2、Stock data thread completely exited
              */
-            if(false == queue_isnull(olintegrate->tqueue))
+            if (false == queue_isnull(olintegrate->tqueue))
             {
-                /* 队列不为空, 证明还有任务需要处理 */
+                /* Queue is not empty, indicating there are still tasks to process */
                 continue;
             }
 
-            /* 设置空闲的线程退出并统计退出的线程个数 */
+            /* Set idle threads to exit and count the number of exited threads */
             jobcnt = olintegrate->parallelcnt;
-            if(false == threads_setsubmgrjobthredstermandcountexit(olintegrate->thrsmgr->parents,
-                                                                         olintegrate->thrsmgr->childthrrefs,
-                                                                         0,
-                                                                         &jobcnt))
+            if (false ==
+                threads_setsubmgrjobthredstermandcountexit(
+                    olintegrate->thrsmgr->parents, olintegrate->thrsmgr->childthrrefs, 0, &jobcnt))
             {
                 elog(RLOG_WARNING, "integrate refresh set job threads term in idle error");
                 thr_node->stat = THRNODE_STAT_ABORT;
                 goto onlinerefresh_integrate_main_done;
             }
 
-            if(jobcnt != olintegrate->parallelcnt)
+            if (jobcnt != olintegrate->parallelcnt)
             {
                 continue;
             }
@@ -785,65 +776,76 @@ void *onlinerefresh_integrate_manage(void* args)
             olintegrate->stat = ONLINEREFRESH_INTEGRATE_REFRESHDONE;
             continue;
         }
-        else if(ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTSTARTING == jobstat)
+        else if (ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTSTARTING == jobstat)
         {
-            if(true == olintegrate->increment)
+            if (true == olintegrate->increment)
             {
-                if(false == onlinerefresh_integrate_incsetsynctable(olintegrate, thr_node))
+                if (false == onlinerefresh_integrate_incsetsynctable(olintegrate, thr_node))
                 {
                     elog(RLOG_WARNING, "onlinerefresh integrate increment set synctable error");
                     continue;
                 }
 
-                /* 启动增量工作线程 */
-                if(false == onlinerefresh_integrate_startincrementjob(olintegrate))
+                /* Start incremental job thread */
+                if (false == onlinerefresh_integrate_startincrementjob(olintegrate))
                 {
                     elog(RLOG_WARNING, "onlinerefresh integrate start increment thread error");
                     thr_node->stat = THRNODE_STAT_ABORT;
                     break;
                 }
 
-                /* 预先获取到 increment->parser 线程, 方面后续的逻辑判断 */
-                /* 获取 loadrecord 线程 */
+                /* Get increment->parser thread in advance for subsequent logic judgment */
+                /* Get loadrecord thread */
                 lc = olintegrate->thrsmgr->childthrrefs->head;
                 thr_ref = (thrref*)lfirst(lc);
-                incloadrec_thrnode = threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
-                if(NULL == incloadrec_thrnode)
+                incloadrec_thrnode =
+                    threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
+                if (NULL == incloadrec_thrnode)
                 {
-                    elog(RLOG_WARNING, "integrate onlinerefresh can not get load record thread by no:%lu", thr_ref->no);
+                    elog(RLOG_WARNING,
+                         "integrate onlinerefresh can not get load record thread by no:%lu",
+                         thr_ref->no);
                     thr_node->stat = THRNODE_STAT_ABORT;
                     osal_thread_exit(NULL);
                 }
 
-                /* 获取 parser 线程 */
+                /* Get parser thread */
                 lc = lc->next;
                 thr_ref = (thrref*)lfirst(lc);
-                incparser_thrnode = threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
-                if(NULL == incparser_thrnode)
+                incparser_thrnode =
+                    threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
+                if (NULL == incparser_thrnode)
                 {
-                    elog(RLOG_WARNING, "integrate onlinerefresh can not get parser thread by no:%lu", thr_ref->no);
+                    elog(RLOG_WARNING,
+                         "integrate onlinerefresh can not get parser thread by no:%lu",
+                         thr_ref->no);
                     thr_node->stat = THRNODE_STAT_ABORT;
                     osal_thread_exit(NULL);
                 }
 
-                /* 获取 serail 线程 */
+                /* Get rebuild thread */
                 lc = lc->next;
                 thr_ref = (thrref*)lfirst(lc);
-                increbuild_thrnode = threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
-                if(NULL == increbuild_thrnode)
+                increbuild_thrnode =
+                    threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
+                if (NULL == increbuild_thrnode)
                 {
-                    elog(RLOG_WARNING, "integrate onlinerefresh can not get rebuild thread by no:%lu", thr_ref->no);
+                    elog(RLOG_WARNING,
+                         "integrate onlinerefresh can not get rebuild thread by no:%lu",
+                         thr_ref->no);
                     thr_node->stat = THRNODE_STAT_ABORT;
                     osal_thread_exit(NULL);
                 }
 
-                /* 获取 flush 线程 */
+                /* Get sync thread */
                 lc = lc->next;
                 thr_ref = (thrref*)lfirst(lc);
-                incsync_thrnode = threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
-                if(NULL == incsync_thrnode)
+                incsync_thrnode =
+                    threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
+                if (NULL == incsync_thrnode)
                 {
-                    elog(RLOG_WARNING, "integrate onlinerefresh can not get sync thread by no:%lu", thr_ref->no);
+                    elog(RLOG_WARNING, "integrate onlinerefresh can not get sync thread by no:%lu",
+                         thr_ref->no);
                     thr_node->stat = THRNODE_STAT_ABORT;
                     osal_thread_exit(NULL);
                 }
@@ -853,70 +855,68 @@ void *onlinerefresh_integrate_manage(void* args)
         }
         else if (ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTDONE == jobstat)
         {
-            /* 
-             * 在 onlinerefresh 中, 需要先等待 increment->parser 线程退出
-             *  parser 在同步过程解析到onlinerefreshend的事务后就会退出
-             *  sync 应用完onlinerefreshend的事务后就会退出
-             *  等待 解析、应用线程退出后, 设置 loadrecord、rebuild 线程为 TERM
+            /*
+             * In onlinerefresh, need to wait for increment->parser thread to exit first
+             *  parser will exit after parsing onlinerefreshend transaction during sync process
+             *  sync will exit after applying onlinerefreshend transaction
+             *  After waiting for parser and apply threads to exit, set loadrecord and rebuild
+             * threads to TERM
              */
-            if(false == olintegrate->increment)
+            if (false == olintegrate->increment)
             {
-                /* 没有增量线程, 设置本线程退出 */
+                /* No incremental thread, set this thread to exit */
                 thr_node->stat = THRNODE_STAT_EXIT;
                 break;
             }
 
-            if(THRNODE_STAT_EXITED != incparser_thrnode->stat
-                || THRNODE_STAT_EXITED != incsync_thrnode->stat)
+            if (THRNODE_STAT_EXITED != incparser_thrnode->stat ||
+                THRNODE_STAT_EXITED != incsync_thrnode->stat)
             {
-                /* 解析线程未退出, 等待 */
+                /* Parser thread not exited, waiting */
                 continue;
             }
 
-            /* 设置 loadrecords 线程退出 */
-            if(THRNODE_STAT_TERM > incloadrec_thrnode->stat)
+            /* Set loadrecords thread to exit */
+            if (THRNODE_STAT_TERM > incloadrec_thrnode->stat)
             {
                 incloadrec_thrnode->stat = THRNODE_STAT_TERM;
                 continue;
             }
 
-            /* 设置 rebuild 线程退出 */
-            if(THRNODE_STAT_TERM > increbuild_thrnode->stat)
+            /* Set rebuild thread to exit */
+            if (THRNODE_STAT_TERM > increbuild_thrnode->stat)
             {
                 increbuild_thrnode->stat = THRNODE_STAT_TERM;
                 continue;
             }
 
-            if(THRNODE_STAT_EXITED != incloadrec_thrnode->stat
-                || THRNODE_STAT_EXITED != increbuild_thrnode->stat)
+            if (THRNODE_STAT_EXITED != incloadrec_thrnode->stat ||
+                THRNODE_STAT_EXITED != increbuild_thrnode->stat)
             {
                 continue;
             }
-            
-            /* 设置本线程退出 */
+
+            /* Set this thread to exit */
             thr_node->stat = THRNODE_STAT_EXIT;
             olintegrate->stat = ONLINEREFRESH_INTEGRATE_DONE;
             break;
         }
-        
     }
 
 onlinerefresh_integrate_main_done:
-    /* 所有线程都已经退出, 管理线程可以退出了 */
+    /* All threads have exited, management thread can exit */
     jobcnt = olintegrate->thrsmgr->childthrrefs->length;
     threads_setsubmgrjobthredsfree(olintegrate->thrsmgr->parents,
-                                          olintegrate->thrsmgr->childthrrefs,
-                                          0,
-                                          jobcnt);
+                                   olintegrate->thrsmgr->childthrrefs, 0, jobcnt);
     /* make compiler happy */
     return NULL;
 }
 
-onlinerefresh_integrate *onlinerefresh_integrate_init(bool increment)
+onlinerefresh_integrate* onlinerefresh_integrate_init(bool increment)
 {
-    onlinerefresh_integrate *onlinerefresh = NULL;
+    onlinerefresh_integrate* onlinerefresh = NULL;
 
-    onlinerefresh = (onlinerefresh_integrate *)rmalloc0(sizeof(onlinerefresh_integrate));
+    onlinerefresh = (onlinerefresh_integrate*)rmalloc0(sizeof(onlinerefresh_integrate));
     if (NULL == onlinerefresh)
     {
         elog(RLOG_WARNING, "onlinerefresh integrate malloc out of memory, %s", strerror(errno));
@@ -928,7 +928,7 @@ onlinerefresh_integrate *onlinerefresh_integrate_init(bool increment)
     onlinerefresh->txid = InvalidFullTransactionId;
 
     onlinerefresh->parallelcnt = guc_getConfigOptionInt(CFG_KEY_MAX_WORK_PER_REFRESH);
-    if(0 == onlinerefresh->parallelcnt)
+    if (0 == onlinerefresh->parallelcnt)
     {
         elog(RLOG_WARNING, "guc parameter  max_work_per_refresh configuration error");
         return NULL;
@@ -940,7 +940,7 @@ onlinerefresh_integrate *onlinerefresh_integrate_init(bool increment)
 
     onlinerefresh->tqueue = queue_init();
 
-    if(increment)
+    if (increment)
     {
         onlinerefresh->recordscache = queue_init();
 
@@ -949,14 +949,13 @@ onlinerefresh_integrate *onlinerefresh_integrate_init(bool increment)
         onlinerefresh->rebuild2sync = cache_txn_init();
     }
 
-
     return onlinerefresh;
 }
 
 void onlinerefresh_integrate_free(void* in_onlinerefresh)
 {
     onlinerefresh_integrate* onlinerefresh = NULL;
-    if(NULL == in_onlinerefresh)
+    if (NULL == in_onlinerefresh)
     {
         return;
     }
@@ -977,7 +976,7 @@ void onlinerefresh_integrate_free(void* in_onlinerefresh)
     {
         queue_destroy(onlinerefresh->recordscache, dlist_freevoid);
     }
-    
+
     if (onlinerefresh->parser2rebuild)
     {
         cache_txn_destroy(onlinerefresh->parser2rebuild);

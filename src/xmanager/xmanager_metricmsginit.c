@@ -20,32 +20,30 @@
 #include "xmanager/xmanager_metricmsginit.h"
 #include "xmanager/xmanager_metricmsg.h"
 
-
 /*
- * 处理 init 命令
- *  1、jobtype 需要小于 PROCESS
- *  2、校验 job 是否存在, 不存在报错
- *  3、创建异步消息挂载到 xscsci 节点上
- *  4、执行初始化命令
-*/
-bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric,
-                                         netpoolentry* npoolentry,
-                                         netpacket* npacket)
+ * Handle init command
+ *1. jobtype must be less than PROCESS
+ *2. Verify job exists, error if not
+ *3. Create async message and mount to xscsci node
+ *4. Execute init command
+ */
+bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                  netpacket* npacket)
 {
-    int errcode                                         = 0;
-    int len                                             = 0;
-    int jobtype                                         = 0;
-    uint8* uptr                                         = NULL;
-    char* jobname                                       = NULL;
-    xmanager_metricnode* pxmetricnode            = NULL;
+    int                        errcode = 0;
+    int                        len = 0;
+    int                        jobtype = 0;
+    uint8*                     uptr = NULL;
+    char*                      jobname = NULL;
+    xmanager_metricnode*       pxmetricnode = NULL;
     xmanager_metricxscscinode* xmetricxscscinode = NULL;
-    xmanager_metricfd2node* fd2node              = NULL;
-    xmanager_metricasyncmsg* asyncmsg            = NULL;
-    xmanager_metricnode xmetricnode              = { 0 };
-    char errormsg[2048]                                 = { 0 };
-    char execcmd[1024]                                  = { 0 };
+    xmanager_metricfd2node*    fd2node = NULL;
+    xmanager_metricasyncmsg*   asyncmsg = NULL;
+    xmanager_metricnode        xmetricnode = {0};
+    char                       errormsg[2048] = {0};
+    char                       execcmd[1024] = {0};
 
-    /* 获取作业类型 */
+    /* Get job type */
     uptr = npacket->data;
 
     /* msglen + crc32 + commandtype */
@@ -59,7 +57,8 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric,
     if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 512, "ERROR: xmanager recv init command, unsupport %s", xmanager_metricnode_getname(jobtype));
+        snprintf(errormsg, 512, "ERROR: xmanager recv init command, unsupport %s",
+                 xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parseinit_error;
     }
 
@@ -79,7 +78,7 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric,
     len -= 1;
     rmemcpy0(jobname, 0, uptr, len);
 
-    /* 查看节点是否存在 */
+    /* Check if node exists */
     xmetricnode.type = jobtype;
     xmetricnode.name = jobname;
 
@@ -100,19 +99,17 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric,
     else if (XMANAGER_METRICNODESTAT_OFFLINE == pxmetricnode->stat)
     {
         errcode = ERROR_MSGCOMMAND;
-        snprintf(errormsg, 2048,
-                 "ERROR: %s already init, use start command start %s node.",
+        snprintf(errormsg, 2048, "ERROR: %s already init, use start command start %s node.",
                  jobname, xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parseinit_error;
     }
 
-    /* 
-     * 创建异步消息
-     *  1、获取 xscsci 节点
-     *  2、创建异步等待消息
+    /*
+     * Create async message
+     *  1、Get xscsci node
+     *  2、Create async wait message
      */
-    fd2node = dlist_get(xmetric->fd2metricnodes,
-                        (void*)((uintptr_t)npoolentry->fd),
+    fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
                         xmanager_metricfd2node_cmp);
 
     xmetricxscscinode = (xmanager_metricxscscinode*)fd2node->metricnode;
@@ -127,30 +124,23 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric,
     asyncmsg->errormsg = NULL;
     asyncmsg->msgtype = XMANAGER_MSG_INITCMD;
     asyncmsg->type = jobtype;
-    asyncmsg->name =jobname;
+    asyncmsg->name = jobname;
     jobname = NULL;
     asyncmsg->result = 0;
 
-    /* 执行 init 命令 execcmd */
+    /* Execute init command execcmd */
     if (XMANAGER_METRICNODETYPE_PGRECEIVELOG == jobtype)
     {
-        snprintf(execcmd,
-                 1024,
-                 "%s/bin/pgreceivelog/receivelog -f %s init",
-                 xmetric->xsynchpath,
+        snprintf(execcmd, 1024, "%s/bin/pgreceivelog/receivelog -f %s init", xmetric->xsynchpath,
                  pxmetricnode->conf);
     }
     else
     {
-        snprintf(execcmd,
-                 1024,
-                 "%s/bin/%s -f %s init",
-                 xmetric->xsynchpath,
-                 xmanager_metricnode_getname(jobtype),
-                 pxmetricnode->conf);
+        snprintf(execcmd, 1024, "%s/bin/%s -f %s init", xmetric->xsynchpath,
+                 xmanager_metricnode_getname(jobtype), pxmetricnode->conf);
     }
 
-    /* 执行 execcmd 命令 */
+    /* Execute execcmd command */
     if (false == execcommand(execcmd, xmetric->privdata, xmetric->privdatadestroy))
     {
         errcode = ERROR_MSGCOMMAND;
@@ -158,8 +148,8 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parseinit_error;
     }
 
-    /* 将消息挂载到异步消息队列中 */
-    xmetricxscscinode->asyncmsgs->msgs =  dlist_put(xmetricxscscinode->asyncmsgs->msgs, asyncmsg);
+    /* Mount message to async message queue */
+    xmetricxscscinode->asyncmsgs->msgs = dlist_put(xmetricxscscinode->asyncmsgs->msgs, asyncmsg);
     return true;
 
 xmanager_metricmsg_parseinit_error:
@@ -173,49 +163,41 @@ xmanager_metricmsg_parseinit_error:
         xmanager_metricasyncmsg_destroy(asyncmsg);
     }
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_INITCMD,
-                                                      errcode,
-                                                      errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_INITCMD,
+                                               errcode, errormsg);
 }
 
-
 /*
- * 组装 init 返回消息
-*/
-bool xmanager_metricmsg_assembleinit(xmanager_metric* xmetric,
-                                            netpoolentry* npoolentry,
-                                            dlist* dlmsgs)
+ * Assemble init response message
+ */
+bool xmanager_metricmsg_assembleinit(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                     dlist* dlmsgs)
 {
-    int ivalue                                          = 0;
-    int msglen                                          = 0;
-    int errmsglen                                       = 0;
-    uint8* uptr                                         = NULL;
-    netpacket* npacket                           = NULL;
-    xmanager_metricasyncmsg* xmetricasyncmsg     = NULL;
-    char errormsg[2048]                                 = { 0 };
+    int                      ivalue = 0;
+    int                      msglen = 0;
+    int                      errmsglen = 0;
+    uint8*                   uptr = NULL;
+    netpacket*               npacket = NULL;
+    xmanager_metricasyncmsg* xmetricasyncmsg = NULL;
+    char                     errormsg[2048] = {0};
 
     if (true == dlist_isnull(dlmsgs) || 1 < dlist_getcount(dlmsgs))
     {
-        /* 组装错误消息 */
+        /* Assemble error message */
         elog(RLOG_WARNING, "metric msg assemble init too many async msgs.");
         snprintf(errormsg, 2048, "metric msg assemble init too many async msgs.");
-        return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                          npoolentry->wpackets,
-                                                          XMANAGER_MSG_INITCMD,
-                                                          ERROR_MSGCOMMAND,
-                                                          errormsg);
+        return xmanager_metricmsg_assembleerrormsg(
+            xmetric, npoolentry->wpackets, XMANAGER_MSG_INITCMD, ERROR_MSGCOMMAND, errormsg);
     }
 
     xmetricasyncmsg = (xmanager_metricasyncmsg*)dlmsgs->head->value;
 
-    /* 总长度 + crc32 + type + flag */
+    /* Total length + crc32 + type + flag */
     msglen = 4 + 4 + 4 + 1;
 
     if (0 != xmetricasyncmsg->result)
     {
-        /* 4 长度 + 4 错误码 + 错误信息 */
+        /* 4 length + 4 Error code + Error message */
         errmsglen = 4 + 4;
         errmsglen += strlen(xmetricasyncmsg->errormsg);
     }
@@ -240,10 +222,10 @@ bool xmanager_metricmsg_assembleinit(xmanager_metric* xmetric,
 
     npacket->used = msglen;
 
-    /* 组装数据 */
+    /* Assemble data */
     uptr = npacket->data;
 
-    /* 长度 */
+    /* Length */
     ivalue = msglen;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
@@ -252,7 +234,7 @@ bool xmanager_metricmsg_assembleinit(xmanager_metric* xmetric,
     /* crc32 */
     uptr += 4;
 
-    /* 类型 */
+    /* Type */
     ivalue = XMANAGER_MSG_INITCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
@@ -263,24 +245,24 @@ bool xmanager_metricmsg_assembleinit(xmanager_metric* xmetric,
 
     if (1 == xmetricasyncmsg->result)
     {
-        /* 总长度 */
+        /* Total length */
         ivalue = errmsglen;
         ivalue = r_hton32(ivalue);
         rmemcpy1(uptr, 0, &ivalue, 4);
         uptr += 4;
 
-        /* 错误码 */
+        /* Error code */
         ivalue = xmetricasyncmsg->errcode;
         ivalue = r_hton32(ivalue);
         rmemcpy1(uptr, 0, &ivalue, 4);
         uptr += 4;
 
-        /* 错误信息 */
+        /* Error message */
         errmsglen -= 8;
         rmemcpy1(uptr, 0, xmetricasyncmsg->errormsg, errmsglen);
     }
 
-    /* 将 netpacket 挂载到待发送队列中 */
+    /* Mount netpacket to send queue */
     if (false == queue_put(npoolentry->wpackets, (void*)npacket))
     {
         elog(RLOG_WARNING, "xmanager metric assemble init msg add message to queue error");

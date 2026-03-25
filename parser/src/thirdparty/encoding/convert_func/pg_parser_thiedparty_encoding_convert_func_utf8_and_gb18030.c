@@ -17,7 +17,6 @@
 #include "./unicode_map/gb18030_to_utf8.map"
 #include "./unicode_map/utf8_to_gb18030.map"
 
-
 /*
  * Convert 4-byte GB18030 characters to and from a linear code space
  *
@@ -26,21 +25,20 @@
  */
 static inline uint32_t gb_linear(uint32_t gb)
 {
-    uint32_t        b0 = (gb & 0xff000000) >> 24;
-    uint32_t        b1 = (gb & 0x00ff0000) >> 16;
-    uint32_t        b2 = (gb & 0x0000ff00) >> 8;
-    uint32_t        b3 = (gb & 0x000000ff);
+    uint32_t b0 = (gb & 0xff000000) >> 24;
+    uint32_t b1 = (gb & 0x00ff0000) >> 16;
+    uint32_t b2 = (gb & 0x0000ff00) >> 8;
+    uint32_t b3 = (gb & 0x000000ff);
 
-    return b0 * 12600 + b1 * 1260 + b2 * 10 + b3 -
-        (0x81 * 12600 + 0x30 * 1260 + 0x81 * 10 + 0x30);
+    return b0 * 12600 + b1 * 1260 + b2 * 10 + b3 - (0x81 * 12600 + 0x30 * 1260 + 0x81 * 10 + 0x30);
 }
 
 static inline uint32_t gb_unlinear(uint32_t lin)
 {
-    uint32_t        r0 = 0x81 + lin / 12600;
-    uint32_t        r1 = 0x30 + (lin / 1260) % 10;
-    uint32_t        r2 = 0x81 + (lin / 10) % 126;
-    uint32_t        r3 = 0x30 + lin % 10;
+    uint32_t r0 = 0x81 + lin / 12600;
+    uint32_t r1 = 0x30 + (lin / 1260) % 10;
+    uint32_t r2 = 0x81 + (lin / 10) % 126;
+    uint32_t r3 = 0x30 + lin % 10;
 
     return (r0 << 24) | (r1 << 16) | (r2 << 8) | r3;
 }
@@ -52,7 +50,7 @@ static inline uint32_t gb_unlinear(uint32_t lin)
  */
 static inline uint32_t unicode_to_utf8word(uint32_t c)
 {
-    uint32_t        word;
+    uint32_t word;
 
     if (c <= 0x7F)
     {
@@ -82,7 +80,7 @@ static inline uint32_t unicode_to_utf8word(uint32_t c)
 
 static inline uint32_t utf8word_to_unicode(uint32_t c)
 {
-    uint32_t        ucs;
+    uint32_t ucs;
 
     if (c <= 0x7F)
     {
@@ -119,8 +117,8 @@ static inline uint32_t utf8word_to_unicode(uint32_t c)
 static uint32_t conv_18030_to_utf8(uint32_t code)
 {
 #define conv18030(minunicode, mincode, maxcode) \
-    if (code >= mincode && code <= maxcode) \
-        return unicode_to_utf8word(gb_linear(code) - gb_linear(mincode) + minunicode)
+    if (code >= mincode && code <= maxcode)     \
+    return unicode_to_utf8word(gb_linear(code) - gb_linear(mincode) + minunicode)
 
     conv18030(0x0452, 0x8130D330, 0x8136A531);
     conv18030(0x2643, 0x8137A839, 0x8138FD38);
@@ -144,11 +142,11 @@ static uint32_t conv_18030_to_utf8(uint32_t code)
  */
 static uint32_t conv_utf8_to_18030(uint32_t code)
 {
-    uint32_t        ucs = utf8word_to_unicode(code);
+    uint32_t ucs = utf8word_to_unicode(code);
 
 #define convutf8(minunicode, maxunicode, mincode) \
-    if (ucs >= minunicode && ucs <= maxunicode) \
-        return gb_unlinear(ucs - minunicode + gb_linear(mincode))
+    if (ucs >= minunicode && ucs <= maxunicode)   \
+    return gb_unlinear(ucs - minunicode + gb_linear(mincode))
 
     convutf8(0x0452, 0x200F, 0x8130D330);
     convutf8(0x2643, 0x2E80, 0x8137A839);
@@ -177,32 +175,24 @@ static uint32_t conv_utf8_to_18030(uint32_t code)
  * ) returns VOID;
  * ----------
  */
-void gb18030_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void gb18030_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(GB18030, UTF8);
 
-    LocalToUtf(src, len, dest,
-               &gb18030_to_unicode_tree,
-               NULL, 0,
-               conv_18030_to_utf8,
-               GB18030);
+    LocalToUtf(src, len, dest, &gb18030_to_unicode_tree, NULL, 0, conv_18030_to_utf8, GB18030);
 }
 
-void utf8_to_gb18030(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_gb18030(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, GB18030);
 
-    UtfToLocal(src, len, dest,
-               &gb18030_from_unicode_tree,
-               NULL, 0,
-               conv_utf8_to_18030,
-               GB18030);
+    UtfToLocal(src, len, dest, &gb18030_from_unicode_tree, NULL, 0, conv_utf8_to_18030, GB18030);
 }

@@ -14,29 +14,30 @@
 #include "xmanager/xmanager_metricmsg.h"
 #include "xmanager/xmanager_metricprogressnode.h"
 
-
-/*  watch 结果 组装 */
-static bool xmanager_metricmsg_assemblewatchresult(xmanager_metric* xmetric,
-                                                         netpoolentry* npoolentry,
-                                                         xmanager_metricnode* pxmetricnode)
+/* Assemble watch result */
+static bool xmanager_metricmsg_assemblewatchresult(xmanager_metric*     xmetric,
+                                                   netpoolentry*        npoolentry,
+                                                   xmanager_metricnode* pxmetricnode)
 {
     void* result = NULL;
 
     switch (pxmetricnode->type)
     {
-    case XMANAGER_METRICNODETYPE_CAPTURE:
-        result = xmanager_metricmsg_assemblecapture(pxmetricnode);
-        break;
-    case XMANAGER_METRICNODETYPE_INTEGRATE:
-        result = xmanager_metricmsg_assembleintegrate(pxmetricnode);
-        break;
-    case XMANAGER_METRICNODETYPE_PROCESS:
-        result = xmanager_metricmsg_assembleprogress(xmetric, pxmetricnode);
-        break;
-    default:
-        elog(RLOG_WARNING, "xmanager metric assemble watch msg data, unsupported metricnode type :%d", pxmetricnode->type);
-        return false;
-        break;
+        case XMANAGER_METRICNODETYPE_CAPTURE:
+            result = xmanager_metricmsg_assemblecapture(pxmetricnode);
+            break;
+        case XMANAGER_METRICNODETYPE_INTEGRATE:
+            result = xmanager_metricmsg_assembleintegrate(pxmetricnode);
+            break;
+        case XMANAGER_METRICNODETYPE_PROCESS:
+            result = xmanager_metricmsg_assembleprogress(xmetric, pxmetricnode);
+            break;
+        default:
+            elog(RLOG_WARNING,
+                 "xmanager metric assemble watch msg data, unsupported metricnode type :%d",
+                 pxmetricnode->type);
+            return false;
+            break;
     }
 
     if (NULL == result)
@@ -46,7 +47,7 @@ static bool xmanager_metricmsg_assemblewatchresult(xmanager_metric* xmetric,
         return false;
     }
 
-    /* 将 netpacket 挂载到待发送队列中 */
+    /* Mount netpacket to send queue */
     if (false == queue_put(npoolentry->wpackets, result))
     {
         elog(RLOG_WARNING, "xmanager metric assemble watch msg add message to queue error");
@@ -57,26 +58,25 @@ static bool xmanager_metricmsg_assemblewatchresult(xmanager_metric* xmetric,
 }
 
 /*
- * 处理 watch 命令
- *  1、jobtype 暂时小于 PROCESS
- *  2、校验 job 是否已经存在
- *  3、获取信息并返回
-*/
-bool xmanager_metricmsg_parsewatch(xmanager_metric* xmetric,
-                                         netpoolentry* npoolentry,
-                                         netpacket* npacket)
+ * Process watch command
+ *  1. jobtype temporarily less than PROCESS
+ *  2. Verify if job already exists
+ *  3. Get information and return
+ */
+bool xmanager_metricmsg_parsewatch(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                   netpacket* npacket)
 {
-    /* 错误码 */
-    int errcode                                         = 0;
-    int len                                             = 0;
-    int jobtype                                         = 0;
-    uint8* uptr                                         = NULL;
-    char* jobname                                       = NULL;
-    xmanager_metricnode* pxmetricnode            = NULL;
-    xmanager_metricnode xmetricnode              = { 0 };
-    char errormsg[512]                                  = { 0 };
+    /* Error code */
+    int                  errcode = 0;
+    int                  len = 0;
+    int                  jobtype = 0;
+    uint8*               uptr = NULL;
+    char*                jobname = NULL;
+    xmanager_metricnode* pxmetricnode = NULL;
+    xmanager_metricnode  xmetricnode = {0};
+    char                 errormsg[512] = {0};
 
-    /* 获取作业类型 */
+    /* Get job type */
     uptr = npacket->data;
 
     /* msglen + crc32 + commandtype */
@@ -90,7 +90,8 @@ bool xmanager_metricmsg_parsewatch(xmanager_metric* xmetric,
     if (XMANAGER_METRICNODETYPE_PROCESS < jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 512, "ERROR: xmanager watch command, temporarily unsupport %s", xmanager_metricnode_getname(jobtype));
+        snprintf(errormsg, 512, "ERROR: xmanager watch command, temporarily unsupport %s",
+                 xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parsewatch_error;
     }
 
@@ -110,11 +111,11 @@ bool xmanager_metricmsg_parsewatch(xmanager_metric* xmetric,
     len -= 1;
     rmemcpy0(jobname, 0, uptr, len);
 
-    /* 查看是否存在 */
+    /* Check if it already exists */
     xmetricnode.type = jobtype;
     xmetricnode.name = jobname;
 
-    /* 获取 metricnode */
+    /* Get metricnode */
     pxmetricnode = dlist_get(xmetric->metricnodes, &xmetricnode, xmanager_metricnode_cmp);
     if (NULL == pxmetricnode)
     {
@@ -123,10 +124,8 @@ bool xmanager_metricmsg_parsewatch(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parsewatch_error;
     }
 
-    /* 组装返回信息 */
-    if(false == xmanager_metricmsg_assemblewatchresult(xmetric,
-                                                             npoolentry,
-                                                             pxmetricnode))
+    /* Assemble response message */
+    if (false == xmanager_metricmsg_assemblewatchresult(xmetric, npoolentry, pxmetricnode))
     {
         errcode = ERROR_OOM;
         snprintf(errormsg, 2048, "ERROR: %s does not assemble watch result.", jobname);
@@ -148,9 +147,6 @@ xmanager_metricmsg_parsewatch_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_WATCHCMD,
-                                                      errcode,
-                                                      errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_WATCHCMD,
+                                               errcode, errormsg);
 }

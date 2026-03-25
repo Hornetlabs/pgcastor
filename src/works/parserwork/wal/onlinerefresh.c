@@ -35,27 +35,27 @@
 
 #define ONLINEREFRESH_MAXLINE 129
 
-static bool get_nspname_relname_from_line(char *line, char *nspname, char *relname)
+static bool get_nspname_relname_from_line(char* line, char* nspname, char* relname)
 {
-    char *temp_nspname = line;
-    char *temp_relname = NULL;
+    char*  temp_nspname = line;
+    char*  temp_relname = NULL;
     size_t nsp_len = 0;
     size_t rel_len = 0;
-    int index = 0;
+    int    index = 0;
 
     temp_relname = strstr(line, ".");
-    if(NULL == temp_relname)
+    if (NULL == temp_relname)
     {
         elog(RLOG_WARNING, "%s configure rule: schema.table, %s", ONLINEREFRESH_DAT, line);
         return false;
     }
     nsp_len = temp_relname - temp_nspname;
 
-    /* 跳过 . */
+    /* Skip the dot */
     temp_relname += 1;
     rel_len = strlen(line) - 1 - nsp_len;
 
-    /* name的最大有效长度为63, 包含\0为64 */
+    /* Maximum valid length for name is 63, including \0 is 64 */
     if (nsp_len > 63 || rel_len > 63)
     {
         elog(RLOG_WARNING, "when dealing filter dataset, invalid input: %s", line);
@@ -91,14 +91,14 @@ static bool get_nspname_relname_from_line(char *line, char *nspname, char *relna
 static void online_refresh_status_write_success(void)
 {
     StringInfoData path = {'\0'};
-    int     fd = -1;
+    int            fd = -1;
 
     initStringInfo(&path);
 
     appendStringInfo(&path, "%s/%s", guc_getConfigOption(CFG_KEY_DATA), ONLINEREFRESH_STATUS);
 
     fd = osal_basic_open_file(path.data, O_RDWR | O_CREAT | BINARY);
-    if(-1 == fd)
+    if (-1 == fd)
     {
         elog(RLOG_WARNING, "open file:%s error, %s", path.data, strerror(errno));
         return;
@@ -110,12 +110,12 @@ static void online_refresh_status_write_success(void)
     rfree(path.data);
 }
 
-static void online_refresh_status_write_error_table(List *tables)
+static void online_refresh_status_write_error_table(List* tables)
 {
-    ListCell *cell = NULL;
+    ListCell*      cell = NULL;
     StringInfoData str = {'\0'};
     StringInfoData path = {'\0'};
-    int     fd = -1;
+    int            fd = -1;
 
     if (!tables)
     {
@@ -126,16 +126,16 @@ static void online_refresh_status_write_error_table(List *tables)
     initStringInfo(&path);
 
     appendStringInfo(&str, "ERROR\n");
-    foreach(cell, tables)
+    foreach (cell, tables)
     {
-        char *temp_tables = (char *)lfirst(cell);
+        char* temp_tables = (char*)lfirst(cell);
         appendStringInfo(&str, "%s\n", temp_tables);
     }
 
     appendStringInfo(&path, "%s/%s", guc_getConfigOption(CFG_KEY_DATA), ONLINEREFRESH_STATUS);
 
     fd = osal_basic_open_file(path.data, O_RDWR | O_CREAT | BINARY);
-    if(-1 == fd)
+    if (-1 == fd)
     {
         elog(RLOG_WARNING, "open file:%s error, %s", path.data, strerror(errno));
         return;
@@ -148,12 +148,12 @@ static void online_refresh_status_write_error_table(List *tables)
     rfree(path.data);
 }
 
-List *onlinerefresh_get_newtable(HTAB *dataset, refresh_tables *tables)
+List* onlinerefresh_get_newtable(HTAB* dataset, refresh_tables* tables)
 {
-    refresh_table *table = NULL;
-    List *result = NULL;
-    bool find = false;
-    refresh_table *table_list_node = NULL;
+    refresh_table* table = NULL;
+    List*          result = NULL;
+    bool           find = false;
+    refresh_table* table_list_node = NULL;
 
     if (!tables)
     {
@@ -180,21 +180,19 @@ List *onlinerefresh_get_newtable(HTAB *dataset, refresh_tables *tables)
     return result;
 }
 
-/* 根据 系统表 填充 refreshtables */
-bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables,
-                                               HTAB* hnamespace,
-                                               HTAB* hclass,
-                                               bool* bmatch)
+/* Populate refreshtables from system catalogs */
+bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables, HTAB* hnamespace, HTAB* hclass,
+                                        bool* bmatch)
 {
-    /* 
-     * 1、根据 rtables 生成 filters
-     *  可能会出现模糊匹配, 所以此处需要处理
-     * 2、根据 filters 重新填充 rtables
+    /*
+     * 1. Build filters from rtables
+     *    Fuzzy matching may occur, so handle it here
+     * 2. Repopulate rtables based on filters
      */
-    List* filters = NULL;
+    List*           filters = NULL;
     refresh_tables* nrtables = NULL;
 
-    /* 生成 filters 集合 */
+    /* Build filters set */
     filters = filter_dataset_buildpairsbyrefreshtables(rtables);
     if (NULL == filters)
     {
@@ -202,7 +200,7 @@ bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables,
         return false;
     }
 
-    /* 根据 filters 集合和数据字典生成 refresh tables */
+    /* Build refresh tables from filters and system catalog */
     if (false == filter_dataset_buildrefreshtablesbyfilters(&nrtables, filters, hnamespace, hclass))
     {
         elog(RLOG_WARNING, "build refresh tables by filters error");
@@ -215,7 +213,7 @@ bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables,
         return true;
     }
 
-    /* 清理掉 rtables 中的表 */
+    /* Free tables in rtables */
     refresh_freetable(rtables->tables);
     rtables->cnt = nrtables->cnt;
     rtables->tables = nrtables->tables;
@@ -227,41 +225,41 @@ bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables,
 }
 
 /*
- * 加载onlinerefresh数据集
+ * Load onlinerefresh dataset
  */
-refresh_tables *onlinerefresh_data_load(HTAB* namespace, HTAB* class)
+refresh_tables* onlinerefresh_data_load(HTAB* namespace, HTAB* class)
 {
-    int line_num = 0;
-    FILE *fp = NULL;
-    char* cptr = NULL;
-    char *data_path = NULL;
-    List *error_table = NULL;
-    HTAB *dataset2oid_htab = NULL;
-    refresh_tables *result = NULL;
-    refresh_table *online_refresh_table = NULL;
-    catalog_class_value *class_value_entry = NULL;
-    catalog_namespace_value *nsp_value_entry = NULL;
-    pg_parser_sysdict_pgclass *temp_class = NULL;
-    pg_parser_sysdict_pgnamespace *temp_nsp = NULL;
-    filter_dataset2oidnode *scan_d2o_entry = NULL;
-    HASH_SEQ_STATUS status_class;
-    HASH_SEQ_STATUS status_d2o;
-    HASHCTL hashCtl_d2o = {'\0'};
-    struct stat st;
-    char temp_nspname[NAMEDATALEN]   = {'\0'};
-    char temp_relname[NAMEDATALEN]   = {'\0'};
-    char filepath[MAXPATH]           = {'\0'};
-    char fline[LINESIZE]             = {'\0'};
-    
+    int                            line_num = 0;
+    FILE*                          fp = NULL;
+    char*                          cptr = NULL;
+    char*                          data_path = NULL;
+    List*                          error_table = NULL;
+    HTAB*                          dataset2oid_htab = NULL;
+    refresh_tables*                result = NULL;
+    refresh_table*                 online_refresh_table = NULL;
+    catalog_class_value*           class_value_entry = NULL;
+    catalog_namespace_value*       nsp_value_entry = NULL;
+    pg_parser_sysdict_pgclass*     temp_class = NULL;
+    pg_parser_sysdict_pgnamespace* temp_nsp = NULL;
+    filter_dataset2oidnode*        scan_d2o_entry = NULL;
+    HASH_SEQ_STATUS                status_class;
+    HASH_SEQ_STATUS                status_d2o;
+    HASHCTL                        hashCtl_d2o = {'\0'};
+    struct stat                    st;
+    char                           temp_nspname[NAMEDATALEN] = {'\0'};
+    char                           temp_relname[NAMEDATALEN] = {'\0'};
+    char                           filepath[MAXPATH] = {'\0'};
+    char                           fline[LINESIZE] = {'\0'};
+
     data_path = guc_getConfigOption(CFG_KEY_DATA);
 
-    /* 获取文件路径 */
+    /* Get file path */
     snprintf(filepath, MAXPATH, "%s/%s", data_path, ONLINEREFRESH_DAT);
 
-    /* 查看文件是否存在 */
-    if(-1 == stat(filepath, &st))
+    /* Check if file exists */
+    if (-1 == stat(filepath, &st))
     {
-        if(ENOENT != errno)
+        if (ENOENT != errno)
         {
             elog(RLOG_WARNING, "stat %s error, %s", filepath, strerror(errno));
             return NULL;
@@ -288,41 +286,39 @@ refresh_tables *onlinerefresh_data_load(HTAB* namespace, HTAB* class)
     }
     rmemset0(result, 0, 0, sizeof(refresh_tables));
 
-    /* 首先读取数据集, 创建dataset2oid hash */
+    /* Read dataset first, create dataset2oid hash */
     hashCtl_d2o.keysize = sizeof(filter_dataset);
     hashCtl_d2o.entrysize = sizeof(filter_dataset2oidnode);
 
-    dataset2oid_htab = hash_create("onlinerefresh_d2o_htab",
-                               256,
-                              &hashCtl_d2o,
-                               HASH_ELEM | HASH_BLOBS);
+    dataset2oid_htab =
+        hash_create("onlinerefresh_d2o_htab", 256, &hashCtl_d2o, HASH_ELEM | HASH_BLOBS);
 
-    while(fgets(fline, ONLINEREFRESH_MAXLINE, fp))
+    while (fgets(fline, ONLINEREFRESH_MAXLINE, fp))
     {
-        filter_dataset temp_dataset_key= {{'\0'}};
-        filter_dataset2oidnode *temp_d2o_entry = NULL;
+        filter_dataset          temp_dataset_key = {{'\0'}};
+        filter_dataset2oidnode* temp_d2o_entry = NULL;
 
-        /* 注释行, 跳过 */
+        /* Comment line, skip */
         cptr = fline;
-        if('#' == *cptr)
+        if ('#' == *cptr)
         {
             continue;
         }
 
         cptr = leftstrtrim(fline, LINESIZE);
-        if('\0' == *cptr)
+        if ('\0' == *cptr)
         {
             continue;
         }
 
-        /* 清空后面的空格制表符 */
+        /* Trim trailing spaces and tabs */
         cptr = rightstrtrim(fline);
-        if('\0' == fline[0])
+        if ('\0' == fline[0])
         {
             continue;
         }
 
-        if(false == get_nspname_relname_from_line(fline, temp_nspname, temp_relname))
+        if (false == get_nspname_relname_from_line(fline, temp_nspname, temp_relname))
         {
             elog(RLOG_WARNING, "parse %s -->%s to schema table error", ONLINEREFRESH_DAT, fline);
             return NULL;
@@ -339,38 +335,37 @@ refresh_tables *onlinerefresh_data_load(HTAB* namespace, HTAB* class)
         strcpy(temp_d2o_entry->dataset.schema, temp_dataset_key.schema);
         strcpy(temp_d2o_entry->dataset.table, temp_dataset_key.table);
 
-        /* oid暂时赋值为0 */
-        temp_d2o_entry->oid = InvalidOid;
+        /* Initialize oid to INVALIDOID */
+        temp_d2o_entry->oid = INVALIDOID;
 
-        /* 重置 */
+        /* Reset */
         rmemset1(temp_nspname, 0, 0, 64);
-        rmemset1(temp_relname, 0, 0, 64);
 
-        /* 计数 */
+        /* Count */
         line_num++;
     }
 
-    /* 没有数据集 */
+    /* No dataset */
     if (line_num == 0)
     {
-        /* 清理, 返回NULL */
+        /* Cleanup and return NULL */
         hash_destroy(dataset2oid_htab);
         return NULL;
     }
 
-    /* 遍历pg_class系统表, 填充dataset2oid哈希表的oid */
+    /* Iterate pg_class system table, populate oid in dataset2oid hash */
     hash_seq_init(&status_class, class);
     while (NULL != (class_value_entry = hash_seq_search(&status_class)))
     {
-        filter_dataset temp_dataset_key= {{'\0'}};
-        filter_dataset2oidnode *temp_d2o_entry = NULL;
-        Oid temp_nsp_oid = InvalidOid;
-        bool temp_nsp_find = false;
-        bool temp_d2o_find = false;
+        filter_dataset          temp_dataset_key = {{'\0'}};
+        filter_dataset2oidnode* temp_d2o_entry = NULL;
+        Oid                     temp_nsp_oid = INVALIDOID;
+        bool                    temp_nsp_find = false;
+        bool                    temp_d2o_find = false;
 
         temp_class = class_value_entry->class;
 
-        /* 只保留r和p */
+        /* Only keep r (regular table) and p (partitioned table) */
         if (!(temp_class->relkind == 'r' || temp_class->relkind == 'p'))
         {
             continue;
@@ -387,37 +382,38 @@ refresh_tables *onlinerefresh_data_load(HTAB* namespace, HTAB* class)
         strcpy(temp_dataset_key.schema, temp_nsp->nspname.data);
         strcpy(temp_dataset_key.table, temp_class->relname.data);
 
-        temp_d2o_entry = hash_search(dataset2oid_htab, &temp_dataset_key, HASH_FIND, &temp_d2o_find);
+        temp_d2o_entry =
+            hash_search(dataset2oid_htab, &temp_dataset_key, HASH_FIND, &temp_d2o_find);
         if (temp_d2o_find)
         {
             temp_d2o_entry->oid = temp_class->oid;
         }
     }
 
-    /* 为了防止重复行, 重新计数 */
+    /* Recount to avoid duplicate lines */
     line_num = 0;
 
-    /* 遍历dataset2oid生成list */
+    /* Iterate dataset2oid to generate list */
     hash_seq_init(&status_d2o, dataset2oid_htab);
     while (NULL != (scan_d2o_entry = hash_seq_search(&status_d2o)))
     {
         Oid temp_oid = scan_d2o_entry->oid;
 
-        if (temp_oid == InvalidOid)
+        if (temp_oid == INVALIDOID)
         {
             char temp_table_name[130] = {'\0'};
             elog(RLOG_WARNING, "when load online refresh dat, get oid invalid, table: %s.%s",
-                                scan_d2o_entry->dataset.schema,
-                                scan_d2o_entry->dataset.table);
-            sprintf(temp_table_name, "%s.%s", scan_d2o_entry->dataset.schema, scan_d2o_entry->dataset.table);
+                 scan_d2o_entry->dataset.schema, scan_d2o_entry->dataset.table);
+            sprintf(temp_table_name, "%s.%s", scan_d2o_entry->dataset.schema,
+                    scan_d2o_entry->dataset.table);
             error_table = lappend(error_table, rstrdup(temp_table_name));
             continue;
         }
 
-        /* 计数增加 */
+        /* Increment count */
         line_num++;
 
-        /* refresh table 分配空间 */
+        /* Allocate space for refresh table */
         if (!online_refresh_table)
         {
             online_refresh_table = rmalloc0(sizeof(refresh_table));
@@ -427,7 +423,7 @@ refresh_tables *onlinerefresh_data_load(HTAB* namespace, HTAB* class)
             }
             rmemset0(online_refresh_table, 0, 0, sizeof(refresh_table));
 
-            /* 第一次分配, 保存首地址 */
+            /* First allocation, save head address */
             result->tables = online_refresh_table;
         }
         else
@@ -439,12 +435,12 @@ refresh_tables *onlinerefresh_data_load(HTAB* namespace, HTAB* class)
             }
             rmemset0(online_refresh_table->next, 0, 0, sizeof(refresh_table));
 
-            /* 第二次及以上分配, 维护next和下一条的prev */
+            /* Second and subsequent allocations, maintain next and prev of next node */
             online_refresh_table->next->prev = online_refresh_table;
             online_refresh_table = online_refresh_table->next;
         }
 
-        /* 赋值 */
+        /* Assign values */
         online_refresh_table->oid = scan_d2o_entry->oid;
         online_refresh_table->schema = rstrdup(scan_d2o_entry->dataset.schema);
         online_refresh_table->table = rstrdup(scan_d2o_entry->dataset.table);
@@ -465,14 +461,14 @@ refresh_tables *onlinerefresh_data_load(HTAB* namespace, HTAB* class)
     }
 
     online_refresh_status_write_success();
-    /* 清理工作 */
+    /* Cleanup */
     hash_destroy(dataset2oid_htab);
     return result;
 }
 
-onlinerefresh *onlinerefresh_init(void)
+onlinerefresh* onlinerefresh_init(void)
 {
-    onlinerefresh *result = NULL;
+    onlinerefresh* result = NULL;
     result = rmalloc0(sizeof(onlinerefresh));
     if (!result)
     {
@@ -482,7 +478,7 @@ onlinerefresh *onlinerefresh_init(void)
     return result;
 }
 
-/* 比较 */
+/* Comparison function for onlinerefresh */
 int onlinerefresh_cmp(void* s1, void* s2)
 {
     onlinerefresh* r1 = NULL;
@@ -499,49 +495,49 @@ int onlinerefresh_cmp(void* s1, void* s2)
     return 1;
 }
 
-void onlinerefresh_state_setsearchmax(onlinerefresh *refresh)
+void onlinerefresh_state_setsearchmax(onlinerefresh* refresh)
 {
     refresh->state = ONLINEREFRESH_STATE_SEARCHMAX;
 }
 
-void onlinerefresh_state_setfullsnapshot(onlinerefresh *refresh)
+void onlinerefresh_state_setfullsnapshot(onlinerefresh* refresh)
 {
     refresh->state = ONLINEREFRESH_STATE_FULLSNAPSHOT;
 }
 
-void onlinerefresh_no_set(onlinerefresh *refresh, uuid_t *no)
+void onlinerefresh_no_set(onlinerefresh* refresh, uuid_t* no)
 {
     refresh->no = no;
 }
 
-void onlinerefresh_increment_set(onlinerefresh *refresh, bool increment)
+void onlinerefresh_increment_set(onlinerefresh* refresh, bool increment)
 {
     refresh->increment = increment;
 }
 
-void onlinerefresh_newtables_set(onlinerefresh *refresh, List *newtables)
+void onlinerefresh_newtables_set(onlinerefresh* refresh, List* newtables)
 {
     refresh->newtables = newtables;
 }
 
-void onlinerefresh_txid_set(onlinerefresh *refresh, FullTransactionId txid)
+void onlinerefresh_txid_set(onlinerefresh* refresh, FullTransactionId txid)
 {
     refresh->txid = txid;
 }
 
-void onlinerefresh_snapshot_set(onlinerefresh *refresh, snapshot *snapshot)
+void onlinerefresh_snapshot_set(onlinerefresh* refresh, snapshot* snapshot)
 {
     refresh->snapshot = snapshot;
 }
 
-void transcache_make_xids_from_txn(void* in_ctx, onlinerefresh *olnode)
+void transcache_make_xids_from_txn(void* in_ctx, onlinerefresh* olnode)
 {
     decodingcontext* ctx = NULL;
-    txn *txn_entry = NULL;
+    txn*             txn_entry = NULL;
 
     if (!olnode->increment)
     {
-        /* 不需要增量时跳过 */
+        /* Skip when incremental is not needed */
         return;
     }
 
@@ -561,7 +557,7 @@ void transcache_make_xids_from_txn(void* in_ctx, onlinerefresh *olnode)
 
         if (xid < olnode->snapshot->xmin)
         {
-            /* 无需加入xids */
+            /* Do not add to xids */
             continue;
         }
         if (xid > olnode->txid)
@@ -570,7 +566,7 @@ void transcache_make_xids_from_txn(void* in_ctx, onlinerefresh *olnode)
         }
         else
         {
-            /* 存在xmin = xmax的情况, 因此首先排除xid = xmin */
+            /* When xmin equals xmax, exclude xid equal to xmin first */
             if (xid != olnode->snapshot->xmin && xid >= olnode->snapshot->xmax)
             {
                 onlinerefresh_xids_append(olnode, xid);
@@ -579,18 +575,18 @@ void transcache_make_xids_from_txn(void* in_ctx, onlinerefresh *olnode)
     }
 }
 
-void onlinerefresh_xids_append(onlinerefresh *refresh, TransactionId xid)
+void onlinerefresh_xids_append(onlinerefresh* refresh, TransactionId xid)
 {
-    FullTransactionId *xid_p = NULL;
-    dlistnode *xid_dlnode = NULL;
+    FullTransactionId* xid_p = NULL;
+    dlistnode*         xid_dlnode = NULL;
 
-    /* 由于xid是不可重复的, 因此在这里先检查是否有重复的xid */
+    /* XIDs are unique, check for duplicates here first */
     if (refresh->xids)
     {
         xid_dlnode = refresh->xids->head;
         while (xid_dlnode)
         {
-            FullTransactionId *xid_temp = (FullTransactionId *) xid_dlnode->value;
+            FullTransactionId* xid_temp = (FullTransactionId*)xid_dlnode->value;
             if (*xid_temp == (FullTransactionId)xid)
             {
                 return;
@@ -609,11 +605,11 @@ void onlinerefresh_xids_append(onlinerefresh *refresh, TransactionId xid)
     refresh->xids = dlist_put(refresh->xids, xid_p);
 }
 
-void onlinerefresh_add_xids_from_snapshot(onlinerefresh *refresh, snapshot *snap)
+void onlinerefresh_add_xids_from_snapshot(onlinerefresh* refresh, snapshot* snap)
 {
     HASH_SEQ_STATUS status;
-    snapshot_xid* entry = NULL;
-    TransactionId xid = InvalidTransactionId;
+    snapshot_xid*   entry = NULL;
+    TransactionId   xid = InvalidTransactionId;
 
     hash_seq_init(&status, snap->xids);
     while ((entry = hash_seq_search(&status)) != NULL)
@@ -623,7 +619,7 @@ void onlinerefresh_add_xids_from_snapshot(onlinerefresh *refresh, snapshot *snap
     }
 }
 
-static void free_xid(void *xid_p)
+static void free_xid(void* xid_p)
 {
     if (xid_p)
     {
@@ -631,7 +627,7 @@ static void free_xid(void *xid_p)
     }
 }
 
-void onlinerefresh_xids_delete(onlinerefresh *refresh, dlist *dl, dlistnode *dlnode)
+void onlinerefresh_xids_delete(onlinerefresh* refresh, dlist* dl, dlistnode* dlnode)
 {
     refresh->xids = dlist_delete(dl, dlnode, free_xid);
 }
@@ -643,14 +639,14 @@ bool onlinerefresh_xids_isnull(onlinerefresh* refresh)
 
 bool onlinerefresh_isxidinsnapshot(onlinerefresh* onlinerefresh, FullTransactionId xid)
 {
-    TransactionId txid = (TransactionId) xid;
-    bool find = false;
+    TransactionId txid = (TransactionId)xid;
+    bool          find = false;
     if (!onlinerefresh || !onlinerefresh->snapshot->xids)
     {
         return false;
     }
 
-    /* 注意: snapshot的xids哈希里的key实际上是TransactionId */
+    /* Note: key in snapshot's xids hash is actually TransactionId */
     hash_search(onlinerefresh->snapshot->xids, &txid, HASH_FIND, &find);
 
     return find;
@@ -679,7 +675,7 @@ void onlinerefresh_destroy(onlinerefresh* olrefresh)
         }
         rfree(olrefresh->snapshot);
     }
-    /* xids的节点已经释放完毕, 无需再释放, 仅释放dlist本身 */
+    /* xids nodes already freed, no need to free again, just free dlist itself */
     if (olrefresh->xids)
     {
         dlist_free(olrefresh->xids, NULL);
@@ -687,12 +683,12 @@ void onlinerefresh_destroy(onlinerefresh* olrefresh)
     rfree(olrefresh);
 }
 
-void onlinerefresh_destroyvoid(void *olrefresh)
+void onlinerefresh_destroyvoid(void* olrefresh)
 {
-    onlinerefresh_destroy((onlinerefresh *)olrefresh);
+    onlinerefresh_destroy((onlinerefresh*)olrefresh);
 }
 
-dlist *onlinerefresh_refreshdlist_delete(dlist *refresh_dlist, dlistnode *dlnode)
+dlist* onlinerefresh_refreshdlist_delete(dlist* refresh_dlist, dlistnode* dlnode)
 {
     if (!refresh_dlist)
     {

@@ -5,7 +5,7 @@
 
 void txnstmt_reset_free(void* data)
 {
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }

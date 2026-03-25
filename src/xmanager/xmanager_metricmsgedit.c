@@ -13,21 +13,19 @@
 #include "xmanager/xmanager_metricmsgedit.h"
 #include "xmanager/xmanager_metricmsg.h"
 
-
-static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric,
-                                                   netpoolentry* npoolentry,
-                                                   xmanager_metricnode* metricnode)
+static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                            xmanager_metricnode* metricnode)
 {
-    uint8 u8value                                               = 0;
-    int fd                                                      = 0;
-    int filesize                                                = 0;
-    int rowlen                                                  = 0;
-    int msglen                                                  = 0;
-    int ivalue                                                  = 0;
-    uint8* rowuptr                                              = 0;
-    uint8* uptr                                                 = 0;
-    char* conffile                                              = NULL;
-    netpacket* npacket                                   = NULL;
+    uint8      u8value = 0;
+    int        fd = 0;
+    int        filesize = 0;
+    int        rowlen = 0;
+    int        msglen = 0;
+    int        ivalue = 0;
+    uint8*     rowuptr = 0;
+    uint8*     uptr = 0;
+    char*      conffile = NULL;
+    netpacket* npacket = NULL;
 
     if (NULL == metricnode->conf)
     {
@@ -36,9 +34,9 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric,
     }
 
     conffile = metricnode->conf;
- 
-    /* 
-     * 读取文件
+
+    /*
+     * Read file
      */
     fd = osal_file_open(conffile, O_RDONLY, 0);
     if (-1 == fd)
@@ -47,16 +45,17 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric,
         return false;
     }
 
-    /* 获取文件大小 */
+    /* Get file size */
     filesize = osal_file_size(fd);
     if (-1 == filesize)
     {
         osal_file_close(fd);
-        elog(RLOG_WARNING, "xmanager metric assemble edit msg not get file:%s size, error:%s.", conffile, strerror(errno));
+        elog(RLOG_WARNING, "xmanager metric assemble edit msg not get file:%s size, error:%s.",
+             conffile, strerror(errno));
         return false;
     }
 
-    /* 4 总长度 + 4 crc32 + 4 msgtype + 1 成功/失败 */
+    /* 4 total length + 4 crc32 + 4 msgtype + 1 success or fail */
     msglen = 4 + 4 + 4 + 1;
 
     /* rowcnt */
@@ -67,7 +66,7 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric,
 
     msglen += rowlen;
 
-    /* 申请空间 */
+    /* Allocate space */
     npacket = netpacket_init();
     if (NULL == npacket)
     {
@@ -85,10 +84,10 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric,
     msglen -= 1;
     npacket->used = msglen;
 
-    /* 组装数据 */
+    /* Assemble data */
     uptr = npacket->data;
 
-    /* 数据总长度 */
+    /* Total data length */
     ivalue = msglen;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
@@ -97,13 +96,13 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric,
     /* crc32 */
     uptr += 4;
 
-    /* 类型 */
+    /* Type */
     ivalue = XMANAGER_MSG_EDITCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
 
-    /* 类型成功标识 */
+    /* Type success flag */
     u8value = 0;
     rmemcpy1(uptr, 0, &u8value, 1);
     uptr += 1;
@@ -117,7 +116,7 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric,
     rowlen = 0;
     rowuptr = uptr;
 
-    /* 偏过行长度 */
+    /* Skip row length */
     uptr += 4;
     rowlen = 4;
 
@@ -127,30 +126,31 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric,
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
 
-    /* 重新设置到文件头部*/
+    /* Re-set to file header*/
     osal_file_seek(fd, 0);
 
-    /* 读取文件，写入消息 */
+    /* Read file, write message */
     if (filesize != osal_file_read(fd, (char*)uptr, filesize))
     {
         osal_file_close(fd);
         fd = -1;
         netpacket_destroy(npacket);
-        elog(RLOG_WARNING, "xmanager metric assemble edit msg read file %s error, %s", conffile, strerror(errno));
+        elog(RLOG_WARNING, "xmanager metric assemble edit msg read file %s error, %s", conffile,
+             strerror(errno));
         return false;
     }
 
     rowlen += filesize;
 
-    /* 关闭文件 */
+    /* Close file */
     osal_file_close(fd);
     fd = -1;
 
-    /* 行总长度 */
+    /* Total row length */
     rowlen = r_hton32(rowlen);
     rmemcpy1(rowuptr, 0, &rowlen, 4);
 
-    /* 将 netpacket 挂载到待发送队列中 */
+    /* Mount netpacket to send queue */
     if (false == queue_put(npoolentry->wpackets, (void*)npacket))
     {
         elog(RLOG_WARNING, "xmanager metric assemble edit msg add message to queue error");
@@ -161,20 +161,19 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric,
     return true;
 }
 
-bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric,
-                                         netpoolentry* npoolentry,
-                                         netpacket* npacket)
+bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric, netpoolentry* npoolentry,
+                                  netpacket* npacket)
 {
-    int len                                             = 0;
-    int jobtype                                         = 0;
-    int errcode                                         = 0;
-    uint8* uptr                                         = NULL;
-    char* jobname                                       = NULL;
-    xmanager_metricnode* pxmetricnode            = NULL;
-    xmanager_metricnode xmetricnode              = { 0 };
-    char errormsg[2048]                                 = { 0 };
+    int                  len = 0;
+    int                  jobtype = 0;
+    int                  errcode = 0;
+    uint8*               uptr = NULL;
+    char*                jobname = NULL;
+    xmanager_metricnode* pxmetricnode = NULL;
+    xmanager_metricnode  xmetricnode = {0};
+    char                 errormsg[2048] = {0};
 
-    /* 获取作业类型 */
+    /* Get job type */
     uptr = npacket->data;
 
     /* msglen + crc32 + commandtype */
@@ -188,13 +187,12 @@ bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric,
     if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 2048, 
-                 "ERROR: xmanager parse edit command, unsupport %s",
+        snprintf(errormsg, 2048, "ERROR: xmanager parse edit command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parseedit_error;
     }
 
-    /* 获取 jobname */
+    /* Get jobname */
     rmemcpy1(&len, 0, uptr, 4);
     len = r_ntoh32(len);
     uptr += 4;
@@ -211,7 +209,7 @@ bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric,
     len -= 1;
     rmemcpy0(jobname, 0, uptr, len);
 
-    /* 查看节点是否存在 */
+    /* Check if node exists */
     xmetricnode.type = jobtype;
     xmetricnode.name = jobname;
 
@@ -223,7 +221,7 @@ bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric,
         goto xmanager_metricmsg_parseedit_error;
     }
 
-    /* 组装返回消息 */
+    /* Assemble return message */
     if (false == xmanager_metricmsg_assembleedit(xmetric, npoolentry, pxmetricnode))
     {
         errcode = ERROR_OOM;
@@ -236,7 +234,8 @@ bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric,
         rfree(jobname);
     }
 
-    return xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_EDITCMD);;
+    return xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_EDITCMD);
+    ;
 
 xmanager_metricmsg_parseedit_error:
 
@@ -246,10 +245,6 @@ xmanager_metricmsg_parseedit_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric,
-                                                      npoolentry->wpackets,
-                                                      XMANAGER_MSG_EDITCMD,
-                                                      errcode,
-                                                      errormsg);
-
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_EDITCMD,
+                                               errcode, errormsg);
 }

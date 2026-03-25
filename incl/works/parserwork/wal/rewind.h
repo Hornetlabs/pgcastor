@@ -3,36 +3,36 @@
 
 typedef struct DECODINGCONTEXT decodingcontext;
 
-/* rewind结构体中的状态值 */
+/* Status value in rewind structure */
 typedef enum REWIND_STAT
 {
-    REWIND_INIT              = 0x00, /* 初始化状态 */
-    REWIND_SEARCHCHECKPOINT  = 0x01, /* 查找checkpoint状态 */
-    REWIND_REWINDING         = 0x02, /* 过渡状态 */
-    REWIND_EMITING           = 0x03, /* 找到checkpoint后查找emit点 */
-    REWIND_EMITED            = 0x04  /* 找到emit点后设置 */
+    REWIND_INIT = 0x00,             /* Initialization status */
+    REWIND_SEARCHCHECKPOINT = 0x01, /* Search checkpoint status */
+    REWIND_REWINDING = 0x02,        /* Transition status */
+    REWIND_EMITING = 0x03,          /* Search emit point after finding checkpoint */
+    REWIND_EMITED = 0x04            /* Set after finding emit point */
 } rewind_stat;
 
 typedef struct REWIND_STRATEGY
 {
-    TransactionId	xmin;
-    TransactionId	xmax;
-    HTAB*           xips;
+    TransactionId xmin;
+    TransactionId xmax;
+    HTAB*         xips;
 } rewind_strategy;
 
-/* rewind结构体 */
+/* rewind structure */
 typedef struct REWIND
 {
-    int                     stat;       /* 状态 */
-    TransactionId           currentxid; /*xmax*/
-    XLogRecPtr              currentlsn; /* 最新点的lsn */
-    XLogRecPtr              redolsn;    /* 找到checkpoint后设置的redolsn */
-    PGconn*                 conn;       /* 保存连接信息 */
-    rewind_strategy	strategy;   /* snapshot的备份 */
+    int             stat;       /* Status */
+    TransactionId   currentxid; /*xmax*/
+    XLogRecPtr      currentlsn; /* lsn of latest point */
+    XLogRecPtr      redolsn;    /* redolsn set after finding checkpoint */
+    PGconn*         conn;       /* Save connection information */
+    rewind_strategy strategy;   /* Backup of snapshot */
 } rewind_info;
 
-extern bool rewind_fastrewind(decodingcontext *decodingctx);
-extern bool rewind_fastrewind_emit(decodingcontext *decodingctx);
+extern bool rewind_fastrewind(decodingcontext* decodingctx);
+extern bool rewind_fastrewind_emit(decodingcontext* decodingctx);
 extern void rewind_strategy_setfastrewind(snapshot* snapshot, decodingcontext* decoingctx);
 
 extern void rewind_stat_setsearchcheckpoint(rewind_info* rewind);

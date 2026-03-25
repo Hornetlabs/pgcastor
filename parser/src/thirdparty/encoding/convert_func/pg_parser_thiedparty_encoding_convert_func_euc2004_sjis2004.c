@@ -14,9 +14,8 @@
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
-
-static void euc_jis_20042shift_jis_2004(const unsigned char *euc, unsigned char *p, int32_t len);
-static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char *p, int32_t len);
+static void euc_jis_20042shift_jis_2004(const unsigned char* euc, unsigned char* p, int32_t len);
+static void shift_jis_20042euc_jis_2004(const unsigned char* sjis, unsigned char* p, int32_t len);
 
 /* ----------
  * conv_proc(
@@ -29,22 +28,24 @@ static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char
  * ----------
  */
 
-void euc_jis_2004_to_shift_jis_2004(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void euc_jis_2004_to_shift_jis_2004(unsigned char* src_str, unsigned char* dest_str,
+                                    int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(EUC_JIS_2004, SHIFT_JIS_2004);
 
     euc_jis_20042shift_jis_2004(src, dest, len);
 }
 
-void shift_jis_2004_to_euc_jis_2004(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void shift_jis_2004_to_euc_jis_2004(unsigned char* src_str, unsigned char* dest_str,
+                                    int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(SHIFT_JIS_2004, EUC_JIS_2004);
 
@@ -54,12 +55,10 @@ void shift_jis_2004_to_euc_jis_2004(unsigned char *src_str, unsigned char *dest_
 /*
  * EUC_JIS_2004 -> SHIFT_JIS_2004
  */
-static void euc_jis_20042shift_jis_2004(const unsigned char *euc, unsigned char *p, int32_t len)
+static void euc_jis_20042shift_jis_2004(const unsigned char* euc, unsigned char* p, int32_t len)
 {
-    int32_t            c1,
-                ku,
-                ten;
-    int32_t            l;
+    int32_t c1, ku, ten;
+    int32_t l;
 
     while (len > 0)
     {
@@ -79,7 +78,7 @@ static void euc_jis_20042shift_jis_2004(const unsigned char *euc, unsigned char 
             continue;
         }
 
-        l = character_encoding_verifymb(EUC_JIS_2004, (const char *) euc, len);
+        l = character_encoding_verifymb(EUC_JIS_2004, (const char*)euc, len);
 
         if (l < 0)
         {
@@ -88,11 +87,11 @@ static void euc_jis_20042shift_jis_2004(const unsigned char *euc, unsigned char 
             break;
         }
 
-        if (c1 == SS2 && l == 2)    /* JIS X 0201 kana? */
+        if (c1 == SS2 && l == 2) /* JIS X 0201 kana? */
         {
             *p++ = euc[1];
         }
-        else if (c1 == SS3 && l == 3)    /* JIS X 0213 plane 2? */
+        else if (c1 == SS3 && l == 3) /* JIS X 0213 plane 2? */
         {
             ku = euc[1] - 0xa0;
             ten = euc[2] - 0xa0;
@@ -126,9 +125,13 @@ static void euc_jis_20042shift_jis_2004(const unsigned char *euc, unsigned char 
             if (ku % 2)
             {
                 if (ten >= 1 && ten <= 63)
+                {
                     *p++ = ten + 0x3f;
+                }
                 else if (ten >= 64 && ten <= 94)
+                {
                     *p++ = ten + 0x40;
+                }
                 else
                 {
                     /* report_invalid_encoding(EUC_JIS_2004,
@@ -137,18 +140,24 @@ static void euc_jis_20042shift_jis_2004(const unsigned char *euc, unsigned char 
                 }
             }
             else
+            {
                 *p++ = ten + 0x9e;
+            }
         }
 
-        else if (l == 2)        /* JIS X 0213 plane 1? */
+        else if (l == 2) /* JIS X 0213 plane 1? */
         {
             ku = c1 - 0xa0;
             ten = euc[1] - 0xa0;
 
             if (ku >= 1 && ku <= 62)
+            {
                 *p++ = (ku + 0x101) >> 1;
+            }
             else if (ku >= 63 && ku <= 94)
+            {
                 *p++ = (ku + 0x181) >> 1;
+            }
             else
             {
                 /* report_invalid_encoding(EUC_JIS_2004,
@@ -159,9 +168,13 @@ static void euc_jis_20042shift_jis_2004(const unsigned char *euc, unsigned char 
             if (ku % 2)
             {
                 if (ten >= 1 && ten <= 63)
+                {
                     *p++ = ten + 0x3f;
+                }
                 else if (ten >= 64 && ten <= 94)
+                {
                     *p++ = ten + 0x40;
+                }
                 else
                 {
                     /* report_invalid_encoding(EUC_JIS_2004,
@@ -170,7 +183,9 @@ static void euc_jis_20042shift_jis_2004(const unsigned char *euc, unsigned char 
                 }
             }
             else
+            {
                 *p++ = ten + 0x9e;
+            }
         }
         else
         {
@@ -190,9 +205,9 @@ static void euc_jis_20042shift_jis_2004(const unsigned char *euc, unsigned char 
  * *ku = 0: "ku" = even
  * *ku = 1: "ku" = odd
  */
-static int32_t get_ten(int32_t b, int32_t *ku)
+static int32_t get_ten(int32_t b, int32_t* ku)
 {
-    int32_t            ten;
+    int32_t ten;
 
     if (b >= 0x40 && b <= 0x7e)
     {
@@ -211,8 +226,8 @@ static int32_t get_ten(int32_t b, int32_t *ku)
     }
     else
     {
-        ten = -1;                /* error */
-        *ku = 0;                /* keep compiler quiet */
+        ten = -1; /* error */
+        *ku = 0;  /* keep compiler quiet */
     }
     return ten;
 }
@@ -221,14 +236,12 @@ static int32_t get_ten(int32_t b, int32_t *ku)
  * SHIFT_JIS_2004 ---> EUC_JIS_2004
  */
 
-static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char *p, int32_t len)
+static void shift_jis_20042euc_jis_2004(const unsigned char* sjis, unsigned char* p, int32_t len)
 {
-    int32_t            c1;
-    int32_t            ku,
-                ten,
-                kubun;
-    int32_t            plane;
-    int32_t            l;
+    int32_t c1;
+    int32_t ku, ten, kubun;
+    int32_t plane;
+    int32_t l;
 
     while (len > 0)
     {
@@ -249,7 +262,7 @@ static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char
             continue;
         }
 
-        l = character_encoding_verifymb(SHIFT_JIS_2004, (const char *) sjis, len);
+        l = character_encoding_verifymb(SHIFT_JIS_2004, (const char*)sjis, len);
 
         if (l < 0 || l > len)
         {
@@ -266,7 +279,7 @@ static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char
         }
         else if (l == 2)
         {
-            int32_t            c2 = sjis[1];
+            int32_t c2 = sjis[1];
 
             plane = 1;
             ku = 1;
@@ -275,7 +288,7 @@ static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char
             /*
              * JIS X 0213
              */
-            if (c1 >= 0x81 && c1 <= 0x9f)    /* plane 1 1ku-62ku */
+            if (c1 >= 0x81 && c1 <= 0x9f) /* plane 1 1ku-62ku */
             {
                 ku = (c1 << 1) - 0x100;
                 ten = get_ten(c2, &kubun);
@@ -287,7 +300,7 @@ static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char
                 }
                 ku -= kubun;
             }
-            else if (c1 >= 0xe0 && c1 <= 0xef)    /* plane 1 62ku-94ku */
+            else if (c1 >= 0xe0 && c1 <= 0xef) /* plane 1 62ku-94ku */
             {
                 ku = (c1 << 1) - 0x180;
                 ten = get_ten(c2, &kubun);
@@ -299,8 +312,8 @@ static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char
                 }
                 ku -= kubun;
             }
-            else if (c1 >= 0xf0 && c1 <= 0xf3)    /* plane 2
-                                                 * 1,3,4,5,8,12,13,14,15 ku */
+            else if (c1 >= 0xf0 && c1 <= 0xf3) /* plane 2
+                                                * 1,3,4,5,8,12,13,14,15 ku */
             {
                 plane = 2;
                 ten = get_ten(c2, &kubun);
@@ -326,7 +339,7 @@ static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char
                         break;
                 }
             }
-            else if (c1 >= 0xf4 && c1 <= 0xfc)    /* plane 2 78-94ku */
+            else if (c1 >= 0xf4 && c1 <= 0xfc) /* plane 2 78-94ku */
             {
                 plane = 2;
                 ten = get_ten(c2, &kubun);
@@ -337,9 +350,13 @@ static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char
                     break;
                 }
                 if (c1 == 0xf4 && kubun == 1)
+                {
                     ku = 15;
+                }
                 else
+                {
                     ku = (c1 << 1) - 0x19a - kubun;
+                }
             }
             else
             {
@@ -349,7 +366,9 @@ static void shift_jis_20042euc_jis_2004(const unsigned char *sjis, unsigned char
             }
 
             if (plane == 2)
+            {
                 *p++ = SS3;
+            }
 
             *p++ = ku + 0xa0;
             *p++ = ten + 0xa0;

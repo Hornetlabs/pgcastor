@@ -5,73 +5,53 @@
 
 typedef struct SUBDIRS
 {
-    proc_type            type;
-    int                         subcnt;
-    char**                      subdirs;
+    proc_type type;
+    int       subcnt;
+    char**    subdirs;
 } subdirs;
 
-/* capture 子目录 */
-static char *m_subdirscapture[] = {
-    "catalog",
-    "chk",
-    "trail",
-    "stat",
-    "log",
-    "filter",
-    "refresh",
-    "onlinerefresh"
-};
+/* capture subdirectory */
+static char* m_subdirscapture[] = {"catalog", "chk",    "trail",   "stat",
+                                   "log",     "filter", "refresh", "onlinerefresh"};
 
-/* integrate 子目录 */
-static char *m_subdirsintegrate[] = {
-    "chk",
-    "trail",
-    "stat",
-    "log",
-    "filter",
-    "refresh",
-    "onlinerefresh"
-};
+/* integrate subdirectory */
+static char* m_subdirsintegrate[] = {"chk",    "trail",   "stat",         "log",
+                                     "filter", "refresh", "onlinerefresh"};
 
-/* xmanager jobname 子目录 */
-static char *m_subdirsxmanager[] = {
-    "log",
-    "metric"
-};
+/* xmanager jobname subdirectory */
+static char* m_subdirsxmanager[] = {"log", "metric"};
 
-static subdirs   m_subdirs[] =
-{
-    {PROC_TYPE_NOP,              0,                                  NULL},
-    {PROC_TYPE_CAPTURE,          lengthof(m_subdirscapture),         m_subdirscapture},
-    {PROC_TYPE_INTEGRATE,        lengthof(m_subdirsintegrate),       m_subdirsintegrate},
-    {PROC_TYPE_PGRECEIVEWAL,     0,                                  NULL},
-    {PROC_TYPE_XMANAGER,         lengthof(m_subdirsxmanager),        m_subdirsxmanager}
-};
+static subdirs m_subdirs[] = {
+    {PROC_TYPE_NOP, 0, NULL},
+    {PROC_TYPE_CAPTURE, lengthof(m_subdirscapture), m_subdirscapture},
+    {PROC_TYPE_INTEGRATE, lengthof(m_subdirsintegrate), m_subdirsintegrate},
+    {PROC_TYPE_PGRECEIVEWAL, 0, NULL},
+    {PROC_TYPE_XMANAGER, lengthof(m_subdirsxmanager), m_subdirsxmanager}};
 
-/* 创建 data 目录 */
+/* Create data directory */
 bool datainit_init(char* in_wdata)
 {
-    int index = 0;
-    DIR* datadir = NULL;
-    struct dirent *file = NULL;
-    char path[MAXPATH] = { 0 };
+    int            index = 0;
+    DIR*           datadir = NULL;
+    struct dirent* file = NULL;
+    char           path[MAXPATH] = {0};
 
-    if(NULL == m_subdirs[g_proctype].subdirs)
+    if (NULL == m_subdirs[g_proctype].subdirs)
     {
         return true;
     }
 
     datadir = osal_open_dir(in_wdata);
-    if(NULL == datadir)
+    if (NULL == datadir)
     {
-        if(errno != ENOENT)
+        if (errno != ENOENT)
         {
             elog(RLOG_WARNING, "open dir error:%s", in_wdata);
             return false;
         }
 
-        /* 创建目录 */
-        if(0 != osal_make_dir(in_wdata))
+        /* Create directory */
+        if (0 != osal_make_dir(in_wdata))
         {
             elog(RLOG_WARNING, "could not create directory:%s", in_wdata);
             return false;
@@ -81,29 +61,28 @@ bool datainit_init(char* in_wdata)
     {
         while (errno = 0, (file = osal_read_dir(datadir, in_wdata)) != NULL)
         {
-            if (0 == strcmp(".", file->d_name)
-                || 0 == strcmp("..", file->d_name))
+            if (0 == strcmp(".", file->d_name) || 0 == strcmp("..", file->d_name))
             {
                 continue;
             }
             else
             {
-                elog(RLOG_WARNING, "directory %s exists but is not empty", guc_getConfigOption(CFG_KEY_DATA));
+                elog(RLOG_WARNING, "directory %s exists but is not empty",
+                     guc_getConfigOption(CFG_KEY_DATA));
                 return false;
             }
         }
     }
     osal_free_dir(datadir);
 
-    /* 创建子目录 */
-    for(index = 0; index < m_subdirs[g_proctype].subcnt; index++)
+    /* Create subdirectories */
+    for (index = 0; index < m_subdirs[g_proctype].subcnt; index++)
     {
         rmemset1(path, 0, '\0', MAXPATH);
-        snprintf(path, MAXPATH, "%s/%s", 
-                                        guc_getConfigOption(CFG_KEY_DATA),
-                                        m_subdirs[g_proctype].subdirs[index]);
+        snprintf(path, MAXPATH, "%s/%s", guc_getConfigOption(CFG_KEY_DATA),
+                 m_subdirs[g_proctype].subdirs[index]);
 
-        if(0 != osal_make_dir(path))
+        if (0 != osal_make_dir(path))
         {
             elog(RLOG_WARNING, "could not create directory:%s", path);
             return false;
@@ -112,27 +91,28 @@ bool datainit_init(char* in_wdata)
     return true;
 }
 
-/* 临时文件清理 */
-void datainit_clear(const char *dir_path) 
+/* Temporary file cleanup */
+void datainit_clear(const char* dir_path)
 {
-    struct dirent *entry;
-    DIR *dp = osal_open_dir(dir_path);
+    struct dirent* entry;
+    DIR*           dp = osal_open_dir(dir_path);
 
-    if (dp == NULL) {
+    if (dp == NULL)
+    {
         elog(RLOG_WARNING, "Could not found folder %s", dir_path);
-        return ;
+        return;
     }
 
-    while (((entry = osal_read_dir(dp,dir_path)) != NULL)) {
+    while (((entry = osal_read_dir(dp, dir_path)) != NULL))
+    {
         if (strstr(entry->d_name, ".tmp") != NULL)
         {
             char full_path[1024];
             snprintf(full_path, sizeof(full_path), "%s/%s", dir_path, entry->d_name);
             osal_durable_unlink(full_path, RLOG_DEBUG);
-            return ;
+            return;
         }
     }
     osal_free_dir(dp);
-    return ; 
+    return;
 }
-

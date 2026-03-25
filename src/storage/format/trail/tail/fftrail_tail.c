@@ -10,73 +10,66 @@
 
 typedef enum TRAIL_TAIL_TOKEN
 {
-    TRAIL_TAIL_TOKEN_NEXTTRAILNO           = 0x00
+    TRAIL_TAIL_TOKEN_NEXTTRAILNO = 0x00
 } trail_tail_token;
 
-/* 序列化尾部信息 */
+/* Serialize tail info */
 bool fftrail_tail_serail(void* data, void* state)
 {
-    uint32  reclen = 0;
-    uint8*  uptr = NULL;
-    ff_tail* fftrail = NULL;
-    file_buffer* rfbuffer = NULL;
+    uint32        reclen = 0;
+    uint8*        uptr = NULL;
+    ff_tail*      fftrail = NULL;
+    file_buffer*  rfbuffer = NULL;
     ffsmgr_state* ffstate = NULL;
 
-    /* 强制转化 */
+    /* Force cast */
     fftrail = (ff_tail*)data;
     ffstate = (ffsmgr_state*)state;
 
-    /* 获取 buffer */
-    rfbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    /* Get buffer */
+    rfbuffer =
+        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     uptr = rfbuffer->data + rfbuffer->start;
 
-    /* 添加数据 */
-    /* 偏移出头部信息 */
+    /* Add data */
+    /* Offset out header info */
     uptr += TOKENHDRSIZE;
 
-    /* 增加 token 内容 */
-    uptr = fftrail_token2buffer(TRAIL_TAIL_TOKEN_NEXTTRAILNO,
-                                        FFTRAIL_INFOTYPE_TOKEN,
-                                        FTRAIL_TOKENDATATYPE_BIGINT,
-                                        8,
-                                        (uint8*)&fftrail->nexttrailno,
-                                        &reclen,
-                                        uptr);
+    /* Add token content */
+    uptr = fftrail_token2buffer(TRAIL_TAIL_TOKEN_NEXTTRAILNO, FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)&fftrail->nexttrailno,
+                                &reclen, uptr);
 
-    /* 增加 rectail */
+    /* Add rectail */
     uptr = rfbuffer->data + rfbuffer->start;
     reclen += TOKENHDRSIZE;
     reclen = MAXALIGN(reclen);
-    FTRAIL_GROUP2BUFFER(put,
-                                FFTRAIL_GROUPTYPE_FTAIL,
-                                FFTRAIL_INFOTYPE_GROUP,
-                                reclen,
-                                uptr)
+    FTRAIL_GROUP2BUFFER(put, FFTRAIL_GROUPTYPE_FTAIL, FFTRAIL_INFOTYPE_GROUP, reclen, uptr)
 
     rfbuffer->start += reclen;
 
     return true;
 }
 
-/* 反序列化尾部信息 */
+/* Deserialize tail info */
 bool fftrail_tail_deserail(void** data, void* state)
 {
-    uint8   tokenid = 0;                        /* token 标识 */
-    uint8   tokeninfo = 0;                      /* token 的详情 */
-    uint32  tokenlen = 0;                       /* token 长度 */
+    uint8  tokenid = 0;   /* token id */
+    uint8  tokeninfo = 0; /* token details */
+    uint32 tokenlen = 0;  /* token length */
 
-    uint8*  uptr = NULL;
-    uint8*  tokendata = NULL;                   /* token 数据区 */
-    ff_tail*  taildata = NULL;
+    uint8*        uptr = NULL;
+    uint8*        tokendata = NULL; /* token data area */
+    ff_tail*      taildata = NULL;
     ffsmgr_state* ffstate = NULL;
 
-    /* 类型强转 */
+    /* Type cast */
     ffstate = (ffsmgr_state*)state;
     uptr = ffstate->recptr;
 
-    /* 申请空间 */
+    /* Allocate space */
     taildata = (ff_tail*)rmalloc0(sizeof(ff_tail));
-    if(NULL == taildata)
+    if (NULL == taildata)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -85,23 +78,21 @@ bool fftrail_tail_deserail(void** data, void* state)
 
     taildata->nexttrailno = 0;
 
-    /* 获取头部标识 */
+    /* Get header id */
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(FFTRAIL_GROUPTYPE_FTAIL != tokenid
-        || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
+    if (FFTRAIL_GROUPTYPE_FTAIL != tokenid || FFTRAIL_INFOTYPE_GROUP != tokeninfo)
     {
         /* make gcc happy */
         uptr = tokendata;
         elog(RLOG_ERROR, "trail file data format error");
     }
 
-    /* 解析头部数据 */
+    /* Parse header data */
     uptr = tokendata;
 
-    /* 获取头部标识 */
+    /* Get header id */
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
-    if(TRAIL_TAIL_TOKEN_NEXTTRAILNO != tokenid
-        || FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
+    if (TRAIL_TAIL_TOKEN_NEXTTRAILNO != tokenid || FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
     {
         /* make gcc happy */
         uptr = tokendata;
@@ -109,6 +100,6 @@ bool fftrail_tail_deserail(void** data, void* state)
     }
     uptr = tokendata;
 
-    taildata->nexttrailno = CONCAT(get,64bit)(&uptr);
+    taildata->nexttrailno = CONCAT(get, 64bit)(&uptr);
     return true;
 }

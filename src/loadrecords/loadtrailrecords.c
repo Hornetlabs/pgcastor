@@ -16,13 +16,13 @@
 #include "loadrecords/loadtrailrecords.h"
 #include "loadrecords/trailpage.h"
 
-/* 初始化 */
+/* Initialization */
 loadtrailrecords* loadtrailrecords_init(void)
 {
     loadtrailrecords* loadrecords = NULL;
 
     loadrecords = (loadtrailrecords*)rmalloc0(sizeof(loadtrailrecords));
-    if(NULL == loadrecords)
+    if (NULL == loadrecords)
     {
         elog(RLOG_WARNING, "load trail records init error, out of memory");
         return NULL;
@@ -39,7 +39,7 @@ loadtrailrecords* loadtrailrecords_init(void)
     loadrecords->records = NULL;
     loadrecords->recordcross.record = NULL;
     loadrecords->mp = rmalloc0(sizeof(mpage));
-    if(NULL == loadrecords->mp)
+    if (NULL == loadrecords->mp)
     {
         elog(RLOG_WARNING, "loadtrailrecords init mpage error, out of memory");
         rfree(loadrecords);
@@ -50,35 +50,36 @@ loadtrailrecords* loadtrailrecords_init(void)
     return loadrecords;
 }
 
-/* 设置加载trail文件的方式 */
+/* Set the method for loading trail files */
 bool loadtrailrecords_setloadpageroutine(loadtrailrecords* loadrecords, loadpage_type type)
 {
-    /* 在文件中加载 */
+    /* Load in file */
     loadrecords->loadpageroutine = loadpage_getpageroutine(type);
-    if(NULL == loadrecords->loadpageroutine)
+    if (NULL == loadrecords->loadpageroutine)
     {
         elog(RLOG_WARNING, "set loadpage routine error");
         return false;
     }
-    
+
     loadrecords->loadpage = loadrecords->loadpageroutine->loadpageinit();
-    if(NULL == loadrecords->loadpage)
+    if (NULL == loadrecords->loadpage)
     {
         elog(RLOG_WARNING, "load page init error");
         return false;
     }
 
-    /* 设置文件块大小和文件大小 */
+    /* Set file block size and file size */
     loadrecords->loadpage->blksize = loadrecords->loadrecords.blksize;
     loadrecords->loadpage->filesize = loadrecords->loadrecords.filesize;
 
-    /* 设置loadpagefromfile的类型 */
-    loadrecords->loadpageroutine->loadpagesettype(loadrecords->loadpage, LOADPAGEFROMFILE_TYPE_TRAIL);
+    /* Set loadpagefromfile type */
+    loadrecords->loadpageroutine->loadpagesettype(loadrecords->loadpage,
+                                                  LOADPAGEFROMFILE_TYPE_TRAIL);
 
     return true;
 }
 
-/* 设置加载的起点 */
+/* Set the loading start position */
 void loadtrailrecords_setloadposition(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset)
 {
     recpos recpos;
@@ -91,10 +92,10 @@ void loadtrailrecords_setloadposition(loadtrailrecords* loadrecords, uint64 file
     loadrecords->loadpageroutine->loadpagesetstartpos(loadrecords->loadpage, recpos);
 }
 
-/* 设置加载的路径 */
+/* Set the loading source path */
 bool loadtrailrecords_setloadsource(loadtrailrecords* loadrecords, char* source)
 {
-    if(false == loadrecords->loadpageroutine->loadpagesetfilesource(loadrecords->loadpage, source))
+    if (false == loadrecords->loadpageroutine->loadpagesetfilesource(loadrecords->loadpage, source))
     {
         elog(RLOG_WARNING, "load trail record set load source error");
         return false;
@@ -102,39 +103,39 @@ bool loadtrailrecords_setloadsource(loadtrailrecords* loadrecords, char* source)
     return true;
 }
 
-/* 加载 records */
+/* Load records */
 bool loadtrailrecords_load(loadtrailrecords* loadrecords)
 {
-    /* 
-     * 1、加载文件块
-     * 2、将文件块拆分为 records
-     * 3、根据 records 的种类，处理分为 2 个逻辑，最有一个 record 的数据完整和不完整
-     *      1、不完整时，分为两种: 读取到 RESET
-     *          1.1 读取到 RESET, 放弃不完整的 record，将 reset record 向后续的流程传递
-     *              证明重启了, 即使上个 record 不完整也不影响.
-     *          1.2 暂存该 record, 等读取下一个页面时 拼装在一起
-     *      2、完整的不做处理
+    /*
+     * 1、Load file blocks
+     * 2、Split file blocks into records
+     * 3、Based on record types, processing is divided into 2 logics for complete and incomplete
+     * record data 1、When incomplete, there are two types: reading RESET 1.1 When reading RESET,
+     * discard the incomplete record and pass the reset record to the subsequent process This proves
+     * a restart occurred, and even if the previous record is incomplete, it doesn't matter. 1.2
+     * Temporarily store this record, and when reading the next page, assemble them together
+     *      2、Complete records require no processing
      */
-    bool shiftfile = false;                             /* 合并 continue record 时, 遇到了文件切换 */
-    bool shiftfilecross = false;                        /* 查找 cross record 时, 遇到了文件切换 */
-    bool crossreset = false;                            /* 在 cross 后面出现了 reset */
-    uint64 reclen = 0;
+    bool       shiftfile = false;      /* File switch encountered when merging continue record */
+    bool       shiftfilecross = false; /* File switch encountered when searching for cross record */
+    bool       crossreset = false;     /* Reset encountered after cross */
+    uint64     reclen = 0;
     dlistnode* dlnode = NULL;
     dlistnode* dlnodenext = NULL;
-    record* record_obj = NULL;
-    recpos recpos = { {0} };
+    record*    record_obj = NULL;
+    recpos     recpos = {{0}};
 
     recpos.trail.type = RECPOS_TYPE_TRAIL;
 
-    /* 加载文件块 */
+    /* Load file blocks */
     loadrecords->loadrecords.error = ERROR_SUCCESS;
 
-    /* 设置读取的起点 */
-    if(false == loadrecords->loadpageroutine->loadpage(loadrecords->loadpage, loadrecords->mp))
+    /* Set the read starting point */
+    if (false == loadrecords->loadpageroutine->loadpage(loadrecords->loadpage, loadrecords->mp))
     {
-        if(ERROR_NOENT == loadrecords->loadpage->error)
+        if (ERROR_NOENT == loadrecords->loadpage->error)
         {
-            /* 因文件不存在导致的问题, 不需要返回错误 */
+            /* No need to return error due to file not existing */
             return true;
         }
 
@@ -142,157 +143,163 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
         return false;
     }
 
-    /* 
-     * 1、验证文件块的正确性
-     * 2、将文件块拆分为 records
+    /*
+     * 1、Validate the correctness of file blocks
+     * 2、Split file blocks into records
      */
-    if(false == trailpage_valid(loadrecords->mp))
+    if (false == trailpage_valid(loadrecords->mp))
     {
         elog(RLOG_WARNING, "load page valid page error");
         return false;
     }
 
-    /* 将 page 拆分为 records */
-    if(false == trailpage_page2records(loadrecords, loadrecords->mp))
+    /* Split page into records */
+    if (false == trailpage_page2records(loadrecords, loadrecords->mp))
     {
         elog(RLOG_WARNING, "page 2 records error");
         return false;
     }
 
-    /* records 为空, 说明没有挖掘到任何内容 */
-    if(true == dlist_isnull(loadrecords->records))
+    /* records is empty, indicating no content was extracted */
+    if (true == dlist_isnull(loadrecords->records))
     {
         return true;
     }
 
-    /* 
-     * 根据场景开始处理
-     * 1、查看是否含有不完整的 record, 含有不完整的 record, 那么在返回的 records 中的首个有效的 record 应为 continue record 或 RESET record
-     *  1.1 当为 continue record 时, 那么合并两个 record
-     *  1.2 若为 reset record, 那么清理掉不完整的 record
-     * 
-     * 2、查看 records 中是否含有CROSS record, 若含有 cross record, 那么查看后续的 record 中是否含有 reset
-     *  2.1 含有 reset,那么清理掉 cross record
-     *  2.2 不含有 reset, 那么将 cross record 暂存
+    /*
+     * Processing begins based on the scenario
+     * 1、Check if there are incomplete records. If there are incomplete records, the first valid
+     * record in the returned records should be a continue record or RESET record
+     *   1.1 When it's a continue record, merge the two records
+     *   1.2 If it's a reset record, clear the incomplete record
+     *
+     * 2、Check if records contain a CROSS record. If a cross record is present, check if subsequent
+     * records contain reset
+     *   2.1 If reset is present, clear the cross record
+     *   2.2 If reset is not present, temporarily store the cross record
      */
-    if(NULL != loadrecords->recordcross.record)
+    if (NULL != loadrecords->recordcross.record)
     {
-        /* 含有 records */
-        for(dlnode = loadrecords->records->head; NULL != dlnode;)
+        /* Contains records */
+        for (dlnode = loadrecords->records->head; NULL != dlnode;)
         {
             record_obj = (record*)dlnode->value;
 
-            /* 会出现在文件的头部 */
-            if(RECORD_TYPE_TRAIL_HEADER == record_obj->type
-                || RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
+            /* May appear at the file header */
+            if (RECORD_TYPE_TRAIL_HEADER == record_obj->type ||
+                RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
             {
                 loadrecords->remainrecords = dlist_put(loadrecords->remainrecords, record_obj);
-                
-                /* 将 dlnode 在链表中移除 */
+
+                /* Remove dlnode from the linked list */
                 dlnode->value = NULL;
                 dlnodenext = dlnode->next;
                 loadrecords->records = dlist_delete(loadrecords->records, dlnode, NULL);
                 dlnode = dlnodenext;
                 continue;
             }
-            else if(RECORD_TYPE_TRAIL_TAIL == record_obj->type)
+            else if (RECORD_TYPE_TRAIL_TAIL == record_obj->type)
             {
                 shiftfile = true;
                 loadrecords->remainrecords = dlist_put(loadrecords->remainrecords, record_obj);
-                
-                /* 将 dlnode 在链表中移除 */
+
+                /* Remove dlnode from the linked list */
                 dlnode->value = NULL;
                 dlnodenext = dlnode->next;
                 loadrecords->records = dlist_delete(loadrecords->records, dlnode, NULL);
                 dlnode = dlnodenext;
                 continue;
             }
-            else if(RECORD_TYPE_TRAIL_RESET == record_obj->type)
+            else if (RECORD_TYPE_TRAIL_RESET == record_obj->type)
             {
                 shiftfile = true;
-                /* 为 RESET, 清理掉 */
+                /* For RESET, clear it */
                 record_free(loadrecords->recordcross.record);
                 loadrecords->recordcross.record = NULL;
                 loadrecords->recordcross.remainlen = 0;
                 loadrecords->recordcross.totallen = 0;
 
-                /* 链表合并 */
-                loadrecords->records = dlist_concat(loadrecords->remainrecords, loadrecords->records);
+                /* Linked list merging */
+                loadrecords->records =
+                    dlist_concat(loadrecords->remainrecords, loadrecords->records);
                 loadrecords->remainrecords = NULL;
                 break;
             }
 
-            if(RECORD_TYPE_TRAIL_CONT != record_obj->type)
+            if (RECORD_TYPE_TRAIL_CONT != record_obj->type)
             {
-                /* 此时应该为 continue record, 若不为 continue record 说明逻辑出现了错误 */
-                elog(RLOG_WARNING, "need continue record, but now type:%d, cross record:%lu.%lu, %lu.%u ,%lu",
-                                    record_obj->type,
-                                    loadrecords->recordcross.record->start.trail.fileid,
-                                    loadrecords->recordcross.record->start.trail.offset,
-                                    loadrecords->recordcross.record->totallength,
-                                    loadrecords->recordcross.record->reallength,
-                                    loadrecords->recordcross.record->len);
+                /* At this point it should be a continue record; if not, it indicates a logical
+                 * error */
+                elog(RLOG_WARNING,
+                     "need continue record, but now type:%d, cross record:%lu.%lu, %lu.%u ,%lu",
+                     record_obj->type, loadrecords->recordcross.record->start.trail.fileid,
+                     loadrecords->recordcross.record->start.trail.offset,
+                     loadrecords->recordcross.record->totallength,
+                     loadrecords->recordcross.record->reallength,
+                     loadrecords->recordcross.record->len);
                 return false;
             }
 
-            /* record 合并 */
-            if(loadrecords->recordcross.record->len < loadrecords->recordcross.totallen)
+            /* Record merging */
+            if (loadrecords->recordcross.record->len < loadrecords->recordcross.totallen)
             {
-                /* 增加一个尾部长度 */
+                /* Increase tail length */
                 reclen = loadrecords->recordcross.totallen + loadrecords->recordcross.rectaillen;
-                loadrecords->recordcross.record->data = rrealloc0(loadrecords->recordcross.record->data, reclen);
-                if(NULL == loadrecords->recordcross.record->data)
+                loadrecords->recordcross.record->data =
+                    rrealloc0(loadrecords->recordcross.record->data, reclen);
+                if (NULL == loadrecords->recordcross.record->data)
                 {
                     elog(RLOG_WARNING, "realloc cross record error");
                     return false;
                 }
-                /* 指向 copy 数据的位置 */
+                /* Point to the copy data position */
                 loadrecords->recordcross.record->dataoffset = loadrecords->recordcross.record->len;
 
-                /* 重置数据的总长度 */
+                /* Reset the total data length */
                 loadrecords->recordcross.record->len = loadrecords->recordcross.totallen;
             }
 
-            /* 将record tail 附加到数据的后面 */
+            /* Append record tail to the end of data */
             rmemcpy1(loadrecords->recordcross.record->data,
-                    loadrecords->recordcross.record->dataoffset,
-                    record_obj->data + record_obj->dataoffset,
-                    record_obj->reallength);
+                     loadrecords->recordcross.record->dataoffset,
+                     record_obj->data + record_obj->dataoffset, record_obj->reallength);
             loadrecords->recordcross.record->dataoffset += record_obj->reallength;
             loadrecords->recordcross.remainlen -= record_obj->reallength;
 
-            /* 将 record 的删除并将 dlnode 节点在双向链表中移除 */
+            /* Delete the record and remove the dlnode node from the doubly linked list */
             loadrecords->recordcross.record->end.trail.fileid = record_obj->end.trail.fileid;
             loadrecords->recordcross.record->end.trail.offset = record_obj->end.trail.offset;
             record_free(record_obj);
 
-            /* 将 dlnode 在链表中移除 */
+            /* Remove dlnode from the linked list */
             dlnode->value = NULL;
             dlnodenext = dlnode->next;
             loadrecords->records = dlist_delete(loadrecords->records, dlnode, NULL);
             dlnode = dlnodenext;
 
-            /* 合并完成后, 需要判断该 record 是否完整, 完整后将 cross record 挂载到正常的链表的头部 */
-            if(0 != loadrecords->recordcross.remainlen)
+            /* After merging is complete, check if the record is complete. If complete, attach the
+             * cross record to the head of the normal linked list
+             */
+            if (0 != loadrecords->recordcross.remainlen)
             {
                 continue;
             }
 
-            /* 组装完成了, 将尾部数据附加到数据尾部 */
+            /* Assembly completed, append tail data to the end of data */
             rmemcpy1(loadrecords->recordcross.record->data,
-                    loadrecords->recordcross.record->dataoffset,
-                    loadrecords->recordcross.rectail,
-                    loadrecords->recordcross.rectaillen);
+                     loadrecords->recordcross.record->dataoffset, loadrecords->recordcross.rectail,
+                     loadrecords->recordcross.rectaillen);
             loadrecords->recordcross.record->len += loadrecords->recordcross.rectaillen;
             loadrecords->recordcross.rectaillen = 0;
 
-            /* 
-             * 连接两个链表, 并将 cross record 加入到链表中
+            /*
+             * Connect two linked lists and add the cross record to the linked list
              */
             loadrecords->records = dlist_concat(loadrecords->remainrecords, loadrecords->records);
             loadrecords->remainrecords = NULL;
             loadrecords->recordcross.record->type = RECORD_TYPE_TRAIL_NORMAL;
-            loadrecords->records = dlist_puthead(loadrecords->records, loadrecords->recordcross.record);
+            loadrecords->records =
+                dlist_puthead(loadrecords->records, loadrecords->recordcross.record);
             loadrecords->recordcross.record = NULL;
             loadrecords->recordcross.rectaillen = 0;
             loadrecords->recordcross.remainlen = 0;
@@ -301,43 +308,45 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
         }
     }
 
-    /* 查看是否还有数据需要处理 */
-    if(true == dlist_isnull(loadrecords->records))
+    /* Check if there is still data to be processed */
+    if (true == dlist_isnull(loadrecords->records))
     {
         goto loadtrailrecords_load_done;
     }
 
-    /* 从后向前处理 */
-    for(dlnode = loadrecords->records->tail; NULL != dlnode; dlnode = dlnode->prev)
+    /* Process from back to front */
+    for (dlnode = loadrecords->records->tail; NULL != dlnode; dlnode = dlnode->prev)
     {
         record_obj = (record*)dlnode->value;
-        /* 会出现在文件的头部 */
-        if(RECORD_TYPE_TRAIL_HEADER == record_obj->type || RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
+        /* May appear at the file header */
+        if (RECORD_TYPE_TRAIL_HEADER == record_obj->type ||
+            RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
         {
             continue;
         }
-        else if(RECORD_TYPE_TRAIL_TAIL == record_obj->type)
+        else if (RECORD_TYPE_TRAIL_TAIL == record_obj->type)
         {
             shiftfilecross = true;
             continue;
         }
-        else if(RECORD_TYPE_TRAIL_RESET == record_obj->type)
+        else if (RECORD_TYPE_TRAIL_RESET == record_obj->type)
         {
             shiftfilecross = true;
             crossreset = true;
             continue;
         }
-        else if(RECORD_TYPE_TRAIL_CROSS != record_obj->type)
+        else if (RECORD_TYPE_TRAIL_CROSS != record_obj->type)
         {
             break;
         }
 
-        /* 
-         * 遇到了 cross
-         *  1、含有 crossreset, 那么说明出现了重启,既然重启了那么 cross record 没有任何意义, 清理掉此 record
-         *  2、不含有, 那么保存到 cross record 中
+        /*
+         * Encountered cross
+         *   1、If crossreset is present, it indicates a restart occurred. Since a restart occurred,
+         * the cross record has no meaning, clear this record. 2、If not present, save it to the
+         * cross record
          */
-        if(true == crossreset)
+        if (true == crossreset)
         {
             record_free(record_obj);
             dlnode->value = NULL;
@@ -345,50 +354,55 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
             break;
         }
 
-        /* 将 record 加入到 cross record 上 */
-        if(NULL != loadrecords->recordcross.record)
+        /* Add the record to the cross record for subsequent merging */
+        if (NULL != loadrecords->recordcross.record)
         {
-            elog(RLOG_WARNING, "The previous processing contained incomplete records, prev fileid:%lu:%lu, current fileid:%lu:%lu",
-                                loadrecords->recordcross.record->start.trail.fileid,
-                                loadrecords->recordcross.record->start.trail.offset,
-                                record_obj->start.trail.fileid,
-                                record_obj->start.trail.offset);
+            elog(RLOG_WARNING,
+                 "The previous processing contained incomplete records, prev fileid:%lu:%lu, "
+                 "current fileid:%lu:%lu",
+                 loadrecords->recordcross.record->start.trail.fileid,
+                 loadrecords->recordcross.record->start.trail.offset,
+                 record_obj->start.trail.fileid, record_obj->start.trail.offset);
             return false;
         }
 
-        /* 放到 cross record 上,方便后续的合并 */
+        /* Place it on the cross record for convenient subsequent merging */
         loadrecords->recordcross.record = record_obj;
 
-        /* 计算长度 */
-        /* 还需要的真实数据长度 */
-        loadrecords->recordcross.remainlen = (record_obj->totallength - (uint64)record_obj->reallength);
+        /* Calculate length */
+        /* Remaining actual data length needed */
+        loadrecords->recordcross.remainlen =
+            (record_obj->totallength - (uint64)record_obj->reallength);
 
-        /* 数据总长度 */
+        /* Total data length */
         loadrecords->recordcross.totallen = record_obj->totallength;
         loadrecords->recordcross.totallen += (uint64)record_obj->dataoffset;
 
-        /* 
-         * copy record tail 数据
-         *  1、计算到record tail 的开始位置
-         *  2、将 tail 数据的长度裁剪掉
-         *  3、复制数据
+        /*
+         * Copy record tail data
+         *   1、Calculate the start position of record tail
+         *   2、Trim the tail data length
+         *   3、Copy the data
          */
-        /* 计算 record tail 的开始位置 */
+        /* Calculate the start position of record tail */
         record_obj->dataoffset += record_obj->reallength;
-        loadrecords->recordcross.rectaillen = (uint16)(record_obj->len - (uint64)record_obj->dataoffset);
+        loadrecords->recordcross.rectaillen =
+            (uint16)(record_obj->len - (uint64)record_obj->dataoffset);
 
-        /* 将 tail 数据的长度在原长度上裁剪掉 */
+        /* Trim the tail data length from the original length */
         record_obj->len -= (uint64)(loadrecords->recordcross.rectaillen);
-        rmemcpy1(loadrecords->recordcross.rectail, 0, (record_obj->data + record_obj->dataoffset), loadrecords->recordcross.rectaillen);
+        rmemcpy1(loadrecords->recordcross.rectail, 0, (record_obj->data + record_obj->dataoffset),
+                 loadrecords->recordcross.rectaillen);
 
-        /* 将 dlnode 在链表中移除,并将 dlnode 之后的节点放入到暂存节点中 */
+        /* Remove dlnode from the linked list and place the subsequent nodes into the temporary node
+         */
         dlnode->value = NULL;
         dlnodenext = dlnode->next;
         loadrecords->records = dlist_truncate(loadrecords->records, dlnode);
         dlist_node_free(dlnode, NULL);
 
-        /* 将后续的节点加入到remain节点中 */
-        if(false == dlist_append(&loadrecords->remainrecords, dlnodenext))
+        /* Add subsequent nodes to the remain node */
+        if (false == dlist_append(&loadrecords->remainrecords, dlnodenext))
         {
             elog(RLOG_WARNING, "dlist append error");
             return false;
@@ -397,11 +411,12 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
     }
 
 loadtrailrecords_load_done:
-    /* 上面流程处理完成后, 需要判断是否需要切换文件 */
-    /* 在查找 continue record 时出现了切换文件的标识, 就不需要处理 cross 和 offset */
-    if(true == shiftfile)
+    /* After the above process is completed, determine if a file switch is needed */
+    /* If the file switch identifier appears when searching for continue records, no need to process
+     * cross and offset */
+    if (true == shiftfile)
     {
-        /* 需要切换文件 */
+        /* Need to switch file */
         loadrecords->fileid++;
         loadrecords->foffset = 0;
         recpos.trail.fileid = loadrecords->fileid;
@@ -410,10 +425,10 @@ loadtrailrecords_load_done:
         return true;
     }
 
-    /* 处理 cross record 时出现了切换文件的标识 */
-    if(true == shiftfilecross)
+    /* File switch identifier appears when processing cross record */
+    if (true == shiftfilecross)
     {
-        /* 需要切换文件 */
+        /* Need to switch file */
         loadrecords->fileid++;
         loadrecords->foffset = 0;
         recpos.trail.fileid = loadrecords->fileid;
@@ -422,10 +437,10 @@ loadtrailrecords_load_done:
         return true;
     }
 
-    /* 判断是否满足切换文件的条件 */
-    if(loadrecords->foffset == loadrecords->loadpage->filesize)
+    /* Determine if the file switch condition is met */
+    if (loadrecords->foffset == loadrecords->loadpage->filesize)
     {
-        /* 切换文件 */
+        /* Switch file */
         loadrecords->fileid++;
         loadrecords->foffset = 0;
         recpos.trail.fileid = loadrecords->fileid;
@@ -443,67 +458,68 @@ loadtrailrecords_load_done:
     return true;
 }
 
-/* 关闭文件描述符 */
+/* Close file descriptor */
 void loadtrailrecords_fileclose(loadtrailrecords* loadrecords)
 {
     loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
 }
 
-/* 
- * 过滤 record,找到事务的开始
- *  返回值说明:
- *   true           还需要继续过滤
- *   false          不需要继续过滤
+/*
+ * Filter records to find the beginning of a transaction
+ *  Return value explanation:
+ *   true           Still need to continue filtering
+ *   false          No need to continue filtering
  */
 bool loadtrailrecords_filterfortransbegin(loadtrailrecords* loadrecords)
 {
     /*
-     * 过滤说明:
-     * trail 文件的格式
+     * Filtering explanation:
+     * trail file format
      * -------------------------------
      * |file header|database metadata |
      * |record     |                  |
      * | -----------------------------
-     * 
-     * 当重启时, 会在文件头部开始解析, 此时因为找到该文件中第一个事务的开始.
-     *  1、元数据需要, 包含 database metadata 和 table metadata
-     *  2、若该文件存在了 RESET 或 TAIL,那说明到了解析到了文件的尾部也没有需要的数据, 所以此时也不在需要在过滤了
+     *
+     * When restarting, parsing begins at the file header, as we have found the beginning of the
+     * first transaction in this file. 1、Metadata is needed, including database metadata and table
+     * metadata 2、If the file contains RESET or TAIL, it indicates that parsing has reached the end
+     * of the file without finding needed data, so filtering is no longer required at this point
      */
-    uint16 subtype = FF_DATA_TYPE_NOP;
-    dlistnode* dlnode = NULL;
-    dlistnode* dlnodenext = NULL;
-    record* record_obj = NULL;
+    uint16       subtype = FF_DATA_TYPE_NOP;
+    dlistnode*   dlnode = NULL;
+    dlistnode*   dlnodenext = NULL;
+    record*      record_obj = NULL;
     ffsmgr_state ffsmgrstate;
 
-    /* 初始化验证接口 */
+    /* Initialize validation interface */
     ffsmgr_init(FFSMG_IF_TYPE_TRAIL, &ffsmgrstate);
     ffsmgrstate.compatibility = loadrecords->compatibility;
 
-    for(dlnode = dlnodenext = loadrecords->records->head; NULL != dlnode; dlnode = dlnodenext)
+    for (dlnode = dlnodenext = loadrecords->records->head; NULL != dlnode; dlnode = dlnodenext)
     {
         dlnodenext = dlnode->next;
         record_obj = (record*)dlnode->value;
-        /* 文件开始并且切页TRAIL_CONT直接删除 */
-        if(RECORD_TYPE_TRAIL_HEADER == record_obj->type
-            || RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
+        /* At file beginning or page switch, TRAIL_CONT records should be deleted directly */
+        if (RECORD_TYPE_TRAIL_HEADER == record_obj->type ||
+            RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
         {
             continue;
         }
-        else if(RECORD_TYPE_TRAIL_RESET == record_obj->type
-            || RECORD_TYPE_TRAIL_TAIL == record_obj->type)
+        else if (RECORD_TYPE_TRAIL_RESET == record_obj->type ||
+                 RECORD_TYPE_TRAIL_TAIL == record_obj->type)
         {
             return false;
         }
 
-        /* 保留data的meta data数据, 这里无需处理 */
+        /* Keep metadata data in data, no processing needed here */
         ffsmgrstate.ffsmgr->ffsmgr_getrecordsubtype(&ffsmgrstate, record_obj->data, &subtype);
-        if (FF_DATA_TYPE_DBMETADATA == subtype
-            || FF_DATA_TYPE_TBMETADATA == subtype)
+        if (FF_DATA_TYPE_DBMETADATA == subtype || FF_DATA_TYPE_TBMETADATA == subtype)
         {
             continue;
         }
 
-        /* 是否为事务开始的record，是之后全需要 */
+        /* Check if this is a transaction start record, which is needed for all subsequent records
+         */
         if (ffsmgrstate.ffsmgr->ffsmgr_isrecordtransstart(&ffsmgrstate, record_obj->data))
         {
             return false;
@@ -515,66 +531,67 @@ bool loadtrailrecords_filterfortransbegin(loadtrailrecords* loadrecords)
 }
 
 /*
- * 根据 fileid 和 offset 过滤,小于此值的不需要
-*/
+ * Filter based on fileid and offset, records less than this value are not needed
+ */
 void loadtrailrecords_filter(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset)
 {
     /*
-     * 过滤说明:
-     *  根据 fileid 和 foffset 
+     * Filter description:
+     *  Based on fileid and foffset
      */
     dlistnode* dlnode = NULL;
     dlistnode* dlnodenext = NULL;
-    record* record_obj = NULL;
+    record*    record_obj = NULL;
 
-    for(dlnode = dlnodenext = loadrecords->records->head; NULL != dlnode; dlnode = dlnodenext)
+    for (dlnode = dlnodenext = loadrecords->records->head; NULL != dlnode; dlnode = dlnodenext)
     {
         dlnodenext = dlnode->next;
         record_obj = (record*)dlnode->value;
 
-        if(fileid < record_obj->start.trail.fileid)
+        if (fileid < record_obj->start.trail.fileid)
         {
             return;
         }
 
-        if(foffset <= record_obj->start.trail.offset)
+        if (foffset <= record_obj->start.trail.offset)
         {
             break;
         }
 
-        /* 此 record 不需要 */
+        /* This record is not needed */
         loadrecords->records = dlist_delete(loadrecords->records, dlnode, record_freevoid);
     }
 }
 
 /*
- * 根据 fileid 和 offset 过滤，但是保留 metadata
- * 返回值说明:
- *   true           还需要继续过滤
- *   false          不需要继续过滤
-*/
-bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset)
+ * Filter based on fileid and offset, but keep metadata
+ * Return value:
+ *   true           Need to continue filtering
+ *   false          No need to continue filtering
+ */
+bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64 fileid,
+                                           uint64 foffset)
 {
     /*
-     * 过滤说明:
-     *  根据 fileid 和 foffset 
+     * Filter description:
+     *  Based on fileid and foffset
      */
-    uint16 subtype = FF_DATA_TYPE_NOP;
-    dlistnode* dlnode               = NULL;
-    dlistnode* dlnodenext           = NULL;
-    record* record_obj           = NULL;
+    uint16       subtype = FF_DATA_TYPE_NOP;
+    dlistnode*   dlnode = NULL;
+    dlistnode*   dlnodenext = NULL;
+    record*      record_obj = NULL;
     ffsmgr_state ffsmgrstate;
 
-    /* 初始化验证接口 */
+    /* Initialize validation interface */
     ffsmgr_init(FFSMG_IF_TYPE_TRAIL, &ffsmgrstate);
     ffsmgrstate.compatibility = loadrecords->compatibility;
 
-    for(dlnode = dlnodenext = loadrecords->records->head; NULL != dlnode; dlnode = dlnodenext)
+    for (dlnode = dlnodenext = loadrecords->records->head; NULL != dlnode; dlnode = dlnodenext)
     {
         dlnodenext = dlnode->next;
         record_obj = (record*)dlnode->value;
 
-        if(fileid < record_obj->start.trail.fileid)
+        if (fileid < record_obj->start.trail.fileid)
         {
             return false;
         }
@@ -584,17 +601,16 @@ bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64
             return false;
         }
 
-        /* reset/tail证明切换了文件, 那么就证明不需要在过滤了 */
-        if(RECORD_TYPE_TRAIL_RESET == record_obj->type
-            || RECORD_TYPE_TRAIL_TAIL == record_obj->type)
+        /* reset/tail indicates file switch, so no further filtering needed */
+        if (RECORD_TYPE_TRAIL_RESET == record_obj->type ||
+            RECORD_TYPE_TRAIL_TAIL == record_obj->type)
         {
             return false;
         }
 
-        /* 保留data的meta data数据, 这里无需处理 */
+        /* Keep metadata data in data, no processing needed here */
         ffsmgrstate.ffsmgr->ffsmgr_getrecordsubtype(&ffsmgrstate, record_obj->data, &subtype);
-        if (FF_DATA_TYPE_DBMETADATA == subtype
-            || FF_DATA_TYPE_TBMETADATA == subtype)
+        if (FF_DATA_TYPE_DBMETADATA == subtype || FF_DATA_TYPE_TBMETADATA == subtype)
         {
             continue;
         }
@@ -605,25 +621,24 @@ bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64
     return true;
 }
 
-
-/* 释放 */
+/* Free resources */
 void loadtrailrecords_free(loadtrailrecords* loadrecords)
 {
-    if(NULL == loadrecords)
+    if (NULL == loadrecords)
     {
         return;
     }
 
-    if(NULL != loadrecords->loadpageroutine)
+    if (NULL != loadrecords->loadpageroutine)
     {
         loadrecords->loadpageroutine->loadpagefree(loadrecords->loadpage);
         loadrecords->loadpage = NULL;
         loadrecords->loadpageroutine = NULL;
     }
 
-    if(NULL != loadrecords->mp)
+    if (NULL != loadrecords->mp)
     {
-        if(NULL != loadrecords->mp->data)
+        if (NULL != loadrecords->mp->data)
         {
             rfree(loadrecords->mp->data);
         }

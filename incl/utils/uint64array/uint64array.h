@@ -3,25 +3,25 @@
 
 typedef struct UINT64ARRAY
 {
-    /* data 中含有 uint64 的个数 */
-    uint64              cnt;
+    /* Number of uint64 in data */
+    uint64 cnt;
 
-    /* data 长度 */
-    uint64              len;
+    /* data length */
+    uint64 len;
 
-    /* 用于快速排序 */
-    uint8*              data;
+    /* For quick sort */
+    uint8* data;
 } uint64array;
 
 uint64array* uint64array_init(void);
 
-/* 增加一个新值 */
+/* Add a new value */
 bool uint64array_add(uint64array* u64a, uint64 value);
 
-/* 排序 */
+/* Sort */
 void uint64array_qsort(uint64array* u64a);
 
-/* 回收 */
+/* Reclaim */
 void uint64array_free(uint64array* u64a);
 
 #endif

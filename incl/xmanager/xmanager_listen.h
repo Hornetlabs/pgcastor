@@ -3,19 +3,19 @@
 
 typedef struct XMANAGER_LISTEN
 {
-    netserver                            base;
-    char                                        padding[CACHELINE_SIZE];
-    queue*                               authqueue;
-    char                                        padding1[CACHELINE_SIZE];
+    netserver base;
+    char      padding[CACHELINE_SIZE];
+    queue*    authqueue;
+    char      padding1[CACHELINE_SIZE];
 } xmanager_listen;
 
-/* 初始化 */
+/* Initialize */
 xmanager_listen* xmanager_listen_init(void);
 
-/* 主流程 */
-void* xmanager_listen_main(void *args);
+/* Main flow */
+void* xmanager_listen_main(void* args);
 
-/* 资源回收 */
+/* Resource cleanup */
 void xmanager_listen_destroy(void* args);
 
 #endif

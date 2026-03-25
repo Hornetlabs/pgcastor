@@ -6,32 +6,30 @@
 
 HTAB* onlinerefresh_integratefilterdataset_init(void)
 {
-    HTAB* integratefilterdataset = NULL;
+    HTAB*   integratefilterdataset = NULL;
     HASHCTL hctl = {'\0'};
 
-    /* pg_class初始化 */
+    /* pg_class initialization */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(onlinerefresh_integratefilterdataset);
-    integratefilterdataset = hash_create("integratefilterdataset",
-                                        128,
-                                        &hctl,
-                                        HASH_ELEM | HASH_BLOBS);
+    integratefilterdataset =
+        hash_create("integratefilterdataset", 128, &hctl, HASH_ELEM | HASH_BLOBS);
 
     return integratefilterdataset;
-    
 }
 
-bool onlinerefresh_integratefilterdataset_add(HTAB* filterdataset, void* in_tables, FullTransactionId txid)
+bool onlinerefresh_integratefilterdataset_add(HTAB* filterdataset, void* in_tables,
+                                              FullTransactionId txid)
 {
-    bool find = false;
-    refresh_tables* tables = NULL;
-    refresh_table* current_table = NULL;
+    bool                                  find = false;
+    refresh_tables*                       tables = NULL;
+    refresh_table*                        current_table = NULL;
     onlinerefresh_integratefilterdataset* entry = NULL;
 
-    tables = ( refresh_tables*)(in_tables);
+    tables = (refresh_tables*)(in_tables);
 
-    /* refresh已完成 */
+    /* refresh completed */
     if (NULL == tables)
     {
         return true;
@@ -42,7 +40,7 @@ bool onlinerefresh_integratefilterdataset_add(HTAB* filterdataset, void* in_tabl
     while (current_table)
     {
         entry = hash_search(filterdataset, &current_table->oid, HASH_ENTER, &find);
-        if(!find)
+        if (!find)
         {
             entry->oid = current_table->oid;
             rmemset1(entry->schema, 0, '\0', NAMEDATALEN);
@@ -58,9 +56,9 @@ bool onlinerefresh_integratefilterdataset_add(HTAB* filterdataset, void* in_tabl
 
 HTAB* onlinerefresh_integratefilterdataset_copy(HTAB* filterdataset)
 {
-    bool find = false;
-    HASH_SEQ_STATUS status;
-    HTAB* result = NULL;
+    bool                                  find = false;
+    HASH_SEQ_STATUS                       status;
+    HTAB*                                 result = NULL;
     onlinerefresh_integratefilterdataset* entry = NULL;
     onlinerefresh_integratefilterdataset* new_entry = NULL;
 
@@ -70,7 +68,7 @@ HTAB* onlinerefresh_integratefilterdataset_copy(HTAB* filterdataset)
     while ((entry = hash_seq_search(&status)) != NULL)
     {
         new_entry = hash_search(result, &entry->oid, HASH_ENTER, &find);
-        if(!find)
+        if (!find)
         {
             new_entry->oid = entry->oid;
             rmemset1(new_entry->schema, 0, '\0', NAMEDATALEN);
@@ -83,11 +81,12 @@ HTAB* onlinerefresh_integratefilterdataset_copy(HTAB* filterdataset)
     return result;
 }
 
-bool onlinerefresh_integratefilterdataset_delete(HTAB* filterdataset, void* in_tables, FullTransactionId txid)
+bool onlinerefresh_integratefilterdataset_delete(HTAB* filterdataset, void* in_tables,
+                                                 FullTransactionId txid)
 {
-    bool find = false;
-    refresh_tables* tables = NULL;
-    refresh_table* current_table = NULL;
+    bool                                  find = false;
+    refresh_tables*                       tables = NULL;
+    refresh_table*                        current_table = NULL;
     onlinerefresh_integratefilterdataset* entry = NULL;
 
     tables = (refresh_tables*)(in_tables);

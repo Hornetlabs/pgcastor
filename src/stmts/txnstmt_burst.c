@@ -9,15 +9,15 @@
 #include "stmts/txnstmt_burst.h"
 #include "works/parserwork/wal/decode_heap_util.h"
 
-/* 初始化 */
+/* Initialization */
 txnstmt_burst* txnstmt_burst_init(void)
 {
     txnstmt_burst* stmtburst = NULL;
 
     stmtburst = (txnstmt_burst*)rmalloc0(sizeof(txnstmt_burst));
-    if(NULL == stmtburst)
+    if (NULL == stmtburst)
     {
-        elog(RLOG_WARNING,"txnstmt burst oom %s", strerror(errno));
+        elog(RLOG_WARNING, "txnstmt burst oom %s", strerror(errno));
         return NULL;
     }
     rmemset0(stmtburst, 0, '\0', sizeof(txnstmt_burst));
@@ -27,10 +27,10 @@ txnstmt_burst* txnstmt_burst_init(void)
     return stmtburst;
 }
 
-/* stmtburst->rows dlist释放函数 */
+/* Free function for stmtburst->rows dlist */
 static void txnstmt_burstrow_free(void* data)
 {
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }
@@ -39,11 +39,11 @@ static void txnstmt_burstrow_free(void* data)
     return;
 }
 
-/* 释放 */
+/* Release */
 void txnstmt_burst_free(void* data)
 {
     txnstmt_burst* stmtburst = NULL;
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }

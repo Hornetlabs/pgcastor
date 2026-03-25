@@ -9,6 +9,6 @@ typedef struct PG_PARSER_SYSDICT_PGRANGE
     uint32_t rngsubtype;
 } pg_parser_sysdict_pgrange;
 
-typedef pg_parser_sysdict_pgrange *pg_sysdict_Form_pg_range;
+typedef pg_parser_sysdict_pgrange* pg_sysdict_Form_pg_range;
 
 #endif

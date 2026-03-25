@@ -36,9 +36,9 @@
 #include "works/splitwork/wal/wal_define.h"
 #include "onlinerefresh/capture/loadrecord/onlinerefresh_captureloadrecord.h"
 
-onlinerefresh_captureloadrecord *onlinerefresh_captureloadrecord_init(void)
+onlinerefresh_captureloadrecord* onlinerefresh_captureloadrecord_init(void)
 {
-    onlinerefresh_captureloadrecord *result = NULL;
+    onlinerefresh_captureloadrecord* result = NULL;
 
     result = rmalloc0(sizeof(onlinerefresh_captureloadrecord));
     if (!result)
@@ -46,7 +46,7 @@ onlinerefresh_captureloadrecord *onlinerefresh_captureloadrecord_init(void)
         elog(RLOG_ERROR, "oom");
     }
     result = rmemset0(result, 0, 0, sizeof(onlinerefresh_captureloadrecord));
-    
+
     result->splitwalctx = splitwal_init();
 
     return result;

@@ -18,18 +18,18 @@
 
 typedef enum REFRESH_CAPTURE_STAT
 {
-    REFRESH_CAPTURE_STAT_JOBNOP             = 0x00,
-    REFRESH_CAPTURE_STAT_JOBSTARTING     ,               /* 工作线程启动中 */
-    REFRESH_CAPTURE_STAT_JOBWORKING      ,               /* 工作线程工作状态 */
-    REFRESH_CAPTURE_STAT_JOBWAITINGDONE                  /* 等待工作线程工作完成 */
+    REFRESH_CAPTURE_STAT_JOBNOP = 0x00,
+    REFRESH_CAPTURE_STAT_JOBSTARTING,   /* worker thread starting */
+    REFRESH_CAPTURE_STAT_JOBWORKING,    /* worker thread working */
+    REFRESH_CAPTURE_STAT_JOBWAITINGDONE /* waiting for worker thread to complete */
 } refresh_capture_stat;
 
-/* 初始化 */
-refresh_capture *refresh_capture_init(void)
+/* initialize */
+refresh_capture* refresh_capture_init(void)
 {
-    refresh_capture *rcapture = NULL;
+    refresh_capture* rcapture = NULL;
 
-    /* 初始化主结构 */
+    /* initialize main structure */
     rcapture = rmalloc0(sizeof(refresh_capture));
     if (NULL == rcapture)
     {
@@ -39,7 +39,7 @@ refresh_capture *refresh_capture_init(void)
     rmemset0(rcapture, 0, 0, sizeof(refresh_capture));
     rcapture->thrsmgr = NULL;
     rcapture->parallelcnt = guc_getConfigOptionInt(CFG_KEY_MAX_WORK_PER_REFRESH);
-    if(0 == rcapture->parallelcnt)
+    if (0 == rcapture->parallelcnt)
     {
         elog(RLOG_WARNING, "guc parameter  max_work_per_refresh configuration error");
         return NULL;
@@ -54,9 +54,9 @@ refresh_capture *refresh_capture_init(void)
     rmemset0(rcapture->refresh_path, 0, 0, MAXPGPATH);
     sprintf(rcapture->refresh_path, "%s/%s", guc_getConfigOption(CFG_KEY_DATA), REFRESH_REFRESH);
 
-    /* 初始化任务队列 */
+    /* initialize task queue */
     rcapture->tqueue = queue_init();
-    if(NULL == rcapture->tqueue)
+    if (NULL == rcapture->tqueue)
     {
         elog(RLOG_WARNING, "task queue init error");
         return NULL;
@@ -65,22 +65,22 @@ refresh_capture *refresh_capture_init(void)
     return rcapture;
 }
 
-/* 遍历待refresh表, 生成queue */
+/* traverse tables to be refreshed, generate queue */
 static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
 {
-    int max_shard_num       = 0;
-    uint32 ctid_blkid_max   = 0;
-    StringInfo str          = NULL;
-    PGresult *res           = NULL;
-    PGconn* conn            = rcapture->conn;
-    refresh_table *table = NULL;
+    int            max_shard_num = 0;
+    uint32         ctid_blkid_max = 0;
+    StringInfo     str = NULL;
+    PGresult*      res = NULL;
+    PGconn*        conn = rcapture->conn;
+    refresh_table* table = NULL;
 
     str = makeStringInfo();
     max_shard_num = guc_getConfigOptionInt(CFG_KEY_MAX_PAGE_PER_REFRESHSHARDING);
     elog(RLOG_DEBUG, "refresh capture table 2 sharding, gen queue begin");
 
-    /* 先判断连接是否存在, 不存在打开连接 */
-    while(!conn)
+    /* first check if connection exists, open connection if not */
+    while (!conn)
     {
         conn = conn_get(rcapture->conn_info);
         if (NULL != conn)
@@ -90,7 +90,7 @@ static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
         }
     }
 
-    /* 遍历待同步表链表, 查询最大ctid估值数, 进行分片后生成任务 */
+    /* traverse sync table list, query max ctid estimate count, shard and generate tasks */
     for (table = rcapture->tables->tables; table != NULL; table = table->next)
     {
         uint32 left = 0;
@@ -98,11 +98,12 @@ static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
         uint32 remain = 0;
         int    shard_no = 1;
 
-        appendStringInfo(str, "select pg_relation_size('\"%s\".\"%s\"')/%d;", table->schema, table->table, g_blocksize);
+        appendStringInfo(str, "select pg_relation_size('\"%s\".\"%s\"')/%d;", table->schema,
+                         table->table, g_blocksize);
         res = PQexec(conn, str->data);
         if (PGRES_TUPLES_OK != PQresultStatus(res))
         {
-            elog(RLOG_WARNING,"Failed execute in compute max ctid: %s", PQerrorMessage(conn));
+            elog(RLOG_WARNING, "Failed execute in compute max ctid: %s", PQerrorMessage(conn));
             PQclear(res);
             PQfinish(conn);
             rcapture->conn = NULL;
@@ -110,13 +111,13 @@ static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
             return false;
         }
 
-        if (PQntuples(res) != 0 )
+        if (PQntuples(res) != 0)
         {
-            ctid_blkid_max = (uint32) atoi(PQgetvalue(res, 0, 0));
+            ctid_blkid_max = (uint32)atoi(PQgetvalue(res, 0, 0));
         }
         else
         {
-            elog(RLOG_WARNING,"Failed execute in compute max ctid: %s", PQerrorMessage(conn));
+            elog(RLOG_WARNING, "Failed execute in compute max ctid: %s", PQerrorMessage(conn));
             PQclear(res);
             PQfinish(conn);
             rcapture->conn = NULL;
@@ -124,65 +125,60 @@ static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
             return false;
         }
 
-        /* 重置 */
+        /* reset */
         resetStringInfo(str);
         PQclear(res);
 
-        /* 没有数据的情况下直接设置分片为0 */
+        /* if no data, directly set sharding to 0 */
         if (ctid_blkid_max == 0)
         {
-            refresh_table_sharding *table_shard = NULL;
+            refresh_table_sharding* table_shard = NULL;
 
             table_shard = refresh_table_sharding_init();
 
-            /* 分片 */
+            /* sharding */
             refresh_table_sharding_set_schema(table_shard, table->schema);
             refresh_table_sharding_set_table(table_shard, table->table);
             refresh_table_sharding_set_shardings(table_shard, 0);
             refresh_table_sharding_set_shardno(table_shard, 0);
             refresh_table_sharding_set_condition(table_shard, NULL);
 
-            elog(RLOG_DEBUG, "capture refresh queue: %s.%s %4d %4d",
-                                table_shard->schema,
-                                table_shard->table,
-                                table_shard->shardings,
-                                table_shard->sharding_no);
-            /* 添加到缓存中 */
-            queue_put(rcapture->tqueue, (void *)table_shard);
+            elog(RLOG_DEBUG, "capture refresh queue: %s.%s %4d %4d", table_shard->schema,
+                 table_shard->table, table_shard->shardings, table_shard->sharding_no);
+            /* add to cache */
+            queue_put(rcapture->tqueue, (void*)table_shard);
             continue;
         }
 
-        /* 第一次计算分片值 */
+        /* first calculate sharding value */
         right = ctid_blkid_max < max_shard_num ? ctid_blkid_max : max_shard_num;
         remain = ctid_blkid_max;
 
-        /* 生成queue */
+        /* generate queue */
         do
         {
-            refresh_table_sharding *table_shard = NULL;
-            refresh_table_condition *cond = NULL;
+            refresh_table_sharding*  table_shard = NULL;
+            refresh_table_condition* cond = NULL;
 
             table_shard = refresh_table_sharding_init();
             cond = refresh_table_sharding_condition_init();
 
-            /* 分片 */
+            /* sharding */
             refresh_table_sharding_set_schema(table_shard, table->schema);
             refresh_table_sharding_set_table(table_shard, table->table);
-            refresh_table_sharding_set_shardings(table_shard, ((ctid_blkid_max - 1) / max_shard_num) + 1);
+            refresh_table_sharding_set_shardings(table_shard,
+                                                 ((ctid_blkid_max - 1) / max_shard_num) + 1);
             refresh_table_sharding_set_shardno(table_shard, shard_no++);
             refresh_table_sharding_set_condition(table_shard, cond);
 
             cond->left_condition = left;
             cond->right_condition = right;
 
-            elog(RLOG_DEBUG, "capture refresh queue: %s.%s %4d %4d",
-                                table_shard->schema,
-                                table_shard->table,
-                                table_shard->shardings,
-                                table_shard->sharding_no);
+            elog(RLOG_DEBUG, "capture refresh queue: %s.%s %4d %4d", table_shard->schema,
+                 table_shard->table, table_shard->shardings, table_shard->sharding_no);
 
-            /* 添加到缓存中 */
-            queue_put(rcapture->tqueue, (void *)table_shard);
+            /* add to cache */
+            queue_put(rcapture->tqueue, (void*)table_shard);
 
             remain = ctid_blkid_max - right;
             left = right;
@@ -190,20 +186,20 @@ static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
         } while (remain);
     }
 
-    /* 清理工作 */
+    /* cleanup */
     deleteStringInfo(str);
 
     return true;
 }
 
-/* 创建目录 */
-static void refresh_capture_trymkdir(refresh_tables *tables)
+/* create directories */
+static void refresh_capture_trymkdir(refresh_tables* tables)
 {
-    char* data_path = NULL;
-    StringInfo path = NULL;
-    StringInfo path_partial = NULL;
-    StringInfo path_complete = NULL;
-    refresh_table *table = NULL;
+    char*          data_path = NULL;
+    StringInfo     path = NULL;
+    StringInfo     path_partial = NULL;
+    StringInfo     path_complete = NULL;
+    refresh_table* table = NULL;
 
     path = makeStringInfo();
     path_partial = makeStringInfo();
@@ -214,11 +210,8 @@ static void refresh_capture_trymkdir(refresh_tables *tables)
     for (table = tables->tables; table != NULL; table = table->next)
     {
         resetStringInfo(path);
-        appendStringInfo(path, "%s/%s/%s_%s",
-                                     data_path,
-                                     REFRESH_REFRESH,
-                                     table->schema,
-                                     table->table);
+        appendStringInfo(path, "%s/%s/%s_%s", data_path, REFRESH_REFRESH, table->schema,
+                         table->table);
 
         elog(RLOG_DEBUG, "path:%s", path->data);
         if (!osal_dir_exist(path->data))
@@ -226,23 +219,19 @@ static void refresh_capture_trymkdir(refresh_tables *tables)
             resetStringInfo(path_partial);
             resetStringInfo(path_complete);
 
-            if(0 != osal_make_dir(path->data))
+            if (0 != osal_make_dir(path->data))
             {
                 elog(RLOG_ERROR, "could not create directory:%s", path);
             }
-            appendStringInfo(path_partial, "%s/%s",
-                                            path->data,
-                                            REFRESH_PARTIAL);
-            appendStringInfo(path_complete, "%s/%s",
-                                            path->data,
-                                            REFRESH_COMPLETE);
+            appendStringInfo(path_partial, "%s/%s", path->data, REFRESH_PARTIAL);
+            appendStringInfo(path_complete, "%s/%s", path->data, REFRESH_COMPLETE);
 
-            if(0 != osal_make_dir(path_partial->data))
+            if (0 != osal_make_dir(path_partial->data))
             {
                 elog(RLOG_ERROR, "could not create directory:%s", path_partial->data);
             }
 
-            if(0 != osal_make_dir(path_complete->data))
+            if (0 != osal_make_dir(path_complete->data))
             {
                 elog(RLOG_ERROR, "could not create directory:%s", path_complete->data);
             }
@@ -254,17 +243,17 @@ static void refresh_capture_trymkdir(refresh_tables *tables)
     deleteStringInfo(path_partial);
 }
 
-/* 启动工作线程 */
-static bool refresh_capture_startjobs(refresh_capture *rcapture)
+/* start worker threads */
+static bool refresh_capture_startjobs(refresh_capture* rcapture)
 {
-    int index                                           = 0;
-    task_refresh_sharding2file* sharding2file    = NULL;
+    int                         index = 0;
+    task_refresh_sharding2file* sharding2file = NULL;
     elog(RLOG_DEBUG, "capture refresh, work thread num: %d", rcapture->parallelcnt);
 
-    /* 为每一个线程分配空间 */
+    /* allocate space for each thread */
     for (index = 0; index < rcapture->parallelcnt; index++)
     {
-        /* 分配空间和初始化 */
+        /* allocate space and initialize */
         sharding2file = refresh_sharding2file_init();
         sharding2file->conn = NULL;
         sharding2file->conn_info = rcapture->conn_info;
@@ -272,46 +261,43 @@ static bool refresh_capture_startjobs(refresh_capture *rcapture)
         sharding2file->snap_shot_name = rcapture->snap_shot_name;
         sharding2file->tqueue = rcapture->tqueue;
 
-        /* 注册工作线程 */
-        if(false == threads_addjobthread(rcapture->thrsmgr->parents,
-                                                THRNODE_IDENTITY_CAPTURE_REFRESH_JOB,
-                                                rcapture->thrsmgr->submgrref.no,
-                                                (void*)sharding2file,
-                                                refresh_sharding2file_free,
-                                                NULL,
-                                                refresh_sharding2file_work))
+        /* register worker thread */
+        if (false ==
+            threads_addjobthread(rcapture->thrsmgr->parents, THRNODE_IDENTITY_CAPTURE_REFRESH_JOB,
+                                 rcapture->thrsmgr->submgrref.no, (void*)sharding2file,
+                                 refresh_sharding2file_free, NULL, refresh_sharding2file_work))
         {
             elog(RLOG_WARNING, "refresh capture start job error");
             return false;
         }
     }
-    
+
     return true;
 }
 
-/* 设置快照名称 */
-void refresh_capture_setsnapshotname(refresh_capture *rcapture, char *snapname)
+/* set snapshot name */
+void refresh_capture_setsnapshotname(refresh_capture* rcapture, char* snapname)
 {
     rcapture->snap_shot_name = rstrdup(snapname);
 }
 
-void refresh_capture_setrefreshtables(refresh_tables* tables, refresh_capture *rcapture)
+void refresh_capture_setrefreshtables(refresh_tables* tables, refresh_capture* rcapture)
 {
     rcapture->tables = tables;
 }
 
-void refresh_capture_setconn(PGconn* conn, refresh_capture *rcapture)
+void refresh_capture_setconn(PGconn* conn, refresh_capture* rcapture)
 {
     rcapture->conn = conn;
 }
 
 static bool refresh_capture_keep_alive(PGconn* conn)
 {
-    PGresult  *res = NULL;
+    PGresult* res = NULL;
     res = PQexec(conn, "SELECT 1;");
     if (PGRES_TUPLES_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING,"Failed in snapshot keep alive: %s", PQerrorMessage(conn));
+        elog(RLOG_WARNING, "Failed in snapshot keep alive: %s", PQerrorMessage(conn));
         PQclear(res);
         return false;
     }
@@ -319,30 +305,31 @@ static bool refresh_capture_keep_alive(PGconn* conn)
     return true;
 }
 
-void *refresh_capture_main(void* args)
+void* refresh_capture_main(void* args)
 {
-    int jobcnt                          = 0;
-    uint32 delay                        = 200;
+    int                  jobcnt = 0;
+    uint32               delay = 200;
     refresh_capture_stat jobstat = REFRESH_CAPTURE_STAT_JOBNOP;
-    thrnode* thr_node             = NULL;
-    refresh_capture *rcapture    = NULL;
+    thrnode*             thr_node = NULL;
+    refresh_capture*     rcapture = NULL;
 
-    thr_node = (thrnode *)args;
-    rcapture = (refresh_capture *)thr_node->data;
+    thr_node = (thrnode*)args;
+    rcapture = (refresh_capture*)thr_node->data;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "refresh capture stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "refresh capture stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;
     }
 
-    /* 设置为工作状态 */
+    /* set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
-    /* 没有待同步的表的情况下可以退出 */
+    /* can exit if there are no tables to sync */
     if (NULL == rcapture->tables || 0 == rcapture->tables->cnt)
     {
         elog(RLOG_INFO, "There are no tables to be synchronized, so no refresh is needed");
@@ -353,11 +340,11 @@ void *refresh_capture_main(void* args)
 
     elog(RLOG_DEBUG, "capture refresh start");
 
-    /* 先创建目录, 只有不存在目录时才会创建 */
+    /* create directories first, only creates if directory doesn't exist */
     refresh_capture_trymkdir(rcapture->tables);
 
-    /* 获取配置的存量工作线程数量并初始化管理结构 */
-    if(false == refresh_capture_startjobs(rcapture))
+    /* get configured number of existing worker threads and initialize management structure */
+    if (false == refresh_capture_startjobs(rcapture))
     {
         elog(RLOG_INFO, "capture refresh start job threads error");
         thr_node->stat = THRNODE_STAT_EXIT;
@@ -368,15 +355,15 @@ void *refresh_capture_main(void* args)
     jobstat = REFRESH_CAPTURE_STAT_JOBSTARTING;
     while (true)
     {
-        /* 
-         * 首先判断是否接收到退出信号
-         *  对于子管理线程，收到 TERM 信号有两种场景:
-         *  1、子管理线程的上级常驻线程退出
-         *  2、接收到了退出标识
-         * 
-         * 上述两种场景, 都不需要子管理线程设置工作线程为 FREE 状态
+        /*
+         * first check if exit signal received
+         *  for sub-manager thread, there are two scenarios for receiving TERM signal:
+         *  1. parent persistent thread of sub-manager thread exits
+         *  2. exit flag received
+         *
+         * in both scenarios, sub-manager thread does not need to set worker threads to FREE state
          */
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
@@ -390,34 +377,34 @@ void *refresh_capture_main(void* args)
             delay = 0;
         }
 
-        /* 等待所有工作线程启动成功 */
-        if(REFRESH_CAPTURE_STAT_JOBSTARTING == jobstat)
+        /* wait for all worker threads to start successfully */
+        if (REFRESH_CAPTURE_STAT_JOBSTARTING == jobstat)
         {
-            /* 查看是否已经启动成功 */
+            /* check if already started successfully */
             jobcnt = 0;
             delay++;
-            if(false == threads_countsubmgrjobthredsabovework(rcapture->thrsmgr->parents,
-                                                                    rcapture->thrsmgr->childthrrefs,
-                                                                    &jobcnt))
+            if (false == threads_countsubmgrjobthredsabovework(
+                             rcapture->thrsmgr->parents, rcapture->thrsmgr->childthrrefs, &jobcnt))
             {
                 elog(RLOG_WARNING, "capture refresh count job thread above work stat error");
                 thr_node->stat = THRNODE_STAT_ABORT;
                 goto refresh_capture_main_done;
             }
 
-            if(jobcnt != rcapture->thrsmgr->childthrrefs->length)
+            if (jobcnt != rcapture->thrsmgr->childthrrefs->length)
             {
                 continue;
             }
             jobstat = REFRESH_CAPTURE_STAT_JOBWORKING;
             continue;
         }
-        else if(REFRESH_CAPTURE_STAT_JOBWORKING == jobstat)
+        else if (REFRESH_CAPTURE_STAT_JOBWORKING == jobstat)
         {
-            /* 工作线程已经启动, 那么向队列中加入工作任务 */
-            if(false == refresh_capture_tables2shardings(rcapture))
+            /* worker threads started, add work tasks to queue */
+            if (false == refresh_capture_tables2shardings(rcapture))
             {
-                /* 向队列中加入任务失败, 那么管理线程退出, 子线程的回收由主线程处理 */
+                /* failed to add tasks to queue, manager thread exits, main thread handles
+                 * sub-thread cleanup */
                 thr_node->stat = THRNODE_STAT_ABORT;
                 break;
             }
@@ -425,44 +412,42 @@ void *refresh_capture_main(void* args)
             delay++;
             continue;
         }
-        else if(REFRESH_CAPTURE_STAT_JOBWAITINGDONE == jobstat)
+        else if (REFRESH_CAPTURE_STAT_JOBWAITINGDONE == jobstat)
         {
-            /* 
-             * 等待任务的完成分为两个部分
-             *  1、任务队列为空
-             *  2、子线程已完全退出
+            /*
+             * waiting for task completion has two parts
+             *  1. task queue is empty
+             *  2. sub-threads have fully exited
              */
-            if(false == queue_isnull(rcapture->tqueue))
+            if (false == queue_isnull(rcapture->tqueue))
             {
                 delay++;
                 continue;
             }
 
-            /* 设置空闲的线程退出并统计退出的线程个数 */
+            /* set idle threads to exit and count exited threads */
             jobcnt = rcapture->thrsmgr->childthrrefs->length;
-            if(false == threads_setsubmgrjobthredstermandcountexit(rcapture->thrsmgr->parents,
-                                                                        rcapture->thrsmgr->childthrrefs,
-                                                                        0,
-                                                                        &jobcnt))
+            if (false == threads_setsubmgrjobthredstermandcountexit(rcapture->thrsmgr->parents,
+                                                                    rcapture->thrsmgr->childthrrefs,
+                                                                    0, &jobcnt))
             {
                 elog(RLOG_WARNING, "capture refresh set job threads term in idle error");
                 thr_node->stat = THRNODE_STAT_ABORT;
                 goto refresh_capture_main_done;
             }
 
-            /* 没有完全退出, 那么继续等待 */
-            if(jobcnt != rcapture->thrsmgr->childthrrefs->length)
+            /* not fully exited, continue waiting */
+            if (jobcnt != rcapture->thrsmgr->childthrrefs->length)
             {
                 continue;
             }
 
-            /* 所有线程已经退出, 那么设置子线程状态为 FREE */
+            /* all threads have exited, set sub-thread state to FREE */
             threads_setsubmgrjobthredsfree(rcapture->thrsmgr->parents,
-                                                rcapture->thrsmgr->childthrrefs,
-                                                0,
-                                                rcapture->parallelcnt);
+                                           rcapture->thrsmgr->childthrrefs, 0,
+                                           rcapture->parallelcnt);
 
-            /* 设置本线程退出 */
+            /* set this thread to exit */
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
@@ -473,27 +458,26 @@ refresh_capture_main_done:
     return NULL;
 }
 
-/* 释放 */
+/* free */
 void refresh_capture_free(void* privdata)
 {
-    refresh_capture *rcapture = NULL;
+    refresh_capture* rcapture = NULL;
 
-    rcapture = (refresh_capture *)privdata;
+    rcapture = (refresh_capture*)privdata;
 
     if (!rcapture)
     {
         return;
     }
-    
 
-    /* 清理conn连接句柄 */
+    /* cleanup conn connection handle */
     if (rcapture->conn)
     {
         PQfinish(rcapture->conn);
         rcapture->conn = NULL;
     }
 
-    /* 清理snap_shot_name */
+    /* cleanup snap_shot_name */
     if (rcapture->snap_shot_name)
     {
         rfree(rcapture->snap_shot_name);
@@ -509,7 +493,7 @@ void refresh_capture_free(void* privdata)
         queue_destroy(rcapture->tqueue, NULL);
     }
 
-    /* 清理refresh tables */
+    /* cleanup refresh tables */
     if (rcapture->tables)
     {
         refresh_freetables(rcapture->tables);

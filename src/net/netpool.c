@@ -43,7 +43,7 @@ netpoolentry* netpoolentry_init(void)
     return npoolentry;
 }
 
-/* 描述符设置 */
+/* Set descriptor */
 void netpoolentry_setfd(netpoolentry* npoolentry, int fd)
 {
     if (NULL == npoolentry)
@@ -54,7 +54,7 @@ void netpoolentry_setfd(netpoolentry* npoolentry, int fd)
     npoolentry->stat = NETPOOLENTRY_STAT_OK;
 }
 
-/* 设置主机信息 */
+/* Set host information */
 bool netpoolentry_sethost(netpoolentry* npoolentry, char* host)
 {
     int len = 0;
@@ -82,7 +82,7 @@ bool netpoolentry_sethost(netpoolentry* npoolentry, char* host)
     return true;
 }
 
-/* 设置端口信息 */
+/* Set port information */
 bool netpoolentry_setport(netpoolentry* npoolentry, char* port)
 {
     int len = 0;
@@ -144,7 +144,7 @@ void netpoolentry_destroy(netpoolentry* npoolentry)
 
 netpool* netpool_init(void)
 {
-    int index = 0;
+    int      index = 0;
     netpool* npool = NULL;
 
     npool = rmalloc0(sizeof(netpool));
@@ -156,29 +156,29 @@ netpool* netpool_init(void)
     rmemset0(npool, 0, '\0', sizeof(netpool));
 
     npool->fdmax = NETPOOL_DEFAULTFDSIZE;
-    npool->fds = rmalloc0(sizeof(void*)*npool->fdmax);
+    npool->fds = rmalloc0(sizeof(void*) * npool->fdmax);
     if (NULL == npool->fds)
     {
         elog(RLOG_ERROR, "net server reset out of memory");
         return NULL;
     }
-    rmemset0(npool->fds, 0, '\0', sizeof(void*)*npool->fdmax);
+    rmemset0(npool->fds, 0, '\0', sizeof(void*) * npool->fdmax);
 
-    npool->pos = rmalloc0(sizeof(int)*npool->fdmax);
+    npool->pos = rmalloc0(sizeof(int) * npool->fdmax);
     if (NULL == npool->pos)
     {
         elog(RLOG_ERROR, "net pool reset out of memory");
         return NULL;
     }
-    rmemset0(npool->pos, 0, '\0', sizeof(int)*npool->fdmax);
+    rmemset0(npool->pos, 0, '\0', sizeof(int) * npool->fdmax);
 
-    npool->errorfds = rmalloc0(sizeof(int)*npool->fdmax);
+    npool->errorfds = rmalloc0(sizeof(int) * npool->fdmax);
     if (NULL == npool->errorfds)
     {
         elog(RLOG_ERROR, "net pool reset out of memory");
         return NULL;
     }
-    rmemset0(npool->errorfds, 0, '\0', sizeof(int)*npool->fdmax);
+    rmemset0(npool->errorfds, 0, '\0', sizeof(int) * npool->fdmax);
 
     for (index = 0; index < npool->fdmax; index++)
     {
@@ -187,9 +187,9 @@ netpool* netpool_init(void)
         npool->errorfds[index] = -1;
     }
 
-    /* 申请 base 信息，用于后续的描述符处理 */
+    /* Apply for base information for subsequent descriptor processing */
     npool->ops = netiomp_init(NETIOMP_TYPE_POLL);
-    if(false == npool->ops->create(&npool->base))
+    if (false == npool->ops->create(&npool->base))
     {
         elog(RLOG_ERROR, "net pool reset NETIOMP_TYPE_POLL create error");
         return NULL;
@@ -200,17 +200,17 @@ netpool* netpool_init(void)
     return npool;
 }
 
-/* 添加 */
+/* Add */
 bool netpool_add(netpool* npool, netpoolentry* entry)
 {
     /*
-     * 1、在原 fds 中查照未使用的槽
-     * 2、未找到那么新分配空间
+     * 1. Search for unused slot in original fds
+     * 2. If not found, allocate new space
      */
-    int index = 0;
-    int fdmax = 0;
-    int* pos = NULL;
-    int* errorfds = NULL;
+    int            index = 0;
+    int            fdmax = 0;
+    int*           pos = NULL;
+    int*           errorfds = NULL;
     netpoolentry** pentrys = NULL;
 
     for (index = 0; index < npool->fdmax; index++)
@@ -229,14 +229,14 @@ bool netpool_add(netpool* npool, netpoolentry* entry)
     }
 
     fdmax = (npool->fdmax * 2);
-    pentrys = (netpoolentry**)rmalloc0(sizeof(void*)*fdmax);
+    pentrys = (netpoolentry**)rmalloc0(sizeof(void*) * fdmax);
     if (NULL == pentrys)
     {
         elog(RLOG_WARNING, "net pool add entry error, out of memory");
         return false;
     }
-    rmemset0(pentrys, 0, '\0', sizeof(void*)*fdmax);
-    
+    rmemset0(pentrys, 0, '\0', sizeof(void*) * fdmax);
+
     pos = rmalloc0(sizeof(int) * fdmax);
     if (NULL == pos)
     {
@@ -281,7 +281,7 @@ bool netpool_add(netpool* npool, netpoolentry* entry)
     return true;
 }
 
-/* 删除 */
+/* Delete */
 void netpool_del(netpool* npool, int fd)
 {
     int index = 0;
@@ -306,7 +306,7 @@ void netpool_del(netpool* npool, int fd)
     }
 }
 
-/* 根据 fd 在 netpool 中获取 entry */
+/* Get entry from netpool by fd */
 netpoolentry* netpool_getentrybyfd(netpool* npool, int fd)
 {
     int index = 0;
@@ -329,27 +329,27 @@ netpoolentry* netpool_getentrybyfd(netpool* npool, int fd)
     return NULL;
 }
 
-/* 接收数据 */
+/* Receive data */
 static bool netpool_recv(netpoolentry* npoolentry)
 {
-    bool bhead                  = false;
-    int rlen                    = 0;
-    int readlen                 = 0;
-    int msglen                  = 0;
-    uint8* cptr                 = NULL;
-    netpacket* npacket   = NULL;
-    uint8 hdr[8]                 = { 0 };
+    bool       bhead = false;
+    int        rlen = 0;
+    int        readlen = 0;
+    int        msglen = 0;
+    uint8*     cptr = NULL;
+    netpacket* npacket = NULL;
+    uint8      hdr[8] = {0};
     if (NULL == npoolentry)
     {
         return false;
     }
 
     /*
-     * 1、在读队列中获取最后一包
-     *  1.1 完整的 packet, 申请一个新的 packet 挂载到 读队列 中
-     *  1.2 不完整的 packet, 使用该 packet
-     * 2、队列为空
-     *  申请一个新 packet 挂载到 读队列中
+     * 1. Get last packet from read queue
+     *  1.1 Complete packet, apply for a new packet and mount to read queue
+     *  1.2 Incomplete packet, use this packet
+     * 2. Queue is empty
+     *  Apply for a new packet and mount to read queue
      */
     if (false == queue_isnull(npoolentry->rpackets))
     {
@@ -380,7 +380,7 @@ static bool netpool_recv(netpoolentry* npoolentry)
     }
     else
     {
-        /* 读取数据 */
+        /* Read data */
         rlen = readlen = npacket->used - npacket->offset;
         cptr = npacket->data + npacket->offset;
     }
@@ -412,18 +412,18 @@ static bool netpool_recv(netpoolentry* npoolentry)
     return true;
 }
 
-/* 发送数据 */
+/* Send data */
 static bool netpool_send(netpoolentry* npoolentry)
 {
-    /* 
-     * 发送数据
-     *  1、在队列中获取待发送的包
-     *  2、发送数据
+    /*
+     * Send data
+     *  1. Get packet to send from queue
+     *  2. Send data
      */
-    int timeout                 = 0;
-    int sendlen                 = 0;
-    uint8* cptr                 = NULL;
-    netpacket* npacket   = NULL;
+    int        timeout = 0;
+    int        sendlen = 0;
+    uint8*     cptr = NULL;
+    netpacket* npacket = NULL;
     if (NULL == npoolentry)
     {
         return true;
@@ -454,20 +454,20 @@ static bool netpool_send(netpoolentry* npoolentry)
     return true;
 }
 
-/* 创建事件并接收描述符,等待触发后调用回掉函数处理 */
+/* Create event and receive descriptor, call callback function after trigger */
 bool netpool_desc(netpool* npool, int* cnt, int** perrorfds)
 {
-    uint16 event            = 0;
-    uint16 revent           = 0;
-    int iret                = 0;
-    int index               = 0;
+    uint16 event = 0;
+    uint16 revent = 0;
+    int    iret = 0;
+    int    index = 0;
 
-    if(NULL == npool)
+    if (NULL == npool)
     {
         return false;
     }
 
-    /* 将有效的描述符加入到监听队列中 */
+    /* Add valid descriptors to listen queue */
     *cnt = 0;
     *perrorfds = npool->errorfds;
     npool->ops->reset(npool->base);
@@ -479,7 +479,7 @@ bool netpool_desc(netpool* npool, int* cnt, int** perrorfds)
             continue;
         }
 
-        /* 处于发送完就关闭的状态, 那么不再读取数据 */
+        /* In state of closing after sending, no longer read data */
         event = 0;
         if (NETPOOLENTRY_STAT_CLOSEUTILWPACKETNULL != npool->fds[index]->stat)
         {
@@ -492,12 +492,12 @@ bool netpool_desc(netpool* npool, int* cnt, int** perrorfds)
         npool->pos[index] = npool->ops->add(npool->base, npool->fds[index]->fd, event);
     }
 
-    /* 调用iomp端口 */
+    /* Call iomp port */
     iret = npool->ops->iomp(npool->base);
-    if(-1 == iret)
+    if (-1 == iret)
     {
-        /* 查看错误是否为信号引起的，若为信号引起那么继续监测 */
-        if(errno == EINTR)
+        /* Check if error is caused by signal, if so continue monitoring */
+        if (errno == EINTR)
         {
             return true;
         }
@@ -505,8 +505,8 @@ bool netpool_desc(netpool* npool, int* cnt, int** perrorfds)
         return false;
     }
 
-    /* 没有事件触发, 返回 */
-    if(0 == iret)
+    /* No event triggered, return */
+    if (0 == iret)
     {
         return true;
     }
@@ -519,18 +519,17 @@ bool netpool_desc(netpool* npool, int* cnt, int** perrorfds)
             continue;
         }
 
-        /* 获取触发的事件 */
+        /* Get triggered event */
         revent = npool->ops->getevent(npool->base, npool->pos[index]);
         if (0 == revent)
         {
-            /* 没有事件触发 */
+            /* No event triggered */
             continue;
         }
 
-
-        if (POLLIN == (revent&POLLIN))
+        if (POLLIN == (revent & POLLIN))
         {
-            /* 接收数据 */
+            /* Receive data */
             if (false == netpool_recv(npool->fds[index]))
             {
                 elog(RLOG_WARNING, "net pool recv error");
@@ -542,9 +541,9 @@ bool netpool_desc(netpool* npool, int* cnt, int** perrorfds)
             }
         }
 
-        if (POLLOUT == (revent&POLLOUT))
+        if (POLLOUT == (revent & POLLOUT))
         {
-            /* 发送数据 */
+            /* Send data */
             if (false == netpool_send(npool->fds[index]))
             {
                 elog(RLOG_WARNING, "net pool send error");
@@ -556,8 +555,7 @@ bool netpool_desc(netpool* npool, int* cnt, int** perrorfds)
             }
         }
 
-        if (POLLHUP == revent
-            || POLLERR == revent)
+        if (POLLHUP == revent || POLLERR == revent)
         {
             elog(RLOG_WARNING, "iomp pollhup/pollerr error, %s", strerror(errno));
             npool->errorfds[*cnt] = npool->fds[index]->fd;
@@ -571,7 +569,7 @@ bool netpool_desc(netpool* npool, int* cnt, int** perrorfds)
     return true;
 }
 
-/* 销毁 */
+/* Destroy */
 void netpool_destroy(netpool* npool)
 {
     int index = 0;
@@ -607,11 +605,10 @@ void netpool_destroy(netpool* npool)
         npool->errorfds = NULL;
     }
 
-    if(NULL != npool->base)
+    if (NULL != npool->base)
     {
         npool->ops->free(npool->base);
         npool->base = NULL;
     }
     rfree(npool);
 }
-

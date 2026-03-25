@@ -1,81 +1,79 @@
 #ifndef _MISC_CONTROL_H
 #define _MISC_CONTROL_H
 
-
-/* 读控制文件 */
+/* read control file */
 void misc_controldata_load(void);
 
-/* 写 control 文件 */
+/* write control file */
 void misc_controldata_flush(void);
 
-/* 读控制文件 */
+/* read and initialize control file */
 void misc_controldata_init(void);
 
-/* 清理 */
+/* cleanup */
 void misc_controldata_destroy(void);
 
-
-/* 设置状态为init */
+/* set status to init */
 void misc_controldata_stat_setinit(void);
 
-/* 设置状态为rewind */
+/* set status to rewind */
 void misc_controldata_stat_setrewind(void);
 
-/* 设置状态为rewinding */
+/* set status to rewinding */
 void misc_controldata_stat_setrewinding(void);
 
-/* 设置状态为trunning */
+/* set status to running */
 void misc_controldata_stat_setrunning(void);
 
-/* 设置状态为shutdown */
+/* set status to shutdown */
 void misc_controldata_stat_setshutdown(void);
 
-/* 设置状态为recovery */
+/* set status to recovery */
 void misc_controldata_stat_setrecovery(void);
 
-/* 获取状态值 */
+/* get status value */
 int misc_controldata_stat_get(void);
 
-/* 设置dbid */
+/* set database id */
 void misc_controldata_database_set(Oid database);
 
-/* 获取 dbid */
+/* get database id */
 Oid misc_controldata_database_get(void* invalid);
 
-/* 设置dbname */
+/* set database name */
 void misc_controldata_dbname_set(char* dbname);
 
-/* 设置monetary */
+/* set monetary locale */
 void misc_controldata_monetary_set(char* monetary);
 
-/* 获取monetary */
+/* get monetary locale */
 char* misc_controldata_monetary_get(void);
 
-/* 设置numeric */
+/* set numeric locale */
 void misc_controldata_numeric_set(char* numeric);
 
-/* 获取numeric */
+/* get numeric locale */
 char* misc_controldata_numeric_get(void);
 
-/* 设置timezone */
+/* set timezone */
 void misc_controldata_timezone_set(char* timezone);
 
-/* 获取timezone */
+/* get timezone */
 char* misc_controldata_timezone_get(void);
 
-/* 设置orgencoding */
+/* set source encoding */
 void misc_controldata_orgencoding_set(char* encoding);
 
-/* 获取orgencoding */
+/* get source encoding */
 char* misc_controldata_orgencoding_get(void);
 
-/* 设置dstencoding */
+/* set destination encoding */
 void misc_controldata_dstencoding_set(char* encoding);
 
-/* 获取dstencoding */
+/* get destination encoding */
 char* misc_controldata_dstencoding_get(void);
 
-/* 获取dbname */
+/* get database name */
 char* misc_controldata_dbname_get(void);
 
 #endif

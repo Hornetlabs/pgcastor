@@ -1,12 +1,12 @@
 /**
  * @file pg_parser_thirdparty_tupleparser_record.c
  * @author bytesync
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2023-08-03
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  */
 #include "pg_parser_os_incl.h"
 #include "pg_parser_app_incl.h"
@@ -22,42 +22,36 @@
 
 #define PGFUNC_RECORD_MCXT NULL
 
-#define pg_parser_HeapTupleHeaderGetTypeId(tup) \
-( \
-     (tup)->t_choice.t_datum.datum_typeid \
-)
+#define pg_parser_HeapTupleHeaderGetTypeId(tup) ((tup)->t_choice.t_datum.datum_typeid)
 
-#define pg_parser_HeapTupleHeaderGetDatumLength(tup) \
-    PG_PARSER_VARSIZE(tup)
+#define pg_parser_HeapTupleHeaderGetDatumLength(tup) PG_PARSER_VARSIZE(tup)
 
-pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info)
+pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
-
-    bool                         is_toast = false;
-    bool                         need_free = false;
+    bool                      is_toast = false;
+    bool                      need_free = false;
     pg_parser_HeapTupleHeader rec = NULL;
-    uint32_t                     tupType;
+    uint32_t                  tupType;
     pg_parser_TupleDesc       tupdesc;
     pg_parser_HeapTupleData   tuple;
-    int                          ncolumns;
-    int                          i;
-    pg_parser_Datum          *values;
-    bool                        *nulls;
+    int                       ncolumns;
+    int                       i;
+    pg_parser_Datum*          values;
+    bool*                     nulls;
 
-    pg_parser_sysdict_tableInfo tbinfo = {'\0'};
-    pg_parser_translog_tbcol_valuetype_customer *custom = NULL;
-    pg_parser_translog_tbcol_valuetype_customer *current_custom = NULL;
+    pg_parser_sysdict_tableInfo                  tbinfo = {'\0'};
+    pg_parser_translog_tbcol_valuetype_customer* custom = NULL;
+    pg_parser_translog_tbcol_valuetype_customer* current_custom = NULL;
 
-    rec = (pg_parser_HeapTupleHeader) 
-                        pg_parser_detoast_datum((struct pg_parser_varlena *) attr,
-                                                &is_toast,
-                                                &need_free,
-                                                 info->zicinfo->dbtype,
-                                                 info->zicinfo->dbversion);
+    rec = (pg_parser_HeapTupleHeader)pg_parser_detoast_datum(
+        (struct pg_parser_varlena*)attr, &is_toast, &need_free, info->zicinfo->dbtype,
+        info->zicinfo->dbversion);
     if (is_toast)
     {
         if (info != NULL)
+        {
             info->valueinfo = INFO_COL_IS_TOAST;
+        }
         info->valuelen = sizeof(struct pg_parser_varatt_external);
         return (pg_parser_Datum)rec;
     }
@@ -66,11 +60,10 @@ pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info
 
     /* Extract type info from the tuple itself */
     tupType = pg_parser_HeapTupleHeaderGetTypeId(rec);
-    if(!pg_parser_sysdict_getTableInfo_byoid(get_typrelid_by_typid(info->sysdicts, tupType),
-                                                info->sysdicts,
-                                                &tbinfo))
+    if (!pg_parser_sysdict_getTableInfo_byoid(get_typrelid_by_typid(info->sysdicts, tupType),
+                                              info->sysdicts, &tbinfo))
     {
-        return (pg_parser_Datum) 0;
+        return (pg_parser_Datum)0;
     }
     tupdesc = pg_parser_get_desc(&tbinfo);
     ncolumns = tupdesc->natts;
@@ -81,24 +74,20 @@ pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info
     tuple.t_tableOid = pg_parser_InvalidOid;
     tuple.t_data = rec;
 
-    if (!pg_parser_mcxt_malloc(PGFUNC_RECORD_MCXT,
-                                (void **)&custom,
-                                ncolumns * sizeof(pg_parser_translog_tbcol_valuetype_customer)))
+    if (!pg_parser_mcxt_malloc(PGFUNC_RECORD_MCXT, (void**)&custom,
+                               ncolumns * sizeof(pg_parser_translog_tbcol_valuetype_customer)))
     {
-        return (pg_parser_Datum) 0;
+        return (pg_parser_Datum)0;
     }
 
-    if (!pg_parser_mcxt_malloc(PGFUNC_RECORD_MCXT,
-                                (void **)&values,
-                                ncolumns * sizeof(pg_parser_Datum)))
+    if (!pg_parser_mcxt_malloc(PGFUNC_RECORD_MCXT, (void**)&values,
+                               ncolumns * sizeof(pg_parser_Datum)))
     {
-        return (pg_parser_Datum) 0;
+        return (pg_parser_Datum)0;
     }
-    if (!pg_parser_mcxt_malloc(PGFUNC_RECORD_MCXT,
-                                (void **)&nulls,
-                                ncolumns * sizeof(bool)))
+    if (!pg_parser_mcxt_malloc(PGFUNC_RECORD_MCXT, (void**)&nulls, ncolumns * sizeof(bool)))
     {
-        return (pg_parser_Datum) 0;
+        return (pg_parser_Datum)0;
     }
 
     /* Break down the tuple into fields */
@@ -106,15 +95,14 @@ pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info
     current_custom = custom;
     for (i = 0; i < ncolumns; i++)
     {
-        pg_sysdict_Form_pg_attribute att = pg_parser_TupleDescAttr(tupdesc, i);
-        pg_parser_translog_tbcol_value *colvalue = NULL;
-        pg_parser_Datum              attr;
+        pg_sysdict_Form_pg_attribute    att = pg_parser_TupleDescAttr(tupdesc, i);
+        pg_parser_translog_tbcol_value* colvalue = NULL;
+        pg_parser_Datum                 attr;
 
-        if (!pg_parser_mcxt_malloc(PGFUNC_RECORD_MCXT,
-                                    (void **)&colvalue,
-                                    sizeof(pg_parser_translog_tbcol_value)))
+        if (!pg_parser_mcxt_malloc(PGFUNC_RECORD_MCXT, (void**)&colvalue,
+                                   sizeof(pg_parser_translog_tbcol_value)))
         {
-            return (pg_parser_Datum) 0;
+            return (pg_parser_Datum)0;
         }
 
         colvalue->m_colName = att->attname.data;
@@ -127,7 +115,6 @@ pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info
             continue;
         }
 
-
         if (nulls[i])
         {
             /* emit nothing... */
@@ -139,7 +126,7 @@ pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info
 
         if (!pg_parser_convert_attr_to_str_value(attr, info->sysdicts, colvalue, info->zicinfo))
         {
-            return (pg_parser_Datum) 0;
+            return (pg_parser_Datum)0;
         }
         current_custom->m_value = colvalue;
         if (i < ncolumns - 1)
@@ -149,15 +136,25 @@ pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo *info
         }
     }
     if (values)
+    {
         pg_parser_mcxt_free(PGFUNC_RECORD_MCXT, values);
+    }
     if (nulls)
+    {
         pg_parser_mcxt_free(PGFUNC_RECORD_MCXT, nulls);
+    }
     if (tupdesc)
+    {
         pg_parser_mcxt_free(PGFUNC_RECORD_MCXT, tupdesc);
+    }
     /* ReleaseTupleDesc(tupdesc); */
     if (need_free)
+    {
         pg_parser_mcxt_free(PGFUNC_RECORD_MCXT, rec);
+    }
     if (tbinfo.pgattr)
+    {
         pg_parser_mcxt_free(PGFUNC_RECORD_MCXT, tbinfo.pgattr);
-    return (pg_parser_Datum) custom;
+    }
+    return (pg_parser_Datum)custom;
 }

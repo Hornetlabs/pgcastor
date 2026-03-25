@@ -19,26 +19,26 @@
 #include "refresh/integrate/refresh_integrate.h"
 
 /*
- * refresh文件表信息长度
+ * refresh file table info length
  * cnt + completecnt + tablestat + oid + schema + table + stat
  *  4  +      4      +     4     +  4  +   64   +  64   + cnt * 1
  */
-#define REFRESH_FILE_TABLE_LEN (sizeof(int) + sizeof(int) + sizeof(int) + sizeof(Oid) + NAMEDATALEN + NAMEDATALEN)
-
+#define REFRESH_FILE_TABLE_LEN \
+    (sizeof(int) + sizeof(int) + sizeof(int) + sizeof(Oid) + NAMEDATALEN + NAMEDATALEN)
 
 typedef enum REFRESH_INTEGRATEJOB_STAT
 {
-    REFRESH_INTEGRATE_STAT_JOBNOP                = 0x00,
-    REFRESH_INTEGRATE_STAT_JOBSTARTING           ,               /* 工作线程启动中 */
-    REFRESH_INTEGRATE_STAT_JOBWORKING            ,               /* 工作线程工作状态 */
-    REFRESH_INTEGRATE_STAT_JOBWAITINGDONE                        /* 等待工作线程工作完成 */
+    REFRESH_INTEGRATE_STAT_JOBNOP = 0x00,
+    REFRESH_INTEGRATE_STAT_JOBSTARTING,   /* worker thread starting */
+    REFRESH_INTEGRATE_STAT_JOBWORKING,    /* worker thread working */
+    REFRESH_INTEGRATE_STAT_JOBWAITINGDONE /* waiting for worker thread to complete */
 } refresh_integratejob_stat;
 
-refresh_integrate *refresh_integrate_init(void)
+refresh_integrate* refresh_integrate_init(void)
 {
-    refresh_integrate *rintegrate = NULL;
+    refresh_integrate* rintegrate = NULL;
 
-    rintegrate = (refresh_integrate *)rmalloc0(sizeof(refresh_integrate));
+    rintegrate = (refresh_integrate*)rmalloc0(sizeof(refresh_integrate));
     if (NULL == rintegrate)
     {
         elog(RLOG_WARNING, "refresh integrate init out of memory, %s", strerror(errno));
@@ -47,7 +47,7 @@ refresh_integrate *refresh_integrate_init(void)
     rmemset0(rintegrate, 0, 0, sizeof(refresh_integrate));
 
     rintegrate->parallelcnt = guc_getConfigOptionInt(CFG_KEY_MAX_WORK_PER_REFRESH);
-    if(0 == rintegrate->parallelcnt)
+    if (0 == rintegrate->parallelcnt)
     {
         elog(RLOG_WARNING, "guc parameter  max_work_per_refresh configuration error");
         return NULL;
@@ -63,7 +63,7 @@ refresh_integrate *refresh_integrate_init(void)
     }
     rmemset0(rintegrate->refresh_path, 0, 0, MAXPGPATH);
     sprintf(rintegrate->refresh_path, "%s", guc_getConfigOption(CFG_KEY_TRAIL_DIR));
-    
+
     rintegrate->sync_stats = NULL;
 
     rintegrate->stat = REFRESH_INTEGRATE_STAT_NOP;
@@ -71,18 +71,18 @@ refresh_integrate *refresh_integrate_init(void)
     return rintegrate;
 }
 
-/* 向sync状态表中refresh数据，并truncate存量表 */
-static bool refresh_integrate_setsynctable(refresh_integrate *rintegrate, thrnode* thrnode)
+/* refresh data to sync status table and truncate existing tables */
+static bool refresh_integrate_setsynctable(refresh_integrate* rintegrate, thrnode* thrnode)
 {
-    int index               = 0;
-    PGconn *conn            = NULL;
-    PGresult *res           = NULL;
-    StringInfo sql          = NULL;
-    char* catalog_schema    = NULL;
+    int        index = 0;
+    PGconn*    conn = NULL;
+    PGresult*  res = NULL;
+    StringInfo sql = NULL;
+    char*      catalog_schema = NULL;
 
 refresh_integrate_setsynctableretry:
     sleep(1);
-    if(THRNODE_STAT_TERM == thrnode->stat)
+    if (THRNODE_STAT_TERM == thrnode->stat)
     {
         return false;
     }
@@ -106,16 +106,16 @@ refresh_integrate_setsynctableretry:
     for (index = 0; index < rintegrate->parallelcnt; index++)
     {
         resetStringInfo(sql);
-        appendStringInfo(sql, "INSERT INTO \"%s\".\"%s\" \n"
-                              "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) \n"
-                              "VALUES (\'%s%d\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
-                              "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
-                              "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
-                              catalog_schema,
-                              SYNC_STATUSTABLE_NAME,
-                              REFRESH_REFRESH,
-                              index,
-                              1);
+        appendStringInfo(
+            sql,
+            "INSERT INTO \"%s\".\"%s\" \n"
+            "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) "
+            "\n"
+            "VALUES (\'%s%d\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
+            "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
+            "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
+            "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
+            catalog_schema, SYNC_STATUSTABLE_NAME, REFRESH_REFRESH, index, 1);
         res = conn_exec(conn, sql->data);
         if (NULL == res)
         {
@@ -126,11 +126,12 @@ refresh_integrate_setsynctableretry:
         PQclear(res);
     }
 
-    /* 清空表信息 */
+    /* truncate table info */
     if (1 == guc_getConfigOptionInt(CFG_KEY_TRUNCATETABLE))
     {
-        /* 如果清空失败，重新连接数据库并执行 */
-        if (false == refresh_table_syncstats_truncatetable_fromsyncstats(rintegrate->sync_stats, (void*)conn))
+        /* if truncate fails, reconnect to database and retry */
+        if (false == refresh_table_syncstats_truncatetable_fromsyncstats(rintegrate->sync_stats,
+                                                                         (void*)conn))
         {
             res = conn_exec(conn, "ROLLBACK");
             if (NULL == res)
@@ -158,24 +159,24 @@ refresh_integrate_setsynctableretry:
     return true;
 }
 
-/* 启动工作线程 */
-static bool refresh_integrate_startjobs(refresh_integrate *rintegrate)
+/* start worker threads */
+static bool refresh_integrate_startjobs(refresh_integrate* rintegrate)
 {
-    int index                                           = 0;
-    refresh_sharding2db *shard2db = NULL;
+    int                  index = 0;
+    refresh_sharding2db* shard2db = NULL;
     elog(RLOG_DEBUG, "integrate refresh, work thread num: %d", rintegrate->parallelcnt);
 
-    /* 为每一个线程分配空间 */
+    /* allocate space for each thread */
     for (index = 0; index < rintegrate->parallelcnt; index++)
     {
-        /* 分配空间和初始化 */
+        /* allocate space and initialize */
         shard2db = refresh_sharding2db_init();
         if (NULL == shard2db)
         {
             return false;
         }
         shard2db->name = (char*)rmalloc0(NAMEDATALEN);
-        if(NULL == shard2db->name)
+        if (NULL == shard2db->name)
         {
             elog(RLOG_WARNING, "malloc sharding2dbname out of memory");
             refresh_sharding2db_free(shard2db);
@@ -189,46 +190,44 @@ static bool refresh_integrate_startjobs(refresh_integrate *rintegrate)
         shard2db->syncstats->tablesyncstats = rintegrate->sync_stats;
         shard2db->syncstats->queue = rintegrate->tqueue;
 
-        /* 注册工作线程 */
-        if(false == threads_addjobthread(rintegrate->thrsmgr->parents,
-                                                THRNODE_IDENTITY_INTEGRATE_REFRESH_JOB,
-                                                rintegrate->thrsmgr->submgrref.no,
-                                                (void*)shard2db,
-                                                refresh_sharding2db_free,
-                                                NULL,
-                                                refresh_sharding2db_work))
+        /* register worker thread */
+        if (false == threads_addjobthread(rintegrate->thrsmgr->parents,
+                                          THRNODE_IDENTITY_INTEGRATE_REFRESH_JOB,
+                                          rintegrate->thrsmgr->submgrref.no, (void*)shard2db,
+                                          refresh_sharding2db_free, NULL, refresh_sharding2db_work))
         {
             elog(RLOG_WARNING, "refresh integrate start job error");
             return false;
         }
     }
-    
+
     return true;
 }
 
-void *refresh_integrate_main(void* args)
+void* refresh_integrate_main(void* args)
 {
-    int jobcnt                                  = 0;
-    refresh_integratejob_stat jobstat    = REFRESH_INTEGRATE_STAT_JOBNOP;
-    thrnode* thr_node                     = NULL;
-    refresh_integrate *rintegrate        = NULL;
+    int                       jobcnt = 0;
+    refresh_integratejob_stat jobstat = REFRESH_INTEGRATE_STAT_JOBNOP;
+    thrnode*                  thr_node = NULL;
+    refresh_integrate*        rintegrate = NULL;
 
-    thr_node = (thrnode *)args;
-    rintegrate = (refresh_integrate *)thr_node->data;
+    thr_node = (thrnode*)args;
+    rintegrate = (refresh_integrate*)thr_node->data;
 
-    /* 查看状态 */
-    if(THRNODE_STAT_STARTING != thr_node->stat)
+    /* check status */
+    if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING, "refresh integrate stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "refresh integrate stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;
     }
 
-    /* 设置为工作状态 */
+    /* set to working state */
     thr_node->stat = THRNODE_STAT_WORK;
 
-    /* 没有待同步的表的情况下可以退出 */
+    /* can exit if there are no tables to sync */
     if (!rintegrate->sync_stats->tablesyncall || !rintegrate->sync_stats->tablesyncing)
     {
         elog(RLOG_INFO, "There are no tables to be synchronized, so no refresh is needed");
@@ -241,7 +240,7 @@ void *refresh_integrate_main(void* args)
 
     rintegrate->stat = REFRESH_INTEGRATE_STAT_WORK;
 
-    /* 向sync状态表添加数据，清理存量表 */
+    /* add data to sync status table, cleanup existing tables */
     if (false == refresh_integrate_setsynctable(rintegrate, thr_node))
     {
         elog(RLOG_INFO, "integrate refresh setsynctable error");
@@ -250,8 +249,8 @@ void *refresh_integrate_main(void* args)
         return NULL;
     }
 
-    /* 获取配置的存量工作线程数量并初始化管理结构 */
-    if(false == refresh_integrate_startjobs(rintegrate))
+    /* get configured number of existing worker threads and initialize management structure */
+    if (false == refresh_integrate_startjobs(rintegrate))
     {
         elog(RLOG_INFO, "integrate refresh start job threads error");
         thr_node->stat = THRNODE_STAT_ABORT;
@@ -262,95 +261,96 @@ void *refresh_integrate_main(void* args)
     jobstat = REFRESH_INTEGRATE_STAT_JOBSTARTING;
     while (true)
     {
-        /* 
-         * 首先判断是否接收到退出信号
-         *  对于子管理线程，收到 TERM 信号有两种场景:
-         *  1、子管理线程的上级常驻线程退出
-         *  2、接收到了退出标识
-         * 
-         * 上述两种场景, 都不需要子管理线程设置工作线程为 FREE 状态
+        /*
+         * first check if exit signal received
+         *  for sub-manager thread, there are two scenarios for receiving TERM signal:
+         *  1. parent persistent thread of sub-manager thread exits
+         *  2. exit flag received
+         *
+         * in both scenarios, sub-manager thread does not need to set worker threads to FREE state
          */
-        if(THRNODE_STAT_TERM == thr_node->stat)
+        if (THRNODE_STAT_TERM == thr_node->stat)
         {
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
 
-        /* 等待所有工作线程启动成功 */
-        if(REFRESH_INTEGRATE_STAT_JOBSTARTING == jobstat)
+        /* wait for all worker threads to start successfully */
+        if (REFRESH_INTEGRATE_STAT_JOBSTARTING == jobstat)
         {
-            /* 查看是否已经启动成功 */
+            /* check if already started successfully */
             jobcnt = 0;
-            if(false == threads_countsubmgrjobthredsabovework(rintegrate->thrsmgr->parents,
-                                                                    rintegrate->thrsmgr->childthrrefs,
-                                                                    &jobcnt))
+            if (false == threads_countsubmgrjobthredsabovework(rintegrate->thrsmgr->parents,
+                                                               rintegrate->thrsmgr->childthrrefs,
+                                                               &jobcnt))
             {
                 elog(RLOG_WARNING, "integrate refresh count job thread above work stat error");
                 thr_node->stat = THRNODE_STAT_ABORT;
                 goto refresh_integrate_main_done;
             }
 
-            if(jobcnt != rintegrate->thrsmgr->childthrrefs->length)
+            if (jobcnt != rintegrate->thrsmgr->childthrrefs->length)
             {
                 continue;
             }
             jobstat = REFRESH_INTEGRATE_STAT_JOBWORKING;
             continue;
         }
-        else if(REFRESH_INTEGRATE_STAT_JOBWORKING == jobstat)
+        else if (REFRESH_INTEGRATE_STAT_JOBWORKING == jobstat)
         {
-            /* 工作线程已经启动, 那么向队列中加入工作任务 */
-            if(false == refresh_table_syncstat_genqueue(rintegrate->sync_stats, (void*)rintegrate->tqueue, rintegrate->refresh_path))
+            /* worker threads started, add work tasks to queue */
+            if (false == refresh_table_syncstat_genqueue(rintegrate->sync_stats,
+                                                         (void*)rintegrate->tqueue,
+                                                         rintegrate->refresh_path))
             {
-                /* 向队列中加入任务失败, 那么管理线程退出, 子线程的回收由主线程处理 */
+                /* failed to add tasks to queue, manager thread exits, main thread handles
+                 * sub-thread cleanup */
                 thr_node->stat = THRNODE_STAT_ABORT;
                 break;
             }
 
-            /* 首先判断是否存在任务和待同步表 */
-            if (NULL ==  rintegrate->sync_stats->tablesyncing)
+            /* first check if tasks and sync tables exist */
+            if (NULL == rintegrate->sync_stats->tablesyncing)
             {
                 jobstat = REFRESH_INTEGRATE_STAT_JOBWAITINGDONE;
             }
             continue;
         }
-        else if(REFRESH_INTEGRATE_STAT_JOBWAITINGDONE == jobstat)
+        else if (REFRESH_INTEGRATE_STAT_JOBWAITINGDONE == jobstat)
         {
-            /* 
-             * 等待任务的完成分为两个部分
-             *  1、任务队列为空
-             *  2、子线程已完全退出
+            /*
+             * waiting for task completion has two parts
+             *  1. task queue is empty
+             *  2. sub-threads have fully exited
              */
-            if(false == queue_isnull(rintegrate->tqueue))
+            if (false == queue_isnull(rintegrate->tqueue))
             {
                 continue;
             }
 
-            /* 设置空闲的线程退出并统计退出的线程个数 */
+            /* set idle threads to exit and count exited threads */
             jobcnt = rintegrate->thrsmgr->childthrrefs->length;
-            if(false == threads_setsubmgrjobthredstermandcountexit(rintegrate->thrsmgr->parents,
-                                                                        rintegrate->thrsmgr->childthrrefs,
-                                                                        0,
-                                                                        &jobcnt))
+            if (false ==
+                threads_setsubmgrjobthredstermandcountexit(
+                    rintegrate->thrsmgr->parents, rintegrate->thrsmgr->childthrrefs, 0, &jobcnt))
             {
                 elog(RLOG_WARNING, "integrate refresh set job threads term in idle error");
                 thr_node->stat = THRNODE_STAT_ABORT;
                 goto refresh_integrate_main_done;
             }
 
-            /* 没有完全退出, 那么继续等待 */
-            if(jobcnt != rintegrate->thrsmgr->childthrrefs->length)
+            /* not fully exited, continue waiting */
+            if (jobcnt != rintegrate->thrsmgr->childthrrefs->length)
             {
                 continue;
             }
 
-            /* 所有线程已经退出, 那么设置子线程状态为 FREE */
+            /* all threads have exited, set sub-thread state to FREE */
             threads_setsubmgrjobthredsfree(rintegrate->thrsmgr->parents,
-                                                rintegrate->thrsmgr->childthrrefs,
-                                                0,
-                                                rintegrate->parallelcnt);
+                                           rintegrate->thrsmgr->childthrrefs, 0,
+                                           rintegrate->parallelcnt);
 
-            /* 设置本线程退出 */
+            /* set this thread to exit */
             thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
@@ -362,35 +362,35 @@ refresh_integrate_main_done:
     return NULL;
 }
 
-/* 存量任务信息及状态写入文件 */
-bool refresh_integrate_write(refresh_integrate *rintegrate)
+/* write existing task info and status to file */
+bool refresh_integrate_write(refresh_integrate* rintegrate)
 {
-    int fd                                          = -1;
-    uint64 tbcnt                                    = 0;
-    uint64 tbsize                                   = 0;
-    uint64 offset                                   = 0;
-    uint64 bufferoffset                             = 0;
-    uint8 *buffer_tb                                = NULL;
-    char path[MAXPATH]                       = {'\0'};
-    char temp_path[MAXPATH]                  = {'\0'};
-    refresh_table_syncstat* table            = NULL;
+    int                     fd = -1;
+    uint64                  tbcnt = 0;
+    uint64                  tbsize = 0;
+    uint64                  offset = 0;
+    uint64                  bufferoffset = 0;
+    uint8*                  buffer_tb = NULL;
+    char                    path[MAXPATH] = {'\0'};
+    char                    temp_path[MAXPATH] = {'\0'};
+    refresh_table_syncstat* table = NULL;
 
-    /* 生成路径 */
+    /* generate path */
     snprintf(path, MAXPATH, "%s/%s", REFRESH_REFRESH, REFRESH_STATUS);
     snprintf(temp_path, MAXPATH, "%s/%s.tmp", REFRESH_REFRESH, REFRESH_STATUS);
 
-    /* 删除临时文件 */
+    /* delete temporary file */
     unlink(temp_path);
 
-    /* 打开临时文件 */
-    fd = osal_basic_open_file(temp_path, O_RDWR | O_CREAT| BINARY);
-    if (fd  < 0)
+    /* open temporary file */
+    fd = osal_basic_open_file(temp_path, O_RDWR | O_CREAT | BINARY);
+    if (fd < 0)
     {
         elog(RLOG_WARNING, "open file %s error %s", temp_path, strerror(errno));
         return false;
     }
 
-    /* 存量表数量 */
+    /* number of existing tables */
     offset += 8;
 
     refresh_table_syncstats_lock(rintegrate->sync_stats);
@@ -417,7 +417,7 @@ bool refresh_integrate_write(refresh_integrate *rintegrate)
         bufferoffset += NAMEDATALEN;
         rmemcpy0(buffer_tb, bufferoffset, table->table, strlen(table->table));
         bufferoffset += NAMEDATALEN;
-        /* 没有分片或还未加入到任务中 */
+        /* no sharding or not yet added to tasks */
         if (0 != table->cnt && NULL != table->stat)
         {
             rmemcpy0(buffer_tb, bufferoffset, table->stat, (table->cnt * sizeof(int8_t)));
@@ -430,14 +430,14 @@ bool refresh_integrate_write(refresh_integrate *rintegrate)
         buffer_tb = NULL;
         tbcnt++;
     }
-    
+
     refresh_table_syncstats_unlock(rintegrate->sync_stats);
     osal_file_pwrite(fd, (char*)&tbcnt, sizeof(tbcnt), 0);
     osal_file_sync(fd);
     osal_file_close(fd);
 
-    /* 重命名文件 */
-    if (osal_durable_rename(temp_path, path, RLOG_DEBUG)) 
+    /* rename file */
+    if (osal_durable_rename(temp_path, path, RLOG_DEBUG))
     {
         elog(RLOG_WARNING, "Error renaming file %s to %s", temp_path, path);
         return false;
@@ -446,32 +446,33 @@ bool refresh_integrate_write(refresh_integrate *rintegrate)
     return true;
 }
 
-/* 读取refresh文件生成refresh任务 */
+/* read refresh file and generate refresh tasks */
 bool refresh_integrate_read(refresh_integrate** refresh)
 {
-    struct stat st;
-    int fd                                              = -1;
-    int read_size                                       = 0;
-    int index_stat                                      = 0;
-    int table_index                                     = 0;
-    uint64 tbcnt                                        = 0;
-    uint64 offset                                       = 0;
-    uint64 bufferoffset                                 = 0;
-    uint8 *buffer                                       = NULL;
-    char path[MAXPATH]                           = {'\0'};
-    char synctable[REFRESH_FILE_TABLE_LEN]              = {'\0'};
-    refresh_integrate *rintegrate                = NULL;
+    struct stat        st;
+    int                fd = -1;
+    int                read_size = 0;
+    int                index_stat = 0;
+    int                table_index = 0;
+    uint64             tbcnt = 0;
+    uint64             offset = 0;
+    uint64             bufferoffset = 0;
+    uint8*             buffer = NULL;
+    char               path[MAXPATH] = {'\0'};
+    char               synctable[REFRESH_FILE_TABLE_LEN] = {'\0'};
+    refresh_integrate* rintegrate = NULL;
 
-    /* 生成路径 */
+    /* generate path */
     snprintf(path, MAXPATH, "%s/%s", REFRESH_REFRESH, REFRESH_STATUS);
 
-    /* 检测文件是否存在, 第一次启动是文件不存在, 因此简单返回分配好的结构体 */
-    if(0 != stat(path, &st))
+    /* check if file exists, on first startup file doesn't exist, so simply return allocated struct
+     */
+    if (0 != stat(path, &st))
     {
         return true;
     }
 
-    //todo错误处理
+    // todo: error handling
     rintegrate = refresh_integrate_init();
     if (rintegrate == NULL)
     {
@@ -487,15 +488,15 @@ bool refresh_integrate_read(refresh_integrate** refresh)
     }
     rintegrate->stat = REFRESH_INTEGRATE_STAT_INIT;
 
-    /* 只读方式打开文件 */
+    /* open file in read-only mode */
     fd = osal_basic_open_file(path, O_RDONLY | BINARY);
-    if (fd  < 0)
+    if (fd < 0)
     {
         elog(RLOG_WARNING, "open integrate refresh file %s error %s", path, strerror(errno));
         return false;
     }
 
-    /* 读取文件, 从文件开始获取persist的rewind信息和count */
+    /* read file, get persist rewind info and count from file start */
     read_size = osal_file_pread(fd, (char*)&tbcnt, sizeof(tbcnt), 0);
     if (read_size <= 0)
     {
@@ -508,10 +509,10 @@ bool refresh_integrate_read(refresh_integrate** refresh)
 
     for (table_index = 0; table_index < tbcnt; table_index++)
     {
-        char table[NAMEDATALEN] = {'\0'};
-        char schema[NAMEDATALEN] = {'\0'};
-        refresh_table_syncstat *new_syncstat = refresh_table_syncstat_init();
-        
+        char                    table[NAMEDATALEN] = {'\0'};
+        char                    schema[NAMEDATALEN] = {'\0'};
+        refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
+
         bufferoffset = 0;
 
         read_size = osal_file_pread(fd, synctable, REFRESH_FILE_TABLE_LEN, offset);
@@ -526,9 +527,11 @@ bool refresh_integrate_read(refresh_integrate** refresh)
 
         rmemcpy1(&new_syncstat->cnt, 0, buffer + bufferoffset, sizeof(new_syncstat->cnt));
         bufferoffset += sizeof(new_syncstat->cnt);
-        rmemcpy1(&new_syncstat->completecnt , 0, buffer + bufferoffset, sizeof(new_syncstat->completecnt));
-        bufferoffset += sizeof(new_syncstat->completecnt );
-        rmemcpy1(&new_syncstat->tablestat, 0, buffer + bufferoffset, sizeof(new_syncstat->tablestat));
+        rmemcpy1(&new_syncstat->completecnt, 0, buffer + bufferoffset,
+                 sizeof(new_syncstat->completecnt));
+        bufferoffset += sizeof(new_syncstat->completecnt);
+        rmemcpy1(&new_syncstat->tablestat, 0, buffer + bufferoffset,
+                 sizeof(new_syncstat->tablestat));
         bufferoffset += sizeof(new_syncstat->tablestat);
         rmemcpy1(&new_syncstat->oid, 0, buffer + bufferoffset, sizeof(new_syncstat->oid));
         bufferoffset += sizeof(new_syncstat->oid);
@@ -539,7 +542,7 @@ bool refresh_integrate_read(refresh_integrate** refresh)
 
         offset += REFRESH_FILE_TABLE_LEN;
 
-        // 复制表信息
+        // copy table info
         refresh_table_syncstat_schema_set(schema, new_syncstat);
         refresh_table_syncstat_table_set(table, new_syncstat);
 
@@ -554,10 +557,12 @@ bool refresh_integrate_read(refresh_integrate** refresh)
             }
             rmemset0(new_syncstat->stat, 0, '\0', new_syncstat->cnt * sizeof(int8_t));
 
-            read_size = osal_file_pread(fd, (char*)new_syncstat->stat, (new_syncstat->cnt * sizeof(int8_t)), offset);
+            read_size = osal_file_pread(fd, (char*)new_syncstat->stat,
+                                        (new_syncstat->cnt * sizeof(int8_t)), offset);
             if (read_size <= 0)
             {
-                elog(RLOG_WARNING, "try read file %s tablestat, read 0, error %s", path, strerror(errno));
+                elog(RLOG_WARNING, "try read file %s tablestat, read 0, error %s", path,
+                     strerror(errno));
                 refresh_table_syncstat_free(new_syncstat);
                 osal_file_close(fd);
                 return false;
@@ -589,19 +594,19 @@ bool refresh_integrate_read(refresh_integrate** refresh)
         refresh_table_syncstats_tablesyncing2tablesyncall(rintegrate->sync_stats);
     }
 
-    /* 处理完毕, 关闭文件 */
+    /* processing complete, close file */
     osal_file_close(fd);
 
     *refresh = (void*)rintegrate;
     return true;
 }
 
-/* 释放 */
+/* free resources */
 void refresh_integrate_free(void* args)
 {
-    refresh_integrate *rintegrate = NULL;
+    refresh_integrate* rintegrate = NULL;
 
-    rintegrate = (refresh_integrate *)args;
+    rintegrate = (refresh_integrate*)args;
 
     if (!rintegrate)
     {
@@ -626,12 +631,12 @@ void refresh_integrate_free(void* args)
     rfree(rintegrate);
 }
 
-/* 释放refresh链表 */
+/* free refresh linked list */
 void refresh_integrate_listfree(void* args)
 {
-    List* refresh                           = NULL;
-    ListCell* lc                            = NULL;
-    refresh_integrate *rintegrate    = NULL;
+    List*              refresh = NULL;
+    ListCell*          lc = NULL;
+    refresh_integrate* rintegrate = NULL;
 
     refresh = (List*)args;
 
@@ -640,11 +645,10 @@ void refresh_integrate_listfree(void* args)
         return;
     }
 
-    foreach(lc, refresh)
+    foreach (lc, refresh)
     {
-        rintegrate = (refresh_integrate *)lfirst(lc);
+        rintegrate = (refresh_integrate*)lfirst(lc);
         refresh_integrate_free((void*)rintegrate);
-
     }
     list_free(refresh);
 }

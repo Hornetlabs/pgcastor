@@ -21,16 +21,15 @@ typedef enum SysdictName
     SYS_INHERITS,
     SYS_SEQUENCE,
     TEMPTABLE_PREFIX
-}SysdictName;
+} SysdictName;
 
 typedef struct pg_parser_sysdict_with_name
 {
     SysdictName num;
-    char *name;
-}pg_parser_sysdict_with_name;
+    char*       name;
+} pg_parser_sysdict_with_name;
 
-static const pg_parser_sysdict_with_name pg_parser_postgresql_v127[] =
-{
+static const pg_parser_sysdict_with_name pg_parser_postgresql_v127[] = {
     {SYS_CLASS, "pg_class"},
     {SYS_INDEX, "pg_index"},
     {SYS_NAMESPACE, "pg_namespace"},
@@ -51,45 +50,45 @@ static const pg_parser_sysdict_with_name pg_parser_postgresql_v127[] =
     {TEMPTABLE_PREFIX, "pg_temp"},
 };
 
-#define PG_SYSDICT_PG_TEMPTABLE_NAME             "pg_temp"
+#define PG_SYSDICT_PG_TEMPTABLE_NAME "pg_temp"
 
 #define IS_INSERT(x) (PG_PARSER_TRANSLOG_DMLTYPE_INSERT == x->m_base.m_dmltype)
 #define IS_DELETE(x) (PG_PARSER_TRANSLOG_DMLTYPE_DELETE == x->m_base.m_dmltype)
 #define IS_UPDATE(x) (PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == x->m_base.m_dmltype)
 
-#define PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(colname, values, cnt, return_str) \
-        pg_parser_ddl_getColumnValueByName(colname, values, cnt); \
-        do \
-        { \
-            if (!return_str) \
-            { \
-                *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_COLUMN_BY_COLNAME; \
-                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, \
-                                    "ERROR: DDL get column by column name, " \
-                                    "can't get %s\n", colname); \
-                return NULL; \
-            } \
-        } while (0)
-
+#define PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(colname, values, cnt, return_str)  \
+    pg_parser_ddl_getColumnValueByName(colname, values, cnt);                 \
+    do                                                                        \
+    {                                                                         \
+        if (!return_str)                                                      \
+        {                                                                     \
+            *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_COLUMN_BY_COLNAME; \
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,                 \
+                                 "ERROR: DDL get column by column name, "     \
+                                 "can't get %s\n",                            \
+                                 colname);                                    \
+            return NULL;                                                      \
+        }                                                                     \
+    } while (0)
 
 #define PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(colname, values, cnt, return_str) \
-        pg_parser_ddl_getColumnValueByName(colname, values, cnt); \
-        if (!return_str) \
-        do \
-        { \
-            { \
-                *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_COLUMN_BY_COLNAME; \
-                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, \
-                                    "ERROR: DDL get column by column name, " \
-                                    "can't get %s\n", colname); \
-                return; \
-            } \
-        } while (0)
-
+    pg_parser_ddl_getColumnValueByName(colname, values, cnt);                          \
+    if (!return_str)                                                                   \
+        do                                                                             \
+        {                                                                              \
+            {                                                                          \
+                *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_COLUMN_BY_COLNAME;      \
+                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,                      \
+                                     "ERROR: DDL get column by column name, "          \
+                                     "can't get %s\n",                                 \
+                                     colname);                                         \
+                return;                                                                \
+            }                                                                          \
+    } while (0)
 
 typedef enum DDLKind
 {
-    /* 短解析(一条record就可解析出的DDL) begin */
+    /* Short parse (DDL that can be parsed from a single record) begin */
     PG_PARSER_DDL_TABLE_TRUNCATE = 0,
     PG_PARSER_DDL_REINDEX,
     PG_PARSER_DDL_TABLE_ALTER_TABLE_RENAME,
@@ -103,8 +102,8 @@ typedef enum DDLKind
     PG_PARSER_DDL_DATABASE_CREATE,
     PG_PARSER_DDL_TABLE_ALTER_COLUMN_TYPE_SHORT,
     PG_PARSER_DDL_DATABASE_DROP,
-    /* 短解析(一条record就可解析出的DDL) end */
-    /* 长解析(多条record才能解析出的DDL) begin */
+    /* Short parse (DDL that can be parsed from a single record) end */
+    /* Long parse (DDL that requires multiple records to parse) begin */
     PG_PARSER_DDL_VIEW_DROP,
     PG_PARSER_DDL_TABLE_CREATE,
     PG_PARSER_DDL_TABLE_CREATE_PARTITION,
@@ -131,109 +130,106 @@ typedef enum DDLKind
     PG_PARSER_DDL_TRIGGER_DROP,
     PG_PARSER_DDL_TYPE_CREATE,
     PG_PARSER_DDL_TYPE_DROP,
-    /* 长解析(多条record才能解析出的DDL) end */
+    /* Long parse (DDL that requires multiple records to parse) end */
 } DDLKind;
 
 #define PG_PARSER_DDL_TRANSDDL_NUM_SHORT PG_PARSER_DDL_DATABASE_DROP + 1
 #define PG_PARSER_DDL_TRANSDDL_NUM_MAX PG_PARSER_DDL_TYPE_DROP + 1
 
-
-#define PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_BEGIN                       0x00
-#define PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP         0x01
-#define PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_UPDATE_STEP                   0x02
-#define PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_DELETE_STEP                   0x03
+#define PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_BEGIN 0x00
+#define PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP 0x01
+#define PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_UPDATE_STEP 0x02
+#define PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_DELETE_STEP 0x03
 
 typedef struct pg_parser_ddlstate
 {
-    DDLKind     m_ddlKind;
-    bool        m_inddl;
+    DDLKind m_ddlKind;
+    bool    m_inddl;
 
-    /* 表名和命名空间名称。 */
-    char        *m_relname;
-    char        *m_nspname;
-    uint32_t     m_reloid;
-    uint32_t     m_owner;
-    char        *m_reloid_char;
-    uint32_t     m_nspname_oid;
-    char        *m_nspname_oid_char;
-    char         m_relpersistence;
-    pg_parser_List *m_attList;
-    /* 表继承父表oid数组 */
-    uint32_t     m_inherits_cnt;
-    uint32_t     *m_inherits_oid;
-    /* 表是否被日志记录 */
-    bool         m_unlogged;
-    /* 约束是否是本地 */
-    bool         m_cons_is_local;
-    /* 表是否为临时表 */
-    bool         m_temp;
-    /* 修改表是否被日志记录时的步骤标志 */
-    uint32_t     m_reloid_temp;
-    uint8_t      m_log_step;
+    /* Table name and namespace name. */
+    char*           m_relname;
+    char*           m_nspname;
+    uint32_t        m_reloid;
+    uint32_t        m_owner;
+    char*           m_reloid_char;
+    uint32_t        m_nspname_oid;
+    char*           m_nspname_oid_char;
+    char            m_relpersistence;
+    pg_parser_List* m_attList;
+    /* Array of parent table OIDs for table inheritance */
+    uint32_t  m_inherits_cnt;
+    uint32_t* m_inherits_oid;
+    /* Whether table is logged */
+    bool m_unlogged;
+    /* Whether constraint is local */
+    bool m_cons_is_local;
+    /* Whether table is temporary */
+    bool m_temp;
+    /* Step flag when modifying whether table is logged */
+    uint32_t m_reloid_temp;
+    uint8_t  m_log_step;
 
-    /* 表重命名。 */
-    char        *m_nspoid_new;
-    char        *m_relname_new;
-    uint32_t     m_relfile_node_new;
-    uint8_t      m_alter_coltype_step;
+    /* Table rename. */
+    char*    m_nspoid_new;
+    char*    m_relname_new;
+    uint32_t m_relfile_node_new;
+    uint8_t  m_alter_coltype_step;
 
-    /* 分区表 */
-    bool                                m_get_partition;
-    pg_parser_translog_tbcol_values *m_partition;
-    pg_parser_nodetree *m_partitionsub_node;
-    pg_parser_translog_tbcol_values *m_inherits;
-    pg_parser_List                  *m_attrdef_list;
+    /* Partitioned table */
+    bool                             m_get_partition;
+    pg_parser_translog_tbcol_values* m_partition;
+    pg_parser_nodetree*              m_partitionsub_node;
+    pg_parser_translog_tbcol_values* m_inherits;
+    pg_parser_List*                  m_attrdef_list;
 
-    /* 表列重命名和默认值 存储一条pg_attribute信息 */
-    pg_parser_translog_tbcol_values *m_att;
+    /* Table column rename and default value, store one pg_attribute information */
+    pg_parser_translog_tbcol_values* m_att;
 
-    /* 索引相关 */
-    pg_parser_translog_tbcol_values *m_index;
-    char                               *m_amoid_char;
+    /* Index related */
+    pg_parser_translog_tbcol_values* m_index;
+    char*                            m_amoid_char;
 
-    /* 序列相关 */
-    pg_parser_translog_tbcol_values *m_sequence;
+    /* Sequence related */
+    pg_parser_translog_tbcol_values* m_sequence;
 
-    /* 存储默认值信息。 */
-    pg_parser_translog_tbcol_values *m_att_def;
+    /* Store default value information. */
+    pg_parser_translog_tbcol_values* m_att_def;
 
-    /* 存储约束信息。 */
-    pg_parser_translog_tbcol_values *m_constraint;
+    /* Store constraint information. */
+    pg_parser_translog_tbcol_values* m_constraint;
 
-    /* 存储函数定义信息。 */
-    char         *m_func_def;
+    /* Store function definition information. */
+    char* m_func_def;
 
-    /* 存储触发器定义信息。 */
-    char         *m_trig_def;
+    /* Store trigger definition information. */
+    char* m_trig_def;
 
-    /* 存储类型信息。 */
-    pg_parser_translog_tbcol_values *m_type_item;
-    pg_parser_translog_tbcol_values *m_type_sub_item;
-    int16_t                             m_type_record_natts;
-    int16_t                             m_type_current_natts;
-    pg_parser_List                  *m_enumlist;
-    char                               *m_type_domain;
-    uint8_t                             m_type_savepoint;
-    pg_parser_translog_convertinfo_with_zic *m_zicinfo;
+    /* Store type information. */
+    pg_parser_translog_tbcol_values*         m_type_item;
+    pg_parser_translog_tbcol_values*         m_type_sub_item;
+    int16_t                                  m_type_record_natts;
+    int16_t                                  m_type_current_natts;
+    pg_parser_List*                          m_enumlist;
+    char*                                    m_type_domain;
+    uint8_t                                  m_type_savepoint;
+    pg_parser_translog_convertinfo_with_zic* m_zicinfo;
 
-    /* 存储视图定义信息。 */
-    pg_parser_translog_tbcol_values *m_view_def;
-    char        m_relkind;
-}pg_parser_ddlstate;
+    /* Store view definition information. */
+    pg_parser_translog_tbcol_values* m_view_def;
+    char                             m_relkind;
+} pg_parser_ddlstate;
 
-typedef pg_parser_translog_ddlstmt* (*pg_parser_DDL_transDDLFunc)(pg_parser_translog_systb2ddl *pg_parser_ddl,
-                                              pg_parser_translog_systb2dll_record *current_record,
-                                              pg_parser_ddlstate *ddlstate,
-                                              int32_t *pg_parser_errno);
+typedef pg_parser_translog_ddlstmt* (*pg_parser_DDL_transDDLFunc)(
+    pg_parser_translog_systb2ddl*        pg_parser_ddl,
+    pg_parser_translog_systb2dll_record* current_record, pg_parser_ddlstate* ddlstate,
+    int32_t* pg_parser_errno);
 
-extern bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl *pg_parser_ddl,
-                                             pg_parser_translog_ddlstmt **pg_parser_ddl_result,
-                                             int32_t *pg_parser_errno);
+extern bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                          pg_parser_translog_ddlstmt**  pg_parser_ddl_result,
+                                          int32_t*                      pg_parser_errno);
 
-extern char *ddl_char_tolower(char *output);
+extern char* ddl_char_tolower(char* output);
 
-extern bool pg_parser_check_table_name(char *tablename,
-                                          SysdictName sysdictnum,
-                                          int16_t dbtype,
-                                          char *dbversion);
+extern bool pg_parser_check_table_name(char* tablename, SysdictName sysdictnum, int16_t dbtype,
+                                       char* dbversion);
 #endif

@@ -3,6 +3,6 @@
 
 TimestampTz dt_gettimestamp(void);
 
-void dt_timestamptz_to_string(TimestampTz t, char *buf);
+void dt_timestamptz_to_string(TimestampTz t, char* buf);
 
 #endif

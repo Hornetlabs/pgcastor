@@ -6,8 +6,8 @@
  *
  * All Copyright (c) 2024-2024, Byte Sync Development Group
  *
- * Author: liuzihe  Date: 2024/07/09 
- * 
+ * Author: liuzihe  Date: 2024/07/09
+ *
  * src/utils/hash/hash_utils.c
  *
  *-------------------------------------------------------------------------
@@ -36,7 +36,7 @@
 #define UINT32_ALIGN_MASK (sizeof(uint32) - 1)
 
 /* Rotate a uint32 value left by k bits - note multiple evaluation! */
-#define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
+#define rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
 
 /*----------
  * mix -- mix 3 32-bit values reversibly.
@@ -70,15 +70,27 @@
  * and rotates are much kinder to the top and bottom bits, so I used rotates.
  *----------
  */
-#define mix(a,b,c) \
-{ \
-  a -= c;  a ^= rot(c, 4);	c += b; \
-  b -= a;  b ^= rot(a, 6);	a += c; \
-  c -= b;  c ^= rot(b, 8);	b += a; \
-  a -= c;  a ^= rot(c,16);	c += b; \
-  b -= a;  b ^= rot(a,19);	a += c; \
-  c -= b;  c ^= rot(b, 4);	b += a; \
-}
+#define mix(a, b, c)     \
+    {                    \
+        a -= c;          \
+        a ^= rot(c, 4);  \
+        c += b;          \
+        b -= a;          \
+        b ^= rot(a, 6);  \
+        a += c;          \
+        c -= b;          \
+        c ^= rot(b, 8);  \
+        b += a;          \
+        a -= c;          \
+        a ^= rot(c, 16); \
+        c += b;          \
+        b -= a;          \
+        b ^= rot(a, 19); \
+        a += c;          \
+        c -= b;          \
+        c ^= rot(b, 4);  \
+        b += a;          \
+    }
 
 /*----------
  * final -- final mixing of 3 32-bit values (a,b,c) into c
@@ -104,21 +116,28 @@
  * and was slower as a result.
  *----------
  */
-#define final(a,b,c) \
-{ \
-  c ^= b; c -= rot(b,14); \
-  a ^= c; a -= rot(c,11); \
-  b ^= a; b -= rot(a,25); \
-  c ^= b; c -= rot(b,16); \
-  a ^= c; a -= rot(c, 4); \
-  b ^= a; b -= rot(a,14); \
-  c ^= b; c -= rot(b,24); \
-}
+#define final(a, b, c)   \
+    {                    \
+        c ^= b;          \
+        c -= rot(b, 14); \
+        a ^= c;          \
+        a -= rot(c, 11); \
+        b ^= a;          \
+        b -= rot(a, 25); \
+        c ^= b;          \
+        c -= rot(b, 16); \
+        a ^= c;          \
+        a -= rot(c, 4);  \
+        b ^= a;          \
+        b -= rot(a, 14); \
+        c ^= b;          \
+        c -= rot(b, 24); \
+    }
 
 /* ------------------↓↓ Private function prototypes ↓↓------------------ */
 
 static uint32 hash_uint32(uint32 k);
-static uint32 hash_any(register const unsigned char *k, register int keylen);
+static uint32 hash_any(register const unsigned char* k, register int keylen);
 
 /* ------------------↑↑ Private function prototypes ↑↑------------------ */
 
@@ -127,19 +146,18 @@ static uint32 hash_any(register const unsigned char *k, register int keylen);
  *
  * (tag_hash works for this case too, but is slower)
  */
-uint32 uint32_hash(const void *key, Size keysize)
+uint32 uint32_hash(const void* key, Size keysize)
 {
-	Assert(keysize == sizeof(uint32));
-	return hash_uint32(*((const uint32 *) key));
+    Assert(keysize == sizeof(uint32));
+    return hash_uint32(*((const uint32*)key));
 }
 
 /*
  * tag_hash: hash function for fixed-size tag values
  */
-uint32 tag_hash(const void *key, Size keysize)
+uint32 tag_hash(const void* key, Size keysize)
 {
-	return hash_any((const unsigned char *) key,
-					(int) keysize);
+    return hash_any((const unsigned char*)key, (int)keysize);
 }
 
 /*
@@ -147,18 +165,17 @@ uint32 tag_hash(const void *key, Size keysize)
  *
  * NOTE: this is the default hash function if none is specified.
  */
-uint32 string_hash(const void *key, Size keysize)
+uint32 string_hash(const void* key, Size keysize)
 {
-	/*
-	 * If the string exceeds keysize-1 bytes, we want to hash only that many,
-	 * because when it is copied into the hash table it will be truncated at
-	 * that length.
-	 */
-	Size		s_len = strlen((const char *) key);
+    /*
+     * If the string exceeds keysize-1 bytes, we want to hash only that many,
+     * because when it is copied into the hash table it will be truncated at
+     * that length.
+     */
+    Size s_len = strlen((const char*)key);
 
-	s_len = Min(s_len, keysize - 1);
-	return hash_any((const unsigned char *) key,
-								   (int) s_len);
+    s_len = Min(s_len, keysize - 1);
+    return hash_any((const unsigned char*)key, (int)s_len);
 }
 
 /*
@@ -170,17 +187,15 @@ uint32 string_hash(const void *key, Size keysize)
  */
 static uint32 hash_uint32(uint32 k)
 {
-	register uint32 a,
-				b,
-				c;
+    register uint32 a, b, c;
 
-	a = b = c = 0x9e3779b9 + (uint32) sizeof(uint32) + 3923095;
-	a += k;
+    a = b = c = 0x9e3779b9 + (uint32)sizeof(uint32) + 3923095;
+    a += k;
 
-	final(a, b, c);
+    final(a, b, c);
 
-	/* report the result */
-	return c;
+    /* report the result */
+    return c;
 }
 
 /*
@@ -201,219 +216,216 @@ static uint32 hash_uint32(uint32 k)
  * by using the final values of both b and c.  b is perhaps a little less
  * well mixed than c, however.
  */
-static uint32 hash_any(register const unsigned char *k, register int keylen)
+static uint32 hash_any(register const unsigned char* k, register int keylen)
 {
-	register uint32 a,
-				b,
-				c,
-				len;
+    register uint32 a, b, c, len;
 
-	/* Set up the internal state */
-	len = keylen;
-	a = b = c = 0x9e3779b9 + len + 3923095;
+    /* Set up the internal state */
+    len = keylen;
+    a = b = c = 0x9e3779b9 + len + 3923095;
 
-	/* If the source pointer is word-aligned, we use word-wide fetches */
-	if (((uintptr_t) k & UINT32_ALIGN_MASK) == 0)
-	{
-		/* Code path for aligned source data */
-		register const uint32 *ka = (const uint32 *) k;
+    /* If the source pointer is word-aligned, we use word-wide fetches */
+    if (((uintptr_t)k & UINT32_ALIGN_MASK) == 0)
+    {
+        /* Code path for aligned source data */
+        register const uint32* ka = (const uint32*)k;
 
-		/* handle most of the key */
-		while (len >= 12)
-		{
-			a += ka[0];
-			b += ka[1];
-			c += ka[2];
-			mix(a, b, c);
-			ka += 3;
-			len -= 12;
-		}
+        /* handle most of the key */
+        while (len >= 12)
+        {
+            a += ka[0];
+            b += ka[1];
+            c += ka[2];
+            mix(a, b, c);
+            ka += 3;
+            len -= 12;
+        }
 
-		/* handle the last 11 bytes */
-		k = (const unsigned char *) ka;
+        /* handle the last 11 bytes */
+        k = (const unsigned char*)ka;
 #ifdef WORDS_BIGENDIAN
-		switch (len)
-		{
-			case 11:
-				c += ((uint32) k[10] << 8);
-				/* fall through */
-			case 10:
-				c += ((uint32) k[9] << 16);
-				/* fall through */
-			case 9:
-				c += ((uint32) k[8] << 24);
-				/* fall through */
-			case 8:
-				/* the lowest byte of c is reserved for the length */
-				b += ka[1];
-				a += ka[0];
-				break;
-			case 7:
-				b += ((uint32) k[6] << 8);
-				/* fall through */
-			case 6:
-				b += ((uint32) k[5] << 16);
-				/* fall through */
-			case 5:
-				b += ((uint32) k[4] << 24);
-				/* fall through */
-			case 4:
-				a += ka[0];
-				break;
-			case 3:
-				a += ((uint32) k[2] << 8);
-				/* fall through */
-			case 2:
-				a += ((uint32) k[1] << 16);
-				/* fall through */
-			case 1:
-				a += ((uint32) k[0] << 24);
-				/* case 0: nothing left to add */
-		}
-#else							/* !WORDS_BIGENDIAN */
-		switch (len)
-		{
-			case 11:
-				c += ((uint32) k[10] << 24);
-				/* fall through */
-			case 10:
-				c += ((uint32) k[9] << 16);
-				/* fall through */
-			case 9:
-				c += ((uint32) k[8] << 8);
-				/* fall through */
-			case 8:
-				/* the lowest byte of c is reserved for the length */
-				b += ka[1];
-				a += ka[0];
-				break;
-			case 7:
-				b += ((uint32) k[6] << 16);
-				/* fall through */
-			case 6:
-				b += ((uint32) k[5] << 8);
-				/* fall through */
-			case 5:
-				b += k[4];
-				/* fall through */
-			case 4:
-				a += ka[0];
-				break;
-			case 3:
-				a += ((uint32) k[2] << 16);
-				/* fall through */
-			case 2:
-				a += ((uint32) k[1] << 8);
-				/* fall through */
-			case 1:
-				a += k[0];
-				/* case 0: nothing left to add */
-		}
-#endif							/* WORDS_BIGENDIAN */
-	}
-	else
-	{
-		/* Code path for non-aligned source data */
+        switch (len)
+        {
+            case 11:
+                c += ((uint32)k[10] << 8);
+                /* fall through */
+            case 10:
+                c += ((uint32)k[9] << 16);
+                /* fall through */
+            case 9:
+                c += ((uint32)k[8] << 24);
+                /* fall through */
+            case 8:
+                /* the lowest byte of c is reserved for the length */
+                b += ka[1];
+                a += ka[0];
+                break;
+            case 7:
+                b += ((uint32)k[6] << 8);
+                /* fall through */
+            case 6:
+                b += ((uint32)k[5] << 16);
+                /* fall through */
+            case 5:
+                b += ((uint32)k[4] << 24);
+                /* fall through */
+            case 4:
+                a += ka[0];
+                break;
+            case 3:
+                a += ((uint32)k[2] << 8);
+                /* fall through */
+            case 2:
+                a += ((uint32)k[1] << 16);
+                /* fall through */
+            case 1:
+                a += ((uint32)k[0] << 24);
+                /* case 0: nothing left to add */
+        }
+#else  /* !WORDS_BIGENDIAN */
+        switch (len)
+        {
+            case 11:
+                c += ((uint32)k[10] << 24);
+                /* fall through */
+            case 10:
+                c += ((uint32)k[9] << 16);
+                /* fall through */
+            case 9:
+                c += ((uint32)k[8] << 8);
+                /* fall through */
+            case 8:
+                /* the lowest byte of c is reserved for the length */
+                b += ka[1];
+                a += ka[0];
+                break;
+            case 7:
+                b += ((uint32)k[6] << 16);
+                /* fall through */
+            case 6:
+                b += ((uint32)k[5] << 8);
+                /* fall through */
+            case 5:
+                b += k[4];
+                /* fall through */
+            case 4:
+                a += ka[0];
+                break;
+            case 3:
+                a += ((uint32)k[2] << 16);
+                /* fall through */
+            case 2:
+                a += ((uint32)k[1] << 8);
+                /* fall through */
+            case 1:
+                a += k[0];
+                /* case 0: nothing left to add */
+        }
+#endif /* WORDS_BIGENDIAN */
+    }
+    else
+    {
+        /* Code path for non-aligned source data */
 
-		/* handle most of the key */
-		while (len >= 12)
-		{
+        /* handle most of the key */
+        while (len >= 12)
+        {
 #ifdef WORDS_BIGENDIAN
-			a += (k[3] + ((uint32) k[2] << 8) + ((uint32) k[1] << 16) + ((uint32) k[0] << 24));
-			b += (k[7] + ((uint32) k[6] << 8) + ((uint32) k[5] << 16) + ((uint32) k[4] << 24));
-			c += (k[11] + ((uint32) k[10] << 8) + ((uint32) k[9] << 16) + ((uint32) k[8] << 24));
-#else							/* !WORDS_BIGENDIAN */
-			a += (k[0] + ((uint32) k[1] << 8) + ((uint32) k[2] << 16) + ((uint32) k[3] << 24));
-			b += (k[4] + ((uint32) k[5] << 8) + ((uint32) k[6] << 16) + ((uint32) k[7] << 24));
-			c += (k[8] + ((uint32) k[9] << 8) + ((uint32) k[10] << 16) + ((uint32) k[11] << 24));
-#endif							/* WORDS_BIGENDIAN */
-			mix(a, b, c);
-			k += 12;
-			len -= 12;
-		}
+            a += (k[3] + ((uint32)k[2] << 8) + ((uint32)k[1] << 16) + ((uint32)k[0] << 24));
+            b += (k[7] + ((uint32)k[6] << 8) + ((uint32)k[5] << 16) + ((uint32)k[4] << 24));
+            c += (k[11] + ((uint32)k[10] << 8) + ((uint32)k[9] << 16) + ((uint32)k[8] << 24));
+#else  /* !WORDS_BIGENDIAN */
+            a += (k[0] + ((uint32)k[1] << 8) + ((uint32)k[2] << 16) + ((uint32)k[3] << 24));
+            b += (k[4] + ((uint32)k[5] << 8) + ((uint32)k[6] << 16) + ((uint32)k[7] << 24));
+            c += (k[8] + ((uint32)k[9] << 8) + ((uint32)k[10] << 16) + ((uint32)k[11] << 24));
+#endif /* WORDS_BIGENDIAN */
+            mix(a, b, c);
+            k += 12;
+            len -= 12;
+        }
 
-		/* handle the last 11 bytes */
+        /* handle the last 11 bytes */
 #ifdef WORDS_BIGENDIAN
-		switch (len)
-		{
-			case 11:
-				c += ((uint32) k[10] << 8);
-				/* fall through */
-			case 10:
-				c += ((uint32) k[9] << 16);
-				/* fall through */
-			case 9:
-				c += ((uint32) k[8] << 24);
-				/* fall through */
-			case 8:
-				/* the lowest byte of c is reserved for the length */
-				b += k[7];
-				/* fall through */
-			case 7:
-				b += ((uint32) k[6] << 8);
-				/* fall through */
-			case 6:
-				b += ((uint32) k[5] << 16);
-				/* fall through */
-			case 5:
-				b += ((uint32) k[4] << 24);
-				/* fall through */
-			case 4:
-				a += k[3];
-				/* fall through */
-			case 3:
-				a += ((uint32) k[2] << 8);
-				/* fall through */
-			case 2:
-				a += ((uint32) k[1] << 16);
-				/* fall through */
-			case 1:
-				a += ((uint32) k[0] << 24);
-				/* case 0: nothing left to add */
-		}
-#else							/* !WORDS_BIGENDIAN */
-		switch (len)
-		{
-			case 11:
-				c += ((uint32) k[10] << 24);
-				/* fall through */
-			case 10:
-				c += ((uint32) k[9] << 16);
-				/* fall through */
-			case 9:
-				c += ((uint32) k[8] << 8);
-				/* fall through */
-			case 8:
-				/* the lowest byte of c is reserved for the length */
-				b += ((uint32) k[7] << 24);
-				/* fall through */
-			case 7:
-				b += ((uint32) k[6] << 16);
-				/* fall through */
-			case 6:
-				b += ((uint32) k[5] << 8);
-				/* fall through */
-			case 5:
-				b += k[4];
-				/* fall through */
-			case 4:
-				a += ((uint32) k[3] << 24);
-				/* fall through */
-			case 3:
-				a += ((uint32) k[2] << 16);
-				/* fall through */
-			case 2:
-				a += ((uint32) k[1] << 8);
-				/* fall through */
-			case 1:
-				a += k[0];
-				/* case 0: nothing left to add */
-		}
-#endif							/* WORDS_BIGENDIAN */
-	}
+        switch (len)
+        {
+            case 11:
+                c += ((uint32)k[10] << 8);
+                /* fall through */
+            case 10:
+                c += ((uint32)k[9] << 16);
+                /* fall through */
+            case 9:
+                c += ((uint32)k[8] << 24);
+                /* fall through */
+            case 8:
+                /* the lowest byte of c is reserved for the length */
+                b += k[7];
+                /* fall through */
+            case 7:
+                b += ((uint32)k[6] << 8);
+                /* fall through */
+            case 6:
+                b += ((uint32)k[5] << 16);
+                /* fall through */
+            case 5:
+                b += ((uint32)k[4] << 24);
+                /* fall through */
+            case 4:
+                a += k[3];
+                /* fall through */
+            case 3:
+                a += ((uint32)k[2] << 8);
+                /* fall through */
+            case 2:
+                a += ((uint32)k[1] << 16);
+                /* fall through */
+            case 1:
+                a += ((uint32)k[0] << 24);
+                /* case 0: nothing left to add */
+        }
+#else  /* !WORDS_BIGENDIAN */
+        switch (len)
+        {
+            case 11:
+                c += ((uint32)k[10] << 24);
+                /* fall through */
+            case 10:
+                c += ((uint32)k[9] << 16);
+                /* fall through */
+            case 9:
+                c += ((uint32)k[8] << 8);
+                /* fall through */
+            case 8:
+                /* the lowest byte of c is reserved for the length */
+                b += ((uint32)k[7] << 24);
+                /* fall through */
+            case 7:
+                b += ((uint32)k[6] << 16);
+                /* fall through */
+            case 6:
+                b += ((uint32)k[5] << 8);
+                /* fall through */
+            case 5:
+                b += k[4];
+                /* fall through */
+            case 4:
+                a += ((uint32)k[3] << 24);
+                /* fall through */
+            case 3:
+                a += ((uint32)k[2] << 16);
+                /* fall through */
+            case 2:
+                a += ((uint32)k[1] << 8);
+                /* fall through */
+            case 1:
+                a += k[0];
+                /* case 0: nothing left to add */
+        }
+#endif /* WORDS_BIGENDIAN */
+    }
 
-	final(a, b, c);
+    final(a, b, c);
 
-	/* report the result */
-	return c;
+    /* report the result */
+    return c;
 }

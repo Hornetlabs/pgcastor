@@ -5,8 +5,7 @@
 #include "refresh/refresh_tables.h"
 #include "onlinerefresh/integrate/dataset/onlinerefresh_integratedataset.h"
 
-
-/* 向 onlinerefresh 编号内增加内容 */
+/* Add content to onlinerefresh number */
 bool onlinerefresh_integratedataset_add(onlinerefresh_integratedataset* dataset, void* node)
 {
     dataset->onlinerefresh = dlist_put(dataset->onlinerefresh, node);
@@ -18,7 +17,7 @@ onlinerefresh_integratedatasetnode* onlinerefresh_integratedatasetnode_init(void
     onlinerefresh_integratedatasetnode* node = NULL;
 
     node = rmalloc0(sizeof(onlinerefresh_integratedatasetnode));
-    if(NULL == node)
+    if (NULL == node)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -26,17 +25,20 @@ onlinerefresh_integratedatasetnode* onlinerefresh_integratedatasetnode_init(void
     return node;
 }
 
-void onlinerefresh_integratedatasetnode_no_set(onlinerefresh_integratedatasetnode* onlinerefreshnode, void* no)
+void onlinerefresh_integratedatasetnode_no_set(
+    onlinerefresh_integratedatasetnode* onlinerefreshnode, void* no)
 {
     rmemcpy1(onlinerefreshnode->onlinerefreshno.data, 0, no, UUID_LEN);
 }
 
-void onlinerefresh_integratedatasetnode_txid_set(onlinerefresh_integratedatasetnode* onlinerefreshnode, FullTransactionId txid)
+void onlinerefresh_integratedatasetnode_txid_set(
+    onlinerefresh_integratedatasetnode* onlinerefreshnode, FullTransactionId txid)
 {
     onlinerefreshnode->txid = txid;
 }
 
-void onlinerefresh_integratedatasetnode_refreshtables_set(onlinerefresh_integratedatasetnode* onlinerefreshnode, refresh_tables* tables)
+void onlinerefresh_integratedatasetnode_refreshtables_set(
+    onlinerefresh_integratedatasetnode* onlinerefreshnode, refresh_tables* tables)
 {
     onlinerefreshnode->refreshtables = refresh_tables_copy(tables);
 }
@@ -46,7 +48,7 @@ onlinerefresh_integratedataset* onlinerefresh_integratedataset_init(void)
     onlinerefresh_integratedataset* integratedataset = NULL;
 
     integratedataset = rmalloc0(sizeof(onlinerefresh_integratedataset));
-    if(NULL == integratedataset)
+    if (NULL == integratedataset)
     {
         elog(RLOG_ERROR, "out of memory");
     }
@@ -56,24 +58,25 @@ onlinerefresh_integratedataset* onlinerefresh_integratedataset_init(void)
     return integratedataset;
 }
 
-onlinerefresh_integratedataset* onlinerefresh_integratedataset_copy(onlinerefresh_integratedataset* dataset)
+onlinerefresh_integratedataset* onlinerefresh_integratedataset_copy(
+    onlinerefresh_integratedataset* dataset)
 {
-    dlistnode* dlnode = NULL;
-    onlinerefresh_integratedataset* result = NULL;
+    dlistnode*                          dlnode = NULL;
+    onlinerefresh_integratedataset*     result = NULL;
     onlinerefresh_integratedatasetnode* node = NULL;
     onlinerefresh_integratedatasetnode* new_node = NULL;
 
     result = onlinerefresh_integratedataset_init();
-    if(NULL == result)
+    if (NULL == result)
     {
         elog(RLOG_WARNING, "out of memory");
         return NULL;
     }
 
-    for(dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnode->next)
+    for (dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnode->next)
     {
         node = (onlinerefresh_integratedatasetnode*)dlnode->value;
-        
+
         new_node = onlinerefresh_integratedatasetnode_init();
         onlinerefresh_integratedatasetnode_no_set(new_node, node->onlinerefreshno.data);
         onlinerefresh_integratedatasetnode_txid_set(new_node, node->txid);
@@ -84,17 +87,18 @@ onlinerefresh_integratedataset* onlinerefresh_integratedataset_copy(onlinerefres
     return result;
 }
 
-onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_number_get(onlinerefresh_integratedataset* dataset, void* no)
+onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_number_get(
+    onlinerefresh_integratedataset* dataset, void* no)
 {
-    dlistnode* dlnode = NULL;
-    dlistnode* dlnodetmp = NULL;
+    dlistnode*                          dlnode = NULL;
+    dlistnode*                          dlnodetmp = NULL;
     onlinerefresh_integratedatasetnode* node = NULL;
-    if(NULL == dataset->onlinerefresh)
+    if (NULL == dataset->onlinerefresh)
     {
         return NULL;
     }
 
-    for(dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnodetmp)
+    for (dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
         node = (onlinerefresh_integratedatasetnode*)dlnode->value;
@@ -106,17 +110,18 @@ onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_number_get(on
     return node;
 }
 
-onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_txid_get(onlinerefresh_integratedataset* dataset, FullTransactionId txid)
+onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_txid_get(
+    onlinerefresh_integratedataset* dataset, FullTransactionId txid)
 {
-    dlistnode* dlnode = NULL;
-    dlistnode* dlnodetmp = NULL;
+    dlistnode*                          dlnode = NULL;
+    dlistnode*                          dlnodetmp = NULL;
     onlinerefresh_integratedatasetnode* node = NULL;
-    if(NULL == dataset->onlinerefresh)
+    if (NULL == dataset->onlinerefresh)
     {
         return NULL;
     }
 
-    for(dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnodetmp)
+    for (dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
         node = (onlinerefresh_integratedatasetnode*)dlnode->value;
@@ -130,16 +135,16 @@ onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_txid_get(onli
 
 void onlinerefresh_integratedataset_delete(onlinerefresh_integratedataset* dataset, void* no)
 {
-    bool find = false;
-    dlistnode* dlnode = NULL;
-    dlistnode* dlnodetmp = NULL;
+    bool                                find = false;
+    dlistnode*                          dlnode = NULL;
+    dlistnode*                          dlnodetmp = NULL;
     onlinerefresh_integratedatasetnode* node = NULL;
-    if(NULL == dataset->onlinerefresh)
+    if (NULL == dataset->onlinerefresh)
     {
         return;
     }
 
-    for(dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnodetmp)
+    for (dlnode = dataset->onlinerefresh->head; NULL != dlnode; dlnode = dlnodetmp)
     {
         dlnodetmp = dlnode->next;
         node = (onlinerefresh_integratedatasetnode*)dlnode->value;
@@ -160,16 +165,15 @@ void onlinerefresh_integratedataset_delete(onlinerefresh_integratedataset* datas
 void onlinerefresh_integratedataset_free(void* data)
 {
     onlinerefresh_integratedatasetnode* node = NULL;
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }
 
     node = (onlinerefresh_integratedatasetnode*)data;
     refresh_freetables(node->refreshtables);
-    
+
     rfree(data);
 
     return;
 }
-

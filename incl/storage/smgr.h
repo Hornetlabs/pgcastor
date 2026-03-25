@@ -3,31 +3,30 @@
 
 typedef struct SMGR_IF
 {
-    /* 打开 */
+    /* Open */
     bool (*smgr_open)(void* state);
 
-    /* 关闭 */
+    /* Close */
     bool (*smgr_close)(void* state);
 
-    /* 刷新 */
+    /* Flush */
     bool (*smgr_flush)(void* state);
 
-    /* 写 */
+    /* Write */
     bool (*smgr_write)(void* state);
 
-    /* 读 */
+    /* Read */
     bool (*smgr_read)(void* state);
 
-    /* 删除 */
+    /* Delete */
     bool (*smgr_unlink)(void* state);
 } smgr_if;
 
 typedef struct SMGR_STATE
 {
-    int                     bufid;
-    int                     fileid;
-    smgr_if*         smgr;
+    int      bufid;
+    int      fileid;
+    smgr_if* smgr;
 } smgr_state;
-
 
 #endif

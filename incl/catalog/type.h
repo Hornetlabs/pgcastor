@@ -1,13 +1,13 @@
 #ifndef _TYPE_H
 #define _TYPE_H
 
-void type_getfromdb(PGconn *conn, cache_sysdicts* sysdicts);
+void type_getfromdb(PGconn* conn, cache_sysdicts* sysdicts);
 
-void typedata_write(List* type, uint64 *offset, sysdict_header_array* array);
+void typedata_write(List* type, uint64* offset, sysdict_header_array* array);
 
 HTAB* typecache_load(sysdict_header_array* array);
 
-void typecache_write(HTAB* typecache, uint64 *offset, sysdict_header_array* array);
+void typecache_write(HTAB* typecache, uint64* offset, sysdict_header_array* array);
 
 /* colvalue2type */
 catalogdata* type_colvalue2type(void* in_colvalue);

@@ -483,29 +483,28 @@ typedef enum pg_parser_NodeTag
      * purposes (usually because they are involved in APIs where we want to
      * pass multiple object types through the same pointer).
      */
-    T_pg_parser_TriggerData,                /* in commands/trigger.h */
+    T_pg_parser_TriggerData,                 /* in commands/trigger.h */
     T_pg_parser_EventTriggerData,            /* in commands/evenT_pg_parser_trigger.h */
-    T_pg_parser_ReturnSetInfo,            /* in nodes/execnodes.h */
+    T_pg_parser_ReturnSetInfo,               /* in nodes/execnodes.h */
     T_pg_parser_WindowObjectData,            /* private in nodeWindowAgg.c */
-    T_pg_parser_TIDBitmap,                /* in nodes/tidbitmap.h */
-    T_pg_parser_InlineCodeBlock,            /* in nodes/parsenodes.h */
-    T_pg_parser_FdwRoutine,                /* in foreign/fdwapi.h */
-    T_pg_parser_IndexAmRoutine,            /* in access/amapi.h */
-    T_pg_parser_TableAmRoutine,            /* in access/tableam.h */
-    T_pg_parser_TsmRoutine,                /* in access/tsmapi.h */
-    T_pg_parser_ForeignKeyCacheInfo,        /* in utils/rel.h */
-    T_pg_parser_CallContext,                /* in nodes/parsenodes.h */
-    T_pg_parser_SupportRequestSimplify,    /* in nodes/supportnodes.h */
-    T_pg_parser_SupportRequestSelectivity,    /* in nodes/supportnodes.h */
-    T_pg_parser_SupportRequestCost,        /* in nodes/supportnodes.h */
-    T_pg_parser_SupportRequestRows,        /* in nodes/supportnodes.h */
-    T_pg_parser_SupportRequestIndexCondition    /* in nodes/supportnodes.h */
+    T_pg_parser_TIDBitmap,                   /* in nodes/tidbitmap.h */
+    T_pg_parser_InlineCodeBlock,             /* in nodes/parsenodes.h */
+    T_pg_parser_FdwRoutine,                  /* in foreign/fdwapi.h */
+    T_pg_parser_IndexAmRoutine,              /* in access/amapi.h */
+    T_pg_parser_TableAmRoutine,              /* in access/tableam.h */
+    T_pg_parser_TsmRoutine,                  /* in access/tsmapi.h */
+    T_pg_parser_ForeignKeyCacheInfo,         /* in utils/rel.h */
+    T_pg_parser_CallContext,                 /* in nodes/parsenodes.h */
+    T_pg_parser_SupportRequestSimplify,      /* in nodes/supportnodes.h */
+    T_pg_parser_SupportRequestSelectivity,   /* in nodes/supportnodes.h */
+    T_pg_parser_SupportRequestCost,          /* in nodes/supportnodes.h */
+    T_pg_parser_SupportRequestRows,          /* in nodes/supportnodes.h */
+    T_pg_parser_SupportRequestIndexCondition /* in nodes/supportnodes.h */
 } pg_parser_NodeTag;
 
-
-#define PG_PARSER_PARTITION_STRATEGY_HASH    'h'
-#define PG_PARSER_PARTITION_STRATEGY_LIST    'l'
-#define PG_PARSER_PARTITION_STRATEGY_RANGE   'r'
+#define PG_PARSER_PARTITION_STRATEGY_HASH 'h'
+#define PG_PARSER_PARTITION_STRATEGY_LIST 'l'
+#define PG_PARSER_PARTITION_STRATEGY_RANGE 'r'
 /*
  * The first field of a node of any type is guaranteed to be the pg_parser_NodeTag.
  * Hence the type of any node can be gotten by casting it to pg_parser_Node. Declaring
@@ -521,15 +520,16 @@ typedef struct pg_parser_Node
 
 #define NODE_MCXT NULL
 
-#define pg_parser_castNode(_type_, nodeptr) ((_type_ *) (nodeptr))
+#define pg_parser_castNode(_type_, nodeptr) ((_type_*)(nodeptr))
 
-#define pg_parser_newNode(size, tag) \
-({  pg_parser_Node   *_result; \
-    pg_parser_AssertMacro((size) >= sizeof(pg_parser_Node));        /* need the tag, at least */ \
-    pg_parser_mcxt_malloc(NODE_MCXT, (void **)&_result, size);\
-    _result->type = (tag); \
-    _result; \
-})
+#define pg_parser_newNode(size, tag)                                                          \
+    ({                                                                                        \
+        pg_parser_Node* _result;                                                              \
+        pg_parser_AssertMacro((size) >= sizeof(pg_parser_Node)); /* need the tag, at least */ \
+        pg_parser_mcxt_malloc(NODE_MCXT, (void**)&_result, size);                             \
+        _result->type = (tag);                                                                \
+        _result;                                                                              \
+    })
 
-#define pg_parser_makeNode(_type_) ((_type_ *) pg_parser_newNode(sizeof(_type_), T_##_type_))
+#define pg_parser_makeNode(_type_) ((_type_*)pg_parser_newNode(sizeof(_type_), T_##_type_))
 #endif

@@ -1,7 +1,7 @@
 /*
  * All Copyright (c) 2024-2025, Byte Sync Development Group
  *
-*/
+ */
 
 #include "app_incl.h"
 #include "libpq-fe.h"
@@ -31,20 +31,20 @@ static void pgreceivewalversion()
 /* receivewal */
 int main(int argc, char** argv)
 {
-    uint32 hlsn                         = 0;
-    uint32 llsn                         = 0;
-    optype optype                = OPTYPE_NOP;
-    TimeLineID tli                      = InvalidTimeLineID;
-    XLogRecPtr lsnstartpos              = InvalidXLogRecPtr;
-    char* profilepath                   = NULL;
-    const char* loglevel                = NULL;
-    char* datadir                       = NULL;
-    char* slotname                      = NULL;
-    char* startpos                      = NULL;
-    char* restorecmd                    = NULL;
-    translog_recvlog* recvwal    = NULL;
+    uint32               hlsn = 0;
+    uint32               llsn = 0;
+    optype               optype = OPTYPE_NOP;
+    TimeLineID           tli = InvalidTimeLineID;
+    XLogRecPtr           lsnstartpos = InvalidXLogRecPtr;
+    char*                profilepath = NULL;
+    const char*          loglevel = NULL;
+    char*                datadir = NULL;
+    char*                slotname = NULL;
+    char*                startpos = NULL;
+    char*                restorecmd = NULL;
+    translog_recvlog*    recvwal = NULL;
     translog_walcontrol* walctrl = NULL;
-    char controlfile[ABSPATH]    = { 0 };
+    char                 controlfile[ABSPATH] = {0};
 
     if (1 < argc)
     {
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
             help();
             exit(0);
         }
-        else if(0 == strcmp(argv[1], "-v"))
+        else if (0 == strcmp(argv[1], "-v"))
         {
             pgreceivewalversion();
             exit(0);
@@ -64,25 +64,22 @@ int main(int argc, char** argv)
             exit(0);
         }
 
-        /* 检查个数 */
+        /* check argument count */
         if (4 != argc)
         {
             help();
             exit(0);
         }
 
-        if (strlen(argv[3]) == strlen("start")
-                && 0 == strcasecmp(argv[3], "start"))
+        if (strlen(argv[3]) == strlen("start") && 0 == strcasecmp(argv[3], "start"))
         {
             optype = OPTYPE_START;
         }
-        else if (strlen(argv[3]) == strlen("stop")
-                && 0 == strcasecmp(argv[3], "stop"))
+        else if (strlen(argv[3]) == strlen("stop") && 0 == strcasecmp(argv[3], "stop"))
         {
             optype = OPTYPE_STOP;
         }
-        else if (strlen(argv[3]) == strlen("status")
-                && 0 == strcasecmp(argv[3], "status"))
+        else if (strlen(argv[3]) == strlen("status") && 0 == strcasecmp(argv[3], "status"))
         {
             optype = OPTYPE_STATUS;
         }
@@ -101,13 +98,13 @@ int main(int argc, char** argv)
     g_proctype = PROC_TYPE_PGRECEIVEWAL;
     mem_init();
 
-    /* 保存配置文件路径绝对路径 */
+    /* save config file path as absolute path */
     profilepath = osal_make_absolute_path(argv[2]);
 
-    /* 参数解析 */
+    /* parse parameters */
     guc_loadcfg(profilepath, false);
 
-    /* 设置 日志级别 */
+    /* set log level */
     loglevel = guc_getConfigOption(CFG_KEY_LOG_LEVEL);
     if (NULL == loglevel)
     {
@@ -117,7 +114,7 @@ int main(int argc, char** argv)
     elog_seteloglevel(loglevel);
 
     /*
-     * 加载 control 文件
+     * load control file
      */
     datadir = guc_getConfigOption(CFG_KEY_DATA);
     if (NULL == datadir || '\0' == datadir[0])
@@ -126,42 +123,43 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    /* 切换工作目录 */
+    /* switch working directory */
     chdir(datadir);
 
-    /* 操作类型为 stop */
+    /* operation type is stop */
     if (OPTYPE_STOP == optype)
     {
         cmd(optype, NULL);
         return 0;
     }
-    else if(OPTYPE_STATUS == optype)
+    else if (OPTYPE_STATUS == optype)
     {
         elog(RLOG_WARNING, "receivewal not support status command.");
         return 1;
     }
 
-    /* 查看解析内容是否正确 */
+    /* check if parsed content is correct */
     guc_debug();
 
-    /* 设置为后台运行 */
+    /* set to run in background */
     makedaemon();
 
-    /* 获取主线程号 */
+    /* get main thread id */
     g_mainthrid = pthread_self();
 
-    /* 在 wdata 查看锁文件是否存在,不存在则创建,存在则检测进程是否启动 */
+    /* check if lock file exists in wdata, create if not exists, check if process is started if
+     * exists */
     misc_lockfiles_create(LOCK_FILE);
 
-    /* log 初始化 */
+    /* log initialization */
     log_init();
 
-    /* 设置信号处理函数 */
+    /* set signal handler */
     signal_init();
 
     /*
-     * 根据状态做不同的处理
-     *  TRANSLOG_WALCONTROL_STAT_INIT                初次启动, 根据配置做处理
+     * handle differently based on status
+     *  TRANSLOG_WALCONTROL_STAT_INIT                first start, handle based on config
      */
     snprintf(controlfile, ABSPATH, "%s/receivewal.control", datadir);
     walctrl = translog_walcontrol_load(controlfile);
@@ -174,7 +172,7 @@ int main(int argc, char** argv)
 
     if (TRANSLOG_WALCONTROL_STAT_INIT == walctrl->stat)
     {
-        /* 获取 slotname */
+        /* get slotname */
         slotname = guc_getConfigOption(CFG_KEY_SLOT_NAME);
         if (NULL != slotname && '\0' != slotname[0])
         {
@@ -184,7 +182,7 @@ int main(int argc, char** argv)
         /* startpos */
         startpos = guc_getConfigOption(CFG_KEY_STARTPOS);
         sscanf(startpos, "%X/%X", &hlsn, &llsn);
-        lsnstartpos = ((uint64)hlsn)<<32 | llsn;
+        lsnstartpos = ((uint64)hlsn) << 32 | llsn;
         translog_walcontrol_setstartpos(walctrl, lsnstartpos);
 
         /* timeline */
@@ -196,9 +194,9 @@ int main(int argc, char** argv)
         translog_walcontrol_setrestorecmd(walctrl, restorecmd);
     }
 
-    /* 设置 receivewal 的信息 */
+    /* set receivewal information */
     recvwal = translog_recvlog_init();
-    if(NULL == recvwal)
+    if (NULL == recvwal)
     {
         elog(RLOG_WARNING, "init recv wal error");
         misc_lockfiles_unlink(0, NULL);
@@ -213,25 +211,25 @@ int main(int argc, char** argv)
     translog_recvlog_setslotname(recvwal, walctrl->slotname);
     translog_recvlog_setrestorecmd(recvwal, walctrl->restorecmd);
 
-    /* 解除信号屏蔽 */
+    /* unblock signals */
     singal_setmask();
 
     elog(RLOG_INFO, "receivewal start, pid:%d", getpid());
 
     log_destroyerrorstack();
 
-    /* 关闭标准输入/输出/错误 */
+    /* close stdin/stdout/stderr */
     closestd();
 
-    /* 启动同步 */
-    if(false == translog_recvlog_main(recvwal))
+    /* start synchronization */
+    if (false == translog_recvlog_main(recvwal))
     {
         elog(RLOG_WARNING, "receivewal error");
         misc_lockfiles_unlink(0, NULL);
         return 1;
     }
 
-    /* 将 control 文件落盘 */
+    /* flush control file to disk */
     walctrl->dbtli = recvwal->dbtli;
     walctrl->startpos = recvwal->startpos;
     walctrl->tli = recvwal->tli;

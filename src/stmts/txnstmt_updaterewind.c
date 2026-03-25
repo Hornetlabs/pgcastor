@@ -3,15 +3,15 @@
 #include "stmts/txnstmt.h"
 #include "stmts/txnstmt_updaterewind.h"
 
-/* 初始化 */
+/* initialize */
 txnstmt_updaterewind* txnstmt_updaterewind_init(void)
 {
     txnstmt_updaterewind* txnstmt = NULL;
 
     txnstmt = (txnstmt_updaterewind*)rmalloc1(sizeof(txnstmt_updaterewind));
-    if(NULL == txnstmt)
+    if (NULL == txnstmt)
     {
-        elog(RLOG_WARNING,"txnstmt updaterewind init oom %s", strerror(errno));
+        elog(RLOG_WARNING, "txnstmt updaterewind init oom %s", strerror(errno));
         return NULL;
     }
     rmemset0(txnstmt, 0, '\0', sizeof(txnstmt_updaterewind));
@@ -22,7 +22,7 @@ txnstmt_updaterewind* txnstmt_updaterewind_init(void)
 
 void txnstmt_updaterewind_free(void* data)
 {
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }

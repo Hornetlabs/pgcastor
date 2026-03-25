@@ -1,7 +1,7 @@
 #ifndef _IPC_H
 #define _IPC_H
 
-typedef void (*on_exit_callback) (int code, void* arg);
+typedef void (*on_exit_callback)(int code, void* arg);
 
 pid_t osal_ipc_fork(void);
 

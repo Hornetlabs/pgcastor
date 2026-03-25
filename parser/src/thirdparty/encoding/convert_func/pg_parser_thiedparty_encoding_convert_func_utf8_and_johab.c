@@ -17,7 +17,6 @@
 #include "./unicode_map/johab_to_utf8.map"
 #include "./unicode_map/utf8_to_johab.map"
 
-
 /* ----------
  * conv_proc(
  *        INTEGER,    -- source encoding id
@@ -28,32 +27,24 @@
  * ) returns VOID;
  * ----------
  */
-void johab_to_utf8(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void johab_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(JOHAB, UTF8);
 
-    LocalToUtf(src, len, dest,
-               &johab_to_unicode_tree,
-               NULL, 0,
-               NULL,
-               JOHAB);
+    LocalToUtf(src, len, dest, &johab_to_unicode_tree, NULL, 0, NULL, JOHAB);
 }
 
-void utf8_to_johab(unsigned char *src_str, unsigned char *dest_str, int32_t str_len)
+void utf8_to_johab(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
-    unsigned char *src = src_str;
-    unsigned char *dest = dest_str;
-    int32_t            len = str_len;
+    unsigned char* src = src_str;
+    unsigned char* dest = dest_str;
+    int32_t        len = str_len;
 
     CHECK_ENCODING_CONVERSION_ARGS(UTF8, JOHAB);
 
-    UtfToLocal(src, len, dest,
-               &johab_from_unicode_tree,
-               NULL, 0,
-               NULL,
-               JOHAB);
+    UtfToLocal(src, len, dest, &johab_from_unicode_tree, NULL, 0, NULL, JOHAB);
 }

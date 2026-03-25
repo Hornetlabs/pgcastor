@@ -3,14 +3,13 @@
 
 #define MAX_ON_EXITS 20
 
-typedef void (*on_exit_callback) (int code, void* arg);
+typedef void (*on_exit_callback)(int code, void* arg);
 
 struct ONEXIT
 {
-	on_exit_callback function;
-	void*		arg;
+    on_exit_callback function;
+    void*            arg;
 };
-
 
 pid_t osal_ipc_fork(void)
 {
@@ -20,5 +19,5 @@ pid_t osal_ipc_fork(void)
 /* pipe */
 int osal_ipc_pipe(int pipes[2])
 {
-	return pipe(pipes);
+    return pipe(pipes);
 }

@@ -31,67 +31,67 @@
 #include "onlinerefresh/capture/parserwal/onlinerefresh_capture_decode_xact.h"
 #include "onlinerefresh/capture/parserwal/onlinerefresh_capture_decode_heap.h"
 
-typedef void (*decode_prefunc_onlinerefresh)(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase);
+typedef void (*decode_prefunc_onlinerefresh)(decodingcontext*             decodingctx,
+                                             pg_parser_translog_pre_base* pbase);
 
 typedef struct DECODE_PREMGR_ONLINEREFRESH
 {
-    int                 type;
-    char*               name;
-    decode_prefunc_onlinerefresh      func;
+    int                          type;
+    char*                        name;
+    decode_prefunc_onlinerefresh func;
 } decode_premgr_onlinerefresh;
 
-static decode_premgr_onlinerefresh m_decodepremgr_onlinerefresh[] =
-{
-    { PG_PARSER_TRANSLOG_INVALID,               "INVALID"        , NULL },
-    { PG_PARSER_TRANSLOG_HEAP_INSERT,           "INSERT"         , onlinerefresh_decode_heap },
-    { PG_PARSER_TRANSLOG_HEAP_UPDATE,           "UPDATE"         , onlinerefresh_decode_heap },
-    { PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,       "HOT UPDATE"     , onlinerefresh_decode_heap },
-    { PG_PARSER_TRANSLOG_HEAP_DELETE,           "DELETE"         , onlinerefresh_decode_heap },
-    { PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,    "MULTI INSERT"   , onlinerefresh_decode_heap },
-    { PG_PARSER_TRANSLOG_XACT_COMMIT,           "COMMIT"         , onlinerefresh_decode_xact_commit },
-    { PG_PARSER_TRANSLOG_XACT_ABORT,            "ABORT"          , onlinerefresh_decode_xact_abort },
-    { PG_PARSER_TRANSLOG_XLOG_SWITCH,           "SWITCH"         , NULL },
-    { PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,       "ONLINE"         , decode_chkpt },
-    { PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,     "SHUTDOWN"       , decode_chkpt },
-    { PG_PARSER_TRANSLOG_FPW_TUPLE,             "FPW_TUPLE"      , heap_fpw_tuples },
-    { PG_PARSER_TRANSLOG_RELMAP,                "RELMAP"         , decode_relmap },
-    { PG_PARSER_TRANSLOG_RUNNING_XACTS,         "RUNNING_XACTS"  , NULL },
-    { PG_PARSER_TRANSLOG_XLOG_RECOVERY,         "RECOVERY"       , NULL },
-    { PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE,   "COMMIT_PREPARE" , NULL },
-    { PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE,    "ABORT_PREPARE"  , NULL },
-    { PG_PARSER_TRANSLOG_XACT_ASSIGNMENT,       "ASSIGNMENT"     , NULL },
-    { PG_PARSER_TRANSLOG_XACT_PREPARE,          "PREPARE"        , NULL },
-    { PG_PARSER_TRANSLOG_HEAP_TRUNCATE,         "TRUNCATE"       , NULL },
-    {PG_PARSER_TRANSLOG_SEQ,                    "SEQUENCE"       , NULL }
-};
+static decode_premgr_onlinerefresh m_decodepremgr_onlinerefresh[] = {
+    {PG_PARSER_TRANSLOG_INVALID, "INVALID", NULL},
+    {PG_PARSER_TRANSLOG_HEAP_INSERT, "INSERT", onlinerefresh_decode_heap},
+    {PG_PARSER_TRANSLOG_HEAP_UPDATE, "UPDATE", onlinerefresh_decode_heap},
+    {PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE, "HOT UPDATE", onlinerefresh_decode_heap},
+    {PG_PARSER_TRANSLOG_HEAP_DELETE, "DELETE", onlinerefresh_decode_heap},
+    {PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT, "MULTI INSERT", onlinerefresh_decode_heap},
+    {PG_PARSER_TRANSLOG_XACT_COMMIT, "COMMIT", onlinerefresh_decode_xact_commit},
+    {PG_PARSER_TRANSLOG_XACT_ABORT, "ABORT", onlinerefresh_decode_xact_abort},
+    {PG_PARSER_TRANSLOG_XLOG_SWITCH, "SWITCH", NULL},
+    {PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE, "ONLINE", decode_chkpt},
+    {PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN, "SHUTDOWN", decode_chkpt},
+    {PG_PARSER_TRANSLOG_FPW_TUPLE, "FPW_TUPLE", heap_fpw_tuples},
+    {PG_PARSER_TRANSLOG_RELMAP, "RELMAP", decode_relmap},
+    {PG_PARSER_TRANSLOG_RUNNING_XACTS, "RUNNING_XACTS", NULL},
+    {PG_PARSER_TRANSLOG_XLOG_RECOVERY, "RECOVERY", NULL},
+    {PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE, "COMMIT_PREPARE", NULL},
+    {PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE, "ABORT_PREPARE", NULL},
+    {PG_PARSER_TRANSLOG_XACT_ASSIGNMENT, "ASSIGNMENT", NULL},
+    {PG_PARSER_TRANSLOG_XACT_PREPARE, "PREPARE", NULL},
+    {PG_PARSER_TRANSLOG_HEAP_TRUNCATE, "TRUNCATE", NULL},
+    {PG_PARSER_TRANSLOG_SEQ, "SEQUENCE", NULL}};
 
-static int              m_precnt_onlinerefresh = (sizeof(m_decodepremgr_onlinerefresh))/(sizeof(decode_premgr_onlinerefresh));
-static XLogRecPtr       m_parserlsn = 0;
-
+static int m_precnt_onlinerefresh =
+    (sizeof(m_decodepremgr_onlinerefresh)) / (sizeof(decode_premgr_onlinerefresh));
+static XLogRecPtr m_parserlsn = 0;
 
 void parserwork_waldecode_onlinerefresh(decodingcontext* decodingctx)
 {
-    int32 rippleerrno = 0;
+    int32                        rippleerrno = 0;
     pg_parser_translog_pre_base* preparserresutl = NULL;
     decodingctx->walpre.m_record = decodingctx->decode_record->data;
 
     m_parserlsn = decodingctx->decode_record->start.wal.lsn;
-    /* 调用预解析，根据预解析内容，分发处理 */
-    if(false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
+    /* Call pre-parser, dispatch processing based on pre-parser content */
+    if (false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
     {
-        elog(RLOG_ERROR, "pg_parser_trans_preTrans error, %08X, %s",
-                            rippleerrno, pg_parser_errno_getErrInfo(rippleerrno));
+        elog(RLOG_ERROR, "pg_parser_trans_preTrans error, %08X, %s", rippleerrno,
+             pg_parser_errno_getErrInfo(rippleerrno));
     }
 
-    /* 调用分发函数 */
-    if(m_precnt_onlinerefresh <= preparserresutl->m_type)
+    /* Call dispatch function */
+    if (m_precnt_onlinerefresh <= preparserresutl->m_type)
     {
         elog(RLOG_ERROR, "pg_parser_trans_preTrans unknown type:%u", preparserresutl->m_type);
     }
 
-    if(NULL == m_decodepremgr_onlinerefresh[preparserresutl->m_type].func)
+    if (NULL == m_decodepremgr_onlinerefresh[preparserresutl->m_type].func)
     {
-        /* 查看事务号是否有效，无效则手动添加一个事务号，并放入到缓存中处理 */
+        /* Check if transaction number is valid, if invalid, manually add a transaction number and
+         * put it in cache for processing */
         pg_parser_trans_preTrans_free(preparserresutl);
         return;
     }

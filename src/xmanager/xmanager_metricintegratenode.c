@@ -7,8 +7,8 @@
 #include "xmanager/xmanager_metricintegratenode.h"
 
 /*
- * metricintegrate  列头长度
- * rowlen 4
+ * metricintegrate column header length
+ * Row length 4
  * namelen 4 + loadlsn
  * namelen 4 + synclsn
  * namelen 4 + loadtrailno
@@ -18,10 +18,12 @@
  * namelen 4 + loadtimestamp
  * namelen 4 + synctimestamp
  */
-#define REFRESH_METRICINTEGRATE_KEY_LEN ( 4 + 4 + strlen("loadlsn") + 4 + strlen("synclsn") + 4 + strlen("loadtrailno") + 4 + strlen("loadtrailstart") + 4 + strlen("synctrailno") + 4 + strlen("synctrailstart") + 4 + strlen("loadtimestamp") + 4 + strlen("synctimestamp"))
+#define REFRESH_METRICINTEGRATE_KEY_LEN                                                        \
+    (4 + 4 + strlen("loadlsn") + 4 + strlen("synclsn") + 4 + strlen("loadtrailno") + 4 +       \
+     strlen("loadtrailstart") + 4 + strlen("synctrailno") + 4 + strlen("synctrailstart") + 4 + \
+     strlen("loadtimestamp") + 4 + strlen("synctimestamp"))
 
-
-/* 初始化 */
+/* Initialize */
 xmanager_metricnode* xmanager_metricintegratenode_init(void)
 {
     xmanager_metricintegratenode* xintegratemetricnode = NULL;
@@ -39,26 +41,24 @@ xmanager_metricnode* xmanager_metricintegratenode_init(void)
     return (xmanager_metricnode*)xintegratemetricnode;
 }
 
-/* 资源清理 */
+/* Clean up resources */
 void xmanager_metricintegratenode_destroy(xmanager_metricnode* metricnode)
 {
     rfree(metricnode);
 }
 
-/* 将 integrate node 节点序列化 */
-bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode,
-                                                uint8** blk,
-                                                int* blksize,
-                                                int* blkstart)
+/* Serialize integrate node */
+bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode, uint8** blk, int* blksize,
+                                         int* blkstart)
 {
-    bool bnew                                                   = false;
-    int len                                                     = 0;
-    int freespace                                               = 0;
-    int ivalue                                                  = 0;
-    int64 i64value                                              = 0;
-    uint64 uvalue                                               = 0;
-    uint8* uptr                                                 = NULL;
-    xmanager_metricintegratenode* xmetricintegratenode   = NULL;
+    bool                          bnew = false;
+    int                           len = 0;
+    int                           freespace = 0;
+    int                           ivalue = 0;
+    int64                         i64value = 0;
+    uint64                        uvalue = 0;
+    uint8*                        uptr = NULL;
+    xmanager_metricintegratenode* xmetricintegratenode = NULL;
 
     if (NULL == metricnode)
     {
@@ -67,33 +67,33 @@ bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode,
 
     xmetricintegratenode = (xmanager_metricintegratenode*)metricnode;
 
-    /* node 节点的总长度 */
+    /* Total node length */
     len = 4;
 
-    /* 
-     * 计算总长度 
-     *  1、metricnode 长度
-     *  2、integratenode 长度
+    /*
+     * Calculate total length
+     *  1. metricnode length
+     *  2. integratenode length
      */
-    /* metricnode 长度 */
+    /* metricnode length */
     len += xmanager_metricnode_serialsize(metricnode);
 
-    /* integrate node 私有长度 */
-    len += (8 +                 /*loadlsn */
-            8 +                 /*synclsn */
-            8 +                 /*loadtrailno */
-            8 +                 /*loadtrailstart */
-            8 +                 /*synctrailno */
-            8 +                 /*synctrailstart */
-            8 +                 /*loadtimestamp */
-            8                   /*synctimestamp */);
-    
-    /* 查看空间是否足够, 不够那么申请空间 */
+    /* integrate node private length */
+    len += (8 + /*loadlsn */
+            8 + /*synclsn */
+            8 + /*loadtrailno */
+            8 + /*loadtrailstart */
+            8 + /*synctrailno */
+            8 + /*synctrailstart */
+            8 + /*loadtimestamp */
+            8 /*synctimestamp */);
+
+    /* Check space sufficient, allocate if needed */
     uptr = *blk;
     freespace = *blksize - *blkstart;
     while (len > freespace)
     {
-        /* 重新申请空间 */
+        /* Reallocate space */
         bnew = true;
         *blksize = (*blksize) * 2;
         freespace = *blksize - *blkstart;
@@ -112,20 +112,20 @@ bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode,
         *blk = uptr;
     }
 
-    /* 总长度序列化 */
+    /* Serialize total length */
     uptr += *blkstart;
     ivalue = len;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     *blkstart += 4;
-    
-    /* 重新指向头部 */
+
+    /* Re-point to header */
     uptr = *blk;
 
-    /* 通用内容格式化 */
+    /* Format common content */
     xmanager_metricnode_serial(&xmetricintegratenode->base, uptr, blkstart);
 
-    /* 将 integrate node 节点的内容序列化 */
+    /* Serialize integrate node content */
     uptr += *blkstart;
 
     /* loadlsn */
@@ -187,13 +187,13 @@ bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode,
     return true;
 }
 
-/* 反序列化为 integrate node 节点 */
+/* Deserialize to integrate node */
 xmanager_metricnode* xmanager_metricintegratenode_deserial(uint8* blk, int* blkstart)
 {
-    int64 i64value                                              = 0;
-    uint64 u64value                                             = 0;
-    uint8* uptr                                                 = NULL;
-    xmanager_metricintegratenode* xmetricintegratenode   = NULL;
+    int64                         i64value = 0;
+    uint64                        u64value = 0;
+    uint8*                        uptr = NULL;
+    xmanager_metricintegratenode* xmetricintegratenode = NULL;
     xmetricintegratenode = (xmanager_metricintegratenode*)xmanager_metricintegratenode_init();
     if (NULL == xmetricintegratenode)
     {
@@ -201,7 +201,7 @@ xmanager_metricnode* xmanager_metricintegratenode_deserial(uint8* blk, int* blks
         return NULL;
     }
 
-    /* 获取基础信息 */
+    /* Get basic info */
     if (false == xmanager_metricnode_deserial(&xmetricintegratenode->base, blk, blkstart))
     {
         elog(RLOG_WARNING, "xmanager metric integrate deserial error");
@@ -262,25 +262,25 @@ xmanager_metricnode* xmanager_metricintegratenode_deserial(uint8* blk, int* blks
     return (xmanager_metricnode*)xmetricintegratenode;
 }
 
-/* integrate info 组装 */
+/* Assemble integrate info */
 void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
 {
-    uint8 u8value                                               = 0;
-    uint16 u16value                                             = 0;
-    int rowlen                                                  = 0;
-    int msglen                                                  = 0;
-    int ivalue                                                  = 0;
-    size_t idx_col                                              = 0;
-    uint8* nullmap                                              = NULL;
-    uint8* rowuptr                                              = NULL;
-    uint8* uptr                                                 = NULL;
-    netpacket* npacket                                   = NULL;
-    xmanager_metricintegratenode* xmetricintegratenode   = NULL;
-    char state[32]                                              = {'\0'};
-    char values[REFRESH_METRICINTEGRATE_INFOCNT][32]            = {{0}};
-    int32 valuelen[REFRESH_METRICINTEGRATE_INFOCNT]             = {0};
+    uint8                         u8value = 0;
+    uint16                        u16value = 0;
+    int                           rowlen = 0;
+    int                           msglen = 0;
+    int                           ivalue = 0;
+    size_t                        idx_col = 0;
+    uint8*                        nullmap = NULL;
+    uint8*                        rowuptr = NULL;
+    uint8*                        uptr = NULL;
+    netpacket*                    npacket = NULL;
+    xmanager_metricintegratenode* xmetricintegratenode = NULL;
+    char                          state[32] = {'\0'};
+    char                          values[REFRESH_METRICINTEGRATE_INFOCNT][32] = {{0}};
+    int32                         valuelen[REFRESH_METRICINTEGRATE_INFOCNT] = {0};
 
-    xmetricintegratenode = (xmanager_metricintegratenode*) pxmetricnode;
+    xmetricintegratenode = (xmanager_metricintegratenode*)pxmetricnode;
 
     rmemset1(state, 0, 0, 32);
     if (XMANAGER_METRICNODESTAT_NOP == pxmetricnode->stat)
@@ -301,35 +301,38 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     }
     else
     {
-        elog(RLOG_WARNING, "xmanager metric assemble info capture msg data, invalid metricnode stat");
+        elog(RLOG_WARNING,
+             "xmanager metric assemble info capture msg data, invalid metricnode stat");
         return NULL;
     }
 
-    /* 4 总长度 + 4 crc32 + 4 msgtype + 1 成功/失败 + 4 rowcnt */
+    /* 4 total length + 4 crc32 + 4 msgtype + 1 success or fail + 4 rowcnt */
     msglen = 4 + 4 + 4 + 1 + 4;
 
-    /* 第一行 长度 info REFRESH_METRICCAPTURE_KEY_LEN + state (4 + strlen(state)) 长度 */
+    /* First row length info + state length */
     msglen += (REFRESH_METRICINTEGRATE_KEY_LEN + 4 + strlen("state"));
 
-    /* rowlen */
+    /* Row length */
     msglen += 4;
 
-    /* nullmapcnt */
+    /* nullmap count */
     msglen += 2;
 
     /* nullmap */
     msglen += 2;
 
-    /* 计算列值长度 */
+    /* Calculate column value length */
 
     /* loadlsn + len */
     msglen += 4;
-    valuelen[0] = snprintf(values[0], 32, "%X/%X", (uint32)(xmetricintegratenode->loadlsn >> 32), (uint32)(xmetricintegratenode->loadlsn));
+    valuelen[0] = snprintf(values[0], 32, "%X/%X", (uint32)(xmetricintegratenode->loadlsn >> 32),
+                           (uint32)(xmetricintegratenode->loadlsn));
     msglen += valuelen[0];
 
     /* synclsn + len */
     msglen += 4;
-    valuelen[1] = snprintf(values[1], 32, "%X/%X", (uint32)(xmetricintegratenode->synclsn >> 32), (uint32)(xmetricintegratenode->synclsn));
+    valuelen[1] = snprintf(values[1], 32, "%X/%X", (uint32)(xmetricintegratenode->synclsn >> 32),
+                           (uint32)(xmetricintegratenode->synclsn));
     msglen += valuelen[1];
 
     /* loadtrailno + len */
@@ -368,7 +371,7 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     msglen += 4;
     msglen += strlen(state);
 
-    /* 申请空间 */
+    /* Allocate space */
     npacket = netpacket_init();
     if (NULL == npacket)
     {
@@ -386,10 +389,10 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     msglen -= 1;
     npacket->used = msglen;
 
-    /* 组装数据 */
+    /* Assemble data */
     uptr = npacket->data;
 
-    /* 数据总长度 */
+    /* Total data length */
     ivalue = msglen;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
@@ -398,13 +401,13 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     /* crc32 */
     uptr += 4;
 
-    /* 类型 */
+    /* Type */
     ivalue = XMANAGER_MSG_STARTCMD;
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
 
-    /* 类型成功标识 */
+    /* Type success flag */
     u8value = 0;
     rmemcpy1(uptr, 0, &u8value, 1);
     uptr += 1;
@@ -418,13 +421,13 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     rowlen = 0;
     rowuptr = uptr;
 
-    /* 偏过行长度 */
+    /* Skip row length */
     uptr += 4;
     rowlen = 4;
 
-    /* 列头组装 */
+    /* Assemble column header */
     /* loadlsn len */
-    ivalue = strlen("loadlsn") ;
+    ivalue = strlen("loadlsn");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -437,7 +440,7 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     rowlen += ivalue;
 
     /* synclsn len */
-    ivalue = strlen("synclsn") ;
+    ivalue = strlen("synclsn");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -450,7 +453,7 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     rowlen += ivalue;
 
     /* loadtrailno len */
-    ivalue = strlen("loadtrailno") ;
+    ivalue = strlen("loadtrailno");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -463,7 +466,7 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     rowlen += ivalue;
 
     /* loadtrailstart len */
-    ivalue = strlen("loadtrailstart") ;
+    ivalue = strlen("loadtrailstart");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -476,7 +479,7 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     rowlen += ivalue;
 
     /* synctrailno len */
-    ivalue = strlen("synctrailno") ;
+    ivalue = strlen("synctrailno");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -489,7 +492,7 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     rowlen += ivalue;
 
     /* synctrailstart len */
-    ivalue = strlen("synctrailstart") ;
+    ivalue = strlen("synctrailstart");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -502,7 +505,7 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     rowlen += ivalue;
 
     /* loadtimestamp len */
-    ivalue = strlen("loadtimestamp") ;
+    ivalue = strlen("loadtimestamp");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -515,7 +518,7 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     rowlen += ivalue;
 
     /* synctimestamp len */
-    ivalue = strlen("synctimestamp") ;
+    ivalue = strlen("synctimestamp");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -526,9 +529,9 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     rmemcpy1(uptr, 0, "synctimestamp", ivalue);
     uptr += ivalue;
     rowlen += ivalue;
-    
+
     /* state len */
-    ivalue = strlen("state") ;
+    ivalue = strlen("state");
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
@@ -540,25 +543,25 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     uptr += ivalue;
     rowlen += ivalue;
 
-    /* 行总长度 */
+    /* Total row length */
     rowlen = r_hton32(rowlen);
     rmemcpy1(rowuptr, 0, &rowlen, 4);
 
     rowlen = 0;
     rowuptr = uptr;
 
-    /* 跳过行长度 */
+    /* Skip row length */
     uptr += 4;
     rowlen = 4;
 
-    /* 空列map的个数 */
+    /* Null column map count */
     u16value = 2;
     u16value = r_hton16(u16value);
     rmemcpy1(uptr, 0, &u16value, 2);
     uptr += 2;
     rowlen += 2;
 
-    /* 空列 map */
+    /* Null column map */
     u16value = 2;
     uptr += u16value;
     rowlen += u16value;
@@ -574,39 +577,38 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
 
     for (idx_col = 0; idx_col < REFRESH_METRICINTEGRATE_INFOCNT; idx_col++)
     {
-
-        if (values[idx_col] == NULL || values[idx_col][0] == '\0')
+        if (values[idx_col][0] == '\0')
         {
             nullmap[idx_col / 8] |= (1U << (idx_col % 8));
             continue;
         }
 
-        /* 列 长度 */
+        /* Column length */
         ivalue = valuelen[idx_col];
         ivalue = r_hton32(ivalue);
         rmemcpy1(uptr, 0, &ivalue, 4);
         uptr += 4;
         rowlen += 4;
 
-        /* 列内容 */
+        /* Column content */
         rmemcpy1(uptr, 0, values[idx_col], valuelen[idx_col]);
         uptr += valuelen[idx_col];
         rowlen += valuelen[idx_col];
     }
 
-    /* state 长度 */
+    /* state length */
     ivalue = strlen(state);
     ivalue = r_hton32(ivalue);
     rmemcpy1(uptr, 0, &ivalue, 4);
     uptr += 4;
     rowlen += 4;
 
-    /* 列内容 */
+    /* Column content */
     rmemcpy1(uptr, 0, state, strlen(state));
     uptr += strlen(state);
     rowlen += strlen(state);
 
-    /* 行总长度 */
+    /* Total row length */
     rowlen = r_hton32(rowlen);
     rmemcpy1(rowuptr, 0, &rowlen, 4);
     rowuptr += 4;

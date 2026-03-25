@@ -8,15 +8,15 @@
 #include "stmts/txnstmt_prepared.h"
 #include "works/parserwork/wal/decode_heap_util.h"
 
-/* 初始化 */
+/* Initialization */
 txnstmt_prepared* txnstmt_prepared_init(void)
 {
     txnstmt_prepared* stmtprepared = NULL;
 
     stmtprepared = (txnstmt_prepared*)rmalloc0(sizeof(txnstmt_prepared));
-    if(NULL == stmtprepared)
+    if (NULL == stmtprepared)
     {
-        elog(RLOG_WARNING,"txnstmt prepared oom %s", strerror(errno));
+        elog(RLOG_WARNING, "txnstmt prepared oom %s", strerror(errno));
         return NULL;
     }
     rmemset0(stmtprepared, 0, '\0', sizeof(txnstmt_prepared));
@@ -29,33 +29,33 @@ txnstmt_prepared* txnstmt_prepared_init(void)
     return stmtprepared;
 }
 
-/* 释放 */
+/* Release */
 void txnstmt_prepared_free(void* data)
 {
-    uint32 index = 0;
+    uint32            index = 0;
     txnstmt_prepared* stmtprepared = NULL;
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }
 
     stmtprepared = (txnstmt_prepared*)data;
 
-    if(NULL != stmtprepared->preparedname)
+    if (NULL != stmtprepared->preparedname)
     {
         rfree(stmtprepared->preparedname);
     }
 
-    if(NULL != stmtprepared->preparedsql)
+    if (NULL != stmtprepared->preparedsql)
     {
         rfree(stmtprepared->preparedsql);
     }
 
-    if(NULL != stmtprepared->values)
+    if (NULL != stmtprepared->values)
     {
-        for(index = 0; index < stmtprepared->valuecnt; index++)
+        for (index = 0; index < stmtprepared->valuecnt; index++)
         {
-            if(NULL != stmtprepared->values[index])
+            if (NULL != stmtprepared->values[index])
             {
                 rfree(stmtprepared->values[index]);
             }
@@ -66,7 +66,6 @@ void txnstmt_prepared_free(void* data)
     if (stmtprepared->row)
     {
         heap_free_trans_result((pg_parser_translog_tbcolbase*)stmtprepared->row);
-        
     }
     rfree(stmtprepared);
     stmtprepared = NULL;

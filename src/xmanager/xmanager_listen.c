@@ -13,23 +13,23 @@
 #include "net/netserver.h"
 #include "xmanager/xmanager_listen.h"
 
-/* 接收新连接 */
-static bool xmanager_listen_netconn(void* netserver, rsocket  sock)
+/* Accept new connection */
+static bool xmanager_listen_netconn(void* netserver, rsocket sock)
 {
     xmanager_listen* xmgrlisten = NULL;
 
     xmgrlisten = (xmanager_listen*)netserver;
 
-    /* 将新连接加入到队列中 */
+    /* Add new connection to queue */
     return queue_put(xmgrlisten->authqueue, (void*)((uintptr_t)sock));
 }
 
-/* 初始化 */
+/* Initialize */
 xmanager_listen* xmanager_listen_init(void)
 {
-    char* unixdomain                    = NULL;
-    xmanager_listen* xmgrlisten  = NULL;
-    char unixdomainpath[512]            = { 0 };
+    char*            unixdomain = NULL;
+    xmanager_listen* xmgrlisten = NULL;
+    char             unixdomainpath[512] = {0};
 
     xmgrlisten = (xmanager_listen*)rmalloc0(sizeof(xmanager_listen));
     if (NULL == xmgrlisten)
@@ -38,18 +38,18 @@ xmanager_listen* xmanager_listen_init(void)
         return NULL;
     }
     rmemset0(xmgrlisten, 0, '\0', sizeof(xmanager_listen));
-    
-    /* netserver 重置 */
+
+    /* Reset netserver */
     if (false == netserver_reset(&xmgrlisten->base))
     {
         elog(RLOG_WARNING, "xmanager listen server init error");
         goto xmanager_listen_init_error;
     }
 
-    /* 设置 IP 地址监听 */
+    /* Set IP address to listen */
     netserver_host_set(&xmgrlisten->base, guc_getConfigOption(CFG_KEY_HOST), NETSERVER_HOSTTYPE_IP);
 
-    /* 设置 unixdomain */
+    /* Set unixdomain */
     unixdomain = guc_getConfigOption(CFG_KEY_UNIXDOMAINDIR);
     if (NULL == unixdomain || '\0' == unixdomain[0])
     {
@@ -57,18 +57,18 @@ xmanager_listen* xmanager_listen_init(void)
     }
     snprintf(unixdomainpath, 512, "%s/%s", unixdomain, RMANAGER_UNIXDOMAINPREFIX);
 
-    /* 设置 unixdomain 监听 */
+    /* Set unixdomain listener */
     netserver_host_set(&xmgrlisten->base, unixdomainpath, NETSERVER_HOSTTYPE_UNIXDOMAIN);
 
-    /* 设置 监听端口 */
+    /* Set listen port */
     netserver_port_set(&xmgrlisten->base, guc_getConfigOptionInt(CFG_KEY_PORT));
 
-    /* 设置类型 */
+    /* Set type */
     netserver_type_set(&xmgrlisten->base, NETSERVER_TYPE_XMANAGER);
 
     xmgrlisten->base.callback = xmanager_listen_netconn;
 
-    /* 启动监听 */
+    /* Start listening */
     if (false == netserver_create(&xmgrlisten->base))
     {
         elog(RLOG_WARNING, "xmanager create listen error");
@@ -85,24 +85,25 @@ xmanager_listen_init_error:
     return NULL;
 }
 
-/* 主流程 */
-void* xmanager_listen_main(void *args)
+/* Main loop */
+void* xmanager_listen_main(void* args)
 {
-    thrnode* thrnode_ptr             = NULL;
-    xmanager_listen* xmgrlisten  = NULL;
+    thrnode*         thrnode_ptr = NULL;
+    xmanager_listen* xmgrlisten = NULL;
 
-    thrnode_ptr = (thrnode *)args;
+    thrnode_ptr = (thrnode*)args;
     xmgrlisten = (xmanager_listen*)thrnode_ptr->data;
 
-    /* 查看状态 */
+    /* Check status */
     if (THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING, "xmanager listen stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING,
+             "xmanager listen stat exception, expected state is THRNODE_STAT_STARTING");
         thrnode_ptr->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set to working state */
     thrnode_ptr->stat = THRNODE_STAT_WORK;
 
     while (1)
@@ -113,7 +114,7 @@ void* xmanager_listen_main(void *args)
             break;
         }
 
-        /* 监听描述符 */
+        /* Listen on descriptors */
         if (false == netserver_desc(&xmgrlisten->base))
         {
             elog(RLOG_WARNING, "xmanager listen desc error");
@@ -126,7 +127,7 @@ void* xmanager_listen_main(void *args)
     return NULL;
 }
 
-/* 资源回收 */
+/* Resource cleanup */
 void xmanager_listen_destroy(void* args)
 {
     xmanager_listen* xmgrlisten = NULL;

@@ -1,34 +1,34 @@
 /**
  * @file pg_parser_thirdparty_encoding_convert.c
  * @author bytesync
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2023-08-10
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  */
 #include "pg_parser_os_incl.h"
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
 
-static void report_invalid_encoding(int32_t encoding, const char *mbstr, int32_t len)
+static void report_invalid_encoding(int32_t encoding, const char* mbstr, int32_t len)
 {
-    (void) (encoding);
-    (void) (mbstr);
-    (void) (len);
-    //printf("ERROR: invalid encoding: %d\n", encoding);
+    (void)(encoding);
+    (void)(mbstr);
+    (void)(len);
+    // printf("ERROR: invalid encoding: %d\n", encoding);
 }
 
 static void report_untranslatable_char(int32_t src_encoding, int32_t dest_encoding,
-                                       const char *mbstr, int32_t len)
+                                       const char* mbstr, int32_t len)
 {
-    (void) (src_encoding);
-    (void) (dest_encoding);
-    (void) (mbstr);
-    (void) (len);
-    //printf("ERROR: untranslatable char\n");
+    (void)(src_encoding);
+    (void)(dest_encoding);
+    (void)(mbstr);
+    (void)(len);
+    // printf("ERROR: untranslatable char\n");
 }
 /*
  * local2local: a generic single byte charset encoding
@@ -43,33 +43,33 @@ static void report_untranslatable_char(int32_t src_encoding, int32_t dest_encodi
  * code point for the target charset, or 0 if there is no equivalent code.
  */
 
-void local2local(const unsigned char *l,
-                 unsigned char *p,
-                 int32_t len,
-                 int32_t src_encoding,
-                 int32_t dest_encoding,
-                 const unsigned char *tab)
+void local2local(const unsigned char* l, unsigned char* p, int32_t len, int32_t src_encoding,
+                 int32_t dest_encoding, const unsigned char* tab)
 {
-    unsigned char c1,
-                c2;
+    unsigned char c1, c2;
 
     while (len > 0)
     {
         c1 = *l;
         if (c1 == 0)
         {
-            report_invalid_encoding(src_encoding, (const char *) l, len);
+            report_invalid_encoding(src_encoding, (const char*)l, len);
         }
         if (!IS_HIGHBIT_SET(c1))
+        {
             *p++ = c1;
+        }
         else
         {
             c2 = tab[c1 - HIGHBIT];
             if (c2)
+            {
                 *p++ = c2;
+            }
             else
-                report_untranslatable_char(src_encoding, dest_encoding,
-                                           (const char *) l, len);
+            {
+                report_untranslatable_char(src_encoding, dest_encoding, (const char*)l, len);
+            }
         }
         l++;
         len--;
@@ -85,18 +85,21 @@ void local2local(const unsigned char *l,
  * lc is the mule character set id for the local encoding
  * encoding is the PG identifier for the local encoding
  */
-void latin2mic(const unsigned char *l, unsigned char *p, int32_t len,
-          int32_t lc, int32_t encoding)
+void latin2mic(const unsigned char* l, unsigned char* p, int32_t len, int32_t lc, int32_t encoding)
 {
-    int32_t            c1;
+    int32_t c1;
 
     while (len > 0)
     {
         c1 = *l;
         if (c1 == 0)
-            report_invalid_encoding(encoding, (const char *) l, len);
+        {
+            report_invalid_encoding(encoding, (const char*)l, len);
+        }
         if (IS_HIGHBIT_SET(c1))
+        {
             *p++ = lc;
+        }
         *p++ = c1;
         l++;
         len--;
@@ -112,16 +115,18 @@ void latin2mic(const unsigned char *l, unsigned char *p, int32_t len,
  * lc is the mule character set id for the local encoding
  * encoding is the PG identifier for the local encoding
  */
-void mic2latin(const unsigned char *mic, unsigned char *p, int32_t len,
-          int32_t lc, int32_t encoding)
+void mic2latin(const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc,
+               int32_t encoding)
 {
-    int32_t            c1;
+    int32_t c1;
 
     while (len > 0)
     {
         c1 = *mic;
         if (c1 == 0)
-            report_invalid_encoding(MULE_INTERNAL, (const char *) mic, len);
+        {
+            report_invalid_encoding(MULE_INTERNAL, (const char*)mic, len);
+        }
         if (!IS_HIGHBIT_SET(c1))
         {
             /* easy for ASCII */
@@ -134,11 +139,13 @@ void mic2latin(const unsigned char *mic, unsigned char *p, int32_t len,
             int32_t l = character_mic_mblen(mic);
 
             if (len < l)
-                report_invalid_encoding(MULE_INTERNAL, (const char *) mic,
-                                        len);
+            {
+                report_invalid_encoding(MULE_INTERNAL, (const char*)mic, len);
+            }
             if (l != 2 || c1 != lc || !IS_HIGHBIT_SET(mic[1]))
-                report_untranslatable_char(MULE_INTERNAL, encoding,
-                                           (const char *) mic, len);
+            {
+                report_untranslatable_char(MULE_INTERNAL, encoding, (const char*)mic, len);
+            }
             *p++ = mic[1];
             mic += 2;
             len -= 2;
@@ -147,7 +154,6 @@ void mic2latin(const unsigned char *mic, unsigned char *p, int32_t len,
     *p = '\0';
 }
 
-
 /*
  * ASCII ---> MIC
  *
@@ -155,15 +161,17 @@ void mic2latin(const unsigned char *mic, unsigned char *p, int32_t len,
  * characters, here we must take a hard line because we don't know
  * the appropriate MIC equivalent.
  */
-void conv_ascii2mic(const unsigned char *l, unsigned char *p, int32_t len)
+void conv_ascii2mic(const unsigned char* l, unsigned char* p, int32_t len)
 {
-    int32_t            c1;
+    int32_t c1;
 
     while (len > 0)
     {
         c1 = *l;
         if (c1 == 0 || IS_HIGHBIT_SET(c1))
-            report_invalid_encoding(SQL_ASCII, (const char *) l, len);
+        {
+            report_invalid_encoding(SQL_ASCII, (const char*)l, len);
+        }
         *p++ = c1;
         l++;
         len--;
@@ -174,16 +182,17 @@ void conv_ascii2mic(const unsigned char *l, unsigned char *p, int32_t len)
 /*
  * MIC ---> ASCII
  */
-void conv_mic2ascii(const unsigned char *mic, unsigned char *p, int32_t len)
+void conv_mic2ascii(const unsigned char* mic, unsigned char* p, int32_t len)
 {
-    int32_t            c1;
+    int32_t c1;
 
     while (len > 0)
     {
         c1 = *mic;
         if (c1 == 0 || IS_HIGHBIT_SET(c1))
-            report_untranslatable_char(MULE_INTERNAL, SQL_ASCII,
-                                       (const char *) mic, len);
+        {
+            report_untranslatable_char(MULE_INTERNAL, SQL_ASCII, (const char*)mic, len);
+        }
         *p++ = c1;
         mic++;
         len--;
@@ -203,23 +212,22 @@ void conv_mic2ascii(const unsigned char *mic, unsigned char *p, int32_t len)
  * starting from 128 (0x80). each entry in the table holds the corresponding
  * code point for the mule encoding, or 0 if there is no equivalent code.
  */
-void latin2mic_with_table(const unsigned char *l,
-                          unsigned char *p,
-                          int32_t len,
-                          int32_t lc,
-                          int32_t encoding,
-                          const unsigned char *tab)
+void latin2mic_with_table(const unsigned char* l, unsigned char* p, int32_t len, int32_t lc,
+                          int32_t encoding, const unsigned char* tab)
 {
-    unsigned char c1,
-                c2;
+    unsigned char c1, c2;
 
     while (len > 0)
     {
         c1 = *l;
         if (c1 == 0)
-            report_invalid_encoding(encoding, (const char *) l, len);
+        {
+            report_invalid_encoding(encoding, (const char*)l, len);
+        }
         if (!IS_HIGHBIT_SET(c1))
+        {
             *p++ = c1;
+        }
         else
         {
             c2 = tab[c1 - HIGHBIT];
@@ -229,8 +237,9 @@ void latin2mic_with_table(const unsigned char *l,
                 *p++ = c2;
             }
             else
-                report_untranslatable_char(encoding, MULE_INTERNAL,
-                                           (const char *) l, len);
+            {
+                report_untranslatable_char(encoding, MULE_INTERNAL, (const char*)l, len);
+            }
         }
         l++;
         len--;
@@ -250,21 +259,18 @@ void latin2mic_with_table(const unsigned char *l,
  * starting from 128 (0x80). each entry in the table holds the corresponding
  * code point for the local charset, or 0 if there is no equivalent code.
  */
-void mic2latin_with_table(const unsigned char *mic,
-                          unsigned char *p,
-                          int32_t len,
-                          int32_t lc,
-                          int32_t encoding,
-                          const unsigned char *tab)
+void mic2latin_with_table(const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc,
+                          int32_t encoding, const unsigned char* tab)
 {
-    unsigned char c1,
-                c2;
+    unsigned char c1, c2;
 
     while (len > 0)
     {
         c1 = *mic;
         if (c1 == 0)
-            report_invalid_encoding(MULE_INTERNAL, (const char *) mic, len);
+        {
+            report_invalid_encoding(MULE_INTERNAL, (const char*)mic, len);
+        }
         if (!IS_HIGHBIT_SET(c1))
         {
             /* easy for ASCII */
@@ -277,14 +283,13 @@ void mic2latin_with_table(const unsigned char *mic,
             int32_t l = character_mic_mblen(mic);
 
             if (len < l)
-                report_invalid_encoding(MULE_INTERNAL, (const char *) mic,
-                                        len);
-            if (l != 2 || c1 != lc || !IS_HIGHBIT_SET(mic[1]) ||
-                (c2 = tab[mic[1] - HIGHBIT]) == 0)
             {
-                report_untranslatable_char(MULE_INTERNAL, encoding,
-                                           (const char *) mic, len);
-                break;            /* keep compiler quiet */
+                report_invalid_encoding(MULE_INTERNAL, (const char*)mic, len);
+            }
+            if (l != 2 || c1 != lc || !IS_HIGHBIT_SET(mic[1]) || (c2 = tab[mic[1] - HIGHBIT]) == 0)
+            {
+                report_untranslatable_char(MULE_INTERNAL, encoding, (const char*)mic, len);
+                break; /* keep compiler quiet */
             }
             *p++ = c2;
             mic += 2;
@@ -298,17 +303,14 @@ void mic2latin_with_table(const unsigned char *mic,
  * comparison routine for bsearch()
  * this routine is intended for combined UTF8 -> local code
  */
-static int32_t compare3(const void *p1, const void *p2)
+static int32_t compare3(const void* p1, const void* p2)
 {
-    uint32_t    s1,
-                s2,
-                d1,
-                d2;
+    uint32_t s1, s2, d1, d2;
 
-    s1 = *(const uint32_t *) p1;
-    s2 = *((const uint32_t *) p1 + 1);
-    d1 = ((const character_utf_to_local_combined *) p2)->utf1;
-    d2 = ((const character_utf_to_local_combined *) p2)->utf2;
+    s1 = *(const uint32_t*)p1;
+    s2 = *((const uint32_t*)p1 + 1);
+    d1 = ((const character_utf_to_local_combined*)p2)->utf1;
+    d2 = ((const character_utf_to_local_combined*)p2)->utf2;
     return (s1 > d1 || (s1 == d1 && s2 > d2)) ? 1 : ((s1 == d1 && s2 == d2) ? 0 : -1);
 }
 
@@ -316,29 +318,36 @@ static int32_t compare3(const void *p1, const void *p2)
  * comparison routine for bsearch()
  * this routine is intended for local code -> combined UTF8
  */
-static int32_t compare4(const void *p1, const void *p2)
+static int32_t compare4(const void* p1, const void* p2)
 {
-    uint32_t        v1,
-                v2;
+    uint32_t v1, v2;
 
-    v1 = *(const uint32_t *) p1;
-    v2 = ((const character_local_to_utf_combined *) p2)->code;
+    v1 = *(const uint32_t*)p1;
+    v2 = ((const character_local_to_utf_combined*)p2)->code;
     return (v1 > v2) ? 1 : ((v1 == v2) ? 0 : -1);
 }
 
 /*
  * store 32bit character representation into multibyte stream
  */
-static inline unsigned char *store_coded_char(unsigned char *dest, uint32_t code)
+static inline unsigned char* store_coded_char(unsigned char* dest, uint32_t code)
 {
     if (code & 0xff000000)
+    {
         *dest++ = code >> 24;
+    }
     if (code & 0x00ff0000)
+    {
         *dest++ = code >> 16;
+    }
     if (code & 0x0000ff00)
+    {
         *dest++ = code >> 8;
+    }
     if (code & 0x000000ff)
+    {
         *dest++ = code;
+    }
     return dest;
 }
 
@@ -348,23 +357,21 @@ static inline unsigned char *store_coded_char(unsigned char *dest, uint32_t code
  * 'l' is the length of the input character in bytes, and b1-b4 are
  * the input character's bytes.
  */
-static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree *rt,
-                                             int32_t l,
-                                             unsigned char b1,
-                                             unsigned char b2,
-                                             unsigned char b3,
-                                             unsigned char b4)
+static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree* rt, int32_t l,
+                                          unsigned char b1, unsigned char b2, unsigned char b3,
+                                          unsigned char b4)
 {
     if (l == 4)
     {
         /* 4-byte code */
 
         /* check code validity */
-        if (b1 < rt->b4_1_lower || b1 > rt->b4_1_upper ||
-            b2 < rt->b4_2_lower || b2 > rt->b4_2_upper ||
-            b3 < rt->b4_3_lower || b3 > rt->b4_3_upper ||
+        if (b1 < rt->b4_1_lower || b1 > rt->b4_1_upper || b2 < rt->b4_2_lower ||
+            b2 > rt->b4_2_upper || b3 < rt->b4_3_lower || b3 > rt->b4_3_upper ||
             b4 < rt->b4_4_lower || b4 > rt->b4_4_upper)
+        {
             return 0;
+        }
 
         /* perform lookup */
         if (rt->chars32)
@@ -378,7 +385,7 @@ static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree *rt,
         }
         else
         {
-            uint16_t        idx = rt->b4root;
+            uint16_t idx = rt->b4root;
 
             idx = rt->chars16[b1 + idx - rt->b4_1_lower];
             idx = rt->chars16[b2 + idx - rt->b4_2_lower];
@@ -391,15 +398,16 @@ static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree *rt,
         /* 3-byte code */
 
         /* check code validity */
-        if (b2 < rt->b3_1_lower || b2 > rt->b3_1_upper ||
-            b3 < rt->b3_2_lower || b3 > rt->b3_2_upper ||
-            b4 < rt->b3_3_lower || b4 > rt->b3_3_upper)
+        if (b2 < rt->b3_1_lower || b2 > rt->b3_1_upper || b3 < rt->b3_2_lower ||
+            b3 > rt->b3_2_upper || b4 < rt->b3_3_lower || b4 > rt->b3_3_upper)
+        {
             return 0;
+        }
 
         /* perform lookup */
         if (rt->chars32)
         {
-            uint32_t        idx = rt->b3root;
+            uint32_t idx = rt->b3root;
 
             idx = rt->chars32[b2 + idx - rt->b3_1_lower];
             idx = rt->chars32[b3 + idx - rt->b3_2_lower];
@@ -407,7 +415,7 @@ static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree *rt,
         }
         else
         {
-            uint16_t        idx = rt->b3root;
+            uint16_t idx = rt->b3root;
 
             idx = rt->chars16[b2 + idx - rt->b3_1_lower];
             idx = rt->chars16[b3 + idx - rt->b3_2_lower];
@@ -419,21 +427,23 @@ static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree *rt,
         /* 2-byte code */
 
         /* check code validity - first byte */
-        if (b3 < rt->b2_1_lower || b3 > rt->b2_1_upper ||
-            b4 < rt->b2_2_lower || b4 > rt->b2_2_upper)
+        if (b3 < rt->b2_1_lower || b3 > rt->b2_1_upper || b4 < rt->b2_2_lower ||
+            b4 > rt->b2_2_upper)
+        {
             return 0;
+        }
 
         /* perform lookup */
         if (rt->chars32)
         {
-            uint32_t        idx = rt->b2root;
+            uint32_t idx = rt->b2root;
 
             idx = rt->chars32[b3 + idx - rt->b2_1_lower];
             return rt->chars32[b4 + idx - rt->b2_2_lower];
         }
         else
         {
-            uint16_t        idx = rt->b2root;
+            uint16_t idx = rt->b2root;
 
             idx = rt->chars16[b3 + idx - rt->b2_1_lower];
             return rt->chars16[b4 + idx - rt->b2_2_lower];
@@ -445,15 +455,21 @@ static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree *rt,
 
         /* check code validity - first byte */
         if (b4 < rt->b1_lower || b4 > rt->b1_upper)
+        {
             return 0;
+        }
 
         /* perform lookup */
         if (rt->chars32)
+        {
             return rt->chars32[b4 + rt->b1root - rt->b1_lower];
+        }
         else
+        {
             return rt->chars16[b4 + rt->b1root - rt->b1_lower];
+        }
     }
-    return 0;                    /* shouldn't happen */
+    return 0; /* shouldn't happen */
 }
 
 /*
@@ -478,21 +494,17 @@ static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree *rt,
  *
  * See pg_wchar.h for more details about the data structures used here.
  */
-void UtfToLocal(const unsigned char *utf, int32_t len,
-                unsigned char *iso,
-                const character_mb_radix_tree *map,
-                const character_utf_to_local_combined *cmap,
-                int32_t cmapsize,
-                utf_local_conversion_func conv_func,
-                int32_t encoding)
+void UtfToLocal(const unsigned char* utf, int32_t len, unsigned char* iso,
+                const character_mb_radix_tree* map, const character_utf_to_local_combined* cmap,
+                int32_t cmapsize, utf_local_conversion_func conv_func, int32_t encoding)
 {
-    uint32_t        iutf;
-    int32_t            l;
-    const character_utf_to_local_combined *cp;
+    uint32_t                               iutf;
+    int32_t                                l;
+    const character_utf_to_local_combined* cp;
 
     if (!CHARACTER_VALID_ENCODING(encoding))
     {
-        //printf("ERROR, invalid encoding number: %d", encoding);
+        // printf("ERROR, invalid encoding number: %d", encoding);
     }
 
     for (; len > 0; len -= l)
@@ -504,14 +516,20 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
 
         /* "break" cases all represent errors */
         if (*utf == '\0')
+        {
             break;
+        }
 
         l = character_utf_mblen(utf);
         if (len < l)
+        {
             break;
+        }
 
         if (!character_utf8_islegal(utf, l))
+        {
             break;
+        }
 
         if (l == 1)
         {
@@ -541,33 +559,37 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
         }
         else
         {
-            //printf("ERROR, unsupported character length %d", l);
-            iutf = 0;            /* keep compiler quiet */
+            // printf("ERROR, unsupported character length %d", l);
+            iutf = 0; /* keep compiler quiet */
         }
         iutf = (b1 << 24 | b2 << 16 | b3 << 8 | b4);
 
         /* First, try with combined map if possible */
         if (cmap && len > l)
         {
-            const unsigned char *utf_save = utf;
-            int32_t            len_save = len;
-            int32_t            l_save = l;
+            const unsigned char* utf_save = utf;
+            int32_t              len_save = len;
+            int32_t              l_save = l;
 
             /* collect next character, same as above */
             len -= l;
 
             l = character_utf_mblen(utf);
             if (len < l)
+            {
                 break;
+            }
 
             if (!character_utf8_islegal(utf, l))
+            {
                 break;
+            }
 
             /* We assume ASCII character cannot be in combined map */
             if (l > 1)
             {
-                uint32_t        iutf2;
-                uint32_t        cutf[2];
+                uint32_t iutf2;
+                uint32_t cutf[2];
 
                 if (l == 2)
                 {
@@ -589,14 +611,14 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
                 }
                 else
                 {
-                    //printf("ERROR, unsupported character length %d", l);
-                    iutf2 = 0;    /* keep compiler quiet */
+                    // printf("ERROR, unsupported character length %d", l);
+                    iutf2 = 0; /* keep compiler quiet */
                 }
 
                 cutf[0] = iutf;
                 cutf[1] = iutf2;
-                cp = bsearch(cutf, cmap, cmapsize,
-                             sizeof(character_utf_to_local_combined), compare3);
+                cp = bsearch(cutf, cmap, cmapsize, sizeof(character_utf_to_local_combined),
+                             compare3);
 
                 if (cp)
                 {
@@ -614,7 +636,7 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
         /* Now check ordinary map */
         if (map)
         {
-            uint32_t        converted = conv_mb_radix_conv(map, l, b1, b2, b3, b4);
+            uint32_t converted = conv_mb_radix_conv(map, l, b1, b2, b3, b4);
 
             if (converted)
             {
@@ -626,7 +648,7 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
         /* if there's a conversion function, try that */
         if (conv_func)
         {
-            uint32_t        converted = (*conv_func) (iutf);
+            uint32_t converted = (*conv_func)(iutf);
 
             if (converted)
             {
@@ -636,13 +658,14 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
         }
 
         /* failed to translate this character */
-        report_untranslatable_char(UTF8, encoding,
-                                   (const char *) (utf - l), len);
+        report_untranslatable_char(UTF8, encoding, (const char*)(utf - l), len);
     }
 
     /* if we broke out of loop early, must be invalid input */
     if (len > 0)
-        report_invalid_encoding(UTF8, (const char *) utf, len);
+    {
+        report_invalid_encoding(UTF8, (const char*)utf, len);
+    }
 
     *iso = '\0';
 }
@@ -669,21 +692,17 @@ void UtfToLocal(const unsigned char *utf, int32_t len,
  *
  * See pg_wchar.h for more details about the data structures used here.
  */
-void LocalToUtf(const unsigned char *iso, int32_t len,
-                unsigned char *utf,
-                const character_mb_radix_tree *map,
-                const character_local_to_utf_combined *cmap,
-                int32_t cmapsize,
-                utf_local_conversion_func conv_func,
-                int32_t encoding)
+void LocalToUtf(const unsigned char* iso, int32_t len, unsigned char* utf,
+                const character_mb_radix_tree* map, const character_local_to_utf_combined* cmap,
+                int32_t cmapsize, utf_local_conversion_func conv_func, int32_t encoding)
 {
-    uint32_t iiso;
-    int32_t  l;
-    const character_local_to_utf_combined *cp;
+    uint32_t                               iiso;
+    int32_t                                l;
+    const character_local_to_utf_combined* cp;
 
     if (!CHARACTER_VALID_ENCODING(encoding))
     {
-        //printf("ERROR, invalid encoding number: %d", encoding);
+        // printf("ERROR, invalid encoding number: %d", encoding);
     }
 
     for (; len > 0; len -= l)
@@ -695,7 +714,9 @@ void LocalToUtf(const unsigned char *iso, int32_t len,
 
         /* "break" cases all represent errors */
         if (*iso == '\0')
+        {
             break;
+        }
 
         if (!IS_HIGHBIT_SET(*iso))
         {
@@ -705,13 +726,17 @@ void LocalToUtf(const unsigned char *iso, int32_t len,
             continue;
         }
 
-        l = character_encoding_verifymb(encoding, (const char *) iso, len);
+        l = character_encoding_verifymb(encoding, (const char*)iso, len);
         if (l < 0)
+        {
             break;
+        }
 
         /* collect coded char of length l */
         if (l == 1)
+        {
             b4 = *iso++;
+        }
         else if (l == 2)
         {
             b3 = *iso++;
@@ -732,14 +757,14 @@ void LocalToUtf(const unsigned char *iso, int32_t len,
         }
         else
         {
-            //printf("ERROR, unsupported character length %d", l);
-            iiso = 0;            /* keep compiler quiet */
+            // printf("ERROR, unsupported character length %d", l);
+            iiso = 0; /* keep compiler quiet */
         }
         iiso = (b1 << 24 | b2 << 16 | b3 << 8 | b4);
 
         if (map)
         {
-            uint32_t        converted = conv_mb_radix_conv(map, l, b1, b2, b3, b4);
+            uint32_t converted = conv_mb_radix_conv(map, l, b1, b2, b3, b4);
 
             if (converted)
             {
@@ -750,8 +775,8 @@ void LocalToUtf(const unsigned char *iso, int32_t len,
             /* If there's a combined character map, try that */
             if (cmap)
             {
-                cp = bsearch(&iiso, cmap, cmapsize,
-                             sizeof(character_local_to_utf_combined), compare4);
+                cp = bsearch(&iiso, cmap, cmapsize, sizeof(character_local_to_utf_combined),
+                             compare4);
 
                 if (cp)
                 {
@@ -765,7 +790,7 @@ void LocalToUtf(const unsigned char *iso, int32_t len,
         /* if there's a conversion function, try that */
         if (conv_func)
         {
-            uint32_t        converted = (*conv_func) (iiso);
+            uint32_t converted = (*conv_func)(iiso);
 
             if (converted)
             {
@@ -775,13 +800,14 @@ void LocalToUtf(const unsigned char *iso, int32_t len,
         }
 
         /* failed to translate this character */
-        report_untranslatable_char(encoding, UTF8,
-                                   (const char *) (iso - l), len);
+        report_untranslatable_char(encoding, UTF8, (const char*)(iso - l), len);
     }
 
     /* if we broke out of loop early, must be invalid input */
     if (len > 0)
-        report_invalid_encoding(encoding, (const char *) iso, len);
+    {
+        report_invalid_encoding(encoding, (const char*)iso, len);
+    }
 
     *utf = '\0';
 }

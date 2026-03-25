@@ -1,50 +1,50 @@
 #ifndef _XMANAGER_METRICASYNCMSG_H_
 #define _XMANAGER_METRICASYNCMSG_H_
 
-/* 消息超时时间 */
-#define XMANAGER_METRICASYNCHMSG_TIMEOUT              10000
+/* Message timeout */
+#define XMANAGER_METRICASYNCHMSG_TIMEOUT 10000
 
 typedef struct XMANAGER_METRICASYNCMSG
 {
-    /* 节点类型 */
-    xmanager_metricnodetype          type;
+    /* Node type */
+    xmanager_metricnodetype type;
 
-    /* 消息类型 */
-    xmanager_msg                     msgtype;
+    /* Message type */
+    xmanager_msg msgtype;
 
-    /* 结果, 0 成功, 1 失败 */
-    int8                                    result;
+    /* Result, 0 success, 1 failure */
+    int8 result;
 
-    /* 错误码 */
-    int                                     errcode;
+    /* Error code */
+    int errcode;
 
-    /* 节点名称 */
-    char*                                   name;
+    /* Node name */
+    char* name;
 
-    /* 错误消息 */
-    char*                                   errormsg;
+    /* Error message */
+    char* errormsg;
 } xmanager_metricasyncmsg;
 
 typedef struct XMANAGER_METRICASYNCMSGS
 {
-    /* 超时时间 */
-    int                                     timeout;
+    /* Timeout */
+    int timeout;
 
     /* xmanager_metricasyncmsg */
-    dlist*                                  msgs;
+    dlist* msgs;
 
     /* xmanager_metricasyncmsg */
-    dlist*                                  results;
+    dlist* results;
 } xmanager_metricasyncmsgs;
 
 extern xmanager_metricasyncmsg* xmanager_metricasyncmsg_init(void);
 
 extern xmanager_metricasyncmsgs* xmanager_metricasyncmsgs_init(void);
 
-/* 删除 metricasyncmsg */
+/* Delete metricasyncmsg */
 extern void xmanager_metricasyncmsg_destroy(xmanager_metricasyncmsg* xmetricasyncmsg);
 
-/* 删除 metricasyncmsg */
+/* Delete metricasyncmsg */
 extern void xmanager_metricasyncmsg_destroyvoid(void* args);
 
 extern void xmanager_metricasyncmsgs_destroy(xmanager_metricasyncmsgs* xmetricasyncmsgs);

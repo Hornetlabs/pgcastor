@@ -3,22 +3,21 @@
 
 typedef struct SNAPSHOT
 {
-    char*                   name;
-    TransactionId           xmin;
-    TransactionId           xmax;
-    HTAB*                   xids;
-}snapshot;
+    char*         name;
+    TransactionId xmin;
+    TransactionId xmax;
+    HTAB*         xids;
+} snapshot;
 
 typedef struct SNAPSHOT_XID
 {
-    TransactionId   xid;
+    TransactionId xid;
 } snapshot_xid;
 
+snapshot* snapshot_buildfromdb(PGconn* conn);
 
-snapshot* snapshot_buildfromdb(PGconn *conn);
+snapshot* snapshot_copy(snapshot* snap);
 
-snapshot *snapshot_copy(snapshot *snap);
-
-void snapshot_free(snapshot *snapshot);
+void snapshot_free(snapshot* snapshot);
 
 #endif

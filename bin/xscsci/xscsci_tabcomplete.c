@@ -9,145 +9,94 @@
 #include "app_c.h"
 #include "xscsci_tabcomplete.h"
 
-#define XSCSCI_WORD_BREAKS              " "
-#define completion_matches              rl_completion_matches
-#define XSCSCI_MATCHANY                 NULL
+#define XSCSCI_WORD_BREAKS " "
+#define completion_matches rl_completion_matches
+#define XSCSCI_MATCHANY NULL
 
-#define XSCSCI_VA_ARGS_NARGS_( \
-	_01,_02,_03,_04,_05,_06,_07,_08,_09,_10, \
-	_11,_12,_13,_14,_15,_16,_17,_18,_19,_20, \
-	_21,_22,_23,_24,_25,_26,_27,_28,_29,_30, \
-	_31,_32,_33,_34,_35,_36,_37,_38,_39,_40, \
-	_41,_42,_43,_44,_45,_46,_47,_48,_49,_50, \
-	_51,_52,_53,_54,_55,_56,_57,_58,_59,_60, \
-	_61,_62,_63,  N, ...) \
-	(N)
+#define XSCSCI_VA_ARGS_NARGS_(_01, _02, _03, _04, _05, _06, _07, _08, _09, _10, _11, _12, _13, \
+                              _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, \
+                              _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, \
+                              _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, \
+                              _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, N, ...)   \
+    (N)
 
+#define XSCSCI_VA_ARGS_NARGS(...)                                                                  \
+    XSCSCI_VA_ARGS_NARGS_(__VA_ARGS__, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, \
+                          48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31,  \
+                          30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13,  \
+                          12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 
-#define XSCSCI_VA_ARGS_NARGS(...) \
-	XSCSCI_VA_ARGS_NARGS_(__VA_ARGS__, \
-				   63,62,61,60,                   \
-				   59,58,57,56,55,54,53,52,51,50, \
-				   49,48,47,46,45,44,43,42,41,40, \
-				   39,38,37,36,35,34,33,32,31,30, \
-				   29,28,27,26,25,24,23,22,21,20, \
-				   19,18,17,16,15,14,13,12,11,10, \
-				   9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+/* first keyword */
+static const char* const m_commands[] = {"create", "alter", "remove", "drop", "init",  "edit",
+                                         "start",  "stop",  "reload", "info", "watch", "refresh",
+                                         "help",   "exit",  "quit",   "list", NULL};
 
+/*
+ * keywords after create progress
+ */
+static const char* const m_createprogresscommands[] = {"capture", NULL};
 
-/* 首个关键字 */
-static const char *const m_commands[] = {
-    "create", "alter", "remove", "drop",
-    "init", "edit", "start", "stop", "reload",
-    "info", "watch", "refresh",
-    "help", "exit", "quit","list",
-    NULL
-};
+/*
+ * keywords after create progress
+ */
+static const char* const m_createcommands[] = {"manager",   "pgreceivelog", "capture",
+                                               "integrate", "progress",     NULL};
 
-/* 
- * create progress后的关键字 
-*/
-static const char *const m_createprogresscommands[] = {
-    "capture",
-    NULL
-};
-
-/* 
- * create progress 后的关键字 
-*/
-static const char *const m_createcommands[] = {
-    "manager", "pgreceivelog",
-    "capture", "integrate", "progress",
-    NULL
-};
-
-/* 
- * alter 关键字后的内容 
-*/
+/*
+ * content after alter keyword
+ */
 /* alter */
-static const char *const m_altercommands[] = {
-    "progress", NULL
-};
+static const char* const m_altercommands[] = {"progress", NULL};
 
 /* alter progress */
-static const char *const m_alterprogresscommands[] = {
-    "add", "remove", NULL
-};
+static const char* const m_alterprogresscommands[] = {"add", "remove", NULL};
 
-/* remove 关键字后的内容 */
-static const char *const m_removecommands[] = {
-    "manager", "pgreceivelog",
-    "capture", "integrate",
-    NULL
-};
+/* content after remove keyword */
+static const char* const m_removecommands[] = {"manager", "pgreceivelog", "capture", "integrate",
+                                               NULL};
 
-/* drop 关键字后的内容 */
-static const char *const m_dropcommands[] = {
-    "manager", "pgreceivelog",
-    "capture", "integrate", "progress",
-    NULL
-};
+/* content after drop keyword */
+static const char* const m_dropcommands[] = {"manager",   "pgreceivelog", "capture",
+                                             "integrate", "progress",     NULL};
 
-/* init 关键字后的内容 */
-static const char *const m_initcommands[] = {
-    "manager", "pgreceivelog",
-    "capture", "integrate",
-    NULL
-};
+/* content after init keyword */
+static const char* const m_initcommands[] = {"manager", "pgreceivelog", "capture", "integrate",
+                                             NULL};
 
-/* edit 关键字后的内容 */
-static const char *const m_editcommands[] = {
-    "manager", "pgreceivelog",
-    "capture", "integrate",
-    NULL
-};
+/* content after edit keyword */
+static const char* const m_editcommands[] = {"manager", "pgreceivelog", "capture", "integrate",
+                                             NULL};
 
-/* start 关键字后的内容 */
-static const char *const m_startcommands[] = {
-    "manager", "pgreceivelog",
-    "capture", "integrate", "all",
-    NULL
-};
+/* content after start keyword */
+static const char* const m_startcommands[] = {"manager",   "pgreceivelog", "capture",
+                                              "integrate", "all",          NULL};
 
-/* stop 关键字后的内容 */
-static const char *const m_stopcommands[] = {
-    "manager", "pgreceivelog",
-    "capture", "integrate", "all",
-    NULL
-};
+/* content after stop keyword */
+static const char* const m_stopcommands[] = {"manager",   "pgreceivelog", "capture",
+                                             "integrate", "all",          NULL};
 
-/* reload 关键字后的内容 */
-static const char *const m_reloadcommands[] = {
-    "manager", "pgreceivelog",
-    "capture", "integrate",
-    NULL
-};
+/* content after reload keyword */
+static const char* const m_reloadcommands[] = {"manager", "pgreceivelog", "capture", "integrate",
+                                               NULL};
 
-/* info 关键字后的内容 */
-static const char *const m_infocommands[] = {
-    "manager", "pgreceivelog",
-    "capture", "integrate", "progress", "all",
-    NULL
-};
+/* content after info keyword */
+static const char* const m_infocommands[] = {"manager",  "pgreceivelog", "capture", "integrate",
+                                             "progress", "all",          NULL};
 
-/* watch 关键字后的内容 */
-static const char *const m_watchcommands[] = {
-    "manager", "pgreceivelog",
-    "capture", "integrate", "progress", "all",
-    NULL
-};
+/* content after watch keyword */
+static const char* const m_watchcommands[] = {"manager",  "pgreceivelog", "capture", "integrate",
+                                              "progress", "all",          NULL};
 
-/* help 关键字后的内容 */
+/* content after help keyword */
 
+static const char*        m_tabcompleteconst = NULL;
+static const char* const* m_commandslist = NULL;
 
-static const char* m_tabcompleteconst           = NULL;
-static const char* const* m_commandslist        = NULL;
-
-/* 单词匹配 */
-static bool xscsci_tabcomplete_wordmatches(const char *pattern, const char *word)
+/* word matching */
+static bool xscsci_tabcomplete_wordmatches(const char* pattern, const char* word)
 {
-    size_t wordlen      = 0;
-    const char* cptr    = NULL;
+    size_t      wordlen = 0;
+    const char* cptr = NULL;
 
     if (NULL == pattern)
     {
@@ -155,7 +104,7 @@ static bool xscsci_tabcomplete_wordmatches(const char *pattern, const char *word
     }
 
     wordlen = strlen(word);
-    while(1)
+    while (1)
     {
         cptr = pattern;
         while ('\0' != *cptr)
@@ -163,7 +112,7 @@ static bool xscsci_tabcomplete_wordmatches(const char *pattern, const char *word
             cptr++;
         }
 
-        /* 匹配上了 */
+        /* matched */
         if (wordlen == (cptr - pattern) && 0 == strncasecmp(word, pattern, wordlen))
         {
             return true;
@@ -175,16 +124,14 @@ static bool xscsci_tabcomplete_wordmatches(const char *pattern, const char *word
     return false;
 }
 
-/* 查看在前面的输入中是否存在 */
-static bool xscsci_tabcomplete_matchesimpl(int prevwordscnt,
-                                           char **prevwords,
-                                           int narg,...)
+/* check if exists in previous input */
+static bool xscsci_tabcomplete_matchesimpl(int prevwordscnt, char** prevwords, int narg, ...)
 {
-    int index       = 0;
-    const char *arg = NULL;
-    va_list args;
+    int         index = 0;
+    const char* arg = NULL;
+    va_list     args;
 
-    /* 强制关联, 若不相同, 那么退出 */
+    /* force association, if not equal then exit */
     if (prevwordscnt != narg)
     {
         return false;
@@ -192,10 +139,10 @@ static bool xscsci_tabcomplete_matchesimpl(int prevwordscnt,
 
     va_start(args, narg);
 
-    /* 遍历输入与 prevwords 匹配 */
+    /* traverse input and match with prevwords */
     for (index = 0; index < narg; index++)
     {
-        arg = va_arg(args, const char *);
+        arg = va_arg(args, const char*);
 
         if (false == xscsci_tabcomplete_wordmatches(arg, prevwords[narg - index - 1]))
         {
@@ -208,25 +155,25 @@ static bool xscsci_tabcomplete_matchesimpl(int prevwordscnt,
     return true;
 }
 
-
-#define XSCSCI_TABCOMPLETE_MATCHES(...) \
-    xscsci_tabcomplete_matchesimpl(prevwordcnt, prevwords, XSCSCI_VA_ARGS_NARGS(__VA_ARGS__), __VA_ARGS__)
+#define XSCSCI_TABCOMPLETE_MATCHES(...)                                                       \
+    xscsci_tabcomplete_matchesimpl(prevwordcnt, prevwords, XSCSCI_VA_ARGS_NARGS(__VA_ARGS__), \
+                                   __VA_ARGS__)
 
 /*
- * 获取已经输入的单词个数
-*/
-static char** xscsci_tabcomplete_getprevwords(int point, char **buffer, int *nwords)
+ * get count of words already entered
+ */
+static char** xscsci_tabcomplete_getprevwords(int point, char** buffer, int* nwords)
 {
-    int index           = 0;
-    int wstart          = 0;
-    int wend            = 0;
-    int wordsfound      = 0;
-    char* buf           = NULL;
-    char* outptr        = NULL;
-    char** prevwords    = NULL;
+    int    index = 0;
+    int    wstart = 0;
+    int    wend = 0;
+    int    wordsfound = 0;
+    char*  buf = NULL;
+    char*  outptr = NULL;
+    char** prevwords = NULL;
 
-    /* 
-     * 历史记录也需要补充到此处, 暂不支持此场景
+    /*
+     * history records also need to be added here, this scenario is not supported yet
      */
     buf = rl_line_buffer;
 
@@ -237,7 +184,7 @@ static char** xscsci_tabcomplete_getprevwords(int point, char **buffer, int *nwo
         return NULL;
     }
 
-    /* 预申请词空间 */
+    /* pre-allocate word space */
     prevwords = (char**)malloc(point * sizeof(char*));
     if (NULL == prevwords)
     {
@@ -246,8 +193,8 @@ static char** xscsci_tabcomplete_getprevwords(int point, char **buffer, int *nwo
     }
     memset(prevwords, '\0', point * sizeof(char*));
 
-    /* 预申请 buffer 空间 */
-    *buffer = outptr = (char *) malloc(point * 2);
+    /* pre-allocate buffer space */
+    *buffer = outptr = (char*)malloc(point * 2);
     if (NULL == *buffer)
     {
         printf("tab complete get prev words out of memory %s\n", strerror(errno));
@@ -255,11 +202,13 @@ static char** xscsci_tabcomplete_getprevwords(int point, char **buffer, int *nwo
     }
     memset(*buffer, '\0', point * 2);
 
-    /* 匹配到最后一个单词的开始 */
+    /* match to the start of the last word */
     for (index = point - 1; index >= 0; index--)
     {
         if (strchr(XSCSCI_WORD_BREAKS, buf[index]))
+        {
             break;
+        }
     }
     point = index;
 
@@ -267,10 +216,10 @@ static char** xscsci_tabcomplete_getprevwords(int point, char **buffer, int *nwo
     {
         wend = -1;
 
-        /* 过滤掉空格 */
+        /* filter out spaces */
         for (index = point; index >= 0; index--)
         {
-            if (!isspace((unsigned char) buf[index]))
+            if (!isspace((unsigned char)buf[index]))
             {
                 wend = index;
                 break;
@@ -282,7 +231,7 @@ static char** xscsci_tabcomplete_getprevwords(int point, char **buffer, int *nwo
             break;
         }
 
-        /* 单词的开始位置 */
+        /* word start position */
         for (wstart = wend; wstart > 0; wstart--)
         {
             if (strchr(XSCSCI_WORD_BREAKS, buf[wstart - 1]))
@@ -297,7 +246,7 @@ static char** xscsci_tabcomplete_getprevwords(int point, char **buffer, int *nwo
         outptr += index;
         *outptr++ = '\0';
 
-        /* 重新计算起始位置 */
+        /* recalculate starting position */
         point = wstart - 1;
     }
 
@@ -305,8 +254,8 @@ static char** xscsci_tabcomplete_getprevwords(int point, char **buffer, int *nwo
     return prevwords;
 }
 
-/* 生成指定常量补全 */
-static char *xscsci_tabcomplete_fromconst(const char *text, int state)
+/* generate specified constant completion */
+static char* xscsci_tabcomplete_fromconst(const char* text, int state)
 {
     if (0 == state)
     {
@@ -319,13 +268,13 @@ static char *xscsci_tabcomplete_fromconst(const char *text, int state)
 }
 
 /*
- * 用户没有输入时的补全
-*/
-static char* xscsci_tabcomplete_matches(const char *text, int state)
+ * completion when user has no input
+ */
+static char* xscsci_tabcomplete_matches(const char* text, int state)
 {
-    static int index;
+    static int  index;
     const char* item = NULL;
-    if ( 0 == state)
+    if (0 == state)
     {
         index = 0;
     }
@@ -349,14 +298,14 @@ static char* xscsci_tabcomplete_matches(const char *text, int state)
 }
 
 /*
- * tab 键补全
-*/
-static char **xscsci_tabcomplete_completion(const char *text, int start, int end)
+ * tab key completion
+ */
+static char** xscsci_tabcomplete_completion(const char* text, int start, int end)
 {
-    int prevwordcnt                     = 0;
-    char** prevwords                    = NULL;
-    char* wordsbuffer                   = NULL;
-    char** matches                       = NULL;
+    int    prevwordcnt = 0;
+    char** prevwords = NULL;
+    char*  wordsbuffer = NULL;
+    char** matches = NULL;
 
     (void)end;
 
@@ -425,7 +374,7 @@ static char **xscsci_tabcomplete_completion(const char *text, int start, int end
     }
     else if (true == XSCSCI_TABCOMPLETE_MATCHES("ALTER", "PROGRESS"))
     {
-        /* TODO 后期扩展, 向 manager 获取数据 */
+        /* TODO: future extension, get data from manager */
     }
     else if (true == XSCSCI_TABCOMPLETE_MATCHES("ALTER", "PROGRESS", XSCSCI_MATCHANY))
     {
@@ -458,11 +407,10 @@ static char **xscsci_tabcomplete_completion(const char *text, int start, int end
     return matches;
 }
 
-/* readline 初始化 */
+/* readline initialization */
 void xscsci_tabcomplete_initreadline(void)
 {
     rl_readline_name = "xscsci";
     rl_attempted_completion_function = xscsci_tabcomplete_completion;
     rl_basic_word_break_characters = XSCSCI_WORD_BREAKS;
 }
-

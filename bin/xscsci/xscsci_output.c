@@ -7,16 +7,16 @@
 #include "xsynch_fe.h"
 #include "xscsci_output.h"
 
-/* 输出结果 */
-void xscsci_output(int rownumber, xsynchrow *rows)
+/* output results */
+void xscsci_output(int rownumber, xsynchrow* rows)
 {
-    int colcnt          = 0;
-    int indexcnt        = 0;
-    int indexrow        = 0;
-    int maxcollen       = 0;
-    int *colwidth       = NULL;
-    xsynchpair* col     = NULL;
-    const char* value   = NULL;
+    int         colcnt = 0;
+    int         indexcnt = 0;
+    int         indexrow = 0;
+    int         maxcollen = 0;
+    int*        colwidth = NULL;
+    xsynchpair* col = NULL;
+    const char* value = NULL;
 
     if (rownumber <= 0)
     {
@@ -25,16 +25,16 @@ void xscsci_output(int rownumber, xsynchrow *rows)
 
     colcnt = rows[0].columncnt;
 
-    /* 计算每一列的最大宽度 */
+    /* calculate maximum width for each column */
     colwidth = (int*)malloc((sizeof(int) * colcnt));
     memset(colwidth, 0, (sizeof(int) * colcnt));
 
     for (indexcnt = 0; indexcnt < colcnt; indexcnt++)
     {
-        /* 先用 key 的宽度初始化 */
+        /* initialize with key width first */
         maxcollen = rows[0].columns[indexcnt].keylen;
 
-        /* 搜索所有行的最大 value 长度 */
+        /* search for maximum value length across all rows */
         for (indexrow = 0; indexrow < rownumber; indexrow++)
         {
             col = &rows[indexrow].columns[indexcnt];
@@ -53,7 +53,7 @@ void xscsci_output(int rownumber, xsynchrow *rows)
         colwidth[indexcnt] = maxcollen;
     }
 
-    /* 输出列名 */
+    /* output column names */
     for (indexcnt = 0; indexcnt < colcnt; indexcnt++)
     {
         col = &rows[0].columns[indexcnt];
@@ -62,11 +62,11 @@ void xscsci_output(int rownumber, xsynchrow *rows)
         if (indexcnt != colcnt - 1)
         {
             printf("|");
-        } 
+        }
     }
     printf("\n");
 
-    /* 输出分割线 */
+    /* output separator line */
     for (indexcnt = 0; indexcnt < colcnt; indexcnt++)
     {
         int i = 0;
@@ -81,7 +81,7 @@ void xscsci_output(int rownumber, xsynchrow *rows)
     }
     printf("\n");
 
-    /* 输出所有行的数据 */
+    /* output all row data */
     for (indexrow = 0; indexrow < rownumber; indexrow++)
     {
         for (indexcnt = 0; indexcnt < colcnt; indexcnt++)
@@ -94,7 +94,7 @@ void xscsci_output(int rownumber, xsynchrow *rows)
             if (indexcnt != colcnt - 1)
             {
                 printf("|");
-            } 
+            }
         }
         printf("\n");
     }

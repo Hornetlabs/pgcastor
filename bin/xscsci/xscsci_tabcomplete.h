@@ -1,7 +1,7 @@
 #ifndef _XSCSCI_TABCOMPLETE_H_
 #define _XSCSCI_TABCOMPLETE_H_
 
-/* readline 初始化 */
+/* initialize readline */
 extern void xscsci_tabcomplete_initreadline(void);
 
 #endif

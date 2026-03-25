@@ -1,23 +1,23 @@
 #ifndef _TRANSCACHE_H
 #define _TRANSCACHE_H
 
-/* relfilnode hash 表的 key 和 entry */
+/* relfilenode hash table key and entry */
 typedef struct RELFILENODE2OID
 {
-    RelFileNode             relfilenode;
-    Oid                     oid;
+    RelFileNode relfilenode;
+    Oid         oid;
 } relfilenode2oid;
 
 typedef struct TXN_SYSDICT
 {
     pg_parser_translog_tbcol_values* colvalues;
-    void *convert_colvalues;
+    void*                            convert_colvalues;
 } txn_sysdict;
 
 typedef struct CHECKPOINTNODE
 {
-    TransactionId           xid;
-    XLogRecPtr              redolsn;
+    TransactionId          xid;
+    XLogRecPtr             redolsn;
     struct CHECKPOINTNODE* next;
     struct CHECKPOINTNODE* prev;
 } checkpointnode;
@@ -28,75 +28,70 @@ typedef struct CHECKPOINTS
     checkpointnode* tail;
 } checkpoints;
 
-
 typedef struct TRANSCACHE
 {
-    /* stmt缓存使用的大小 */
-    uint64                      totalsize;
+    /* total size used by statement cache */
+    uint64 totalsize;
 
-    /* capture_buffer      事务缓存占用的空间 */
-    uint64                      capture_buffer;
-
-    /* 
-     * 维护逻辑
-     *  chkpts 为链表结构，其中 head 指向首个 checkpoint， tail 指向最后一个 checkpoint
-     *      当 parser 线程解析到 checkpoint 时，增加一个节点到 chkpts 中。
-     *      在 序列化 线程中当 restartlsn 更新后，那么计算是否应该删除 chkpts 中的某些节点，
-     *          当需要删除节点时，那么同时清理 fpwcache 中的数据
-     */
-    checkpoints*         chkpts;
-    txn_dlist*           transdlist;
-    HTAB*                       by_txns;            /* 待提交事务缓存, key: transactionid, entry: txn              */
-
-    /* fpw 缓存 */
-    HTAB*                       by_fpwtuples;       /* 全页写tuple保存的哈希表 */
-    List*                       fpwtupleslist;      /* 含有哈希key和lsn的链表 */
-
-    cache_sysdicts*      sysdicts;           /* 系统字典             */
+    /* space occupied by capture_buffer transaction cache */
+    uint64 capture_buffer;
 
     /*
-     * 同步数据集
+     * Maintenance logic:
+     *  chkpts is a linked list where head points to the first checkpoint and tail to the last
+     *      When parser thread parses a checkpoint, add a node to chkpts.
+     *      In the serialization thread, after restartlsn is updated, check whether to remove
+     *          nodes from chkpts; when removing nodes, also clean fpwcache data.
      */
-    /* 同步表规则 */
-    List*                       tableincludes;
+    checkpoints* chkpts;
+    txn_dlist*   transdlist;
+    HTAB*        by_txns; /* pending transaction cache, key: transactionid, entry: txn */
 
-    /* 同步排除表规则 */
-    List*                       tableexcludes;
+    /* FPW (full page write) cache */
+    HTAB* by_fpwtuples;  /* hash table for storing full page write tuples */
+    List* fpwtupleslist; /* linked list of hash keys and lsn */
 
-    /* 新增表规则 */
-    List*                       addtablepattern;
+    cache_sysdicts* sysdicts; /* system dictionary cache */
 
     /*
-     * 同步数据集,                           relid
-     *  根据 tableincludes/tableexcludes 和 运行时 tableaddpattern 生成的同步数据集合
-     *  程序刚启动时由 tableincludes 和 tableexcludes 生成初始同步数据集
-     *  在运行过程中, 当 新创建 表时, 新创建的表满足 tableaddpattern 规则时 则将新创建的表加入到 同步数据集中
+     * Sync dataset
      */
-    HTAB*                       hsyncdataset;
+    /* table include rules */
+    List* tableincludes;
+
+    /* table exclude rules */
+    List* tableexcludes;
+
+    /* new table pattern rules */
+    List* addtablepattern;
 
     /*
-    * 导致事务设置为 filter 的数据集合
-    *    Key:Oid
-    *    Value: filter_oid2datasetnode
-    */
-    HTAB*                       htxnfilterdataset;
+     * Sync dataset keyed by relid
+     *  Generated from tableincludes/tableexcludes and runtime tableaddpattern
+     *  At startup, initial sync dataset is generated from tableincludes and tableexcludes
+     *  During runtime, when new tables match tableaddpattern rules, they are added to the sync
+     * dataset
+     */
+    HTAB* hsyncdataset;
+
+    /*
+     * Dataset that causes transactions to be filtered
+     *    Key: Oid
+     *    Value: filter_oid2datasetnode
+     */
+    HTAB* htxnfilterdataset;
 } transcache;
 
-typedef transcache       txnscontext;
+typedef transcache txnscontext;
 
-extern void transcache_dlist_remove(void* in_ctx,
-                                    txn* txn,
-                                    bool* brestart,
-                                    XLogRecPtr* restartlsn,
-                                    bool* bconfirm,
-                                    XLogRecPtr* confirmlsn,
-                                    bool bset);
+extern void transcache_dlist_remove(void* in_ctx, txn* txn, bool* brestart, XLogRecPtr* restartlsn,
+                                    bool* bconfirm, XLogRecPtr* confirmlsn, bool bset);
 
-extern txn *transcache_getTXNByXid(void* in_ctx, uint64_t xid);
+extern txn* transcache_getTXNByXid(void* in_ctx, uint64_t xid);
 
-extern txn *transcache_getTXNByXidFind(transcache* transcache, uint64_t xid);
+extern txn* transcache_getTXNByXidFind(transcache* transcache, uint64_t xid);
 
-extern void transcache_removeTXNByXid(transcache * in_transcache, uint64_t xid);
+extern void transcache_removeTXNByXid(transcache* in_transcache, uint64_t xid);
 
 bool transcache_refreshlsn(void* in_ctx, txn* txn);
 
@@ -108,24 +103,24 @@ extern void transcache_sysdict_free(txn* txn);
 
 extern void transcache_free(transcache* transcache);
 
-/* 获取数据库的标识 */
+/* get database oid */
 extern Oid transcache_getdboid(void* in_transcache);
 
-/* 获取数据库的名称 */
+/* get database name */
 extern char* transcache_getdbname(Oid dbid, void* in_transcache);
 
-/* 获取namespace数据 */
+/* get namespace data */
 extern void* transcache_getnamespace(Oid oid, void* in_transcache);
 
-/* 获取class数据 */
+/* get class data */
 extern void* transcache_getclass(Oid oid, void* in_transcache);
 
-/* 获取attribute数据 */
+/* get attribute data */
 extern void* transcache_getattributes(Oid oid, void* in_transcache);
 
 extern void* transcache_getindex(Oid oid, void* in_transcache);
 
-/* 获取type数据 */
+/* get type data */
 extern void* transcache_gettype(Oid oid, void* in_transcache);
 
 #endif

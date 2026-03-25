@@ -1,7 +1,7 @@
 /**
  * @file                pg_parser_zones_mideast_all.h
  * @author              ByteSynch
- * @brief               定义所有中东时区的名称
+ * @brief               Define all Middle East timezone names
  * @version             0.1
  * @date                2023-09-18
  *

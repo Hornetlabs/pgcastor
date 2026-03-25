@@ -12,38 +12,37 @@
 #include "catalog/catalog.h"
 #include "catalog/relmapfile.h"
 
-
-/* 将 relmap 应用到 hash 中 */
-void relmapfile_catalogdata2transcache(cache_sysdicts* sysdicts,
-                                                catalogdata* catalogdata)
+/* Apply relmap to hash */
+void relmapfile_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogdata)
 {
-    int index = 0;
-    RelFileNode relfilenode = { 0 };
-    replmapfile* relmapfile = NULL;
+    int                  index = 0;
+    RelFileNode          relfilenode = {0};
+    replmapfile*         relmapfile = NULL;
     catalog_class_value* classInHash = NULL;
-    relfilenode2oid* prelfilenode2oid = NULL;
+    relfilenode2oid*     prelfilenode2oid = NULL;
 
-    if(NULL == sysdicts)
+    if (NULL == sysdicts)
     {
         return;
     }
 
-    if(CATALOG_TYPE_RELMAPFILE != catalogdata->type)
+    if (CATALOG_TYPE_RELMAPFILE != catalogdata->type)
     {
         elog(RLOG_ERROR, "xsynch logical error");
     }
     relmapfile = (replmapfile*)catalogdata->catalog;
 
-    for(index = 0; index < relmapfile->num; index++)
+    for (index = 0; index < relmapfile->num; index++)
     {
-        /* 根据 oid 在 by_class 中获取 class 数据，然后更改 class 中的 relfilenode */
-        classInHash = hash_search(sysdicts->by_class, &(relmapfile->mapping + index)->mapoid, HASH_FIND, NULL);
-        if(NULL == classInHash)
+        /* Get class data from by_class by oid, then change relfilenode in class */
+        classInHash = hash_search(sysdicts->by_class, &(relmapfile->mapping + index)->mapoid,
+                                  HASH_FIND, NULL);
+        if (NULL == classInHash)
         {
             continue;
         }
 
-        if(classInHash->class->relfilenode == (relmapfile->mapping + index)->mapfilenode)
+        if (classInHash->class->relfilenode == (relmapfile->mapping + index)->mapfilenode)
         {
             continue;
         }
@@ -54,22 +53,21 @@ void relmapfile_catalogdata2transcache(cache_sysdicts* sysdicts,
 
         classInHash->class->relfilenode = (relmapfile->mapping + index)->mapfilenode;
 
-        /* 在格式化时，by_relfilenode为空 */
-        if(NULL != sysdicts->by_relfilenode)
+        /* by_relfilenode is empty during formatting */
+        if (NULL != sysdicts->by_relfilenode)
         {
-            /* 更改 relfilenode2oid */
+            /* Update relfilenode2oid */
             hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_REMOVE, NULL);
 
-            /* 添加新的 */
+            /* Add new */
             relfilenode.relNode = classInHash->class->relfilenode;
-            prelfilenode2oid = hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, NULL);
-            if(NULL == prelfilenode2oid)
+            prelfilenode2oid =
+                hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, NULL);
+            if (NULL == prelfilenode2oid)
             {
                 elog(RLOG_ERROR, "put relfilenode2oid hash error, %u.%u.%u, oid:%u",
-                                    relfilenode.spcNode,
-                                    relfilenode.dbNode,
-                                    relfilenode.relNode,
-                                    classInHash->class->oid);
+                     relfilenode.spcNode, relfilenode.dbNode, relfilenode.relNode,
+                     classInHash->class->oid);
             }
             rmemcpy1(&prelfilenode2oid->relfilenode, 0, &relfilenode, sizeof(RelFileNode));
             prelfilenode2oid->oid = classInHash->class->oid;
@@ -77,30 +75,27 @@ void relmapfile_catalogdata2transcache(cache_sysdicts* sysdicts,
     }
 }
 
-
-
-/* 释放 */
+/* Release */
 void relmapfile_catalogdatafree(catalogdata* catalogdata)
 {
     replmapfile* relmapfile = NULL;
-    if(NULL == catalogdata)
+    if (NULL == catalogdata)
     {
         return;
     }
 
-    if(NULL == catalogdata->catalog)
+    if (NULL == catalogdata->catalog)
     {
         rfree(catalogdata);
         return;
     }
 
-    /* catalog 内存释放 */
+    /* Catalog memory release */
     relmapfile = (replmapfile*)catalogdata->catalog;
-    if(NULL != relmapfile->mapping)
+    if (NULL != relmapfile->mapping)
     {
         rfree(relmapfile->mapping);
     }
     rfree(catalogdata->catalog);
     rfree(catalogdata);
 }
-

@@ -7,7 +7,7 @@ typedef struct TASK_REFRESH_P2CSHARDING
     queue*                   taskqueue;
 } task_refresh_p2csharding;
 
-extern task_refresh_p2csharding *refresh_p2csharding_init(void);
+extern task_refresh_p2csharding* refresh_p2csharding_init(void);
 
 void* refresh_p2csharding_main(void* args);
 

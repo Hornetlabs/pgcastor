@@ -17,10 +17,9 @@ commit_stmt* txnstmt_commit_init(void)
     return endstmt;
 }
 
-
 void txnstmt_commit_free(void* data)
 {
-    if(NULL == data)
+    if (NULL == data)
     {
         return;
     }

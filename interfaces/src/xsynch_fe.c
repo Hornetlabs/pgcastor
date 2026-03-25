@@ -20,36 +20,34 @@ typedef void (*commandfuncfree)(xsynch_cmd* cmd);
 
 typedef struct XSYNCH_COMMANDOPS
 {
-    xsynch_cmdtag                   type;
-    char*                           desc;
-    commandfuncfree                 free;
+    xsynch_cmdtag   type;
+    char*           desc;
+    commandfuncfree free;
 } xsynch_commandops;
 
 static bool XSynchParseoptions(xsynchconn* conn, char* connstr)
 {
-    bool foundsplit = false;
-    int index       = 0;
-    int connstrlen  = 0;
-    char* key       = NULL;
-    char* value     = NULL;
+    bool  foundsplit = false;
+    int   index = 0;
+    int   connstrlen = 0;
+    char* key = NULL;
+    char* value = NULL;
 
     connstrlen = strlen(connstr);
 
     while (index < connstrlen)
     {
-        while (' ' == connstr[index]
-               || '\t' == connstr[index]
-               || '\r' == connstr[index]
-               || '\n' == connstr[index])
+        while (' ' == connstr[index] || '\t' == connstr[index] || '\r' == connstr[index] ||
+               '\n' == connstr[index])
         {
             index++;
             continue;
         }
 
-        /* 拆解 key */
+        /* parse key */
         foundsplit = false;
         key = connstr + index;
-        while(index < connstrlen)
+        while (index < connstrlen)
         {
             if (' ' != connstr[index] && '=' != connstr[index])
             {
@@ -77,13 +75,11 @@ static bool XSynchParseoptions(xsynchconn* conn, char* connstr)
             break;
         }
 
-        /* 获取 value */
-        while(index < connstrlen)
+        /* get value */
+        while (index < connstrlen)
         {
-            while (' ' == connstr[index]
-               || '\t' == connstr[index]
-               || '\r' == connstr[index]
-               || '\n' == connstr[index])
+            while (' ' == connstr[index] || '\t' == connstr[index] || '\r' == connstr[index] ||
+                   '\n' == connstr[index])
             {
                 index++;
                 continue;
@@ -91,9 +87,9 @@ static bool XSynchParseoptions(xsynchconn* conn, char* connstr)
             break;
         }
 
-        /* 拆解值 */
+        /* parse value */
         value = connstr + index;
-        while(index < connstrlen)
+        while (index < connstrlen)
         {
             if (' ' != connstr[index])
             {
@@ -106,7 +102,7 @@ static bool XSynchParseoptions(xsynchconn* conn, char* connstr)
             break;
         }
 
-        /* 查看 key 是否符合规则 */
+        /* check if key matches rule */
         if (0 == strcmp("host", key))
         {
             memcpy(conn->host, value, strlen(value));
@@ -159,7 +155,7 @@ static bool XSynchParseoptions(xsynchconn* conn, char* connstr)
     return true;
 }
 
-/* 初始化xsynch_result */
+/* initialize xsynch_result */
 void* XsynchResultInit(void)
 {
     xsynch_result* result = NULL;
@@ -176,7 +172,7 @@ void* XsynchResultInit(void)
     return result;
 }
 
-/* 重置xsynch_result内容 */
+/* reset xsynch_result content */
 void XsynchResultReset(void* in_result)
 {
     xsynch_result* result = NULL;
@@ -187,7 +183,6 @@ void XsynchResultReset(void* in_result)
     {
         return;
     }
-    
 
     if (NULL != result->rows)
     {
@@ -200,7 +195,7 @@ void XsynchResultReset(void* in_result)
     return;
 }
 
-/* 初始化row */
+/* initialize row */
 xsynchrow* XsynchRowInit(int rowcnt)
 {
     xsynchrow* row = NULL;
@@ -217,7 +212,7 @@ xsynchrow* XsynchRowInit(int rowcnt)
     return row;
 }
 
-/* 初始化xsynchpair */
+/* initialize xsynchpair */
 xsynchpair* XsynchPairInit(int colcnt)
 {
     xsynchpair* col = NULL;
@@ -236,10 +231,10 @@ xsynchpair* XsynchPairInit(int colcnt)
     return col;
 }
 
-/* 释放pari资源 */
+/* free pair resources */
 void XsynchPairFree(int colcnt, void* in_col)
 {
-    int idx_col = 0;
+    int         idx_col = 0;
     xsynchpair* col = NULL;
     xsynchpair* tmpcol = NULL;
 
@@ -264,17 +259,17 @@ void XsynchPairFree(int colcnt, void* in_col)
         }
     }
     free(col);
-    
+
     return;
 }
 
-/* 释放rows资源 */
+/* free rows resources */
 void XsynchRowFree(int rowcnt, void* in_rows)
 {
-    int idx_row = 0;
+    int        idx_row = 0;
     xsynchrow* rows = NULL;
     xsynchrow* tmprow = NULL;
-    rows = (xsynchrow*) in_rows;
+    rows = (xsynchrow*)in_rows;
 
     if (0 == rowcnt || NULL == rows)
     {
@@ -291,18 +286,16 @@ void XsynchRowFree(int rowcnt, void* in_rows)
     return;
 }
 
-/* 设置连接参数 */
+/* set connection parameters */
 xsynchconn* XSynchSetParam(char* connstr)
 {
     /*
-     * 1、解析 connstr, 并写入到 xsynchconn 结构中
-     * 2、查看 port 是否为有效值, 非有效值, 那么设置 port 为 config.h 中的 RMANAGER_PORT
-     * 3、查看 host 是否为有效值, 非有效值, 那么设置 host 为 config.h 中的 RMANAGER_UNIXDOMAINPREFIX 与 port 的拼接
-     * 4、执行链接
-     * 5、检测是否连接上
-     * 6、tcpkeepalive 设置等
-     * 7、发送 identity 消息
-     * 8、接收 identity 消息
+     * 1. parse connstr and write to xsynchconn structure
+     * 2. check if port is valid, if not set port to RMANAGER_PORT from config.h
+     * 3. check if host is valid, if not set host to RMANAGER_UNIXDOMAINPREFIX from config.h
+     * concatenated with port 4. execute connection 5. check if connected 6. tcpkeepalive settings
+     * etc 7. send identity message
+     * 8. receive identity message
      */
     xsynchconn* xconn = NULL;
 
@@ -315,7 +308,8 @@ xsynchconn* XSynchSetParam(char* connstr)
 
     if (NULL == connstr)
     {
-        snprintf(xconn->host, 512, "%s/%s.%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX, RMANAGER_PORT);
+        snprintf(xconn->host, 512, "%s/%s.%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX,
+                 RMANAGER_PORT);
         snprintf(xconn->port, 128, "%s", RMANAGER_PORT);
         xconn->keepalive = 0;
         xconn->socktype = XSYNCH_SOCKTYPE_UNIXDOMAIN;
@@ -333,7 +327,7 @@ xsynchconn* XSynchSetParam(char* connstr)
             return NULL;
         }
     }
-    
+
     xconn->sendmsg = xsynch_exbufferdata_init();
     if (NULL == xconn->sendmsg)
     {
@@ -358,7 +352,7 @@ xsynchconn* XSynchSetParam(char* connstr)
         return NULL;
     }
 
-    xconn->result = (xsynch_result *)XsynchResultInit();
+    xconn->result = (xsynch_result*)XsynchResultInit();
     if (NULL == xconn->result)
     {
         xsynch_exbufferdata_free(xconn->sendmsg);
@@ -368,7 +362,7 @@ xsynchconn* XSynchSetParam(char* connstr)
         return NULL;
     }
 
-    /* 连接 xmanager */
+    /* connect to xmanager */
     if (false == xsynch_fenet_conn(xconn))
     {
         return xconn;
@@ -376,24 +370,24 @@ xsynchconn* XSynchSetParam(char* connstr)
     return xconn;
 }
 
-/* 连接 */
+/* connect */
 bool XSynchConn(xsynchconn* conn)
 {
-    int rownumber = 0;
-    xsynchrow* rows = NULL;
-    xsynch_identitycmd icmd = { {0} };
+    int                rownumber = 0;
+    xsynchrow*         rows = NULL;
+    xsynch_identitycmd icmd = {{0}};
 
-    /* 检测是否连接 */
+    /* check if connected */
     if (false == xsynch_fenet_isconn(conn))
     {
-        /* 连接 xmanager */
+        /* connect to xmanager */
         if (false == xsynch_fenet_conn(conn))
         {
             return false;
         }
     }
 
-    /* 构建 command */
+    /* build command */
     icmd.type.type = T_XSYNCH_IDENTITYCMD;
     icmd.jobname = "xscsci";
     icmd.user = NULL;
@@ -405,7 +399,7 @@ bool XSynchConn(xsynchconn* conn)
         return false;
     }
 
-    /* 发送 cmd */
+    /* send cmd */
     if (false == xsynch_fenet_sendcmd(conn))
     {
         return false;
@@ -413,39 +407,39 @@ bool XSynchConn(xsynchconn* conn)
 
     XSynchGetResult(conn, &rownumber, &rows);
 
-    /* 解析数据 */
+    /* parse data */
     return true;
 }
 
-/* 发送命令 */
+/* send command */
 bool XSynchSendCmd(xsynchconn* conn, xsynch_cmd* cmd)
 {
     /*
-     * 1、检测连接是否有效，无效返回错误信息
-     * 2、根据 cmd 组装数据流
+     * 1. check if connection is valid, return error if invalid
+     * 2. assemble data stream based on cmd
      *      xsynch_febuildmsg_cmd2msg
-     * 
-     * 3、发送数据至 xmanager
-     * 4、获取 xmanager 返回结果
+     *
+     * 3. send data to xmanager
+     * 4. get xmanager return result
      */
 
-     /* 检测是否连接 */
+    /* check if connected */
     if (false == xsynch_fenet_isconn(conn))
     {
-        /* 连接 xmanager */
+        /* connect to xmanager */
         if (false == XSynchConn(conn))
         {
             return false;
         }
     }
 
-    /* 根据 cmd 组装数据流 */
+    /* assemble data stream based on cmd */
     if (false == xsynch_febuildmsg_cmd2msg(cmd, conn->sendmsg))
     {
         return false;
     }
 
-    /* 发送 cmd */
+    /* send cmd */
     if (false == xsynch_fenet_sendcmd(conn))
     {
         return false;
@@ -453,13 +447,13 @@ bool XSynchSendCmd(xsynchconn* conn, xsynch_cmd* cmd)
     return true;
 }
 
-/* 测试xmanager是否启动 */
+/* test if xmanager is started */
 bool XSynchPing(xsynchconn* conn)
 {
-     /* 检测是否连接 */
+    /* check if connected */
     if (false == xsynch_fenet_isconn(conn))
     {
-        /* 连接 xmanager */
+        /* connect to xmanager */
         if (false == XSynchConn(conn))
         {
             return false;
@@ -469,20 +463,20 @@ bool XSynchPing(xsynchconn* conn)
     return true;
 }
 
-/* 获取返回结果 */
+/* get return result */
 void XSynchGetResult(xsynchconn* conn, int* rownumber, xsynchrow** rows)
 {
     /*
-     * 1、解析 conn->recvmsg 中的数据
+     * 1. parse data in conn->recvmsg
      *      xsynch_feparsemsg_msg2result
-     * 2、清理 conn->recvmsg 中的数据
-     * 3、返回 rownumber 和 rows
+     * 2. clean data in conn->recvmsg
+     * 3. return rownumber and rows
      */
 
     *rownumber = 0;
     *rows = NULL;
 
-    /* 获取结果出错，打印错误信息清理数据 */
+    /* error getting result, print error message and clean data */
     if (false == xsynch_feparsemsg_msg2result(conn->recvmsg, conn))
     {
         printf("get result failed:%s \n", conn->errmsg->data);
@@ -492,7 +486,7 @@ void XSynchGetResult(xsynchconn* conn, int* rownumber, xsynchrow** rows)
         return;
     }
 
-    /* 设置返回值释放资源 */
+    /* set return value and release resources */
     *rownumber = conn->result->rowcnt;
     *rows = conn->result->rows;
     conn->result->rowcnt = 0;
@@ -501,11 +495,11 @@ void XSynchGetResult(xsynchconn* conn, int* rownumber, xsynchrow** rows)
     return;
 }
 
-/* 获取错误信息 */
+/* get error information */
 void XSynchGetErrmsg(xsynchconn* conn)
 {
     /*
-     * 输出错误信息
+     * output error information
      */
     if (NULL == conn || XSYNCHCONN_STATUS_OK != conn->connstatus)
     {
@@ -520,7 +514,7 @@ void XSynchGetErrmsg(xsynchconn* conn)
     return;
 }
 
-/* 清理返回结果 */
+/* clean return result */
 void XSynchClear(xsynchconn* conn)
 {
     if (NULL == conn)
@@ -539,14 +533,14 @@ void XSynchClear(xsynchconn* conn)
     return;
 }
 
-/* 清理 xsynchconn */
+/* cleanup xsynchconn */
 void XSynchFinish(xsynchconn* conn)
 {
     if (NULL == conn)
     {
         return;
     }
-    
+
     xsynch_exbufferdata_free(conn->sendmsg);
     xsynch_exbufferdata_free(conn->recvmsg);
     xsynch_exbufferdata_free(conn->errmsg);
@@ -561,7 +555,6 @@ void XSynchFinish(xsynchconn* conn)
 
     return;
 }
-
 
 void xsynch_rangvar_destroy(xsynch_rangevar* rs)
 {
@@ -584,9 +577,9 @@ void xsynch_rangvar_destroy(xsynch_rangevar* rs)
     rs = NULL;
 }
 
-xsynch_rangevar *xsynch_rangvar_init(char* schema, char* table)
+xsynch_rangevar* xsynch_rangvar_init(char* schema, char* table)
 {
-    xsynch_rangevar    *rs = NULL;
+    xsynch_rangevar* rs = NULL;
 
     rs = malloc(sizeof(xsynch_rangevar));
     if (NULL == rs)
@@ -599,7 +592,7 @@ xsynch_rangevar *xsynch_rangvar_init(char* schema, char* table)
     return rs;
 }
 
-void xsynch_rangvar_free(xsynch_rangevar *rangevar)
+void xsynch_rangvar_free(xsynch_rangevar* rangevar)
 {
     if (NULL == rangevar)
     {
@@ -619,9 +612,9 @@ void xsynch_rangvar_free(xsynch_rangevar *rangevar)
     return;
 }
 
-xsynch_job *xsynch_job_init(int jobkind, char* jobname)
+xsynch_job* xsynch_job_init(int jobkind, char* jobname)
 {
-    xsynch_job *job = NULL;
+    xsynch_job* job = NULL;
 
     job = malloc(sizeof(xsynch_job));
     if (NULL == job)
@@ -650,7 +643,7 @@ void xsynch_job_free(xsynch_job* job)
     return;
 }
 
-/* identity 资源释放 */
+/* identity resource release */
 static void xsynch_command_identityfree(xsynch_cmd* cmd)
 {
     xsynch_identitycmd* identity = NULL;
@@ -680,11 +673,11 @@ static void xsynch_command_identityfree(xsynch_cmd* cmd)
     free(identity);
 }
 
-/* create 资源释放 */
+/* create resource release */
 static void xsynch_command_createfree(xsynch_cmd* cmd)
 {
-    ListCell* lc = NULL;
-    xsynch_job* job = NULL;
+    ListCell*         lc = NULL;
+    xsynch_job*       job = NULL;
     xsynch_createcmd* create = NULL;
 
     if (NULL == cmd)
@@ -701,7 +694,7 @@ static void xsynch_command_createfree(xsynch_cmd* cmd)
 
     if (NULL != create->job)
     {
-        foreach(lc, create->job)
+        foreach (lc, create->job)
         {
             job = (xsynch_job*)lfirst(lc);
             xsynch_job_free(job);
@@ -713,11 +706,11 @@ static void xsynch_command_createfree(xsynch_cmd* cmd)
     free(create);
 }
 
-/* alter 资源释放 */
+/* alter resource release */
 static void xsynch_command_alterfree(xsynch_cmd* cmd)
 {
-    ListCell* lc = NULL;
-    xsynch_job* job = NULL;
+    ListCell*        lc = NULL;
+    xsynch_job*      job = NULL;
     xsynch_altercmd* alter = NULL;
 
     if (NULL == cmd)
@@ -734,7 +727,7 @@ static void xsynch_command_alterfree(xsynch_cmd* cmd)
 
     if (NULL != alter->job)
     {
-        foreach(lc, alter->job)
+        foreach (lc, alter->job)
         {
             job = (xsynch_job*)lfirst(lc);
             xsynch_job_free(job);
@@ -747,7 +740,7 @@ static void xsynch_command_alterfree(xsynch_cmd* cmd)
     return;
 }
 
-/* remove 资源释放 */
+/* remove resource release */
 static void xsynch_command_removefree(xsynch_cmd* cmd)
 {
     xsynch_removecmd* remove = NULL;
@@ -768,7 +761,7 @@ static void xsynch_command_removefree(xsynch_cmd* cmd)
     return;
 }
 
-/* drop 资源释放 */
+/* drop resource release */
 static void xsynch_command_dropfree(xsynch_cmd* cmd)
 {
     xsynch_dropcmd* drop = NULL;
@@ -789,7 +782,7 @@ static void xsynch_command_dropfree(xsynch_cmd* cmd)
     return;
 }
 
-/* init 资源释放 */
+/* init resource release */
 static void xsynch_command_initfree(xsynch_cmd* cmd)
 {
     xsynch_initcmd* init = NULL;
@@ -810,7 +803,7 @@ static void xsynch_command_initfree(xsynch_cmd* cmd)
     return;
 }
 
-/* edit 资源释放 */
+/* edit resource release */
 static void xsynch_command_editfree(xsynch_cmd* cmd)
 {
     xsynch_editcmd* edit = NULL;
@@ -831,7 +824,7 @@ static void xsynch_command_editfree(xsynch_cmd* cmd)
     return;
 }
 
-/* start 资源释放 */
+/* start resource release */
 static void xsynch_command_startfree(xsynch_cmd* cmd)
 {
     xsynch_startcmd* start = NULL;
@@ -852,7 +845,7 @@ static void xsynch_command_startfree(xsynch_cmd* cmd)
     return;
 }
 
-/* stop 资源释放 */
+/* stop resource release */
 static void xsynch_command_stopfree(xsynch_cmd* cmd)
 {
     xsynch_stopcmd* stop = NULL;
@@ -873,7 +866,7 @@ static void xsynch_command_stopfree(xsynch_cmd* cmd)
     return;
 }
 
-/* reload 资源释放 */
+/* reload resource release */
 static void xsynch_command_reloadfree(xsynch_cmd* cmd)
 {
     xsynch_reloadcmd* reload = NULL;
@@ -894,7 +887,7 @@ static void xsynch_command_reloadfree(xsynch_cmd* cmd)
     return;
 }
 
-/* info 资源释放 */
+/* info resource release */
 static void xsynch_command_infofree(xsynch_cmd* cmd)
 {
     xsynch_infocmd* info = NULL;
@@ -915,7 +908,7 @@ static void xsynch_command_infofree(xsynch_cmd* cmd)
     return;
 }
 
-/* watch 资源释放 */
+/* watch resource release */
 static void xsynch_command_watchfree(xsynch_cmd* cmd)
 {
     xsynch_watchcmd* watch = NULL;
@@ -936,11 +929,11 @@ static void xsynch_command_watchfree(xsynch_cmd* cmd)
     return;
 }
 
-/* cfgfile 资源释放 */
+/* cfgfile resource release */
 static void xsynch_command_cfgfilefree(xsynch_cmd* cmd)
 {
     xsynch_cfgfilecmd* cfgfile = NULL;
-    
+
     if (NULL == cmd)
     {
         return;
@@ -967,11 +960,11 @@ static void xsynch_command_cfgfilefree(xsynch_cmd* cmd)
     return;
 }
 
-/* refresh 资源释放 */
+/* refresh resource release */
 static void xsynch_command_refreshfree(xsynch_cmd* cmd)
 {
-    ListCell* lc = NULL;
-    xsynch_rangevar *rs = NULL;
+    ListCell*          lc = NULL;
+    xsynch_rangevar*   rs = NULL;
     xsynch_refreshcmd* refresh = NULL;
 
     if (NULL == cmd)
@@ -988,7 +981,7 @@ static void xsynch_command_refreshfree(xsynch_cmd* cmd)
 
     if (NULL != refresh->tables)
     {
-        foreach(lc, refresh->tables)
+        foreach (lc, refresh->tables)
         {
             rs = (xsynch_rangevar*)lfirst(lc);
             xsynch_rangvar_free(rs);
@@ -1001,119 +994,49 @@ static void xsynch_command_refreshfree(xsynch_cmd* cmd)
     return;
 }
 
-/* list 资源释放 */
+/* list resource release */
 static void xsynch_command_listfree(xsynch_cmd* cmd)
 {
     if (NULL == cmd)
     {
         return;
     }
-    
+
     free(cmd);
     return;
 }
 
-static xsynch_commandops m_commandfree[] =
-{
-    {
-        T_XSYNCH_NOP,
-        "NOP",
-        NULL
-    },
-    {
-        T_XSYNCH_IDENTITYCMD,
-        "IDENTITY COMMAND",
-        xsynch_command_identityfree
-    },
-    {
-        T_XSYNCH_CREATECMD,
-        "CREATE COMMAND",
-        xsynch_command_createfree
-    },
-    {
-        T_XSYNCH_ALTERCMD,
-        "ALTER COMMAND",
-        xsynch_command_alterfree
-    },
-    {
-        T_XSYNCH_REMOVECMD,
-        "REMOVE COMMAND",
-        xsynch_command_removefree
-    },
-    {
-        T_XSYNCH_DROPCMD,
-        "DROP COMMAND",
-        xsynch_command_dropfree
-    },
-    {
-        T_XSYNCH_INITCMD,
-        "INIT COMMAND",
-        xsynch_command_initfree
-    },
-    {
-        T_XSYNCH_EDITCMD,
-        "EDIT COMMAND",
-        xsynch_command_editfree
-    },
-    {
-        T_XSYNCH_STARTCMD,
-        "START COMMAND",
-        xsynch_command_startfree
-    },
-    {
-        T_XSYNCH_STOPCMD,
-        "STOP COMMAND",
-        xsynch_command_stopfree
-    },
-    {
-        T_XSYNCH_RELOADCMD,
-        "RELOAD COMMAND",
-        xsynch_command_reloadfree
-    },
-    {
-        T_XSYNCH_INFOCMD,
-        "INFO COMMAND",
-        xsynch_command_infofree
-    },
-    {
-        T_XSYNCH_WATCHCMD,
-        "WATCH COMMAND",
-        xsynch_command_watchfree
-    },
-    {
-        T_XSYNCH_CFGfILECMD,
-        "never trigger",
-        xsynch_command_cfgfilefree
-    },
-    {
-        T_XSYNCH_REFRESHCMD,
-        "REFRESH COMMAND",
-        xsynch_command_refreshfree
-    },
-    {
-        T_XSYNCH_LISTCMD,
-        "LIST COMMAND",
-        xsynch_command_listfree
-    },
-    {
-        T_XSYNCH_MAX,
-        "MAX COMMAND",
-        NULL
-    }
-};
+static xsynch_commandops m_commandfree[] = {
+    {T_XSYNCH_NOP, "NOP", NULL},
+    {T_XSYNCH_IDENTITYCMD, "IDENTITY COMMAND", xsynch_command_identityfree},
+    {T_XSYNCH_CREATECMD, "CREATE COMMAND", xsynch_command_createfree},
+    {T_XSYNCH_ALTERCMD, "ALTER COMMAND", xsynch_command_alterfree},
+    {T_XSYNCH_REMOVECMD, "REMOVE COMMAND", xsynch_command_removefree},
+    {T_XSYNCH_DROPCMD, "DROP COMMAND", xsynch_command_dropfree},
+    {T_XSYNCH_INITCMD, "INIT COMMAND", xsynch_command_initfree},
+    {T_XSYNCH_EDITCMD, "EDIT COMMAND", xsynch_command_editfree},
+    {T_XSYNCH_STARTCMD, "START COMMAND", xsynch_command_startfree},
+    {T_XSYNCH_STOPCMD, "STOP COMMAND", xsynch_command_stopfree},
+    {T_XSYNCH_RELOADCMD, "RELOAD COMMAND", xsynch_command_reloadfree},
+    {T_XSYNCH_INFOCMD, "INFO COMMAND", xsynch_command_infofree},
+    {T_XSYNCH_WATCHCMD, "WATCH COMMAND", xsynch_command_watchfree},
+    {T_XSYNCH_CFGfILECMD, "never trigger", xsynch_command_cfgfilefree},
+    {T_XSYNCH_REFRESHCMD, "REFRESH COMMAND", xsynch_command_refreshfree},
+    {T_XSYNCH_LISTCMD, "LIST COMMAND", xsynch_command_listfree},
+    {T_XSYNCH_MAX, "MAX COMMAND", NULL}};
 
 void xsynch_command_free(xsynch_cmd* cmd)
 {
-    if(T_XSYNCH_MAX < cmd->type)
+    if (T_XSYNCH_MAX < cmd->type)
     {
         printf("command unknown cmd type %d\n", cmd->type);
         return;
     }
 
-    if(NULL == m_commandfree[cmd->type].free)
+    if (NULL == m_commandfree[cmd->type].free)
     {
         printf("command unsupport %s\n", m_commandfree[cmd->type].desc);
-        return ;
+        return;
     }
 
     return m_commandfree[cmd->type].free(cmd);

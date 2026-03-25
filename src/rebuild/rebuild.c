@@ -19,23 +19,23 @@
 #include "rebuild/rebuild_preparestmt.h"
 #include "works/parserwork/wal/decode_heap_util.h"
 
-/* multiinsert拆分为多条insert */
+/* Split multiinsert into multiple insert statements */
 static bool rebuild_prepared_multiinsert2insert(pg_parser_translog_tbcol_nvalues* nvalues,
-                                                       pg_parser_translog_tbcol_value* column,
-                                                       txnstmt_prepared* stmtprepared)
+                                                pg_parser_translog_tbcol_value*   column,
+                                                txnstmt_prepared*                 stmtprepared)
 {
     pg_parser_translog_tbcol_values* row = NULL;
 
-    /* 申请insert data空间 */
+    /* Allocate insert data space */
     row = (pg_parser_translog_tbcol_values*)rmalloc0(sizeof(pg_parser_translog_tbcol_values));
-    if(NULL == row)
+    if (NULL == row)
     {
         elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
         return false;
     }
     rmemset0(row, 0, '\0', sizeof(pg_parser_translog_tbcol_values));
 
-    /* 复制m_base */
+    /* Copy m_base */
     row->m_base.m_dmltype = nvalues->m_base.m_dmltype;
     row->m_base.m_originid = nvalues->m_base.m_originid;
     row->m_base.m_tabletype = nvalues->m_base.m_tabletype;
@@ -43,7 +43,7 @@ static bool rebuild_prepared_multiinsert2insert(pg_parser_translog_tbcol_nvalues
     row->m_base.m_schemaname = rstrdup(nvalues->m_base.m_schemaname);
     row->m_base.m_tbname = rstrdup(nvalues->m_base.m_tbname);
 
-    /* 复制values值 */
+    /* Copy values */
     row->m_haspkey = nvalues->m_haspkey;
     row->m_relfilenode = nvalues->m_relfilenode;
     row->m_relid = nvalues->m_relid;
@@ -56,16 +56,14 @@ static bool rebuild_prepared_multiinsert2insert(pg_parser_translog_tbcol_nvalues
     return true;
 }
 
-static char* rebuild_makehatb(rebuild* rebuild,
-                                     txnstmt_prepared* stmtprepared,
-                                     Oid relid)
+static char* rebuild_makehatb(rebuild* rebuild, txnstmt_prepared* stmtprepared, Oid relid)
 {
-    bool found = false;
-    tableoptype table_optype = {'\0'};
-    rebuild_preparestmt tmp_stmt = {'\0'};
-    rbtreenode* treenode = NULL;
+    bool                 found = false;
+    tableoptype          table_optype = {'\0'};
+    rebuild_preparestmt  tmp_stmt = {'\0'};
+    rbtreenode*          treenode = NULL;
     rebuild_preparestmt* pstmt = NULL;
-    tableop2preparestmt *hash_entry = NULL;
+    tableop2preparestmt* hash_entry = NULL;
 
     table_optype.optype = stmtprepared->optype;
     table_optype.relid = relid;
@@ -73,22 +71,23 @@ static char* rebuild_makehatb(rebuild* rebuild,
     stmtprepared->number = rebuild->prepareno;
 
     hash_entry = hash_search(rebuild->hatatb2prepare, &table_optype, HASH_ENTER, &found);
-    /* 没有找到初始化rbtree */
-    if(false == found)
+    /* Not found, initialize rbtree */
+    if (false == found)
     {
         hash_entry->tableop.optype = table_optype.optype;
         hash_entry->tableop.relid = table_optype.relid;
-        hash_entry->rbtree = rbtree_init(rebuild_preparestmt_cmp, rebuild_preparestmt_free, rebuild_preparestmt_debug);
-        if(NULL == hash_entry->rbtree)
+        hash_entry->rbtree = rbtree_init(rebuild_preparestmt_cmp, rebuild_preparestmt_free,
+                                         rebuild_preparestmt_debug);
+        if (NULL == hash_entry->rbtree)
         {
             elog(RLOG_WARNING, "rebuild makehatb rbtree out of memory");
             return NULL;
         }
     }
 
-    /* 添加新的节点 */
+    /* Add new node */
     pstmt = rebuild_preparestmt_init();
-    if(NULL == pstmt)
+    if (NULL == pstmt)
     {
         elog(RLOG_WARNING, "ripple rebuild preparestmt out of memory");
         return NULL;
@@ -99,42 +98,40 @@ static char* rebuild_makehatb(rebuild* rebuild,
     rbtree_insert(hash_entry->rbtree, pstmt);
     (rebuild->prepareno)++;
 
-    /* 获取stmtname并返回 */
+    /* Get and return stmtname */
     tmp_stmt.preparesql = stmtprepared->preparedsql;
     treenode = rbtree_get_value(hash_entry->rbtree, (void*)&tmp_stmt);
 
     if (NULL == treenode)
     {
-        elog(RLOG_WARNING,"preparedsql not find from hash ");
+        elog(RLOG_WARNING, "preparedsql not find from hash ");
         return NULL;
     }
 
     pstmt = (rebuild_preparestmt*)treenode->data;
-    
+
     return pstmt->stmtname;
 }
 
-static char* rebuild_get_stmtname(rebuild* rebuild, 
-                                         txnstmt_prepared* stmtprepared,
-                                         Oid relid)
+static char* rebuild_get_stmtname(rebuild* rebuild, txnstmt_prepared* stmtprepared, Oid relid)
 {
-    bool found = false;
-    tableoptype table_optype = {'\0'};
-    rebuild_preparestmt tmp_stmt = {'\0'};
-    rbtreenode* treenode = NULL;
+    bool                 found = false;
+    tableoptype          table_optype = {'\0'};
+    rebuild_preparestmt  tmp_stmt = {'\0'};
+    rbtreenode*          treenode = NULL;
     rebuild_preparestmt* pstmt = NULL;
-    tableop2preparestmt *hash_entry = NULL;
+    tableop2preparestmt* hash_entry = NULL;
 
     table_optype.optype = stmtprepared->optype;
     table_optype.relid = relid;
 
     hash_entry = hash_search(rebuild->hatatb2prepare, &table_optype, HASH_FIND, &found);
-    if(found)
+    if (found)
     {
-        /* 查询rbtree,查到返回，查不到添加到该rbtree */
+        /* Query rbtree, return if found, add to rbtree if not found */
         tmp_stmt.preparesql = stmtprepared->preparedsql;
         treenode = rbtree_get_value(hash_entry->rbtree, (void*)&tmp_stmt);
-        /* 返回值执行语句 */
+        /* Return value for execution statement */
         if (NULL != treenode)
         {
             pstmt = (rebuild_preparestmt*)treenode->data;
@@ -145,15 +142,15 @@ static char* rebuild_get_stmtname(rebuild* rebuild,
     return NULL;
 }
 
-/* 表中是否含有主键或唯一约束 */
+/* Check if table has primary key or unique constraint */
 static bool rebuild_hasconskey(HTAB* hindex, Oid tboid)
 {
-    List* lindex                                = NULL;
+    List* lindex = NULL;
 
-    /* 获取index */
+    /* Get index */
     lindex = (List*)index_getbyoid(tboid, hindex);
 
-    /* 不含有唯一索引退出 */
+    /* Exit if no unique index exists */
     if (NULL == lindex || NULL == lindex->head)
     {
         return false;
@@ -162,11 +159,11 @@ static bool rebuild_hasconskey(HTAB* hindex, Oid tboid)
     return true;
 }
 
-/* 初始化syncstate->hatables2prepare哈希表 */
+/* Initialize syncstate->hatables2prepare hash table */
 static HTAB* rebuild_hatables2prepare_init(void)
 {
-    HASHCTL        hash_ctl;
-    HTAB* stmthtab;
+    HASHCTL hash_ctl;
+    HTAB*   stmthtab;
 
     rmemset1(&hash_ctl, 0, 0, sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(tableoptype);
@@ -175,17 +172,17 @@ static HTAB* rebuild_hatables2prepare_init(void)
     return stmthtab;
 }
 
-/* 释放syncstate->hatables2prepare哈希表 */
+/* Free syncstate->hatables2prepare hash table */
 static void rebuild_hatables2prepare_free(rebuild* rebuild)
 {
-    HASH_SEQ_STATUS status;
+    HASH_SEQ_STATUS      status;
     tableop2preparestmt* entry;
 
     if (NULL == rebuild->hatatb2prepare)
     {
         return;
     }
-    
+
     hash_seq_init(&status, rebuild->hatatb2prepare);
     while ((entry = hash_seq_search(&status)) != NULL)
     {
@@ -198,7 +195,7 @@ static void rebuild_hatables2prepare_free(rebuild* rebuild)
     return;
 }
 
-/* 初始化 */
+/* Initialize */
 void rebuild_reset(rebuild* rebuild)
 {
     if (NULL == rebuild)
@@ -206,7 +203,7 @@ void rebuild_reset(rebuild* rebuild)
         return;
     }
     rebuild->prepareno = 1;
-    if(NULL != rebuild->hatatb2prepare)
+    if (NULL != rebuild->hatatb2prepare)
     {
         rebuild_hatables2prepare_free(rebuild);
     }
@@ -221,33 +218,29 @@ void rebuild_reset(rebuild* rebuild)
 
     rebuild->hatatb2prepare = rebuild_hatables2prepare_init();
 
-    return ;
+    return;
 }
 
-static txnstmt* rebuild_initpreparestmt(rebuild* rebuild,
-                                                      Oid relid,
-                                                      uint8 op,
-                                                      uint32 colcnt,
-                                                      char* preparedstmt,
-                                                      uint32 preparedstmtlen)
+static txnstmt* rebuild_initpreparestmt(rebuild* rebuild, Oid relid, uint8 op, uint32 colcnt,
+                                        char* preparedstmt, uint32 preparedstmtlen)
 {
-    uint32 len = 0;
-    char* stmtname = NULL;
-    txnstmt* stmt = NULL;
+    uint32            len = 0;
+    char*             stmtname = NULL;
+    txnstmt*          stmt = NULL;
     txnstmt_prepared* stmtprepared = NULL;
 
-    /* 初始化 txnstmt */
+    /* Initialize txnstmt */
     stmt = txnstmt_init();
-    if(NULL == stmt)
+    if (NULL == stmt)
     {
         return NULL;
     }
     stmt->stmt = NULL;
     stmt->type = TXNSTMT_TYPE_PREPARED;
 
-    /* 初始化 prepared 结构体 */
+    /* Initialize prepared structure */
     stmtprepared = txnstmt_prepared_init();
-    if(NULL == stmtprepared)
+    if (NULL == stmtprepared)
     {
         txnstmt_free(stmt);
         return NULL;
@@ -255,20 +248,20 @@ static txnstmt* rebuild_initpreparestmt(rebuild* rebuild,
     stmt->stmt = (void*)stmtprepared;
     stmtprepared->optype = op;
 
-    /* 申请空间 */
+    /* Allocate memory */
     stmtprepared->values = rmalloc0(sizeof(char*) * colcnt);
-    if(NULL == stmtprepared->values)
+    if (NULL == stmtprepared->values)
     {
         txnstmt_free(stmt);
-        elog(RLOG_WARNING,"stmtprepared->values malloc error %s", strerror(errno));
+        elog(RLOG_WARNING, "stmtprepared->values malloc error %s", strerror(errno));
         return NULL;
     }
-    /* 复制 prepared */
+    /* Copy prepared */
     stmtprepared->preparedsql = rmalloc0(preparedstmtlen + 1);
-    if(NULL == stmtprepared->preparedsql)
+    if (NULL == stmtprepared->preparedsql)
     {
         txnstmt_free(stmt);
-        elog(RLOG_WARNING,"stmtprepared->preparedsql malloc error %s", strerror(errno));
+        elog(RLOG_WARNING, "stmtprepared->preparedsql malloc error %s", strerror(errno));
         return NULL;
     }
     rmemset0(stmtprepared->preparedsql, 0, '\0', preparedstmtlen + 1);
@@ -287,13 +280,13 @@ static txnstmt* rebuild_initpreparestmt(rebuild* rebuild,
         }
     }
 
-    /* 复制 prepared */
+    /* Copy prepared */
     len = strlen(stmtname);
     stmtprepared->preparedname = rmalloc0(len + 1);
-    if(NULL == stmtprepared->preparedname)
+    if (NULL == stmtprepared->preparedname)
     {
         txnstmt_free(stmt);
-        elog(RLOG_WARNING,"stmtprepared->preparedname malloc error %s", strerror(errno));
+        elog(RLOG_WARNING, "stmtprepared->preparedname malloc error %s", strerror(errno));
         return NULL;
     }
     rmemset0(stmtprepared->preparedname, 0, '\0', len + 1);
@@ -302,37 +295,32 @@ static txnstmt* rebuild_initpreparestmt(rebuild* rebuild,
     return stmt;
 }
 
-/* multiinsert */
-static bool rebuild_prepared_multiinsert(rebuild* rebuild,
-                                                txnstmt* stmt,
-                                                List** lststmt)
+/* Multiinsert */
+static bool rebuild_prepared_multiinsert(rebuild* rebuild, txnstmt* stmt, List** lststmt)
 {
-    bool                                    has_valid_column = false;
-    uint16_t                                index = 0;
-    uint16_t                                index_rowcnt = 0;
-    uint32                                  colcnts = 0;
-    txnstmt*                         nstmt = NULL;
-    txnstmt_prepared*                stmtprepared = NULL;
-    pg_parser_translog_tbcol_value*      column = NULL;
-    pg_parser_translog_tbcol_nvalues*    nvalues = NULL;
-    StringInfo                              preparestmtname;
+    bool                              has_valid_column = false;
+    uint16_t                          index = 0;
+    uint16_t                          index_rowcnt = 0;
+    uint32                            colcnts = 0;
+    txnstmt*                          nstmt = NULL;
+    txnstmt_prepared*                 stmtprepared = NULL;
+    pg_parser_translog_tbcol_value*   column = NULL;
+    pg_parser_translog_tbcol_nvalues* nvalues = NULL;
+    StringInfo                        preparestmtname;
 
-    /* MULTIINSERT处理 */
+    /* MULTIINSERT processing */
     has_valid_column = false;
-    nvalues = (pg_parser_translog_tbcol_nvalues *)stmt->stmt;
+    nvalues = (pg_parser_translog_tbcol_nvalues*)stmt->stmt;
 
     preparestmtname = makeStringInfo();
-    appendStringInfo(preparestmtname,
-                        "insert into \"%s\".\"%s\" (",
-                        nvalues->m_base.m_schemaname,
-                        nvalues->m_base.m_tbname);
+    appendStringInfo(preparestmtname, "insert into \"%s\".\"%s\" (", nvalues->m_base.m_schemaname,
+                     nvalues->m_base.m_tbname);
 
-    /* 拼接列名 */
+    /* Assemble column names */
     column = nvalues->m_rows[0].m_new_values;
-    for (index = 0; index < nvalues->m_valueCnt; index ++)
+    for (index = 0; index < nvalues->m_valueCnt; index++)
     {
-        if (column[index].m_info == INFO_COL_MAY_NULL
-            || column[index].m_info == INFO_COL_IS_DROPED) 
+        if (column[index].m_info == INFO_COL_MAY_NULL || column[index].m_info == INFO_COL_IS_DROPED)
         {
             continue;
         }
@@ -344,25 +332,25 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild,
         has_valid_column = true;
     }
 
-    /* 检查是否至少存在一个有效列 */
-    if (has_valid_column) 
+    /* Check if at least one valid column exists */
+    if (has_valid_column)
     {
         appendStringInfo(preparestmtname, " ) values (");
-    } 
-    else 
+    }
+    else
     {
-        /* 没有列, 在PG系列中是允许插入的 */
+        /* No columns, allowed in PG series */
         appendStringInfo(preparestmtname, " ) values ();");
     }
 
-    /* 拼接bind参数 */
-    if(true == has_valid_column)
+    /* Assemble bind parameters */
+    if (true == has_valid_column)
     {
         has_valid_column = false;
         for (index = 0; index < nvalues->m_valueCnt; index++)
         {
-            if (column[index].m_info == INFO_COL_MAY_NULL
-                || column[index].m_info == INFO_COL_IS_DROPED)
+            if (column[index].m_info == INFO_COL_MAY_NULL ||
+                column[index].m_info == INFO_COL_IS_DROPED)
             {
                 continue;
             }
@@ -377,26 +365,21 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild,
     }
     else
     {
-        /* 不需要绑定值了，直接执行就可以了 */
-        elog(RLOG_WARNING,
-                "%s.%s no column, not currently supported",
-                nvalues->m_base.m_schemaname,
-                nvalues->m_base.m_tbname);
+        /* No need to bind values, can execute directly */
+        elog(RLOG_WARNING, "%s.%s no column, not currently supported", nvalues->m_base.m_schemaname,
+             nvalues->m_base.m_tbname);
         deleteStringInfo(preparestmtname);
         return false;
     }
 
-    /* 遍历每一行，并将每行的数据组装为 prepared 语句 */
+    /* Iterate each row, assemble row data into prepared statement */
     for (index_rowcnt = 0; index_rowcnt < nvalues->m_rowCnt; index_rowcnt++)
     {
-        /* 初始化 txnstmt */
-        nstmt = rebuild_initpreparestmt(rebuild,
-                                                nvalues->m_relid,
-                                                PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
-                                                colcnts,
-                                                preparestmtname->data,
-                                                preparestmtname->len);
-        if(NULL == nstmt)
+        /* Initialize txnstmt */
+        nstmt =
+            rebuild_initpreparestmt(rebuild, nvalues->m_relid, PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
+                                    colcnts, preparestmtname->data, preparestmtname->len);
+        if (NULL == nstmt)
         {
             deleteStringInfo(preparestmtname);
             return false;
@@ -409,16 +392,15 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild,
         nstmt->type = TXNSTMT_TYPE_PREPARED;
         stmtprepared = (txnstmt_prepared*)nstmt->stmt;
 
-        if(false == rebuild_prepared_multiinsert2insert(nvalues, 
-                                                               nvalues->m_rows[index_rowcnt].m_new_values,
-                                                               stmtprepared))
+        if (false == rebuild_prepared_multiinsert2insert(
+                         nvalues, nvalues->m_rows[index_rowcnt].m_new_values, stmtprepared))
         {
             txnstmt_free(nstmt);
             deleteStringInfo(preparestmtname);
             return false;
         }
 
-        /* 组装数据 */
+        /* Assemble data */
         for (index = 0; index < nvalues->m_valueCnt; index++)
         {
             column = &(nvalues->m_rows[index_rowcnt].m_new_values[index]);
@@ -437,7 +419,7 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild,
         }
         nvalues->m_rows[index_rowcnt].m_new_values = NULL;
 
-        /* 加入到列表中 */
+        /* Add to list */
         *lststmt = lappend(*lststmt, nstmt);
     }
 
@@ -445,35 +427,31 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild,
     return true;
 }
 
-/* insert */
-static bool rebuild_prepared_insert(rebuild* rebuild,
-                                           txnstmt* stmt,
-                                           List** lststmt)
+/* Insert */
+static bool rebuild_prepared_insert(rebuild* rebuild, txnstmt* stmt, List** lststmt)
 {
-    int                                     index = 0;
-    int                                     colcnt = 0;
-    bool                                    has_valid_column = false;
-    StringInfo                              preparedstmt = NULL;
+    int                              index = 0;
+    int                              colcnt = 0;
+    bool                             has_valid_column = false;
+    StringInfo                       preparedstmt = NULL;
     txnstmt*                         nstmt = NULL;
     txnstmt_prepared*                stmtprepared = NULL;
-    pg_parser_translog_tbcol_values*     row = NULL;
-    pg_parser_translog_tbcol_value*      colvalue = NULL;
+    pg_parser_translog_tbcol_values* row = NULL;
+    pg_parser_translog_tbcol_value*  colvalue = NULL;
 
-    /* 入参转换 */
-    row = (pg_parser_translog_tbcol_values *)stmt->stmt;
+    /* Input parameter conversion */
+    row = (pg_parser_translog_tbcol_values*)stmt->stmt;
 
-    /* 申请空间 */
+    /* Allocate memory */
     preparedstmt = makeStringInfo();
-    appendStringInfo(preparedstmt,
-                    "insert into \"%s\".\"%s\" (",
-                    row->m_base.m_schemaname,
-                    row->m_base.m_tbname);
+    appendStringInfo(preparedstmt, "insert into \"%s\".\"%s\" (", row->m_base.m_schemaname,
+                     row->m_base.m_tbname);
 
-    /* 拼接列名 */
+    /* Assemble column names */
     for (index = 0; index < row->m_valueCnt; index++)
     {
-        if (row->m_new_values[index].m_info == INFO_COL_MAY_NULL
-            || row->m_new_values[index].m_info == INFO_COL_IS_DROPED)
+        if (row->m_new_values[index].m_info == INFO_COL_MAY_NULL ||
+            row->m_new_values[index].m_info == INFO_COL_IS_DROPED)
         {
             continue;
         }
@@ -487,27 +465,25 @@ static bool rebuild_prepared_insert(rebuild* rebuild,
         has_valid_column = true;
     }
 
-    /* 检查是否至少存在一个有效列 */
+    /* Check if at least one valid column exists */
     if (has_valid_column)
     {
         appendStringInfo(preparedstmt, " ) values (");
     }
     else
     {
-        elog(RLOG_WARNING,
-                "%s.%s no column, not currently supported",
-                row->m_base.m_schemaname,
-                row->m_base.m_tbname);
+        elog(RLOG_WARNING, "%s.%s no column, not currently supported", row->m_base.m_schemaname,
+             row->m_base.m_tbname);
         deleteStringInfo(preparedstmt);
         return false;
     }
 
-    /* 拼接bind参数 */
+    /* Assemble bind parameters */
     has_valid_column = false;
     for (index = 0; index < row->m_valueCnt; index++)
     {
-        if (row->m_new_values[index].m_info == INFO_COL_MAY_NULL
-            || row->m_new_values[index].m_info == INFO_COL_IS_DROPED)
+        if (row->m_new_values[index].m_info == INFO_COL_MAY_NULL ||
+            row->m_new_values[index].m_info == INFO_COL_IS_DROPED)
         {
             continue;
         }
@@ -521,13 +497,9 @@ static bool rebuild_prepared_insert(rebuild* rebuild,
     }
     appendStringInfo(preparedstmt, " );");
 
-    nstmt = rebuild_initpreparestmt(rebuild,
-                                           row->m_relid,
-                                           PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
-                                           colcnt,
-                                           preparedstmt->data,
-                                           preparedstmt->len);
-    if(NULL == nstmt)
+    nstmt = rebuild_initpreparestmt(rebuild, row->m_relid, PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
+                                    colcnt, preparedstmt->data, preparedstmt->len);
+    if (NULL == nstmt)
     {
         deleteStringInfo(preparedstmt);
         return false;
@@ -542,10 +514,10 @@ static bool rebuild_prepared_insert(rebuild* rebuild,
     stmtprepared->row = row;
     stmt->stmt = NULL;
 
-    /* 加入到列表中 */
+    /* Add to list */
     *lststmt = lappend(*lststmt, nstmt);
 
-    /* 组装值  colvalue */
+    /* Assemble values colvalue */
     for (index = 0; index < row->m_valueCnt; index++)
     {
         colvalue = row->m_new_values + index;
@@ -557,8 +529,7 @@ static bool rebuild_prepared_insert(rebuild* rebuild,
         {
             stmtprepared->values[stmtprepared->valuecnt++] = NULL;
         }
-        else if (INFO_COL_MAY_NULL == colvalue->m_info
-                || INFO_COL_IS_DROPED == colvalue->m_info)
+        else if (INFO_COL_MAY_NULL == colvalue->m_info || INFO_COL_IS_DROPED == colvalue->m_info)
         {
             continue;
         }
@@ -568,19 +539,16 @@ static bool rebuild_prepared_insert(rebuild* rebuild,
     return true;
 }
 
-/* 拼接bind参数函数 */
-static int rebuild_appendbindparam(StringInfoData *stmt,
-                                          pg_parser_translog_tbcol_value *values,
-                                          int count,
-                                          int nParams,
-                                          bool with_comma)
+/* Concatenate bind parameters function */
+static int rebuild_appendbindparam(StringInfoData* stmt, pg_parser_translog_tbcol_value* values,
+                                   int count, int nParams, bool with_comma)
 {
-    bool is_first = true; 
-    int index_colcnt = 0;
+    bool is_first = true;
+    int  index_colcnt = 0;
     for (index_colcnt = 0; index_colcnt < count; index_colcnt++)
     {
-        if (values[index_colcnt].m_info == INFO_COL_MAY_NULL
-            || values[index_colcnt].m_info == INFO_COL_IS_DROPED)
+        if (values[index_colcnt].m_info == INFO_COL_MAY_NULL ||
+            values[index_colcnt].m_info == INFO_COL_IS_DROPED)
         {
             continue;
         }
@@ -595,64 +563,50 @@ static int rebuild_appendbindparam(StringInfoData *stmt,
         }
 
         appendStringInfo(stmt, "\"%s\" = $%d", values[index_colcnt].m_colName, ++nParams);
-        is_first = false; 
+        is_first = false;
     }
 
     return nParams;
 }
 
-/* delete */
-static bool rebuild_prepared_delete(rebuild* rebuild,
-                                           txnstmt* stmt,
-                                           List** lststmt)
+/* Delete */
+static bool rebuild_prepared_delete(rebuild* rebuild, txnstmt* stmt, List** lststmt)
 {
-    int                                     index = 0;
-    int                                     colcnt = 0;
-    StringInfo                              preparedstmt = NULL;
+    int                              index = 0;
+    int                              colcnt = 0;
+    StringInfo                       preparedstmt = NULL;
     txnstmt*                         nstmt = NULL;
     txnstmt_prepared*                stmtprepared = NULL;
-    pg_parser_translog_tbcol_values*     row = NULL;
-    pg_parser_translog_tbcol_value*      colvalue = NULL;
+    pg_parser_translog_tbcol_values* row = NULL;
+    pg_parser_translog_tbcol_value*  colvalue = NULL;
 
-    /* 入参转换 */
-    row = (pg_parser_translog_tbcol_values *)stmt->stmt;
+    /* Input parameter conversion */
+    row = (pg_parser_translog_tbcol_values*)stmt->stmt;
 
-    /* 申请空间 */
+    /* Allocate space */
     preparedstmt = makeStringInfo();
-    appendStringInfo(preparedstmt,
-                        "DELETE FROM \"%s\".\"%s\" WHERE ",
-                        row->m_base.m_schemaname,
-                        row->m_base.m_tbname);
+    appendStringInfo(preparedstmt, "DELETE FROM \"%s\".\"%s\" WHERE ", row->m_base.m_schemaname,
+                     row->m_base.m_tbname);
 
-    /* 没有主键或唯一约束 */
-    if(false == row->m_haspkey
-       && false ==  rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
+    /* No primary key or unique constraint */
+    if (false == row->m_haspkey &&
+        false == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
-        appendStringInfo(preparedstmt,
-                            "CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
-                            row->m_base.m_schemaname,
-                            row->m_base.m_tbname);
+        appendStringInfo(preparedstmt, "CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
+                         row->m_base.m_schemaname, row->m_base.m_tbname);
     }
 
-    colcnt = rebuild_appendbindparam(preparedstmt,
-                                            row->m_old_values,
-                                            row->m_valueCnt,
-                                            0,
-                                            false);
+    colcnt = rebuild_appendbindparam(preparedstmt, row->m_old_values, row->m_valueCnt, 0, false);
 
-    if (false == row->m_haspkey
-        && false ==  rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
+    if (false == row->m_haspkey &&
+        false == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
         appendStringInfo(preparedstmt, " LIMIT 1)");
     }
 
-    nstmt = rebuild_initpreparestmt(rebuild,
-                                           row->m_relid,
-                                           PG_PARSER_TRANSLOG_DMLTYPE_DELETE,
-                                           colcnt,
-                                           preparedstmt->data,
-                                           preparedstmt->len);
-    if(NULL == nstmt)
+    nstmt = rebuild_initpreparestmt(rebuild, row->m_relid, PG_PARSER_TRANSLOG_DMLTYPE_DELETE,
+                                    colcnt, preparedstmt->data, preparedstmt->len);
+    if (NULL == nstmt)
     {
         deleteStringInfo(preparedstmt);
         return false;
@@ -667,10 +621,10 @@ static bool rebuild_prepared_delete(rebuild* rebuild,
     stmtprepared->row = row;
     stmt->stmt = NULL;
 
-    /* 加入到列表中 */
+    /* Add to list */
     *lststmt = lappend(*lststmt, nstmt);
 
-    /* 组装值  colvalue */
+    /* Assemble values colvalue */
     for (index = 0; index < row->m_valueCnt; index++)
     {
         colvalue = row->m_old_values + index;
@@ -682,8 +636,7 @@ static bool rebuild_prepared_delete(rebuild* rebuild,
         {
             stmtprepared->values[stmtprepared->valuecnt++] = NULL;
         }
-        else if (INFO_COL_MAY_NULL == colvalue->m_info
-                || INFO_COL_IS_DROPED == colvalue->m_info)
+        else if (INFO_COL_MAY_NULL == colvalue->m_info || INFO_COL_IS_DROPED == colvalue->m_info)
         {
             continue;
         }
@@ -693,66 +646,46 @@ static bool rebuild_prepared_delete(rebuild* rebuild,
     return true;
 }
 
-/* update */
-static bool rebuild_prepared_update(rebuild* rebuild,
-                                           txnstmt* stmt,
-                                           List** lststmt)
+/* Update */
+static bool rebuild_prepared_update(rebuild* rebuild, txnstmt* stmt, List** lststmt)
 {
-    int                                     index = 0;
-    int                                     colcnt = 0;
-    StringInfo                              preparedstmt = NULL;
+    int                              index = 0;
+    int                              colcnt = 0;
+    StringInfo                       preparedstmt = NULL;
     txnstmt*                         nstmt = NULL;
     txnstmt_prepared*                stmtprepared = NULL;
-    pg_parser_translog_tbcol_values*     row = NULL;
-    pg_parser_translog_tbcol_value*      colvalue = NULL;
+    pg_parser_translog_tbcol_values* row = NULL;
+    pg_parser_translog_tbcol_value*  colvalue = NULL;
 
-    /* 入参转换 */
-    row = (pg_parser_translog_tbcol_values *)stmt->stmt;
+    /* Input parameter conversion */
+    row = (pg_parser_translog_tbcol_values*)stmt->stmt;
 
-    /* 申请空间 */
+    /* Allocate space */
     preparedstmt = makeStringInfo();
-    appendStringInfo(preparedstmt,
-                        "UPDATE \"%s\".\"%s\" SET ",
-                        row->m_base.m_schemaname,
-                        row->m_base.m_tbname);
+    appendStringInfo(preparedstmt, "UPDATE \"%s\".\"%s\" SET ", row->m_base.m_schemaname,
+                     row->m_base.m_tbname);
 
-    /* 新值 */
-    colcnt = rebuild_appendbindparam(preparedstmt,
-                                            row->m_new_values,
-                                            row->m_valueCnt,
-                                            0,
-                                            true);
-    
+    /* New values */
+    colcnt = rebuild_appendbindparam(preparedstmt, row->m_new_values, row->m_valueCnt, 0, true);
+
     if (row->m_haspkey || true == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
-        appendStringInfo(preparedstmt," WHERE ");
-        colcnt = rebuild_appendbindparam(preparedstmt,
-                                                row->m_old_values,
-                                                row->m_valueCnt,
-                                                colcnt,
-                                                false);
+        appendStringInfo(preparedstmt, " WHERE ");
+        colcnt = rebuild_appendbindparam(preparedstmt, row->m_old_values, row->m_valueCnt, colcnt,
+                                         false);
     }
     else
     {
-        appendStringInfo(preparedstmt,
-                            " WHERE CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
-                            row->m_base.m_schemaname,
-                            row->m_base.m_tbname);
-        colcnt = rebuild_appendbindparam(preparedstmt,
-                                                row->m_old_values,
-                                                row->m_valueCnt,
-                                                colcnt,
-                                                false);
+        appendStringInfo(preparedstmt, " WHERE CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
+                         row->m_base.m_schemaname, row->m_base.m_tbname);
+        colcnt = rebuild_appendbindparam(preparedstmt, row->m_old_values, row->m_valueCnt, colcnt,
+                                         false);
         appendStringInfo(preparedstmt, " LIMIT 1)");
     }
 
-    nstmt = rebuild_initpreparestmt(rebuild,
-                                           row->m_relid,
-                                           PG_PARSER_TRANSLOG_DMLTYPE_UPDATE,
-                                           colcnt,
-                                           preparedstmt->data,
-                                           preparedstmt->len);
-    if(NULL == nstmt)
+    nstmt = rebuild_initpreparestmt(rebuild, row->m_relid, PG_PARSER_TRANSLOG_DMLTYPE_UPDATE,
+                                    colcnt, preparedstmt->data, preparedstmt->len);
+    if (NULL == nstmt)
     {
         deleteStringInfo(preparedstmt);
         return false;
@@ -767,10 +700,10 @@ static bool rebuild_prepared_update(rebuild* rebuild,
     stmtprepared->row = row;
     stmt->stmt = NULL;
 
-    /* 加入到列表中 */
+    /* Add to list */
     *lststmt = lappend(*lststmt, nstmt);
 
-    /* 组装新值  colvalue */
+    /* Assemble new values colvalue */
     for (index = 0; index < row->m_valueCnt; index++)
     {
         colvalue = row->m_new_values + index;
@@ -782,14 +715,13 @@ static bool rebuild_prepared_update(rebuild* rebuild,
         {
             stmtprepared->values[stmtprepared->valuecnt++] = NULL;
         }
-        else if (INFO_COL_MAY_NULL == colvalue->m_info
-                || INFO_COL_IS_DROPED == colvalue->m_info)
+        else if (INFO_COL_MAY_NULL == colvalue->m_info || INFO_COL_IS_DROPED == colvalue->m_info)
         {
             continue;
         }
     }
 
-    /* 组装值  colvalue */
+    /* Assemble values colvalue */
     for (index = 0; index < row->m_valueCnt; index++)
     {
         colvalue = row->m_old_values + index;
@@ -801,8 +733,7 @@ static bool rebuild_prepared_update(rebuild* rebuild,
         {
             stmtprepared->values[stmtprepared->valuecnt++] = NULL;
         }
-        else if (INFO_COL_MAY_NULL == colvalue->m_info
-                || INFO_COL_IS_DROPED == colvalue->m_info)
+        else if (INFO_COL_MAY_NULL == colvalue->m_info || INFO_COL_IS_DROPED == colvalue->m_info)
         {
             continue;
         }
@@ -812,77 +743,77 @@ static bool rebuild_prepared_update(rebuild* rebuild,
     return true;
 }
 
-/* 对 txn 的内容重组 */
+/* Reorganize txn content */
 bool rebuild_prepared(rebuild* rebuild, txn* txn)
 {
-    bool complete                               = false;
-    ListCell* lc                                = NULL;
-    List* lststmt                               = NULL;
-    ListCell* metadatalc                        = NULL;
-    txnstmt* stmtnode                    = NULL;
-    catalogdata *catalog_data             = NULL;
-    txnstmt_metadata* metadatastmt       = NULL;
-    pg_parser_translog_tbcolbase* tbcolbase  = NULL;
+    bool                          complete = false;
+    ListCell*                     lc = NULL;
+    List*                         lststmt = NULL;
+    ListCell*                     metadatalc = NULL;
+    txnstmt*                      stmtnode = NULL;
+    catalogdata*                  catalog_data = NULL;
+    txnstmt_metadata*             metadatastmt = NULL;
+    pg_parser_translog_tbcolbase* tbcolbase = NULL;
 
-    if(NULL == txn->stmts)
+    if (NULL == txn->stmts)
     {
         return true;
     }
 
-    /* 重组 */
+    /* Rebuild */
     lststmt = txn->stmts;
     txn->stmts = NULL;
-    foreach(lc, lststmt)
+    foreach (lc, lststmt)
     {
         stmtnode = (txnstmt*)lfirst(lc);
 
         if (stmtnode->type == TXNSTMT_TYPE_DML)
         {
-            tbcolbase = (pg_parser_translog_tbcolbase *)stmtnode->stmt;
-            if(PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
+            tbcolbase = (pg_parser_translog_tbcolbase*)stmtnode->stmt;
+            if (PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT == tbcolbase->m_dmltype)
             {
-                if(false == rebuild_prepared_multiinsert(rebuild, stmtnode, &txn->stmts))
+                if (false == rebuild_prepared_multiinsert(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
-            else if(PG_PARSER_TRANSLOG_DMLTYPE_INSERT == tbcolbase->m_dmltype)
+            else if (PG_PARSER_TRANSLOG_DMLTYPE_INSERT == tbcolbase->m_dmltype)
             {
-                if(false == rebuild_prepared_insert(rebuild, stmtnode, &txn->stmts))
+                if (false == rebuild_prepared_insert(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
-            else if(PG_PARSER_TRANSLOG_DMLTYPE_DELETE == tbcolbase->m_dmltype)
+            else if (PG_PARSER_TRANSLOG_DMLTYPE_DELETE == tbcolbase->m_dmltype)
             {
-                if(false == rebuild_prepared_delete(rebuild, stmtnode, &txn->stmts))
+                if (false == rebuild_prepared_delete(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
-            else if(PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == tbcolbase->m_dmltype)
+            else if (PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == tbcolbase->m_dmltype)
             {
-                if(false == rebuild_prepared_update(rebuild, stmtnode, &txn->stmts))
+                if (false == rebuild_prepared_update(rebuild, stmtnode, &txn->stmts))
                 {
                     return false;
                 }
             }
 
-            /* stmtnode 释放 */
+            /* Free stmtnode */
             txnstmt_free(stmtnode);
         }
-        else if(stmtnode->type == TXNSTMT_TYPE_DDL)
+        else if (stmtnode->type == TXNSTMT_TYPE_DDL)
         {
             txn->stmts = lappend(txn->stmts, stmtnode);
         }
-        else if(stmtnode->type == TXNSTMT_TYPE_METADATA)
+        else if (stmtnode->type == TXNSTMT_TYPE_METADATA)
         {
-            /* 应用系统表用于主键或唯一约束判断 */
+            /* Apply system table for primary key or unique constraint judgment */
             metadatastmt = (txnstmt_metadata*)stmtnode->stmt;
 
             complete = false;
             metadatalc = metadatastmt->begin;
-            while(1)
+            while (1)
             {
                 catalog_data = (catalogdata*)lfirst(metadatalc);
                 cache_sysdicts_txnsysdicthisitem2cache(rebuild->sysdicts, metadatalc);
@@ -891,25 +822,24 @@ bool rebuild_prepared(rebuild* rebuild, txn* txn)
                     cache_sysdicts_clearsysdicthisbyclass(rebuild->sysdicts, metadatalc);
                 }
 
-                /* 只有一个 */
-                if(metadatalc == metadatastmt->end
-                    || true == complete)
+                /* Only one */
+                if (metadatalc == metadatastmt->end || true == complete)
                 {
                     break;
                 }
-                /* 校验是否到达最后一个 */
+                /* Verify if reached the last one */
                 metadatalc = metadatalc->next;
-                if(metadatalc == metadatastmt->end)
+                if (metadatalc == metadatastmt->end)
                 {
                     complete = true;
                 }
             }
-            /* integrate不需要，会导致大事务退出 */
+            /* Not needed for integrate, will cause large transaction exit */
             txnstmt_free(stmtnode);
         }
-        else if(stmtnode->type == TXNSTMT_TYPE_SHIFTFILE)
+        else if (stmtnode->type == TXNSTMT_TYPE_SHIFTFILE)
         {
-            /* integrate不需要，会导致大事务退出 */
+            /* Not needed for integrate, will cause large transaction exit */
             txnstmt_free(stmtnode);
         }
         else
@@ -923,11 +853,11 @@ bool rebuild_prepared(rebuild* rebuild, txn* txn)
     return true;
 }
 
-/* 对 txn 的内容重组 */
+/* Reorganize txn content */
 bool rebuild_txnburst(rebuild* rebuild, txn* txn)
 {
-    rebuild_burst* burst = NULL;  
-    if(NULL == txn->stmts)
+    rebuild_burst* burst = NULL;
+    if (NULL == txn->stmts)
     {
         return true;
     }
@@ -937,14 +867,14 @@ bool rebuild_txnburst(rebuild* rebuild, txn* txn)
     {
         return false;
     }
-    
-    /* 事务重组为burstnode */
-    if(false == rebuild_burst_txn2bursts(burst, rebuild->sysdicts, txn))
+
+    /* Rebuild transaction into burstnode */
+    if (false == rebuild_burst_txn2bursts(burst, rebuild->sysdicts, txn))
     {
         return false;
     }
 
-    /* burstnode合并为sql语句 */
+    /* Merge burstnode into sql statement */
     if (false == rebuild_burst_bursts2stmt(burst, rebuild->sysdicts, txn))
     {
         return false;
@@ -956,7 +886,7 @@ bool rebuild_txnburst(rebuild* rebuild, txn* txn)
     return true;
 }
 
-/* 内存清理 */
+/* Memory cleanup */
 void rebuild_destroy(rebuild* rebuild)
 {
     if (NULL == rebuild)
@@ -966,7 +896,7 @@ void rebuild_destroy(rebuild* rebuild)
 
     if (rebuild->hatatb2prepare)
     {
-       rebuild_hatables2prepare_free(rebuild);
+        rebuild_hatables2prepare_free(rebuild);
     }
 
     if (rebuild->sysdicts)
@@ -974,7 +904,6 @@ void rebuild_destroy(rebuild* rebuild)
         cache_sysdicts_free(rebuild->sysdicts);
         rebuild->sysdicts = NULL;
     }
-    
+
     return;
 }
-

@@ -1,13 +1,13 @@
 #include "app_incl.h"
 #include "loadrecords/record.h"
 
-/* record 初始化 */
+/* Initialize record */
 record* record_init(void)
 {
     record* rec = NULL;
 
     rec = rmalloc0(sizeof(record));
-    if(NULL == rec)
+    if (NULL == rec)
     {
         return NULL;
     }
@@ -16,33 +16,33 @@ record* record_init(void)
     return rec;
 }
 
-/* record 释放 */
+/* Free record */
 void record_free(record* rec)
 {
-    if(NULL == rec)
+    if (NULL == rec)
     {
         return;
     }
 
-    if(NULL != rec->data)
+    if (NULL != rec->data)
     {
         rfree(rec->data);
     }
     rfree(rec);
 }
 
-/* record 释放 */
+/* Free record (void pointer version) */
 void record_freevoid(void* args)
 {
     record* rec = NULL;
-    if(NULL == args)
+    if (NULL == args)
     {
         return;
     }
 
     rec = (record*)args;
 
-    if(NULL != rec->data)
+    if (NULL != rec->data)
     {
         rfree(rec->data);
     }

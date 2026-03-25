@@ -3,9 +3,9 @@
 
 typedef struct refresh_integratesyncstate
 {
-    syncstate                    base;
-    queue*                       queue;
-    refresh_table_syncstats*     tablesyncstats;
+    syncstate                base;
+    queue*                   queue;
+    refresh_table_syncstats* tablesyncstats;
 } refresh_integratesyncstate;
 
 refresh_integratesyncstate* refresh_integratesyncstate_init(void);

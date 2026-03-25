@@ -26,8 +26,8 @@
 
 typedef struct XMANAGER_AUTHFD2TIMEOUT
 {
-    int                         fd;
-    int                         timeout;
+    int fd;
+    int timeout;
 } xmanager_authfd2timeout;
 
 static xmanager_authfd2timeout* xmanager_authfd2timeout_init(void)
@@ -45,10 +45,10 @@ static xmanager_authfd2timeout* xmanager_authfd2timeout_init(void)
     return fd2timeout;
 }
 
-/* 比较 */
+/* Compare */
 static int xmanager_authfd2timeout_cmp(void* s1, void* s2)
 {
-    int fd = -1;
+    int                      fd = -1;
     xmanager_authfd2timeout* fd2timeout = NULL;
 
     fd = (int)((uintptr_t)s1);
@@ -61,7 +61,7 @@ static int xmanager_authfd2timeout_cmp(void* s1, void* s2)
     return 1;
 }
 
-/* 销毁 */
+/* Destroy */
 static void xmanager_authfd2timeout_destroy(xmanager_authfd2timeout* fd2timeout)
 {
     if (NULL == fd2timeout)
@@ -104,10 +104,10 @@ xmanager_auth* xmanager_auth_init(void)
 /* xscsci */
 static xmanager_metricregnode* xmanager_auth_identityxscsci(xmanager_auth* xauth, uint8* uptr)
 {
-    int jobnamelen                                  = 0;
-    char* jobname                                   = NULL;
-    xmanager_metricregnode* xmetricregnode   = NULL;
-    xmanager_metricfd2node* xmetricfd2node   = NULL;
+    int                        jobnamelen = 0;
+    char*                      jobname = NULL;
+    xmanager_metricregnode*    xmetricregnode = NULL;
+    xmanager_metricfd2node*    xmetricfd2node = NULL;
     xmanager_metricxscscinode* xmetricxscsci = NULL;
 
     xmetricregnode = xmanager_metricregnode_init();
@@ -139,12 +139,12 @@ static xmanager_metricregnode* xmanager_auth_identityxscsci(xmanager_auth* xauth
     xmetricxscsci->number = xauth->no;
     xauth->no++;
 
-    /* 名称长度 */
+    /* Name length */
     rmemcpy1(&jobnamelen, 0, uptr, 4);
     uptr += 4;
     jobnamelen = r_ntoh32(jobnamelen);
 
-    /* 名称 */
+    /* Name */
     if (0 != jobnamelen)
     {
         jobnamelen += 1;
@@ -176,13 +176,13 @@ static xmanager_metricregnode* xmanager_auth_identityxscsci(xmanager_auth* xauth
 /* capture/integrate */
 static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xauth, uint8* uptr)
 {
-    int8 result                                         = 0;
-    int ivalue                                          = 0;
-    int len                                             = 0;
-    char* value                                         = NULL;
-    xmanager_metricregnode* xmetricregnode       = NULL;
-    xmanager_metricfd2node* xmetricfd2node       = NULL;
-    xmanager_metriccapturenode* xmetriccapture   = NULL;
+    int8                        result = 0;
+    int                         ivalue = 0;
+    int                         len = 0;
+    char*                       value = NULL;
+    xmanager_metricregnode*     xmetricregnode = NULL;
+    xmanager_metricfd2node*     xmetricfd2node = NULL;
+    xmanager_metriccapturenode* xmetriccapture = NULL;
 
     xmetricregnode = xmanager_metricregnode_init();
     if (NULL == xmetricregnode)
@@ -211,7 +211,7 @@ static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xaut
     }
     xmetriccapture = (xmanager_metriccapturenode*)xmetricfd2node->metricnode;
 
-    /* 名称长度 */
+    /* Name length */
     rmemcpy1(&len, 0, uptr, 4);
     uptr += 4;
     len = r_ntoh32(len);
@@ -237,20 +237,20 @@ static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xaut
     uptr += len;
     xmetriccapture->base.name = value;
 
-    /* 获取 command type */
+    /* Get command type */
     rmemcpy1(&ivalue, 0, uptr, 4);
     ivalue = r_ntoh32(ivalue);
     uptr += 4;
     xmetricregnode->msgtype = ivalue;
 
-    /* 获取成功/失败 */
+    /* Get success or fail */
     rmemcpy1(&result, 0, uptr, 1);
     uptr += 1;
 
     if (1 == result)
     {
-        /* 失败了, 那么获取错误信息 */
-        /* 获取总长度 */
+        /* Failed, get error info */
+        /* Get total length */
         rmemcpy1(&len, 0, uptr, 4);
         len = r_ntoh32(len);
         uptr += 4;
@@ -266,11 +266,12 @@ static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xaut
                 return NULL;
             }
             rmemset0(xmetricregnode->msg, 0, '\0', 128);
-            snprintf(xmetricregnode->msg, 128, "%s error", xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
+            snprintf(xmetricregnode->msg, 128, "%s error",
+                     xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
         }
         else
         {
-            /* 偏移错误码 */
+            /* Offset error code */
             rmemcpy1(&ivalue, 0, uptr, 4);
             ivalue = r_ntoh32(ivalue);
             uptr += 4;
@@ -278,7 +279,7 @@ static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xaut
 
             len -= 4;
 
-            /* 获取错误信息 */
+            /* Get error info */
             len += 1;
             xmetricregnode->msg = rmalloc0(len);
             if (NULL == xmetricregnode->msg)
@@ -296,10 +297,10 @@ static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xaut
         return xmetricregnode;
     }
 
-    /* 
-     * data 目录
-     * 1、获取长度
-     * 2、复制目录
+    /*
+     * data directory
+     * 1. Get length
+     * 2. Copy directory
      */
     len = 0;
     value = NULL;
@@ -313,7 +314,7 @@ static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xaut
         return NULL;
     }
 
-    /* 数据内容 */
+    /* Data content */
     len += 1;
     value = rmalloc0(len);
     if (NULL == value)
@@ -333,13 +334,13 @@ static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xaut
 /* integrate*/
 static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xauth, uint8* uptr)
 {
-    int8 result                                             = 0;
-    int ivalue                                              = 0;
-    int len                                                 = 0;
-    char* value                                             = NULL;
-    xmanager_metricregnode* xmetricregnode           = NULL;
-    xmanager_metricfd2node* xmetricfd2node           = NULL;
-    xmanager_metricintegratenode* xmetricintegrate   = NULL;
+    int8                          result = 0;
+    int                           ivalue = 0;
+    int                           len = 0;
+    char*                         value = NULL;
+    xmanager_metricregnode*       xmetricregnode = NULL;
+    xmanager_metricfd2node*       xmetricfd2node = NULL;
+    xmanager_metricintegratenode* xmetricintegrate = NULL;
 
     xmetricregnode = xmanager_metricregnode_init();
     if (NULL == xmetricregnode)
@@ -368,7 +369,7 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
     }
     xmetricintegrate = (xmanager_metricintegratenode*)xmetricfd2node->metricnode;
 
-    /* 名称长度 */
+    /* Name length */
     rmemcpy1(&len, 0, uptr, 4);
     uptr += 4;
     len = r_ntoh32(len);
@@ -394,19 +395,19 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
     uptr += len;
     xmetricintegrate->base.name = value;
 
-    /* 获取 command type */
+    /* Get command type */
     rmemcpy1(&ivalue, 0, uptr, 4);
     ivalue = r_ntoh32(ivalue);
     uptr += 4;
     xmetricregnode->msgtype = ivalue;
 
-    /* 获取成功/失败 */
+    /* Get success or fail */
     rmemcpy1(&result, 0, uptr, 1);
     uptr += 1;
 
     if (1 == result)
     {
-        /* 失败了, 那么获取错误信息 */
+        /* Failed, get error info */
         rmemcpy1(&len, 0, uptr, 4);
         len = r_ntoh32(len);
         uptr += 4;
@@ -420,11 +421,12 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
                 return NULL;
             }
             rmemset0(xmetricregnode->msg, 0, '\0', 128);
-            snprintf(xmetricregnode->msg, 128, "%s error", xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
+            snprintf(xmetricregnode->msg, 128, "%s error",
+                     xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
         }
         else
         {
-            /* 偏移错误码 */
+            /* Offset error code */
             rmemcpy1(&ivalue, 0, uptr, 4);
             ivalue = r_ntoh32(ivalue);
             uptr += 4;
@@ -448,10 +450,10 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
         return xmetricregnode;
     }
 
-    /* 
-     * data 目录
-     * 1、获取长度
-     * 2、复制目录
+    /*
+     * data directory
+     * 1. Get length
+     * 2. Copy directory
      */
     len = 0;
     value = NULL;
@@ -465,7 +467,7 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
         return NULL;
     }
 
-    /* 数据内容 */
+    /* Data content */
     len += 1;
     value = rmalloc0(len);
     if (NULL == value)
@@ -480,10 +482,10 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
     uptr += len;
     xmetricintegrate->base.data = value;
 
-    /* 
-     * trail 目录
-     * 1、获取长度
-     * 2、复制目录
+    /*
+     * trail directory
+     * 1. Get length
+     * 2. Copy directory
      */
     len = 0;
     value = NULL;
@@ -497,7 +499,7 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
         return NULL;
     }
 
-    /* 数据内容 */
+    /* Data content */
     len += 1;
     value = rmalloc0(len);
     if (NULL == value)
@@ -514,17 +516,18 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
     return xmetricregnode;
 }
 
-/* 身份信息 */
-static bool xmanager_auth_identity(xmanager_auth* xauth, netpoolentry* npoolentry, netpacket* npacket)
+/* Identity info */
+static bool xmanager_auth_identity(xmanager_auth* xauth, netpoolentry* npoolentry,
+                                   netpacket* npacket)
 {
-    int msglen                                      = 0;
-    int crc32                                       = 0;
-    int msgtype                                     = 0;
-    int jobtype                                     = 0;
-    uint8* uptr                                     = NULL;
-    xmanager_metricregnode* metricregnode    = NULL;
+    int                     msglen = 0;
+    int                     crc32 = 0;
+    int                     msgtype = 0;
+    int                     jobtype = 0;
+    uint8*                  uptr = NULL;
+    xmanager_metricregnode* metricregnode = NULL;
 
-    /* 拆解内容 */
+    /* Parse content */
     uptr = npacket->data;
     rmemcpy1(&msglen, 0, uptr, 4);
     uptr += 4;
@@ -536,14 +539,14 @@ static bool xmanager_auth_identity(xmanager_auth* xauth, netpoolentry* npoolentr
     uptr += 4;
     msgtype = r_ntoh32(msgtype);
 
-    /* 不是 identitycmd */
+    /* Not identitycmd */
     if (XMANAGER_MSG_IDENTITYCMD != msgtype)
     {
         elog(RLOG_WARNING, "need identity command, but now msgtype:%d", msgtype);
         return false;
     }
 
-    /* 业务类型 */
+    /* Business type */
     rmemcpy1(&jobtype, 0, uptr, 4);
     uptr += 4;
     jobtype = r_ntoh32(jobtype);
@@ -571,21 +574,21 @@ static bool xmanager_auth_identity(xmanager_auth* xauth, netpoolentry* npoolentr
         return false;
     }
 
-    /* 加入到队列中 */
+    /* Add to queue */
     metricregnode->metricfd2node->fd = npoolentry->fd;
     npoolentry->fd = -1;
     queue_put(xauth->metricqueue, metricregnode);
     return true;
 }
 
-/* 处理读队列 */
+/* Process read queue */
 static bool xmanager_auth_msg(xmanager_auth* xauth, int index)
 {
-    netpacket* npacket = NULL;
+    netpacket*    npacket = NULL;
     netpoolentry* npoolentry = NULL;
 
     npoolentry = xauth->npool->fds[index];
-    while(1)
+    while (1)
     {
         npacket = queue_tryget(npoolentry->rpackets);
         if (NULL == npacket)
@@ -602,7 +605,7 @@ static bool xmanager_auth_msg(xmanager_auth* xauth, int index)
             return true;
         }
 
-        /* 解析数据 */
+        /* Parse data */
         if (false == xmanager_auth_identity(xauth, npoolentry, npacket))
         {
             netpacket_destroy(npacket);
@@ -610,37 +613,36 @@ static bool xmanager_auth_msg(xmanager_auth* xauth, int index)
         }
         netpacket_destroy(npacket);
 
-        /* 在 auth 模块只会有一条数据 */
+        /* In auth module only one data */
         break;
     }
 
-    /* 处理 npoolentry */
+    /* Process npoolentry */
     netpoolentry_destroy(npoolentry);
     xauth->npool->fds[index] = NULL;
     return true;
 }
 
-
-/* 主流程 */
-void* xmanager_auth_main(void *args)
+/* Main loop */
+void* xmanager_auth_main(void* args)
 {
-    int fd                                      = -1;
-    int index                                   = 0;
-    int errorfdscnt                             = 0;
-    int* errorfds                               = NULL;
-    dlist* dlfd2timeout                         = NULL;
-    thrnode* thrnode_ptr                     = NULL;
-    queueitem* item                      = NULL;
-    queueitem* items                     = NULL;
-    xmanager_auth* xauth                 = NULL;
-    netpoolentry* npoolentry             = NULL;
-    xmanager_authfd2timeout* fd2timeout  = NULL;
+    int                      fd = -1;
+    int                      index = 0;
+    int                      errorfdscnt = 0;
+    int*                     errorfds = NULL;
+    dlist*                   dlfd2timeout = NULL;
+    thrnode*                 thrnode_ptr = NULL;
+    queueitem*               item = NULL;
+    queueitem*               items = NULL;
+    xmanager_auth*           xauth = NULL;
+    netpoolentry*            npoolentry = NULL;
+    xmanager_authfd2timeout* fd2timeout = NULL;
 
     thrnode_ptr = (thrnode*)args;
 
     xauth = (xmanager_auth*)thrnode_ptr->data;
 
-    /* 查看状态 */
+    /* Check status */
     if (THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
         elog(RLOG_WARNING, "xmanager auth stat exception, expected state is THRNODE_STAT_STARTING");
@@ -648,10 +650,10 @@ void* xmanager_auth_main(void *args)
         pthread_exit(NULL);
     }
 
-    /* 设置为工作状态 */
+    /* Set working state */
     thrnode_ptr->stat = THRNODE_STAT_WORK;
 
-    while(1)
+    while (1)
     {
         items = NULL;
         if (THRNODE_STAT_TERM == thrnode_ptr->stat)
@@ -660,7 +662,7 @@ void* xmanager_auth_main(void *args)
             break;
         }
 
-        /* 在队列中获取描述符 */
+        /* Get fd from queue */
         items = queue_trygetbatch(xauth->authqueue);
         for (item = items; NULL != item; item = items)
         {
@@ -688,12 +690,11 @@ void* xmanager_auth_main(void *args)
             fd2timeout->fd = fd;
             dlfd2timeout = dlist_put(dlfd2timeout, fd2timeout);
 
-            /* 加入到队列中 */
+            /* Add to queue */
             if (false == netpool_add(xauth->npool, npoolentry))
             {
                 elog(RLOG_WARNING, "xmanager auth add entry to net pool error");
-                dlist_deletebyvalue(dlfd2timeout,
-                                    (void*)((uintptr_t)fd2timeout->fd),
+                dlist_deletebyvalue(dlfd2timeout, (void*)((uintptr_t)fd2timeout->fd),
                                     xmanager_authfd2timeout_cmp,
                                     xmanager_authfd2timeout_destroyvoid);
 
@@ -704,7 +705,7 @@ void* xmanager_auth_main(void *args)
             queueitem_free(item, NULL);
         }
 
-        /* 监听 */
+        /* Monitor */
         if (false == netpool_desc(xauth->npool, &errorfdscnt, &errorfds))
         {
             elog(RLOG_WARNING, "xmanager auth net pool desc error");
@@ -712,16 +713,14 @@ void* xmanager_auth_main(void *args)
             break;
         }
 
-        /* 先处理异常的描述符 */
+        /* Handle abnormal fds first */
         for (index = 0; index < errorfdscnt; index++)
         {
-            dlist_deletebyvalue(dlfd2timeout,
-                                (void*)((uintptr_t)errorfds[index]),
-                                xmanager_authfd2timeout_cmp,
-                                xmanager_authfd2timeout_destroyvoid);
+            dlist_deletebyvalue(dlfd2timeout, (void*)((uintptr_t)errorfds[index]),
+                                xmanager_authfd2timeout_cmp, xmanager_authfd2timeout_destroyvoid);
         }
 
-        /* 遍历读队列并处理 */
+        /* Iterate read queue and process */
         for (index = 0; index < xauth->npool->fdcnt; index++)
         {
             if (NULL == xauth->npool->fds[index])
@@ -739,11 +738,10 @@ void* xmanager_auth_main(void *args)
             if (false == xmanager_auth_msg(xauth, index))
             {
                 elog(RLOG_WARNING, "xmanager auth deal identity msg error");
-                dlist_deletebyvalue(dlfd2timeout,
-                                    (void*)((uintptr_t)npoolentry->fd),
+                dlist_deletebyvalue(dlfd2timeout, (void*)((uintptr_t)npoolentry->fd),
                                     xmanager_authfd2timeout_cmp,
                                     xmanager_authfd2timeout_destroyvoid);
-                
+
                 netpoolentry_destroy(npoolentry);
                 xauth->npool->fds[index] = NULL;
                 continue;
@@ -751,8 +749,7 @@ void* xmanager_auth_main(void *args)
 
             if (NULL == xauth->npool->fds[index])
             {
-                dlist_deletebyvalue(dlfd2timeout,
-                                    (void*)((uintptr_t)fd),
+                dlist_deletebyvalue(dlfd2timeout, (void*)((uintptr_t)fd),
                                     xmanager_authfd2timeout_cmp,
                                     xmanager_authfd2timeout_destroyvoid);
             }

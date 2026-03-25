@@ -1,8 +1,5 @@
 #include "pg_parser_os_incl.h"
 #include "thirdparty/time/timezone_zic/pg_parser_thirdparty_timezone_tzdata_info.h"
 
-char* PG_Africa_Maputo[] =
-{
-    (char *)"Zone	Africa/Maputo	2:10:20 -	LMT	1903 Mar",
-    (char *)"			2:00	-	CAT"
-};
+char* PG_Africa_Maputo[] = {(char*)"Zone	Africa/Maputo	2:10:20 -	LMT	1903 Mar",
+                            (char*)"			2:00	-	CAT"};

@@ -5,7 +5,6 @@
 #include "xmanager/xmanager_msg.h"
 #include "xmanager/xmanager_metricasyncmsg.h"
 
-
 xmanager_metricasyncmsg* xmanager_metricasyncmsg_init(void)
 {
     xmanager_metricasyncmsg* xmetricasyncmsg = NULL;
@@ -26,7 +25,7 @@ xmanager_metricasyncmsg* xmanager_metricasyncmsg_init(void)
     return xmetricasyncmsg;
 }
 
-/* 删除 metricasyncmsg */
+/* Delete metricasyncmsg */
 void xmanager_metricasyncmsg_destroy(xmanager_metricasyncmsg* xmetricasyncmsg)
 {
     if (NULL == xmetricasyncmsg)
@@ -48,7 +47,7 @@ void xmanager_metricasyncmsg_destroy(xmanager_metricasyncmsg* xmetricasyncmsg)
     rfree(xmetricasyncmsg);
 }
 
-/* 删除 metricasyncmsg */
+/* Delete metricasyncmsg */
 void xmanager_metricasyncmsg_destroyvoid(void* args)
 {
     xmanager_metricasyncmsg_destroy((xmanager_metricasyncmsg*)args);

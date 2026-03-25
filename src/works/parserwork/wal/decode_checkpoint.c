@@ -34,9 +34,9 @@ void decode_chkpt_init(decodingcontext* ctx, XLogRecPtr redolsn)
 {
     checkpointnode* chkptnode = NULL;
 
-    /* 将 redolsn 加入到链表中 */
+    /* Add redolsn to linked list */
     chkptnode = (checkpointnode*)rmalloc0(sizeof(checkpointnode));
-    if(NULL == chkptnode)
+    if (NULL == chkptnode)
     {
         elog(RLOG_DEBUG, "out of memory, %s", strerror(errno));
     }
@@ -47,7 +47,7 @@ void decode_chkpt_init(decodingcontext* ctx, XLogRecPtr redolsn)
     chkptnode->redolsn = redolsn;
 
     ctx->trans_cache->chkpts = rmalloc0(sizeof(checkpoints));
-    if(NULL == ctx->trans_cache->chkpts)
+    if (NULL == ctx->trans_cache->chkpts)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
@@ -57,22 +57,21 @@ void decode_chkpt_init(decodingcontext* ctx, XLogRecPtr redolsn)
     ctx->trans_cache->chkpts->head = chkptnode;
     ctx->trans_cache->chkpts->tail = chkptnode;
 
-    elog(RLOG_INFO, "ripple redolsn from %X/%X",
-                    (uint32)(redolsn>>32), (uint32)redolsn);
+    elog(RLOG_INFO, "ripple redolsn from %X/%X", (uint32)(redolsn >> 32), (uint32)redolsn);
 }
 
-/* checkpoint 提交 */
+/* checkpoint commit */
 void decode_chkpt(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
-    txn *txn = NULL;
-    checkpointnode* chkptnode = NULL;
+    txn*                              txn = NULL;
+    checkpointnode*                   chkptnode = NULL;
     pg_parser_translog_pre_transchkp* prechkpt = NULL;
 
     prechkpt = (pg_parser_translog_pre_transchkp*)pbase;
 
-    /* 将 redolsn 加入到链表中 */
+    /* Add redolsn to linked list */
     chkptnode = (checkpointnode*)rmalloc0(sizeof(checkpointnode));
-    if(NULL == chkptnode)
+    if (NULL == chkptnode)
     {
         elog(RLOG_DEBUG, "out of memory, %s", strerror(errno));
     }
@@ -82,8 +81,8 @@ void decode_chkpt(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
     chkptnode->xid = prechkpt->m_base.m_xid;
     chkptnode->redolsn = prechkpt->m_redo_lsn;
 
-    /* 挂上去 */
-    if(NULL == ctx->trans_cache->chkpts->head)
+    /* Hook it on */
+    if (NULL == ctx->trans_cache->chkpts->head)
     {
         ctx->trans_cache->chkpts->head = chkptnode;
         ctx->trans_cache->chkpts->tail = chkptnode;
@@ -94,60 +93,56 @@ void decode_chkpt(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
         ctx->trans_cache->chkpts->tail->next = chkptnode;
         ctx->trans_cache->chkpts->tail = chkptnode;
     }
-    elog(RLOG_DEBUG, "add checkpoint:%X/%X", 
-                        (uint32)(chkptnode->redolsn>>32),
-                        (uint32)(chkptnode->redolsn));
+    elog(RLOG_DEBUG, "add checkpoint:%X/%X", (uint32)(chkptnode->redolsn >> 32),
+         (uint32)(chkptnode->redolsn));
 
-    /* 检查时间线是否发生变化 */
+    /* Check if timeline has changed */
     if (prechkpt->m_this_timeline != prechkpt->m_prev_timeline)
     {
-        /* 时间线发生变化, 创建一个xid = 0的事物 */
-        txn = txn_init(InvalidTransactionId, 
-                            ctx->decode_record->start.wal.lsn,
-                            ctx->decode_record->end.wal.lsn);
+        /* Timeline changed, create a transaction with xid = 0 */
+        txn = txn_init(InvalidTransactionId, ctx->decode_record->start.wal.lsn,
+                       ctx->decode_record->end.wal.lsn);
 
-        /* 设置时间线 */
+        /* Set timeline */
         txn->type = TXN_TYPE_TIMELINE;
         txn->curtlid = prechkpt->m_this_timeline;
         ctx->base.curtlid = prechkpt->m_this_timeline;
 
-        /* 加入到队列中 */
+        /* Add to queue */
         cache_txn_add(ctx->parser2txns, txn);
     }
 
-    if(InvalidTransactionId == chkptnode->xid 
-        && ctx->decode_record->start.wal.lsn > ctx->base.confirmedlsn)
+    if (InvalidTransactionId == chkptnode->xid &&
+        ctx->decode_record->start.wal.lsn > ctx->base.confirmedlsn)
     {
-        txn = txn_init(InvalidTransactionId, 
-                            ctx->decode_record->start.wal.lsn,
-                            ctx->decode_record->end.wal.lsn);
+        txn = txn_init(InvalidTransactionId, ctx->decode_record->start.wal.lsn,
+                       ctx->decode_record->end.wal.lsn);
 
-        /* 根据事务startlsn/endlsn更新redo/restart/confirm lsn */
+        /* Update redo/restart/confirm lsn based on transaction startlsn/endlsn */
         transcache_refreshlsn((void*)ctx, txn);
 
-        /* 加入到队列中 */
+        /* Add to queue */
         cache_txn_add(ctx->parser2txns, txn);
     }
 }
 
 void decode_recovery(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 {
-    txn *txn = NULL;
+    txn*                                txn = NULL;
     pg_parser_translog_pre_endrecovery* recovery = NULL;
 
     if (recovery->m_this_timeline != recovery->m_prev_timeline)
     {
-        /* 时间线发生变化, 创建一个xid = 0的事物 */
-        txn = txn_init(InvalidTransactionId, 
-                            ctx->decode_record->start.wal.lsn,
-                            ctx->decode_record->end.wal.lsn);
+        /* Timeline changed, create a transaction with xid = 0 */
+        txn = txn_init(InvalidTransactionId, ctx->decode_record->start.wal.lsn,
+                       ctx->decode_record->end.wal.lsn);
 
-        /* 设置时间线 */
+        /* Set timeline */
         txn->type = TXN_TYPE_TIMELINE;
         txn->curtlid = recovery->m_this_timeline;
         ctx->base.curtlid = recovery->m_this_timeline;
 
-        /* 加入到队列中 */
+        /* Add to queue */
         cache_txn_add(ctx->parser2txns, txn);
     }
 }

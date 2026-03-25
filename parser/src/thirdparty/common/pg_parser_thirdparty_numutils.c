@@ -1,12 +1,12 @@
 /**
  * @file pg_parser_thirdparty_numutils.c
  * @author bytesync
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2023-08-03
- * 
+ *
  * @copyright Copyright (c) 2023
- * 
+ *
  */
 
 #include <math.h>
@@ -25,9 +25,9 @@
  *
  * It doesn't seem worth implementing this separately.
  */
-void numutils_itoa(int16_t i, char *a)
+void numutils_itoa(int16_t i, char* a)
 {
-    numutils_ltoa((int32_t) i, a);
+    numutils_ltoa((int32_t)i, a);
 }
 
 /*
@@ -36,10 +36,10 @@ void numutils_itoa(int16_t i, char *a)
  * Caller must ensure that 'a' points to enough memory to hold the result
  * (at least 12 bytes, counting a leading sign and trailing NUL).
  */
-void numutils_ltoa(int32_t value, char *a)
+void numutils_ltoa(int32_t value, char* a)
 {
-    char       *start = a;
-    bool        neg = false;
+    char* start = a;
+    bool  neg = false;
 
     /*
      * Avoid problems with the most negative integer not being representable
@@ -59,8 +59,8 @@ void numutils_ltoa(int32_t value, char *a)
     /* Compute the result string backwards. */
     do
     {
-        int32_t        remainder;
-        int32_t        oldval = value;
+        int32_t remainder;
+        int32_t oldval = value;
 
         value /= 10;
         remainder = oldval - value * 10;
@@ -68,7 +68,9 @@ void numutils_ltoa(int32_t value, char *a)
     } while (value != 0);
 
     if (neg)
+    {
         *a++ = '-';
+    }
 
     /* Add trailing NUL byte, and back up 'a' to the last character. */
     *a-- = '\0';
@@ -76,7 +78,7 @@ void numutils_ltoa(int32_t value, char *a)
     /* Reverse string. */
     while (start < a)
     {
-        char        swap = *start;
+        char swap = *start;
 
         *start++ = *a;
         *a-- = swap;
@@ -89,10 +91,10 @@ void numutils_ltoa(int32_t value, char *a)
  * Caller must ensure that 'a' points to enough memory to hold the result
  * (at least MAXINT8LEN+1 bytes, counting a leading sign and trailing NUL).
  */
-void numutils_lltoa(int64_t value, char *a)
+void numutils_lltoa(int64_t value, char* a)
 {
-    char       *start = a;
-    bool        neg = false;
+    char* start = a;
+    bool  neg = false;
 
     /*
      * Avoid problems with the most negative integer not being representable
@@ -112,8 +114,8 @@ void numutils_lltoa(int64_t value, char *a)
     /* Compute the result string backwards. */
     do
     {
-        int64_t        remainder;
-        int64_t        oldval = value;
+        int64_t remainder;
+        int64_t oldval = value;
 
         value /= 10;
         remainder = oldval - value * 10;
@@ -121,7 +123,9 @@ void numutils_lltoa(int64_t value, char *a)
     } while (value != 0);
 
     if (neg)
+    {
         *a++ = '-';
+    }
 
     /* Add trailing NUL byte, and back up 'a' to the last character. */
     *a-- = '\0';
@@ -129,13 +133,12 @@ void numutils_lltoa(int64_t value, char *a)
     /* Reverse string. */
     while (start < a)
     {
-        char        swap = *start;
+        char swap = *start;
 
         *start++ = *a;
         *a-- = swap;
     }
 }
-
 
 /*
  * numutils_ltostr_zeropad
@@ -159,11 +162,11 @@ void numutils_lltoa(int64_t value, char *a)
  * Note: Caller must ensure that 'str' points to enough memory to hold the
  * result.
  */
-char *numutils_ltostr_zeropad(char *str, int32_t value, int32_t minwidth)
+char* numutils_ltostr_zeropad(char* str, int32_t value, int32_t minwidth)
 {
-    char       *start = str;
-    char       *end = &str[minwidth];
-    int32_t        num = value;
+    char*   start = str;
+    char*   end = &str[minwidth];
+    int32_t num = value;
 
     /*
      * Handle negative numbers in a special way.  We can't just write a '-'
@@ -181,8 +184,8 @@ char *numutils_ltostr_zeropad(char *str, int32_t value, int32_t minwidth)
          */
         while (minwidth--)
         {
-            int32_t        oldval = num;
-            int32_t        remainder;
+            int32_t oldval = num;
+            int32_t remainder;
 
             num /= 10;
             remainder = oldval - num * 10;
@@ -194,8 +197,8 @@ char *numutils_ltostr_zeropad(char *str, int32_t value, int32_t minwidth)
         /* Build the number starting at the last digit */
         while (minwidth--)
         {
-            int32_t        oldval = num;
-            int32_t        remainder;
+            int32_t oldval = num;
+            int32_t remainder;
 
             num /= 10;
             remainder = oldval - num * 10;
@@ -209,7 +212,9 @@ char *numutils_ltostr_zeropad(char *str, int32_t value, int32_t minwidth)
      * will generate a correct answer in the minimum valid width.
      */
     if (num != 0)
+    {
         return numutils_ltostr(str, value);
+    }
 
     /* Otherwise, return last output character + 1 */
     return end;
@@ -233,10 +238,10 @@ char *numutils_ltostr_zeropad(char *str, int32_t value, int32_t minwidth)
  * Note: Caller must ensure that 'str' points to enough memory to hold the
  * result.
  */
-char *numutils_ltostr(char *str, int32_t value)
+char* numutils_ltostr(char* str, int32_t value)
 {
-    char       *start;
-    char       *end;
+    char* start;
+    char* end;
 
     /*
      * Handle negative numbers in a special way.  We can't just write a '-'
@@ -252,8 +257,8 @@ char *numutils_ltostr(char *str, int32_t value)
         /* Compute the result string backwards. */
         do
         {
-            int32_t        oldval = value;
-            int32_t        remainder;
+            int32_t oldval = value;
+            int32_t remainder;
 
             value /= 10;
             remainder = oldval - value * 10;
@@ -269,8 +274,8 @@ char *numutils_ltostr(char *str, int32_t value)
         /* Compute the result string backwards. */
         do
         {
-            int32_t        oldval = value;
-            int32_t        remainder;
+            int32_t oldval = value;
+            int32_t remainder;
 
             value /= 10;
             remainder = oldval - value * 10;
@@ -284,7 +289,7 @@ char *numutils_ltostr(char *str, int32_t value)
     /* Reverse string. */
     while (start < str)
     {
-        char        swap = *start;
+        char swap = *start;
 
         *start++ = *str;
         *str-- = swap;
