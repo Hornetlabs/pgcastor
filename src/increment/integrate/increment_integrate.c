@@ -669,9 +669,9 @@ increment_integrate* increment_integrate_init(void)
 /* Start refresh */
 bool increment_integrate_startrefresh(increment_integrate* incintegrate)
 {
-    int                iret = 0;
-    ListCell*          lc = NULL;
-    refresh_integrate* rintegrate = NULL;
+    int iret                        = 0;
+    ListCell* lc                    = NULL;
+    refresh_integrate* rintegrate   = NULL;
 
     iret = osal_thread_lock(&incintegrate->refreshlock);
     if (0 != iret)
@@ -710,10 +710,10 @@ bool increment_integrate_startrefresh(increment_integrate* incintegrate)
 /* Recycle refresh nodes */
 bool increment_integrate_tryjoinonrefresh(increment_integrate* incintegrate)
 {
-    int                iret = 0;
-    List*              nl = NULL;
-    ListCell*          lc = NULL;
-    refresh_integrate* rintegrate = NULL;
+    int iret                        = 0;
+    List*  nl                       = NULL;
+    ListCell* lc                    = NULL;
+    refresh_integrate* rintegrate   = NULL;
 
     iret = osal_thread_lock(&incintegrate->refreshlock);
     if (0 != iret)
@@ -733,8 +733,10 @@ bool increment_integrate_tryjoinonrefresh(increment_integrate* incintegrate)
 
         /*
          * refresh is already done
-         *  1. Resource release
+         *  1. Clean up the refreshtable file directory 
+         *  2. Resource release
          */
+        refresh_table_syncstat_cleardirbyall(rintegrate->sync_stats, rintegrate->refresh_path);
         refresh_integrate_free(rintegrate);
     }
 

@@ -70,6 +70,7 @@ typedef enum CAPTURERELOAD_STATUS
 #define BIGTRANSACTION_FILE_TEMP "bigtransaction.status.tmp"
 #define ONLINEREFRESHABANDON_DAT "onlinerefreshabandon.dat"
 #define REFRESH_STATUS "refresh.status"
+#define REFRESH_REFRESHTABLES "refreshtables.dat"
 
 #define TIMEZONE "PRC"
 #define NUMERIC "zh_CN.UTF-8"

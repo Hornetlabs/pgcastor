@@ -58,6 +58,8 @@ void refreshtablesyncstat_cnt_set(int cnt, refresh_table_syncstat* syncstat);
 bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, void* queue,
                                      char* refreshdir);
 
+bool refresh_table_syncstat_cleardirbyall(refresh_table_syncstats* tablesyncstats, char* refreshdir);
+
 void refresh_table_syncstat_free(refresh_table_syncstat* tablesyncstat);
 
 refresh_table_syncstats* refresh_table_syncstats_init(void);

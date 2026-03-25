@@ -214,7 +214,6 @@ void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* 
 bool refreshtablesyncstats_markstatdone(refresh_table_sharding*  tablesharding,
                                         refresh_table_syncstats* tablesyncstats, char* refreshdir)
 {
-    bool                    complete = false;
     refresh_table_syncstat* current_table = NULL;
 
     if (!tablesharding || !tablesyncstats || !tablesyncstats->tablesyncing)
@@ -268,7 +267,6 @@ bool refreshtablesyncstats_markstatdone(refresh_table_sharding*  tablesharding,
                 tablesyncstats->tablesyncdone = current_table;
                 current_table->prev = NULL;
                 current_table->tablestat = REFRESH_TABLE_STAT_DONE;
-                complete = true;
             }
             refresh_table_syncstats_write(current_table, refreshdir);
             break;
@@ -277,21 +275,6 @@ bool refreshtablesyncstats_markstatdone(refresh_table_sharding*  tablesharding,
     }
 
     refresh_table_syncstats_unlock(tablesyncstats);
-
-    /* delete completed files */
-    if (complete)
-    {
-        StringInfo path = NULL;
-        path = makeStringInfo();
-
-        appendStringInfo(path, "%s/%s/%s_%s", refreshdir, REFRESH_REFRESH, tablesharding->schema,
-                         tablesharding->table);
-        if (!osal_remove_dir(path->data))
-        {
-            elog(RLOG_ERROR, "can't remove dir: %s", path->data);
-        }
-        deleteStringInfo(path);
-    }
 
     return true;
 }

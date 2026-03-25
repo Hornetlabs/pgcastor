@@ -92,10 +92,10 @@ void refreshtablesyncstat_cnt_set(int cnt, refresh_table_syncstat* syncstat)
 bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, void* queue_ptr,
                                      char* refreshdir)
 {
-    DIR*                    compdir = NULL;
-    struct dirent*          entry = NULL;
-    StringInfo              path = NULL;
-    refresh_table_syncstat* tables = NULL;
+    DIR* compdir                    = NULL;
+    struct dirent* entry            = NULL;
+    StringInfo path                 = NULL;
+    refresh_table_syncstat* tables  = NULL;
 
     path = makeStringInfo();
 
@@ -185,10 +185,33 @@ bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, vo
     return true;
 }
 
+/* Clean up the file directory based on tablesyncstats->tablesyncall */
+bool refresh_table_syncstat_cleardirbyall(refresh_table_syncstats* tablesyncstats, char* refreshdir)
+{
+    StringInfo path                     = NULL;
+    refresh_table_syncstat* tables      = NULL;
+
+    path = makeStringInfo();
+
+    /* Iterate over tablesyncall and clean up directories */
+    for (tables = tablesyncstats->tablesyncall; tables != NULL; tables = tables->next)
+    {
+        resetStringInfo(path);
+        appendStringInfo(path, "%s/%s/%s_%s", refreshdir,
+                                              REFRESH_REFRESH,
+                                              tables->schema,
+                                              tables->table);
+        osal_remove_dir(path->data);
+    }
+    /* cleanup */
+    deleteStringInfo(path);
+    return true;
+}
+
 void refresh_table_syncstat_free(refresh_table_syncstat* tablesyncstat)
 {
-    refresh_table_syncstat* next = NULL;
-    refresh_table_syncstat* current = tablesyncstat;
+    refresh_table_syncstat* next        = NULL;
+    refresh_table_syncstat* current     = tablesyncstat;
 
     if (NULL == tablesyncstat)
     {

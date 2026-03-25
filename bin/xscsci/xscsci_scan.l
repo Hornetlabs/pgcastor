@@ -84,7 +84,7 @@ digit           [0-9]+
 
 /* 单词组成 */
 ident_start     [A-Za-z]
-ident_cont      [A-Za-z0-9]
+ident_cont      [A-Za-z0-9_]
 
 /* 单词匹配 */
 identifier      {ident_start}{ident_cont}*

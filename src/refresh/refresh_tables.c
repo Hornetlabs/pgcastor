@@ -276,11 +276,11 @@ static void refresh_table_get_table_from_filename(char* filename, refresh_table*
 
 refresh_tables* refresh_tables_gen_from_file(char* path)
 {
-    refresh_tables* result = NULL;
-    refresh_table*  table_prev = NULL;
-    DIR*            compdir = NULL;
-    int             table_cnt = 0;
-    struct dirent*  entry = NULL;
+    int table_cnt               = 0;
+    refresh_tables* result      = NULL;
+    refresh_table*  table_prev  = NULL;
+    DIR* compdir                = NULL;
+    struct dirent* entry        = NULL;
 
     compdir = osal_open_dir(path);
     if (NULL == compdir)
@@ -323,4 +323,140 @@ refresh_tables* refresh_tables_gen_from_file(char* path)
     result->cnt = table_cnt;
 
     return result;
+}
+
+/* Generate a refresh file to record the number of shards in the table */
+bool refresh_tables_flush(refresh_tables* rtables)
+{
+    int fd                      = -1;
+    uint32 totallen             = 0;
+    uint32 len                  = 0;
+    uint8* uptr                 = NULL;
+    uint8* data                 = NULL;
+    refresh_table* rtable       = NULL;
+    char filepath[MAXPATH]      = { 0 };
+
+    snprintf(filepath, MAXPATH, "%s/%s", REFRESH_REFRESH, REFRESH_REFRESHTABLES);
+    fd = osal_basic_open_file(filepath, O_RDWR | O_CREAT | BINARY);
+    if (-1 == fd)
+    {
+        elog(RLOG_WARNING, "open file %s error", filepath);
+        return false;
+    }
+    totallen = 4;
+    for (rtable = rtables->tables; NULL != rtable; rtable = rtable->next)
+    {
+        totallen += 4;
+        /* schems */
+        totallen += strlen(rtable->schema);
+        totallen += 1;
+        /* table name */
+        totallen += strlen(rtable->table);
+        totallen += 1;
+    }
+    data = rmalloc0(totallen);
+    if (NULL == data)
+    {
+        elog(RLOG_WARNING, "flush refreshtables out of memory");
+        return false;
+    }
+    rmemset0(data, 0, '\0', totallen);
+    uptr = data;
+    rmemcpy1(uptr, 0, &totallen, 4);
+    uptr += 4;
+ 
+    /* 填充数据 */
+    for (rtable = rtables->tables; NULL != rtable; rtable = rtable->next)
+    {
+        rmemcpy1(uptr, 0, &rtable->oid, 4);
+        uptr += 4;
+        /* schema */
+        len = strlen(rtable->schema);
+        rmemcpy1(uptr, 0, rtable->schema, len);
+        uptr += len;
+        uptr += 1;
+        /* table name */
+        len = strlen(rtable->table);
+        rmemcpy1(uptr, 0, rtable->table, len);
+        uptr += len;
+        uptr += 1;
+    }
+    osal_file_pwrite(fd, (char*)data, totallen, 0);
+    osal_file_sync(fd);
+    osal_file_close(fd);
+    return true;
+}
+
+/* Load refresh file */
+refresh_tables* refresh_tables_load(void)
+{
+    int fd                      = -1;
+    uint32 fsize                = 0;
+    uint32 totallen             = 0;
+    uint8* uptr                 = NULL;
+    uint8* data                 = NULL;
+    refresh_table* rtable       = NULL;
+    refresh_tables* rtables     = NULL;
+    char filepath[MAXPATH]      = { 0 };
+
+    snprintf(filepath, MAXPATH, "%s/%s", REFRESH_REFRESH, REFRESH_REFRESHTABLES);
+    fd = osal_basic_open_file(filepath, O_RDWR | BINARY);
+    if (-1 == fd)
+    {
+        elog(RLOG_WARNING, "open file %s error", filepath);
+        return false;
+    }
+    fsize = osal_file_size(fd);
+    data = rmalloc0(fsize);
+    if (NULL == data)
+    {
+        osal_file_close(fd);
+        fd = -1;
+        elog(RLOG_WARNING, "out of memory");
+        return NULL;
+    }
+    rmemset0(data, 0, '\0', fsize);
+    osal_file_pread(fd, (char*)data, fsize, 0);
+    osal_file_close(fd);
+    fd = -1;
+    uptr = data;
+    rmemcpy1(&totallen, 0, uptr, 4);
+    uptr += 4;
+    totallen -= 4;
+    while (0 != totallen)
+    {
+        if (NULL == rtables)
+        {
+            rtables = refresh_tables_init();
+            if (NULL == rtables)
+            {
+                elog(RLOG_WARNING, "load refresh tables error");
+                return NULL;
+            }
+        }
+        rtable = refresh_table_init();
+        if (NULL == rtable)
+        {
+            elog(RLOG_WARNING, "load refresh tables out of memory");
+            refresh_freetables(rtables);
+            return NULL;
+        }
+        refresh_tables_add(rtable, rtables);
+        rmemcpy1(&rtable->oid, 0, uptr, 4);
+        uptr += 4;
+        totallen -= 4;
+        /* schema */
+        refresh_table_setschema((char*)uptr, rtable);
+        totallen -= strlen((char*)uptr);
+        uptr += strlen((char*)uptr);
+        uptr += 1;
+        totallen -= 1;
+        /* table */
+        refresh_table_settable((char*)uptr, rtable);
+        totallen -= strlen((char*)uptr);
+        uptr += strlen((char*)uptr);
+        uptr += 1;
+        totallen -= 1;
+    }
+    return rtables;
 }
