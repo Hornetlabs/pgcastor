@@ -68,6 +68,14 @@ extern "C"
         }
         return (s2 << 16) + s1;
     }
+
+#if defined(USE_EXTERNAL_MZCRC)
+    /* If USE_EXTERNAL_CRC is defined, an external module will export the
+     * mz_crc32() symbol for us to use, e.g. an SSE-accelerated version.
+     * Depending on the impl, it may be necessary to ~ the input/output crc values.
+     */
+    mz_ulong mz_crc32(mz_ulong crc, const mz_uint8* ptr, size_t buf_len);
+#else
 /* Faster, but larger CPU cache footprint.
  */
 mz_ulong mz_crc32(mz_ulong crc, const mz_uint8* ptr, size_t buf_len)
