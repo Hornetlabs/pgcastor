@@ -82,10 +82,10 @@ typedef struct SPLITWALCONTEXT
     splitwalctx_privdatacallback callback;
 } splitwalcontext;
 
-extern void*            splitwork_wal_main(void* args);
+extern void* splitwork_wal_main(void* args);
 extern splitwalcontext* splitwal_init(void);
-extern void             splitwal_destroy(splitwalcontext* split_wal_ctx);
-extern void*            onlinerefresh_captureloadrecord_main(void* args);
-extern void             onlinerefresh_captureloadrecord_free(void* args);
+extern void splitwal_destroy(splitwalcontext* split_wal_ctx);
+extern void* onlinerefresh_captureloadrecord_main(void* args);
+extern void onlinerefresh_captureloadrecord_free(void* args);
 
 #endif

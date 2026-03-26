@@ -18,19 +18,19 @@
 
 #define PGFUNC_NETWORK_MCXT NULL
 
-#define PGSQL_AF_INET (AF_INET + 0)
-#define PGSQL_AF_INET6 (AF_INET + 1)
+#define PGSQL_AF_INET       (AF_INET + 0)
+#define PGSQL_AF_INET6      (AF_INET + 1)
 
-#define NS_IN6ADDRSZ 16
-#define NS_INT16SZ 2
+#define NS_IN6ADDRSZ        16
+#define NS_INT16SZ          2
 
-#define SPRINTF(x) ((size_t)sprintf x)
+#define SPRINTF(x)          ((size_t)sprintf x)
 
-#define ip_family(inetptr) (((inet_struct*)PG_PARSER_VARDATA_ANY(inetptr))->family)
+#define ip_family(inetptr)  (((inet_struct*)PG_PARSER_VARDATA_ANY(inetptr))->family)
 
-#define ip_bits(inetptr) (((inet_struct*)PG_PARSER_VARDATA_ANY(inetptr))->bits)
+#define ip_bits(inetptr)    (((inet_struct*)PG_PARSER_VARDATA_ANY(inetptr))->bits)
 
-#define ip_addr(inetptr) (((inet_struct*)PG_PARSER_VARDATA_ANY(inetptr))->ipaddr)
+#define ip_addr(inetptr)    (((inet_struct*)PG_PARSER_VARDATA_ANY(inetptr))->ipaddr)
 
 typedef struct
 {
@@ -45,8 +45,8 @@ typedef struct
     inet_struct inet_data;
 } inet;
 
-static char*   pg_parser_inet_net_ntop(int32_t af, const void* src, int32_t bits, char* dst,
-                                       size_t size);
+static char* pg_parser_inet_net_ntop(
+    int32_t af, const void* src, int32_t bits, char* dst, size_t size);
 static int32_t decoct(const unsigned char* src, int32_t bytes, char* dst, size_t size);
 
 static char* inet_net_ntop_ipv4(const unsigned char* src, int32_t bits, char* dst, size_t size);
@@ -287,8 +287,8 @@ static char* inet_net_ntop_ipv6(const unsigned char* src, int32_t bits, char* ds
  * author:
  *    Paul Vixie (ISC), October 1998
  */
-static char* pg_parser_inet_net_ntop(int32_t af, const void* src, int32_t bits, char* dst,
-                                     size_t size)
+static char* pg_parser_inet_net_ntop(
+    int32_t af, const void* src, int32_t bits, char* dst, size_t size)
 {
     /*
      * We need to cover both the address family constants used by the PG inet

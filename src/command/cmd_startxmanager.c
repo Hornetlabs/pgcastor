@@ -30,8 +30,13 @@ static bool cmd_startxmanagerthreads(xmanager* xmgr)
     /* Threads are started in reverse order of exit, i.e., first started exits last */
 
     /* Start metric thread */
-    if (false == threads_addpersistthread(xmgr->threads, &thrnode, THRNODE_IDENTITY_XMANAGER_METRIC,
-                                          xmgr->persistno, (void*)xmgr->metric, NULL, NULL,
+    if (false == threads_addpersistthread(xmgr->threads,
+                                          &thrnode,
+                                          THRNODE_IDENTITY_XMANAGER_METRIC,
+                                          xmgr->persistno,
+                                          (void*)xmgr->metric,
+                                          NULL,
+                                          NULL,
                                           xmanager_metric_main))
     {
         elog(RLOG_WARNING, "add xmanager metric module persist to threads error");
@@ -39,8 +44,13 @@ static bool cmd_startxmanagerthreads(xmanager* xmgr)
     }
 
     /* Start auth thread */
-    if (false == threads_addpersistthread(xmgr->threads, &thrnode, THRNODE_IDENTITY_XMANAGER_AUTH,
-                                          xmgr->persistno, (void*)xmgr->auth, NULL, NULL,
+    if (false == threads_addpersistthread(xmgr->threads,
+                                          &thrnode,
+                                          THRNODE_IDENTITY_XMANAGER_AUTH,
+                                          xmgr->persistno,
+                                          (void*)xmgr->auth,
+                                          NULL,
+                                          NULL,
                                           xmanager_auth_main))
     {
         elog(RLOG_WARNING, "add xmanager auth module persist to threads error");
@@ -48,8 +58,13 @@ static bool cmd_startxmanagerthreads(xmanager* xmgr)
     }
 
     /* Start listen thread */
-    if (false == threads_addpersistthread(xmgr->threads, &thrnode, THRNODE_IDENTITY_XMANAGER_LISTEN,
-                                          xmgr->persistno, (void*)xmgr->listens, NULL, NULL,
+    if (false == threads_addpersistthread(xmgr->threads,
+                                          &thrnode,
+                                          THRNODE_IDENTITY_XMANAGER_LISTEN,
+                                          xmgr->persistno,
+                                          (void*)xmgr->listens,
+                                          NULL,
+                                          NULL,
                                           xmanager_listen_main))
     {
         elog(RLOG_WARNING, "add xmanager listen module persist to threads error");

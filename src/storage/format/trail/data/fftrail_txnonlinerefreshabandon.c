@@ -23,8 +23,8 @@ bool fftrail_txnonlinerefreshabandon_serial(void* data, void* state)
      *      uuid            16 bytes
      *  RecTail
      */
-    int    hdrlen = 0;
-    uint32 tlen = 0;
+    int           hdrlen = 0;
+    uint32        tlen = 0;
 
     uint8*        uptr = NULL;
     List*         uuid_list = NULL;
@@ -76,8 +76,8 @@ bool fftrail_txnonlinerefreshabandon_serial(void* data, void* state)
         uuid = (uuid_t*)lfirst(lc);
 
         /* online refresh uuid */
-        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR, 16,
-                                 (uint8*)uuid->data);
+        fftrail_data_data2buffer(
+            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR, 16, (uint8*)uuid->data);
     }
 
     /* Fill header info */
@@ -115,13 +115,13 @@ bool fftrail_txnonlinerefreshabandon_serial(void* data, void* state)
 /* Deserialize online refresh info */
 bool fftrail_txnonlinerefreshabandon_deserial(void** data, void* state)
 {
-    uint8  tokenid = 0;   /* token id */
-    uint8  tokeninfo = 0; /* token details */
-    uint32 recoffset = 0;
-    uint32 dataoffset = 0;
-    uint16 subtype = FF_DATA_TYPE_NOP;
-    uint32 tokenlen = 0; /* token length */
-    uint64 totallen = 0;
+    uint8         tokenid = 0;   /* token id */
+    uint8         tokeninfo = 0; /* token details */
+    uint32        recoffset = 0;
+    uint32        dataoffset = 0;
+    uint16        subtype = FF_DATA_TYPE_NOP;
+    uint32        tokenlen = 0; /* token length */
+    uint64        totallen = 0;
 
     uint8*        uptr = NULL;
     uint8*        tokendata = NULL; /* token data area */
@@ -196,8 +196,13 @@ bool fftrail_txnonlinerefreshabandon_deserial(void** data, void* state)
         }
 
         /* Get uuid */
-        if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_STR, 16, (uint8*)uuid->data))
+        if (false == fftrail_data_buffer2data(&txndata->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_STR,
+                                              16,
+                                              (uint8*)uuid->data))
         {
             return false;
         }

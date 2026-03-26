@@ -26,7 +26,8 @@ typedef struct INCREMENT_INTEGRATESPLITTRAIL
 void increment_integratesplittrail_state_set(increment_integratesplittrail* splittrail, int state);
 
 void increment_integratesplittrail_emit_set(increment_integratesplittrail* splittrail,
-                                            uint64 fileid, uint64 emitoffset);
+                                            uint64                         fileid,
+                                            uint64                         emitoffset);
 
 increment_integratesplittrail* increment_integratesplittrail_init(void);
 

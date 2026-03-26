@@ -9,39 +9,51 @@
 #define DDL_CREATE_VIEW_MCXT NULL
 
 static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_view(
-    pg_parser_translog_systb2ddl* pg_parser_ddl, pg_parser_ddlstate* ddlstate,
-    int32_t* pg_parser_errno);
+    pg_parser_translog_systb2ddl* pg_parser_ddl,
+    pg_parser_ddlstate*           ddlstate,
+    int32_t*                      pg_parser_errno);
 
 pg_parser_translog_ddlstmt* pg_parser_DDL_create_view(
     pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record, pg_parser_ddlstate* ddlstate,
-    int32_t* pg_parser_errno)
+    pg_parser_translog_systb2dll_record* current_record,
+    pg_parser_ddlstate*                  ddlstate,
+    int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
     if (IS_INSERT(current_record->m_record))
     {
-        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_ATTRIBUTE,
-                                       pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
+                                       SYS_ATTRIBUTE,
+                                       pg_parser_ddl->m_dbtype,
+                                       pg_parser_ddl->m_dbversion))
         {
             /* nothing need to do */
         }
-        else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_REWRITE,
-                                            pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+        else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
+                                            SYS_REWRITE,
+                                            pg_parser_ddl->m_dbtype,
+                                            pg_parser_ddl->m_dbversion))
         {
             /* nothing need to do */
             // ddlstate->m_view_def = current_record->m_record;
         }
-        else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND,
-                                            pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+        else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
+                                            SYS_DEPEND,
+                                            pg_parser_ddl->m_dbtype,
+                                            pg_parser_ddl->m_dbversion))
         {
             char* temp_refobjid = NULL;
             char* temp_classid = NULL;
-            temp_refobjid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "refobjid", current_record->m_record->m_new_values,
-                current_record->m_record->m_valueCnt, temp_refobjid);
-            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "classid", current_record->m_record->m_new_values,
-                current_record->m_record->m_valueCnt, temp_classid);
+            temp_refobjid =
+                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("refobjid",
+                                                   current_record->m_record->m_new_values,
+                                                   current_record->m_record->m_valueCnt,
+                                                   temp_refobjid);
+            temp_classid =
+                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                   current_record->m_record->m_new_values,
+                                                   current_record->m_record->m_valueCnt,
+                                                   temp_classid);
             if (!strcmp(ddlstate->m_reloid_char, temp_refobjid) &&
                 !strcmp(RewriteRelationIdChar, temp_classid))
             {
@@ -54,8 +66,9 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_view(
 }
 
 static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_view(
-    pg_parser_translog_systb2ddl* pg_parser_ddl, pg_parser_ddlstate* ddlstate,
-    int32_t* pg_parser_errno)
+    pg_parser_translog_systb2ddl* pg_parser_ddl,
+    pg_parser_ddlstate*           ddlstate,
+    int32_t*                      pg_parser_errno)
 {
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);

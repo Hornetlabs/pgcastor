@@ -7,7 +7,8 @@
  *  2. Verify if job already exists
  *  3. Get information and return
  */
-extern bool xmanager_metricmsg_parsewatch(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                          netpacket* npacket);
+extern bool xmanager_metricmsg_parsewatch(xmanager_metric* xmetric,
+                                          netpoolentry*    npoolentry,
+                                          netpacket*       npacket);
 
 #endif

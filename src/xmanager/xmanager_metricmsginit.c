@@ -27,8 +27,9 @@
  *3. Create async message and mount to xscsci node
  *4. Execute init command
  */
-bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                  netpacket* npacket)
+bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric,
+                                  netpoolentry*    npoolentry,
+                                  netpacket*       npacket)
 {
     int                        errcode = 0;
     int                        len = 0;
@@ -57,7 +58,9 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric, netpoolentry* npoole
     if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 512, "ERROR: xmanager recv init command, unsupport %s",
+        snprintf(errormsg,
+                 512,
+                 "ERROR: xmanager recv init command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parseinit_error;
     }
@@ -99,8 +102,11 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric, netpoolentry* npoole
     else if (XMANAGER_METRICNODESTAT_OFFLINE == pxmetricnode->stat)
     {
         errcode = ERROR_MSGCOMMAND;
-        snprintf(errormsg, 2048, "ERROR: %s already init, use start command start %s node.",
-                 jobname, xmanager_metricnode_getname(jobtype));
+        snprintf(errormsg,
+                 2048,
+                 "ERROR: %s already init, use start command start %s node.",
+                 jobname,
+                 xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parseinit_error;
     }
 
@@ -109,8 +115,8 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric, netpoolentry* npoole
      *  1、Get xscsci node
      *  2、Create async wait message
      */
-    fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
-                        xmanager_metricfd2node_cmp);
+    fd2node = dlist_get(
+        xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
 
     xmetricxscscinode = (xmanager_metricxscscinode*)fd2node->metricnode;
     asyncmsg = xmanager_metricasyncmsg_init();
@@ -131,13 +137,20 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric, netpoolentry* npoole
     /* Execute init command execcmd */
     if (XMANAGER_METRICNODETYPE_PGRECEIVELOG == jobtype)
     {
-        snprintf(execcmd, 1024, "%s/bin/pgreceivelog/receivelog -f %s init", xmetric->xsynchpath,
+        snprintf(execcmd,
+                 1024,
+                 "%s/bin/pgreceivelog/receivelog -f %s init",
+                 xmetric->xsynchpath,
                  pxmetricnode->conf);
     }
     else
     {
-        snprintf(execcmd, 1024, "%s/bin/%s -f %s init", xmetric->xsynchpath,
-                 xmanager_metricnode_getname(jobtype), pxmetricnode->conf);
+        snprintf(execcmd,
+                 1024,
+                 "%s/bin/%s -f %s init",
+                 xmetric->xsynchpath,
+                 xmanager_metricnode_getname(jobtype),
+                 pxmetricnode->conf);
     }
 
     /* Execute execcmd command */
@@ -163,15 +176,16 @@ xmanager_metricmsg_parseinit_error:
         xmanager_metricasyncmsg_destroy(asyncmsg);
     }
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_INITCMD,
-                                               errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(
+        xmetric, npoolentry->wpackets, XMANAGER_MSG_INITCMD, errcode, errormsg);
 }
 
 /*
  * Assemble init response message
  */
-bool xmanager_metricmsg_assembleinit(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                     dlist* dlmsgs)
+bool xmanager_metricmsg_assembleinit(xmanager_metric* xmetric,
+                                     netpoolentry*    npoolentry,
+                                     dlist*           dlmsgs)
 {
     int                      ivalue = 0;
     int                      msglen = 0;

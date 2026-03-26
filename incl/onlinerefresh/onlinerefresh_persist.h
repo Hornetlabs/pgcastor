@@ -57,8 +57,9 @@ extern onlinerefresh_persist* onlinerefresh_persist_init(void);
 extern int onlinerefresh_persist_delectbyuuidcmp(void* vala, void* valb);
 
 /* Set node status by uuid */
-extern void onlinerefresh_persist_statesetbyuuid(onlinerefresh_persist* persist, uuid_t* uuid,
-                                                 int state);
+extern void onlinerefresh_persist_statesetbyuuid(onlinerefresh_persist* persist,
+                                                 uuid_t*                uuid,
+                                                 int                    state);
 
 /* Delete stock table in node by uuid */
 extern void onlinerefresh_persist_removerefreshtbsbyuuid(onlinerefresh_persist* persist,

@@ -146,9 +146,10 @@ void bigtxn_persist_removebyxid(bigtxn_persist* persist, FullTransactionId xid)
         return;
     }
 
-    persist->dpersistnodes =
-        dlist_deletebyvalue(persist->dpersistnodes, (void*)&xid,
-                            bigtxn_integratepersist_delectbyxidcmp, bigtxn_persistnode_free);
+    persist->dpersistnodes = dlist_deletebyvalue(persist->dpersistnodes,
+                                                 (void*)&xid,
+                                                 bigtxn_integratepersist_delectbyxidcmp,
+                                                 bigtxn_persistnode_free);
     persist->count = persist->dpersistnodes->length;
 
     return;

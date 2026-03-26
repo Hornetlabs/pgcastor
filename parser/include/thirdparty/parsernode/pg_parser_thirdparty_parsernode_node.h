@@ -502,8 +502,8 @@ typedef enum pg_parser_NodeTag
     T_pg_parser_SupportRequestIndexCondition /* in nodes/supportnodes.h */
 } pg_parser_NodeTag;
 
-#define PG_PARSER_PARTITION_STRATEGY_HASH 'h'
-#define PG_PARSER_PARTITION_STRATEGY_LIST 'l'
+#define PG_PARSER_PARTITION_STRATEGY_HASH  'h'
+#define PG_PARSER_PARTITION_STRATEGY_LIST  'l'
 #define PG_PARSER_PARTITION_STRATEGY_RANGE 'r'
 /*
  * The first field of a node of any type is guaranteed to be the pg_parser_NodeTag.
@@ -516,9 +516,9 @@ typedef struct pg_parser_Node
     pg_parser_NodeTag type;
 } pg_parser_Node;
 
-#define pg_parser_NodeTagType(nodeptr) (((const pg_parser_Node*)(nodeptr))->type)
+#define pg_parser_NodeTagType(nodeptr)      (((const pg_parser_Node*)(nodeptr))->type)
 
-#define NODE_MCXT NULL
+#define NODE_MCXT                           NULL
 
 #define pg_parser_castNode(_type_, nodeptr) ((_type_*)(nodeptr))
 

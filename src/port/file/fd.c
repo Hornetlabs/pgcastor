@@ -7,11 +7,11 @@
 int g_dir_create_mode = DIR_MODE_OWNER;
 int g_file_create_mode = FILE_MODE_OWNER;
 
-#define FILE_CLOSED (-1)
+#define FILE_CLOSED                (-1)
 
-#define FileIsNotOpen(file) (file == FILE_CLOSED)
+#define FileIsNotOpen(file)        (file == FILE_CLOSED)
 
-#define IS_DIR_SEP(ch) ((ch) == '/')
+#define IS_DIR_SEP(ch)             ((ch) == '/')
 
 #define is_absolute_path(filename) (IS_DIR_SEP((filename)[0]))
 
@@ -632,8 +632,8 @@ char* osal_make_absolute_path(const char* path)
 }
 
 /* Create file with specified size */
-bool osal_create_file_with_size(char* filepath, int fileFlags, uint64_t filesize, uint32_t blksize,
-                                uint8* blkdata)
+bool osal_create_file_with_size(
+    char* filepath, int fileFlags, uint64_t filesize, uint32_t blksize, uint8* blkdata)
 {
     int      fd = -1;
     uint64_t index = 0;

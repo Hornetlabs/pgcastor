@@ -25,8 +25,8 @@ bool fftrail_txnbigtxn_end_serial(void* data, void* state)
      *      commit         1 byte
      *  RecTail
      */
-    int    hdrlen = 0;
-    uint32 tlen = 0;
+    int              hdrlen = 0;
+    uint32           tlen = 0;
 
     uint8*           uptr = NULL;
     txnstmt*         rstmt = NULL; /* Content to write to trail file */
@@ -73,11 +73,19 @@ bool fftrail_txnbigtxn_end_serial(void* data, void* state)
     fbuffer->start += hdrlen;
 
     /* bigtxn_end xid */
-    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_BIGINT, 8,
+    fftrail_data_data2buffer(&txndata->header,
+                             ffstate,
+                             &fbuffer,
+                             FTRAIL_TOKENDATATYPE_BIGINT,
+                             8,
                              (uint8*)&end_stmt->xid);
 
     /* bigtxn_end commit */
-    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_TINYINT, 1,
+    fftrail_data_data2buffer(&txndata->header,
+                             ffstate,
+                             &fbuffer,
+                             FTRAIL_TOKENDATATYPE_TINYINT,
+                             1,
                              (uint8*)&end_stmt->commit);
 
     /* Fill header info */
@@ -115,13 +123,13 @@ bool fftrail_txnbigtxn_end_serial(void* data, void* state)
 /* Deserialize bigtxn end info */
 bool fftrail_txnbigtxn_end_deserial(void** data, void* state)
 {
-    uint8  tokenid = 0;   /* token id */
-    uint8  tokeninfo = 0; /* token details */
-    uint32 recoffset = 0;
-    uint32 dataoffset = 0;
-    uint16 subtype = FF_DATA_TYPE_NOP;
-    uint32 tokenlen = 0; /* token length */
-    uint64 totallen = 0;
+    uint8            tokenid = 0;   /* token id */
+    uint8            tokeninfo = 0; /* token details */
+    uint32           recoffset = 0;
+    uint32           dataoffset = 0;
+    uint16           subtype = FF_DATA_TYPE_NOP;
+    uint32           tokenlen = 0; /* token length */
+    uint64           totallen = 0;
 
     uint8*           uptr = NULL;
     uint8*           tokendata = NULL; /* token data area */
@@ -191,8 +199,13 @@ bool fftrail_txnbigtxn_end_deserial(void** data, void* state)
     totallen = txndata->header.totallength;
 
     /* Get xid */
-    if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)&end_stmt->xid))
+    if (false == fftrail_data_buffer2data(&txndata->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_BIGINT,
+                                          8,
+                                          (uint8*)&end_stmt->xid))
     {
         return false;
     }
@@ -200,8 +213,12 @@ bool fftrail_txnbigtxn_end_deserial(void** data, void* state)
     totallen -= 8;
 
     /* bigtxn end commit */
-    if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_TINYINT, 1,
+    if (false == fftrail_data_buffer2data(&txndata->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_TINYINT,
+                                          1,
                                           (uint8*)&end_stmt->commit))
     {
         return false;

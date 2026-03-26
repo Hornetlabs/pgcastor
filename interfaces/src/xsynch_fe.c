@@ -308,7 +308,11 @@ xsynchconn* XSynchSetParam(char* connstr)
 
     if (NULL == connstr)
     {
-        snprintf(xconn->host, 512, "%s/%s.%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX,
+        snprintf(xconn->host,
+                 512,
+                 "%s/%s.%s",
+                 RMANAGER_UNIXDOMAINDIR,
+                 RMANAGER_UNIXDOMAINPREFIX,
                  RMANAGER_PORT);
         snprintf(xconn->port, 128, "%s", RMANAGER_PORT);
         xconn->keepalive = 0;

@@ -1,7 +1,7 @@
 #ifndef PG_PARSER_TRANS_TRANSREC_HEAPTUPLE_H
 #define PG_PARSER_TRANS_TRANSREC_HEAPTUPLE_H
 
-#define pg_parser_InvalidBlockNumber ((uint32_t)0xFFFFFFFF)
+#define pg_parser_InvalidBlockNumber  ((uint32_t)0xFFFFFFFF)
 #define pg_parser_InvalidOffsetNumber ((uint16_t)0)
 
 /* heap begin*/
@@ -10,22 +10,22 @@
 #define PG_PARSER_HEAP_KEYS_UPDATED                                                                \
     0x2000                                                       /* tuple was updated and key cols \
                                                                   * modified, or tuple deleted */
-#define PG_PARSER_HEAP_HOT_UPDATED 0x4000                        /* tuple was HOT-updated */
-#define PG_PARSER_HEAP_ONLY_TUPLE 0x8000                         /* this is heap-only tuple */
-#define PG_PARSER_HEAP2_XACT_MASK 0xE000                         /* visibility-related bits */
+#define PG_PARSER_HEAP_HOT_UPDATED     0x4000                    /* tuple was HOT-updated */
+#define PG_PARSER_HEAP_ONLY_TUPLE      0x8000                    /* this is heap-only tuple */
+#define PG_PARSER_HEAP2_XACT_MASK      0xE000                    /* visibility-related bits */
 #define PG_PARSER_HEAP_TUPLE_HAS_MATCH PG_PARSER_HEAP_ONLY_TUPLE /* tuple has a join match */
 
 /*
  * information stored in t_infomask:
  */
-#define PG_PARSER_HEAP_HASNULL 0x0001          /* has null attribute(s) */
-#define PG_PARSER_HEAP_HASVARWIDTH 0x0002      /* has variable-width attribute(s) */
-#define PG_PARSER_HEAP_HASEXTERNAL 0x0004      /* has external stored attribute(s) */
-#define PG_PARSER_HEAP_HASOID_OLD 0x0008       /* has an object-id field */
+#define PG_PARSER_HEAP_HASNULL          0x0001 /* has null attribute(s) */
+#define PG_PARSER_HEAP_HASVARWIDTH      0x0002 /* has variable-width attribute(s) */
+#define PG_PARSER_HEAP_HASEXTERNAL      0x0004 /* has external stored attribute(s) */
+#define PG_PARSER_HEAP_HASOID_OLD       0x0008 /* has an object-id field */
 #define PG_PARSER_HEAP_XMAX_KEYSHR_LOCK 0x0010 /* xmax is a key-shared locker */
-#define PG_PARSER_HEAP_COMBOCID 0x0020         /* t_cid is a combo cid */
-#define PG_PARSER_HEAP_XMAX_EXCL_LOCK 0x0040   /* xmax is exclusive locker */
-#define PG_PARSER_HEAP_XMAX_LOCK_ONLY 0x0080   /* xmax, if valid, is only a locker */
+#define PG_PARSER_HEAP_COMBOCID         0x0020 /* t_cid is a combo cid */
+#define PG_PARSER_HEAP_XMAX_EXCL_LOCK   0x0040 /* xmax is exclusive locker */
+#define PG_PARSER_HEAP_XMAX_LOCK_ONLY   0x0080 /* xmax, if valid, is only a locker */
 
 /* heap some flag bits end*/
 typedef struct pg_parser_xl_heap_header
@@ -50,9 +50,9 @@ typedef struct pg_parser_HeapTupleFields
 
 typedef struct pg_parser_DatumTupleFields
 {
-    int32_t datum_len_; /* pg_parser_varlena header (do not touch directly!) */
+    int32_t  datum_len_; /* pg_parser_varlena header (do not touch directly!) */
 
-    int32_t datum_typmod; /* -1, or identifier of a record type */
+    int32_t  datum_typmod; /* -1, or identifier of a record type */
 
     uint32_t datum_typeid; /* composite type OID, or RECORDOID */
 
@@ -103,7 +103,7 @@ typedef struct pg_parser_HeapTupleData
     pg_parser_HeapTupleHeader t_data; /* -> tuple header and data */
 } pg_parser_HeapTupleData;
 
-typedef pg_parser_HeapTupleData* pg_parser_HeapTuple;
+typedef pg_parser_HeapTupleData*    pg_parser_HeapTuple;
 
 typedef struct pg_parser_slist_node pg_parser_slist_node;
 struct pg_parser_slist_node
@@ -114,13 +114,13 @@ struct pg_parser_slist_node
 typedef struct pg_parser_ReorderBufferTupleBuf
 {
     /* position in preallocated list */
-    pg_parser_slist_node node;
+    pg_parser_slist_node    node;
 
     /* tuple header, the interesting bit for users of logical decoding */
     pg_parser_HeapTupleData tuple;
 
     /* pre-allocated size of tuple buffer, different from tuple size */
-    size_t alloc_tuple_size;
+    size_t                  alloc_tuple_size;
 
     /* actual tuple data follows */
 } pg_parser_ReorderBufferTupleBuf;
@@ -159,11 +159,11 @@ typedef struct pg_parser_TupleConstr
 
 typedef struct pg_parser_TupleDescData
 {
-    int32_t                natts;      /* number of attributes in the tuple */
-    uint32_t               tdtypeid;   /* composite type ID for tuple type */
-    int32_t                tdtypmod;   /* typmod for tuple type */
-    int32_t                tdrefcount; /* reference count, or -1 if not counting */
-    pg_parser_TupleConstr* constr;     /* constraints, or NULL if none */
+    int32_t                        natts;      /* number of attributes in the tuple */
+    uint32_t                       tdtypeid;   /* composite type ID for tuple type */
+    int32_t                        tdtypmod;   /* typmod for tuple type */
+    int32_t                        tdrefcount; /* reference count, or -1 if not counting */
+    pg_parser_TupleConstr*         constr;     /* constraints, or NULL if none */
     /* attrs[N] is the description of Attribute Number N+1 */
     pg_parser_sysdict_pgattributes attrs[FLEXIBLE_ARRAY_MEMBER];
 } pg_parser_TupleDescData;
@@ -186,12 +186,13 @@ typedef struct pg_parser_TupleDescData* pg_parser_TupleDesc;
 
 #define pg_parser_BlockIdSet(blockId, blockNumber)            \
     (pg_parser_AssertMacro(((const void*)(blockId) != NULL)), \
-     (blockId)->bi_hi = (blockNumber) >> 16, (blockId)->bi_lo = (blockNumber) & 0xffff)
+     (blockId)->bi_hi = (blockNumber) >> 16,                  \
+     (blockId)->bi_lo = (blockNumber) & 0xffff)
 
 #define pg_parser_HeapTupleHeaderSetXmin(tup, xid) ((tup)->t_choice.t_heap.t_xmin = (xid))
 #define pg_parser_HeapTupleHeaderSetXmax(tup, xid) ((tup)->t_choice.t_heap.t_xmax = (xid))
 
-#define pg_parser_FirstCommandId ((uint32_t)0)
+#define pg_parser_FirstCommandId                   ((uint32_t)0)
 /* SetCmin is reasonably simple since we never need a combo CID */
 #define pg_parser_HeapTupleHeaderSetCmin(tup, cid)     \
     do                                                 \
@@ -249,7 +250,8 @@ typedef struct pg_parser_TupleDescData* pg_parser_TupleDesc;
     (((tuple)->t_data->t_infomask & PG_PARSER_HEAP_HASVARWIDTH) != 0)
 
 #define pg_parser_fastgetattr(tup, attnum, tupleDesc, isnull, dbtype, dbversion)                 \
-    (pg_parser_AssertMacro((attnum) > 0), (*(isnull) = false),                                   \
+    (pg_parser_AssertMacro((attnum) > 0),                                                        \
+     (*(isnull) = false),                                                                        \
      pg_parser_HeapTupleNoNulls(tup)                                                             \
          ? (pg_parser_TupleDescAttr((tupleDesc), (attnum) - 1)->attcacheoff >= 0                 \
                 ? (pg_parser_fetchatt(                                                           \
@@ -259,8 +261,8 @@ typedef struct pg_parser_TupleDescData* pg_parser_TupleDesc;
                 : pg_parser_nocachegetattr((tup), (attnum), (tupleDesc), (dbtype), (dbversion))) \
          : ((pg_parser_att_isnull((attnum) - 1, (tup)->t_data->t_bits)                           \
                  ? ((*(isnull) = true), (pg_parser_Datum)NULL)                                   \
-                 : (pg_parser_nocachegetattr((tup), (attnum), (tupleDesc), (dbtype),             \
-                                             (dbversion))))))
+                 : (pg_parser_nocachegetattr(                                                    \
+                       (tup), (attnum), (tupleDesc), (dbtype), (dbversion))))))
 
 #define pg_parser_HeapTupleHeaderGetNatts(tup) ((tup)->t_infomask2 & PG_PARSER_HEAP_NATTS_MASK)
 
@@ -268,14 +270,14 @@ typedef struct pg_parser_TupleDescData* pg_parser_TupleDesc;
     (((attnum) > 0)                                                                          \
          ? (((attnum) > (int32_t)pg_parser_HeapTupleHeaderGetNatts((tup)->t_data))           \
                 ? pg_parser_getmissingattr((tupleDesc), (attnum), (isnull), (ismissing))     \
-                : pg_parser_fastgetattr((tup), (attnum), (tupleDesc), (isnull), (dbtype),    \
-                                        (dbversion)))                                        \
-         : pg_parser_heap_getsysattr((tup), (attnum), (tupleDesc), (isnull), (dbtype),       \
-                                     (dbversion)))
+                : pg_parser_fastgetattr(                                                     \
+                      (tup), (attnum), (tupleDesc), (isnull), (dbtype), (dbversion)))        \
+         : pg_parser_heap_getsysattr(                                                        \
+               (tup), (attnum), (tupleDesc), (isnull), (dbtype), (dbversion)))
 
-#define pg_parser_HeapTupleHeaderGetRawXmin(tup) ((tup)->t_choice.t_heap.t_xmin)
+#define pg_parser_HeapTupleHeaderGetRawXmin(tup)      ((tup)->t_choice.t_heap.t_xmin)
 
-#define pg_parser_HeapTupleHeaderGetRawXmax(tup) ((tup)->t_choice.t_heap.t_xmax)
+#define pg_parser_HeapTupleHeaderGetRawXmax(tup)      ((tup)->t_choice.t_heap.t_xmax)
 
 #define pg_parser_HeapTupleHeaderGetRawCommandId(tup) ((tup)->t_choice.t_heap.t_field3.t_cid)
 
@@ -291,7 +293,7 @@ typedef struct pg_parser_MinimalTupleData
 {
     uint32_t t_len; /* actual length of minimal tuple */
 
-    char mt_padding[PG_PARSER_MINIMAL_TUPLE_PADDING];
+    char     mt_padding[PG_PARSER_MINIMAL_TUPLE_PADDING];
 
     /* Fields below here must match HeapTupleHeaderData! */
 
@@ -299,11 +301,11 @@ typedef struct pg_parser_MinimalTupleData
 
     uint16_t t_infomask; /* various flag bits, see below */
 
-    uint8_t t_hoff; /* sizeof header incl. bitmap, padding */
+    uint8_t  t_hoff; /* sizeof header incl. bitmap, padding */
 
     /* ^ - 23 bytes - ^ */
 
-    uint8_t t_bits[FLEXIBLE_ARRAY_MEMBER]; /* bitmap of NULLs */
+    uint8_t  t_bits[FLEXIBLE_ARRAY_MEMBER]; /* bitmap of NULLs */
 
     /* MORE DATA FOLLOWS AT END OF STRUCT */
 } pg_parser_MinimalTupleData;
@@ -315,34 +317,46 @@ typedef pg_parser_MinimalTupleData* pg_parser_MinimalTuple;
 extern pg_parser_ReorderBufferTupleBuf* pg_parser_heaptuple_get_tuple_space(size_t  tuple_len,
                                                                             int16_t dbtype,
                                                                             char*   dbversion);
-extern void                             pg_parser_reassemble_tuple_from_heap_tuple_header(
-                                void* hth, size_t len, pg_parser_ReorderBufferTupleBuf* tuple, int16_t dbtype, char* dbversion);
+extern void pg_parser_reassemble_tuple_from_heap_tuple_header(
+    void* hth, size_t len, pg_parser_ReorderBufferTupleBuf* tuple, int16_t dbtype, char* dbversion);
 
-extern void pg_parser_re_tuple_from_wal_data(char* data, size_t len,
-                                             pg_parser_ReorderBufferTupleBuf* tuple, uint32_t xmin,
-                                             uint32_t xmax);
+extern void pg_parser_re_tuple_from_wal_data(
+    char* data, size_t len, pg_parser_ReorderBufferTupleBuf* tuple, uint32_t xmin, uint32_t xmax);
 
 extern pg_parser_TupleDesc pg_parser_get_desc(pg_parser_sysdict_tableInfo* tbinfo);
-extern pg_parser_Datum     pg_parser_nocachegetattr(pg_parser_HeapTuple tuple, int32_t attnum,
-                                                    pg_parser_TupleDesc tupleDesc, int16_t dbtype,
-                                                    char* dbversion);
-extern pg_parser_Datum     pg_parser_heap_getsysattr(pg_parser_HeapTuple tup, int32_t attnum,
-                                                     pg_parser_TupleDesc tupleDesc, bool* isnull,
-                                                     int16_t dbtype, char* dbversion);
-extern void                pg_parser_DecodeXLogTuple(char* data, size_t len,
-                                                     pg_parser_ReorderBufferTupleBuf* tuple, int16_t dbtype,
-                                                     char* dbversion);
-extern void                pg_parser_reassemble_tuple_from_wal_data(char* data, size_t len,
-                                                                    pg_parser_ReorderBufferTupleBuf* tuple,
-                                                                    uint32_t xmin, uint32_t xmax, int16_t dbtype,
-                                                                    char* dbversion);
-extern void pg_parser_heap_deform_tuple(pg_parser_HeapTuple tuple, pg_parser_TupleDesc tupleDesc,
-                                        pg_parser_Datum* values, bool* isnull);
+extern pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
+                                                int32_t             attnum,
+                                                pg_parser_TupleDesc tupleDesc,
+                                                int16_t             dbtype,
+                                                char*               dbversion);
+extern pg_parser_Datum pg_parser_heap_getsysattr(pg_parser_HeapTuple tup,
+                                                 int32_t             attnum,
+                                                 pg_parser_TupleDesc tupleDesc,
+                                                 bool*               isnull,
+                                                 int16_t             dbtype,
+                                                 char*               dbversion);
+extern void pg_parser_DecodeXLogTuple(char*                            data,
+                                      size_t                           len,
+                                      pg_parser_ReorderBufferTupleBuf* tuple,
+                                      int16_t                          dbtype,
+                                      char*                            dbversion);
+extern void pg_parser_reassemble_tuple_from_wal_data(char*                            data,
+                                                     size_t                           len,
+                                                     pg_parser_ReorderBufferTupleBuf* tuple,
+                                                     uint32_t                         xmin,
+                                                     uint32_t                         xmax,
+                                                     int16_t                          dbtype,
+                                                     char*                            dbversion);
+extern void pg_parser_heap_deform_tuple(pg_parser_HeapTuple tuple,
+                                        pg_parser_TupleDesc tupleDesc,
+                                        pg_parser_Datum*    values,
+                                        bool*               isnull);
 
-extern pg_parser_ReorderBufferTupleBuf* pg_parser_assemble_tuple(int32_t dbtype, char* dbversion,
-                                                                 uint32_t pagesize, char* page,
-                                                                 uint16_t offnum);
+extern pg_parser_ReorderBufferTupleBuf* pg_parser_assemble_tuple(
+    int32_t dbtype, char* dbversion, uint32_t pagesize, char* page, uint16_t offnum);
 
-extern pg_parser_Datum pg_parser_getmissingattr(pg_parser_TupleDesc tupleDesc, int32_t attnum,
-                                                bool* isnull, bool* ismissing);
+extern pg_parser_Datum pg_parser_getmissingattr(pg_parser_TupleDesc tupleDesc,
+                                                int32_t             attnum,
+                                                bool*               isnull,
+                                                bool*               ismissing);
 #endif

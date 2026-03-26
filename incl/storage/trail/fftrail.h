@@ -12,8 +12,8 @@ typedef enum FTRAIL_TOKENDATATYPE
 
 #define ftrail_datatype ftrail_tokendatatype
 
-#define FTRAIL_MAGIC 0x78A555C0
-#define TOKENHDRSIZE 6
+#define FTRAIL_MAGIC    0x78A555C0
+#define TOKENHDRSIZE    6
 
 /* Parameter description:
  * Input parameters:
@@ -140,12 +140,12 @@ typedef struct FFTRAIL_PRIVDATA
     XLogRecPtr confirmlsn;
 
     /* Data in HTAB* tables */
-    List* tbentrys;
+    List*      tbentrys;
 
     /* Data in HTAB* databases */
-    List* dbentrys;
-    HTAB* tables;
-    HTAB* databases;
+    List*      dbentrys;
+    HTAB*      tables;
+    HTAB*      databases;
 } fftrail_privdata;
 
 /*-------------------------------Private information within trail file end------------------------*/
@@ -183,8 +183,8 @@ void fftrail_setrecordlength(void* state, uint8* record, uint16 reclength);
 
 bool fftrail_isrecordtransstart(void* state, uint8* record);
 
-bool fftrail_validrecord(ff_cxt_type type, void* state, uint8 infotype, uint64 fileid,
-                         uint8* record);
+bool fftrail_validrecord(
+    ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record);
 
 /*
  * Serialization
@@ -197,16 +197,25 @@ bool fftrail_serialpreshiftblock(void* state);
 bool fftrail_serialshiffile(void* state);
 
 /* Add specific data to buffer */
-uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype, uint16 tdatalen, uint8* tdata,
-                           uint8* buffer);
+uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype,
+                           uint16               tdatalen,
+                           uint8*               tdata,
+                           uint8*               buffer);
 
 /* Write specific data from buffer to data */
-uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype, uint64 tdatalen, uint8* tdata,
-                           uint8* buffer);
+uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype,
+                           uint64               tdatalen,
+                           uint8*               tdata,
+                           uint8*               buffer);
 
 /* Add token data to buffer */
-uint8* fftrail_token2buffer(uint8 tid, uint8 tinfo, ftrail_tokendatatype tdtype, uint16 tdatalen,
-                            uint8* tdata, uint32* tlen, uint8* buffer);
+uint8* fftrail_token2buffer(uint8                tid,
+                            uint8                tinfo,
+                            ftrail_tokendatatype tdtype,
+                            uint16               tdatalen,
+                            uint8*               tdata,
+                            uint32*              tlen,
+                            uint8*               buffer);
 
 /* Get tail length */
 int fftrail_resetlen(int compatibility);

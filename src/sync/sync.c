@@ -18,8 +18,10 @@
 #include "refresh/refresh_tables.h"
 #include "onlinerefresh/integrate/dataset/onlinerefresh_integratedataset.h"
 
-static bool syncstate_prepare(syncstate* syncstate, const char* stmtName, const char* query,
-                              int nParams)
+static bool syncstate_prepare(syncstate*  syncstate,
+                              const char* stmtName,
+                              const char* query,
+                              int         nParams)
 {
     PGresult* res = NULL;
     res = PQprepare(syncstate->conn, stmtName, query, nParams, NULL);
@@ -34,7 +36,9 @@ static bool syncstate_prepare(syncstate* syncstate, const char* stmtName, const 
     return true;
 }
 
-static bool syncstate_execprepare(syncstate* syncstate, const char* stmtName, int nParams,
+static bool syncstate_execprepare(syncstate*         syncstate,
+                                  const char*        stmtName,
+                                  int                nParams,
                                   const char* const* paramValues)
 {
     PGresult* res = NULL;
@@ -156,7 +160,7 @@ bool syncstate_update_statustb(syncstate* sync_state, void* txn_ptr, bool exec)
     txn*        txn_entry = NULL;
     const char* paramValues[4];
 
-    char* stmtname = "update_sync_statustb";
+    char*       stmtname = "update_sync_statustb";
     txn_entry = (txn*)txn_ptr;
 
     if (exec)
@@ -192,7 +196,8 @@ bool syncstate_update_statustb(syncstate* sync_state, void* txn_ptr, bool exec)
         sprintf(sql_exec,
                 "UPDATE %s.sync_status SET emit_fileid = $1, lsn = $2, xid = $3, emit_offset = $4 "
                 "where name = '%s';",
-                guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), sync_state->name);
+                guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+                sync_state->name);
 
         res = PQprepare(sync_state->conn, stmtname, sql_exec, 4, NULL);
 
@@ -220,8 +225,11 @@ bool syncstate_update_statustb_commitlsn(syncstate* syncstate, XLogRecPtr commit
     sprintf(lsn, "%lu", commitlsn);
 
     rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec, "UPDATE %s.sync_status SET lsn = '%s' where name = '%s';",
-            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), lsn, syncstate->name);
+    sprintf(sql_exec,
+            "UPDATE %s.sync_status SET lsn = '%s' where name = '%s';",
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+            lsn,
+            syncstate->name);
 
     res = conn_exec(syncstate->conn, sql_exec);
 
@@ -251,7 +259,9 @@ bool syncstate_update_rewind(syncstate* syncstate, recpos rewind)
     sprintf(rewind_offset, "%lu", rewind.trail.offset);
     sprintf(sql_exec,
             "UPDATE %s.sync_status SET rewind_fileid = %s, rewind_offset = %s where name = '%s';",
-            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), rewind_fileid, rewind_offset,
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+            rewind_fileid,
+            rewind_offset,
             syncstate->name);
 
     res = conn_exec(syncstate->conn, sql_exec);
@@ -334,8 +344,10 @@ stmts_write_retry:
                 hash_search(sync_state->hpreparedno, &preparedstmt->number, HASH_ENTER, &find);
             if (false == find)
             {
-                if (!syncstate_prepare(sync_state, preparedstmt->preparedname,
-                                       preparedstmt->preparedsql, preparedstmt->valuecnt))
+                if (!syncstate_prepare(sync_state,
+                                       preparedstmt->preparedname,
+                                       preparedstmt->preparedsql,
+                                       preparedstmt->valuecnt))
                 {
                     if (CONNECTION_OK == PQstatus(sync_state->conn))
                     {
@@ -345,12 +357,16 @@ stmts_write_retry:
                 }
                 prepared_entry->number = preparedstmt->number;
                 rmemset1(prepared_entry->preparename, 0, '\0', 64);
-                rmemcpy1(prepared_entry->preparename, 0, preparedstmt->preparedname,
+                rmemcpy1(prepared_entry->preparename,
+                         0,
+                         preparedstmt->preparedname,
                          strlen(preparedstmt->preparedname));
             }
 
-            if (!syncstate_execprepare(sync_state, preparedstmt->preparedname,
-                                       preparedstmt->valuecnt, (const char**)preparedstmt->values))
+            if (!syncstate_execprepare(sync_state,
+                                       preparedstmt->preparedname,
+                                       preparedstmt->valuecnt,
+                                       (const char**)preparedstmt->values))
             {
                 if (CONNECTION_OK == PQstatus(sync_state->conn))
                 {
@@ -513,8 +529,10 @@ stmts_write_retry:
                 hash_search(sync_state->hpreparedno, &preparedstmt->number, HASH_ENTER, &find);
             if (false == find)
             {
-                if (!syncstate_prepare(sync_state, preparedstmt->preparedname,
-                                       preparedstmt->preparedsql, preparedstmt->valuecnt))
+                if (!syncstate_prepare(sync_state,
+                                       preparedstmt->preparedname,
+                                       preparedstmt->preparedsql,
+                                       preparedstmt->valuecnt))
                 {
                     if (CONNECTION_OK == PQstatus(sync_state->conn))
                     {
@@ -524,12 +542,16 @@ stmts_write_retry:
                 }
                 prepared_entry->number = preparedstmt->number;
                 rmemset1(prepared_entry->preparename, 0, '\0', 64);
-                rmemcpy1(prepared_entry->preparename, 0, preparedstmt->preparedname,
+                rmemcpy1(prepared_entry->preparename,
+                         0,
+                         preparedstmt->preparedname,
                          strlen(preparedstmt->preparedname));
             }
 
-            if (!syncstate_execprepare(sync_state, preparedstmt->preparedname,
-                                       preparedstmt->valuecnt, (const char**)preparedstmt->values))
+            if (!syncstate_execprepare(sync_state,
+                                       preparedstmt->preparedname,
+                                       preparedstmt->valuecnt,
+                                       (const char**)preparedstmt->values))
             {
                 if (CONNECTION_OK == PQstatus(sync_state->conn))
                 {

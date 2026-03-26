@@ -30,11 +30,11 @@
 #include "works/parserwork/wal/decode_colvalue.h"
 
 #define CATALOG_SYSDICT_SCHEMA "pg_catalog"
-#define CATALOG_PG_CLASS "pg_class"
-#define CATALOG_PG_ATTRIBUTE "pg_attribute"
-#define CATALOG_PG_NAMESPACE "pg_namespace"
-#define CATALOG_PG_TYPE "pg_type"
-#define CATALOG_PG_INDEX "pg_index"
+#define CATALOG_PG_CLASS       "pg_class"
+#define CATALOG_PG_ATTRIBUTE   "pg_attribute"
+#define CATALOG_PG_NAMESPACE   "pg_namespace"
+#define CATALOG_PG_TYPE        "pg_type"
+#define CATALOG_PG_INDEX       "pg_index"
 
 static catalogdata* catalog_copy_class(catalogdata* catalog_src);
 static catalogdata* catalog_copy_attribute(catalogdata* catalog_src);
@@ -53,7 +53,8 @@ static catalogdata* catalog_colvalued2catalog_pg12(void* in_colvalues);
 
 static catalogdata* catalog_colvalue_no_filter_conversion_pg12(void* in_colvalues);
 
-static catalogdata* catalog_colvalue_no_filter_conversion(int dbtype, int dbversion,
+static catalogdata* catalog_colvalue_no_filter_conversion(int   dbtype,
+                                                          int   dbversion,
                                                           void* in_colvalues);
 static catalogdata* catalog_colvalue_no_filter_conversion_postgres(int   dbversion,
                                                                    void* in_colvalues);
@@ -123,7 +124,8 @@ static catalogdata* catalog_colvalued2catalog_postgres(int dbversion, void* in_c
 
 static colvalue2catalog_bydbtype m_colvalue2catalog_dbtype_distribute[] = {
     {DATABASE_TYPE_NOP, NULL, NULL},
-    {DATABASE_TYPE_POSTGRESQL, catalog_colvalued2catalog_postgres,
+    {DATABASE_TYPE_POSTGRESQL,
+     catalog_colvalued2catalog_postgres,
      catalog_colvalue_no_filter_conversion_postgres}};
 
 static int m_colvalue2catalog_bydbtype_cnt =
@@ -533,7 +535,9 @@ static catalogdata* catalog_copy_constraint(catalogdata* catalog_src)
             return NULL;
         }
         rmemset0(constraint_dst->conkey, 0, '\0', constraint_dst->conkeycnt * sizeof(int16_t));
-        rmemcpy0(constraint_dst->conkey, 0, constraint_src->conkey,
+        rmemcpy0(constraint_dst->conkey,
+                 0,
+                 constraint_src->conkey,
                  constraint_dst->conkeycnt * sizeof(int16_t));
     }
 
@@ -766,7 +770,8 @@ catalogdata* catalog_colvalued2catalog(int dbtype, int dbversion, void* in_colva
 
 /* No-filter system catalog colvalue to catalog structure dispatch function - start */
 /* no filter colvalue to catalog dispatch entry */
-static catalogdata* catalog_colvalue_no_filter_conversion(int dbtype, int dbversion,
+static catalogdata* catalog_colvalue_no_filter_conversion(int   dbtype,
+                                                          int   dbversion,
                                                           void* in_colvalues)
 {
     if ((m_colvalue2catalog_bydbtype_cnt - 1) < dbtype ||
@@ -917,8 +922,9 @@ catalogdata* catalog_colvalued2catalog_pg12(void* in_colvalues)
     return catalog_data;
 }
 
-static void* catalog_get_sysdict_from_sysdicthash(HTAB* sysdicthash, void* search_variable,
-                                                  int dict_type)
+static void* catalog_get_sysdict_from_sysdicthash(HTAB* sysdicthash,
+                                                  void* search_variable,
+                                                  int   dict_type)
 {
     switch (dict_type)
     {
@@ -934,8 +940,8 @@ static void* catalog_get_sysdict_from_sysdicthash(HTAB* sysdicthash, void* searc
         }
         case CATALOG_TYPE_ATTRIBUTE:
         {
-            List*                    temp_attribute_list = NULL;
-            catalog_attribute_value* temp_attribute_value = NULL;
+            List*                     temp_attribute_list = NULL;
+            catalog_attribute_value*  temp_attribute_value = NULL;
 
             /* The matching condition for attribute is that oid and attnum match */
             catalog_attribute_search* att_search = (catalog_attribute_search*)search_variable;
@@ -1072,8 +1078,9 @@ static void* catalog_get_sysdict_from_sysdicthash(HTAB* sysdicthash, void* searc
  * Currently only index uses this, but written as a general function for extensibility
  * No need to consider delete case in hash
  */
-static List* catalog_get_sysdict_list_from_sysdicthash(HTAB* sysdicthash, void* search_variable,
-                                                       int dict_type)
+static List* catalog_get_sysdict_list_from_sysdicthash(HTAB* sysdicthash,
+                                                       void* search_variable,
+                                                       int   dict_type)
 {
     List* result = NULL;
 
@@ -1100,8 +1107,9 @@ static List* catalog_get_sysdict_list_from_sysdicthash(HTAB* sysdicthash, void* 
     return result;
 }
 
-static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis, void* search_variable,
-                                                 int dict_type)
+static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis,
+                                                 void* search_variable,
+                                                 int   dict_type)
 {
     ListCell* hiscell = NULL;
     void*     sysdicthis_result = NULL;
@@ -1275,8 +1283,10 @@ static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis, void* search_
  * For non-target tables, return the passed-in result
  * For target tables, append data to linked list and return
  */
-static List* catalog_get_sysdict_list_from_sysdicthis_opinsert(List* result, catalogdata* dict,
-                                                               void* search_variable, int dict_type)
+static List* catalog_get_sysdict_list_from_sysdicthis_opinsert(List*        result,
+                                                               catalogdata* dict,
+                                                               void*        search_variable,
+                                                               int          dict_type)
 {
     switch (dict_type)
     {
@@ -1303,8 +1313,10 @@ static List* catalog_get_sysdict_list_from_sysdicthis_opinsert(List* result, cat
  * For non-target tables, return the passed-in result
  * For target tables, update data in linked list
  */
-static List* catalog_get_sysdict_list_from_sysdicthis_opupdate(List* result, catalogdata* dict,
-                                                               void* search_variable, int dict_type)
+static List* catalog_get_sysdict_list_from_sysdicthis_opupdate(List*        result,
+                                                               catalogdata* dict,
+                                                               void*        search_variable,
+                                                               int          dict_type)
 {
     switch (dict_type)
     {
@@ -1352,8 +1364,10 @@ static List* catalog_get_sysdict_list_from_sysdicthis_opupdate(List* result, cat
  * For non-target tables, return the passed-in result
  * For target tables, delete data from linked list
  */
-static List* catalog_get_sysdict_list_from_sysdicthis_opdelete(List* result, catalogdata* dict,
-                                                               void* search_variable, int dict_type)
+static List* catalog_get_sysdict_list_from_sysdicthis_opdelete(List*        result,
+                                                               catalogdata* dict,
+                                                               void*        search_variable,
+                                                               int          dict_type)
 {
     switch (dict_type)
     {
@@ -1410,8 +1424,10 @@ static List* catalog_get_sysdict_list_from_sysdicthis_opdelete(List* result, cat
  * Currently only index uses this, but written as a general function for extensibility
  * Need to consider delete and update cases, so linked list is passed in
  */
-static List* catalog_get_sysdict_list_from_sysdicthis(List* result, List* sysdicthis,
-                                                      void* search_variable, int dict_type)
+static List* catalog_get_sysdict_list_from_sysdicthis(List* result,
+                                                      List* sysdicthis,
+                                                      void* search_variable,
+                                                      int   dict_type)
 {
     ListCell* hiscell = NULL;
     void*     sysdicthis_result = NULL;
@@ -1534,13 +1550,17 @@ static void* catalog_get_sysdict_from_colvalue(List* sysdict, void* search_varia
                             Oid     temp_oid = INVALIDOID;
                             int16_t temp_attnum = 0;
 
-                            temp_oid = (Oid)atoi((char*)get_attribute_value_from_colvalue(
-                                col->m_new_values, ATTRIBUTE_MAPNUM_ATTRELID, g_idbtype,
-                                g_idbversion));
+                            temp_oid = (Oid)atoi(
+                                (char*)get_attribute_value_from_colvalue(col->m_new_values,
+                                                                         ATTRIBUTE_MAPNUM_ATTRELID,
+                                                                         g_idbtype,
+                                                                         g_idbversion));
 
-                            temp_attnum = (int16_t)atoi((char*)get_attribute_value_from_colvalue(
-                                col->m_new_values, ATTRIBUTE_MAPNUM_ATTNUM, g_idbtype,
-                                g_idbversion));
+                            temp_attnum = (int16_t)atoi(
+                                (char*)get_attribute_value_from_colvalue(col->m_new_values,
+                                                                         ATTRIBUTE_MAPNUM_ATTNUM,
+                                                                         g_idbtype,
+                                                                         g_idbversion));
                             if (temp_oid == temp_att_search->attrelid &&
                                 temp_attnum == temp_att_search->attnum)
                             {
@@ -1659,8 +1679,8 @@ static void* catalog_get_sysdict_from_colvalue(List* sysdict, void* search_varia
     return NULL;
 }
 
-static void* catalog_get_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis,
-                                 void* search_variable, int dict_type)
+static void* catalog_get_sysdict(
+    HTAB* sysdict_hash, List* sysdict, List* sysdicthis, void* search_variable, int dict_type)
 {
     void* result = NULL;
     /* First search sysdict, and based on whether sysdict exists, determine whether to search
@@ -1703,8 +1723,8 @@ static void* catalog_get_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdic
  *          sysdict_hash, sysdicthis, sysdict
  * Currently only index uses this, but written as a general function for extensibility
  */
-static void* catalog_get_sysdict_list(HTAB* sysdict_hash, List* sysdict, List* sysdicthis,
-                                      void* search_variable, int dict_type)
+static void* catalog_get_sysdict_list(
+    HTAB* sysdict_hash, List* sysdict, List* sysdicthis, void* search_variable, int dict_type)
 {
     List* result = NULL;
 
@@ -1718,8 +1738,8 @@ static void* catalog_get_sysdict_list(HTAB* sysdict_hash, List* sysdict, List* s
     /* Then search sysdicthis */
     if (sysdicthis)
     {
-        result = catalog_get_sysdict_list_from_sysdicthis(result, sysdicthis, search_variable,
-                                                          dict_type);
+        result = catalog_get_sysdict_list_from_sysdicthis(
+            result, sysdicthis, search_variable, dict_type);
     }
 
     /* Finally search sysdict, this is not actually used in index stage, but kept */
@@ -1763,9 +1783,13 @@ static Oid catalog_get_oid_by_relfilenode_from_colvalues(uint32_t relfilenode, L
     return INVALIDOID;
 }
 
-Oid catalog_get_oid_by_relfilenode(HTAB* relfilenode_htab, List* sysdicthis, List* sysdict,
-                                   uint32_t dboid, uint32_t tbspcoid, uint32_t relfilenode,
-                                   bool report_error)
+Oid catalog_get_oid_by_relfilenode(HTAB*    relfilenode_htab,
+                                   List*    sysdicthis,
+                                   List*    sysdict,
+                                   uint32_t dboid,
+                                   uint32_t tbspcoid,
+                                   uint32_t relfilenode,
+                                   bool     report_error)
 {
     RelFileNode      rnode = {'\0'};
     relfilenode2oid* entry = NULL;
@@ -1818,7 +1842,8 @@ Oid catalog_get_oid_by_relfilenode(HTAB* relfilenode_htab, List* sysdicthis, Lis
         }
         else
         {
-            elog(RLOG_DEBUG, "fpw capture, can't find oid by relfilenode: %u, ignore fpw tuples",
+            elog(RLOG_DEBUG,
+                 "fpw capture, can't find oid by relfilenode: %u, ignore fpw tuples",
                  rnode.relNode);
         }
 
@@ -1842,16 +1867,16 @@ void* catalog_get_namespace_sysdict(HTAB* sysdict_hash, List* sysdict, List* sys
     return catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, CATALOG_TYPE_NAMESPACE);
 }
 
-void* catalog_get_attribute_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis,
-                                    Oid attrelid, int16_t attnum)
+void* catalog_get_attribute_sysdict(
+    HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid attrelid, int16_t attnum)
 {
     catalog_attribute_search temp_att_search = {'\0'};
 
     temp_att_search.attrelid = attrelid;
     temp_att_search.attnum = attnum;
 
-    return catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &temp_att_search,
-                               CATALOG_TYPE_ATTRIBUTE);
+    return catalog_get_sysdict(
+        sysdict_hash, sysdict, sysdicthis, &temp_att_search, CATALOG_TYPE_ATTRIBUTE);
 }
 
 void* catalog_get_type_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid oid)
@@ -1976,13 +2001,18 @@ bool catalog_sysdict_setfullmode(HTAB* hclass)
 
         /* Enable full mode */
         rmemset1(sql_exec, 0, '\0', MAX_EXEC_SQL_LEN);
-        snprintf(sql_exec, MAX_EXEC_SQL_LEN, "alter table \"%s\".\"%s\" replica identity full;",
-                 class->nspname.data, class->relname.data);
+        snprintf(sql_exec,
+                 MAX_EXEC_SQL_LEN,
+                 "alter table \"%s\".\"%s\" replica identity full;",
+                 class->nspname.data,
+                 class->relname.data);
         res = conn_exec(conn, sql_exec);
         if (NULL == res)
         {
-            elog(RLOG_WARNING, "capture set table %s.%s replica identity full error",
-                 class->nspname.data, class->relname.data);
+            elog(RLOG_WARNING,
+                 "capture set table %s.%s replica identity full error",
+                 class->nspname.data,
+                 class->relname.data);
             PQfinish(conn);
             return false;
         }

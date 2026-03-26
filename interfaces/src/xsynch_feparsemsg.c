@@ -20,7 +20,7 @@ typedef struct XSYNCH_FEPARSEMSG_PARSER
     xsynch_cmdtag cmd;
     char*         desc;
 
-    bool (*parser)(xsynch_exbuffer msg, xsynch_conn* conn);
+    bool          (*parser)(xsynch_exbuffer msg, xsynch_conn* conn);
 } xsynch_feparsemsg_parser;
 
 /* edit message parser */

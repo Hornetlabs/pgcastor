@@ -19,7 +19,8 @@ HTAB* onlinerefresh_integratefilterdataset_init(void)
     return integratefilterdataset;
 }
 
-bool onlinerefresh_integratefilterdataset_add(HTAB* filterdataset, void* in_tables,
+bool onlinerefresh_integratefilterdataset_add(HTAB*             filterdataset,
+                                              void*             in_tables,
                                               FullTransactionId txid)
 {
     bool                                  find = false;
@@ -81,7 +82,8 @@ HTAB* onlinerefresh_integratefilterdataset_copy(HTAB* filterdataset)
     return result;
 }
 
-bool onlinerefresh_integratefilterdataset_delete(HTAB* filterdataset, void* in_tables,
+bool onlinerefresh_integratefilterdataset_delete(HTAB*             filterdataset,
+                                                 void*             in_tables,
                                                  FullTransactionId txid)
 {
     bool                                  find = false;

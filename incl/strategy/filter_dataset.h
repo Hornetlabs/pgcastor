@@ -29,17 +29,17 @@ typedef struct FILTER_PAIR
 } filter_pair;
 
 /* function declarations */
-extern bool  filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namespace, HTAB* class);
+extern bool filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namespace, HTAB* class);
 extern HTAB* filter_dataset_load(HTAB* namespace, HTAB* class);
 extern HTAB* filter_dataset_reload(HTAB* namespace, HTAB* class, HTAB* oid2datasets);
-extern bool  filter_dataset_dml(HTAB* oid2datasets, Oid oid);
-extern bool  filter_dataset_ddl(HTAB* oid2datasets, Oid oid);
-extern bool  filter_dataset_matchforcreate(List* tablepattern, char* schema, char* table);
-extern bool  filter_dataset_add(HTAB* oid2datasets, Oid oid, char* schema, char* table);
-extern bool  filter_dataset_modify(HTAB* oid2datasets, Oid oid, char* schema, char* table);
-extern bool  filter_dataset_delete(HTAB* oid2datasets, Oid oid);
-extern bool  filter_dataset_flush(HTAB* oid2datasets);
-extern void  filter_dataset_free(HTAB* oid2datasets);
+extern bool filter_dataset_dml(HTAB* oid2datasets, Oid oid);
+extern bool filter_dataset_ddl(HTAB* oid2datasets, Oid oid);
+extern bool filter_dataset_matchforcreate(List* tablepattern, char* schema, char* table);
+extern bool filter_dataset_add(HTAB* oid2datasets, Oid oid, char* schema, char* table);
+extern bool filter_dataset_modify(HTAB* oid2datasets, Oid oid, char* schema, char* table);
+extern bool filter_dataset_delete(HTAB* oid2datasets, Oid oid);
+extern bool filter_dataset_flush(HTAB* oid2datasets);
+extern void filter_dataset_free(HTAB* oid2datasets);
 
 /* bidirectional filter transaction filter set */
 extern HTAB* filter_dataset_txnfilterload(HTAB* namespace, HTAB* class);
@@ -56,7 +56,9 @@ extern void filter_dataset_listpairsfree(List* rulelist);
 
 extern refresh_tables* filter_dataset_buildrefreshtables(HTAB* hfilters);
 
-extern bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List* sysdicthis,
+extern bool filter_dataset_updatedatasets(List* addtablepattern,
+                                          HTAB* namespace,
+                                          List* sysdicthis,
                                           HTAB* syncdatasets);
 
 extern void filter_dataset_updatedatasets_onlinerefresh(HTAB* dataset, List* tables_list);
@@ -67,7 +69,9 @@ extern void filter_dataset_pairfree(filter_pair* filterpair);
 extern List* filter_dataset_buildpairsbyrefreshtables(refresh_tables* rtables);
 
 /* rebuild refreshtables */
-extern bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables, List* filters,
-                                                       HTAB* hnamespace, HTAB* hclass);
+extern bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables,
+                                                       List*            filters,
+                                                       HTAB*            hnamespace,
+                                                       HTAB*            hclass);
 
 #endif

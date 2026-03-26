@@ -18,8 +18,8 @@ typedef void (*procinit)();
 typedef struct RPOC2INIT
 {
     proc_type type;
-    bool (*init)();
-    char* errmsg;
+    bool      (*init)();
+    char*     errmsg;
 } proc2init;
 
 /* capture initialization */

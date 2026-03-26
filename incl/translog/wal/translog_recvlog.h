@@ -1,55 +1,55 @@
 #ifndef _TRANSLOG_RECVLOG_H_
 #define _TRANSLOG_RECVLOG_H_
 
-#define XLOG_BLKSIZE 8192
-#define PGWALSEGMENTSPERXLOGID(segsize) (UINT64CONST(0x100000000) / (segsize))
-#define PGWALBYTETOSEG(lsn, segsize) (lsn / segsize)
+#define XLOG_BLKSIZE                     8192
+#define PGWALSEGMENTSPERXLOGID(segsize)  (UINT64CONST(0x100000000) / (segsize))
+#define PGWALBYTETOSEG(lsn, segsize)     (lsn / segsize)
 #define PGWALSEGMENTOFFSET(lsn, segsize) ((lsn) & ((segsize) - 1))
 
 typedef struct TRANSLOG_RECVLOG
 {
     /* FDE encryption */
-    bool enablefde;
+    bool                       enablefde;
 
     /* flag for whether DONE was actively sent, 0 = not sent, 1 = sent */
-    bool senddone;
+    bool                       senddone;
 
     /* database type */
-    translog_recvlog_dbtype dbtype;
+    translog_recvlog_dbtype    dbtype;
 
     /* database version */
     translog_recvlog_dbversion dbversion;
 
     /* log file descriptor */
-    int fd;
+    int                        fd;
 
     /* transaction log size */
-    uint32 segsize;
+    uint32                     segsize;
 
     /* sync timeline */
-    TimeLineID tli;
+    TimeLineID                 tli;
 
     /* database timeline */
-    TimeLineID dbtli;
+    TimeLineID                 dbtli;
 
     /* transaction log sequence number */
-    uint64 segno;
+    uint64                     segno;
 
     /* sync LSN */
-    XLogRecPtr startpos;
+    XLogRecPtr                 startpos;
 
     /* database connection string */
     /* working directory */
-    char* data;
+    char*                      data;
 
     /* database instance identifier */
-    char* sysidentifier;
+    char*                      sysidentifier;
 
     /* slotname */
-    char* slotname;
+    char*                      slotname;
 
     /* restorecommand */
-    char* restorecmd;
+    char*                      restorecmd;
 } translog_recvlog;
 
 /* initialize structure */

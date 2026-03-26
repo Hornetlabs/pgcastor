@@ -39,7 +39,10 @@ static void cmd_reloadcapture(void)
 
     if (0 != kill((pid_t)ripplepid, SIGHUP))
     {
-        snprintf(szMsg, 128, "could not send reload signal (PID:%ld) : %s\n", ripplepid,
+        snprintf(szMsg,
+                 128,
+                 "could not send reload signal (PID:%ld) : %s\n",
+                 ripplepid,
                  strerror(errno));
         cmd_printmsg(szMsg);
     }

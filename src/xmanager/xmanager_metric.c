@@ -117,8 +117,8 @@ static bool xmanager_metric_parsepacket(xmanager_metric* xmetric, int index)
                 rmemcpy1(&msgtype, 0, uptr, 4);
                 msgtype = r_ntoh32(msgtype);
                 snprintf(errormsg, 512, "unknown error happend");
-                if (false == xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
-                                                                 msgtype, ERROR_OOM, errormsg))
+                if (false == xmanager_metricmsg_assembleerrormsg(
+                                 xmetric, npoolentry->wpackets, msgtype, ERROR_OOM, errormsg))
                 {
                     elog(RLOG_WARNING, "metric parse packet error");
                     return false;
@@ -304,8 +304,9 @@ static bool xmanager_metric_newnodepre(xmanager_metric*        xmetric,
     }
 
     /* Message reorganization, init/start error/stop messages need to reorganize return content */
-    if (false == xmanager_metricmsg_assembleresponse(xmetric, npoolentry, xmetricregnode->msgtype,
-                                                     xmetricxscscinode->asyncmsgs->results))
+    if (false ==
+        xmanager_metricmsg_assembleresponse(
+            xmetric, npoolentry, xmetricregnode->msgtype, xmetricxscscinode->asyncmsgs->results))
     {
         elog(RLOG_WARNING, "assemble response to xscsci error, close xscsci connect");
 
@@ -313,9 +314,10 @@ static bool xmanager_metric_newnodepre(xmanager_metric*        xmetric,
         netpool_del(xmetric->npool, npoolentry->fd);
 
         /* Remove metricnode from list */
-        xmetric->metricnodes =
-            dlist_deletebyvaluefirstmatch(xmetric->metricnodes, xmetricxscscinode,
-                                          xmanager_metricnode_cmp, xmanager_metricnode_destroyvoid);
+        xmetric->metricnodes = dlist_deletebyvaluefirstmatch(xmetric->metricnodes,
+                                                             xmetricxscscinode,
+                                                             xmanager_metricnode_cmp,
+                                                             xmanager_metricnode_destroyvoid);
 
         /* Remove data from fd mapping list */
         xmetric->fd2metricnodes =
@@ -342,9 +344,10 @@ static void xmanager_metric_removenode(xmanager_metric*        xmetric,
 
     xmetricnode = xmetricfd2node->metricnode;
     xmetricfd2node->metricnode->stat = XMANAGER_METRICNODESTAT_OFFLINE;
-    xmetric->fd2metricnodes =
-        dlist_deletebyvalue(xmetric->fd2metricnodes, (void*)((uintptr_t)xmetricfd2node->fd),
-                            xmanager_metricfd2node_cmp, xmanager_metricfd2node_destroyvoid);
+    xmetric->fd2metricnodes = dlist_deletebyvalue(xmetric->fd2metricnodes,
+                                                  (void*)((uintptr_t)xmetricfd2node->fd),
+                                                  xmanager_metricfd2node_cmp,
+                                                  xmanager_metricfd2node_destroyvoid);
 
     /* xscsci and xmanager both need to be removed from xmanager */
     if (XMANAGER_METRICNODETYPE_XSCSCI != xmetricnode->type &&
@@ -353,9 +356,10 @@ static void xmanager_metric_removenode(xmanager_metric*        xmetric,
         return;
     }
 
-    xmetric->metricnodes =
-        dlist_deletebyvaluefirstmatch(xmetric->metricnodes, (void*)xmetricnode,
-                                      xmanager_metricnode_cmp, xmanager_metricnode_destroyvoid);
+    xmetric->metricnodes = dlist_deletebyvaluefirstmatch(xmetric->metricnodes,
+                                                         (void*)xmetricnode,
+                                                         xmanager_metricnode_cmp,
+                                                         xmanager_metricnode_destroyvoid);
 }
 
 /* Async message timeout detection */
@@ -425,8 +429,8 @@ static void xmanager_metric_asyncmsgtimeout(xmanager_metric* xmetric)
         xmetricxscscinode->asyncmsgs->msgs = NULL;
 
         /* Assemble info */
-        xmanager_metricmsg_assembleresponse(xmetric, npoolentry, xmetricasyncmsg->msgtype,
-                                            xmetricxscscinode->asyncmsgs->results);
+        xmanager_metricmsg_assembleresponse(
+            xmetric, npoolentry, xmetricasyncmsg->msgtype, xmetricxscscinode->asyncmsgs->results);
 
         /* Clean up results */
         dlist_free(xmetricxscscinode->asyncmsgs->results, xmanager_metricasyncmsg_destroyvoid);
@@ -611,7 +615,8 @@ void* xmanager_metric_main(void* args)
              * 1. Get and set offset
              * 2. Remove from active list
              */
-            fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)errorfds[index]),
+            fd2node = dlist_get(xmetric->fd2metricnodes,
+                                (void*)((uintptr_t)errorfds[index]),
                                 xmanager_metricfd2node_cmp);
             xmanager_metric_removenode(xmetric, fd2node);
 
@@ -631,7 +636,8 @@ void* xmanager_metric_main(void* args)
             npoolentry = xmetric->npool->fds[index];
             if (NETPOOLENTRY_STAT_CLOSEUTILWPACKETNULL == npoolentry->stat)
             {
-                fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
+                fd2node = dlist_get(xmetric->fd2metricnodes,
+                                    (void*)((uintptr_t)npoolentry->fd),
                                     xmanager_metricfd2node_cmp);
                 xmanager_metric_removenode(xmetric, fd2node);
 
@@ -650,7 +656,8 @@ void* xmanager_metric_main(void* args)
             {
                 /* Error processing read packet, close connection and release resources */
                 elog(RLOG_WARNING, "xmanager metric parse packet error");
-                fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
+                fd2node = dlist_get(xmetric->fd2metricnodes,
+                                    (void*)((uintptr_t)npoolentry->fd),
                                     xmanager_metricfd2node_cmp);
                 xmanager_metric_removenode(xmetric, fd2node);
 

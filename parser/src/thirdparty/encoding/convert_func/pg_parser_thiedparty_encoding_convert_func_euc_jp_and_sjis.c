@@ -20,7 +20,7 @@
  * this code is used if a mapping EUC -> SJIS is not defined.
  */
 #define PGSJISALTCODE 0x81ac
-#define PGEUCALTCODE 0xa2ae
+#define PGEUCALTCODE  0xa2ae
 
 /*
  * conversion table between SJIS UDC (IBM kanji) and EUC_JP

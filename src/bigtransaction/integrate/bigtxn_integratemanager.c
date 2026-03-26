@@ -98,7 +98,11 @@ bigtxn_integratemanager_setsynctableretry:
         "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
         "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
         "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
-        catalog_schema, SYNC_STATUSTABLE_NAME, STORAGE_BIG_TRANSACTION_DIR, bigtxnmgr->xid, 3);
+        catalog_schema,
+        SYNC_STATUSTABLE_NAME,
+        STORAGE_BIG_TRANSACTION_DIR,
+        bigtxnmgr->xid,
+        3);
     res = conn_exec(conn, sql->data);
     if (NULL == res)
     {
@@ -138,8 +142,12 @@ static bool bigtxn_integratemanager_checksyncstat(bigtxn_integratemanager* bigtx
     catalog_schema = guc_getConfigOption(CFG_KEY_CATALOGSCHEMA);
 
     resetStringInfo(sql);
-    appendStringInfo(sql, "select stat from \"%s\".\"%s\" where name = \'%s-%lu\';", catalog_schema,
-                     SYNC_STATUSTABLE_NAME, STORAGE_BIG_TRANSACTION_DIR, bigtxnmgr->xid);
+    appendStringInfo(sql,
+                     "select stat from \"%s\".\"%s\" where name = \'%s-%lu\';",
+                     catalog_schema,
+                     SYNC_STATUSTABLE_NAME,
+                     STORAGE_BIG_TRANSACTION_DIR,
+                     bigtxnmgr->xid);
 
     res = conn_exec(conn, sql->data);
     if (NULL == res)
@@ -227,8 +235,12 @@ static bool bigtxn_integratemanager_startincrementjob(bigtxn_integratemanager* b
         return false;
     }
     rmemset1(bigtxnloadrecord->splittrailctx->capturedata, 0, '\0', MAXPGPATH);
-    snprintf(bigtxnloadrecord->splittrailctx->capturedata, MAXPGPATH, "%s/%s/%lu",
-             guc_getConfigOption(CFG_KEY_TRAIL_DIR), STORAGE_BIG_TRANSACTION_DIR, bigtxnmgr->xid);
+    snprintf(bigtxnloadrecord->splittrailctx->capturedata,
+             MAXPGPATH,
+             "%s/%s/%lu",
+             guc_getConfigOption(CFG_KEY_TRAIL_DIR),
+             STORAGE_BIG_TRANSACTION_DIR,
+             bigtxnmgr->xid);
 
     if (false == loadtrailrecords_setloadsource(bigtxnloadrecord->splittrailctx->loadrecords,
                                                 bigtxnloadrecord->splittrailctx->capturedata))
@@ -243,40 +255,52 @@ static bool bigtxn_integratemanager_startincrementjob(bigtxn_integratemanager* b
      * Start all threads
      */
     /* Register apply thread */
-    if (false ==
-        threads_addjobthread(bigtxnmgr->thrsmgr->parents, THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNSYNC,
-                             bigtxnmgr->thrsmgr->submgrref.no, (void*)bigtxnsync,
-                             bigtxn_integrateincsync_free, NULL, bigtxn_integrateincsync_main))
+    if (false == threads_addjobthread(bigtxnmgr->thrsmgr->parents,
+                                      THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNSYNC,
+                                      bigtxnmgr->thrsmgr->submgrref.no,
+                                      (void*)bigtxnsync,
+                                      bigtxn_integrateincsync_free,
+                                      NULL,
+                                      bigtxn_integrateincsync_main))
     {
         elog(RLOG_WARNING, "bigtxn integrate start increment sync job error");
         return false;
     }
 
     /* Register transaction rebuild thread */
-    if (false == threads_addjobthread(
-                     bigtxnmgr->thrsmgr->parents, THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNREBUILD,
-                     bigtxnmgr->thrsmgr->submgrref.no, (void*)bigtxnrebuild,
-                     bigtxn_integraterebuild_free, NULL, bigtxn_integraterebuild_main))
+    if (false == threads_addjobthread(bigtxnmgr->thrsmgr->parents,
+                                      THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNREBUILD,
+                                      bigtxnmgr->thrsmgr->submgrref.no,
+                                      (void*)bigtxnrebuild,
+                                      bigtxn_integraterebuild_free,
+                                      NULL,
+                                      bigtxn_integraterebuild_main))
     {
         elog(RLOG_WARNING, "bigtxn integrate start increment rebuild job error");
         return false;
     }
 
     /* Register parser thread */
-    if (false == threads_addjobthread(
-                     bigtxnmgr->thrsmgr->parents, THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNPARSER,
-                     bigtxnmgr->thrsmgr->submgrref.no, (void*)bigtxnparser,
-                     bigtxn_integrateparsertrail_free, NULL, bigtxn_integrateparsertrail_main))
+    if (false == threads_addjobthread(bigtxnmgr->thrsmgr->parents,
+                                      THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNPARSER,
+                                      bigtxnmgr->thrsmgr->submgrref.no,
+                                      (void*)bigtxnparser,
+                                      bigtxn_integrateparsertrail_free,
+                                      NULL,
+                                      bigtxn_integrateparsertrail_main))
     {
         elog(RLOG_WARNING, "bigtxn integrate start increment parsertrail job error");
         return false;
     }
 
     /* Register loadrecords thread */
-    if (false == threads_addjobthread(
-                     bigtxnmgr->thrsmgr->parents, THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNLOADRECORDS,
-                     bigtxnmgr->thrsmgr->submgrref.no, (void*)bigtxnloadrecord,
-                     bigtxn_integratesplittrail_free, NULL, bigtxn_integratesplittrail_main))
+    if (false == threads_addjobthread(bigtxnmgr->thrsmgr->parents,
+                                      THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNLOADRECORDS,
+                                      bigtxnmgr->thrsmgr->submgrref.no,
+                                      (void*)bigtxnloadrecord,
+                                      bigtxn_integratesplittrail_free,
+                                      NULL,
+                                      bigtxn_integratesplittrail_main))
     {
         elog(RLOG_WARNING, "bigtxn integrate start increment splittrail job error");
         return false;
@@ -367,7 +391,8 @@ void* bigtxn_integratemanager_main(void* args)
     bigtxnloadrecthrnode = threads_getthrnodebyno(integratemgr->thrsmgr->parents, thr_ref->no);
     if (NULL == bigtxnloadrecthrnode)
     {
-        elog(RLOG_WARNING, "bigtxn integratemanager can not get load record thread by no:%lu",
+        elog(RLOG_WARNING,
+             "bigtxn integratemanager can not get load record thread by no:%lu",
              thr_ref->no);
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
@@ -379,7 +404,8 @@ void* bigtxn_integratemanager_main(void* args)
     bigtxnparsertrailthrnode = threads_getthrnodebyno(integratemgr->thrsmgr->parents, thr_ref->no);
     if (NULL == bigtxnparsertrailthrnode)
     {
-        elog(RLOG_WARNING, "bigtxn integratemanager can not get parser thread by no:%lu",
+        elog(RLOG_WARNING,
+             "bigtxn integratemanager can not get parser thread by no:%lu",
              thr_ref->no);
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
@@ -391,7 +417,8 @@ void* bigtxn_integratemanager_main(void* args)
     bigtxnrebuildthrnode = threads_getthrnodebyno(integratemgr->thrsmgr->parents, thr_ref->no);
     if (NULL == bigtxnrebuildthrnode)
     {
-        elog(RLOG_WARNING, "bigtxn integratemanager can not get rebuild thread by no:%lu",
+        elog(RLOG_WARNING,
+             "bigtxn integratemanager can not get rebuild thread by no:%lu",
              thr_ref->no);
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
@@ -403,8 +430,8 @@ void* bigtxn_integratemanager_main(void* args)
     bigtxnsyncthrnode = threads_getthrnodebyno(integratemgr->thrsmgr->parents, thr_ref->no);
     if (NULL == bigtxnsyncthrnode)
     {
-        elog(RLOG_WARNING, "bigtxn integratemanager can not get sync thread by no:%lu",
-             thr_ref->no);
+        elog(
+            RLOG_WARNING, "bigtxn integratemanager can not get sync thread by no:%lu", thr_ref->no);
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -482,8 +509,8 @@ void* bigtxn_integratemanager_main(void* args)
 
             /* All threads have exited, manager thread can exit */
             jobcnt = integratemgr->thrsmgr->childthrrefs->length;
-            threads_setsubmgrjobthredsfree(integratemgr->thrsmgr->parents,
-                                           integratemgr->thrsmgr->childthrrefs, 0, jobcnt);
+            threads_setsubmgrjobthredsfree(
+                integratemgr->thrsmgr->parents, integratemgr->thrsmgr->childthrrefs, 0, jobcnt);
 
             /* Set this thread to exit */
             thr_node->stat = THRNODE_STAT_EXIT;

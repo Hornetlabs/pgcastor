@@ -55,10 +55,12 @@ void refresh_table_syncstat_oid_set(Oid oid, refresh_table_syncstat* syncstat);
 
 void refreshtablesyncstat_cnt_set(int cnt, refresh_table_syncstat* syncstat);
 
-bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, void* queue,
-                                     char* refreshdir);
+bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats,
+                                     void*                    queue,
+                                     char*                    refreshdir);
 
-bool refresh_table_syncstat_cleardirbyall(refresh_table_syncstats* tablesyncstats, char* refreshdir);
+bool refresh_table_syncstat_cleardirbyall(refresh_table_syncstats* tablesyncstats,
+                                          char*                    refreshdir);
 
 void refresh_table_syncstat_free(refresh_table_syncstat* tablesyncstat);
 
@@ -78,7 +80,8 @@ void refresh_table_syncstats_tablesyncall_set(refresh_tables*          refreshta
 void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* tablesyncstats);
 
 bool refreshtablesyncstats_markstatdone(refresh_table_sharding*  tablesharding,
-                                        refresh_table_syncstats* tablesyncstats, char* refreshdir);
+                                        refresh_table_syncstats* tablesyncstats,
+                                        char*                    refreshdir);
 
 void refresh_table_syncstats_free(refresh_table_syncstats* tablesyncstats);
 

@@ -17,8 +17,9 @@
 #include "bigtransaction/integrate/sync/bigtxn_integratesync.h"
 
 /* Error handling, re-execute all stmt */
-static bool bigtxn_integrateincsync_restart_applytxn(syncstate* syncstate, thrnode* thrnode,
-                                                     txn* cur_txn)
+static bool bigtxn_integrateincsync_restart_applytxn(syncstate* syncstate,
+                                                     thrnode*   thrnode,
+                                                     txn*       cur_txn)
 {
     if (0 == cur_txn->stmts->length)
     {
@@ -28,33 +29,6 @@ static bool bigtxn_integrateincsync_restart_applytxn(syncstate* syncstate, thrno
     return syncstate_bigtxn_applytxn(syncstate, thrnode, (void*)cur_txn);
 }
 
-#if 0
-/* Delete incremental data from status table */
-static bool bigtxn_integrateincsync_delinc(bigtxn_integrateincsync* syncwork)
-{
-    PGconn *conn            = NULL;
-    PGresult *res           = NULL;
-    char sql_exec[1024]     = {'\0'};
-
-    rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec, "DELETE FROM \"%s\".\"%s\" WHERE \"name\" = \'%s\';",
-                      guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
-                      SYNC_STATUSTABLE_NAME,
-                      syncwork->base.name);
-    res = PQexec(syncwork->base.conn, sql_exec);
-    if (PGRES_COMMAND_OK != PQresultStatus(res))
-    {
-        elog(RLOG_WARNING,"Failed to update status table in: %s", PQerrorMessage(syncwork->base.conn));
-        PQclear(res);
-        return false;
-    }
-    PQclear(res);
-    PQfinish(conn);
-
-    return true;
-}
-#endif
-
 /* Update refresh task status in status table */
 static bool bigtxn_integrateincsync_updatasyncstatus(bigtxn_integrateincsync* syncwork, int16 stat)
 {
@@ -62,13 +36,17 @@ static bool bigtxn_integrateincsync_updatasyncstatus(bigtxn_integrateincsync* sy
     char      sql_exec[1024] = {'\0'};
 
     rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec, "UPDATE %s.%s SET \"stat\" = %hd WHERE \"name\" = \'%s\' ",
-            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), SYNC_STATUSTABLE_NAME, stat,
+    sprintf(sql_exec,
+            "UPDATE %s.%s SET \"stat\" = %hd WHERE \"name\" = \'%s\' ",
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+            SYNC_STATUSTABLE_NAME,
+            stat,
             syncwork->base.name);
     res = PQexec(syncwork->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING, "Failed to update status table in: %s",
+        elog(RLOG_WARNING,
+             "Failed to update status table in: %s",
              PQerrorMessage(syncwork->base.conn));
         PQclear(res);
         return false;

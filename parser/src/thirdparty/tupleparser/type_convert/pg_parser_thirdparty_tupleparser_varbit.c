@@ -17,13 +17,13 @@
 #include "thirdparty/tupleparser/toast/pg_parser_thirdparty_tupleparser_toast.h"
 
 #define PGFUNC_VARVBIT_MCXT NULL
-#define BITS_PER_BYTE 8
+#define BITS_PER_BYTE       8
 
-#define VARBITLEN(PTR) (((VarBit*)(PTR))->bit_len)
-#define VARBITS(PTR) (((VarBit*)(PTR))->bit_dat)
+#define VARBITLEN(PTR)      (((VarBit*)(PTR))->bit_len)
+#define VARBITS(PTR)        (((VarBit*)(PTR))->bit_dat)
 
-#define HIGHBIT (0x80)
-#define IS_HIGHBIT_SET(ch) ((unsigned char)(ch) & HIGHBIT)
+#define HIGHBIT             (0x80)
+#define IS_HIGHBIT_SET(ch)  ((unsigned char)(ch) & HIGHBIT)
 
 /*
  * Modeled on struct pg_parser_varlena from postgres.h, but data type is bits8.
@@ -56,11 +56,13 @@ pg_parser_Datum bit_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
  */
 pg_parser_Datum varbit_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
-    bool    is_toast = false;
-    bool    need_free = false;
-    VarBit* s =
-        (VarBit*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr, &is_toast, &need_free,
-                                         info->zicinfo->dbtype, info->zicinfo->dbversion);
+    bool     is_toast = false;
+    bool     need_free = false;
+    VarBit*  s = (VarBit*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                 &is_toast,
+                                                 &need_free,
+                                                 info->zicinfo->dbtype,
+                                                 info->zicinfo->dbversion);
     char *   result, *r;
     uint8_t* sp;
     uint8_t  x;

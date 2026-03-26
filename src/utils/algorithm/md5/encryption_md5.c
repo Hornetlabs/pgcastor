@@ -5,10 +5,10 @@
 
 #define SHIFT(X, s) (((X) << (s)) | ((X) >> (32 - (s))))
 
-#define F(X, Y, Z) (((X) & (Y)) | ((~X) & (Z)))
-#define G(X, Y, Z) (((X) & (Z)) | ((Y) & (~Z)))
-#define H(X, Y, Z) ((X) ^ (Y) ^ (Z))
-#define I(X, Y, Z) ((Y) ^ ((X) | (~Z)))
+#define F(X, Y, Z)  (((X) & (Y)) | ((~X) & (Z)))
+#define G(X, Y, Z)  (((X) & (Z)) | ((Y) & (~Z)))
+#define H(X, Y, Z)  ((X) ^ (Y) ^ (Z))
+#define I(X, Y, Z)  ((Y) ^ ((X) | (~Z)))
 
 #define ROUND1(a, b, c, d, k, s, i)                     \
     do                                                  \
@@ -42,25 +42,25 @@
         (a) = (b) + (a);                                \
     } while (0)
 
-#define Sa 7
-#define Sb 12
-#define Sc 17
-#define Sd 22
+#define Sa     7
+#define Sb     12
+#define Sc     17
+#define Sd     22
 
-#define Se 5
-#define Sf 9
-#define Sg 14
-#define Sh 20
+#define Se     5
+#define Sf     9
+#define Sg     14
+#define Sh     20
 
-#define Si 4
-#define Sj 11
-#define Sk 16
-#define Sl 23
+#define Si     4
+#define Sj     11
+#define Sk     16
+#define Sl     23
 
-#define Sm 6
-#define Sn 10
-#define So 15
-#define Sp 21
+#define Sm     6
+#define Sn     10
+#define So     15
+#define Sp     21
 
 #define MD5_A0 0x67452301
 #define MD5_B0 0xefcdab89

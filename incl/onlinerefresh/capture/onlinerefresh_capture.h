@@ -28,17 +28,17 @@ typedef struct onlinerefresh_capture
     char              padding5[CACHELINE_SIZE];
 
     /* Clean up onlinerefresh remaining */
-    void (*removeolrefresh)(void* privdata, void* olrefresh);
+    void              (*removeolrefresh)(void* privdata, void* olrefresh);
 
     /* Parent structure */
-    void* privdata;
+    void*             privdata;
 
-    char padding6[CACHELINE_SIZE];
+    char              padding6[CACHELINE_SIZE];
 } onlinerefresh_capture;
 
-extern void*                  onlinerefresh_capture_main(void* args);
-extern void                   onlinerefresh_capture_destroy(void* privdata);
-extern int                    onlinerefresh_capture_cmp(void* s1, void* s2);
+extern void* onlinerefresh_capture_main(void* args);
+extern void onlinerefresh_capture_destroy(void* privdata);
+extern int onlinerefresh_capture_cmp(void* s1, void* s2);
 extern onlinerefresh_capture* onlinerefresh_capture_init(bool increment);
 extern void onlinerefresh_capture_increment_set(onlinerefresh_capture* onlinerefresh_capture,
                                                 bool                   increment);

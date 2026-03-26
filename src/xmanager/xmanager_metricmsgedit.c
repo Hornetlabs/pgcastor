@@ -13,7 +13,8 @@
 #include "xmanager/xmanager_metricmsgedit.h"
 #include "xmanager/xmanager_metricmsg.h"
 
-static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric, netpoolentry* npoolentry,
+static bool xmanager_metricmsg_assembleedit(xmanager_metric*     xmetric,
+                                            netpoolentry*        npoolentry,
                                             xmanager_metricnode* metricnode)
 {
     uint8      u8value = 0;
@@ -50,8 +51,10 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric, netpoolent
     if (-1 == filesize)
     {
         osal_file_close(fd);
-        elog(RLOG_WARNING, "xmanager metric assemble edit msg not get file:%s size, error:%s.",
-             conffile, strerror(errno));
+        elog(RLOG_WARNING,
+             "xmanager metric assemble edit msg not get file:%s size, error:%s.",
+             conffile,
+             strerror(errno));
         return false;
     }
 
@@ -135,7 +138,9 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric, netpoolent
         osal_file_close(fd);
         fd = -1;
         netpacket_destroy(npacket);
-        elog(RLOG_WARNING, "xmanager metric assemble edit msg read file %s error, %s", conffile,
+        elog(RLOG_WARNING,
+             "xmanager metric assemble edit msg read file %s error, %s",
+             conffile,
              strerror(errno));
         return false;
     }
@@ -161,8 +166,9 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric* xmetric, netpoolent
     return true;
 }
 
-bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                  netpacket* npacket)
+bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric,
+                                  netpoolentry*    npoolentry,
+                                  netpacket*       npacket)
 {
     int                  len = 0;
     int                  jobtype = 0;
@@ -187,7 +193,9 @@ bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric, netpoolentry* npoole
     if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 2048, "ERROR: xmanager parse edit command, unsupport %s",
+        snprintf(errormsg,
+                 2048,
+                 "ERROR: xmanager parse edit command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parseedit_error;
     }
@@ -245,6 +253,6 @@ xmanager_metricmsg_parseedit_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_EDITCMD,
-                                               errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(
+        xmetric, npoolentry->wpackets, XMANAGER_MSG_EDITCMD, errcode, errormsg);
 }

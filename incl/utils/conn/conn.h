@@ -9,7 +9,7 @@ typedef enum TXN_ISOLATION_LEVEL
     TXNISOLVL_SERIALIZABLE = 0x03
 } txn_isolation_level;
 
-void    conn_close(PGconn* conn);
+void conn_close(PGconn* conn);
 PGconn* conn_get(const char* conninfo);
 
 /* Connect database/stream replication */

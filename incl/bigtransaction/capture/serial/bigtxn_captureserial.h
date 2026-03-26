@@ -12,28 +12,28 @@ typedef struct BIGTXN_CAPTURESERIAL_CALLBACK
 typedef struct BIGTXN_CAPTURESERIAL
 {
     /* Serialization main structure */
-    serialstate base;
+    serialstate                   base;
 
     /* Recent txn */
-    bigtxn* lasttxn;
+    bigtxn*                       lasttxn;
 
     /* Big transaction data dictionary */
-    cache_sysdicts* dicts;
+    cache_sysdicts*               dicts;
 
     /* Transaction cache, used to receive transactions from increment_captureparser thread */
-    cache_txn* bigtxn2serial;
+    cache_txn*                    bigtxn2serial;
 
     /* padding */
-    char padding[CACHELINE_SIZE];
+    char                          padding[CACHELINE_SIZE];
 
     /* Transaction hash */
-    HTAB* by_txns;
+    HTAB*                         by_txns;
 
     /* padding */
-    char padding1[CACHELINE_SIZE];
+    char                          padding1[CACHELINE_SIZE];
 
     /* Store upper layer pointer */
-    void* privdata;
+    void*                         privdata;
 
     /* Get timeline callback function */
     bigtxn_captureserial_callback callback;

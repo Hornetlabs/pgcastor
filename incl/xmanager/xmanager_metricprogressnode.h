@@ -14,8 +14,10 @@ extern xmanager_metricnode* xmanager_metricprogressnode_init(void);
 extern void xmanager_metricprogressnode_destroy(xmanager_metricnode* metricnode);
 
 /* Serialize progress node */
-extern bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode, uint8** blk,
-                                               int* blksize, int* blkstart);
+extern bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
+                                               uint8**              blk,
+                                               int*                 blksize,
+                                               int*                 blkstart);
 
 /* Deserialize to progress node */
 extern xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkstart);

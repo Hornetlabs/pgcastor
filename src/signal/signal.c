@@ -7,7 +7,7 @@
 typedef void (*ripplesigfunc)(int signo);
 
 /* Global variables */
-sigset_t UnBlockSig, BlockSig;
+sigset_t     UnBlockSig, BlockSig;
 
 static void signal_sigterm(int signo)
 {

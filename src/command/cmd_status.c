@@ -58,17 +58,23 @@ bool cmd_statuscapture(void)
     /* Output content */
     printf("\n---------------RIPPLE PARSER INFO----------------\n");
 
-    printf("capture redolsn         :%X/%X\n", (uint32)(mcapture.redolsn >> 32),
+    printf("capture redolsn         :%X/%X\n",
+           (uint32)(mcapture.redolsn >> 32),
            (uint32)(mcapture.redolsn));
-    printf("capture restartlsn      :%X/%X\n", (uint32)(mcapture.restartlsn >> 32),
+    printf("capture restartlsn      :%X/%X\n",
+           (uint32)(mcapture.restartlsn >> 32),
            (uint32)(mcapture.restartlsn));
-    printf("capture confirmlsn      :%X/%X\n", (uint32)(mcapture.confirmlsn >> 32),
+    printf("capture confirmlsn      :%X/%X\n",
+           (uint32)(mcapture.confirmlsn >> 32),
            (uint32)(mcapture.confirmlsn));
-    printf("capture loadlsn         :%X/%X\n", (uint32)(mcapture.loadlsn >> 32),
+    printf("capture loadlsn         :%X/%X\n",
+           (uint32)(mcapture.loadlsn >> 32),
            (uint32)(mcapture.loadlsn));
-    printf("capture parselsn        :%X/%X\n", (uint32)(mcapture.parselsn >> 32),
+    printf("capture parselsn        :%X/%X\n",
+           (uint32)(mcapture.parselsn >> 32),
            (uint32)(mcapture.parselsn));
-    printf("capture flushlsn        :%X/%X\n", (uint32)(mcapture.flushlsn >> 32),
+    printf("capture flushlsn        :%X/%X\n",
+           (uint32)(mcapture.flushlsn >> 32),
            (uint32)(mcapture.flushlsn));
     printf("capture trail           :%lX/%lX\n", mcapture.trailno, mcapture.trailstart);
     printf("capture parsetimestamp  :%lu\n", mcapture.parsetimestamp);
@@ -107,13 +113,15 @@ bool cmd_statusintegrate(void)
     /* Output content */
     printf("\n---------------RIPPLE PARSER INFO----------------\n");
 
-    printf("integrate loadlsn:           %X/%X", (uint32)(mintegrate.loadlsn >> 32),
+    printf("integrate loadlsn:           %X/%X",
+           (uint32)(mintegrate.loadlsn >> 32),
            (uint32)(mintegrate.loadlsn));
-    printf("integrate synclsn:           %X/%X", (uint32)(mintegrate.synclsn >> 32),
+    printf("integrate synclsn:           %X/%X",
+           (uint32)(mintegrate.synclsn >> 32),
            (uint32)(mintegrate.synclsn));
     printf("integrate loadtrail:         %lX/%lX", mintegrate.loadtrailno, mintegrate.loadtrailno);
-    printf("integrate synctrail:         %lX/%lX", mintegrate.synctrailno,
-           mintegrate.synctrailstart);
+    printf(
+        "integrate synctrail:         %lX/%lX", mintegrate.synctrailno, mintegrate.synctrailstart);
     printf("integrate loadTimestamp:     %lu", mintegrate.loadtimestamp);
     printf("integrate syncTimestamp:     %lu", mintegrate.synctimestamp);
 

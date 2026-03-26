@@ -32,7 +32,9 @@ typedef struct PARSERWORK_GROUPMGR
 
 static parserwork_groupmgr m_groupmgr[] = {
     {FFTRAIL_CXT_TYPE_NOP, "NOP", NULL, NULL},
-    {FFTRAIL_CXT_TYPE_FHEADER, "FileHeader", parsertrail_trailheadapply,
+    {FFTRAIL_CXT_TYPE_FHEADER,
+     "FileHeader",
+     parsertrail_trailheadapply,
      parsertrail_trailheadclean},
     {FFTRAIL_CXT_TYPE_DATA, "FileData", parsertrail_traildataapply, parsertrail_traildataclean},
     {FFTRAIL_CXT_TYPE_RESET, "FileReset", parsertrail_trailresetapply, parsertrail_trailresetclean},
@@ -55,8 +57,8 @@ bool parsertrail_traildecode(parsertrail* parsertrail)
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
 
     /* Call deserialization interface */
-    bret = parsertrail->ffsmgrstate->ffsmgr->ffsmgr_deserial(tokenid, &result,
-                                                             parsertrail->ffsmgrstate);
+    bret = parsertrail->ffsmgrstate->ffsmgr->ffsmgr_deserial(
+        tokenid, &result, parsertrail->ffsmgrstate);
     if (false == bret)
     {
         /* Received exit signal */
@@ -70,7 +72,8 @@ bool parsertrail_traildecode(parsertrail* parsertrail)
         /* make gcc happy */
         tokenid = tokeninfo;
         uptr = tokendata;
-        elog(RLOG_WARNING, "%s need apply, Specify the corresponding processing logic",
+        elog(RLOG_WARNING,
+             "%s need apply, Specify the corresponding processing logic",
              m_groupmgr[tokenid].desc);
         return false;
     }
@@ -143,9 +146,13 @@ bool parsertrail_parser(parsertrail* parsertrail)
         /* Call parsing interface */
         if (false == parsertrail_traildecode(parsertrail))
         {
-            elog(RLOG_WARNING, "parse trail record error, record type:%d", record_obj->type,
-                 record_obj->start.trail.fileid, record_obj->start.trail.offset,
-                 record_obj->totallength, record_obj->reallength);
+            elog(RLOG_WARNING,
+                 "parse trail record error, record type:%d",
+                 record_obj->type,
+                 record_obj->start.trail.fileid,
+                 record_obj->start.trail.offset,
+                 record_obj->totallength,
+                 record_obj->reallength);
             return false;
         }
         dlist_node_free(dlnode, record_freevoid);

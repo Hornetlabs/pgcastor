@@ -21,8 +21,10 @@ static void report_invalid_encoding(int32_t encoding, const char* mbstr, int32_t
     // printf("ERROR: invalid encoding: %d\n", encoding);
 }
 
-static void report_untranslatable_char(int32_t src_encoding, int32_t dest_encoding,
-                                       const char* mbstr, int32_t len)
+static void report_untranslatable_char(int32_t     src_encoding,
+                                       int32_t     dest_encoding,
+                                       const char* mbstr,
+                                       int32_t     len)
 {
     (void)(src_encoding);
     (void)(dest_encoding);
@@ -43,8 +45,12 @@ static void report_untranslatable_char(int32_t src_encoding, int32_t dest_encodi
  * code point for the target charset, or 0 if there is no equivalent code.
  */
 
-void local2local(const unsigned char* l, unsigned char* p, int32_t len, int32_t src_encoding,
-                 int32_t dest_encoding, const unsigned char* tab)
+void local2local(const unsigned char* l,
+                 unsigned char*       p,
+                 int32_t              len,
+                 int32_t              src_encoding,
+                 int32_t              dest_encoding,
+                 const unsigned char* tab)
 {
     unsigned char c1, c2;
 
@@ -115,8 +121,8 @@ void latin2mic(const unsigned char* l, unsigned char* p, int32_t len, int32_t lc
  * lc is the mule character set id for the local encoding
  * encoding is the PG identifier for the local encoding
  */
-void mic2latin(const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc,
-               int32_t encoding)
+void mic2latin(
+    const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc, int32_t encoding)
 {
     int32_t c1;
 
@@ -212,8 +218,12 @@ void conv_mic2ascii(const unsigned char* mic, unsigned char* p, int32_t len)
  * starting from 128 (0x80). each entry in the table holds the corresponding
  * code point for the mule encoding, or 0 if there is no equivalent code.
  */
-void latin2mic_with_table(const unsigned char* l, unsigned char* p, int32_t len, int32_t lc,
-                          int32_t encoding, const unsigned char* tab)
+void latin2mic_with_table(const unsigned char* l,
+                          unsigned char*       p,
+                          int32_t              len,
+                          int32_t              lc,
+                          int32_t              encoding,
+                          const unsigned char* tab)
 {
     unsigned char c1, c2;
 
@@ -259,8 +269,12 @@ void latin2mic_with_table(const unsigned char* l, unsigned char* p, int32_t len,
  * starting from 128 (0x80). each entry in the table holds the corresponding
  * code point for the local charset, or 0 if there is no equivalent code.
  */
-void mic2latin_with_table(const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc,
-                          int32_t encoding, const unsigned char* tab)
+void mic2latin_with_table(const unsigned char* mic,
+                          unsigned char*       p,
+                          int32_t              len,
+                          int32_t              lc,
+                          int32_t              encoding,
+                          const unsigned char* tab)
 {
     unsigned char c1, c2;
 
@@ -357,9 +371,12 @@ static inline unsigned char* store_coded_char(unsigned char* dest, uint32_t code
  * 'l' is the length of the input character in bytes, and b1-b4 are
  * the input character's bytes.
  */
-static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree* rt, int32_t l,
-                                          unsigned char b1, unsigned char b2, unsigned char b3,
-                                          unsigned char b4)
+static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree* rt,
+                                          int32_t                        l,
+                                          unsigned char                  b1,
+                                          unsigned char                  b2,
+                                          unsigned char                  b3,
+                                          unsigned char                  b4)
 {
     if (l == 4)
     {
@@ -494,9 +511,14 @@ static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree* rt, int
  *
  * See pg_wchar.h for more details about the data structures used here.
  */
-void UtfToLocal(const unsigned char* utf, int32_t len, unsigned char* iso,
-                const character_mb_radix_tree* map, const character_utf_to_local_combined* cmap,
-                int32_t cmapsize, utf_local_conversion_func conv_func, int32_t encoding)
+void UtfToLocal(const unsigned char*                   utf,
+                int32_t                                len,
+                unsigned char*                         iso,
+                const character_mb_radix_tree*         map,
+                const character_utf_to_local_combined* cmap,
+                int32_t                                cmapsize,
+                utf_local_conversion_func              conv_func,
+                int32_t                                encoding)
 {
     uint32_t                               iutf;
     int32_t                                l;
@@ -617,8 +639,8 @@ void UtfToLocal(const unsigned char* utf, int32_t len, unsigned char* iso,
 
                 cutf[0] = iutf;
                 cutf[1] = iutf2;
-                cp = bsearch(cutf, cmap, cmapsize, sizeof(character_utf_to_local_combined),
-                             compare3);
+                cp = bsearch(
+                    cutf, cmap, cmapsize, sizeof(character_utf_to_local_combined), compare3);
 
                 if (cp)
                 {
@@ -692,9 +714,14 @@ void UtfToLocal(const unsigned char* utf, int32_t len, unsigned char* iso,
  *
  * See pg_wchar.h for more details about the data structures used here.
  */
-void LocalToUtf(const unsigned char* iso, int32_t len, unsigned char* utf,
-                const character_mb_radix_tree* map, const character_local_to_utf_combined* cmap,
-                int32_t cmapsize, utf_local_conversion_func conv_func, int32_t encoding)
+void LocalToUtf(const unsigned char*                   iso,
+                int32_t                                len,
+                unsigned char*                         utf,
+                const character_mb_radix_tree*         map,
+                const character_local_to_utf_combined* cmap,
+                int32_t                                cmapsize,
+                utf_local_conversion_func              conv_func,
+                int32_t                                encoding)
 {
     uint32_t                               iiso;
     int32_t                                l;
@@ -775,8 +802,8 @@ void LocalToUtf(const unsigned char* iso, int32_t len, unsigned char* utf,
             /* If there's a combined character map, try that */
             if (cmap)
             {
-                cp = bsearch(&iiso, cmap, cmapsize, sizeof(character_local_to_utf_combined),
-                             compare4);
+                cp = bsearch(
+                    &iiso, cmap, cmapsize, sizeof(character_local_to_utf_combined), compare4);
 
                 if (cp)
                 {

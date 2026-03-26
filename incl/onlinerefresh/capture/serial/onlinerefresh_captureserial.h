@@ -20,5 +20,5 @@ typedef struct ONLINEREFRESH_CAPTURESERIAL
 extern onlinerefresh_captureserial* onlinerefresh_captureserial_init(void);
 
 extern void* onlinerefresh_captureserial_main(void* args);
-extern void  onlinerefresh_captureserial_free(void* args);
+extern void onlinerefresh_captureserial_free(void* args);
 #endif

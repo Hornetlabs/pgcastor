@@ -272,7 +272,9 @@ void proc_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         catalogInHash = hash_search(sysdicts->by_proc, &newcatalog->oid, HASH_ENTER, &found);
         if (true == found)
         {
-            elog(RLOG_WARNING, "by_proc hash duplicate oid, %u, %s", catalogInHash->proc->oid,
+            elog(RLOG_WARNING,
+                 "by_proc hash duplicate oid, %u, %s",
+                 catalogInHash->proc->oid,
                  catalogInHash->proc->proname.data);
 
             if (NULL != catalogInHash->proc)
@@ -305,7 +307,9 @@ void proc_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         catalogInHash = hash_search(sysdicts->by_proc, &newcatalog->oid, HASH_FIND, &found);
         if (NULL == catalogInHash)
         {
-            elog(RLOG_WARNING, "by_proc hash not found, %u, %s", newcatalog->proc->oid,
+            elog(RLOG_WARNING,
+                 "by_proc hash not found, %u, %s",
+                 newcatalog->proc->oid,
                  newcatalog->proc->proname.data);
             return;
         }

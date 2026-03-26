@@ -227,9 +227,13 @@ void onlinerefresh_captureparser_loadmetadata(onlinerefresh_captureparser* olcpa
     elog(RLOG_INFO,
          "capture onlinerefresh parser from, restartlsn %X/%X, last commit lsn:%X/%X, fileid:%lu, "
          "offset:%u, curtlid:%u",
-         (uint32)(decodingctx->base.restartlsn >> 32), (uint32)decodingctx->base.restartlsn,
-         (uint32)(decodingctx->base.confirmedlsn >> 32), (uint32)decodingctx->base.confirmedlsn,
-         decodingctx->base.fileid, decodingctx->base.fileoffset, decodingctx->base.curtlid);
+         (uint32)(decodingctx->base.restartlsn >> 32),
+         (uint32)decodingctx->base.restartlsn,
+         (uint32)(decodingctx->base.confirmedlsn >> 32),
+         (uint32)decodingctx->base.confirmedlsn,
+         decodingctx->base.fileid,
+         decodingctx->base.fileoffset,
+         decodingctx->base.curtlid);
 }
 
 /* Traverse and parse record */

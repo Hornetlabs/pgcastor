@@ -312,13 +312,15 @@ static bool update_index_catalog_data_in_lsit(List*                index_list,
                         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
                     }
                 }
-                rmemcpy0(dict_index->indkey, 0, new_index_value->index->indkey,
+                rmemcpy0(dict_index->indkey,
+                         0,
+                         new_index_value->index->indkey,
                          sizeof(uint32) * new_index_value->index->indnatts);
             }
 
             /* Reassign */
-            rmemcpy0(dict_index, 0, new_index_value->index,
-                     offsetof(pg_parser_sysdict_pgindex, indkey));
+            rmemcpy0(
+                dict_index, 0, new_index_value->index, offsetof(pg_parser_sysdict_pgindex, indkey));
             find = true;
             break;
         }
@@ -340,8 +342,10 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
     }
 
     new_index_value = (catalog_index_value*)catalogdata->catalog;
-    elog(RLOG_DEBUG, "op:%d, newindex, indrelid:%u, primary:%s, isreplident:%s, keynum:%d",
-         catalogdata->op, new_index_value->index->indexrelid,
+    elog(RLOG_DEBUG,
+         "op:%d, newindex, indrelid:%u, primary:%s, isreplident:%s, keynum:%d",
+         catalogdata->op,
+         new_index_value->index->indexrelid,
          new_index_value->index->indisprimary ? "true" : "false",
          new_index_value->index->indisreplident ? "true" : "false",
          new_index_value->index->indnatts);
@@ -373,7 +377,9 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemcpy0(dict_index->indkey, 0, new_index_value->index->indkey,
+            rmemcpy0(dict_index->indkey,
+                     0,
+                     new_index_value->index->indkey,
                      sizeof(uint32) * dict_index->indnatts);
 
             index_value = (catalog_index_value*)rmalloc0(sizeof(catalog_index_value));
@@ -390,8 +396,10 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
         }
         else
         {
-            elog(RLOG_DEBUG, "index r:%u,i:%u find in index hash list, do update",
-                 new_index_value->index->indrelid, new_index_value->index->indexrelid);
+            elog(RLOG_DEBUG,
+                 "index r:%u,i:%u find in index hash list, do update",
+                 new_index_value->index->indrelid,
+                 new_index_value->index->indexrelid);
             update_index_catalog_data_in_lsit(indexInHash->index_list, new_index_value);
         }
     }
@@ -447,15 +455,19 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
         indexInHash = hash_search(sysdicts->by_index, &new_index_value->oid, HASH_FIND, &found);
         if (NULL == indexInHash || NULL == (indexInHash->index_list))
         {
-            elog(RLOG_WARNING, "index r:%u,i:%u can not fond in index hash",
-                 new_index_value->index->indrelid, new_index_value->index->indexrelid);
+            elog(RLOG_WARNING,
+                 "index r:%u,i:%u can not fond in index hash",
+                 new_index_value->index->indrelid,
+                 new_index_value->index->indexrelid);
             return;
         }
 
         if (!update_index_catalog_data_in_lsit(indexInHash->index_list, new_index_value))
         {
-            elog(RLOG_WARNING, "index r:%u,i:%u can not fond in index hash list",
-                 new_index_value->index->indrelid, new_index_value->index->indexrelid);
+            elog(RLOG_WARNING,
+                 "index r:%u,i:%u can not fond in index hash list",
+                 new_index_value->index->indrelid,
+                 new_index_value->index->indexrelid);
             return;
         }
     }
@@ -590,14 +602,14 @@ void indexcache_write(HTAB* indexcache, uint64* offset, sysdict_header_array* ar
 
 HTAB* indexcache_load(sysdict_header_array* array)
 {
-    int     r = 0;
-    int     fd = -1;
-    HTAB*   indexhtab;
-    HASHCTL hash_ctl;
-    bool    found = false;
-    uint32  datasize = 0;
-    uint64  offset = 0;
-    uint64  fileoffset = 0;
+    int                       r = 0;
+    int                       fd = -1;
+    HTAB*                     indexhtab;
+    HASHCTL                   hash_ctl;
+    bool                      found = false;
+    uint32                    datasize = 0;
+    uint64                    offset = 0;
+    uint64                    fileoffset = 0;
 
     char                      buffer[FILE_BLK_SIZE];
     pg_sysdict_Form_pg_index  index;

@@ -19,7 +19,7 @@
 #include "trans/transrec/pg_parser_trans_transrec_heaptuple.h"
 #include "thirdparty/stringinfo/pg_parser_thirdparty_stringinfo.h"
 
-#define PGFUNC_RANGE_MCXT NULL
+#define PGFUNC_RANGE_MCXT   NULL
 #define RANGE_EMPTY_LITERAL "empty"
 
 typedef struct
@@ -39,22 +39,22 @@ typedef struct
 } RangeBound;
 
 /* A range's flags byte contains these bits: */
-#define RANGE_EMPTY 0x01   /* range is empty */
-#define RANGE_LB_INC 0x02  /* lower bound is inclusive */
-#define RANGE_UB_INC 0x04  /* upper bound is inclusive */
-#define RANGE_LB_INF 0x08  /* lower bound is -infinity */
-#define RANGE_UB_INF 0x10  /* upper bound is +infinity */
+#define RANGE_EMPTY   0x01 /* range is empty */
+#define RANGE_LB_INC  0x02 /* lower bound is inclusive */
+#define RANGE_UB_INC  0x04 /* upper bound is inclusive */
+#define RANGE_LB_INF  0x08 /* lower bound is -infinity */
+#define RANGE_UB_INF  0x10 /* upper bound is +infinity */
 #define RANGE_LB_NULL 0x20 /* lower bound is null (NOT USED) */
 #define RANGE_UB_NULL 0x40 /* upper bound is null (NOT USED) */
 #define RANGE_CONTAIN_EMPTY                        \
     0x80 /* marks a GiST internal-page entry whose \
           * subtree contains some empty ranges */
 
-#define RANGE_HAS_LBOUND(flags) (!((flags) & (RANGE_EMPTY | RANGE_LB_NULL | RANGE_LB_INF)))
+#define RANGE_HAS_LBOUND(flags)   (!((flags) & (RANGE_EMPTY | RANGE_LB_NULL | RANGE_LB_INF)))
 
-#define RANGE_HAS_UBOUND(flags) (!((flags) & (RANGE_EMPTY | RANGE_UB_NULL | RANGE_UB_INF)))
+#define RANGE_HAS_UBOUND(flags)   (!((flags) & (RANGE_EMPTY | RANGE_UB_NULL | RANGE_UB_INF)))
 
-#define RangeIsEmpty(r) ((range_get_flags(r) & RANGE_EMPTY) != 0)
+#define RangeIsEmpty(r)           ((range_get_flags(r) & RANGE_EMPTY) != 0)
 #define RangeIsOrContainsEmpty(r) ((range_get_flags(r) & (RANGE_EMPTY | RANGE_CONTAIN_EMPTY)) != 0)
 
 static char range_get_flags(RangeType* range);
@@ -80,8 +80,11 @@ static char range_get_flags(RangeType* range)
  * Note that if the element type is pass-by-reference, the datums in the
  * RangeBound structs will be pointers into the given range object.
  */
-static void range_deserialize(pg_parser_sysdict_pgtype* npt, RangeType* range, RangeBound* lower,
-                              RangeBound* upper, bool* empty)
+static void range_deserialize(pg_parser_sysdict_pgtype* npt,
+                              RangeType*                range,
+                              RangeBound*               lower,
+                              RangeBound*               upper,
+                              bool*                     empty)
 {
     char              flags;
     int16_t           typlen;
@@ -145,7 +148,7 @@ extern const unsigned short int** __ctype_b_loc(void) __THROW __attribute__((__c
 
 #define __isctype(c, type) ((*__ctype_b_loc())[(int)(c)] & (unsigned short int)type)
 
-#define isspace(c) __isctype((c), 8192)
+#define isspace(c)         __isctype((c), 8192)
 
 /*
  * Helper for range_deparse: quote a bound value as needed
@@ -248,16 +251,18 @@ pg_parser_Datum range_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
     bool       is_toast = false;
     bool       need_free = false;
-    RangeType* range =
-        (RangeType*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr, &is_toast, &need_free,
-                                            info->zicinfo->dbtype, info->zicinfo->dbversion);
-    char*                     output_str;
-    char                      flags;
-    char*                     lbound_str = NULL;
-    char*                     ubound_str = NULL;
-    RangeBound                lower;
-    RangeBound                upper;
-    bool                      empty;
+    RangeType* range = (RangeType*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                           &is_toast,
+                                                           &need_free,
+                                                           info->zicinfo->dbtype,
+                                                           info->zicinfo->dbversion);
+    char*      output_str;
+    char       flags;
+    char*      lbound_str = NULL;
+    char*      ubound_str = NULL;
+    RangeBound lower;
+    RangeBound upper;
+    bool       empty;
     pg_parser_sysdict_pgtype* type = NULL;
 
     if (is_toast)
@@ -280,8 +285,8 @@ pg_parser_Datum range_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
     /* call element type's output function */
     if (RANGE_HAS_LBOUND(flags))
     {
-        lbound_str = pg_parser_convert_attr_to_str_char(lower.val, info->sysdicts, type->oid,
-                                                        &is_toast, info->zicinfo);
+        lbound_str = pg_parser_convert_attr_to_str_char(
+            lower.val, info->sysdicts, type->oid, &is_toast, info->zicinfo);
         if (!lbound_str)
         {
             return (pg_parser_Datum)0;
@@ -295,8 +300,8 @@ pg_parser_Datum range_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
     }
     if (RANGE_HAS_UBOUND(flags))
     {
-        ubound_str = pg_parser_convert_attr_to_str_char(upper.val, info->sysdicts, type->oid,
-                                                        &is_toast, info->zicinfo);
+        ubound_str = pg_parser_convert_attr_to_str_char(
+            upper.val, info->sysdicts, type->oid, &is_toast, info->zicinfo);
         if (!ubound_str)
         {
             return (pg_parser_Datum)0;

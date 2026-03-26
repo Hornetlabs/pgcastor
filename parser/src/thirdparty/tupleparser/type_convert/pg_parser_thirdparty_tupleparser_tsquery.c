@@ -14,13 +14,13 @@
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 #define PGFUNC_TSQUERY_MCXT NULL
-#define QI_VAL 1
+#define QI_VAL              1
 
-#define OP_NOT 1
-#define OP_AND 2
-#define OP_OR 3
-#define OP_PHRASE 4 /* highest code, tsquery_cleanup.c */
-#define OP_COUNT 4
+#define OP_NOT              1
+#define OP_AND              2
+#define OP_OR               3
+#define OP_PHRASE           4 /* highest code, tsquery_cleanup.c */
+#define OP_COUNT            4
 
 typedef struct
 {
@@ -31,7 +31,7 @@ typedef struct
 
 typedef TSQueryData* TSQuery;
 
-typedef int8_t QueryItemType;
+typedef int8_t       QueryItemType;
 
 typedef struct
 {
@@ -50,14 +50,14 @@ typedef struct
                            * bitmask of allowed weights. if it =0 then
                            * any weight are allowed. Weights and bit
                            * map: A: 1<<3 B: 1<<2 C: 1<<1 D: 1<<0 */
-    bool    prefix;       /* true if it's a prefix search */
-    int32_t valcrc;       /* XXX: pg_crc32 would be a more appropriate
+    bool          prefix; /* true if it's a prefix search */
+    int32_t       valcrc; /* XXX: pg_crc32 would be a more appropriate
                            * data type, but we use comparisons to signed
                            * integers in the code. They would need to be
                            * changed as well. */
 
     /* pointer to pg_parser_text value of operand, must correlate with WordEntry */
-    uint32_t length : 12, distance : 20;
+    uint32_t      length : 12, distance : 20;
 } QueryOperand;
 
 typedef union
@@ -96,7 +96,7 @@ typedef struct
 #define TOUCHAR(x) (*((const unsigned char*)(x)))
 
 /* The second argument of t_iseq() must be a plain ASCII character */
-#define t_iseq(x, c) (TOUCHAR(x) == (unsigned char)(c))
+#define t_iseq(x, c)   (TOUCHAR(x) == (unsigned char)(c))
 #define COPYCHAR(d, s) rmemcpy1(d, 0, s, character_encoding_mblen(CHARACTER_UTF8, s))
 
 /* FTS operator priorities, see ts_type.h */

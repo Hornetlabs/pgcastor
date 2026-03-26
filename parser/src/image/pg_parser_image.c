@@ -6,9 +6,9 @@
 #include "trans/transrec/pg_parser_trans_transrec_itemptr.h"
 #include "image/pg_parser_image.h"
 
-#define IMAGE_MCXT NULL
+#define IMAGE_MCXT        NULL
 
-#define LONG_ALIGN_MASK (sizeof(long) - 1)
+#define LONG_ALIGN_MASK   (sizeof(long) - 1)
 #define MEMSET_LOOP_LIMIT 1024
 /*
  * MemSet
@@ -45,8 +45,10 @@
             rmemset1(_vstart, 0, _val, _len);                                                   \
     } while (0)
 
-bool pg_parser_image_get_block_image(pg_parser_trans_transrec_decode_XLogReaderState* record,
-                                     uint8_t block_id, char* page, int32_t block_size)
+bool pg_parser_image_get_block_image(pg_parser_XLogReaderState* record,
+                                     uint8_t                    block_id,
+                                     char*                      page,
+                                     int32_t                    block_size)
 {
     pg_parser_DecodedBkpBlock* bkpb;
     char*                      ptr;
@@ -72,8 +74,8 @@ bool pg_parser_image_get_block_image(pg_parser_trans_transrec_decode_XLogReaderS
     if (bkpb->bimg_info & PG_PARSER_TRANS_TRANSREC_BKPIMAGE_IS_COMPRESSED)
     {
         /* If a backup block image is compressed, decompress it. */
-        if (pg_parser_lz_decompress(ptr, bkpb->bimg_len, tmp, block_size - bkpb->hole_length,
-                                    true) < 0)
+        if (pg_parser_lz_decompress(
+                ptr, bkpb->bimg_len, tmp, block_size - bkpb->hole_length, true) < 0)
         {
             return false;
         }
@@ -90,7 +92,9 @@ bool pg_parser_image_get_block_image(pg_parser_trans_transrec_decode_XLogReaderS
         rmemcpy1(page, 0, ptr, bkpb->hole_offset);
         /* must zero-fill the hole. */
         MemSet(page + bkpb->hole_offset, 0, bkpb->hole_length);
-        rmemcpy1(page + (bkpb->hole_offset + bkpb->hole_length), 0, ptr + bkpb->hole_offset,
+        rmemcpy1(page + (bkpb->hole_offset + bkpb->hole_length),
+                 0,
+                 ptr + bkpb->hole_offset,
                  block_size - (bkpb->hole_offset + bkpb->hole_length));
     }
 
@@ -109,9 +113,10 @@ bool pg_parser_image_get_block_image(pg_parser_trans_transrec_decode_XLogReaderS
          : ((((pg_parser_PageHeader)(page))->pd_lower - pg_parser_SizeOfPageHeaderData) / \
             sizeof(pg_parser_ItemIdData)))
 
-pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image(char* page, uint32_t* tupcnt,
-                                                                    uint32_t pageno,
-                                                                    uint8_t  debug_level)
+pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image(char*     page,
+                                                                    uint32_t* tupcnt,
+                                                                    uint32_t  pageno,
+                                                                    uint8_t   debug_level)
 {
     pg_parser_PageHeader           phdr = (pg_parser_PageHeader)page;
     pg_parser_translog_tuplecache* result = NULL;
@@ -128,8 +133,8 @@ pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image(char* page, 
     }
     if (count != 0)
     {
-        if (!pg_parser_mcxt_malloc(IMAGE_MCXT, (void**)&result,
-                                   count * sizeof(pg_parser_translog_tuplecache)))
+        if (!pg_parser_mcxt_malloc(
+                IMAGE_MCXT, (void**)&result, count * sizeof(pg_parser_translog_tuplecache)))
         {
             return NULL;
         }
@@ -148,14 +153,17 @@ pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image(char* page, 
     {
         if (pg_parser_ItemIdIsNormal(&phdr->pd_linp[i]))
         {
-            if (!pg_parser_mcxt_malloc(IMAGE_MCXT, (void**)&(result[count].m_tupledata),
+            if (!pg_parser_mcxt_malloc(IMAGE_MCXT,
+                                       (void**)&(result[count].m_tupledata),
                                        (int32_t)(phdr->pd_linp[i].lp_len)))
             {
                 return NULL;
             }
             result[count].m_itemoffnum = i + 1;
             result[count].m_pageno = pageno;
-            rmemcpy0(result[count].m_tupledata, 0, pg_parser_PageGetItem(page, &phdr->pd_linp[i]),
+            rmemcpy0(result[count].m_tupledata,
+                     0,
+                     pg_parser_PageGetItem(page, &phdr->pd_linp[i]),
                      (size_t)(phdr->pd_linp[i].lp_len));
             result[count].m_tuplelen = phdr->pd_linp[i].lp_len;
             count++;
@@ -166,7 +174,9 @@ pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image(char* page, 
         for (i = 0; i < *tupcnt; i++)
         {
             printf("DEBUG: get tuple from FPW image, itemoff[%u], pageno[%u], tuplen[%u]\n",
-                   result[i].m_itemoffnum, result[i].m_pageno, result[i].m_tuplelen);
+                   result[i].m_itemoffnum,
+                   result[i].m_pageno,
+                   result[i].m_tuplelen);
         }
     }
     return result;
@@ -187,9 +197,13 @@ pg_parser_translog_tuplecache* pg_parser_image_getTupleFromCache(
     return result;
 }
 
-pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image_with_dbtype(
-    int32_t dbtype, char* dbversion, uint32_t pagesize, char* page, uint32_t* tupcnt,
-    uint32_t pageno, uint8_t debug_level)
+pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image_with_dbtype(int32_t   dbtype,
+                                                                                char*     dbversion,
+                                                                                uint32_t  pagesize,
+                                                                                char*     page,
+                                                                                uint32_t* tupcnt,
+                                                                                uint32_t  pageno,
+                                                                                uint8_t debug_level)
 {
     PG_PARSER_UNUSED(dbtype);
     PG_PARSER_UNUSED(dbversion);
@@ -201,7 +215,7 @@ bool check_page_have_item(char* page)
 {
     pg_parser_PageHeader phdr = (pg_parser_PageHeader)page;
 
-    uint32_t item_num = PageGetMaxOffsetNumber(phdr);
+    uint32_t             item_num = PageGetMaxOffsetNumber(phdr);
     if (item_num > 0)
     {
         return true;

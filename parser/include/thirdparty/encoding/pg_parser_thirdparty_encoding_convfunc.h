@@ -90,13 +90,17 @@ extern void uhc_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t
 extern void utf8_to_uhc(unsigned char* src_str, unsigned char* dest_str, int32_t str_len);
 extern void euc_jis_2004_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len);
 extern void utf8_to_euc_jis_2004(unsigned char* src_str, unsigned char* dest_str, int32_t str_len);
-extern void shift_jis_2004_to_utf8(unsigned char* src_str, unsigned char* dest_str,
-                                   int32_t str_len);
-extern void utf8_to_shift_jis_2004(unsigned char* src_str, unsigned char* dest_str,
-                                   int32_t str_len);
-extern void euc_jis_2004_to_shift_jis_2004(unsigned char* src_str, unsigned char* dest_str,
-                                           int32_t str_len);
-extern void shift_jis_2004_to_euc_jis_2004(unsigned char* src_str, unsigned char* dest_str,
-                                           int32_t str_len);
+extern void shift_jis_2004_to_utf8(unsigned char* src_str,
+                                   unsigned char* dest_str,
+                                   int32_t        str_len);
+extern void utf8_to_shift_jis_2004(unsigned char* src_str,
+                                   unsigned char* dest_str,
+                                   int32_t        str_len);
+extern void euc_jis_2004_to_shift_jis_2004(unsigned char* src_str,
+                                           unsigned char* dest_str,
+                                           int32_t        str_len);
+extern void shift_jis_2004_to_euc_jis_2004(unsigned char* src_str,
+                                           unsigned char* dest_str,
+                                           int32_t        str_len);
 
 #endif

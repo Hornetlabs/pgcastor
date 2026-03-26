@@ -22,8 +22,10 @@ typedef struct XMANAGER_METRICNODESTAT_NAME
 } xmanager_metricnodestat_name;
 
 static xmanager_metricnodestat_name metricnodestat_name[] = {
-    {XMANAGER_METRICNODESTAT_NOP, "NOP"},       {XMANAGER_METRICNODESTAT_INIT, "INIT"},
-    {XMANAGER_METRICNODESTAT_ONLINE, "ONLINE"}, {XMANAGER_METRICNODESTAT_OFFLINE, "OFFLIN"},
+    {XMANAGER_METRICNODESTAT_NOP, "NOP"},
+    {XMANAGER_METRICNODESTAT_INIT, "INIT"},
+    {XMANAGER_METRICNODESTAT_ONLINE, "ONLINE"},
+    {XMANAGER_METRICNODESTAT_OFFLINE, "OFFLIN"},
     {XMANAGER_METRICNODESTAT_MAX, "MAX"},
 };
 
@@ -449,8 +451,9 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric, netpoolent
  * Handle list command
  *1. Return metricnode info
  */
-bool xmanager_metricmsg_parselist(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                  netpacket* npacket)
+bool xmanager_metricmsg_parselist(xmanager_metric* xmetric,
+                                  netpoolentry*    npoolentry,
+                                  netpacket*       npacket)
 {
     /* Error code */
     int    errcode = 0;
@@ -489,6 +492,6 @@ bool xmanager_metricmsg_parselist(xmanager_metric* xmetric, netpoolentry* npoole
 xmanager_metricmsg_parselist_error:
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_LISTCMD,
-                                               errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(
+        xmetric, npoolentry->wpackets, XMANAGER_MSG_LISTCMD, errcode, errormsg);
 }

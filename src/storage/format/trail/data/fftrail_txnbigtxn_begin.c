@@ -26,11 +26,11 @@ bool fftrail_txnbigtxn_begin_serial(void* data, void* state)
     uint32             tlen = 0;
     FullTransactionId* xid = NULL;
 
-    uint8*        uptr = NULL;
-    txnstmt*      rstmt = NULL; /* Content to write to trail file */
-    ff_txndata*   txndata = NULL;
-    file_buffer*  fbuffer = NULL;
-    ffsmgr_state* ffstate = NULL; /* state data info */
+    uint8*             uptr = NULL;
+    txnstmt*           rstmt = NULL; /* Content to write to trail file */
+    ff_txndata*        txndata = NULL;
+    file_buffer*       fbuffer = NULL;
+    ffsmgr_state*      ffstate = NULL; /* state data info */
 
     txndata = (ff_txndata*)data;
     rstmt = (txnstmt*)txndata->data;
@@ -70,8 +70,8 @@ bool fftrail_txnbigtxn_begin_serial(void* data, void* state)
     fbuffer->start += hdrlen;
 
     /* bigtxn begin txid */
-    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_BIGINT, 8,
-                             (uint8*)xid);
+    fftrail_data_data2buffer(
+        &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)xid);
 
     /* Fill header info */
     if (FFSMGR_STATUS_SHIFTFILE == ffstate->status)
@@ -117,11 +117,11 @@ bool fftrail_txnbigtxn_begin_deserial(void** data, void* state)
     uint64             totallen = 0;
     FullTransactionId* xid = NULL;
 
-    uint8*        uptr = NULL;
-    uint8*        tokendata = NULL; /* token data area */
-    ff_txndata*   txndata = NULL;
-    ffsmgr_state* ffstate = NULL;
-    txnstmt*      rstmt = NULL;
+    uint8*             uptr = NULL;
+    uint8*             tokendata = NULL; /* token data area */
+    ff_txndata*        txndata = NULL;
+    ffsmgr_state*      ffstate = NULL;
+    txnstmt*           rstmt = NULL;
 
     /* Type cast */
     ffstate = (ffsmgr_state*)state;
@@ -182,8 +182,13 @@ bool fftrail_txnbigtxn_begin_deserial(void** data, void* state)
     totallen = txndata->header.totallength;
 
     /* Get xid */
-    if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)xid))
+    if (false == fftrail_data_buffer2data(&txndata->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_BIGINT,
+                                          8,
+                                          (uint8*)xid))
     {
         elog(RLOG_WARNING, "big txn begin deserial error");
         return false;

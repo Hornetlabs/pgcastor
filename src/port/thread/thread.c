@@ -44,7 +44,8 @@ int osal_thread_cond_signal(pthread_cond_t* cond)
 }
 
 /* Wait for condition */
-int osal_thread_cond_timewait(pthread_cond_t* cond, pthread_mutex_t* mutex,
+int osal_thread_cond_timewait(pthread_cond_t*        cond,
+                              pthread_mutex_t*       mutex,
                               const struct timespec* abstime)
 {
     return pthread_cond_timedwait(cond, mutex, abstime);

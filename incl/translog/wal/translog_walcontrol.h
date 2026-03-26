@@ -22,22 +22,22 @@ typedef struct TRANSLOG_WALCONTROL
     translog_walcontrol_stat stat;
 
     /* Log size */
-    uint32 segsize;
+    uint32                   segsize;
 
     /* Stream replication starting point */
-    XLogRecPtr startpos;
+    XLogRecPtr               startpos;
 
     /* Timeline currently syncing */
-    TimeLineID tli;
+    TimeLineID               tli;
 
     /* Database timeline */
-    TimeLineID dbtli;
+    TimeLineID               dbtli;
 
     /* slotname */
-    char slotname[NAMEDATALEN];
+    char                     slotname[NAMEDATALEN];
 
     /* restorecommand */
-    char restorecmd[MAXPATH];
+    char                     restorecmd[MAXPATH];
 } translog_walcontrol;
 
 /* Set starting lsn for stream replication */

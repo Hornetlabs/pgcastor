@@ -16,8 +16,8 @@
 #include "thirdparty/stringinfo/pg_parser_thirdparty_stringinfo.h"
 #include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_fmgr.h"
 
-#define PGFUNC_NUMERIC_MCXT NULL
-#define PGFUNC_JSONB_MCXT NULL
+#define PGFUNC_NUMERIC_MCXT       NULL
+#define PGFUNC_JSONB_MCXT         NULL
 
 #define PG_PARSER_NUMERIC_OUT_OID 1702
 
@@ -61,24 +61,24 @@ typedef struct NumericVar
     NumericDigit* digits;  /* base-NBASE digits */
 } NumericVar;
 
-#define NBASE 10000
-#define HALF_NBASE 5000
-#define DEC_DIGITS 4       /* decimal digits per NBASE digit */
-#define MUL_GUARD_DIGITS 2 /* these are measured in NBASE digits */
-#define DIV_GUARD_DIGITS 4
+#define NBASE                      10000
+#define HALF_NBASE                 5000
+#define DEC_DIGITS                 4 /* decimal digits per NBASE digit */
+#define MUL_GUARD_DIGITS           2 /* these are measured in NBASE digits */
+#define DIV_GUARD_DIGITS           4
 
-#define NUMERIC_SIGN_MASK 0xC000
-#define NUMERIC_POS 0x0000
-#define NUMERIC_NEG 0x4000
-#define NUMERIC_SHORT 0x8000
-#define NUMERIC_NAN 0xC000
+#define NUMERIC_SIGN_MASK          0xC000
+#define NUMERIC_POS                0x0000
+#define NUMERIC_NEG                0x4000
+#define NUMERIC_SHORT              0x8000
+#define NUMERIC_NAN                0xC000
 
-#define NUMERIC_FLAGBITS(n) ((n)->choice.n_header & NUMERIC_SIGN_MASK)
-#define NUMERIC_IS_NAN(n) (NUMERIC_FLAGBITS(n) == NUMERIC_NAN)
-#define NUMERIC_IS_SHORT(n) (NUMERIC_FLAGBITS(n) == NUMERIC_SHORT)
+#define NUMERIC_FLAGBITS(n)        ((n)->choice.n_header & NUMERIC_SIGN_MASK)
+#define NUMERIC_IS_NAN(n)          (NUMERIC_FLAGBITS(n) == NUMERIC_NAN)
+#define NUMERIC_IS_SHORT(n)        (NUMERIC_FLAGBITS(n) == NUMERIC_SHORT)
 
-#define NUMERIC_HDRSZ (PG_PARSER_VARHDRSZ + sizeof(uint16_t) + sizeof(int16_t))
-#define NUMERIC_HDRSZ_SHORT (PG_PARSER_VARHDRSZ + sizeof(uint16_t))
+#define NUMERIC_HDRSZ              (PG_PARSER_VARHDRSZ + sizeof(uint16_t) + sizeof(int16_t))
+#define NUMERIC_HDRSZ_SHORT        (PG_PARSER_VARHDRSZ + sizeof(uint16_t))
 
 #define NUMERIC_HEADER_IS_SHORT(n) (((n)->choice.n_header & 0x8000) != 0)
 #define NUMERIC_HEADER_SIZE(n) \
@@ -87,12 +87,12 @@ typedef struct NumericVar
 #define NUMERIC_NDIGITS(num) \
     ((PG_PARSER_VARSIZE(num) - NUMERIC_HEADER_SIZE(num)) / sizeof(NumericDigit))
 
-#define NUMERIC_DSCALE_MASK 0x3FFF
-#define NUMERIC_SHORT_DSCALE_MASK 0x1F80
-#define NUMERIC_SHORT_DSCALE_SHIFT 7
-#define NUMERIC_SHORT_SIGN_MASK 0x2000
+#define NUMERIC_DSCALE_MASK            0x3FFF
+#define NUMERIC_SHORT_DSCALE_MASK      0x1F80
+#define NUMERIC_SHORT_DSCALE_SHIFT     7
+#define NUMERIC_SHORT_SIGN_MASK        0x2000
 #define NUMERIC_SHORT_WEIGHT_SIGN_MASK 0x0040
-#define NUMERIC_SHORT_WEIGHT_MASK 0x003F
+#define NUMERIC_SHORT_WEIGHT_MASK      0x003F
 
 #define NUMERIC_SIGN(n)                                                                           \
     (NUMERIC_IS_SHORT(n)                                                                          \
@@ -116,7 +116,7 @@ typedef struct NumericVar
     (NUMERIC_HEADER_IS_SHORT(num) ? (num)->choice.n_short.n_data : (num)->choice.n_long.n_data)
 
 /* static function statement */
-static void  init_var_from_num(Numeric num, NumericVar* dest);
+static void init_var_from_num(Numeric num, NumericVar* dest);
 static char* get_str_from_var(const NumericVar* var);
 
 static void init_var_from_num(Numeric num, NumericVar* dest)
@@ -289,11 +289,13 @@ static char* get_str_from_var(const NumericVar* var)
  */
 pg_parser_Datum numeric_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
-    bool    is_toast = false;
-    bool    need_free = false;
-    Numeric num =
-        (Numeric)pg_parser_detoast_datum((struct pg_parser_varlena*)attr, &is_toast, &need_free,
-                                         info->zicinfo->dbtype, info->zicinfo->dbversion);
+    bool       is_toast = false;
+    bool       need_free = false;
+    Numeric    num = (Numeric)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                   &is_toast,
+                                                   &need_free,
+                                                   info->zicinfo->dbtype,
+                                                   info->zicinfo->dbversion);
     NumericVar x;
     char*      str;
 
@@ -330,44 +332,44 @@ pg_parser_Datum numeric_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* inf
 typedef uint32_t JEntry;
 
 /* flags for the header-field in JsonbContainer */
-#define JB_CMASK 0x0FFFFFFF   /* mask for count field */
+#define JB_CMASK   0x0FFFFFFF /* mask for count field */
 #define JB_FSCALAR 0x10000000 /* flag bits */
 #define JB_FOBJECT 0x20000000
-#define JB_FARRAY 0x40000000
+#define JB_FARRAY  0x40000000
 
 /* convenience macros for accessing a JsonbContainer struct */
-#define JsonContainerSize(jc) ((jc)->header & JB_CMASK)
+#define JsonContainerSize(jc)     ((jc)->header & JB_CMASK)
 #define JsonContainerIsScalar(jc) (((jc)->header & JB_FSCALAR) != 0)
 #define JsonContainerIsObject(jc) (((jc)->header & JB_FOBJECT) != 0)
-#define JsonContainerIsArray(jc) (((jc)->header & JB_FARRAY) != 0)
+#define JsonContainerIsArray(jc)  (((jc)->header & JB_FARRAY) != 0)
 
 /* convenience macros for accessing the root container in a Jsonb datum */
-#define JB_ROOT_COUNT(jbp_) (*(uint32*)PG_PARSER_VARDATA(jbp_) & JB_CMASK)
+#define JB_ROOT_COUNT(jbp_)     (*(uint32*)PG_PARSER_VARDATA(jbp_) & JB_CMASK)
 #define JB_ROOT_IS_SCALAR(jbp_) ((*(uint32*)PG_PARSER_VARDATA(jbp_) & JB_FSCALAR) != 0)
 #define JB_ROOT_IS_OBJECT(jbp_) ((*(uint32*)PG_PARSER_VARDATA(jbp_) & JB_FOBJECT) != 0)
-#define JB_ROOT_IS_ARRAY(jbp_) ((*(uint32*)PG_PARSER_VARDATA(jbp_) & JB_FARRAY) != 0)
+#define JB_ROOT_IS_ARRAY(jbp_)  ((*(uint32*)PG_PARSER_VARDATA(jbp_) & JB_FARRAY) != 0)
 
-#define JENTRY_OFFLENMASK 0x0FFFFFFF
-#define JENTRY_TYPEMASK 0x70000000
-#define JENTRY_HAS_OFF 0x80000000
+#define JENTRY_OFFLENMASK       0x0FFFFFFF
+#define JENTRY_TYPEMASK         0x70000000
+#define JENTRY_HAS_OFF          0x80000000
 
 /* values stored in the type bits */
-#define JENTRY_ISSTRING 0x00000000
-#define JENTRY_ISNUMERIC 0x10000000
-#define JENTRY_ISBOOL_FALSE 0x20000000
-#define JENTRY_ISBOOL_TRUE 0x30000000
-#define JENTRY_ISNULL 0x40000000
-#define JENTRY_ISCONTAINER 0x50000000 /* array or object */
+#define JENTRY_ISSTRING       0x00000000
+#define JENTRY_ISNUMERIC      0x10000000
+#define JENTRY_ISBOOL_FALSE   0x20000000
+#define JENTRY_ISBOOL_TRUE    0x30000000
+#define JENTRY_ISNULL         0x40000000
+#define JENTRY_ISCONTAINER    0x50000000 /* array or object */
 
-#define JBE_OFFLENFLD(je_) ((je_) & JENTRY_OFFLENMASK)
-#define JBE_HAS_OFF(je_) (((je_) & JENTRY_HAS_OFF) != 0)
-#define JBE_ISSTRING(je_) (((je_) & JENTRY_TYPEMASK) == JENTRY_ISSTRING)
-#define JBE_ISNUMERIC(je_) (((je_) & JENTRY_TYPEMASK) == JENTRY_ISNUMERIC)
-#define JBE_ISCONTAINER(je_) (((je_) & JENTRY_TYPEMASK) == JENTRY_ISCONTAINER)
-#define JBE_ISNULL(je_) (((je_) & JENTRY_TYPEMASK) == JENTRY_ISNULL)
-#define JBE_ISBOOL_TRUE(je_) (((je_) & JENTRY_TYPEMASK) == JENTRY_ISBOOL_TRUE)
+#define JBE_OFFLENFLD(je_)    ((je_) & JENTRY_OFFLENMASK)
+#define JBE_HAS_OFF(je_)      (((je_) & JENTRY_HAS_OFF) != 0)
+#define JBE_ISSTRING(je_)     (((je_) & JENTRY_TYPEMASK) == JENTRY_ISSTRING)
+#define JBE_ISNUMERIC(je_)    (((je_) & JENTRY_TYPEMASK) == JENTRY_ISNUMERIC)
+#define JBE_ISCONTAINER(je_)  (((je_) & JENTRY_TYPEMASK) == JENTRY_ISCONTAINER)
+#define JBE_ISNULL(je_)       (((je_) & JENTRY_TYPEMASK) == JENTRY_ISNULL)
+#define JBE_ISBOOL_TRUE(je_)  (((je_) & JENTRY_TYPEMASK) == JENTRY_ISBOOL_TRUE)
 #define JBE_ISBOOL_FALSE(je_) (((je_) & JENTRY_TYPEMASK) == JENTRY_ISBOOL_FALSE)
-#define JBE_ISBOOL(je_) (JBE_ISBOOL_TRUE(je_) || JBE_ISBOOL_FALSE(je_))
+#define JBE_ISBOOL(je_)       (JBE_ISBOOL_TRUE(je_) || JBE_ISBOOL_FALSE(je_))
 
 /* Macro for advancing an offset variable to the next JEntry */
 #define JBE_ADVANCE_OFFSET(offset, je)      \
@@ -386,7 +388,7 @@ typedef struct JsonbContainer
 {
     uint32_t header; /* number of elements or key/value pairs, and
                       * flags */
-    JEntry children[FLEXIBLE_ARRAY_MEMBER];
+    JEntry   children[FLEXIBLE_ARRAY_MEMBER];
 
     /* the data for each child node follows. */
 } JsonbContainer;
@@ -413,29 +415,29 @@ typedef enum
 typedef struct JsonbIterator
 {
     /* Container being iterated */
-    JsonbContainer* container;
-    uint32_t        nElems; /* Number of elements in children array (will
-                             * be nPairs for objects) */
-    bool    isScalar;       /* Pseudo-array scalar value? */
-    JEntry* children;       /* JEntrys for child nodes */
+    JsonbContainer*       container;
+    uint32_t              nElems;   /* Number of elements in children array (will
+                                     * be nPairs for objects) */
+    bool                  isScalar; /* Pseudo-array scalar value? */
+    JEntry*               children; /* JEntrys for child nodes */
     /* Data proper.  This points to the beginning of the variable-length data */
-    char* dataProper;
+    char*                 dataProper;
 
     /* Current item in buffer (up to nElems) */
-    int32_t curIndex;
+    int32_t               curIndex;
 
     /* Data offset corresponding to current item */
-    uint32_t curDataOffset;
+    uint32_t              curDataOffset;
 
     /*
      * If the container is an object, we want to return keys and values
      * alternately; so curDataOffset points to the current key, and
      * curValueOffset points to the current value.
      */
-    uint32_t curValueOffset;
+    uint32_t              curValueOffset;
 
     /* Private state */
-    JsonbIterState state;
+    JsonbIterState        state;
 
     struct JsonbIterator* parent;
 } JsonbIterator;
@@ -644,8 +646,8 @@ static uint32_t getJsonbLength(const JsonbContainer* jc, int32_t index)
  * A nested array or object will be returned as jbvBinary, ie. it won't be
  * expanded.
  */
-static void fillJsonbValue(JsonbContainer* container, int32_t index, char* base_addr,
-                           uint32_t offset, JsonbValue* result)
+static void fillJsonbValue(
+    JsonbContainer* container, int32_t index, char* base_addr, uint32_t offset, JsonbValue* result)
 {
     JEntry entry = container->children[index];
 
@@ -760,8 +762,8 @@ recurse:
                 return WJB_END_ARRAY;
             }
 
-            fillJsonbValue((*it)->container, (*it)->curIndex, (*it)->dataProper,
-                           (*it)->curDataOffset, val);
+            fillJsonbValue(
+                (*it)->container, (*it)->curIndex, (*it)->dataProper, (*it)->curDataOffset, val);
 
             JBE_ADVANCE_OFFSET((*it)->curDataOffset, (*it)->children[(*it)->curIndex]);
             (*it)->curIndex++;
@@ -812,8 +814,11 @@ recurse:
             else
             {
                 /* Return key of a key/value pair.  */
-                fillJsonbValue((*it)->container, (*it)->curIndex, (*it)->dataProper,
-                               (*it)->curDataOffset, val);
+                fillJsonbValue((*it)->container,
+                               (*it)->curIndex,
+                               (*it)->dataProper,
+                               (*it)->curDataOffset,
+                               val);
                 if (val->type != jbvString)
                 {
                     // printf("error in deal JBI_OBJECT_KEY\n");
@@ -828,8 +833,11 @@ recurse:
             /* Set state for next call */
             (*it)->state = JBI_OBJECT_KEY;
 
-            fillJsonbValue((*it)->container, (*it)->curIndex + (*it)->nElems, (*it)->dataProper,
-                           (*it)->curValueOffset, val);
+            fillJsonbValue((*it)->container,
+                           (*it)->curIndex + (*it)->nElems,
+                           (*it)->dataProper,
+                           (*it)->curValueOffset,
+                           val);
 
             JBE_ADVANCE_OFFSET((*it)->curDataOffset, (*it)->children[(*it)->curIndex]);
             JBE_ADVANCE_OFFSET((*it)->curValueOffset,
@@ -918,7 +926,8 @@ static void escape_json(pg_parser_StringInfo buf, const char* str)
     pg_parser_appendStringInfoCharMacro(buf, '"');
 }
 
-static void jsonb_put_escaped_value(pg_parser_StringInfo out, JsonbValue* scalarVal,
+static void jsonb_put_escaped_value(pg_parser_StringInfo       out,
+                                    JsonbValue*                scalarVal,
                                     pg_parser_extraTypoutInfo* info)
 {
     bool  is_toast = false;
@@ -965,18 +974,20 @@ static void jsonb_put_escaped_value(pg_parser_StringInfo out, JsonbValue* scalar
 /*
  * common worker for above two functions
  */
-static char* JsonbToCStringWorker(JsonbContainer* in, int32_t estimated_len, bool indent,
+static char* JsonbToCStringWorker(JsonbContainer*            in,
+                                  int32_t                    estimated_len,
+                                  bool                       indent,
                                   pg_parser_extraTypoutInfo* info)
 {
-    bool               first = true;
-    JsonbIterator*     it;
-    JsonbValue         v;
-    JsonbIteratorToken type = WJB_DONE;
-    int32_t            level = 0;
-    bool               redo_switch = false;
+    bool                 first = true;
+    JsonbIterator*       it;
+    JsonbValue           v;
+    JsonbIteratorToken   type = WJB_DONE;
+    int32_t              level = 0;
+    bool                 redo_switch = false;
 
     /* If we are indenting, don't add a space after a comma */
-    int32_t ispaces = indent ? 1 : 2;
+    int32_t              ispaces = indent ? 1 : 2;
 
     /*
      * Don't indent the very first item. This gets set to the indent flag at
@@ -1108,7 +1119,8 @@ static char* JsonbToCStringWorker(JsonbContainer* in, int32_t estimated_len, boo
     return result;
 }
 
-static char* JsonbToCString(JsonbContainer* in, int32_t estimated_len,
+static char* JsonbToCString(JsonbContainer*            in,
+                            int32_t                    estimated_len,
                             pg_parser_extraTypoutInfo* info)
 {
     return JsonbToCStringWorker(in, estimated_len, false, info);
@@ -1121,10 +1133,12 @@ pg_parser_Datum jsonb_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
     bool   is_toast = false;
     bool   need_free = false;
-    Jsonb* jb =
-        (Jsonb*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr, &is_toast, &need_free,
-                                        info->zicinfo->dbtype, info->zicinfo->dbversion);
-    char* out;
+    Jsonb* jb = (Jsonb*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                &is_toast,
+                                                &need_free,
+                                                info->zicinfo->dbtype,
+                                                info->zicinfo->dbversion);
+    char*  out;
 
     if (is_toast)
     {

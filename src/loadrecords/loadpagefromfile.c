@@ -97,7 +97,11 @@ bool loadpagefromfile_loadpage(loadpage* loadpage, mpage* mp)
         if (LOADPAGEFROMFILE_TYPE_WAL == lpff->filetype)
         {
             uint64_t sendSegNo = (lpff->foffset) / (lpff->loadpage.filesize);
-            snprintf(lpff->fpath, ABSPATH, "%s/%08X%08X%08X", lpff->fdir, (uint32)lpff->fileno,
+            snprintf(lpff->fpath,
+                     ABSPATH,
+                     "%s/%08X%08X%08X",
+                     lpff->fdir,
+                     (uint32)lpff->fileno,
                      (uint32)((sendSegNo) / ((0x100000000UL) / (lpff->loadpage.filesize))),
                      (uint32)((sendSegNo) % ((0x100000000UL) / (lpff->loadpage.filesize))));
         }

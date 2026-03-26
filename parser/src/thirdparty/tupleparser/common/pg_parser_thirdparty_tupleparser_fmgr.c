@@ -86,7 +86,7 @@ const pg_parser_FmgrBuiltinSpecial pg_parser_fmgr_builtins_special[] = {
 const int32_t pg_parser_fmgr_nbuiltins_special =
     (sizeof(pg_parser_fmgr_builtins_special) / sizeof(pg_parser_FmgrBuiltinSpecial));
 
-static const pg_parser_FmgrBuiltinNormal*  pg_parser_getNormalOutputFuncByName(char* typoutput);
+static const pg_parser_FmgrBuiltinNormal* pg_parser_getNormalOutputFuncByName(char* typoutput);
 static const pg_parser_FmgrBuiltinSpecial* pg_parser_getSpecialOutputFuncByName(char* typoutput);
 
 static char* typoutput_tolower(char* output)
@@ -103,7 +103,8 @@ static char* typoutput_tolower(char* output)
     return output;
 }
 
-bool pg_parser_convert_attr_to_str_value(pg_parser_Datum attr, pg_parser_sysdicts* sysdicts,
+bool pg_parser_convert_attr_to_str_value(pg_parser_Datum                          attr,
+                                         pg_parser_sysdicts*                      sysdicts,
                                          pg_parser_translog_tbcol_value*          colvalue,
                                          pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
@@ -121,8 +122,8 @@ bool pg_parser_convert_attr_to_str_value(pg_parser_Datum attr, pg_parser_sysdict
 
     typoutput = typinfo.typoutput_proname;
     typoutput = typoutput_tolower(typoutput);
-    pg_parser_log_errlog(zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n",
-                         typoutput);
+    pg_parser_log_errlog(
+        zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* Currently does not support anyarray_out */
     if (!strcmp("anyarray_out", typoutput))
     {
@@ -187,7 +188,8 @@ bool pg_parser_convert_attr_to_str_value(pg_parser_Datum attr, pg_parser_sysdict
     {
         char* temp_ptr = (char*)colvalue->m_value;
         bool  needfree = false;
-        colvalue->m_value = pg_parser_encoding_convert((char*)colvalue->m_value, &needfree,
+        colvalue->m_value = pg_parser_encoding_convert((char*)colvalue->m_value,
+                                                       &needfree,
                                                        zicinfo->convertinfo->m_tartgetcharset,
                                                        zicinfo->convertinfo->m_dbcharset);
         if (needfree)
@@ -201,15 +203,17 @@ bool pg_parser_convert_attr_to_str_value(pg_parser_Datum attr, pg_parser_sysdict
     }
     if ((colvalue->m_info == INFO_NOTHING))
     {
-        pg_parser_log_errlog(zicinfo->debuglevel, "DEBUG: success get values[%s]\n",
-                             (char*)(colvalue->m_value));
+        pg_parser_log_errlog(
+            zicinfo->debuglevel, "DEBUG: success get values[%s]\n", (char*)(colvalue->m_value));
     }
 
     return true;
 }
 
-char* pg_parser_convert_attr_to_str_char(pg_parser_Datum attr, pg_parser_sysdicts* sysdicts,
-                                         uint32_t typid, bool* istoast,
+char* pg_parser_convert_attr_to_str_char(pg_parser_Datum                          attr,
+                                         pg_parser_sysdicts*                      sysdicts,
+                                         uint32_t                                 typid,
+                                         bool*                                    istoast,
                                          pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
     char*                               typoutput = NULL;
@@ -227,8 +231,8 @@ char* pg_parser_convert_attr_to_str_char(pg_parser_Datum attr, pg_parser_sysdict
 
     typoutput = typinfo.typoutput_proname;
     typoutput = typoutput_tolower(typoutput);
-    pg_parser_log_errlog(zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n",
-                         typoutput);
+    pg_parser_log_errlog(
+        zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* Currently does not support anyarray_out */
     fmgr_normal = pg_parser_getNormalOutputFuncByName(typoutput);
     if (!strcmp("anyarray_out", typoutput))
@@ -280,9 +284,10 @@ char* pg_parser_convert_attr_to_str_char(pg_parser_Datum attr, pg_parser_sysdict
     {
         char* temp_ptr = result;
         bool  needfree = false;
-        result =
-            pg_parser_encoding_convert(result, &needfree, zicinfo->convertinfo->m_tartgetcharset,
-                                       zicinfo->convertinfo->m_dbcharset);
+        result = pg_parser_encoding_convert(result,
+                                            &needfree,
+                                            zicinfo->convertinfo->m_tartgetcharset,
+                                            zicinfo->convertinfo->m_dbcharset);
         if (needfree)
         {
             pg_parser_mcxt_free(FMGR_MCXT, temp_ptr);
@@ -295,8 +300,9 @@ char* pg_parser_convert_attr_to_str_char(pg_parser_Datum attr, pg_parser_sysdict
     return result;
 }
 
-bool pg_parser_convert_attr_to_str_external_value(pg_parser_Datum attr, char* typoutput,
-                                                  pg_parser_translog_tbcol_value*          colvalue,
+bool pg_parser_convert_attr_to_str_external_value(pg_parser_Datum                 attr,
+                                                  char*                           typoutput,
+                                                  pg_parser_translog_tbcol_value* colvalue,
                                                   pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
     bool                                is_special = false;
@@ -304,8 +310,8 @@ bool pg_parser_convert_attr_to_str_external_value(pg_parser_Datum attr, char* ty
     const pg_parser_FmgrBuiltinSpecial* fmgr_special = NULL;
 
     typoutput = typoutput_tolower(typoutput);
-    pg_parser_log_errlog(zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n",
-                         typoutput);
+    pg_parser_log_errlog(
+        zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* Currently does not support anyarray_out */
     if (!strcmp("anyarray_out", typoutput))
     {
@@ -368,7 +374,8 @@ bool pg_parser_convert_attr_to_str_external_value(pg_parser_Datum attr, char* ty
     {
         char* temp_ptr = (char*)colvalue->m_value;
         bool  needfree = false;
-        colvalue->m_value = pg_parser_encoding_convert((char*)colvalue->m_value, &needfree,
+        colvalue->m_value = pg_parser_encoding_convert((char*)colvalue->m_value,
+                                                       &needfree,
                                                        zicinfo->convertinfo->m_tartgetcharset,
                                                        zicinfo->convertinfo->m_dbcharset);
         if (needfree)
@@ -410,7 +417,9 @@ static const pg_parser_FmgrBuiltinSpecial* pg_parser_getSpecialOutputFuncByName(
 }
 
 char* pg_parser_convert_attr_to_str_by_typid_typoptput(
-    pg_parser_Datum attr, uint32_t typid, char* typoutput,
+    pg_parser_Datum                          attr,
+    uint32_t                                 typid,
+    char*                                    typoutput,
     pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
     char*                               result = NULL;
@@ -420,8 +429,8 @@ char* pg_parser_convert_attr_to_str_by_typid_typoptput(
     const pg_parser_FmgrBuiltinSpecial* fmgr_special = NULL;
 
     typoutput = typoutput_tolower(typoutput);
-    pg_parser_log_errlog(zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n",
-                         typoutput);
+    pg_parser_log_errlog(
+        zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* Currently does not support anyarray_out */
     if (!strcmp("anyarray_out", typoutput))
     {
@@ -478,9 +487,10 @@ char* pg_parser_convert_attr_to_str_by_typid_typoptput(
     {
         char* temp_ptr = result;
         bool  needfree = false;
-        result =
-            pg_parser_encoding_convert(result, &needfree, zicinfo->convertinfo->m_tartgetcharset,
-                                       zicinfo->convertinfo->m_dbcharset);
+        result = pg_parser_encoding_convert(result,
+                                            &needfree,
+                                            zicinfo->convertinfo->m_tartgetcharset,
+                                            zicinfo->convertinfo->m_dbcharset);
         if (needfree)
         {
             pg_parser_mcxt_free(FMGR_MCXT, temp_ptr);

@@ -5,13 +5,17 @@
 #include "trans/transrec/pg_parser_trans_transrec_rmgr.h"
 
 #define MAX_ERRORMSG_LEN 1000
-#define DECODE_MCXT NULL
+#define DECODE_MCXT      NULL
 
-static void ResetDecoder(pg_parser_trans_transrec_decode_XLogReaderState* state);
+static void ResetDecoder(pg_parser_XLogReaderState* state);
 
-bool pg_parser_trans_transrec_decodeXlogRecord(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_XLogRecord* record,
-    uint32_t BLCKSZ, int32_t* pg_parser_errno, bool is_pre_parsing, int16_t dbtype, char* dbversion)
+bool pg_parser_trans_transrec_decodeXlogRecord(pg_parser_XLogReaderState* state,
+                                               pg_parser_XLogRecord*      record,
+                                               uint32_t                   BLCKSZ,
+                                               int32_t*                   pg_parser_errno,
+                                               bool                       is_pre_parsing,
+                                               int16_t                    dbtype,
+                                               char*                      dbversion)
 {
     /*
      * read next _size bytes from record buffer, but check for overrun first.
@@ -285,8 +289,8 @@ bool pg_parser_trans_transrec_decodeXlogRecord(
              */
             state->main_data_bufsz =
                 PG_PARSER_MAXALIGN(PG_PARSER_Max(state->main_data_len, BLCKSZ / 2));
-            if (!pg_parser_mcxt_malloc(DECODE_MCXT, (void**)(&(state->main_data)),
-                                       state->main_data_bufsz))
+            if (!pg_parser_mcxt_malloc(
+                    DECODE_MCXT, (void**)(&(state->main_data)), state->main_data_bufsz))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_MAINDATA;
                 return false;
@@ -304,13 +308,11 @@ pg_parser_trans_transrec_decodeXlogRecord_err:
 }
 
 /* Initialize state used for parsing */
-pg_parser_trans_transrec_decode_XLogReaderState*
-pg_parser_trans_transrec_decode_XLogReader_Allocate(void)
+pg_parser_XLogReaderState* pg_parser_trans_transrec_decode_XLogReader_Allocate(void)
 {
-    pg_parser_trans_transrec_decode_XLogReaderState* state = NULL;
+    pg_parser_XLogReaderState* state = NULL;
 
-    if (!pg_parser_mcxt_malloc(DECODE_MCXT, (void**)(&state),
-                               sizeof(pg_parser_trans_transrec_decode_XLogReaderState)))
+    if (!pg_parser_mcxt_malloc(DECODE_MCXT, (void**)(&state), sizeof(pg_parser_XLogReaderState)))
     {
         return NULL;
     }
@@ -321,8 +323,7 @@ pg_parser_trans_transrec_decode_XLogReader_Allocate(void)
 }
 
 /* Free state related resources */
-void pg_parser_trans_transrec_decode_XLogReader_XLogReaderFree(
-    pg_parser_trans_transrec_decode_XLogReaderState* state)
+void pg_parser_trans_transrec_decode_XLogReader_XLogReaderFree(pg_parser_XLogReaderState* state)
 {
     int32_t block_id;
 
@@ -343,7 +344,7 @@ void pg_parser_trans_transrec_decode_XLogReader_XLogReaderFree(
 }
 
 /* Reset state status */
-static void ResetDecoder(pg_parser_trans_transrec_decode_XLogReaderState* state)
+static void ResetDecoder(pg_parser_XLogReaderState* state)
 {
     int32_t block_id;
 
@@ -361,8 +362,9 @@ static void ResetDecoder(pg_parser_trans_transrec_decode_XLogReaderState* state)
     state->max_block_id = -1;
 }
 
-char* pg_parser_XLogRecGetBlockData(pg_parser_trans_transrec_decode_XLogReaderState* record,
-                                    uint8_t block_id, size_t* len)
+char* pg_parser_XLogRecGetBlockData(pg_parser_XLogReaderState* record,
+                                    uint8_t                    block_id,
+                                    size_t*                    len)
 {
     pg_parser_DecodedBkpBlock* bkpb;
     if (!record->blocks[block_id].in_use)

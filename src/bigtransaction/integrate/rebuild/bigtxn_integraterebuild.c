@@ -141,8 +141,8 @@ void* bigtxn_integraterebuild_main(void* args)
                         relid = values->m_relid;
                     }
 
-                    filterdatasetentry = hash_search(rebuild_obj->honlinerefreshfilterdataset,
-                                                     &relid, HASH_FIND, &find);
+                    filterdatasetentry = hash_search(
+                        rebuild_obj->honlinerefreshfilterdataset, &relid, HASH_FIND, &find);
                     if (false == find)
                     {
                         tmpstmt = lappend(tmpstmt, stmtnode);

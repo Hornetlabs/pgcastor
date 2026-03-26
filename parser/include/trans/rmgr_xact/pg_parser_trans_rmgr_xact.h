@@ -5,14 +5,14 @@
  * The following flags, stored in xinfo, determine which information is
  * contained in commit/abort records.
  */
-#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_DBINFO (1U << 0)
-#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_SUBXACTS (1U << 1)
+#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_DBINFO       (1U << 0)
+#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_SUBXACTS     (1U << 1)
 #define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_RELFILENODES (1U << 2)
-#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_INVALS (1U << 3)
-#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_TWOPHASE (1U << 4)
-#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_ORIGIN (1U << 5)
-#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_AE_LOCKS (1U << 6)
-#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_GID (1U << 7)
+#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_INVALS       (1U << 3)
+#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_TWOPHASE     (1U << 4)
+#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_ORIGIN       (1U << 5)
+#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_AE_LOCKS     (1U << 6)
+#define PG_PARSER_TRANS_RMGR_XACT_XINFO_HAS_GID          (1U << 7)
 /* mask for filtering opcodes out of xl_info */
 #define PG_PARSER_TRANS_TRANSREC_RMGR_XACT_OPMASK 0x70
 
@@ -125,28 +125,28 @@ typedef struct pg_parser_xl_xact_origin
 
 typedef struct pg_parser_xl_xact_parsed_commit
 {
-    int64_t  xact_time;
-    uint32_t xinfo;
+    int64_t                              xact_time;
+    uint32_t                             xinfo;
 
-    uint32_t dbId; /* MyDatabaseId */
-    uint32_t tsId; /* MyDatabaseTableSpace */
+    uint32_t                             dbId; /* MyDatabaseId */
+    uint32_t                             tsId; /* MyDatabaseTableSpace */
 
-    int32_t   nsubxacts;
-    uint32_t* subxacts;
+    int32_t                              nsubxacts;
+    uint32_t*                            subxacts;
 
-    int32_t                nrels;
-    pg_parser_RelFileNode* xnodes;
+    int32_t                              nrels;
+    pg_parser_RelFileNode*               xnodes;
 
     int32_t                              nmsgs;
     pg_parser_SharedInvalidationMessage* msgs;
 
-    uint32_t               twophase_xid;                    /* only for 2PC */
-    char                   twophase_gid[PG_PARSER_GIDSIZE]; /* only for 2PC */
-    int32_t                nabortrels;                      /* only for 2PC */
-    pg_parser_RelFileNode* abortnodes;                      /* only for 2PC */
+    uint32_t                             twophase_xid;                    /* only for 2PC */
+    char                                 twophase_gid[PG_PARSER_GIDSIZE]; /* only for 2PC */
+    int32_t                              nabortrels;                      /* only for 2PC */
+    pg_parser_RelFileNode*               abortnodes;                      /* only for 2PC */
 
-    uint64_t origin_lsn;
-    int64_t  origin_timestamp;
+    uint64_t                             origin_lsn;
+    int64_t                              origin_timestamp;
 } pg_parser_xl_xact_parsed_commit;
 
 typedef struct pg_parser_xl_xact_subxacts
@@ -168,23 +168,23 @@ typedef struct pg_parser_xl_xact_abort
 
 typedef struct pg_parser_xl_xact_parsed_abort
 {
-    int64_t  xact_time;
-    uint32_t xinfo;
+    int64_t                xact_time;
+    uint32_t               xinfo;
 
-    uint32_t dbId; /* MyDatabaseId */
-    uint32_t tsId; /* MyDatabaseTableSpace */
+    uint32_t               dbId; /* MyDatabaseId */
+    uint32_t               tsId; /* MyDatabaseTableSpace */
 
-    int32_t   nsubxacts;
-    uint32_t* subxacts;
+    int32_t                nsubxacts;
+    uint32_t*              subxacts;
 
     int32_t                nrels;
     pg_parser_RelFileNode* xnodes;
 
-    uint32_t twophase_xid;                    /* only for 2PC */
-    char     twophase_gid[PG_PARSER_GIDSIZE]; /* only for 2PC */
+    uint32_t               twophase_xid;                    /* only for 2PC */
+    char                   twophase_gid[PG_PARSER_GIDSIZE]; /* only for 2PC */
 
-    uint64_t origin_lsn;
-    int64_t  origin_timestamp;
+    uint64_t               origin_lsn;
+    int64_t                origin_timestamp;
 } pg_parser_xl_xact_parsed_abort;
 
 typedef struct pg_parser_xl_xact_assignment
@@ -199,10 +199,10 @@ typedef struct pg_parser_xl_xact_assignment
 #define pg_parser_MinSizeOfXactCommit \
     (offsetof(pg_parser_xl_xact_commit, xact_time) + sizeof(int64_t))
 #define pg_parser_MinSizeOfXactRelfilenodes offsetof(pg_parser_xl_xact_relfilenodes, xnodes)
-#define pg_parser_MinSizeOfXactInvals offsetof(pg_parser_xl_xact_invals, msgs)
+#define pg_parser_MinSizeOfXactInvals       offsetof(pg_parser_xl_xact_invals, msgs)
 
-extern bool pg_parser_trans_rmgr_xact_pre(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                          pg_parser_translog_pre_base**                    result,
-                                          int32_t* pg_parser_errno);
+extern bool pg_parser_trans_rmgr_xact_pre(pg_parser_XLogReaderState*    state,
+                                          pg_parser_translog_pre_base** result,
+                                          int32_t*                      pg_parser_errno);
 
 #endif

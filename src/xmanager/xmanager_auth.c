@@ -266,7 +266,9 @@ static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xaut
                 return NULL;
             }
             rmemset0(xmetricregnode->msg, 0, '\0', 128);
-            snprintf(xmetricregnode->msg, 128, "%s error",
+            snprintf(xmetricregnode->msg,
+                     128,
+                     "%s error",
                      xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
         }
         else
@@ -421,7 +423,9 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
                 return NULL;
             }
             rmemset0(xmetricregnode->msg, 0, '\0', 128);
-            snprintf(xmetricregnode->msg, 128, "%s error",
+            snprintf(xmetricregnode->msg,
+                     128,
+                     "%s error",
                      xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
         }
         else
@@ -517,8 +521,9 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
 }
 
 /* Identity info */
-static bool xmanager_auth_identity(xmanager_auth* xauth, netpoolentry* npoolentry,
-                                   netpacket* npacket)
+static bool xmanager_auth_identity(xmanager_auth* xauth,
+                                   netpoolentry*  npoolentry,
+                                   netpacket*     npacket)
 {
     int                     msglen = 0;
     int                     crc32 = 0;
@@ -694,7 +699,8 @@ void* xmanager_auth_main(void* args)
             if (false == netpool_add(xauth->npool, npoolentry))
             {
                 elog(RLOG_WARNING, "xmanager auth add entry to net pool error");
-                dlist_deletebyvalue(dlfd2timeout, (void*)((uintptr_t)fd2timeout->fd),
+                dlist_deletebyvalue(dlfd2timeout,
+                                    (void*)((uintptr_t)fd2timeout->fd),
                                     xmanager_authfd2timeout_cmp,
                                     xmanager_authfd2timeout_destroyvoid);
 
@@ -716,8 +722,10 @@ void* xmanager_auth_main(void* args)
         /* Handle abnormal fds first */
         for (index = 0; index < errorfdscnt; index++)
         {
-            dlist_deletebyvalue(dlfd2timeout, (void*)((uintptr_t)errorfds[index]),
-                                xmanager_authfd2timeout_cmp, xmanager_authfd2timeout_destroyvoid);
+            dlist_deletebyvalue(dlfd2timeout,
+                                (void*)((uintptr_t)errorfds[index]),
+                                xmanager_authfd2timeout_cmp,
+                                xmanager_authfd2timeout_destroyvoid);
         }
 
         /* Iterate read queue and process */
@@ -738,7 +746,8 @@ void* xmanager_auth_main(void* args)
             if (false == xmanager_auth_msg(xauth, index))
             {
                 elog(RLOG_WARNING, "xmanager auth deal identity msg error");
-                dlist_deletebyvalue(dlfd2timeout, (void*)((uintptr_t)npoolentry->fd),
+                dlist_deletebyvalue(dlfd2timeout,
+                                    (void*)((uintptr_t)npoolentry->fd),
                                     xmanager_authfd2timeout_cmp,
                                     xmanager_authfd2timeout_destroyvoid);
 
@@ -749,7 +758,8 @@ void* xmanager_auth_main(void* args)
 
             if (NULL == xauth->npool->fds[index])
             {
-                dlist_deletebyvalue(dlfd2timeout, (void*)((uintptr_t)fd),
+                dlist_deletebyvalue(dlfd2timeout,
+                                    (void*)((uintptr_t)fd),
                                     xmanager_authfd2timeout_cmp,
                                     xmanager_authfd2timeout_destroyvoid);
             }

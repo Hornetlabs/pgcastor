@@ -16,7 +16,7 @@
 #include "thirdparty/time/timezone/pg_parser_thirdparty_timezone_tzfile.h"
 
 #define TIME_SMALLEST(a, b) (((a) < (b)) ? (a) : (b))
-#define TIME_BIGGEST(a, b) (((a) > (b)) ? (a) : (b))
+#define TIME_BIGGEST(a, b)  (((a) > (b)) ? (a) : (b))
 
 struct time_ttinfo
 {                        /* time type information */
@@ -53,7 +53,7 @@ struct pg_parser_time_state
      * zero for recent tzdb releases. It might be nonzero for data from tzdb
      * 2018e or earlier.
      */
-    int32_t defaulttype;
+    int32_t            defaulttype;
 };
 
 struct pg_parser_tz

@@ -63,8 +63,9 @@ static bool xmanager_metricmsg_assemblewatchresult(xmanager_metric*     xmetric,
  *  2. Verify if job already exists
  *  3. Get information and return
  */
-bool xmanager_metricmsg_parsewatch(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                   netpacket* npacket)
+bool xmanager_metricmsg_parsewatch(xmanager_metric* xmetric,
+                                   netpoolentry*    npoolentry,
+                                   netpacket*       npacket)
 {
     /* Error code */
     int                  errcode = 0;
@@ -90,7 +91,9 @@ bool xmanager_metricmsg_parsewatch(xmanager_metric* xmetric, netpoolentry* npool
     if (XMANAGER_METRICNODETYPE_PROCESS < jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 512, "ERROR: xmanager watch command, temporarily unsupport %s",
+        snprintf(errormsg,
+                 512,
+                 "ERROR: xmanager watch command, temporarily unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parsewatch_error;
     }
@@ -147,6 +150,6 @@ xmanager_metricmsg_parsewatch_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_WATCHCMD,
-                                               errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(
+        xmetric, npoolentry->wpackets, XMANAGER_MSG_WATCHCMD, errcode, errormsg);
 }

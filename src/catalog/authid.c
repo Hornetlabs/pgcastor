@@ -23,7 +23,7 @@ void authid_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
     pg_sysdict_Form_pg_authid authid;
     catalog_authid_value*     entry = NULL;
 
-    const char* query =
+    const char*               query =
         "SELECT rel.oid, rel.rolname, rel.rolsuper, rel.rolinherit, rel.rolcreaterole, "
         "rel.rolcreatedb, rel.rolcanlogin, rel.rolreplication, rel.rolbypassrls, rel.rolconnlimit "
         "FROM pg_authid rel;";
@@ -329,8 +329,8 @@ catalogdata* authid_colvalue2authid(void* in_colvalue)
     pgauthid->rolinherit = ((char*)((colvalue + 4)->m_value))[0] == 't' ? true : false;
 
     /* rolname 1 */
-    rmemcpy1(pgauthid->rolname.data, 0, (char*)((colvalue + 1)->m_value),
-             (colvalue + 1)->m_valueLen);
+    rmemcpy1(
+        pgauthid->rolname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* rolreplication 7 */
     pgauthid->rolreplication = ((char*)((colvalue + 7)->m_value))[0] == 't' ? true : false;
@@ -359,7 +359,9 @@ void authid_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalo
         catalogInHash = hash_search(sysdicts->by_authid, &newcatalog->oid, HASH_ENTER, &found);
         if (true == found)
         {
-            elog(RLOG_WARNING, "by_authid hash duplicate oid, %u, %u", catalogInHash->authid->oid,
+            elog(RLOG_WARNING,
+                 "by_authid hash duplicate oid, %u, %u",
+                 catalogInHash->authid->oid,
                  catalogInHash->authid->rolname.data);
 
             if (NULL != catalogInHash->authid)
@@ -392,7 +394,9 @@ void authid_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalo
         catalogInHash = hash_search(sysdicts->by_authid, &newcatalog->oid, HASH_FIND, &found);
         if (NULL == catalogInHash)
         {
-            elog(RLOG_WARNING, "authid hash duplicate oid, %u, %s", newcatalog->authid->oid,
+            elog(RLOG_WARNING,
+                 "authid hash duplicate oid, %u, %s",
+                 newcatalog->authid->oid,
                  newcatalog->authid->rolname.data);
             return;
         }

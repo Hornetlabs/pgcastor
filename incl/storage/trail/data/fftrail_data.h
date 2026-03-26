@@ -61,11 +61,20 @@ bool fftrail_data_hdrdeserail(ff_data* ffdatahdr, ffsmgr_state* ffstate);
  *  dlen                    Length of data to write
  *  data                    Data to write
  */
-bool fftrail_data_data2buffer(ff_data* ffdatahdr, ffsmgr_state* ffstate, file_buffer** ref_buffer,
-                              ftrail_datatype dtype, uint64 dlen, uint8* data);
+bool fftrail_data_data2buffer(ff_data*        ffdatahdr,
+                              ffsmgr_state*   ffstate,
+                              file_buffer**   ref_buffer,
+                              ftrail_datatype dtype,
+                              uint64          dlen,
+                              uint8*          data);
 
-bool fftrail_data_buffer2data(ff_data* ffdatahdr, ffsmgr_state* ffstate, uint32* recoffset,
-                              uint32* dataoffset, ftrail_datatype dtype, uint64 dlen, uint8* data);
+bool fftrail_data_buffer2data(ff_data*        ffdatahdr,
+                              ffsmgr_state*   ffstate,
+                              uint32*         recoffset,
+                              uint32*         dataoffset,
+                              ftrail_datatype dtype,
+                              uint64          dlen,
+                              uint8*          data);
 
 /* Serialize data information */
 bool fftrail_data_serail(void* data, void* state);

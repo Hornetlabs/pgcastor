@@ -22,39 +22,39 @@ typedef struct PG_PARSER_SYSDICT_PGCLASS
 
 typedef pg_parser_sysdict_pgclass* pg_sysdict_Form_pg_class;
 
-#define RelationRelationId 1259
-#define RelationRelationIdChar "1259"
-#define RelationRelation_Rowtype_Id 83
+#define RelationRelationId                   1259
+#define RelationRelationIdChar               "1259"
+#define RelationRelation_Rowtype_Id          83
 
-#define RewriteRelationId 2618
-#define RewriteRelationIdChar "2618"
+#define RewriteRelationId                    2618
+#define RewriteRelationIdChar                "2618"
 
-#define AccessMethodRelationId 2601
-#define CollationRelationId 3456
-#define OperatorClassRelationId 2616
-#define OperatorRelationId 2617
+#define AccessMethodRelationId               2601
+#define CollationRelationId                  3456
+#define OperatorClassRelationId              2616
+#define OperatorRelationId                   2617
 
-#define ConstraintRelationId 2606
-#define ConstraintRelationIdChar "2606"
+#define ConstraintRelationId                 2606
+#define ConstraintRelationIdChar             "2606"
 
-#define AttrDefaultRelationId 2604
+#define AttrDefaultRelationId                2604
 
-#define PG_TOAST_NAME "pg_toast"
+#define PG_TOAST_NAME                        "pg_toast"
 
-#define PG_SYSDICT_RELKIND_RELATION 'r'          /* ordinary table */
-#define PG_SYSDICT_RELKIND_INDEX 'i'             /* secondary index */
-#define PG_SYSDICT_RELKIND_SEQUENCE 'S'          /* sequence object */
-#define PG_SYSDICT_RELKIND_TOASTVALUE 't'        /* for out-of-line values */
-#define PG_SYSDICT_RELKIND_VIEW 'v'              /* view */
-#define PG_SYSDICT_RELKIND_MATVIEW 'm'           /* materialized view */
-#define PG_SYSDICT_RELKIND_COMPOSITE_TYPE 'c'    /* composite type */
-#define PG_SYSDICT_RELKIND_FOREIGN_TABLE 'f'     /* foreign table */
+#define PG_SYSDICT_RELKIND_RELATION          'r' /* ordinary table */
+#define PG_SYSDICT_RELKIND_INDEX             'i' /* secondary index */
+#define PG_SYSDICT_RELKIND_SEQUENCE          'S' /* sequence object */
+#define PG_SYSDICT_RELKIND_TOASTVALUE        't' /* for out-of-line values */
+#define PG_SYSDICT_RELKIND_VIEW              'v' /* view */
+#define PG_SYSDICT_RELKIND_MATVIEW           'm' /* materialized view */
+#define PG_SYSDICT_RELKIND_COMPOSITE_TYPE    'c' /* composite type */
+#define PG_SYSDICT_RELKIND_FOREIGN_TABLE     'f' /* foreign table */
 #define PG_SYSDICT_RELKIND_PARTITIONED_TABLE 'p' /* partitioned table */
 #define PG_SYSDICT_RELKIND_PARTITIONED_INDEX 'I' /* partitioned index */
 
-#define PG_SYSDICT_RELPERSISTENCE_PERMANENT 'p' /* regular table */
-#define PG_SYSDICT_RELPERSISTENCE_UNLOGGED 'u'  /* unlogged permanent table */
-#define PG_SYSDICT_RELPERSISTENCE_TEMP 't'      /* temporary table */
+#define PG_SYSDICT_RELPERSISTENCE_PERMANENT  'p' /* regular table */
+#define PG_SYSDICT_RELPERSISTENCE_UNLOGGED   'u' /* unlogged permanent table */
+#define PG_SYSDICT_RELPERSISTENCE_TEMP       't' /* temporary table */
 
 /* default selection for replica identity (primary key or nothing) */
 #define PG_SYSDICT_REPLICA_IDENTITY_DEFAULT 'd'

@@ -53,24 +53,24 @@ void mem_print(memprint_flag flag);
 void mem_init(void);
 
 /* macro definitions */
-#define rmalloc0(size) rmalloc(__FILE__, __LINE__, size, true)
-#define rmalloc1(size) rmalloc(__FILE__, __LINE__, size, false)
+#define rmalloc0(size)                    rmalloc(__FILE__, __LINE__, size, true)
+#define rmalloc1(size)                    rmalloc(__FILE__, __LINE__, size, false)
 
-#define rmemset0(s, offset, c, n) rmemset(s, offset, c, n, true)
-#define rmemset1(s, offset, c, n) rmemset(s, offset, c, n, false)
+#define rmemset0(s, offset, c, n)         rmemset(s, offset, c, n, true)
+#define rmemset1(s, offset, c, n)         rmemset(s, offset, c, n, false)
 
 #define rmemcpy0(dest, dstoffset, src, n) rmemcpy(dest, dstoffset, src, n, true)
 #define rmemcpy1(dest, dstoffset, src, n) rmemcpy(dest, dstoffset, src, n, false)
 
-#define rrealloc0(ptr, size) rrealloc(__FILE__, __LINE__, ptr, size, true)
-#define rrealloc1(ptr, size) rrealloc(__FILE__, __LINE__, ptr, size, false)
+#define rrealloc0(ptr, size)              rrealloc(__FILE__, __LINE__, ptr, size, true)
+#define rrealloc1(ptr, size)              rrealloc(__FILE__, __LINE__, ptr, size, false)
 
-#define rfree(ptr) rfree(ptr)
+#define rfree(ptr)                        rfree(ptr)
 
-#define rstrdup(s) _rstrdup(__FILE__, __LINE__, s)
-#define rstrndup(s, n) _rstrndup(__FILE__, __LINE__, s, n)
+#define rstrdup(s)                        _rstrdup(__FILE__, __LINE__, s)
+#define rstrndup(s, n)                    _rstrndup(__FILE__, __LINE__, s, n)
 
-#define MALLOC_MAGIC 0x134DAE5
-#define MALLOC_NODE_SIZE sizeof(malloc_node)
+#define MALLOC_MAGIC                      0x134DAE5
+#define MALLOC_NODE_SIZE                  sizeof(malloc_node)
 
 #endif

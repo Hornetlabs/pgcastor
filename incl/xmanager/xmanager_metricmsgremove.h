@@ -9,7 +9,8 @@
  *  4. Delete conf file
  *  5. Return success message
  */
-extern bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                           netpacket* npacket);
+extern bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
+                                           netpoolentry*    npoolentry,
+                                           netpacket*       npacket);
 
 #endif

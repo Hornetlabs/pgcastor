@@ -15,7 +15,7 @@ typedef struct LOADPAGE
     uint64        filesize;
 
     /* Error code */
-    int error;
+    int           error;
 } loadpage;
 
 #define LOADPAGEBLKSIZEMASK(blksize) ((uint64)(blksize - 1))

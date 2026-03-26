@@ -28,7 +28,8 @@ onlinerefresh_integrateparsertrail* onlinerefresh_integrateparsertrail_init(void
         (onlinerefresh_integrateparsertrail*)rmalloc0(sizeof(onlinerefresh_integrateparsertrail));
     if (NULL == traildecodecxt)
     {
-        elog(RLOG_WARNING, "onlinerefresh integrateparsertrail malloc out of memory, %s",
+        elog(RLOG_WARNING,
+             "onlinerefresh integrateparsertrail malloc out of memory, %s",
              strerror(errno));
         return NULL;
     }
@@ -86,14 +87,16 @@ static bool onlinerefresh_integrateparsertrail_txns2queue(increment_integratepar
             }
             else
             {
-                elog(RLOG_WARNING, "in integrate onlinerefresh increment unknown txn flag:%u",
+                elog(RLOG_WARNING,
+                     "in integrate onlinerefresh increment unknown txn flag:%u",
                      txn_ptr->flag);
                 return false;
             }
         }
         else
         {
-            elog(RLOG_WARNING, "in integrate onlinerefresh increment unknown txn flag:%u",
+            elog(RLOG_WARNING,
+                 "in integrate onlinerefresh increment unknown txn flag:%u",
                  txn_ptr->flag);
             return false;
         }

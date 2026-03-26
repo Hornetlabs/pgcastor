@@ -35,8 +35,8 @@ static char* bigtxn_captureserial_getdbname(void* serial, Oid oid)
 
     cserial = (bigtxn_captureserial*)serial;
 
-    database = catalog_get_database_sysdict(cserial->dicts->by_database, NULL,
-                                            cserial->lasttxn->txndicts, oid);
+    database = catalog_get_database_sysdict(
+        cserial->dicts->by_database, NULL, cserial->lasttxn->txndicts, oid);
     if (!database)
     {
         elog(RLOG_ERROR, "can't find database by oid: %u", oid);
@@ -55,8 +55,8 @@ static void* bigtxn_captureserial_getnamespace(void* serial, Oid oid)
 
     cserial = (bigtxn_captureserial*)serial;
 
-    namespace = catalog_get_namespace_sysdict(cserial->dicts->by_namespace, NULL,
-                                              cserial->lasttxn->txndicts, oid);
+    namespace = catalog_get_namespace_sysdict(
+        cserial->dicts->by_namespace, NULL, cserial->lasttxn->txndicts, oid);
 
     if (!namespace)
     {
@@ -97,8 +97,8 @@ static void* bigtxn_captureserial_getindex(void* serial, Oid oid)
 
     cserial = (bigtxn_captureserial*)serial;
 
-    index = catalog_get_index_sysdict_list(cserial->dicts->by_index, NULL,
-                                           cserial->lasttxn->txndicts, oid);
+    index = catalog_get_index_sysdict_list(
+        cserial->dicts->by_index, NULL, cserial->lasttxn->txndicts, oid);
 
     return index;
 }
@@ -125,8 +125,8 @@ static void* bigtxn_captureserial_getatrrs(void* serial, Oid oid)
     for (index_attrs = 0; index_attrs < natts; index_attrs++)
     {
         void* temp_att = NULL;
-        temp_att = catalog_get_attribute_sysdict(cserial->dicts->by_attribute, NULL,
-                                                 cserial->lasttxn->txndicts, oid, index_attrs + 1);
+        temp_att = catalog_get_attribute_sysdict(
+            cserial->dicts->by_attribute, NULL, cserial->lasttxn->txndicts, oid, index_attrs + 1);
         if (!temp_att)
         {
             elog(RLOG_ERROR, "can't find pg_attribute relation");
@@ -320,8 +320,8 @@ static void bigtxn_captureserial_txn2disk(serialstate* serialstate, txn* txn)
                 goto bigtxn_captureserial_txn2disk_reset;
             }
         }
-        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_DATA, (void*)&txndata,
-                                                        serialstate->ffsmgrstate);
+        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(
+            FFTRAIL_CXT_TYPE_DATA, (void*)&txndata, serialstate->ffsmgrstate);
     }
 }
 
@@ -335,9 +335,9 @@ static void capture_serial_buffer2waitflush(bigtxn_captureserial* cserial, txn* 
      * 2. Set new cache's identifier information
      * 3. Set old cache's identifier information based on lsn info in wstate
      */
-    int oldflag = 0;
-    int bufid = 0;
-    int timeout = 0;
+    int          oldflag = 0;
+    int          bufid = 0;
+    int          timeout = 0;
 
     ff_fileinfo* finfo = NULL;
     file_buffer* fbuffer = NULL;
@@ -453,8 +453,8 @@ static bool bigtxn_captureserial_initbigtxn(bigtxn_captureserial* cserial, txn* 
     if (true == found)
     {
         /* Need to reset flag */
-        elog(RLOG_WARNING, "big transaction capture serial txn already in the hash, %lu",
-             htxn->xid);
+        elog(
+            RLOG_WARNING, "big transaction capture serial txn already in the hash, %lu", htxn->xid);
         return false;
     }
     htxn->xid = txn->xid;

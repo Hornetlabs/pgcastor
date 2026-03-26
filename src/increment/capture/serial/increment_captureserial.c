@@ -128,16 +128,17 @@ static void increment_captureserial_txn2disk(serialstate* serialstate, txn* txn)
                 goto trfwork_serial_txn2disk_reset;
             }
         }
-        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_DATA, (void*)&txndata,
-                                                        serialstate->ffsmgrstate);
+        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(
+            FFTRAIL_CXT_TYPE_DATA, (void*)&txndata, serialstate->ffsmgrstate);
     }
     increment_captureserial_settimestamp(serialstate, txn);
 }
 
 /* Set serial parse node info */
 static void increment_captureserial_lsn_set(increment_captureserialstate* captureserialstate,
-                                            XLogRecPtr redolsn, XLogRecPtr restartlsn,
-                                            XLogRecPtr confirmlsn)
+                                            XLogRecPtr                    redolsn,
+                                            XLogRecPtr                    restartlsn,
+                                            XLogRecPtr                    confirmlsn)
 {
     captureserialstate->redolsn = redolsn;
     captureserialstate->restartlsn = restartlsn;
@@ -177,10 +178,10 @@ static void increment_captureserial_buffer2waitflush(
      * 2. Set new cache flag info
      * 3. Set old cache flag info based on lsn info from wstate
      */
-    int  oldflag = 0;
-    int  bufid = 0;
-    bool flush = false;
-    int  timeout = 0;
+    int          oldflag = 0;
+    int          bufid = 0;
+    bool         flush = false;
+    int          timeout = 0;
 
     ff_fileinfo* finfo = NULL;
     file_buffer* fbuffer = NULL;
@@ -313,14 +314,14 @@ static void increment_captureserial_buffer2waitflush(
 static bool increment_captureserial_recovery(increment_captureserialstate* captureserialstate,
                                              uint64                        fileoffset)
 {
-    bool   shiftfile = false;
-    int    bufid = 0;
-    int    maxbufid = 0;
-    int    mbytes = 0;
-    int    minsize = 0;
-    int    timeout = 0;
-    uint64 bytes = 0;
-    uint64 freespc = 0;
+    bool         shiftfile = false;
+    int          bufid = 0;
+    int          maxbufid = 0;
+    int          mbytes = 0;
+    int          minsize = 0;
+    int          timeout = 0;
+    uint64       bytes = 0;
+    uint64       freespc = 0;
 
     file_buffer* in_fbuffer = NULL;
     file_buffer* fbuffer = NULL;
@@ -381,8 +382,8 @@ static bool increment_captureserial_recovery(increment_captureserialstate* captu
     }
 
     fftail.nexttrailno = (finfo->fileid + 1);
-    serial_state->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_RESET, &fftail,
-                                                     (void*)serial_state->ffsmgrstate);
+    serial_state->ffsmgrstate->ffsmgr->ffsmgr_serial(
+        FFTRAIL_CXT_TYPE_RESET, &fftail, (void*)serial_state->ffsmgrstate);
 
     /* Re-fetch fbuffer */
     while (1)

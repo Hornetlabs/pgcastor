@@ -1,7 +1,7 @@
 #ifndef APP_C_H
 #define APP_C_H
 
-#define NAMEDATALEN 64
+#define NAMEDATALEN     64
 #define gettext_noop(x) (x)
 
 /* ----------------------------------------------------------------
@@ -49,7 +49,7 @@ typedef long int int64;
 typedef unsigned long int uint64;
 #endif
 
-#define INT64CONST(x) (x##L)
+#define INT64CONST(x)  (x##L)
 #define UINT64CONST(x) (x##UL)
 
 #ifndef INT8_MIN
@@ -89,44 +89,44 @@ typedef unsigned long int uint64;
 #define UINT64_MAX UINT64CONST(0xFFFFFFFFFFFFFFFF)
 #endif
 
-typedef size_t Size;
+typedef size_t       Size;
 
-typedef int rsocket;
+typedef int          rsocket;
 
 typedef unsigned int Index;
 
-typedef signed int Offset;
+typedef signed int   Offset;
 
-typedef float  float4;
-typedef double float8;
+typedef float        float4;
+typedef double       float8;
 
 typedef unsigned int Oid;
 
 #define INVALIDOID ((Oid)0)
-#define OID_MAX UINT_MAX
+#define OID_MAX    UINT_MAX
 
-typedef Oid regproc;
+typedef Oid           regproc;
 
-typedef uint32 TransactionId;
+typedef uint32        TransactionId;
 
-typedef uint64 FullTransactionId;
+typedef uint64        FullTransactionId;
 
 typedef TransactionId MultiXactId;
 
-typedef uint32 MultiXactOffset;
+typedef uint32        MultiXactOffset;
 
-typedef uint32 CommandId;
+typedef uint32        CommandId;
 
-#define FirstCommandId ((CommandId)0)
-#define InvalidCommandId (~(CommandId)0)
+#define FirstCommandId           ((CommandId)0)
+#define InvalidCommandId         (~(CommandId)0)
 
-#define InvalidTransactionId ((TransactionId)0)
+#define InvalidTransactionId     ((TransactionId)0)
 
 #define InvalidFullTransactionId ((FullTransactionId)0)
 
 typedef uint32 TimeLineID;
 
-typedef int64 TimestampTz;
+typedef int64  TimestampTz;
 
 #define InvalidTimeLineID ((TimeLineID)0)
 
@@ -169,26 +169,26 @@ typedef struct RelFileNode
  */
 #define PointerIsAligned(pointer, type) (((uintptr_t)(pointer) % (sizeof(type))) == 0)
 
-#define OffsetToPointer(base, offset) ((void*)((char*)base + offset))
+#define OffsetToPointer(base, offset)   ((void*)((char*)base + offset))
 
-#define OidIsValid(objectId) ((bool)((objectId) != INVALIDOID))
+#define OidIsValid(objectId)            ((bool)((objectId) != INVALIDOID))
 
-#define RegProcedureIsValid(p) OidIsValid(p)
+#define RegProcedureIsValid(p)          OidIsValid(p)
 
 /*
  * Zero is used indicate an invalid pointer. Bootstrap skips the first possible
  * WAL segment, initializing the first WAL page at WAL segment size, so no XLOG
  * record can begin at zero.
  */
-#define InvalidXLogRecPtr 0
+#define InvalidXLogRecPtr      0
 #define XLogRecPtrIsInvalid(r) ((r) == InvalidXLogRecPtr)
 
 /*
  * XLogSegNo - physical log file sequence number.
  */
-typedef uint64 XLogSegNo;
+typedef uint64    XLogSegNo;
 
-typedef uint8 RmgrId;
+typedef uint8     RmgrId;
 
 typedef uint32    pg_crc32c;
 typedef pg_crc32c r_crc32c;
@@ -228,7 +228,7 @@ typedef union RECPOS
  */
 
 #define MAXFNAMELEN 64
-#define MAXPGPATH 1024
+#define MAXPGPATH   1024
 
 /* ----------------------------------------------------------------
  *				Section 5:	offsetof, lengthof, alignment
@@ -249,23 +249,23 @@ typedef union RECPOS
 #define TYPEALIGN(ALIGNVAL, LEN) \
     (((uintptr_t)(LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t)((ALIGNVAL) - 1)))
 
-#define SHORTALIGN(LEN) TYPEALIGN(ALIGNOF_SHORT, (LEN))
-#define INTALIGN(LEN) TYPEALIGN(ALIGNOF_INT, (LEN))
-#define LONGALIGN(LEN) TYPEALIGN(ALIGNOF_LONG, (LEN))
+#define SHORTALIGN(LEN)  TYPEALIGN(ALIGNOF_SHORT, (LEN))
+#define INTALIGN(LEN)    TYPEALIGN(ALIGNOF_INT, (LEN))
+#define LONGALIGN(LEN)   TYPEALIGN(ALIGNOF_LONG, (LEN))
 #define DOUBLEALIGN(LEN) TYPEALIGN(ALIGNOF_DOUBLE, (LEN))
-#define MAXALIGN(LEN) TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
+#define MAXALIGN(LEN)    TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
 /* MAXALIGN covers only built-in types, not buffers */
-#define BUFFERALIGN(LEN) TYPEALIGN(ALIGNOF_BUFFER, (LEN))
-#define CACHELINEALIGN(LEN) TYPEALIGN(PG_CACHE_LINE_SIZE, (LEN))
+#define BUFFERALIGN(LEN)              TYPEALIGN(ALIGNOF_BUFFER, (LEN))
+#define CACHELINEALIGN(LEN)           TYPEALIGN(PG_CACHE_LINE_SIZE, (LEN))
 
 #define TYPEALIGN_DOWN(ALIGNVAL, LEN) (((uintptr_t)(LEN)) & ~((uintptr_t)((ALIGNVAL) - 1)))
 
-#define SHORTALIGN_DOWN(LEN) TYPEALIGN_DOWN(ALIGNOF_SHORT, (LEN))
-#define INTALIGN_DOWN(LEN) TYPEALIGN_DOWN(ALIGNOF_INT, (LEN))
-#define LONGALIGN_DOWN(LEN) TYPEALIGN_DOWN(ALIGNOF_LONG, (LEN))
-#define DOUBLEALIGN_DOWN(LEN) TYPEALIGN_DOWN(ALIGNOF_DOUBLE, (LEN))
-#define MAXALIGN_DOWN(LEN) TYPEALIGN_DOWN(MAXIMUM_ALIGNOF, (LEN))
-#define BUFFERALIGN_DOWN(LEN) TYPEALIGN_DOWN(ALIGNOF_BUFFER, (LEN))
+#define SHORTALIGN_DOWN(LEN)          TYPEALIGN_DOWN(ALIGNOF_SHORT, (LEN))
+#define INTALIGN_DOWN(LEN)            TYPEALIGN_DOWN(ALIGNOF_INT, (LEN))
+#define LONGALIGN_DOWN(LEN)           TYPEALIGN_DOWN(ALIGNOF_LONG, (LEN))
+#define DOUBLEALIGN_DOWN(LEN)         TYPEALIGN_DOWN(ALIGNOF_DOUBLE, (LEN))
+#define MAXALIGN_DOWN(LEN)            TYPEALIGN_DOWN(MAXIMUM_ALIGNOF, (LEN))
+#define BUFFERALIGN_DOWN(LEN)         TYPEALIGN_DOWN(ALIGNOF_BUFFER, (LEN))
 
 /*
  * The above macros will not work with types wider than uintptr_t, like with
@@ -285,21 +285,21 @@ typedef union RECPOS
  */
 #ifndef USE_ASSERT_CHECKING
 
-#define Assert(condition) ((void)true)
-#define AssertMacro(condition) ((void)true)
-#define AssertArg(condition) ((void)true)
-#define AssertState(condition) ((void)true)
+#define Assert(condition)                 ((void)true)
+#define AssertMacro(condition)            ((void)true)
+#define AssertArg(condition)              ((void)true)
+#define AssertState(condition)            ((void)true)
 #define AssertPointerAlignment(ptr, bndr) ((void)true)
-#define Trap(condition, errorType) ((void)true)
-#define TrapMacro(condition, errorType) (true)
+#define Trap(condition, errorType)        ((void)true)
+#define TrapMacro(condition, errorType)   (true)
 
 #elif defined(FRONTEND)
 
 #include <assert.h>
-#define Assert(p) assert(p)
-#define AssertMacro(p) ((void)assert(p))
-#define AssertArg(condition) assert(condition)
-#define AssertState(condition) assert(condition)
+#define Assert(p)                         assert(p)
+#define AssertMacro(p)                    ((void)assert(p))
+#define AssertArg(condition)              assert(condition)
+#define AssertState(condition)            assert(condition)
 #define AssertPointerAlignment(ptr, bndr) ((void)true)
 
 #else /* USE_ASSERT_CHECKING && !FRONTEND */
@@ -326,11 +326,11 @@ typedef union RECPOS
     ((bool)(!(condition) ||             \
             (ExceptionalCondition(CppAsString(condition), (errorType), __FILE__, __LINE__), 0)))
 
-#define Assert(condition) Trap(!(condition), "FailedAssertion")
+#define Assert(condition)      Trap(!(condition), "FailedAssertion")
 
 #define AssertMacro(condition) ((void)TrapMacro(!(condition), "FailedAssertion"))
 
-#define AssertArg(condition) Trap(!(condition), "BadArgument")
+#define AssertArg(condition)   Trap(!(condition), "BadArgument")
 
 #define AssertState(condition) Trap(!(condition), "BadState")
 
@@ -365,12 +365,12 @@ typedef union RECPOS
 #define Abs(x) ((x) >= 0 ? (x) : -(x))
 
 #if defined(WIN32) || defined(__CYGWIN__)
-#define BINARY O_BINARY
+#define BINARY   O_BINARY
 #define BINARY_A "ab"
 #define BINARY_R "rb"
 #define BINARY_W "wb"
 #else
-#define BINARY 0
+#define BINARY   0
 #define BINARY_A "a"
 #define BINARY_R "r"
 #define BINARY_W "w"
@@ -380,12 +380,12 @@ typedef union RECPOS
 #define LONG_ALIGN_MASK (sizeof(long) - 1)
 
 /* Define bytes to use libc memset(). */
-#define MEMSET_LOOP_LIMIT 1024
+#define MEMSET_LOOP_LIMIT         1024
 
-#define PG_PRINTF_ATTRIBUTE gnu_printf
+#define PG_PRINTF_ATTRIBUTE       gnu_printf
 #define pg_attribute_printf(f, a) __attribute__((format(PG_PRINTF_ATTRIBUTE, f, a)))
 
-#define CONCAT(x, y) x##y
+#define CONCAT(x, y)              x##y
 
 /*-------------------align begin--------------------------------*/
 #define MAXIMUM_ALIGNOF 8

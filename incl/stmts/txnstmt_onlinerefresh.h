@@ -9,9 +9,9 @@ typedef struct txnstmt_onlinerefresh
     refresh_tables*   refreshtables; /* Tables to sync	*/
 } txnstmt_onlinerefresh;
 
-void                   txnstmt_onlinerefresh_begin_free(void* data);
-void                   txnstmt_onlinerefresh_end_free(void* data);
-void                   txnstmt_onlinerefresh_increment_end_free(void* data);
+void txnstmt_onlinerefresh_begin_free(void* data);
+void txnstmt_onlinerefresh_end_free(void* data);
+void txnstmt_onlinerefresh_increment_end_free(void* data);
 txnstmt_onlinerefresh* txnstmt_onlinerefresh_init(void);
 void txnstmt_onlinerefresh_set_increment(txnstmt_onlinerefresh* refresh, int8 increment);
 void txnstmt_onlinerefresh_set_no(txnstmt_onlinerefresh* refresh, uuid_t* uuid);

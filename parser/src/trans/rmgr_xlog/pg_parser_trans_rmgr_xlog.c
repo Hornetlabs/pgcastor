@@ -6,7 +6,7 @@
 #include "trans/rmgr_xlog/pg_parser_trans_rmgr_xlog.h"
 
 #define PG_PARSER_RMGR_XLOG_INFOCNT 4
-#define RMGR_XLOG_MCXT NULL
+#define RMGR_XLOG_MCXT              NULL
 
 typedef struct FullTransactionId
 {
@@ -15,10 +15,10 @@ typedef struct FullTransactionId
 
 typedef struct CheckPoint
 {
-    pg_parser_XLogRecPtr redo;                 /* next RecPtr available when we began to
+    pg_parser_XLogRecPtr    redo;              /* next RecPtr available when we began to
                                                 * create CheckPoint (i.e. REDO start point) */
-    pg_parser_TimeLineID ThisTimeLineID;       /* current TLI */
-    pg_parser_TimeLineID PrevTimeLineID;       /* previous TLI, if this record begins a new
+    pg_parser_TimeLineID    ThisTimeLineID;    /* current TLI */
+    pg_parser_TimeLineID    PrevTimeLineID;    /* previous TLI, if this record begins a new
                                                 * timeline (equals ThisTimeLineID otherwise) */
     bool                    fullPageWrites;    /* current full_page_writes */
     FullTransactionId       nextFullXid;       /* next free full transaction ID */
@@ -51,25 +51,25 @@ typedef struct xl_end_of_recovery
     uint32_t PrevTimeLineID; /* previous TLI we forked off from */
 } xl_end_of_recovery;
 
-typedef bool (*pg_parser_trans_transrec_rmgr_info_func_pre)(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno);
+typedef bool (*pg_parser_trans_transrec_rmgr_info_func_pre)(pg_parser_XLogReaderState*    state,
+                                                            pg_parser_translog_pre_base** result,
+                                                            int32_t* pg_parser_errno);
 
-static bool pg_parser_trans_rmgr_xlog_ckps(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                           pg_parser_translog_pre_base**                    result,
-                                           int32_t* pg_parser_errno);
+static bool pg_parser_trans_rmgr_xlog_ckps(pg_parser_XLogReaderState*    state,
+                                           pg_parser_translog_pre_base** result,
+                                           int32_t*                      pg_parser_errno);
 
-static bool pg_parser_trans_rmgr_xlog_ckpo(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                           pg_parser_translog_pre_base**                    result,
-                                           int32_t* pg_parser_errno);
+static bool pg_parser_trans_rmgr_xlog_ckpo(pg_parser_XLogReaderState*    state,
+                                           pg_parser_translog_pre_base** result,
+                                           int32_t*                      pg_parser_errno);
 
-static bool pg_parser_trans_rmgr_xlog_switch(pg_parser_trans_transrec_decode_XLogReaderState* state,
+static bool pg_parser_trans_rmgr_xlog_switch(pg_parser_XLogReaderState*    state,
                                              pg_parser_translog_pre_base** result,
                                              int32_t*                      pg_parser_errno);
 
-static bool pg_parser_trans_rmgr_xlog_recovery(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno);
+static bool pg_parser_trans_rmgr_xlog_recovery(pg_parser_XLogReaderState*    state,
+                                               pg_parser_translog_pre_base** result,
+                                               int32_t*                      pg_parser_errno);
 
 typedef struct PG_PARSER_TRANS_RMGR_XLOG
 {
@@ -84,8 +84,9 @@ static pg_parser_trans_rmgr_xlog m_record_rmgr_xlog_info[] = {
     {PG_PARSER_TRANS_TRANSREC_RMGR_XLOG_SWITCH, pg_parser_trans_rmgr_xlog_switch},
     {PG_PARSER_TRANS_TRANSREC_RMGR_XLOG_END_OF_RECOVERY, pg_parser_trans_rmgr_xlog_recovery}};
 
-bool pg_parser_trans_rmgr_xlog_pre(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                   pg_parser_translog_pre_base** result, int32_t* pg_parser_errno)
+bool pg_parser_trans_rmgr_xlog_pre(pg_parser_XLogReaderState*    state,
+                                   pg_parser_translog_pre_base** result,
+                                   int32_t*                      pg_parser_errno)
 {
     uint8_t info = state->decoded_record->xl_info;
     int8_t  infocnts = PG_PARSER_RMGR_XLOG_INFOCNT;
@@ -104,9 +105,9 @@ bool pg_parser_trans_rmgr_xlog_pre(pg_parser_trans_transrec_decode_XLogReaderSta
     return false;
 }
 
-static bool pg_parser_trans_rmgr_xlog_ckps(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                           pg_parser_translog_pre_base**                    result,
-                                           int32_t* pg_parser_errno)
+static bool pg_parser_trans_rmgr_xlog_ckps(pg_parser_XLogReaderState*    state,
+                                           pg_parser_translog_pre_base** result,
+                                           int32_t*                      pg_parser_errno)
 {
     pg_parser_translog_pre_transchkp* transchp = NULL;
     CheckPoint*                       checkp = (CheckPoint*)state->main_data;
@@ -120,8 +121,8 @@ static bool pg_parser_trans_rmgr_xlog_ckps(pg_parser_trans_transrec_decode_XLogR
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(RMGR_XLOG_MCXT, (void**)(&transchp),
-                               sizeof(pg_parser_translog_pre_transchkp)))
+    if (!pg_parser_mcxt_malloc(
+            RMGR_XLOG_MCXT, (void**)(&transchp), sizeof(pg_parser_translog_pre_transchkp)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_09;
         return false;
@@ -138,9 +139,9 @@ static bool pg_parser_trans_rmgr_xlog_ckps(pg_parser_trans_transrec_decode_XLogR
     return true;
 }
 
-static bool pg_parser_trans_rmgr_xlog_ckpo(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                           pg_parser_translog_pre_base**                    result,
-                                           int32_t* pg_parser_errno)
+static bool pg_parser_trans_rmgr_xlog_ckpo(pg_parser_XLogReaderState*    state,
+                                           pg_parser_translog_pre_base** result,
+                                           int32_t*                      pg_parser_errno)
 {
     pg_parser_translog_pre_transchkp* transchp = NULL;
     CheckPoint*                       checkp = (CheckPoint*)state->main_data;
@@ -154,8 +155,8 @@ static bool pg_parser_trans_rmgr_xlog_ckpo(pg_parser_trans_transrec_decode_XLogR
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(RMGR_XLOG_MCXT, (void**)(&transchp),
-                               sizeof(pg_parser_translog_pre_transchkp)))
+    if (!pg_parser_mcxt_malloc(
+            RMGR_XLOG_MCXT, (void**)(&transchp), sizeof(pg_parser_translog_pre_transchkp)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_0A;
         return false;
@@ -172,7 +173,7 @@ static bool pg_parser_trans_rmgr_xlog_ckpo(pg_parser_trans_transrec_decode_XLogR
     return true;
 }
 
-static bool pg_parser_trans_rmgr_xlog_switch(pg_parser_trans_transrec_decode_XLogReaderState* state,
+static bool pg_parser_trans_rmgr_xlog_switch(pg_parser_XLogReaderState*    state,
                                              pg_parser_translog_pre_base** result,
                                              int32_t*                      pg_parser_errno)
 {
@@ -187,8 +188,8 @@ static bool pg_parser_trans_rmgr_xlog_switch(pg_parser_trans_transrec_decode_XLo
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(RMGR_XLOG_MCXT, (void**)(&xlog_switch),
-                               sizeof(pg_parser_translog_pre_base)))
+    if (!pg_parser_mcxt_malloc(
+            RMGR_XLOG_MCXT, (void**)(&xlog_switch), sizeof(pg_parser_translog_pre_base)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_08;
         return false;
@@ -208,9 +209,9 @@ static bool pg_parser_trans_rmgr_xlog_switch(pg_parser_trans_transrec_decode_XLo
     return true;
 }
 
-static bool pg_parser_trans_rmgr_xlog_recovery(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno)
+static bool pg_parser_trans_rmgr_xlog_recovery(pg_parser_XLogReaderState*    state,
+                                               pg_parser_translog_pre_base** result,
+                                               int32_t*                      pg_parser_errno)
 {
     pg_parser_translog_pre_endrecovery* xlog_recovery = NULL;
     xl_end_of_recovery*                 recovery = (xl_end_of_recovery*)state->main_data;
@@ -224,8 +225,8 @@ static bool pg_parser_trans_rmgr_xlog_recovery(
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(RMGR_XLOG_MCXT, (void**)(&xlog_recovery),
-                               sizeof(pg_parser_translog_pre_endrecovery)))
+    if (!pg_parser_mcxt_malloc(
+            RMGR_XLOG_MCXT, (void**)(&xlog_recovery), sizeof(pg_parser_translog_pre_endrecovery)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_XLOG_RECOVERY_MEMALLOC_ERROR1;
         return false;

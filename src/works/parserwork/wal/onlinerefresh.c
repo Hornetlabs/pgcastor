@@ -181,8 +181,10 @@ List* onlinerefresh_get_newtable(HTAB* dataset, refresh_tables* tables)
 }
 
 /* Populate refreshtables from system catalogs */
-bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables, HTAB* hnamespace, HTAB* hclass,
-                                        bool* bmatch)
+bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables,
+                                        HTAB*           hnamespace,
+                                        HTAB*           hclass,
+                                        bool*           bmatch)
 {
     /*
      * 1. Build filters from rtables
@@ -402,9 +404,13 @@ refresh_tables* onlinerefresh_data_load(HTAB* namespace, HTAB* class)
         if (temp_oid == INVALIDOID)
         {
             char temp_table_name[130] = {'\0'};
-            elog(RLOG_WARNING, "when load online refresh dat, get oid invalid, table: %s.%s",
-                 scan_d2o_entry->dataset.schema, scan_d2o_entry->dataset.table);
-            sprintf(temp_table_name, "%s.%s", scan_d2o_entry->dataset.schema,
+            elog(RLOG_WARNING,
+                 "when load online refresh dat, get oid invalid, table: %s.%s",
+                 scan_d2o_entry->dataset.schema,
+                 scan_d2o_entry->dataset.table);
+            sprintf(temp_table_name,
+                    "%s.%s",
+                    scan_d2o_entry->dataset.schema,
                     scan_d2o_entry->dataset.table);
             error_table = lappend(error_table, rstrdup(temp_table_name));
             continue;

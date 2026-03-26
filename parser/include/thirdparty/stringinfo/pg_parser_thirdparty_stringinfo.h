@@ -135,8 +135,9 @@ extern void pg_parser_appendStringInfoSpaces(pg_parser_StringInfo str, int32_t c
  * Append arbitrary binary data to a pg_parser_StringInfo, allocating more space
  * if necessary.
  */
-extern void pg_parser_appendBinaryStringInfo(pg_parser_StringInfo str, const char* data,
-                                             int32_t datalen);
+extern void pg_parser_appendBinaryStringInfo(pg_parser_StringInfo str,
+                                             const char*          data,
+                                             int32_t              datalen);
 
 /*------------------------
  * pg_parser_enlargeStringInfo

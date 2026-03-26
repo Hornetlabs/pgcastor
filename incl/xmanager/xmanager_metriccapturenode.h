@@ -25,8 +25,10 @@ extern xmanager_metricnode* xmanager_metriccapturenode_init(void);
 extern void xmanager_metriccapturenode_destroy(xmanager_metricnode* metricnode);
 
 /* Serialize capture node */
-extern bool xmanager_metriccapturenode_serial(xmanager_metricnode* metricnode, uint8** blk,
-                                              int* blksize, int* blkstart);
+extern bool xmanager_metriccapturenode_serial(xmanager_metricnode* metricnode,
+                                              uint8**              blk,
+                                              int*                 blksize,
+                                              int*                 blkstart);
 
 /* Deserialize to capture node */
 extern xmanager_metricnode* xmanager_metriccapturenode_deserial(uint8* blk, int* blkstart);

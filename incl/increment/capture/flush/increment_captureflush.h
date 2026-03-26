@@ -19,15 +19,15 @@ typedef struct INCREMENT_CAPTUREFLUSH_CALLBACK
 
 typedef struct INCREMENT_CAPTUREFLUSH
 {
-    int          fd;
-    int          basefd; /* File descriptor corresponding to base */
-    uint64       maxsize;
-    uint64       fileid; /* File number written to      */
-    char         path[MAXPATH];
-    txnscontext* txnsctx; /*
-                           * System dictionary
-                           *  Only use system dictionary
-                           */
+    int                             fd;
+    int                             basefd; /* File descriptor corresponding to base */
+    uint64                          maxsize;
+    uint64                          fileid; /* File number written to      */
+    char                            path[MAXPATH];
+    txnscontext*                    txnsctx; /*
+                                              * System dictionary
+                                              *  Only use system dictionary
+                                              */
     capturebase                     base;
     file_buffers*                   txn2filebuffer;
     void*                           privdata; /* Content is: increment_capture*/

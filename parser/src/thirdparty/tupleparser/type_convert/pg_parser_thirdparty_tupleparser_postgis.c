@@ -22,8 +22,8 @@
 
 #define PGFUNC_POSTGIS_MCXT NULL
 
-#define SHOW_DIGS_DOUBLE 15
-#define MAX_DIGS_DOUBLE (SHOW_DIGS_DOUBLE + 6 + 1 + 3 + 1)
+#define SHOW_DIGS_DOUBLE    15
+#define MAX_DIGS_DOUBLE     (SHOW_DIGS_DOUBLE + 6 + 1 + 3 + 1)
 
 typedef struct
 {
@@ -657,7 +657,7 @@ static const uint64_t DOUBLE_POW5_SPLIT[326][2] = {{0u, 1152921504606846976u},
                                                    {3278889188817135834u, 1424047269444608885u},
                                                    {8710297504448807696u, 1780059086805761106u}};
 
-static const char DIGIT_TABLE[200] = {
+static const char     DIGIT_TABLE[200] = {
     '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0', '7', '0', '8', '0',
     '9', '1', '0', '1', '1', '1', '2', '1', '3', '1', '4', '1', '5', '1', '6', '1', '7', '1', '8',
     '1', '9', '2', '0', '2', '1', '2', '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2',
@@ -685,7 +685,7 @@ pg_parser_Datum spheroid_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* in
     return (pg_parser_Datum)result;
 }
 
-#define OUT_MAX_DIGITS 17 + 8
+#define OUT_MAX_DIGITS       17 + 8
 #define OUT_MAX_BYTES_DOUBLE (1 /* Sign */ + 2 /* 0.x */ + OUT_MAX_DIGITS)
 
 typedef struct
@@ -695,8 +695,8 @@ typedef struct
     int32_t srid;
 } BOX3D;
 
-#define FP_MAX(A, B) (((A) > (B)) ? (A) : (B))
-#define FP_MIN(A, B) (((A) < (B)) ? (A) : (B))
+#define FP_MAX(A, B)   (((A) > (B)) ? (A) : (B))
+#define FP_MIN(A, B)   (((A) < (B)) ? (A) : (B))
 
 #define OUT_MIN_DOUBLE 1E-8
 #define OUT_MAX_DOUBLE 1E15
@@ -710,18 +710,20 @@ static inline uint64_t double_to_bits(const double d)
 
 #define DOUBLE_MANTISSA_BITS 52
 #define DOUBLE_EXPONENT_BITS 11
-#define DOUBLE_BIAS 1023
+#define DOUBLE_BIAS          1023
 
 typedef struct floating_decimal_64
 {
     uint64_t mantissa;
     // Decimal exponent's range is -324 to 308
     // inclusive, and can fit in a short if needed.
-    int32_t exponent;
+    int32_t  exponent;
 } floating_decimal_64;
 
-static inline int32_t copy_special_str(char* const result, const bool sign, const bool exponent,
-                                       const bool mantissa)
+static inline int32_t copy_special_str(char* const result,
+                                       const bool  sign,
+                                       const bool  exponent,
+                                       const bool  mantissa)
 {
     if (mantissa)
     {
@@ -742,7 +744,8 @@ static inline int32_t copy_special_str(char* const result, const bool sign, cons
     return 1;
 }
 
-static inline bool d2d_small_int(const uint64_t ieeeMantissa, const uint32_t ieeeExponent,
+static inline bool d2d_small_int(const uint64_t             ieeeMantissa,
+                                 const uint32_t             ieeeExponent,
                                  floating_decimal_64* const v)
 {
     const uint64_t m2 = (1ull << DOUBLE_MANTISSA_BITS) | ieeeMantissa;
@@ -790,7 +793,7 @@ static inline uint32_t log10Pow2(const int32_t e)
 }
 
 #define DOUBLE_POW5_INV_BITCOUNT 125
-#define DOUBLE_POW5_BITCOUNT 125
+#define DOUBLE_POW5_BITCOUNT     125
 
 static inline uint64_t div5(const uint64_t x)
 {
@@ -823,8 +826,12 @@ static inline uint64_t mulShift(const uint64_t m, const uint64_t* const mul, con
     return (uint64_t)(((b0 >> 64) + b2) >> (j - 64));
 }
 
-static inline uint64_t mulShiftAll(const uint64_t m, const uint64_t* const mul, const int32_t j,
-                                   uint64_t* const vp, uint64_t* const vm, const uint32_t mmShift)
+static inline uint64_t mulShiftAll(const uint64_t        m,
+                                   const uint64_t* const mul,
+                                   const int32_t         j,
+                                   uint64_t* const       vp,
+                                   uint64_t* const       vm,
+                                   const uint32_t        mmShift)
 {
     *vp = mulShift(4 * m + 2, mul, j);
     *vm = mulShift(4 * m - 1 - mmShift, mul, j);
@@ -868,22 +875,22 @@ static inline floating_decimal_64 d2d(const uint64_t ieeeMantissa, const uint32_
     uint64_t            output;
     floating_decimal_64 fd;
 
-    const bool even = (m2 & 1) == 0;
-    const bool acceptBounds = even;
+    const bool          even = (m2 & 1) == 0;
+    const bool          acceptBounds = even;
 
     // Step 2: Determine the interval of valid decimal representations.
-    const uint64_t mv = 4 * m2;
+    const uint64_t      mv = 4 * m2;
     // Implicit bool -> int32_t conversion. True is 1, false is 0.
-    const uint32_t mmShift = ieeeMantissa != 0 || ieeeExponent <= 1;
+    const uint32_t      mmShift = ieeeMantissa != 0 || ieeeExponent <= 1;
     // We would compute mp and mm like this:
     // uint64_t mp = 4 * m2 + 2;
     // uint64_t mm = mv - 1 - mmShift;
 
     // Step 3: Convert to a decimal power base using 128-bit arithmetic.
-    uint64_t vr, vp, vm;
-    int32_t  e10;
-    bool     vmIsTrailingZeros = false;
-    bool     vrIsTrailingZeros = false;
+    uint64_t            vr, vp, vm;
+    int32_t             e10;
+    bool                vmIsTrailingZeros = false;
+    bool                vrIsTrailingZeros = false;
     if (e2 >= 0)
     {
         // I tried special-casing q == 0, but there was no effect on performance.
@@ -1225,8 +1232,10 @@ static inline int32_t to_chars_uint64(uint64_t output, uint32_t olength, char* c
     return i;
 }
 
-static inline int32_t to_chars_fixed(const floating_decimal_64 v, const bool sign,
-                                     uint32_t precision, char* const result)
+static inline int32_t to_chars_fixed(const floating_decimal_64 v,
+                                     const bool                sign,
+                                     uint32_t                  precision,
+                                     char* const               result)
 {
     uint64_t output = v.mantissa;
     uint32_t olength = decimalLength17(output);
@@ -1562,9 +1571,9 @@ pg_parser_Datum box2d_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
     char*                result;
     int32_t              size = 0;
 
-    GBOX* box = (GBOX*)attr;
+    GBOX*                box = (GBOX*)attr;
     /* Avoid unaligned access to the gbox struct */
-    GBOX box_aligned;
+    GBOX                 box_aligned;
 
     PG_PARSER_UNUSED(info);
 
@@ -1634,7 +1643,7 @@ typedef struct
     float   c[1];
 } GIDX;
 
-#define GIDX_NDIMS(gidx) ((PG_PARSER_VARSIZE((gidx)) - PG_PARSER_VARHDRSZ) / (2 * sizeof(float)))
+#define GIDX_NDIMS(gidx)              ((PG_PARSER_VARSIZE((gidx)) - PG_PARSER_VARHDRSZ) / (2 * sizeof(float)))
 #define GIDX_GET_MIN(gidx, dimension) *((gidx)->c + 2 * (dimension))
 #define GIDX_GET_MAX(gidx, dimension) *((gidx)->c + 2 * (dimension) + 1)
 
@@ -1689,22 +1698,22 @@ struct rt_raster_serialized_t
     uint16_t numBands; /* Number of bands: 2 bytes */
 
     /* }---[ 8 byte boundary ]---{ */
-    double scaleX; /* pixel width: 8 bytes */
+    double   scaleX; /* pixel width: 8 bytes */
 
     /* }---[ 8 byte boundary ]---{ */
-    double scaleY; /* pixel height: 8 bytes */
+    double   scaleY; /* pixel height: 8 bytes */
 
     /* }---[ 8 byte boundary ]---{ */
-    double ipX; /* insertion point X: 8 bytes */
+    double   ipX; /* insertion point X: 8 bytes */
 
     /* }---[ 8 byte boundary ]---{ */
-    double ipY; /* insertion point Y: 8 bytes */
+    double   ipY; /* insertion point Y: 8 bytes */
 
     /* }---[ 8 byte boundary ]---{ */
-    double skewX; /* skew about the X axis: 8 bytes */
+    double   skewX; /* skew about the X axis: 8 bytes */
 
     /* }---[ 8 byte boundary ]---{ */
-    double skewY; /* skew about the Y axis: 8 bytes */
+    double   skewY; /* skew about the Y axis: 8 bytes */
 
     /* }---[ 8 byte boundary ]--- */
     int32_t  srid;   /* Spatial reference id: 4 bytes */
@@ -1716,7 +1725,7 @@ struct rt_raster_serialized_t
 
 typedef struct rt_raster_serialized_t rt_pgraster;
 
-typedef struct rt_raster_t* rt_raster;
+typedef struct rt_raster_t*           rt_raster;
 
 typedef enum
 {
@@ -1750,10 +1759,10 @@ struct rt_band_t
     int32_t    hasnodata; /* a flag indicating if this band contains nodata values */
     int32_t    isnodata;  /* a flag indicating if this band is filled only with
                              nodata values. flag CANNOT be TRUE if hasnodata is FALSE */
-    double nodataval;     /* int will be converted ... */
-    int8_t ownsdata;      /* 0, externally owned. 1, internally owned. only applies to data.mem */
+    double     nodataval; /* int will be converted ... */
+    int8_t     ownsdata;  /* 0, externally owned. 1, internally owned. only applies to data.mem */
 
-    rt_raster raster; /* reference to parent raster */
+    rt_raster  raster; /* reference to parent raster */
 
     union
     {
@@ -1774,12 +1783,12 @@ struct rt_raster_t
     uint16_t numBands;
 
     /* Georeference (in projection units) */
-    double scaleX; /* pixel width */
-    double scaleY; /* pixel height */
-    double ipX;    /* geo x ordinate of the corner of upper-left pixel */
-    double ipY;    /* geo y ordinate of the corner of bottom-right pixel */
-    double skewX;  /* skew about the X axis*/
-    double skewY;  /* skew about the Y axis */
+    double   scaleX; /* pixel width */
+    double   scaleY; /* pixel height */
+    double   ipX;    /* geo x ordinate of the corner of upper-left pixel */
+    double   ipY;    /* geo y ordinate of the corner of bottom-right pixel */
+    double   skewX;  /* skew about the X axis*/
+    double   skewY;  /* skew about the Y axis */
 
     int32_t  srid;   /* spatial reference id */
     uint16_t width;  /* pixel columns - max 65535 */
@@ -1787,8 +1796,8 @@ struct rt_raster_t
     rt_band* bands;  /* actual bands */
 };
 
-#define LW_TRUE 1
-#define LW_FALSE 0
+#define LW_TRUE    1
+#define LW_FALSE   0
 #define LW_UNKNOWN 2
 #define LW_FAILURE 0
 #define LW_SUCCESS 1
@@ -1823,17 +1832,17 @@ static void rt_band_destroy(rt_band band)
     pg_parser_mcxt_free(PGFUNC_POSTGIS_MCXT, band);
 }
 
-#define BANDTYPE_FLAGS_MASK 0xF0
-#define BANDTYPE_PIXTYPE_MASK 0x0F
-#define BANDTYPE_FLAG_OFFDB (1 << 7)
+#define BANDTYPE_FLAGS_MASK     0xF0
+#define BANDTYPE_PIXTYPE_MASK   0x0F
+#define BANDTYPE_FLAG_OFFDB     (1 << 7)
 #define BANDTYPE_FLAG_HASNODATA (1 << 6)
-#define BANDTYPE_FLAG_ISNODATA (1 << 5)
+#define BANDTYPE_FLAG_ISNODATA  (1 << 5)
 #define BANDTYPE_FLAG_RESERVED3 (1 << 4)
 
-#define BANDTYPE_PIXTYPE(x) ((x) & BANDTYPE_PIXTYPE_MASK)
-#define BANDTYPE_IS_OFFDB(x) ((x) & BANDTYPE_FLAG_OFFDB)
-#define BANDTYPE_HAS_NODATA(x) ((x) & BANDTYPE_FLAG_HASNODATA)
-#define BANDTYPE_IS_NODATA(x) ((x) & BANDTYPE_FLAG_ISNODATA)
+#define BANDTYPE_PIXTYPE(x)     ((x) & BANDTYPE_PIXTYPE_MASK)
+#define BANDTYPE_IS_OFFDB(x)    ((x) & BANDTYPE_FLAG_OFFDB)
+#define BANDTYPE_HAS_NODATA(x)  ((x) & BANDTYPE_FLAG_HASNODATA)
+#define BANDTYPE_IS_NODATA(x)   ((x) & BANDTYPE_FLAG_ISNODATA)
 
 static int rt_pixtype_size(rt_pixtype pixtype)
 {
@@ -1989,7 +1998,7 @@ static rt_raster rt_raster_deserialize(void* serialized, int header_only)
     uint16_t       i = 0;
     uint16_t       j = 0;
 
-    uint8_t littleEndian = LW_TRUE;
+    uint8_t        littleEndian = LW_TRUE;
 
     /* NOTE: Value of rt_raster.size may be different
      * than actual size of raster data being read.
@@ -2141,7 +2150,8 @@ static rt_raster rt_raster_deserialize(void* serialized, int header_only)
 
             /* Register path */
             pathlen = strlen((char*)ptr);
-            pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void**)&(band->data.offline.path),
+            pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT,
+                                  (void**)&(band->data.offline.path),
                                   sizeof(char) * (pathlen + 1));
             if (band->data.offline.path == NULL)
             {
@@ -2396,7 +2406,7 @@ static uint8_t* rt_raster_to_wkb(rt_raster raster, int outasin, uint32_t* wkbsiz
             /* Write data */
             uint32_t datasize = raster->width * raster->height * pixbytes;
             // todo, offline here
-            char* band_result = rt_band_get_data(band);
+            char*    band_result = rt_band_get_data(band);
 
             if (!band_result)
             {
@@ -2488,8 +2498,10 @@ pg_parser_Datum raster_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info
 
     PG_PARSER_UNUSED(info);
 
-    pgraster = (rt_pgraster*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr, &is_toast,
-                                                     &need_free, info->zicinfo->dbtype,
+    pgraster = (rt_pgraster*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                     &is_toast,
+                                                     &need_free,
+                                                     info->zicinfo->dbtype,
                                                      info->zicinfo->dbversion);
     if (is_toast)
     {
@@ -2550,15 +2562,15 @@ typedef struct
     char      pad[1]; /* Padding to 24 bytes (unused) */
 } LWGEOM;
 
-#define GFLAG_Z 0x01
-#define GFLAG_M 0x02
-#define GFLAG_BBOX 0x04
-#define GFLAG_GEODETIC 0x08
-#define GFLAG_VER_0 0x40
+#define GFLAG_Z                    0x01
+#define GFLAG_M                    0x02
+#define GFLAG_BBOX                 0x04
+#define GFLAG_GEODETIC             0x08
+#define GFLAG_VER_0                0x40
 
 #define GFLAGS_GET_VERSION(gflags) (((gflags) & GFLAG_VER_0) >> 6)
 
-#define SRID_UNKNOWN 0
+#define SRID_UNKNOWN               0
 
 static int32_t gserialized2_get_srid(const GSERIALIZED* g)
 {
@@ -2581,20 +2593,20 @@ static int32_t gserialized2_get_srid(const GSERIALIZED* g)
     }
 }
 
-#define G1FLAG_Z 0x01
-#define G1FLAG_M 0x02
-#define G1FLAG_BBOX 0x04
+#define G1FLAG_Z        0x01
+#define G1FLAG_M        0x02
+#define G1FLAG_BBOX     0x04
 #define G1FLAG_GEODETIC 0x08
 #define G1FLAG_READONLY 0x10
-#define G1FLAG_SOLID 0x20
+#define G1FLAG_SOLID    0x20
 /* VERSION BITS         0x40 */
 /* VERSION BITS         0x80 */
 
-#define G1FLAGS_GET_Z(gflags) ((gflags) & G1FLAG_Z)
-#define G1FLAGS_GET_M(gflags) (((gflags) & G1FLAG_M) >> 1)
-#define G1FLAGS_GET_BBOX(gflags) (((gflags) & G1FLAG_BBOX) >> 2)
+#define G1FLAGS_GET_Z(gflags)        ((gflags) & G1FLAG_Z)
+#define G1FLAGS_GET_M(gflags)        (((gflags) & G1FLAG_M) >> 1)
+#define G1FLAGS_GET_BBOX(gflags)     (((gflags) & G1FLAG_BBOX) >> 2)
 #define G1FLAGS_GET_GEODETIC(gflags) (((gflags) & G1FLAG_GEODETIC) >> 3)
-#define G1FLAGS_GET_SOLID(gflags) (((gflags) & G1FLAG_SOLID) >> 5)
+#define G1FLAGS_GET_SOLID(gflags)    (((gflags) & G1FLAG_SOLID) >> 5)
 
 #define G1FLAGS_SET_Z(gflags, value) \
     ((gflags) = (value) ? ((gflags) | G1FLAG_Z) : ((gflags) & ~G1FLAG_Z))
@@ -2607,52 +2619,52 @@ static int32_t gserialized2_get_srid(const GSERIALIZED* g)
 #define G1FLAGS_SET_SOLID(gflags, value) \
     ((gflags) = (value) ? ((gflags) | G1FLAG_SOLID) : ((gflags) & ~G1FLAG_SOLID))
 
-#define G1FLAGS_NDIMS(gflags) (2 + G1FLAGS_GET_Z(gflags) + G1FLAGS_GET_M(gflags))
-#define G1FLAGS_GET_ZM(gflags) (G1FLAGS_GET_M(gflags) + G1FLAGS_GET_Z(gflags) * 2)
-#define G1FLAGS_NDIMS_BOX(gflags) (G1FLAGS_GET_GEODETIC(gflags) ? 3 : G1FLAGS_NDIMS(gflags))
+#define G1FLAGS_NDIMS(gflags)        (2 + G1FLAGS_GET_Z(gflags) + G1FLAGS_GET_M(gflags))
+#define G1FLAGS_GET_ZM(gflags)       (G1FLAGS_GET_M(gflags) + G1FLAGS_GET_Z(gflags) * 2)
+#define G1FLAGS_NDIMS_BOX(gflags)    (G1FLAGS_GET_GEODETIC(gflags) ? 3 : G1FLAGS_NDIMS(gflags))
 
-#define G2FLAG_Z 0x01
-#define G2FLAG_M 0x02
-#define G2FLAG_BBOX 0x04
-#define G2FLAG_GEODETIC 0x08
-#define G2FLAG_EXTENDED 0x10
-#define G2FLAG_RESERVED1 0x20 /* RESERVED FOR FUTURE USES */
-#define G2FLAG_VER_0 0x40
-#define G2FLAG_RESERVED2 0x80 /* RESERVED FOR FUTURE VERSIONS */
+#define G2FLAG_Z                     0x01
+#define G2FLAG_M                     0x02
+#define G2FLAG_BBOX                  0x04
+#define G2FLAG_GEODETIC              0x08
+#define G2FLAG_EXTENDED              0x10
+#define G2FLAG_RESERVED1             0x20 /* RESERVED FOR FUTURE USES */
+#define G2FLAG_VER_0                 0x40
+#define G2FLAG_RESERVED2             0x80 /* RESERVED FOR FUTURE VERSIONS */
 
-#define G2FLAG_X_SOLID 0x00000001
-#define G2FLAG_X_CHECKED_VALID 0x00000002  // To Be Implemented?
-#define G2FLAG_X_IS_VALID 0x00000004       // To Be Implemented?
-#define G2FLAG_X_HAS_HASH 0x00000008       // To Be Implemented?
+#define G2FLAG_X_SOLID               0x00000001
+#define G2FLAG_X_CHECKED_VALID       0x00000002  // To Be Implemented?
+#define G2FLAG_X_IS_VALID            0x00000004  // To Be Implemented?
+#define G2FLAG_X_HAS_HASH            0x00000008  // To Be Implemented?
 
-#define G2FLAGS_GET_VERSION(gflags) (((gflags) & G2FLAG_VER_0) >> 6)
-#define G2FLAGS_GET_Z(gflags) ((gflags) & G2FLAG_Z)
-#define G2FLAGS_GET_M(gflags) (((gflags) & G2FLAG_M) >> 1)
-#define G2FLAGS_GET_BBOX(gflags) (((gflags) & G2FLAG_BBOX) >> 2)
+#define G2FLAGS_GET_VERSION(gflags)  (((gflags) & G2FLAG_VER_0) >> 6)
+#define G2FLAGS_GET_Z(gflags)        ((gflags) & G2FLAG_Z)
+#define G2FLAGS_GET_M(gflags)        (((gflags) & G2FLAG_M) >> 1)
+#define G2FLAGS_GET_BBOX(gflags)     (((gflags) & G2FLAG_BBOX) >> 2)
 #define G2FLAGS_GET_GEODETIC(gflags) (((gflags) & G2FLAG_GEODETIC) >> 3)
 #define G2FLAGS_GET_EXTENDED(gflags) (((gflags) & G2FLAG_EXTENDED) >> 4)
-#define G2FLAGS_GET_UNUSED(gflags) (((gflags) & G2FLAG_UNUSED) >> 5)
+#define G2FLAGS_GET_UNUSED(gflags)   (((gflags) & G2FLAG_UNUSED) >> 5)
 
-#define G2FLAGS_NDIMS(gflags) (2 + G2FLAGS_GET_Z(gflags) + G2FLAGS_GET_M(gflags))
-#define G2FLAGS_GET_ZM(gflags) (G2FLAGS_GET_M(gflags) + G2FLAGS_GET_Z(gflags) * 2)
-#define G2FLAGS_NDIMS_BOX(gflags) (G2FLAGS_GET_GEODETIC(gflags) ? 3 : G2FLAGS_NDIMS(gflags))
+#define G2FLAGS_NDIMS(gflags)        (2 + G2FLAGS_GET_Z(gflags) + G2FLAGS_GET_M(gflags))
+#define G2FLAGS_GET_ZM(gflags)       (G2FLAGS_GET_M(gflags) + G2FLAGS_GET_Z(gflags) * 2)
+#define G2FLAGS_NDIMS_BOX(gflags)    (G2FLAGS_GET_GEODETIC(gflags) ? 3 : G2FLAGS_NDIMS(gflags))
 
-#define LWFLAG_Z 0x01
-#define LWFLAG_M 0x02
-#define LWFLAG_BBOX 0x04
-#define LWFLAG_GEODETIC 0x08
-#define LWFLAG_READONLY 0x10
-#define LWFLAG_SOLID 0x20
+#define LWFLAG_Z                     0x01
+#define LWFLAG_M                     0x02
+#define LWFLAG_BBOX                  0x04
+#define LWFLAG_GEODETIC              0x08
+#define LWFLAG_READONLY              0x10
+#define LWFLAG_SOLID                 0x20
 
-#define FLAGS_GET_Z(flags) ((flags) & LWFLAG_Z)
-#define FLAGS_GET_M(flags) (((flags) & LWFLAG_M) >> 1)
-#define FLAGS_GET_BBOX(flags) (((flags) & LWFLAG_BBOX) >> 2)
-#define FLAGS_GET_GEODETIC(flags) (((flags) & LWFLAG_GEODETIC) >> 3)
-#define FLAGS_GET_READONLY(flags) (((flags) & LWFLAG_READONLY) >> 4)
-#define FLAGS_GET_SOLID(flags) (((flags) & LWFLAG_SOLID) >> 5)
+#define FLAGS_GET_Z(flags)           ((flags) & LWFLAG_Z)
+#define FLAGS_GET_M(flags)           (((flags) & LWFLAG_M) >> 1)
+#define FLAGS_GET_BBOX(flags)        (((flags) & LWFLAG_BBOX) >> 2)
+#define FLAGS_GET_GEODETIC(flags)    (((flags) & LWFLAG_GEODETIC) >> 3)
+#define FLAGS_GET_READONLY(flags)    (((flags) & LWFLAG_READONLY) >> 4)
+#define FLAGS_GET_SOLID(flags)       (((flags) & LWFLAG_SOLID) >> 5)
 
-#define FLAGS_SET_Z(flags, value) ((flags) = (value) ? ((flags) | LWFLAG_Z) : ((flags) & ~LWFLAG_Z))
-#define FLAGS_SET_M(flags, value) ((flags) = (value) ? ((flags) | LWFLAG_M) : ((flags) & ~LWFLAG_M))
+#define FLAGS_SET_Z(flags, value)    ((flags) = (value) ? ((flags) | LWFLAG_Z) : ((flags) & ~LWFLAG_Z))
+#define FLAGS_SET_M(flags, value)    ((flags) = (value) ? ((flags) | LWFLAG_M) : ((flags) & ~LWFLAG_M))
 #define FLAGS_SET_BBOX(flags, value) \
     ((flags) = (value) ? ((flags) | LWFLAG_BBOX) : ((flags) & ~LWFLAG_BBOX))
 #define FLAGS_SET_GEODETIC(flags, value) \
@@ -2662,8 +2674,8 @@ static int32_t gserialized2_get_srid(const GSERIALIZED* g)
 #define FLAGS_SET_SOLID(flags, value) \
     ((flags) = (value) ? ((flags) | LWFLAG_SOLID) : ((flags) & ~LWFLAG_SOLID))
 
-#define FLAGS_NDIMS(flags) (2 + FLAGS_GET_Z(flags) + FLAGS_GET_M(flags))
-#define FLAGS_GET_ZM(flags) (FLAGS_GET_M(flags) + FLAGS_GET_Z(flags) * 2)
+#define FLAGS_NDIMS(flags)     (2 + FLAGS_GET_Z(flags) + FLAGS_GET_M(flags))
+#define FLAGS_GET_ZM(flags)    (FLAGS_GET_M(flags) + FLAGS_GET_Z(flags) * 2)
 #define FLAGS_NDIMS_BOX(flags) (FLAGS_GET_GEODETIC(flags) ? 3 : FLAGS_NDIMS(flags))
 
 static int gserialized2_has_extended(const GSERIALIZED* g)
@@ -2761,34 +2773,34 @@ static inline uint32_t gserialized2_get_uint32_t(const uint8_t* loc)
     return *((uint32_t*)loc);
 }
 
-#define POINTTYPE 1
-#define LINETYPE 2
-#define POLYGONTYPE 3
-#define MULTIPOINTTYPE 4
-#define MULTILINETYPE 5
-#define MULTIPOLYGONTYPE 6
-#define COLLECTIONTYPE 7
-#define CIRCSTRINGTYPE 8
-#define COMPOUNDTYPE 9
-#define CURVEPOLYTYPE 10
-#define MULTICURVETYPE 11
-#define MULTISURFACETYPE 12
+#define POINTTYPE             1
+#define LINETYPE              2
+#define POLYGONTYPE           3
+#define MULTIPOINTTYPE        4
+#define MULTILINETYPE         5
+#define MULTIPOLYGONTYPE      6
+#define COLLECTIONTYPE        7
+#define CIRCSTRINGTYPE        8
+#define COMPOUNDTYPE          9
+#define CURVEPOLYTYPE         10
+#define MULTICURVETYPE        11
+#define MULTISURFACETYPE      12
 #define POLYHEDRALSURFACETYPE 13
-#define TRIANGLETYPE 14
-#define TINTYPE 15
+#define TRIANGLETYPE          14
+#define TINTYPE               15
 
-#define NUMTYPES 16
+#define NUMTYPES              16
 
 typedef struct
 {
-    uint32_t npoints;   /* how many points we are currently storing */
-    uint32_t maxpoints; /* how many points we have space for in serialized_pointlist */
+    uint32_t  npoints;   /* how many points we are currently storing */
+    uint32_t  maxpoints; /* how many points we have space for in serialized_pointlist */
 
     /* Use FLAGS_* macros to handle */
     lwflags_t flags;
 
     /* Array of POINT 2D, 3D or 4D, possibly misaligned. */
-    uint8_t* serialized_pointlist;
+    uint8_t*  serialized_pointlist;
 } POINTARRAY;
 
 /* POINTYPE */
@@ -2820,7 +2832,9 @@ static lwflags_t lwflags(int hasz, int hasm, int geodetic)
     return flags;
 }
 
-static POINTARRAY* ptarray_construct_reference_data(char hasz, char hasm, uint32_t npoints,
+static POINTARRAY* ptarray_construct_reference_data(char     hasz,
+                                                    char     hasm,
+                                                    uint32_t npoints,
                                                     uint8_t* ptlist)
 {
     POINTARRAY* pa = NULL;
@@ -2855,7 +2869,8 @@ static POINTARRAY* ptarray_construct_empty(char hasz, char hasm, uint32_t maxpoi
     /* Allocate the coordinate array */
     if (maxpoints > 0)
     {
-        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void**)&(pa->serialized_pointlist),
+        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT,
+                              (void**)&(pa->serialized_pointlist),
                               maxpoints * ptarray_point_size(pa));
     }
     else
@@ -2873,8 +2888,10 @@ static POINTARRAY* ptarray_construct(char hasz, char hasm, uint32_t npoints)
     return pa;
 }
 
-static LWPOINT* lwpoint_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lwflags, size_t* size,
-                                                 int32_t srid)
+static LWPOINT* lwpoint_from_gserialized2_buffer(uint8_t*  data_ptr,
+                                                 lwflags_t lwflags,
+                                                 size_t*   size,
+                                                 int32_t   srid)
 {
     uint8_t* start_ptr = data_ptr;
     LWPOINT* point;
@@ -2892,8 +2909,8 @@ static LWPOINT* lwpoint_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lw
 
     if (npoints > 0)
     {
-        point->point = ptarray_construct_reference_data(FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags),
-                                                        1, data_ptr);
+        point->point = ptarray_construct_reference_data(
+            FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags), 1, data_ptr);
     }
     else
     {
@@ -2921,8 +2938,10 @@ typedef struct
     char        pad[1]; /* Padding to 24 bytes (unused) */
 } LWLINE;               /* "light-weight line" */
 
-static LWLINE* lwline_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lwflags, size_t* size,
-                                               int32_t srid)
+static LWLINE* lwline_from_gserialized2_buffer(uint8_t*  data_ptr,
+                                               lwflags_t lwflags,
+                                               size_t*   size,
+                                               int32_t   srid)
 {
     uint8_t* start_ptr = data_ptr;
     LWLINE*  line;
@@ -2940,8 +2959,8 @@ static LWLINE* lwline_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lwfl
 
     if (npoints > 0)
     {
-        line->points = ptarray_construct_reference_data(FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags),
-                                                        npoints, data_ptr);
+        line->points = ptarray_construct_reference_data(
+            FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags), npoints, data_ptr);
     }
 
     else
@@ -2970,8 +2989,10 @@ typedef struct
     char        pad[1]; /* Padding to 24 bytes (unused) */
 } LWCIRCSTRING;         /* "light-weight circularstring" */
 
-static LWCIRCSTRING* lwcircstring_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lwflags,
-                                                           size_t* size, int32_t srid)
+static LWCIRCSTRING* lwcircstring_from_gserialized2_buffer(uint8_t*  data_ptr,
+                                                           lwflags_t lwflags,
+                                                           size_t*   size,
+                                                           int32_t   srid)
 {
     uint8_t*      start_ptr = data_ptr;
     LWCIRCSTRING* circstring;
@@ -2994,8 +3015,8 @@ static LWCIRCSTRING* lwcircstring_from_gserialized2_buffer(uint8_t* data_ptr, lw
     }
     else
     {
-        circstring->points = ptarray_construct(FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags),
-                                               0); /* Empty circularstring */
+        circstring->points = ptarray_construct(
+            FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags), 0); /* Empty circularstring */
     }
 
     data_ptr += FLAGS_NDIMS(lwflags) * npoints * sizeof(double);
@@ -3020,8 +3041,10 @@ typedef struct
     uint32_t     maxrings; /* how many rings we have space for in **rings */
 } LWPOLY;                  /* "light-weight polygon" */
 
-static LWPOLY* lwpoly_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lwflags, size_t* size,
-                                               int32_t srid)
+static LWPOLY* lwpoly_from_gserialized2_buffer(uint8_t*  data_ptr,
+                                               lwflags_t lwflags,
+                                               size_t*   size,
+                                               int32_t   srid)
 {
     uint8_t* start_ptr = data_ptr;
     LWPOLY*  poly;
@@ -3043,8 +3066,8 @@ static LWPOLY* lwpoly_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lwfl
     ordinate_ptr = data_ptr; /* Start the ordinate pointer. */
     if (nrings > 0)
     {
-        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void**)&(poly->rings),
-                              sizeof(POINTARRAY*) * nrings);
+        pg_parser_mcxt_malloc(
+            PGFUNC_POSTGIS_MCXT, (void**)&(poly->rings), sizeof(POINTARRAY*) * nrings);
         poly->maxrings = nrings;
         ordinate_ptr += nrings * 4; /* Move past all the npoints values. */
         if (nrings % 2)             /* If there is padding, move past that too. */
@@ -3092,8 +3115,10 @@ typedef struct
     char        pad[1]; /* Padding to 24 bytes (unused) */
 } LWTRIANGLE;
 
-static LWTRIANGLE* lwtriangle_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lwflags,
-                                                       size_t* size, int32_t srid)
+static LWTRIANGLE* lwtriangle_from_gserialized2_buffer(uint8_t*  data_ptr,
+                                                       lwflags_t lwflags,
+                                                       size_t*   size,
+                                                       int32_t   srid)
 {
     uint8_t*    start_ptr = data_ptr;
     LWTRIANGLE* triangle;
@@ -3191,11 +3216,15 @@ static int lwcollection_allows_subtype(int collectiontype, int subtype)
     return LW_FALSE;
 }
 
-static LWGEOM* lwgeom_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lwflags, size_t* g_size,
-                                               int32_t srid);
+static LWGEOM* lwgeom_from_gserialized2_buffer(uint8_t*  data_ptr,
+                                               lwflags_t lwflags,
+                                               size_t*   g_size,
+                                               int32_t   srid);
 
-static LWCOLLECTION* lwcollection_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lwflags,
-                                                           size_t* size, int32_t srid)
+static LWCOLLECTION* lwcollection_from_gserialized2_buffer(uint8_t*  data_ptr,
+                                                           lwflags_t lwflags,
+                                                           size_t*   size,
+                                                           int32_t   srid)
 {
     uint32_t      type;
     uint8_t*      start_ptr = data_ptr;
@@ -3218,8 +3247,8 @@ static LWCOLLECTION* lwcollection_from_gserialized2_buffer(uint8_t* data_ptr, lw
 
     if (ngeoms > 0)
     {
-        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void**)&(collection->geoms),
-                              sizeof(LWGEOM*) * ngeoms);
+        pg_parser_mcxt_malloc(
+            PGFUNC_POSTGIS_MCXT, (void**)&(collection->geoms), sizeof(LWGEOM*) * ngeoms);
         collection->maxgeoms = ngeoms;
     }
     else
@@ -3253,8 +3282,10 @@ static LWCOLLECTION* lwcollection_from_gserialized2_buffer(uint8_t* data_ptr, lw
     return collection;
 }
 
-static LWGEOM* lwgeom_from_gserialized2_buffer(uint8_t* data_ptr, lwflags_t lwflags, size_t* g_size,
-                                               int32_t srid)
+static LWGEOM* lwgeom_from_gserialized2_buffer(uint8_t*  data_ptr,
+                                               lwflags_t lwflags,
+                                               size_t*   g_size,
+                                               int32_t   srid)
 {
     uint32_t type;
 
@@ -3650,9 +3681,9 @@ static int gbox_merge_point3d(const POINT3D* p, GBOX* gbox)
     return LW_SUCCESS;
 }
 
-#define FP_TOLERANCE 1e-12
+#define FP_TOLERANCE    1e-12
 #define FP_EQUALS(A, B) (fabs((A) - (B)) <= FP_TOLERANCE)
-#define FP_IS_ZERO(A) (fabs(A) <= FP_TOLERANCE)
+#define FP_IS_ZERO(A)   (fabs(A) <= FP_TOLERANCE)
 
 static int p3d_same(const POINT3D* p1, const POINT3D* p2)
 {
@@ -4291,7 +4322,7 @@ static int lwpoly_calculate_gbox_cartesian(LWPOLY* poly, GBOX* gbox)
     return ptarray_calculate_gbox_cartesian(poly->rings[0], gbox);
 }
 
-#define NO_VALUE 0.0
+#define NO_VALUE   0.0
 #define NO_Z_VALUE NO_VALUE
 #define NO_M_VALUE NO_VALUE
 
@@ -4355,8 +4386,10 @@ static int getPoint4d_p(const POINTARRAY* pa, uint32_t n, POINT4D* op)
 
 #define EPSILON_SQLMM 1e-8
 
-static double lw_arc_center(const POINT2D* p1, const POINT2D* p2, const POINT2D* p3,
-                            POINT2D* result)
+static double lw_arc_center(const POINT2D* p1,
+                            const POINT2D* p2,
+                            const POINT2D* p3,
+                            POINT2D*       result)
 {
     POINT2D c;
     double  cx, cy, cr;
@@ -4405,8 +4438,10 @@ static double lw_arc_center(const POINT2D* p1, const POINT2D* p2, const POINT2D*
     return cr;
 }
 
-static int lw_arc_calculate_gbox_cartesian_2d(const POINT2D* A1, const POINT2D* A2,
-                                              const POINT2D* A3, GBOX* gbox)
+static int lw_arc_calculate_gbox_cartesian_2d(const POINT2D* A1,
+                                              const POINT2D* A2,
+                                              const POINT2D* A3,
+                                              GBOX*          gbox)
 {
     POINT2D xmin, ymin, xmax, ymax;
     POINT2D C;
@@ -4480,8 +4515,10 @@ static int lw_arc_calculate_gbox_cartesian_2d(const POINT2D* A1, const POINT2D* 
     return LW_SUCCESS;
 }
 
-static int lw_arc_calculate_gbox_cartesian(const POINT4D* p1, const POINT4D* p2, const POINT4D* p3,
-                                           GBOX* gbox)
+static int lw_arc_calculate_gbox_cartesian(const POINT4D* p1,
+                                           const POINT4D* p2,
+                                           const POINT4D* p3,
+                                           GBOX*          gbox)
 {
     int rv;
 
@@ -4751,8 +4788,8 @@ static LWPOINT* lwpoint_from_gserialized1_buffer(uint8_t* data_ptr, lwflags_t lw
 
     if (npoints > 0)
     {
-        point->point = ptarray_construct_reference_data(FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags),
-                                                        1, data_ptr);
+        point->point = ptarray_construct_reference_data(
+            FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags), 1, data_ptr);
     }
     else
     {
@@ -4788,8 +4825,8 @@ static LWLINE* lwline_from_gserialized1_buffer(uint8_t* data_ptr, lwflags_t lwfl
 
     if (npoints > 0)
     {
-        line->points = ptarray_construct_reference_data(FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags),
-                                                        npoints, data_ptr);
+        line->points = ptarray_construct_reference_data(
+            FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags), npoints, data_ptr);
     }
 
     else
@@ -4808,8 +4845,9 @@ static LWLINE* lwline_from_gserialized1_buffer(uint8_t* data_ptr, lwflags_t lwfl
     return line;
 }
 
-static LWCIRCSTRING* lwcircstring_from_gserialized1_buffer(uint8_t* data_ptr, lwflags_t lwflags,
-                                                           size_t* size)
+static LWCIRCSTRING* lwcircstring_from_gserialized1_buffer(uint8_t*  data_ptr,
+                                                           lwflags_t lwflags,
+                                                           size_t*   size)
 {
     uint8_t*      start_ptr = data_ptr;
     LWCIRCSTRING* circstring;
@@ -4832,8 +4870,8 @@ static LWCIRCSTRING* lwcircstring_from_gserialized1_buffer(uint8_t* data_ptr, lw
     }
     else
     {
-        circstring->points = ptarray_construct(FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags),
-                                               0); /* Empty circularstring */
+        circstring->points = ptarray_construct(
+            FLAGS_GET_Z(lwflags), FLAGS_GET_M(lwflags), 0); /* Empty circularstring */
     }
 
     data_ptr += FLAGS_NDIMS(lwflags) * npoints * sizeof(double);
@@ -4868,8 +4906,8 @@ static LWPOLY* lwpoly_from_gserialized1_buffer(uint8_t* data_ptr, lwflags_t lwfl
     ordinate_ptr = data_ptr; /* Start the ordinate pointer. */
     if (nrings > 0)
     {
-        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void**)&(poly->rings),
-                              sizeof(POINTARRAY*) * nrings);
+        pg_parser_mcxt_malloc(
+            PGFUNC_POSTGIS_MCXT, (void**)&(poly->rings), sizeof(POINTARRAY*) * nrings);
         poly->maxrings = nrings;
         ordinate_ptr += nrings * 4; /* Move past all the npoints values. */
         if (nrings % 2)             /* If there is padding, move past that too. */
@@ -4907,8 +4945,9 @@ static LWPOLY* lwpoly_from_gserialized1_buffer(uint8_t* data_ptr, lwflags_t lwfl
     return poly;
 }
 
-static LWTRIANGLE* lwtriangle_from_gserialized1_buffer(uint8_t* data_ptr, lwflags_t lwflags,
-                                                       size_t* size)
+static LWTRIANGLE* lwtriangle_from_gserialized1_buffer(uint8_t*  data_ptr,
+                                                       lwflags_t lwflags,
+                                                       size_t*   size)
 {
     uint8_t*    start_ptr = data_ptr;
     LWTRIANGLE* triangle;
@@ -4947,11 +4986,13 @@ static LWTRIANGLE* lwtriangle_from_gserialized1_buffer(uint8_t* data_ptr, lwflag
     return triangle;
 }
 
-static LWGEOM* lwgeom_from_gserialized1_buffer(uint8_t* data_ptr, lwflags_t lwflags,
-                                               size_t* g_size);
+static LWGEOM* lwgeom_from_gserialized1_buffer(uint8_t*  data_ptr,
+                                               lwflags_t lwflags,
+                                               size_t*   g_size);
 
-static LWCOLLECTION* lwcollection_from_gserialized1_buffer(uint8_t* data_ptr, lwflags_t lwflags,
-                                                           size_t* size)
+static LWCOLLECTION* lwcollection_from_gserialized1_buffer(uint8_t*  data_ptr,
+                                                           lwflags_t lwflags,
+                                                           size_t*   size)
 {
     uint32_t      type;
     uint8_t*      start_ptr = data_ptr;
@@ -4976,8 +5017,8 @@ static LWCOLLECTION* lwcollection_from_gserialized1_buffer(uint8_t* data_ptr, lw
 
     if (ngeoms > 0)
     {
-        pg_parser_mcxt_malloc(PGFUNC_POSTGIS_MCXT, (void**)&(collection->geoms),
-                              sizeof(LWGEOM*) * ngeoms);
+        pg_parser_mcxt_malloc(
+            PGFUNC_POSTGIS_MCXT, (void**)&(collection->geoms), sizeof(LWGEOM*) * ngeoms);
         collection->maxgeoms = ngeoms;
     }
     else
@@ -5215,22 +5256,22 @@ static LWGEOM* lwgeom_from_gserialized(const GSERIALIZED* g)
     }
 }
 
-#define WKB_ISO 0x01
-#define WKB_SFSQL 0x02
-#define WKB_EXTENDED 0x04
-#define WKB_NDR 0x08
-#define WKB_XDR 0x10
-#define WKB_HEX 0x20
-#define WKB_NO_NPOINTS 0x40 /* Internal use only */
-#define WKB_NO_SRID 0x80    /* Internal use only */
+#define WKB_ISO         0x01
+#define WKB_SFSQL       0x02
+#define WKB_EXTENDED    0x04
+#define WKB_NDR         0x08
+#define WKB_XDR         0x10
+#define WKB_HEX         0x20
+#define WKB_NO_NPOINTS  0x40 /* Internal use only */
+#define WKB_NO_SRID     0x80 /* Internal use only */
 
-#define WKT_ISO 0x01
-#define WKT_SFSQL 0x02
-#define WKT_EXTENDED 0x04
+#define WKT_ISO         0x01
+#define WKT_SFSQL       0x02
+#define WKT_EXTENDED    0x04
 
 #define WKB_DOUBLE_SIZE 8 /* Internal use only */
-#define WKB_INT_SIZE 4    /* Internal use only */
-#define WKB_BYTE_SIZE 1   /* Internal use only */
+#define WKB_INT_SIZE    4 /* Internal use only */
+#define WKB_BYTE_SIZE   1 /* Internal use only */
 
 static int lwgeom_has_srid(const LWGEOM* geom)
 {
@@ -5652,9 +5693,9 @@ static void stringbuffer_destroy(stringbuffer_t* s)
     }
 }
 
-#define WKT_NO_TYPE 0x08   /* Internal use only */
+#define WKT_NO_TYPE   0x08 /* Internal use only */
 #define WKT_NO_PARENS 0x10 /* Internal use only */
-#define WKT_IS_CHILD 0x20  /* Internal use only */
+#define WKT_IS_CHILD  0x20 /* Internal use only */
 
 static void dimension_qualifiers_to_wkt_sb(const LWGEOM* geom, stringbuffer_t* sb, uint8_t variant)
 {
@@ -5696,8 +5737,10 @@ inline static void stringbuffer_append_double(stringbuffer_t* s, double d, int p
     s->str_end += lwprint_double(d, precision, s->str_end);
 }
 
-inline static void coordinate_to_wkt_sb(double* coords, stringbuffer_t* sb, uint32_t dimensions,
-                                        int precision)
+inline static void coordinate_to_wkt_sb(double*         coords,
+                                        stringbuffer_t* sb,
+                                        uint32_t        dimensions,
+                                        int             precision)
 {
     uint32_t d = 0;
     stringbuffer_append_double(sb, coords[d], precision);
@@ -5709,8 +5752,10 @@ inline static void coordinate_to_wkt_sb(double* coords, stringbuffer_t* sb, uint
     }
 }
 
-static void ptarray_to_wkt_sb(const POINTARRAY* ptarray, stringbuffer_t* sb, int precision,
-                              uint8_t variant)
+static void ptarray_to_wkt_sb(const POINTARRAY* ptarray,
+                              stringbuffer_t*   sb,
+                              int               precision,
+                              uint8_t           variant)
 {
     /* OGC only includes X/Y */
     uint32_t dimensions = 2;
@@ -5733,7 +5778,7 @@ static void ptarray_to_wkt_sb(const POINTARRAY* ptarray, stringbuffer_t* sb, int
     {
         uint32_t i = 0;
 
-        double* dbl_ptr = (double*)getPoint_internal(ptarray, i);
+        double*  dbl_ptr = (double*)getPoint_internal(ptarray, i);
         coordinate_to_wkt_sb(dbl_ptr, sb, dimensions, precision);
 
         for (i = 1; i < ptarray->npoints; i++)
@@ -5918,8 +5963,10 @@ typedef struct
     uint32_t     maxgeoms; /* how many geometries we have space for in **geoms */
 } LWTIN;
 
-static void lwmpoint_to_wkt_sb(const LWMPOINT* mpoint, stringbuffer_t* sb, int precision,
-                               uint8_t variant)
+static void lwmpoint_to_wkt_sb(const LWMPOINT* mpoint,
+                               stringbuffer_t* sb,
+                               int             precision,
+                               uint8_t         variant)
 {
     uint32_t i = 0;
     if (!(variant & WKT_NO_TYPE))
@@ -5951,8 +5998,10 @@ static void lwmpoint_to_wkt_sb(const LWMPOINT* mpoint, stringbuffer_t* sb, int p
     stringbuffer_append_len(sb, ")", 1);
 }
 
-static void lwmline_to_wkt_sb(const LWMLINE* mline, stringbuffer_t* sb, int precision,
-                              uint8_t variant)
+static void lwmline_to_wkt_sb(const LWMLINE*  mline,
+                              stringbuffer_t* sb,
+                              int             precision,
+                              uint8_t         variant)
 {
     uint32_t i = 0;
 
@@ -5981,8 +6030,10 @@ static void lwmline_to_wkt_sb(const LWMLINE* mline, stringbuffer_t* sb, int prec
     stringbuffer_append_len(sb, ")", 1);
 }
 
-static void lwmpoly_to_wkt_sb(const LWMPOLY* mpoly, stringbuffer_t* sb, int precision,
-                              uint8_t variant)
+static void lwmpoly_to_wkt_sb(const LWMPOLY*  mpoly,
+                              stringbuffer_t* sb,
+                              int             precision,
+                              uint8_t         variant)
 {
     uint32_t i = 0;
 
@@ -6011,11 +6062,15 @@ static void lwmpoly_to_wkt_sb(const LWMPOLY* mpoly, stringbuffer_t* sb, int prec
     stringbuffer_append_len(sb, ")", 1);
 }
 
-static void lwgeom_to_wkt_sb(const LWGEOM* geom, stringbuffer_t* sb, int precision,
-                             uint8_t variant);
+static void lwgeom_to_wkt_sb(const LWGEOM*   geom,
+                             stringbuffer_t* sb,
+                             int             precision,
+                             uint8_t         variant);
 
-static void lwcollection_to_wkt_sb(const LWCOLLECTION* collection, stringbuffer_t* sb,
-                                   int precision, uint8_t variant)
+static void lwcollection_to_wkt_sb(const LWCOLLECTION* collection,
+                                   stringbuffer_t*     sb,
+                                   int                 precision,
+                                   uint8_t             variant)
 {
     uint32_t i = 0;
 
@@ -6042,8 +6097,10 @@ static void lwcollection_to_wkt_sb(const LWCOLLECTION* collection, stringbuffer_
     stringbuffer_append_len(sb, ")", 1);
 }
 
-static void lwcircstring_to_wkt_sb(const LWCIRCSTRING* circ, stringbuffer_t* sb, int precision,
-                                   uint8_t variant)
+static void lwcircstring_to_wkt_sb(const LWCIRCSTRING* circ,
+                                   stringbuffer_t*     sb,
+                                   int                 precision,
+                                   uint8_t             variant)
 {
     if (!(variant & WKT_NO_TYPE))
     {
@@ -6058,8 +6115,10 @@ static void lwcircstring_to_wkt_sb(const LWCIRCSTRING* circ, stringbuffer_t* sb,
     ptarray_to_wkt_sb(circ->points, sb, precision, variant);
 }
 
-static void lwcompound_to_wkt_sb(const LWCOMPOUND* comp, stringbuffer_t* sb, int precision,
-                                 uint8_t variant)
+static void lwcompound_to_wkt_sb(const LWCOMPOUND* comp,
+                                 stringbuffer_t*   sb,
+                                 int               precision,
+                                 uint8_t           variant)
 {
     uint32_t i = 0;
 
@@ -6101,8 +6160,10 @@ static void lwcompound_to_wkt_sb(const LWCOMPOUND* comp, stringbuffer_t* sb, int
     stringbuffer_append_len(sb, ")", 1);
 }
 
-static void lwcurvepoly_to_wkt_sb(const LWCURVEPOLY* cpoly, stringbuffer_t* sb, int precision,
-                                  uint8_t variant)
+static void lwcurvepoly_to_wkt_sb(const LWCURVEPOLY* cpoly,
+                                  stringbuffer_t*    sb,
+                                  int                precision,
+                                  uint8_t            variant)
 {
     uint32_t i = 0;
 
@@ -6146,8 +6207,10 @@ static void lwcurvepoly_to_wkt_sb(const LWCURVEPOLY* cpoly, stringbuffer_t* sb, 
     stringbuffer_append_len(sb, ")", 1);
 }
 
-static void lwmcurve_to_wkt_sb(const LWMCURVE* mcurv, stringbuffer_t* sb, int precision,
-                               uint8_t variant)
+static void lwmcurve_to_wkt_sb(const LWMCURVE* mcurv,
+                               stringbuffer_t* sb,
+                               int             precision,
+                               uint8_t         variant)
 {
     uint32_t i = 0;
 
@@ -6191,8 +6254,10 @@ static void lwmcurve_to_wkt_sb(const LWMCURVE* mcurv, stringbuffer_t* sb, int pr
     stringbuffer_append_len(sb, ")", 1);
 }
 
-static void lwmsurface_to_wkt_sb(const LWMSURFACE* msurf, stringbuffer_t* sb, int precision,
-                                 uint8_t variant)
+static void lwmsurface_to_wkt_sb(const LWMSURFACE* msurf,
+                                 stringbuffer_t*   sb,
+                                 int               precision,
+                                 uint8_t           variant)
 {
     uint32_t i = 0;
 
@@ -6232,8 +6297,10 @@ static void lwmsurface_to_wkt_sb(const LWMSURFACE* msurf, stringbuffer_t* sb, in
     stringbuffer_append_len(sb, ")", 1);
 }
 
-static void lwtriangle_to_wkt_sb(const LWTRIANGLE* tri, stringbuffer_t* sb, int precision,
-                                 uint8_t variant)
+static void lwtriangle_to_wkt_sb(const LWTRIANGLE* tri,
+                                 stringbuffer_t*   sb,
+                                 int               precision,
+                                 uint8_t           variant)
 {
     if (!(variant & WKT_NO_TYPE))
     {
@@ -6279,8 +6346,10 @@ static void lwtin_to_wkt_sb(const LWTIN* tin, stringbuffer_t* sb, int precision,
     stringbuffer_append_len(sb, ")", 1);
 }
 
-static void lwpsurface_to_wkt_sb(const LWPSURFACE* psurf, stringbuffer_t* sb, int precision,
-                                 uint8_t variant)
+static void lwpsurface_to_wkt_sb(const LWPSURFACE* psurf,
+                                 stringbuffer_t*   sb,
+                                 int               precision,
+                                 uint8_t           variant)
 {
     uint32_t i = 0;
 
@@ -6402,28 +6471,28 @@ static char* lwgeom_to_wkt(const LWGEOM* geom, uint8_t variant, int precision, s
     return str;
 }
 
-#define WKB_POINT_TYPE 1
-#define WKB_LINESTRING_TYPE 2
-#define WKB_POLYGON_TYPE 3
-#define WKB_MULTIPOINT_TYPE 4
-#define WKB_MULTILINESTRING_TYPE 5
-#define WKB_MULTIPOLYGON_TYPE 6
+#define WKB_POINT_TYPE              1
+#define WKB_LINESTRING_TYPE         2
+#define WKB_POLYGON_TYPE            3
+#define WKB_MULTIPOINT_TYPE         4
+#define WKB_MULTILINESTRING_TYPE    5
+#define WKB_MULTIPOLYGON_TYPE       6
 #define WKB_GEOMETRYCOLLECTION_TYPE 7
-#define WKB_CIRCULARSTRING_TYPE 8
-#define WKB_COMPOUNDCURVE_TYPE 9
-#define WKB_CURVEPOLYGON_TYPE 10
-#define WKB_MULTICURVE_TYPE 11
-#define WKB_MULTISURFACE_TYPE 12
-#define WKB_CURVE_TYPE 13   /* from ISO draft, not sure is real */
-#define WKB_SURFACE_TYPE 14 /* from ISO draft, not sure is real */
-#define WKB_POLYHEDRALSURFACE_TYPE 15
-#define WKB_TIN_TYPE 16
-#define WKB_TRIANGLE_TYPE 17
+#define WKB_CIRCULARSTRING_TYPE     8
+#define WKB_COMPOUNDCURVE_TYPE      9
+#define WKB_CURVEPOLYGON_TYPE       10
+#define WKB_MULTICURVE_TYPE         11
+#define WKB_MULTISURFACE_TYPE       12
+#define WKB_CURVE_TYPE              13 /* from ISO draft, not sure is real */
+#define WKB_SURFACE_TYPE            14 /* from ISO draft, not sure is real */
+#define WKB_POLYHEDRALSURFACE_TYPE  15
+#define WKB_TIN_TYPE                16
+#define WKB_TRIANGLE_TYPE           17
 
-#define WKBZOFFSET 0x80000000
-#define WKBMOFFSET 0x40000000
-#define WKBSRIDFLAG 0x20000000
-#define WKBBBOXFLAG 0x10000000
+#define WKBZOFFSET                  0x80000000
+#define WKBMOFFSET                  0x40000000
+#define WKBSRIDFLAG                 0x20000000
+#define WKBBBOXFLAG                 0x10000000
 
 static uint32_t lwgeom_wkb_type(const LWGEOM* geom, uint8_t variant)
 {
@@ -7301,13 +7370,15 @@ pg_parser_Datum geometry_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* in
     LWGEOM*      lwgeom = NULL;
     char*        result = NULL;
 
-    bool is_toast = false;
-    bool need_free = false;
+    bool         is_toast = false;
+    bool         need_free = false;
 
     PG_PARSER_UNUSED(info);
 
-    geom = (GSERIALIZED*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr, &is_toast,
-                                                 &need_free, info->zicinfo->dbtype,
+    geom = (GSERIALIZED*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                 &is_toast,
+                                                 &need_free,
+                                                 info->zicinfo->dbtype,
                                                  info->zicinfo->dbversion);
     if (is_toast)
     {
@@ -7351,14 +7422,16 @@ pg_parser_Datum geography_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* i
     GSERIALIZED* g = NULL;
     LWGEOM*      lwgeom = NULL;
 
-    bool  is_toast = false;
-    bool  need_free = false;
-    char* result = NULL;
+    bool         is_toast = false;
+    bool         need_free = false;
+    char*        result = NULL;
 
     PG_PARSER_UNUSED(info);
 
-    g = (GSERIALIZED*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr, &is_toast,
-                                              &need_free, info->zicinfo->dbtype,
+    g = (GSERIALIZED*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                              &is_toast,
+                                              &need_free,
+                                              info->zicinfo->dbtype,
                                               info->zicinfo->dbversion);
 
     lwgeom = lwgeom_from_gserialized(g);
@@ -7388,17 +7461,25 @@ pg_parser_Datum geography_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* i
 
 #define TYPMOD_GET_SRID(typmod) ((((typmod) & 0x0FFFFF00) - ((typmod) & 0x10000000)) >> 8)
 #define TYPMOD_GET_TYPE(typmod) ((typmod & 0x000000FC) >> 2)
-#define TYPMOD_GET_Z(typmod) ((typmod & 0x00000002) >> 1)
-#define TYPMOD_GET_M(typmod) (typmod & 0x00000001)
+#define TYPMOD_GET_Z(typmod)    ((typmod & 0x00000002) >> 1)
+#define TYPMOD_GET_M(typmod)    (typmod & 0x00000001)
 
-static char* lwgeomTypeName[] = {"Unknown",        "Point",
-                                 "LineString",     "Polygon",
-                                 "MultiPoint",     "MultiLineString",
-                                 "MultiPolygon",   "GeometryCollection",
-                                 "CircularString", "CompoundCurve",
-                                 "CurvePolygon",   "MultiCurve",
-                                 "MultiSurface",   "PolyhedralSurface",
-                                 "Triangle",       "Tin"};
+static char* lwgeomTypeName[] = {"Unknown",
+                                 "Point",
+                                 "LineString",
+                                 "Polygon",
+                                 "MultiPoint",
+                                 "MultiLineString",
+                                 "MultiPolygon",
+                                 "GeometryCollection",
+                                 "CircularString",
+                                 "CompoundCurve",
+                                 "CurvePolygon",
+                                 "MultiCurve",
+                                 "MultiSurface",
+                                 "PolyhedralSurface",
+                                 "Triangle",
+                                 "Tin"};
 
 static const char* lwtype_name(uint8_t type)
 {

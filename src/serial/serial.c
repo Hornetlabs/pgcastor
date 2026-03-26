@@ -24,8 +24,8 @@ static void serial_readdatafromfile(file_buffer* fbuffer)
     uint64       foffset = 0;
     ff_fileinfo* finfo = NULL;
 
-    struct stat st;
-    char        path[MAXPATH] = {0};
+    struct stat  st;
+    char         path[MAXPATH] = {0};
 
     if (0 == fbuffer->start)
     {
@@ -43,7 +43,9 @@ static void serial_readdatafromfile(file_buffer* fbuffer)
     /* verify file exists, then open */
     if (0 != stat(path, &st))
     {
-        elog(RLOG_ERROR, "file not exist, please recheck %s, fbuffer->start:%lu", path,
+        elog(RLOG_ERROR,
+             "file not exist, please recheck %s, fbuffer->start:%lu",
+             path,
              fbuffer->start);
     }
 
@@ -103,7 +105,9 @@ file_buffers* serialstate_getfilebuffer(void* privdata)
     return serial_state->txn2filebuffer;
 }
 
-void serialstate_fbuffer_set(serialstate* serial_state, uint64 fileid, uint64 fileoffset,
+void serialstate_fbuffer_set(serialstate*      serial_state,
+                             uint64            fileid,
+                             uint64            fileoffset,
                              FullTransactionId xid)
 {
     int          bufid = 0;
@@ -150,7 +154,10 @@ void serialstate_fbuffer_set(serialstate* serial_state, uint64 fileid, uint64 fi
     finfo->xid = xid;
     fbuffer->start = (fileoffset % FILE_BUFFER_SIZE);
 
-    elog(RLOG_DEBUG, "ffsmgr_set fileid:%lu, fileoffset:%lu, %lu", fileid, fileoffset,
+    elog(RLOG_DEBUG,
+         "ffsmgr_set fileid:%lu, fileoffset:%lu, %lu",
+         fileid,
+         fileoffset,
          fbuffer->start);
 
     /* when reading, use fbuffer->start as reference */

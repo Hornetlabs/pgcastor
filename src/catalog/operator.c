@@ -173,7 +173,8 @@ HTAB* operatorcache_load(sysdict_header_array* array)
             entry = hash_search(operatorhtab, &operator->oid, HASH_ENTER, &found);
             if (found)
             {
-                elog(RLOG_ERROR, "operator_oid:%u already exist in by_operator",
+                elog(RLOG_ERROR,
+                     "operator_oid:%u already exist in by_operator",
                      entry->operator->oid);
             }
             entry->oid = operator->oid;

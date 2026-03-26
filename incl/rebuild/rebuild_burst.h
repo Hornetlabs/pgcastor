@@ -46,7 +46,7 @@ typedef struct REBUILD_BURSTROW
     uint8                    md5[16];
     struct REBUILD_BURSTROW* relatedrow; /* Associated statements split from update insert --->
                                             delete, delete ---> insert  */
-    void* row;                           /* Original data pg_praser_translog_tbcol_values */
+    void*                    row;        /* Original data pg_praser_translog_tbcol_values */
 } rebuild_burstrow;
 
 typedef struct REBUILD_BURSTTABLE
@@ -98,12 +98,18 @@ extern int rebuild_bursttable_cmp(void* s1, void* s2);
 extern int rebuild_burstnode_tablecmp(void* s1, void* s2);
 
 /* Get burst node */
-extern bool rebuild_burst_getnode(HTAB* hclass, HTAB* hattrs, HTAB* hindex, rebuild_burst* burst,
-                                  rebuild_burstnode** pburstnode, rebuild_bursttable* bursttable);
+extern bool rebuild_burst_getnode(HTAB*               hclass,
+                                  HTAB*               hattrs,
+                                  HTAB*               hindex,
+                                  rebuild_burst*      burst,
+                                  rebuild_burstnode** pburstnode,
+                                  rebuild_bursttable* bursttable);
 
 /* Split update into insert/delete */
-extern bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode, rebuild_burstrow** delrow,
-                                          rebuild_burstrow** insertrow, void* rows);
+extern bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
+                                          rebuild_burstrow** delrow,
+                                          rebuild_burstrow** insertrow,
+                                          void*              rows);
 
 /*
  * Merge insert/delete
@@ -124,8 +130,10 @@ extern bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode, rebuild_bur
  * failed : in_updaterow merge success returns matched insertrow, failure updaterow : error false
  * execution failed exit, true execution succeeded
  */
-extern bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode, rebuild_burstrow* delrow,
-                                            rebuild_burstrow** updaterow, bool* error);
+extern bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
+                                            rebuild_burstrow*  delrow,
+                                            rebuild_burstrow** updaterow,
+                                            bool*              error);
 
 /* burstnode splice statement */
 extern bool rebuild_burst_bursts2stmt(rebuild_burst* burst, cache_sysdicts* sysdicts, txn* txn);

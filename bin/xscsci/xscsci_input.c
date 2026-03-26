@@ -14,8 +14,8 @@
 #include "xscsci_input.h"
 #include "xscsci_tabcomplete.h"
 
-#define XSCSCI_RLHISTORY ".xscsci_history"
-#define XSCSCI_NL_IN_HISTORY 0x01
+#define XSCSCI_RLHISTORY       ".xscsci_history"
+#define XSCSCI_NL_IN_HISTORY   0x01
 #define XSCSCI_HISTORY_MAXLINE 500
 
 static int  m_historylinesadded = 0;

@@ -115,7 +115,11 @@ refresh_integrate_setsynctableretry:
             "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
             "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
             "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
-            catalog_schema, SYNC_STATUSTABLE_NAME, REFRESH_REFRESH, index, 1);
+            catalog_schema,
+            SYNC_STATUSTABLE_NAME,
+            REFRESH_REFRESH,
+            index,
+            1);
         res = conn_exec(conn, sql->data);
         if (NULL == res)
         {
@@ -193,8 +197,11 @@ static bool refresh_integrate_startjobs(refresh_integrate* rintegrate)
         /* register worker thread */
         if (false == threads_addjobthread(rintegrate->thrsmgr->parents,
                                           THRNODE_IDENTITY_INTEGRATE_REFRESH_JOB,
-                                          rintegrate->thrsmgr->submgrref.no, (void*)shard2db,
-                                          refresh_sharding2db_free, NULL, refresh_sharding2db_work))
+                                          rintegrate->thrsmgr->submgrref.no,
+                                          (void*)shard2db,
+                                          refresh_sharding2db_free,
+                                          NULL,
+                                          refresh_sharding2db_work))
         {
             elog(RLOG_WARNING, "refresh integrate start job error");
             return false;
@@ -347,7 +354,8 @@ void* refresh_integrate_main(void* args)
 
             /* all threads have exited, set sub-thread state to FREE */
             threads_setsubmgrjobthredsfree(rintegrate->thrsmgr->parents,
-                                           rintegrate->thrsmgr->childthrrefs, 0,
+                                           rintegrate->thrsmgr->childthrrefs,
+                                           0,
                                            rintegrate->parallelcnt);
 
             /* set this thread to exit */
@@ -527,11 +535,13 @@ bool refresh_integrate_read(refresh_integrate** refresh)
 
         rmemcpy1(&new_syncstat->cnt, 0, buffer + bufferoffset, sizeof(new_syncstat->cnt));
         bufferoffset += sizeof(new_syncstat->cnt);
-        rmemcpy1(&new_syncstat->completecnt, 0, buffer + bufferoffset,
+        rmemcpy1(&new_syncstat->completecnt,
+                 0,
+                 buffer + bufferoffset,
                  sizeof(new_syncstat->completecnt));
         bufferoffset += sizeof(new_syncstat->completecnt);
-        rmemcpy1(&new_syncstat->tablestat, 0, buffer + bufferoffset,
-                 sizeof(new_syncstat->tablestat));
+        rmemcpy1(
+            &new_syncstat->tablestat, 0, buffer + bufferoffset, sizeof(new_syncstat->tablestat));
         bufferoffset += sizeof(new_syncstat->tablestat);
         rmemcpy1(&new_syncstat->oid, 0, buffer + bufferoffset, sizeof(new_syncstat->oid));
         bufferoffset += sizeof(new_syncstat->oid);
@@ -557,11 +567,13 @@ bool refresh_integrate_read(refresh_integrate** refresh)
             }
             rmemset0(new_syncstat->stat, 0, '\0', new_syncstat->cnt * sizeof(int8_t));
 
-            read_size = osal_file_pread(fd, (char*)new_syncstat->stat,
-                                        (new_syncstat->cnt * sizeof(int8_t)), offset);
+            read_size = osal_file_pread(
+                fd, (char*)new_syncstat->stat, (new_syncstat->cnt * sizeof(int8_t)), offset);
             if (read_size <= 0)
             {
-                elog(RLOG_WARNING, "try read file %s tablestat, read 0, error %s", path,
+                elog(RLOG_WARNING,
+                     "try read file %s tablestat, read 0, error %s",
+                     path,
                      strerror(errno));
                 refresh_table_syncstat_free(new_syncstat);
                 osal_file_close(fd);

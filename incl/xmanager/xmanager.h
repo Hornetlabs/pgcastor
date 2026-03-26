@@ -3,8 +3,8 @@
 
 typedef struct XMANAGER
 {
-    uint64 persistno;
-    char*  xsynchpath;
+    uint64           persistno;
+    char*            xsynchpath;
     /* thread management module */
     threads*         threads;
     char             padding[CACHELINE_SIZE];

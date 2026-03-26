@@ -56,15 +56,23 @@ static fftrail_datatypemgr m_datatypemgr[] = {
     {FF_DATA_TYPE_TXNCOMMIT, "TXN COMMIT", NULL, fftrail_txncommit_deserial},
     {FF_DATA_TYPE_REFRESH, "TXN REFRESH", NULL, fftrail_txnrefresh_deserial},
     {FF_DATA_TYPE_TXNBEGIN, "TXN BEGIN", NULL, NULL},
-    {FF_DATA_TYPE_ONLINE_REFRESH_BEGIN, "TXN ONLINE REFRESH BEGIN", NULL,
+    {FF_DATA_TYPE_ONLINE_REFRESH_BEGIN,
+     "TXN ONLINE REFRESH BEGIN",
+     NULL,
      fftrail_txnonlinerefresh_begin_deserial},
-    {FF_DATA_TYPE_ONLINE_REFRESH_END, "TXN ONLINE REFRESH END", NULL,
+    {FF_DATA_TYPE_ONLINE_REFRESH_END,
+     "TXN ONLINE REFRESH END",
+     NULL,
      fftrail_txnonlinerefresh_end_deserial},
-    {FF_DATA_TYPE_ONLINE_REFRESH_INCREMENT_END, "TXN ONLINE REFRESH END", NULL,
+    {FF_DATA_TYPE_ONLINE_REFRESH_INCREMENT_END,
+     "TXN ONLINE REFRESH END",
+     NULL,
      fftrail_txnonlinerefresh_increment_end_deserial},
     {FF_DATA_TYPE_BIGTXN_BEGIN, "TXN BIGTRANSACTION BEGIN", NULL, fftrail_txnbigtxn_begin_deserial},
     {FF_DATA_TYPE_BIGTXN_END, "TXN BIGTRANSACTION END", NULL, fftrail_txnbigtxn_end_deserial},
-    {FF_DATA_TYPE_ONLINEREFRESH_ABANDON, "TXN ONLINEREFRESH ABANDON", NULL,
+    {FF_DATA_TYPE_ONLINEREFRESH_ABANDON,
+     "TXN ONLINEREFRESH ABANDON",
+     NULL,
      fftrail_txnonlinerefreshabandon_deserial}};
 
 static int m_datatypmgrcnt = (sizeof(m_datatypemgr) / sizeof(fftrail_datatypemgr));
@@ -341,8 +349,12 @@ uint8 fftrail_data_gettransindfromhead(int compatibility, uint8* head)
  * dlen waitwritedata length
  * data waitwritedata
  */
-bool fftrail_data_data2buffer(ff_data* ffdatahdr, ffsmgr_state* ffstate, file_buffer** ref_buffer,
-                              ftrail_datatype dtype, uint64 dlen, uint8* data)
+bool fftrail_data_data2buffer(ff_data*        ffdatahdr,
+                              ffsmgr_state*   ffstate,
+                              file_buffer**   ref_buffer,
+                              ftrail_datatype dtype,
+                              uint64          dlen,
+                              uint8*          data)
 {
     bool              shiftfile = false; /* switchswapfile */
     uint32            tlen = 0;
@@ -546,8 +558,13 @@ bool fftrail_data_data2buffer(ff_data* ffdatahdr, ffsmgr_state* ffstate, file_bu
  * is whethercontainhas enough data dtype get datatype dlen reasontheorylength data
  * datastoreput position expandbigrecoffsetand dataoffset，recordconcatenatebacklengthaddadd
  */
-bool fftrail_data_buffer2data(ff_data* ffdatahdr, ffsmgr_state* ffstate, uint32* recoffset,
-                              uint32* dataoffset, ftrail_datatype dtype, uint64 dlen, uint8* data)
+bool fftrail_data_buffer2data(ff_data*        ffdatahdr,
+                              ffsmgr_state*   ffstate,
+                              uint32*         recoffset,
+                              uint32*         dataoffset,
+                              ftrail_datatype dtype,
+                              uint64          dlen,
+                              uint8*          data)
 {
     uint32 freespc = 0;
     uint8* uptr = NULL;
@@ -583,53 +600,93 @@ void fftrail_data_hdrserail(ff_data* ffdatahdr, ffsmgr_state* ffstate)
 
     /* ffheader innercontentfillfill */
     /* addadd datanameencode */
-    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_DBMDNO, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&ffdatahdr->dbmdno, &len,
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_DBMDNO,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_SMALLINT,
+                                2,
+                                (uint8*)&ffdatahdr->dbmdno,
+                                &len,
                                 uptr);
 
     /* addadd tableencode */
-    uptr =
-        fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_TBMDNO, FFTRAIL_INFOTYPE_TOKEN,
-                             FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&ffdatahdr->tbmdno, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_TBMDNO,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_INT,
+                                4,
+                                (uint8*)&ffdatahdr->tbmdno,
+                                &len,
+                                uptr);
 
     /* addadd transactionnumber */
-    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_TRANSID, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)&ffdatahdr->transid, &len,
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_TRANSID,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                8,
+                                (uint8*)&ffdatahdr->transid,
+                                &len,
                                 uptr);
 
     /* addadd transactioninnersequentialorder */
-    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_TRANSIND, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_TINYINT, 1, (uint8*)&ffdatahdr->transind, &len,
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_TRANSIND,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_TINYINT,
+                                1,
+                                (uint8*)&ffdatahdr->transind,
+                                &len,
                                 uptr);
 
     /* addadd totallength */
-    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_TOTALLENGTH, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)&ffdatahdr->totallength,
-                                &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_TOTALLENGTH,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                8,
+                                (uint8*)&ffdatahdr->totallength,
+                                &len,
+                                uptr);
 
     /* addadd record length */
-    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_RECLENGTH, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&ffdatahdr->reclength,
-                                &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_RECLENGTH,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_SMALLINT,
+                                2,
+                                (uint8*)&ffdatahdr->reclength,
+                                &len,
+                                uptr);
 
     /* addadd record count */
-    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_RECCOUNT, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&ffdatahdr->reccount,
-                                &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_RECCOUNT,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_SMALLINT,
+                                2,
+                                (uint8*)&ffdatahdr->reccount,
+                                &len,
+                                uptr);
 
     /* add data source */
-    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_FORMATTYPE, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_TINYINT, 1, (uint8*)&ffdatahdr->formattype,
-                                &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_FORMATTYPE,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_TINYINT,
+                                1,
+                                (uint8*)&ffdatahdr->formattype,
+                                &len,
+                                uptr);
 
     /* add type identifier */
-    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_TYPE, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&ffdatahdr->subtype, &len,
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_TYPE,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_SMALLINT,
+                                2,
+                                (uint8*)&ffdatahdr->subtype,
+                                &len,
                                 uptr);
 
     /* addadd endposition offsetamount */
-    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_ORGPOS, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)&ffdatahdr->orgpos, &len,
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_ORGPOS,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                8,
+                                (uint8*)&ffdatahdr->orgpos,
+                                &len,
                                 uptr);
 
     /*
@@ -649,8 +706,13 @@ void fftrail_data_hdrserail(ff_data* ffdatahdr, ffsmgr_state* ffstate)
 
     /* will crc codewriteto filemiddle */
     /* addaddcrc */
-    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_CRC32, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&ffdatahdr->crc32, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_TOKENDATAHDR_ID_CRC32,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_INT,
+                                4,
+                                (uint8*)&ffdatahdr->crc32,
+                                &len,
+                                uptr);
 }
 
 /*
@@ -675,7 +737,9 @@ bool fftrail_data_hdrdeserail(ff_data* ffdatahdr, ffsmgr_state* ffstate)
     {
         /* make gcc happy */
         uptr = tokendata;
-        elog(RLOG_ERROR, "need type %u, bu current type:%u", TRAIL_TOKENDATAHDR_ID_DBMDNO,
+        elog(RLOG_ERROR,
+             "need type %u, bu current type:%u",
+             TRAIL_TOKENDATAHDR_ID_DBMDNO,
              FFTRAIL_INFOTYPE_TOKEN);
     }
     ffdatahdr->dbmdno = CONCAT(get, 16bit)(&tokendata);

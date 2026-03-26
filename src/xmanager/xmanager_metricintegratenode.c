@@ -48,8 +48,10 @@ void xmanager_metricintegratenode_destroy(xmanager_metricnode* metricnode)
 }
 
 /* Serialize integrate node */
-bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode, uint8** blk, int* blksize,
-                                         int* blkstart)
+bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode,
+                                         uint8**              blk,
+                                         int*                 blksize,
+                                         int*                 blkstart)
 {
     bool                          bnew = false;
     int                           len = 0;
@@ -325,13 +327,19 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
 
     /* loadlsn + len */
     msglen += 4;
-    valuelen[0] = snprintf(values[0], 32, "%X/%X", (uint32)(xmetricintegratenode->loadlsn >> 32),
+    valuelen[0] = snprintf(values[0],
+                           32,
+                           "%X/%X",
+                           (uint32)(xmetricintegratenode->loadlsn >> 32),
                            (uint32)(xmetricintegratenode->loadlsn));
     msglen += valuelen[0];
 
     /* synclsn + len */
     msglen += 4;
-    valuelen[1] = snprintf(values[1], 32, "%X/%X", (uint32)(xmetricintegratenode->synclsn >> 32),
+    valuelen[1] = snprintf(values[1],
+                           32,
+                           "%X/%X",
+                           (uint32)(xmetricintegratenode->synclsn >> 32),
                            (uint32)(xmetricintegratenode->synclsn));
     msglen += valuelen[1];
 

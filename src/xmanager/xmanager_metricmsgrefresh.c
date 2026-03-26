@@ -23,7 +23,8 @@
 /* Assemble capture refresh message */
 static bool xmanager_metricmsg_assemblerefreshforcapture(xmanager_metric*     xmetric,
                                                          xmanager_metricnode* xmetricnode,
-                                                         int tableslen, uint8* tables)
+                                                         int                  tableslen,
+                                                         uint8*               tables)
 {
     int                     ivalue = 0;
     int                     msglen = 0;
@@ -109,12 +110,13 @@ static bool xmanager_metricmsg_assemblerefreshforcapture(xmanager_metric*     xm
  *2. Forward refresh message to capture
  *3. Create async message and mount to xscsci node
  */
-bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                     netpacket* npacket)
+bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric,
+                                     netpoolentry*    npoolentry,
+                                     netpacket*       npacket)
 {
-    int errcode = 0;
-    int ivalue = 0;
-    int msglen = 0;
+    int                        errcode = 0;
+    int                        ivalue = 0;
+    int                        msglen = 0;
 
     uint8*                     uptr = NULL;
     char*                      jobname = NULL;
@@ -188,8 +190,8 @@ bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric, netpoolentry* npo
      *  2、Create async wait message
      */
     /* Get xscsci node */
-    fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
-                        xmanager_metricfd2node_cmp);
+    fd2node = dlist_get(
+        xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
     xmetricxscscinode = (xmanager_metricxscscinode*)fd2node->metricnode;
 
     /* Create async wait message */
@@ -223,16 +225,17 @@ xmanager_metricmsg_parserefresh_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
-                                               XMANAGER_MSG_REFRESHCMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(
+        xmetric, npoolentry->wpackets, XMANAGER_MSG_REFRESHCMD, errcode, errormsg);
     return false;
 }
 
 /*
  * Assemble refresh response message
  */
-bool xmanager_metricmsg_assemblerefresh(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                        dlist* dlmsgs)
+bool xmanager_metricmsg_assemblerefresh(xmanager_metric* xmetric,
+                                        netpoolentry*    npoolentry,
+                                        dlist*           dlmsgs)
 {
     xmanager_metricasyncmsg* xmetricasyncmsg = NULL;
     char                     errmsg[2048] = {0};
@@ -247,7 +250,9 @@ bool xmanager_metricmsg_assemblerefresh(xmanager_metric* xmetric, netpoolentry* 
     }
 
     xmetricasyncmsg = (xmanager_metricasyncmsg*)dlmsgs->head->value;
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
-                                               XMANAGER_MSG_REFRESHCMD, xmetricasyncmsg->errcode,
+    return xmanager_metricmsg_assembleerrormsg(xmetric,
+                                               npoolentry->wpackets,
+                                               XMANAGER_MSG_REFRESHCMD,
+                                               xmetricasyncmsg->errcode,
                                                xmetricasyncmsg->errormsg);
 }

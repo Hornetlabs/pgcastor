@@ -7,8 +7,11 @@ typedef struct TRANSLOG_RECVLOG_AMROUTINE
     char*                      desc;
     bool (*msgop)(translog_recvlog* recvwal, PGconn* conn, char* buffer, int blen);
 
-    bool (*endreplication)(translog_recvlog* recvwal, translog_walcontrol* walctrl, PGconn* conn,
-                           bool* endcommand, int* error);
+    bool (*endreplication)(translog_recvlog*    recvwal,
+                           translog_walcontrol* walctrl,
+                           PGconn*              conn,
+                           bool*                endcommand,
+                           int*                 error);
 } translog_recvlog_amroutine;
 
 typedef struct TRANSLOG_RECVLOG_DBTYPEROUTINE
@@ -17,20 +20,21 @@ typedef struct TRANSLOG_RECVLOG_DBTYPEROUTINE
     translog_recvlog_dbtype type;
 
     /* description */
-    char* desc;
+    char*                   desc;
 
     /* getdatalibraryversion */
-    bool (*getdbversion)(PGconn* conn, translog_recvlog_dbversion* version);
+    bool                    (*getdbversion)(PGconn* conn, translog_recvlog_dbversion* version);
 
     /* fde encrypt */
-    bool (*getconfigurefde)(char* conninfo, bool* fde);
+    bool                    (*getconfigurefde)(char* conninfo, bool* fde);
 } translog_recvlog_dbtyperoutine;
 
 /* according todatalibrarytypegetdatalibraryversion */
 bool translog_recvlog_getconfigurefde(translog_recvlog_dbtype type, char* conninfo, bool* fde);
 
 /* according todatalibrarytypegetdatalibraryversion */
-bool translog_recvlog_getdbversion(translog_recvlog_dbtype type, PGconn* conn,
+bool translog_recvlog_getdbversion(translog_recvlog_dbtype     type,
+                                   PGconn*                     conn,
                                    translog_recvlog_dbversion* dbversion);
 
 translog_recvlog_amroutine* translog_recvlog_getroutine(translog_recvlog_dbversion dbversion);

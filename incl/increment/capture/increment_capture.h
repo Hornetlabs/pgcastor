@@ -24,16 +24,16 @@ typedef struct INCREMENT_CAPTURE
     pthread_mutex_t               olrefreshlock;
     dlist*                        olrefreshing;
     /* Tables to do onlinerefresh */
-    dlist*                  olrefreshtables;
-    char                    padding8[CACHELINE_SIZE];
-    metric_capture*         metric;
-    char                    padding9[CACHELINE_SIZE];
-    bigtxn_captureserial*   bigtxnserialstate;
-    char                    padding10[CACHELINE_SIZE];
-    increment_captureflush* bigtxnwritestate;
-    char                    padding11[CACHELINE_SIZE];
-    threads*                threads; /* Thread management */
-    char                    padding12[CACHELINE_SIZE];
+    dlist*                        olrefreshtables;
+    char                          padding8[CACHELINE_SIZE];
+    metric_capture*               metric;
+    char                          padding9[CACHELINE_SIZE];
+    bigtxn_captureserial*         bigtxnserialstate;
+    char                          padding10[CACHELINE_SIZE];
+    increment_captureflush*       bigtxnwritestate;
+    char                          padding11[CACHELINE_SIZE];
+    threads*                      threads; /* Thread management */
+    char                          padding12[CACHELINE_SIZE];
 } increment_capture;
 
 void increment_capture_parserwal_rewindingstat_setemiting(void* privdata);

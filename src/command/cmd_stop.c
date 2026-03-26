@@ -73,13 +73,16 @@ bool cmd_stopproc(void)
         return false;
     }
 
-    snprintf(szMsg, 128, "found %s process:%d, will send sigterm\n", m_typ2stop[g_proctype].desc,
+    snprintf(szMsg,
+             128,
+             "found %s process:%d, will send sigterm\n",
+             m_typ2stop[g_proctype].desc,
              (pid_t)ripplepid);
     cmd_printmsg(szMsg);
     if (0 != kill((pid_t)ripplepid, SIGTERM))
     {
-        snprintf(szMsg, 128, "could not send stop signal (PID:%ld) : %s\n", ripplepid,
-                 strerror(errno));
+        snprintf(
+            szMsg, 128, "could not send stop signal (PID:%ld) : %s\n", ripplepid, strerror(errno));
         cmd_printmsg(szMsg);
         return false;
     }

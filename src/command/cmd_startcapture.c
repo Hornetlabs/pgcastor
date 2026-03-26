@@ -71,29 +71,41 @@ static bool cmd_startcapturethreads(increment_capture* inccapture)
      * begin---------------------------------*/
     /* Threads are started in reverse order of exit, i.e., first started exits last */
     /* Start flush thread */
-    if (false == threads_addpersistthread(
-                     inccapture->threads, &thr_node, THRNODE_IDENTITY_INC_CAPTURE_BIGTXNFLUSH,
-                     inccapture->persistno, (void*)inccapture->bigtxnwritestate, NULL, NULL,
-                     bigtxn_captureflush_main))
+    if (false == threads_addpersistthread(inccapture->threads,
+                                          &thr_node,
+                                          THRNODE_IDENTITY_INC_CAPTURE_BIGTXNFLUSH,
+                                          inccapture->persistno,
+                                          (void*)inccapture->bigtxnwritestate,
+                                          NULL,
+                                          NULL,
+                                          bigtxn_captureflush_main))
     {
         elog(RLOG_WARNING, "add capture increment bigtxn flush persist to threads error");
         return false;
     }
 
     /* Start big transaction serialization thread */
-    if (false == threads_addpersistthread(
-                     inccapture->threads, &thr_node, THRNODE_IDENTITY_INC_CAPTURE_BIGTXNSERIAL,
-                     inccapture->persistno, (void*)inccapture->bigtxnserialstate, NULL, NULL,
-                     bigtxn_captureserial_main))
+    if (false == threads_addpersistthread(inccapture->threads,
+                                          &thr_node,
+                                          THRNODE_IDENTITY_INC_CAPTURE_BIGTXNSERIAL,
+                                          inccapture->persistno,
+                                          (void*)inccapture->bigtxnserialstate,
+                                          NULL,
+                                          NULL,
+                                          bigtxn_captureserial_main))
     {
         elog(RLOG_WARNING, "add capture increment bigtxn serial persist to threads error");
         return false;
     }
 
     /* Start increment flush thread */
-    if (false == threads_addpersistthread(inccapture->threads, &thr_node,
-                                          THRNODE_IDENTITY_INC_CAPTURE_FLUSH, inccapture->persistno,
-                                          (void*)inccapture->writestate, NULL, NULL,
+    if (false == threads_addpersistthread(inccapture->threads,
+                                          &thr_node,
+                                          THRNODE_IDENTITY_INC_CAPTURE_FLUSH,
+                                          inccapture->persistno,
+                                          (void*)inccapture->writestate,
+                                          NULL,
+                                          NULL,
                                           increment_captureflush_main))
     {
         elog(RLOG_WARNING, "add capture increment flush persist to threads error");
@@ -101,39 +113,55 @@ static bool cmd_startcapturethreads(increment_capture* inccapture)
     }
 
     /* Start increment serialization thread */
-    if (false == threads_addpersistthread(inccapture->threads, &thr_node,
+    if (false == threads_addpersistthread(inccapture->threads,
+                                          &thr_node,
                                           THRNODE_IDENTITY_INC_CAPTURE_SERIAL,
-                                          inccapture->persistno, (void*)inccapture->serialstate,
-                                          NULL, NULL, increment_captureserial_main))
+                                          inccapture->persistno,
+                                          (void*)inccapture->serialstate,
+                                          NULL,
+                                          NULL,
+                                          increment_captureserial_main))
     {
         elog(RLOG_WARNING, "add capture increment serial persist to threads error");
         return false;
     }
 
     /* Start parser thread */
-    if (false == threads_addpersistthread(inccapture->threads, &thr_node,
+    if (false == threads_addpersistthread(inccapture->threads,
+                                          &thr_node,
                                           THRNODE_IDENTITY_INC_CAPTURE_PARSER,
-                                          inccapture->persistno, (void*)inccapture->decodingctx,
-                                          NULL, NULL, parserwork_wal_main))
+                                          inccapture->persistno,
+                                          (void*)inccapture->decodingctx,
+                                          NULL,
+                                          NULL,
+                                          parserwork_wal_main))
     {
         elog(RLOG_WARNING, "add capture increment parser persist to threads error");
         return false;
     }
 
     /* Start walwork thread */
-    if (false == threads_addpersistthread(inccapture->threads, &thr_node,
+    if (false == threads_addpersistthread(inccapture->threads,
+                                          &thr_node,
                                           THRNODE_IDENTITY_INC_CAPTURE_LOADRECORD,
-                                          inccapture->persistno, (void*)inccapture->splitwalctx,
-                                          NULL, NULL, splitwork_wal_main))
+                                          inccapture->persistno,
+                                          (void*)inccapture->splitwalctx,
+                                          NULL,
+                                          NULL,
+                                          splitwork_wal_main))
     {
         elog(RLOG_WARNING, "add capture increment splitwal persist to threads error");
         return false;
     }
 
     /* Start metric thread */
-    if (false == threads_addpersistthread(inccapture->threads, &thr_node,
-                                          THRNODE_IDENTITY_CAPTURE_METRIC, inccapture->persistno,
-                                          (void*)inccapture->metric, NULL, NULL,
+    if (false == threads_addpersistthread(inccapture->threads,
+                                          &thr_node,
+                                          THRNODE_IDENTITY_CAPTURE_METRIC,
+                                          inccapture->persistno,
+                                          (void*)inccapture->metric,
+                                          NULL,
+                                          NULL,
                                           metric_capture_main))
     {
         elog(RLOG_WARNING, "add capture increment metric persist to threads error");
@@ -158,9 +186,8 @@ static void cmd_startcapture_removeonlinerefresh(void* pinccapture, void* polref
 }
 
 /* Build onlinerefresh response packet to xmanager */
-static void cmd_startcaputre_assembleolrefreshpacket(increment_capture* inccapture,
-                                                     refresh_tables* rtables, bool result,
-                                                     int errcode, char* msg)
+static void cmd_startcaputre_assembleolrefreshpacket(
+    increment_capture* inccapture, refresh_tables* rtables, bool result, int errcode, char* msg)
 {
     /*
      * 1. Build network packet
@@ -359,8 +386,8 @@ static bool cmd_startcapture_startonlinerefresh(increment_capture* inccapture)
             /* Build onlinerefresh failure message */
             osal_thread_unlock(&inccapture->olrefreshlock);
             snprintf(errmsg, 1024, "ERROR: can not rebuild refresh tables.");
-            cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_NOENT,
-                                                     errmsg);
+            cmd_startcaputre_assembleolrefreshpacket(
+                inccapture, rtables, false, ERROR_NOENT, errmsg);
             refresh_freetables(rtables);
             return true;
         }
@@ -398,8 +425,8 @@ static bool cmd_startcapture_startonlinerefresh(increment_capture* inccapture)
             elog(RLOG_WARNING, "%s, repeat table when do online refresh", errmsg);
             osal_thread_unlock(&inccapture->olrefreshlock);
             parserwork_stat_setresume(inccapture->decodingctx);
-            cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_MSGEXIST,
-                                                     errmsg);
+            cmd_startcaputre_assembleolrefreshpacket(
+                inccapture, rtables, false, ERROR_MSGEXIST, errmsg);
             refresh_freetables(rtables);
             return true;
         }
@@ -535,21 +562,27 @@ static bool cmd_startcapture_startonlinerefresh(increment_capture* inccapture)
     osal_thread_unlock(&inccapture->olrefreshlock);
 
     /* Register and start onlinerefresh capture management thread */
-    if (false ==
-        threads_addsubmanger(inccapture->threads, THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_MGR,
-                             inccapture->persistno, &olcapture->thrsmgr, (void*)olcapture,
-                             onlinerefresh_capture_destroy, NULL, onlinerefresh_capture_main))
+    if (false == threads_addsubmanger(inccapture->threads,
+                                      THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_MGR,
+                                      inccapture->persistno,
+                                      &olcapture->thrsmgr,
+                                      (void*)olcapture,
+                                      onlinerefresh_capture_destroy,
+                                      NULL,
+                                      onlinerefresh_capture_main))
     {
         snprintf(errmsg, 1024, "ERROR: start onlinerefresh work threads error.");
         elog(RLOG_WARNING, errmsg);
-        cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_STARTTHREAD,
-                                                 errmsg);
+        cmd_startcaputre_assembleolrefreshpacket(
+            inccapture, rtables, false, ERROR_STARTTHREAD, errmsg);
 
         /*
          * 1. Remove onlinerefresh from increment capture
          * 2. Remove onlinerefresh transaction from increment->parser thread
          */
-        dlist_deletebyvalue(inccapture->olrefreshing, olcapture, onlinerefresh_capture_cmp,
+        dlist_deletebyvalue(inccapture->olrefreshing,
+                            olcapture,
+                            onlinerefresh_capture_cmp,
                             onlinerefresh_capture_destroy);
 
         /* Delete onlinerefresh */
@@ -810,9 +843,13 @@ bool cmd_startcapture(void)
     if (NULL != rcapture)
     {
         /* Register refresh management thread */
-        if (false == threads_addsubmanger(inccapture->threads, THRNODE_IDENTITY_CAPTURE_REFRESH_MGR,
-                                          inccapture->persistno, &rcapture->thrsmgr,
-                                          (void*)rcapture, refresh_capture_free, NULL,
+        if (false == threads_addsubmanger(inccapture->threads,
+                                          THRNODE_IDENTITY_CAPTURE_REFRESH_MGR,
+                                          inccapture->persistno,
+                                          &rcapture->thrsmgr,
+                                          (void*)rcapture,
+                                          refresh_capture_free,
+                                          NULL,
                                           refresh_capture_main))
         {
             bret = false;
@@ -893,8 +930,10 @@ bool cmd_startcapture(void)
          (uint32)(inccapture->writestate->base.restartlsn >> 32),
          (uint32)inccapture->writestate->base.restartlsn,
          (uint32)(inccapture->writestate->base.confirmedlsn >> 32),
-         (uint32)inccapture->writestate->base.confirmedlsn, inccapture->writestate->base.fileid,
-         inccapture->writestate->base.fileoffset, inccapture->writestate->base.curtlid);
+         (uint32)inccapture->writestate->base.confirmedlsn,
+         inccapture->writestate->base.fileid,
+         inccapture->writestate->base.fileoffset,
+         inccapture->writestate->base.curtlid);
 
 cmd_startcapture_done:
 

@@ -68,7 +68,8 @@ static const pg_conv_map maps[] = {
     {LATIN7, &iso8859_13_to_unicode_tree, &iso8859_13_from_unicode_tree}, /* ISO-8859-13 Latin 7 */
     {LATIN8, &iso8859_14_to_unicode_tree, &iso8859_14_from_unicode_tree}, /* ISO-8859-14 Latin 8 */
     {LATIN9, &iso8859_15_to_unicode_tree, &iso8859_15_from_unicode_tree}, /* ISO-8859-15 Latin 9 */
-    {LATIN10, &iso8859_16_to_unicode_tree,
+    {LATIN10,
+     &iso8859_16_to_unicode_tree,
      &iso8859_16_from_unicode_tree}, /* ISO-8859-16 Latin 10 */
     {ISO_8859_5, &iso8859_5_to_unicode_tree, &iso8859_5_from_unicode_tree}, /* ISO-8859-5 */
     {ISO_8859_6, &iso8859_6_to_unicode_tree, &iso8859_6_from_unicode_tree}, /* ISO-8859-6 */

@@ -53,9 +53,12 @@ pg_parser_Datum int2vectorout(pg_parser_Datum attr, pg_parser_extraTypoutInfo* i
 {
     bool                  is_toast = false;
     bool                  need_free = false;
-    pg_parser_int2vector* int2Array = (pg_parser_int2vector*)pg_parser_detoast_datum_packed(
-        (struct pg_parser_varlena*)attr, &is_toast, &need_free, info->zicinfo->dbtype,
-        info->zicinfo->dbversion);
+    pg_parser_int2vector* int2Array =
+        (pg_parser_int2vector*)pg_parser_detoast_datum_packed((struct pg_parser_varlena*)attr,
+                                                              &is_toast,
+                                                              &need_free,
+                                                              info->zicinfo->dbtype,
+                                                              info->zicinfo->dbversion);
     int32_t num, nnums = int2Array->dim1;
     char*   rp;
     char*   result;

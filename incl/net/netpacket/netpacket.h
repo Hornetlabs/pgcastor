@@ -3,11 +3,11 @@
 
 typedef struct NETPACKET
 {
-    int offset;  /* meaning varies by context:
-                  * when reading: number of bytes already read
-                  * when writing: number of bytes already written
-                  */
-    int    used; /* total data length */
+    int    offset; /* meaning varies by context:
+                    * when reading: number of bytes already read
+                    * when writing: number of bytes already written
+                    */
+    int    used;   /* total data length */
     int    max;
     uint8* data;
 } netpacket;

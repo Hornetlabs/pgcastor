@@ -5,21 +5,25 @@
 #include "sysdict/pg_parser_sysdict_pg_type.h"
 
 #define SYSDICT_INVALID_COUNT -1
-#define SYSDICT_INVALID_OID -1
-#define SYSDICT_MCXT NULL
+#define SYSDICT_INVALID_OID   -1
+#define SYSDICT_MCXT          NULL
 
 static int32_t getcount_from_pgclass_by_relfilenode(pg_parser_sysdicts* sysdict,
                                                     uint32_t            relfilenode);
-static char*   getname_from_sysdict_by_oid(pg_parser_sysdicts* sysdict, uint32_t oid,
-                                           pg_parser_sysdict_type sysdict_type);
+static char* getname_from_sysdict_by_oid(pg_parser_sysdicts*    sysdict,
+                                         uint32_t               oid,
+                                         pg_parser_sysdict_type sysdict_type);
 
-static pg_parser_sysdict_pgattributes* get_attr_by_oid(pg_parser_sysdicts* sysdict, uint32_t oid,
-                                                       int16_t seqnum);
+static pg_parser_sysdict_pgattributes* get_attr_by_oid(pg_parser_sysdicts* sysdict,
+                                                       uint32_t            oid,
+                                                       int16_t             seqnum);
 
-static int32_t getcount_from_sysdict_by_oid(pg_parser_sysdicts* sysdict, uint32_t oid,
+static int32_t getcount_from_sysdict_by_oid(pg_parser_sysdicts*    sysdict,
+                                            uint32_t               oid,
                                             pg_parser_sysdict_type sysdict_type);
 
-bool pg_parser_sysdict_getTableInfo_byoid(uint32_t oid, pg_parser_sysdicts* sysdict,
+bool pg_parser_sysdict_getTableInfo_byoid(uint32_t                     oid,
+                                          pg_parser_sysdicts*          sysdict,
                                           pg_parser_sysdict_tableInfo* tbinfo)
 {
     int32_t  count = SYSDICT_INVALID_COUNT;
@@ -53,7 +57,8 @@ bool pg_parser_sysdict_getTableInfo_byoid(uint32_t oid, pg_parser_sysdicts* sysd
     tbinfo->scname =
         getname_from_sysdict_by_oid(sysdict, temp_nspoid, PG_PARSER_SYSDICT_PG_NAMESPACE_TYPE);
     tbinfo->needzic = false;
-    if (!pg_parser_mcxt_malloc(SYSDICT_MCXT, (void**)&(tbinfo->pgattr),
+    if (!pg_parser_mcxt_malloc(SYSDICT_MCXT,
+                               (void**)&(tbinfo->pgattr),
                                (tbinfo->natts) * sizeof(pg_parser_sysdict_pgattributes*)))
     {
         return false;
@@ -69,7 +74,8 @@ bool pg_parser_sysdict_getTableInfo_byoid(uint32_t oid, pg_parser_sysdicts* sysd
     return true;
 }
 
-bool pg_parser_sysdict_getTableInfo(uint32_t record_relfilenode, pg_parser_sysdicts* sysdict,
+bool pg_parser_sysdict_getTableInfo(uint32_t                     record_relfilenode,
+                                    pg_parser_sysdicts*          sysdict,
                                     pg_parser_sysdict_tableInfo* tbinfo)
 {
     int32_t  count = SYSDICT_INVALID_COUNT;
@@ -113,7 +119,8 @@ bool pg_parser_sysdict_getTableInfo(uint32_t record_relfilenode, pg_parser_sysdi
         return false;
     }
     tbinfo->needzic = false;
-    if (!pg_parser_mcxt_malloc(SYSDICT_MCXT, (void**)&(tbinfo->pgattr),
+    if (!pg_parser_mcxt_malloc(SYSDICT_MCXT,
+                               (void**)&(tbinfo->pgattr),
                                (tbinfo->natts) * sizeof(pg_parser_sysdict_pgattributes*)))
     {
         printf("\nerror in tbinfo 6\n");
@@ -131,7 +138,8 @@ bool pg_parser_sysdict_getTableInfo(uint32_t record_relfilenode, pg_parser_sysdi
     return true;
 }
 
-bool pg_parser_sysdict_getTypeInfo(uint32_t oid, pg_parser_sysdicts* sysdict,
+bool pg_parser_sysdict_getTypeInfo(uint32_t                    oid,
+                                   pg_parser_sysdicts*         sysdict,
                                    pg_parser_sysdict_TypeInfo* typinfo)
 {
     int32_t count = SYSDICT_INVALID_COUNT;
@@ -176,8 +184,10 @@ pg_parser_sysdict_pgtype* pg_parser_sysdict_getSubTypeByRange(uint32_t          
                                             sysdict);
 }
 
-bool pg_parser_sysdict_getProcInfoByOid(uint32_t oid, pg_parser_sysdicts* sysdict, char** proname,
-                                        char** nspname)
+bool pg_parser_sysdict_getProcInfoByOid(uint32_t            oid,
+                                        pg_parser_sysdicts* sysdict,
+                                        char**              proname,
+                                        char**              nspname)
 {
     int32_t count = SYSDICT_INVALID_COUNT;
 
@@ -187,9 +197,9 @@ bool pg_parser_sysdict_getProcInfoByOid(uint32_t oid, pg_parser_sysdicts* sysdic
         return false;
     }
     *proname = sysdict->m_pg_proc.m_pg_proc[count].proname.data;
-    *nspname =
-        getname_from_sysdict_by_oid(sysdict, sysdict->m_pg_proc.m_pg_proc[count].pronamespace,
-                                    PG_PARSER_SYSDICT_PG_NAMESPACE_TYPE);
+    *nspname = getname_from_sysdict_by_oid(sysdict,
+                                           sysdict->m_pg_proc.m_pg_proc[count].pronamespace,
+                                           PG_PARSER_SYSDICT_PG_NAMESPACE_TYPE);
     return true;
 }
 
@@ -205,78 +215,6 @@ bool pg_parser_sysdict_getEnumNameByOid(uint32_t oid, pg_parser_sysdicts* sysdic
         return true;
     }
 }
-
-#if 0
-bool pg_parser_sysdict_getTypeNameByOid(uint32_t oid,
-                                          pg_parser_sysdict_pgtype_dict *sysdict_pg_type,
-                                          char **typname)
-{
-    pg_parser_sysdicts temp_sysdict = {'\0'};
-    temp_sysdict.m_pg_type.m_count = sysdict_pg_type->m_count;
-    temp_sysdict.m_pg_type.m_pg_type = sysdict_pg_type->m_pg_type;
-
-    *typname = getname_from_sysdict_by_oid(&temp_sysdict,
-                                           oid,
-                                           PG_PARSER_SYSDICT_PG_TYPE_TYPE);
-    if (!(*typname))
-        return false;
-    else
-        return true;
-}
-
-bool pg_parser_sysdict_getRelNameByOid(uint32_t oid,
-                                          pg_parser_sysdict_pgclass_dict *sysdict_pg_class,
-                                          char **relname)
-{
-    pg_parser_sysdicts temp_sysdict = {'\0'};
-    temp_sysdict.m_pg_class.m_count = sysdict_pg_class->m_count;
-    temp_sysdict.m_pg_class.m_pg_class = sysdict_pg_class->m_pg_class;
-
-    *relname = getname_from_sysdict_by_oid(&temp_sysdict,
-                                           oid,
-                                           PG_PARSER_SYSDICT_PG_CLASS_TYPE);
-    if (!(*relname))
-        return false;
-    else
-        return true;
-}
-
-bool pg_parser_sysdict_getNspidByRelid(uint32_t relid,
-                                          pg_parser_sysdict_pgclass_dict *sysdict_pg_class,
-                                          uint32_t *nspid)
-{
-    pg_parser_sysdicts temp_sysdict = {'\0'};
-    int32_t count = SYSDICT_INVALID_COUNT;
-    temp_sysdict.m_pg_class.m_count = sysdict_pg_class->m_count;
-    temp_sysdict.m_pg_class.m_pg_class = sysdict_pg_class->m_pg_class;
-
-    count = getcount_from_sysdict_by_oid(&temp_sysdict,
-                                          relid,
-                                          PG_PARSER_SYSDICT_PG_CLASS_TYPE);
-    if (SYSDICT_INVALID_COUNT == count)
-        return false;
-
-    *nspid = sysdict_pg_class->m_pg_class[count].relnamespace;
-    return true;
-}
-
-bool pg_parser_sysdict_getNspNameByOid(uint32_t oid,
-                                          pg_parser_sysdict_pgnamespace_dict *sysdict_pg_namespace,
-                                          char **nspname)
-{
-    pg_parser_sysdicts temp_sysdict = {'\0'};
-    temp_sysdict.m_pg_namespace.m_count = sysdict_pg_namespace->m_count;
-    temp_sysdict.m_pg_namespace.m_pg_namespace = sysdict_pg_namespace->m_pg_namespace;
-
-    *nspname = getname_from_sysdict_by_oid(&temp_sysdict,
-                                           oid,
-                                           PG_PARSER_SYSDICT_PG_NAMESPACE_TYPE);
-    if (!(*nspname))
-        return false;
-    else
-        return true;
-}
-#endif
 
 static int32_t getcount_from_pgclass_by_relfilenode(pg_parser_sysdicts* sysdict,
                                                     uint32_t            relfilenode)
@@ -298,7 +236,8 @@ static int32_t getcount_from_pgclass_by_relfilenode(pg_parser_sysdicts* sysdict,
 }
 
 /* Process records where only one record will match */
-static char* getname_from_sysdict_by_oid(pg_parser_sysdicts* sysdict, uint32_t oid,
+static char* getname_from_sysdict_by_oid(pg_parser_sysdicts*    sysdict,
+                                         uint32_t               oid,
                                          pg_parser_sysdict_type sysdict_type)
 {
     int32_t count = getcount_from_sysdict_by_oid(sysdict, oid, sysdict_type);
@@ -337,7 +276,8 @@ static char* getname_from_sysdict_by_oid(pg_parser_sysdicts* sysdict, uint32_t o
     return NULL;
 }
 
-static int32_t getcount_from_sysdict_by_oid(pg_parser_sysdicts* sysdict, uint32_t oid,
+static int32_t getcount_from_sysdict_by_oid(pg_parser_sysdicts*    sysdict,
+                                            uint32_t               oid,
                                             pg_parser_sysdict_type sysdict_type)
 {
     int32_t i = 0;
@@ -410,8 +350,9 @@ static int32_t getcount_from_sysdict_by_oid(pg_parser_sysdicts* sysdict, uint32_
     return SYSDICT_INVALID_COUNT;
 }
 
-static pg_parser_sysdict_pgattributes* get_attr_by_oid(pg_parser_sysdicts* sysdict, uint32_t oid,
-                                                       int16_t seqnum)
+static pg_parser_sysdict_pgattributes* get_attr_by_oid(pg_parser_sysdicts* sysdict,
+                                                       uint32_t            oid,
+                                                       int16_t             seqnum)
 {
     int32_t i = 0;
     for (i = 0; i < sysdict->m_pg_attribute.m_count; i++)

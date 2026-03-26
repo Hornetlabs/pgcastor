@@ -15,15 +15,18 @@
 /* generate empty transaction log file */
 static bool translog_recvpglog_initemptywalfile(translog_recvlog* recvwal)
 {
-    uint64 segno = 0;
-    char   xlogfile[MAXPATH] = {0};
-    char   blkdata[XLOG_BLKSIZE] = {0};
+    uint64      segno = 0;
+    char        xlogfile[MAXPATH] = {0};
+    char        blkdata[XLOG_BLKSIZE] = {0};
 
     struct stat st;
 
     segno = PGWALBYTETOSEG(recvwal->startpos, recvwal->segsize);
-    snprintf(xlogfile, MAXPATH, "%s/%08X%08X%08X", /* directory/timeline segno size */
-             recvwal->data, recvwal->tli,
+    snprintf(xlogfile,
+             MAXPATH,
+             "%s/%08X%08X%08X", /* directory/timeline segno size */
+             recvwal->data,
+             recvwal->tli,
              (uint32)((segno) / PGWALSEGMENTSPERXLOGID(recvwal->segsize)),
              (uint32)((segno) % PGWALSEGMENTSPERXLOGID(recvwal->segsize)));
 
@@ -42,8 +45,11 @@ static bool translog_recvpglog_initemptywalfile(translog_recvlog* recvwal)
     }
 
     /* write empty file */
-    if (false == osal_create_file_with_size(xlogfile, O_RDWR | O_CREAT | O_EXCL | BINARY,
-                                            recvwal->segsize, XLOG_BLKSIZE, (uint8*)blkdata))
+    if (false == osal_create_file_with_size(xlogfile,
+                                            O_RDWR | O_CREAT | O_EXCL | BINARY,
+                                            recvwal->segsize,
+                                            XLOG_BLKSIZE,
+                                            (uint8*)blkdata))
     {
         elog(RLOG_WARNING, "create empty file %s error", xlogfile);
         return false;
@@ -64,8 +70,11 @@ static bool translog_recvpglog_openwalfile(translog_recvlog* recvwal)
         return false;
     }
 
-    snprintf(xlogfile, MAXPATH, "%s/%08X%08X%08X", /* directory/timeline segno size */
-             recvwal->data, recvwal->tli,
+    snprintf(xlogfile,
+             MAXPATH,
+             "%s/%08X%08X%08X", /* directory/timeline segno size */
+             recvwal->data,
+             recvwal->tli,
              (uint32)((recvwal->segno) / PGWALSEGMENTSPERXLOGID(recvwal->segsize)),
              (uint32)((recvwal->segno) % PGWALSEGMENTSPERXLOGID(recvwal->segsize)));
 
@@ -89,14 +98,18 @@ static bool translog_recvpglog_parsenewpos(PGresult* res, TimeLineID* ptli, XLog
         elog(RLOG_WARNING,
              "unexpected result set after end-of-timeline: got %d rows and %d fields, expected %d "
              "rows and %d fields",
-             PQntuples(res), PQnfields(res), 1, 2);
+             PQntuples(res),
+             PQnfields(res),
+             1,
+             2);
         return false;
     }
 
     *ptli = atoi(PQgetvalue(res, 0, 0));
     if (sscanf(PQgetvalue(res, 0, 1), "%X/%X", &xlogid, &xrecoff) != 2)
     {
-        elog(RLOG_WARNING, "could not parse next timeline's starting point %s",
+        elog(RLOG_WARNING,
+             "could not parse next timeline's starting point %s",
              PQgetvalue(res, 0, 1));
         return false;
     }
@@ -132,8 +145,11 @@ static bool translog_recvpglog_datamsg(translog_recvlog* recvwal, char* buffer, 
 
     if (recvwal->startpos != datastartlsn)
     {
-        elog(RLOG_WARNING, "got stream lsn %08X/%08X, expected %08X/%08X",
-             (uint32)(datastartlsn >> 32), (uint32)datastartlsn, (uint32)(recvwal->startpos >> 32),
+        elog(RLOG_WARNING,
+             "got stream lsn %08X/%08X, expected %08X/%08X",
+             (uint32)(datastartlsn >> 32),
+             (uint32)datastartlsn,
+             (uint32)(recvwal->startpos >> 32),
              (uint32)recvwal->startpos);
 
         return false;
@@ -204,8 +220,10 @@ static bool translog_recvpglog_datamsg(translog_recvlog* recvwal, char* buffer, 
 /*
  * heartbeat
  */
-static bool translog_recvpglog_keepalivemsg(translog_recvlog* recvwal, PGconn* conn, char* buffer,
-                                            int blen)
+static bool translog_recvpglog_keepalivemsg(translog_recvlog* recvwal,
+                                            PGconn*           conn,
+                                            char*             buffer,
+                                            int               blen)
 {
     /*
      * source message format:
@@ -278,8 +296,11 @@ bool translog_recvpglog_getpgversion(PGconn* conn, translog_recvlog_dbversion* d
  *      when source ends streaming replication, resultstatus changes to PGRES_COPY_IN,
  *      so need to check resultstatus here
  */
-bool translog_recvpglog_endreplication(translog_recvlog* recvwal, translog_walcontrol* walctrl,
-                                       PGconn* conn, bool* endcommand, int* error)
+bool translog_recvpglog_endreplication(translog_recvlog*    recvwal,
+                                       translog_walcontrol* walctrl,
+                                       PGconn*              conn,
+                                       bool*                endcommand,
+                                       int*                 error)
 {
     XLogRecPtr startpos = InvalidXLogRecPtr;
     TimeLineID tli = InvalidTimeLineID;
@@ -332,8 +353,11 @@ bool translog_recvpglog_endreplication(translog_recvlog* recvwal, translog_walco
         /* write control file */
         translog_walcontrol_flush(walctrl, recvwal->data);
 
-        elog(RLOG_WARNING, "receivewal will shift replication timeline:%u, pos:%08X/%08X",
-             recvwal->tli, (uint32)(recvwal->startpos >> 32), (uint32)recvwal->startpos);
+        elog(RLOG_WARNING,
+             "receivewal will shift replication timeline:%u, pos:%08X/%08X",
+             recvwal->tli,
+             (uint32)(recvwal->startpos >> 32),
+             (uint32)recvwal->startpos);
     }
     else if (PGRES_COMMAND_OK == PQresultStatus(res))
     {
@@ -341,14 +365,19 @@ bool translog_recvpglog_endreplication(translog_recvlog* recvwal, translog_walco
         *endcommand = true;
         recvwal->senddone = 0;
 
-        elog(RLOG_INFO, "stop replication at timeline:%u, pos:%08X/%08X, database timelie:%u",
-             recvwal->tli, (uint32)(recvwal->startpos >> 32), (uint32)recvwal->startpos,
+        elog(RLOG_INFO,
+             "stop replication at timeline:%u, pos:%08X/%08X, database timelie:%u",
+             recvwal->tli,
+             (uint32)(recvwal->startpos >> 32),
+             (uint32)recvwal->startpos,
              recvwal->dbtli);
     }
     else
     {
-        elog(RLOG_WARNING, "unexpected termination of replication stream: %s, %s",
-             PQresultErrorMessage(res), PQresultErrorField(res, PG_DIAG_SQLSTATE));
+        elog(RLOG_WARNING,
+             "unexpected termination of replication stream: %s, %s",
+             PQresultErrorMessage(res),
+             PQresultErrorField(res, PG_DIAG_SQLSTATE));
 
         *error = ERROR_SUCCESS;
         if (0 == strcmp(PG_ERROR_FILEREMOVED, PQresultErrorField(res, PG_DIAG_SQLSTATE)))

@@ -162,8 +162,8 @@ bool netserver_create(netserver* netserver)
             domain = AF_INET;
             /* Get address corresponding to host */
             rmemset1(&addr, 0, 0, sizeof(struct sockaddr_in));
-            bret = osal_host2sockaddr(&addr, nsvrhost->host, netserver->port, domain, SOCK_STREAM,
-                                      IPPROTO_TCP, 1);
+            bret = osal_host2sockaddr(
+                &addr, nsvrhost->host, netserver->port, domain, SOCK_STREAM, IPPROTO_TCP, 1);
             if (false == bret)
             {
                 elog(RLOG_WARNING, "can not get addr info, %s", strerror(errno));
@@ -325,19 +325,34 @@ bool netserver_desc(netserver* netserver)
             return netserver->callback(netserver, nsock);
         }
 
-        osal_setsockopt(nsock, SOL_SOCKET, SO_KEEPALIVE, (char*)&netserver->keepalive,
+        osal_setsockopt(nsock,
+                        SOL_SOCKET,
+                        SO_KEEPALIVE,
+                        (char*)&netserver->keepalive,
                         sizeof(netserver->keepalive));
 
-        osal_setsockopt(nsock, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&netserver->keepaliveidle,
+        osal_setsockopt(nsock,
+                        IPPROTO_TCP,
+                        TCP_KEEPIDLE,
+                        (char*)&netserver->keepaliveidle,
                         sizeof(netserver->keepaliveidle));
 
-        osal_setsockopt(nsock, IPPROTO_TCP, TCP_KEEPINTVL, (char*)&netserver->keepaliveinterval,
+        osal_setsockopt(nsock,
+                        IPPROTO_TCP,
+                        TCP_KEEPINTVL,
+                        (char*)&netserver->keepaliveinterval,
                         sizeof(netserver->keepaliveinterval));
 
-        osal_setsockopt(nsock, IPPROTO_TCP, TCP_KEEPCNT, (char*)&netserver->keepalivecount,
+        osal_setsockopt(nsock,
+                        IPPROTO_TCP,
+                        TCP_KEEPCNT,
+                        (char*)&netserver->keepalivecount,
                         sizeof(netserver->keepalivecount));
 
-        osal_setsockopt(nsock, IPPROTO_TCP, TCP_USER_TIMEOUT, (char*)&netserver->usertimeout,
+        osal_setsockopt(nsock,
+                        IPPROTO_TCP,
+                        TCP_USER_TIMEOUT,
+                        (char*)&netserver->usertimeout,
                         sizeof(netserver->usertimeout));
 
         if (false == netserver->callback(netserver, nsock))

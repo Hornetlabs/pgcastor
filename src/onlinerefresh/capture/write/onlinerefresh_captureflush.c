@@ -177,7 +177,9 @@ void* onlinerefresh_captureflush_main(void* args)
             }
 
             /* Write data */
-            osal_file_pwrite(cflush->fd, (char*)fbuffer->data, fbuffer->maxsize,
+            osal_file_pwrite(cflush->fd,
+                             (char*)fbuffer->data,
+                             fbuffer->maxsize,
                              ((finfo->blknum - 1) * FILE_BUFFER_SIZE));
             osal_file_data_sync(cflush->fd);
         }

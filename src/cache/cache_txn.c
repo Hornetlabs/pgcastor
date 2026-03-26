@@ -47,8 +47,10 @@ stmtcache_add_retry:
         }
         osal_thread_unlock(&stmtcache->mutex_lock);
         usleep(10000);
-        elog(RLOG_DEBUG, "stmtcache full,waiting space, totalnum:%d, maxnum:%d",
-             stmtcache->totalnum, g_transmaxnum);
+        elog(RLOG_DEBUG,
+             "stmtcache full,waiting space, totalnum:%d, maxnum:%d",
+             stmtcache->totalnum,
+             g_transmaxnum);
         goto stmtcache_add_retry;
     }
 

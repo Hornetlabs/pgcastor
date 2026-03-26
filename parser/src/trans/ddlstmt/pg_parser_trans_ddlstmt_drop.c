@@ -9,15 +9,18 @@
 
 void pg_parser_ddl_deleteRecordTrans(pg_parser_translog_systb2ddl*        pg_parser_ddl,
                                      pg_parser_translog_systb2dll_record* current_record,
-                                     pg_parser_ddlstate* ddlstate, int32_t* pg_parser_errno)
+                                     pg_parser_ddlstate*                  ddlstate,
+                                     int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_tbcol_values* record_trans = current_record->m_record;
 
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_CLASS,
-                                   pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                   SYS_CLASS,
+                                   pg_parser_ddl->m_dbtype,
+                                   pg_parser_ddl->m_dbversion))
     {
         char* relkind = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
             "relkind", record_trans->m_old_values, record_trans->m_valueCnt, relkind);
@@ -53,8 +56,10 @@ void pg_parser_ddl_deleteRecordTrans(pg_parser_translog_systb2ddl*        pg_par
             ddlstate->m_inddl = true;
         }
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_INDEX,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_INDEX,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * Delete index.
@@ -68,8 +73,10 @@ void pg_parser_ddl_deleteRecordTrans(pg_parser_translog_systb2ddl*        pg_par
 
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_NAMESPACE,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_NAMESPACE,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * Delete namespace.
@@ -81,8 +88,10 @@ void pg_parser_ddl_deleteRecordTrans(pg_parser_translog_systb2ddl*        pg_par
             "nspname", record_trans->m_old_values, record_trans->m_valueCnt, ddlstate->m_nspname);
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_ATTRDEF,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_ATTRDEF,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * Delete field default value.
@@ -91,16 +100,20 @@ void pg_parser_ddl_deleteRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         uint32_t m_reloid;
         pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
                              "DEBUG, DDL PARSER: capture alter table drop default begin \n");
-        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "adrelid", record_trans->m_old_values, record_trans->m_valueCnt,
-            ddlstate->m_reloid_char);
+        ddlstate->m_reloid_char =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("adrelid",
+                                                         record_trans->m_old_values,
+                                                         record_trans->m_valueCnt,
+                                                         ddlstate->m_reloid_char);
         m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_ALTER_COLUMN_DROP_DEFAULT;
         ddlstate->m_reloid = m_reloid;
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_DATABASE,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_DATABASE,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * Delete database.
@@ -109,42 +122,10 @@ void pg_parser_ddl_deleteRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         ddlstate->m_ddlKind = PG_PARSER_DDL_DATABASE_DROP;
         ddlstate->m_inddl = true;
     }
-#if 0
-    else if (!strcmp(PG_SYSDICT_PG_PROC_NAME, ddl_char_tolower(record_trans->m_base.m_tbname)))
-    {
-        /*
-         * Delete function.
-         *    drop function func_name (type, ...);
-         */
-        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
-                                                                record_trans->m_old_values,
-                                                                record_trans->m_valueCnt,
-                                                                ddlstate->m_reloid_char);
-        ddlstate->m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
-        ddlstate->m_ddlKind = PG_PARSER_DDL_FUNCTION_DROP;
-
-        ddlstate->m_inddl = true;
-    }
-#endif
-// todo trigger
-#if 0
-    else if (!strcmp(PG_SYSDICT_PG_TRIGGER_NAME, ddl_char_tolower(record_trans->m_base.m_tbname)))
-    {
-        /*
-         * Delete trigger.
-         *    drop trigger trigger_name on table_name;
-         */
-        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
-                                                                record_trans->m_old_values,
-                                                                record_trans->m_valueCnt,
-                                                                ddlstate->m_reloid_char);
-        ddlstate->m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
-        ddlstate->m_ddlKind = PG_PARSER_DDL_TRIGGER_DROP;
-        ddlstate->m_inddl = true;
-    }
-#endif
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_TYPE,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_TYPE,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * Start deleting type
@@ -155,15 +136,19 @@ void pg_parser_ddl_deleteRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
             "oid", record_trans->m_old_values, record_trans->m_valueCnt, ddlstate->m_reloid_char);
         ddlstate->m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
-        ddlstate->m_nspname_oid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "typnamespace", record_trans->m_old_values, record_trans->m_valueCnt,
-            ddlstate->m_nspname_oid_char);
+        ddlstate->m_nspname_oid_char =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("typnamespace",
+                                                         record_trans->m_old_values,
+                                                         record_trans->m_valueCnt,
+                                                         ddlstate->m_nspname_oid_char);
         ddlstate->m_ddlKind = PG_PARSER_DDL_TYPE_DROP;
         ddlstate->m_type_item = record_trans;
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_REWRITE,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_REWRITE,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * drop view
@@ -173,14 +158,18 @@ void pg_parser_ddl_deleteRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
                              "DEBUG, DDL PARSER: capture drop view begin \n");
         ddlstate->m_ddlKind = PG_PARSER_DDL_VIEW_DROP;
-        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "ev_class", record_trans->m_old_values, record_trans->m_valueCnt,
-            ddlstate->m_reloid_char);
+        ddlstate->m_reloid_char =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("ev_class",
+                                                         record_trans->m_old_values,
+                                                         record_trans->m_valueCnt,
+                                                         ddlstate->m_reloid_char);
 
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_CONSTRAINT,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_CONSTRAINT,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * alter table drop constraint (foreign key constraint)
@@ -190,20 +179,28 @@ void pg_parser_ddl_deleteRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
                              "DEBUG, DDL PARSER: capture alter table drop constraint begin \n");
         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_ALTER_DROP_CONSTRAINT;
-        ddlstate->m_relname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "conname", current_record->m_record->m_old_values, current_record->m_record->m_valueCnt,
-            ddlstate->m_relname);
-        temp_reloid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "conrelid", current_record->m_record->m_old_values,
-            current_record->m_record->m_valueCnt, temp_reloid);
-        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "conislocal", current_record->m_record->m_old_values,
-            current_record->m_record->m_valueCnt, temp_str);
+        ddlstate->m_relname =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("conname",
+                                                         current_record->m_record->m_old_values,
+                                                         current_record->m_record->m_valueCnt,
+                                                         ddlstate->m_relname);
+        temp_reloid =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("conrelid",
+                                                         current_record->m_record->m_old_values,
+                                                         current_record->m_record->m_valueCnt,
+                                                         temp_reloid);
+        temp_str =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("conislocal",
+                                                         current_record->m_record->m_old_values,
+                                                         current_record->m_record->m_valueCnt,
+                                                         temp_str);
         ddlstate->m_cons_is_local = temp_str[0] == 't' ? true : false;
         ddlstate->m_reloid = strtoul(temp_reloid, NULL, 10);
-        ddlstate->m_nspname_oid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "connamespace", current_record->m_record->m_old_values,
-            current_record->m_record->m_valueCnt, ddlstate->m_nspname_oid_char);
+        ddlstate->m_nspname_oid_char =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("connamespace",
+                                                         current_record->m_record->m_old_values,
+                                                         current_record->m_record->m_valueCnt,
+                                                         ddlstate->m_nspname_oid_char);
 
         ddlstate->m_inddl = true;
     }

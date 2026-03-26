@@ -21,40 +21,40 @@ typedef struct XSYCNH_RESULT
 typedef struct XSYNCH_CONN
 {
     /* connection to xmanager descriptor */
-    int sock;
+    int               sock;
 
     /* error code, interface side */
-    int errcode;
+    int               errcode;
 
     /* connection status */
     xsynchconn_status connstatus;
 
     /* socktype */
-    xsynch_socktype socktype;
+    xsynch_socktype   socktype;
 
     /*
      * tcp keep alive related
      */
-    int keepalive;
-    int keepaliveidle;
-    int keepaliveinterval;
-    int keepalivecount;
-    int usertimeout;
+    int               keepalive;
+    int               keepaliveidle;
+    int               keepaliveinterval;
+    int               keepalivecount;
+    int               usertimeout;
 
-    char host[512];
-    char port[128];
+    char              host[512];
+    char              port[128];
 
     /* send data buffer */
-    xsynch_exbuffer sendmsg;
+    xsynch_exbuffer   sendmsg;
 
     /* receive data buffer */
-    xsynch_exbuffer recvmsg;
+    xsynch_exbuffer   recvmsg;
 
     /* error message */
-    xsynch_exbuffer errmsg;
+    xsynch_exbuffer   errmsg;
 
     /* return result */
-    xsynch_result* result;
+    xsynch_result*    result;
 } xsynch_conn;
 
 #endif

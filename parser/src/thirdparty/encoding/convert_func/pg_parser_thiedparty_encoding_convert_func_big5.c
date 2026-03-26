@@ -71,8 +71,12 @@ static const unsigned short b1c4[][2] = {
     {0xC879, 0x2123}, {0xC87B, 0x2124}, {0xC87D, 0x212A}, {0xC8A2, 0x2152}};
 
 /* Big Five Level 2 Correspondence to CNS 11643-1992 Plane 3 */
-static const unsigned short b2c3[][2] = {{0xF9D6, 0x4337}, {0xF9D7, 0x4F50}, {0xF9D8, 0x444E},
-                                         {0xF9D9, 0x504A}, {0xF9DA, 0x2C5D}, {0xF9DB, 0x3D7E},
+static const unsigned short b2c3[][2] = {{0xF9D6, 0x4337},
+                                         {0xF9D7, 0x4F50},
+                                         {0xF9D8, 0x444E},
+                                         {0xF9D9, 0x504A},
+                                         {0xF9DA, 0x2C5D},
+                                         {0xF9DB, 0x3D7E},
                                          {0xF9DC, 0x4B5C}};
 
 static unsigned short BinarySearchRange(const codes_t* array, int32_t high, unsigned short code)

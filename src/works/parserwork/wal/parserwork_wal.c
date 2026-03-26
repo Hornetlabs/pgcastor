@@ -81,8 +81,8 @@ HTAB* decodingcontext_stat_getsyncdataset(decodingcontext* decodingctx)
 /* Remove onlinerefresh */
 void parserwork_decodingctx_removeonlinerefresh(decodingcontext* ctx, onlinerefresh* onlinerefresh)
 {
-    ctx->onlinerefresh = dlist_deletebyvalue(ctx->onlinerefresh, onlinerefresh, onlinerefresh_cmp,
-                                             onlinerefresh_destroyvoid);
+    ctx->onlinerefresh = dlist_deletebyvalue(
+        ctx->onlinerefresh, onlinerefresh, onlinerefresh_cmp, onlinerefresh_destroyvoid);
 
     if (NULL != ctx->refreshtxn)
     {
@@ -92,8 +92,9 @@ void parserwork_decodingctx_removeonlinerefresh(decodingcontext* ctx, onlinerefr
     }
 }
 
-void parserwork_decodingctx_addonlinerefresh(decodingcontext* ctx, onlinerefresh* onlinerefresh,
-                                             txn* txn)
+void parserwork_decodingctx_addonlinerefresh(decodingcontext* ctx,
+                                             onlinerefresh*   onlinerefresh,
+                                             txn*             txn)
 {
     ctx->onlinerefresh = dlist_put(ctx->onlinerefresh, onlinerefresh);
     ctx->refreshtxn = txn;
@@ -255,10 +256,15 @@ void parserwork_walinitphase2(decodingcontext* decodingctx)
     elog(RLOG_INFO,
          "ripple parser from, redolsn %X/%X, restartlsn %X/%X, last commit lsn:%X/%X, fileid:%lu, "
          "offset:%u, timeline:%u",
-         (uint32)(decodingctx->base.redolsn >> 32), (uint32)decodingctx->base.redolsn,
-         (uint32)(decodingctx->base.restartlsn >> 32), (uint32)decodingctx->base.restartlsn,
-         (uint32)(decodingctx->base.confirmedlsn >> 32), (uint32)decodingctx->base.confirmedlsn,
-         decodingctx->base.fileid, decodingctx->base.fileoffset, decodingctx->base.curtlid);
+         (uint32)(decodingctx->base.redolsn >> 32),
+         (uint32)decodingctx->base.redolsn,
+         (uint32)(decodingctx->base.restartlsn >> 32),
+         (uint32)decodingctx->base.restartlsn,
+         (uint32)(decodingctx->base.confirmedlsn >> 32),
+         (uint32)decodingctx->base.confirmedlsn,
+         decodingctx->base.fileid,
+         decodingctx->base.fileoffset,
+         decodingctx->base.curtlid);
 }
 
 bool parserwork_wal_initfromdb(decodingcontext* decodingctx)
@@ -304,8 +310,10 @@ bool parserwork_wal_initfromdb(decodingcontext* decodingctx)
 
     decodingctx->rewind_ptr->redolsn = checkpoint->redolsn;
 
-    elog(RLOG_INFO, "ripple redolsn fromdb, redolsn %X/%X, timeline:%u",
-         (uint32)(checkpoint->redolsn >> 32), (uint32)checkpoint->redolsn,
+    elog(RLOG_INFO,
+         "ripple redolsn fromdb, redolsn %X/%X, timeline:%u",
+         (uint32)(checkpoint->redolsn >> 32),
+         (uint32)checkpoint->redolsn,
          decodingctx->base.curtlid);
 
     /* Initialize checkpoint node */
@@ -388,9 +396,10 @@ static void parserwork_wal_rewind_ptr(decodingcontext* decodingctx, dlist* recor
                 decodingctx->stat = DECODINGCONTEXT_RUNNING;
                 if (decodingctx->callback.setparserlsn)
                 {
-                    decodingctx->callback.setparserlsn(
-                        decodingctx->privdata, decodingctx->base.confirmedlsn,
-                        decodingctx->base.restartlsn, decodingctx->base.restartlsn);
+                    decodingctx->callback.setparserlsn(decodingctx->privdata,
+                                                       decodingctx->base.confirmedlsn,
+                                                       decodingctx->base.restartlsn,
+                                                       decodingctx->base.restartlsn);
                 }
                 else
                 {
@@ -400,7 +409,8 @@ static void parserwork_wal_rewind_ptr(decodingcontext* decodingctx, dlist* recor
                 elog(RLOG_INFO,
                      "parserwork wal rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, "
                      "confirmedlsn: %X/%X",
-                     (uint32)(decodingctx->base.redolsn >> 32), (uint32)decodingctx->base.redolsn,
+                     (uint32)(decodingctx->base.redolsn >> 32),
+                     (uint32)decodingctx->base.redolsn,
                      (uint32)(decodingctx->base.restartlsn >> 32),
                      (uint32)decodingctx->base.restartlsn,
                      (uint32)(decodingctx->base.confirmedlsn >> 32),
@@ -564,8 +574,9 @@ void* parserwork_wal_main(void* args)
     return NULL;
 }
 
-void parserwork_wal_getparserinfo(decodingcontext* decodingctx, XLogRecPtr* prestartlsn,
-                                  XLogRecPtr* pconfirmlsn)
+void parserwork_wal_getparserinfo(decodingcontext* decodingctx,
+                                  XLogRecPtr*      prestartlsn,
+                                  XLogRecPtr*      pconfirmlsn)
 {
     if (NULL == decodingctx)
     {
@@ -589,9 +600,10 @@ static void parserwork_wal_reload(decodingcontext* decodingctx)
     decodingctx->trans_cache->addtablepattern =
         filter_dataset_initaddtablepattern(decodingctx->trans_cache->addtablepattern);
 
-    decodingctx->trans_cache->hsyncdataset = filter_dataset_reload(
-        decodingctx->trans_cache->sysdicts->by_namespace,
-        decodingctx->trans_cache->sysdicts->by_class, decodingctx->trans_cache->hsyncdataset);
+    decodingctx->trans_cache->hsyncdataset =
+        filter_dataset_reload(decodingctx->trans_cache->sysdicts->by_namespace,
+                              decodingctx->trans_cache->sysdicts->by_class,
+                              decodingctx->trans_cache->hsyncdataset);
     return;
 }
 

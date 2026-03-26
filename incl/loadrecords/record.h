@@ -61,21 +61,21 @@ typedef struct RECORD
 typedef struct RECORDCROSS
 {
     /* uint16 tail length */
-    uint16 rectaillen;
+    uint16  rectaillen;
 
     /* Total length:
      *  trail file: contains header of first crossrecord
      */
-    uint64 totallen;
+    uint64  totallen;
 
     /* How many bytes are needed to assemble a complete record */
-    uint64 remainlen;
+    uint64  remainlen;
 
     /*
      * Data at tail
      *  trail: contains length of one tail
      */
-    uint8 rectail[RECORD_TAIL_LEN];
+    uint8   rectail[RECORD_TAIL_LEN];
 
     record* record;
 } recordcross;

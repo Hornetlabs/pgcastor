@@ -13,9 +13,12 @@ pg_parser_Datum byteaout(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
     bool             is_toast = false;
     bool             need_free = false;
-    pg_parser_bytea* vlena = (pg_parser_bytea*)pg_parser_detoast_datum(
-        (struct pg_parser_varlena*)attr, &is_toast, &need_free, info->zicinfo->dbtype,
-        info->zicinfo->dbversion);
+    pg_parser_bytea* vlena =
+        (pg_parser_bytea*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                  &is_toast,
+                                                  &need_free,
+                                                  info->zicinfo->dbtype,
+                                                  info->zicinfo->dbversion);
     char* result;
     char* rp;
 
@@ -39,7 +42,8 @@ pg_parser_Datum byteaout(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
     /* Print hex format */
     else
     {
-        if (!pg_parser_mcxt_malloc(PGFUNC_VARLENA_MCXT, (void**)&result,
+        if (!pg_parser_mcxt_malloc(PGFUNC_VARLENA_MCXT,
+                                   (void**)&result,
                                    ((int32_t)PG_PARSER_VARSIZE_ANY_EXHDR(vlena)) * 2 + 2 + 1))
         {
             return (pg_parser_Datum)0;
@@ -62,14 +66,16 @@ static char* text_to_cstring(const pg_parser_text* t, pg_parser_extraTypoutInfo*
 {
     pg_parser_text* unpacked = NULL;
     /* must cast away the const, unfortunately */
-    int32_t len = 0;
-    bool    is_toast = false;
-    char*   result;
-    bool    need_free = false;
+    int32_t         len = 0;
+    bool            is_toast = false;
+    char*           result;
+    bool            need_free = false;
 
-    unpacked = (pg_parser_text*)pg_parser_detoast_datum_packed(
-        (struct pg_parser_varlena*)t, &is_toast, &need_free, info->zicinfo->dbtype,
-        info->zicinfo->dbversion);
+    unpacked = (pg_parser_text*)pg_parser_detoast_datum_packed((struct pg_parser_varlena*)t,
+                                                               &is_toast,
+                                                               &need_free,
+                                                               info->zicinfo->dbtype,
+                                                               info->zicinfo->dbversion);
     len = (int32_t)PG_PARSER_VARSIZE_ANY_EXHDR(unpacked);
 
     /* When out-of-line storage is detected, directly return out-of-line storage value */

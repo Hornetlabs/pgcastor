@@ -21,8 +21,13 @@
  * libraryidentifier tbid tableidentifier *dbmdno libraryidentifierin trail filemiddle number output
  * parameter *tbmdno tableidentifierin trail filemiddle number output parameter state closekeyinfo
  */
-bool fftrail_tbmetadata_serial(bool force, Oid dbid, Oid tbid, FullTransactionId xid,
-                               uint32* dbmdno, uint32* tbmdno, void* state)
+bool fftrail_tbmetadata_serial(bool              force,
+                               Oid               dbid,
+                               Oid               tbid,
+                               FullTransactionId xid,
+                               uint32*           dbmdno,
+                               uint32*           tbmdno,
+                               void*             state)
 {
     /*
      * checklookremainsurplusemptybetweenis whetherfullsufficientmostsmalloptimizeneedrequest
@@ -121,13 +126,17 @@ bool fftrail_tbmetadata_serial(bool force, Oid dbid, Oid tbid, FullTransactionId
         fftbmd->columns[pgattrs->attnum - 1].typid = pgattrs->atttypid;
         fftbmd->columns[pgattrs->attnum - 1].flag = 0;
         fftbmd->columns[pgattrs->attnum - 1].num = pgattrs->attnum;
-        rmemcpy1(fftbmd->columns[pgattrs->attnum - 1].column, 0, pgattrs->attname.data,
+        rmemcpy1(fftbmd->columns[pgattrs->attnum - 1].column,
+                 0,
+                 pgattrs->attname.data,
                  strlen(pgattrs->attname.data));
         if (0 < pgattrs->atttypid)
         {
             type = (pg_sysdict_Form_pg_type)ffstate->callback.gettype(ffstate->privdata,
                                                                       pgattrs->atttypid);
-            rmemcpy1(fftbmd->columns[pgattrs->attnum - 1].typename, 0, type->typname.data,
+            rmemcpy1(fftbmd->columns[pgattrs->attnum - 1].typename,
+                     0,
+                     type->typname.data,
                      strlen(type->typname.data));
         }
 
@@ -298,66 +307,110 @@ bool fftrail_tbmetadata_serial(bool force, Oid dbid, Oid tbid, FullTransactionId
 
     /* fillfilldata */
     /* tablenumber */
-    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4,
-                             (uint8*)&fftbmd->tbmdno);
+    fftrail_data_data2buffer(
+        &fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&fftbmd->tbmdno);
 
     /* table oid */
-    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4,
-                             (uint8*)&fftbmd->oid);
+    fftrail_data_data2buffer(
+        &fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&fftbmd->oid);
 
     /* tableidentifier */
-    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2,
+    fftrail_data_data2buffer(&fftbmd->header,
+                             ffstate,
+                             &fbuffer,
+                             FTRAIL_TOKENDATATYPE_SMALLINT,
+                             2,
                              (uint8*)&fftbmd->flag);
 
     /* identity */
-    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_TINYINT, 1,
+    fftrail_data_data2buffer(&fftbmd->header,
+                             ffstate,
+                             &fbuffer,
+                             FTRAIL_TOKENDATATYPE_TINYINT,
+                             1,
                              (uint8*)&fftbmd->identify);
 
     /* tablemiddlelist number */
-    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2,
+    fftrail_data_data2buffer(&fftbmd->header,
+                             ffstate,
+                             &fbuffer,
+                             FTRAIL_TOKENDATATYPE_SMALLINT,
+                             2,
                              (uint8*)&fftbmd->colcnt);
 
     /* table schemainfo */
     tmpcollen = (uint16)strlen(fftbmd->schema);
-    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2,
-                             (uint8*)&tmpcollen);
+    fftrail_data_data2buffer(
+        &fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&tmpcollen);
 
-    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR,
-                             tmpcollen, (uint8*)fftbmd->schema);
+    fftrail_data_data2buffer(&fftbmd->header,
+                             ffstate,
+                             &fbuffer,
+                             FTRAIL_TOKENDATATYPE_STR,
+                             tmpcollen,
+                             (uint8*)fftbmd->schema);
 
     /* table name */
     tmpcollen = (uint16)strlen(fftbmd->table);
-    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2,
-                             (uint8*)&tmpcollen);
+    fftrail_data_data2buffer(
+        &fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&tmpcollen);
 
-    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR,
-                             tmpcollen, (uint8*)fftbmd->table);
+    fftrail_data_data2buffer(&fftbmd->header,
+                             ffstate,
+                             &fbuffer,
+                             FTRAIL_TOKENDATATYPE_STR,
+                             tmpcollen,
+                             (uint8*)fftbmd->table);
 
     /* listinfo */
     for (index = 0; index < fftbmd->colcnt; index++)
     {
         /* listtype */
-        fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4,
+        fftrail_data_data2buffer(&fftbmd->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_INT,
+                                 4,
                                  (uint8*)&fftbmd->columns[index].typid);
 
         /* listidentifier */
-        fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT,
-                                 2, (uint8*)&fftbmd->columns[index].flag);
+        fftrail_data_data2buffer(&fftbmd->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_SMALLINT,
+                                 2,
+                                 (uint8*)&fftbmd->columns[index].flag);
 
         /* listintablemiddle sequentialorder */
-        fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT,
-                                 2, (uint8*)&fftbmd->columns[index].num);
+        fftrail_data_data2buffer(&fftbmd->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_SMALLINT,
+                                 2,
+                                 (uint8*)&fftbmd->columns[index].num);
 
         /* listtypelength */
-        fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4,
+        fftrail_data_data2buffer(&fftbmd->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_INT,
+                                 4,
                                  (uint8*)&fftbmd->columns[index].length);
 
         /* listtyperefineddegree */
-        fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4,
+        fftrail_data_data2buffer(&fftbmd->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_INT,
+                                 4,
                                  (uint8*)&fftbmd->columns[index].precision);
 
         /* listtypecarvedegree */
-        fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4,
+        fftrail_data_data2buffer(&fftbmd->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_INT,
+                                 4,
                                  (uint8*)&fftbmd->columns[index].scale);
 
         /* listtypename lengthinfo */
@@ -370,30 +423,46 @@ bool fftrail_tbmetadata_serial(bool force, Oid dbid, Oid tbid, FullTransactionId
             tmpcollen = (uint16)strlen(fftbmd->columns[index].typename);
         }
 
-        fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT,
-                                 2, (uint8*)&tmpcollen);
+        fftrail_data_data2buffer(&fftbmd->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_SMALLINT,
+                                 2,
+                                 (uint8*)&tmpcollen);
 
         /* already delete listatttypidas 0 */
         if (tmpcollen > 0)
         {
             /* listtypename */
-            fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR,
-                                     tmpcollen, (uint8*)fftbmd->columns[index].typename);
+            fftrail_data_data2buffer(&fftbmd->header,
+                                     ffstate,
+                                     &fbuffer,
+                                     FTRAIL_TOKENDATATYPE_STR,
+                                     tmpcollen,
+                                     (uint8*)fftbmd->columns[index].typename);
         }
 
         /* column name lengthinfo */
         tmpcollen = (uint16)strlen(fftbmd->columns[index].column);
-        fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT,
-                                 2, (uint8*)&tmpcollen);
+        fftrail_data_data2buffer(&fftbmd->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_SMALLINT,
+                                 2,
+                                 (uint8*)&tmpcollen);
 
         /* column name */
-        fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR,
-                                 tmpcollen, (uint8*)fftbmd->columns[index].column);
+        fftrail_data_data2buffer(&fftbmd->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_STR,
+                                 tmpcollen,
+                                 (uint8*)fftbmd->columns[index].column);
     }
 
     /* indexnum */
-    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4,
-                             (uint8*)&indexnum);
+    fftrail_data_data2buffer(
+        &fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&indexnum);
 
     /* inhas index situationlowerputsetindexinnercontent */
     if (0 < indexnum)
@@ -405,30 +474,48 @@ bool fftrail_tbmetadata_serial(bool force, Oid dbid, Oid tbid, FullTransactionId
             pg_sysdict_Form_pg_index index_catalog = index_value->index;
 
             /* indexrelid 4 */
-            fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT,
-                                     4, (uint8*)&index_catalog->indexrelid);
+            fftrail_data_data2buffer(&fftbmd->header,
+                                     ffstate,
+                                     &fbuffer,
+                                     FTRAIL_TOKENDATATYPE_INT,
+                                     4,
+                                     (uint8*)&index_catalog->indexrelid);
 
             /* indisprimary 1 */
-            fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer,
-                                     FTRAIL_TOKENDATATYPE_TINYINT, 1,
+            fftrail_data_data2buffer(&fftbmd->header,
+                                     ffstate,
+                                     &fbuffer,
+                                     FTRAIL_TOKENDATATYPE_TINYINT,
+                                     1,
                                      (uint8*)&index_catalog->indisprimary);
 
             /* indisreplident 1 */
-            fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer,
-                                     FTRAIL_TOKENDATATYPE_TINYINT, 1,
+            fftrail_data_data2buffer(&fftbmd->header,
+                                     ffstate,
+                                     &fbuffer,
+                                     FTRAIL_TOKENDATATYPE_TINYINT,
+                                     1,
                                      (uint8*)&index_catalog->indisreplident);
 
             /* indnatts 4 */
-            fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT,
-                                     4, (uint8*)&index_catalog->indnatts);
+            fftrail_data_data2buffer(&fftbmd->header,
+                                     ffstate,
+                                     &fbuffer,
+                                     FTRAIL_TOKENDATATYPE_INT,
+                                     4,
+                                     (uint8*)&index_catalog->indnatts);
 
             /* indkey changelong */
             for (key_index = 0; key_index < index_catalog->indnatts; key_index++)
             {
                 uint32 key_num = index_catalog->indkey[key_index];
 
-                fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer,
-                                         FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&key_num);
+                fftrail_data_data2buffer(&fftbmd->header,
+                                         ffstate,
+                                         &fbuffer,
+                                         FTRAIL_TOKENDATATYPE_INT,
+                                         4,
+                                         (uint8*)&key_num);
             }
         }
     }
@@ -477,12 +564,12 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
     uint8  tokeninfo = 0; /* token details */
     uint32 recoffset =
         0; /* foundationin record begin offset，used forpoint toneed needparse data */
-    uint32 dataoffset = 0; /* foundationin data offset，used forcalculatecurrent record
-                              datapartdivide remainsurplusemptybetween */
-    uint16 tmpcollen = 0;
-    uint16 index = 0;
-    uint16 subtype = FF_DATA_TYPE_NOP;
-    uint32 tokenlen = 0; /* token length */
+    uint32         dataoffset = 0; /* foundationin data offset，used forcalculatecurrent record
+                                      datapartdivide remainsurplusemptybetween */
+    uint16         tmpcollen = 0;
+    uint16         index = 0;
+    uint16         subtype = FF_DATA_TYPE_NOP;
+    uint32         tokenlen = 0; /* token length */
 
     uint8*         uptr = NULL;
     uint8*         tokendata = NULL; /* token data area */
@@ -532,37 +619,60 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
      * 2、dataconcatinstall
      */
     /* gettablenumber */
-    if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&fftbmd->tbmdno))
+    if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_INT,
+                                          4,
+                                          (uint8*)&fftbmd->tbmdno))
     {
         return false;
     }
 
     /* gettable oid */
-    if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&fftbmd->oid))
+    if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_INT,
+                                          4,
+                                          (uint8*)&fftbmd->oid))
     {
         return false;
     }
 
     /* gettable flag */
-    if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&fftbmd->flag))
+    if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_SMALLINT,
+                                          2,
+                                          (uint8*)&fftbmd->flag))
     {
         return false;
     }
 
     /* gettable identify */
-    if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_TINYINT, 1,
+    if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_TINYINT,
+                                          1,
                                           (uint8*)&fftbmd->identify))
     {
         return false;
     }
 
     /* gettable colcnt */
-    if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_SMALLINT, 2,
+    if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_SMALLINT,
+                                          2,
                                           (uint8*)&fftbmd->colcnt))
     {
         return false;
@@ -570,8 +680,13 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
 
     /* gettable schema */
     /* getlength */
-    if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&tmpcollen))
+    if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_SMALLINT,
+                                          2,
+                                          (uint8*)&tmpcollen))
     {
         return false;
     }
@@ -584,8 +699,12 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(fftbmd->schema, 0, '\0', (tmpcollen + 1));
-    if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_STR, tmpcollen,
+    if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_STR,
+                                          tmpcollen,
                                           (uint8*)fftbmd->schema))
     {
         return false;
@@ -593,8 +712,13 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
 
     /* gettable table name */
     /* getlength */
-    if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&tmpcollen))
+    if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_SMALLINT,
+                                          2,
+                                          (uint8*)&tmpcollen))
     {
         return false;
     }
@@ -606,8 +730,12 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
         elog(RLOG_ERROR, "out of memory");
     }
     rmemset0(fftbmd->table, 0, '\0', (tmpcollen + 1));
-    if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_STR, tmpcollen,
+    if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_STR,
+                                          tmpcollen,
                                           (uint8*)fftbmd->table))
     {
         return false;
@@ -624,48 +752,72 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
     for (index = 0; index < fftbmd->colcnt; index++)
     {
         /* getlisttype */
-        if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_INT, 4,
+        if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_INT,
+                                              4,
                                               (uint8*)&fftbmd->columns[index].typid))
         {
             return false;
         }
 
         /* getlistidentifier */
-        if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_SMALLINT, 2,
+        if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_SMALLINT,
+                                              2,
                                               (uint8*)&fftbmd->columns[index].flag))
         {
             return false;
         }
 
         /* listintablemiddle sequentialorder */
-        if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_SMALLINT, 2,
+        if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_SMALLINT,
+                                              2,
                                               (uint8*)&fftbmd->columns[index].num))
         {
             return false;
         }
 
         /* listtypelength */
-        if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_INT, 4,
+        if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_INT,
+                                              4,
                                               (uint8*)&fftbmd->columns[index].length))
         {
             return false;
         }
 
         /* listtyperefineddegree*/
-        if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_INT, 4,
+        if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_INT,
+                                              4,
                                               (uint8*)&fftbmd->columns[index].precision))
         {
             return false;
         }
 
         /* listtypecarvedegree */
-        if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_INT, 4,
+        if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_INT,
+                                              4,
                                               (uint8*)&fftbmd->columns[index].scale))
         {
             return false;
@@ -673,8 +825,13 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
 
         /* listtypename lengthinfo */
         /* listtypelength */
-        if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&tmpcollen))
+        if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_SMALLINT,
+                                              2,
+                                              (uint8*)&tmpcollen))
         {
             return false;
         }
@@ -684,8 +841,12 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
         if (tmpcollen > 0)
         {
             rmemset1(fftbmd->columns[index].typename, 0, '\0', NAMEDATALEN);
-            if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                                  FTRAIL_TOKENDATATYPE_STR, tmpcollen,
+            if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                                  ffstate,
+                                                  &recoffset,
+                                                  &dataoffset,
+                                                  FTRAIL_TOKENDATATYPE_STR,
+                                                  tmpcollen,
                                                   (uint8*)fftbmd->columns[index].typename))
             {
                 return false;
@@ -694,8 +855,13 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
 
         /* column name lengthinfo */
         /* listlength */
-        if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&tmpcollen))
+        if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_SMALLINT,
+                                              2,
+                                              (uint8*)&tmpcollen))
         {
             return false;
         }
@@ -703,8 +869,12 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
         /* column name */
         /* requestemptybetween */
         rmemset1(fftbmd->columns[index].column, 0, '\0', NAMEDATALEN);
-        if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_STR, tmpcollen,
+        if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_STR,
+                                              tmpcollen,
                                               (uint8*)fftbmd->columns[index].column))
         {
             return false;
@@ -712,8 +882,13 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
     }
 
     /* getindexidentifier */
-    if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&indexnum))
+    if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_INT,
+                                          4,
+                                          (uint8*)&indexnum))
     {
         return false;
     }
@@ -736,31 +911,49 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
             int             index_key = 0;
 
             /* getindexrelid */
-            if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                                  FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&indexrelid))
+            if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                                  ffstate,
+                                                  &recoffset,
+                                                  &dataoffset,
+                                                  FTRAIL_TOKENDATATYPE_INT,
+                                                  4,
+                                                  (uint8*)&indexrelid))
             {
                 return false;
             }
 
             /* getindisprimary */
-            if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                                  FTRAIL_TOKENDATATYPE_TINYINT, 1,
+            if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                                  ffstate,
+                                                  &recoffset,
+                                                  &dataoffset,
+                                                  FTRAIL_TOKENDATATYPE_TINYINT,
+                                                  1,
                                                   (uint8*)&indisprimary))
             {
                 return false;
             }
 
             /* getindisidentify */
-            if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                                  FTRAIL_TOKENDATATYPE_TINYINT, 1,
+            if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                                  ffstate,
+                                                  &recoffset,
+                                                  &dataoffset,
+                                                  FTRAIL_TOKENDATATYPE_TINYINT,
+                                                  1,
                                                   (uint8*)&indisidentify))
             {
                 return false;
             }
 
             /* getindnatts */
-            if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset, &dataoffset,
-                                                  FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&indnatts))
+            if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                                  ffstate,
+                                                  &recoffset,
+                                                  &dataoffset,
+                                                  FTRAIL_TOKENDATATYPE_INT,
+                                                  4,
+                                                  (uint8*)&indnatts))
             {
                 return false;
             }
@@ -776,8 +969,12 @@ bool fftrail_tbmetadata_deserial(void** data, void* state)
             for (index_key = 0; index_key < indnatts; index_key++)
             {
                 /* getkey */
-                if (false == fftrail_data_buffer2data(&fftbmd->header, ffstate, &recoffset,
-                                                      &dataoffset, FTRAIL_TOKENDATATYPE_INT, 4,
+                if (false == fftrail_data_buffer2data(&fftbmd->header,
+                                                      ffstate,
+                                                      &recoffset,
+                                                      &dataoffset,
+                                                      FTRAIL_TOKENDATATYPE_INT,
+                                                      4,
                                                       (uint8*)&key[index_key]))
                 {
                     return false;

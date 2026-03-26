@@ -308,8 +308,13 @@ void mem_print(memprint_flag flag)
             (flag == MEMPRINT_LOCAL && cur->flag == 1) || (flag == MEMPRINT_ALL))
         {
             totalsize += cur->size;
-            elog(RLOG_INFO, "Allocated at %s:%u, size %lu, address %p, number %u\n", cur->file,
-                 cur->line, cur->size, cur, cur->number);
+            elog(RLOG_INFO,
+                 "Allocated at %s:%u, size %lu, address %p, number %u\n",
+                 cur->file,
+                 cur->line,
+                 cur->size,
+                 cur,
+                 cur->number);
         }
 
         cur = cur->next;

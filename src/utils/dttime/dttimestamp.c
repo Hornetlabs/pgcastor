@@ -29,7 +29,14 @@ void dt_timestamptz_to_string(TimestampTz t, char* buf)
     /* Convert to local time (or gmtime) */
     localtime_r(&unix_sec, &tm);
 
-    sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d.%06ld", tm.tm_year + 1900, tm.tm_mon + 1,
-            tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, usec);
+    sprintf(buf,
+            "%04d-%02d-%02d %02d:%02d:%02d.%06ld",
+            tm.tm_year + 1900,
+            tm.tm_mon + 1,
+            tm.tm_mday,
+            tm.tm_hour,
+            tm.tm_min,
+            tm.tm_sec,
+            usec);
     return;
 }

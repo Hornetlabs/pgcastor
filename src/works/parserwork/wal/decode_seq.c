@@ -62,8 +62,12 @@ void decode_seq(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
     // Get current transaction info
     txn = transcache_getTXNByXid((void*)ctx, pbase->m_xid);
     seq_oid = catalog_get_oid_by_relfilenode(ctx->trans_cache->sysdicts->by_relfilenode,
-                                             txn->sysdictHis, txn->sysdict, seq->m_dboid,
-                                             seq->m_tbspcoid, seq->m_relfilenode, true);
+                                             txn->sysdictHis,
+                                             txn->sysdict,
+                                             seq->m_dboid,
+                                             seq->m_tbspcoid,
+                                             seq->m_relfilenode,
+                                             true);
 
     /* Find system catalog record from cache */
     class = (pg_sysdict_Form_pg_class)catalog_get_class_sysdict(
@@ -75,7 +79,9 @@ void decode_seq(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 
     /* Find system catalog record from cache */
     nsp = (pg_parser_sysdict_pgnamespace*)catalog_get_namespace_sysdict(
-        ctx->trans_cache->sysdicts->by_namespace, txn->sysdict, txn->sysdictHis,
+        ctx->trans_cache->sysdicts->by_namespace,
+        txn->sysdict,
+        txn->sysdictHis,
         class->relnamespace);
 
     if (!nsp)
@@ -88,8 +94,11 @@ void decode_seq(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 
     alter_seq_restart_stmt = makeStringInfo();
 
-    appendStringInfo(alter_seq_restart_stmt, "ALTER SEQUENCE \"%s\".\"%s\" RESTART WITH %ld;",
-                     seq_nspname, seq_name, seq->m_last_value);
+    appendStringInfo(alter_seq_restart_stmt,
+                     "ALTER SEQUENCE \"%s\".\"%s\" RESTART WITH %ld;",
+                     seq_nspname,
+                     seq_name,
+                     seq->m_last_value);
 
     stmt = rmalloc0(sizeof(txnstmt));
     if (!stmt)

@@ -1,7 +1,7 @@
 #ifndef PG_PARSER_TRANS_RMGR_RELMAP_H
 #define PG_PARSER_TRANS_RMGR_RELMAP_H
 
-#define PG_PARSER_MAX_MAPPINGS 62 /* 62 * 8 + 16 = 512 */
+#define PG_PARSER_MAX_MAPPINGS       62 /* 62 * 8 + 16 = 512 */
 #define PG_PARSER_XLOG_RELMAP_UPDATE 0x00
 
 typedef struct pg_parser_xl_relmap_update
@@ -27,8 +27,8 @@ typedef struct pg_parser_RelMapFile
     int32_t              pad; /* to make the struct size be 512 exactly */
 } pg_parser_RelMapFile;
 
-extern bool pg_parser_trans_rmgr_relmap_pre(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                            pg_parser_translog_pre_base**                    result,
-                                            int32_t* pg_parser_errno);
+extern bool pg_parser_trans_rmgr_relmap_pre(pg_parser_XLogReaderState*    state,
+                                            pg_parser_translog_pre_base** result,
+                                            int32_t*                      pg_parser_errno);
 
 #endif

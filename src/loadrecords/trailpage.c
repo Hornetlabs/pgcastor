@@ -73,9 +73,9 @@ bool trailpage_page2records(loadtrailrecords* ltrailrecords, mpage* mp)
         switch (tokenid)
         {
             case FFTRAIL_GROUPTYPE_FHEADER:
-                if (false == ffsmgrstate.ffsmgr->ffsmgr_validrecord(tokenid, (void*)&ffsmgrstate,
-                                                                    tokeninfo,
-                                                                    ltrailrecords->fileid, uptr1))
+                if (false ==
+                    ffsmgrstate.ffsmgr->ffsmgr_validrecord(
+                        tokenid, (void*)&ffsmgrstate, tokeninfo, ltrailrecords->fileid, uptr1))
                 {
                     /* Validation failed, this marks the end of a complete record */
                     ltrailrecords->loadrecords.error = ERROR_BLK_INCOMPLETE;
@@ -87,9 +87,9 @@ bool trailpage_page2records(loadtrailrecords* ltrailrecords, mpage* mp)
                 tokenlen = MAXALIGN(tokenlen);
                 break;
             case FFTRAIL_GROUPTYPE_DATA:
-                if (false == ffsmgrstate.ffsmgr->ffsmgr_validrecord(tokenid, (void*)&ffsmgrstate,
-                                                                    tokeninfo,
-                                                                    ltrailrecords->fileid, uptr1))
+                if (false ==
+                    ffsmgrstate.ffsmgr->ffsmgr_validrecord(
+                        tokenid, (void*)&ffsmgrstate, tokeninfo, ltrailrecords->fileid, uptr1))
                 {
                     ltrailrecords->loadrecords.error = ERROR_BLK_INCOMPLETE;
                     goto trailpage_page2records_done;
@@ -105,9 +105,9 @@ bool trailpage_page2records(loadtrailrecords* ltrailrecords, mpage* mp)
 
                 break;
             case FFTRAIL_GROUPTYPE_RESET:
-                if (false == ffsmgrstate.ffsmgr->ffsmgr_validrecord(tokenid, (void*)&ffsmgrstate,
-                                                                    tokeninfo,
-                                                                    ltrailrecords->fileid, uptr1))
+                if (false ==
+                    ffsmgrstate.ffsmgr->ffsmgr_validrecord(
+                        tokenid, (void*)&ffsmgrstate, tokeninfo, ltrailrecords->fileid, uptr1))
                 {
                     ltrailrecords->loadrecords.error = ERROR_BLK_INCOMPLETE;
                     goto trailpage_page2records_done;
@@ -117,9 +117,9 @@ bool trailpage_page2records(loadtrailrecords* ltrailrecords, mpage* mp)
                 rectype = RECORD_TYPE_TRAIL_RESET;
                 break;
             case FFTRAIL_GROUPTYPE_FTAIL:
-                if (false == ffsmgrstate.ffsmgr->ffsmgr_validrecord(tokenid, (void*)&ffsmgrstate,
-                                                                    tokeninfo,
-                                                                    ltrailrecords->fileid, uptr1))
+                if (false ==
+                    ffsmgrstate.ffsmgr->ffsmgr_validrecord(
+                        tokenid, (void*)&ffsmgrstate, tokeninfo, ltrailrecords->fileid, uptr1))
                 {
                     ltrailrecords->loadrecords.error = ERROR_BLK_INCOMPLETE;
                     goto trailpage_page2records_done;
@@ -131,8 +131,11 @@ bool trailpage_page2records(loadtrailrecords* ltrailrecords, mpage* mp)
                 ltrailrecords->loadrecords.error = ERROR_BLK_INCOMPLETE;
                 goto trailpage_page2records_done;
             default:
-                elog(RLOG_WARNING, "unknown group type:%u, foffset:%lu, fileid:%lu", tokenid,
-                     ltrailrecords->foffset, ltrailrecords->fileid);
+                elog(RLOG_WARNING,
+                     "unknown group type:%u, foffset:%lu, fileid:%lu",
+                     tokenid,
+                     ltrailrecords->foffset,
+                     ltrailrecords->fileid);
                 return false;
         }
 

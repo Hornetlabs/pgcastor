@@ -232,7 +232,8 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
                  * error */
                 elog(RLOG_WARNING,
                      "need continue record, but now type:%d, cross record:%lu.%lu, %lu.%u ,%lu",
-                     record_obj->type, loadrecords->recordcross.record->start.trail.fileid,
+                     record_obj->type,
+                     loadrecords->recordcross.record->start.trail.fileid,
                      loadrecords->recordcross.record->start.trail.offset,
                      loadrecords->recordcross.record->totallength,
                      loadrecords->recordcross.record->reallength,
@@ -262,7 +263,8 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
             /* Append record tail to the end of data */
             rmemcpy1(loadrecords->recordcross.record->data,
                      loadrecords->recordcross.record->dataoffset,
-                     record_obj->data + record_obj->dataoffset, record_obj->reallength);
+                     record_obj->data + record_obj->dataoffset,
+                     record_obj->reallength);
             loadrecords->recordcross.record->dataoffset += record_obj->reallength;
             loadrecords->recordcross.remainlen -= record_obj->reallength;
 
@@ -287,7 +289,8 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
 
             /* Assembly completed, append tail data to the end of data */
             rmemcpy1(loadrecords->recordcross.record->data,
-                     loadrecords->recordcross.record->dataoffset, loadrecords->recordcross.rectail,
+                     loadrecords->recordcross.record->dataoffset,
+                     loadrecords->recordcross.rectail,
                      loadrecords->recordcross.rectaillen);
             loadrecords->recordcross.record->len += loadrecords->recordcross.rectaillen;
             loadrecords->recordcross.rectaillen = 0;
@@ -362,7 +365,8 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
                  "current fileid:%lu:%lu",
                  loadrecords->recordcross.record->start.trail.fileid,
                  loadrecords->recordcross.record->start.trail.offset,
-                 record_obj->start.trail.fileid, record_obj->start.trail.offset);
+                 record_obj->start.trail.fileid,
+                 record_obj->start.trail.offset);
             return false;
         }
 
@@ -391,7 +395,9 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
 
         /* Trim the tail data length from the original length */
         record_obj->len -= (uint64)(loadrecords->recordcross.rectaillen);
-        rmemcpy1(loadrecords->recordcross.rectail, 0, (record_obj->data + record_obj->dataoffset),
+        rmemcpy1(loadrecords->recordcross.rectail,
+                 0,
+                 (record_obj->data + record_obj->dataoffset),
                  loadrecords->recordcross.rectaillen);
 
         /* Remove dlnode from the linked list and place the subsequent nodes into the temporary node
@@ -569,8 +575,9 @@ void loadtrailrecords_filter(loadtrailrecords* loadrecords, uint64 fileid, uint6
  *   true           Need to continue filtering
  *   false          No need to continue filtering
  */
-bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64 fileid,
-                                           uint64 foffset)
+bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords,
+                                           uint64            fileid,
+                                           uint64            foffset)
 {
     /*
      * Filter description:

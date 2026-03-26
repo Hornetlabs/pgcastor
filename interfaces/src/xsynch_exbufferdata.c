@@ -100,8 +100,10 @@ bool xsynch_exbufferdata_enlarge(xsynch_exbuffer exbuffer, size_t needed)
     return false;
 }
 
-static bool xsynch_exbufferdata_appendva(xsynch_exbuffer exbuffer, const char* fmt,
-                                         bool* enlargememory, va_list args)
+static bool xsynch_exbufferdata_appendva(xsynch_exbuffer exbuffer,
+                                         const char*     fmt,
+                                         bool*           enlargememory,
+                                         va_list         args)
 {
     int    nprinted;
     size_t avail;

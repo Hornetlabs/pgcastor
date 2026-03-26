@@ -13,6 +13,6 @@ typedef struct ONLINEREFRESH_CAPTUREFLUSH
 extern onlinerefresh_captureflush* onlinerefresh_captureflush_init(void);
 
 extern void* onlinerefresh_captureflush_main(void* args);
-extern void  onlinerefresh_captureflush_free(void* args);
+extern void onlinerefresh_captureflush_free(void* args);
 
 #endif

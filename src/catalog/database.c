@@ -72,16 +72,17 @@ void database_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         entry->oid = database->oid;
         entry->database = database;
 
-        oid_entry = (catalog_datname2oid_value*)hash_search(sysdicts->by_datname2oid,
-                                                            &database->datname, HASH_ENTER, &found);
+        oid_entry = (catalog_datname2oid_value*)hash_search(
+            sysdicts->by_datname2oid, &database->datname, HASH_ENTER, &found);
         if (found)
         {
-            elog(RLOG_ERROR, "database_name:%s already exist in by_datname2oid",
+            elog(RLOG_ERROR,
+                 "database_name:%s already exist in by_datname2oid",
                  oid_entry->datname.data);
         }
         oid_entry->oid = database->oid;
-        rmemcpy1(oid_entry->datname.data, 0, database->datname.data,
-                 sizeof(database->datname.data));
+        rmemcpy1(
+            oid_entry->datname.data, 0, database->datname.data, sizeof(database->datname.data));
     }
 
     PQclear(res);
@@ -200,7 +201,8 @@ HTAB* databasecache_load(sysdict_header_array* array)
             entry = hash_search(databasehtab, &database->oid, HASH_ENTER, &found);
             if (found)
             {
-                elog(RLOG_ERROR, "database_oid:%u already exist in by_database",
+                elog(RLOG_ERROR,
+                     "database_oid:%u already exist in by_database",
                      entry->database->oid);
             }
             entry->oid = database->oid;
@@ -264,11 +266,12 @@ HTAB* datname2oid_cache_load(sysdict_header_array* array)
         {
             rmemset1(&database, 0, '\0', sizeof(pg_parser_sysdict_pgdatabase));
             rmemcpy1(&database, 0, buffer + offset, sizeof(pg_parser_sysdict_pgdatabase));
-            entry = (catalog_datname2oid_value*)hash_search(databasehtab, &database.datname,
-                                                            HASH_ENTER, &found);
+            entry = (catalog_datname2oid_value*)hash_search(
+                databasehtab, &database.datname, HASH_ENTER, &found);
             if (found)
             {
-                elog(RLOG_ERROR, "database_name:%s already exist in by_datname2oid",
+                elog(RLOG_ERROR,
+                     "database_name:%s already exist in by_datname2oid",
                      entry->datname.data);
             }
             entry->oid = database.oid;
@@ -401,8 +404,8 @@ catalogdata* database_colvalue2database(void* in_colvalue)
     databasevalue->oid = pgdatabase->oid;
 
     /* datname 1 */
-    rmemcpy1(pgdatabase->datname.data, 0, (char*)((colvalue + 1)->m_value),
-             (colvalue + 1)->m_valueLen);
+    rmemcpy1(
+        pgdatabase->datname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* datdba 2 */
     sscanf((char*)((colvalue + 2)->m_value), "%u", &pgdatabase->datdba);
@@ -411,12 +414,14 @@ catalogdata* database_colvalue2database(void* in_colvalue)
     sscanf((char*)((colvalue + 3)->m_value), "%d", &pgdatabase->encoding);
 
     /* datcollate 4 */
-    rmemcpy1(pgdatabase->datcollate.data, 0, (char*)((colvalue + 4)->m_value),
+    rmemcpy1(pgdatabase->datcollate.data,
+             0,
+             (char*)((colvalue + 4)->m_value),
              (colvalue + 4)->m_valueLen);
 
     /* datcollate 5 */
-    rmemcpy1(pgdatabase->datctype.data, 0, (char*)((colvalue + 5)->m_value),
-             (colvalue + 5)->m_valueLen);
+    rmemcpy1(
+        pgdatabase->datctype.data, 0, (char*)((colvalue + 5)->m_value), (colvalue + 5)->m_valueLen);
 
     return catalog_data;
 }
@@ -442,8 +447,10 @@ void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cata
             hash_search(sysdicts->by_database, &newcatalog->oid, HASH_ENTER, &found);
         if (true == found)
         {
-            elog(RLOG_WARNING, "by_database hash duplicate oid, %u, %s",
-                 catalogInOid2Hash->database->oid, catalogInOid2Hash->database->datname.data);
+            elog(RLOG_WARNING,
+                 "by_database hash duplicate oid, %u, %s",
+                 catalogInOid2Hash->database->oid,
+                 catalogInOid2Hash->database->datname.data);
 
             if (NULL != catalogInOid2Hash->database)
             {
@@ -457,17 +464,23 @@ void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cata
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemcpy0(catalogInOid2Hash->database, 0, newcatalog->database,
+        rmemcpy0(catalogInOid2Hash->database,
+                 0,
+                 newcatalog->database,
                  sizeof(pg_parser_sysdict_pgdatabase));
         // datname2oid
-        catalogInDatname2Hash = hash_search(sysdicts->by_datname2oid,
-                                            &newcatalog->database->datname, HASH_ENTER, &found);
+        catalogInDatname2Hash = hash_search(
+            sysdicts->by_datname2oid, &newcatalog->database->datname, HASH_ENTER, &found);
         if (true == found)
         {
-            elog(RLOG_WARNING, "by_datname2oid hash duplicate oid, %u, %s",
-                 catalogInDatname2Hash->oid, catalogInDatname2Hash->datname.data);
+            elog(RLOG_WARNING,
+                 "by_datname2oid hash duplicate oid, %u, %s",
+                 catalogInDatname2Hash->oid,
+                 catalogInDatname2Hash->datname.data);
         }
-        rmemcpy1(catalogInDatname2Hash->datname.data, 0, newcatalog->database->datname.data,
+        rmemcpy1(catalogInDatname2Hash->datname.data,
+                 0,
+                 newcatalog->database->datname.data,
                  sizeof(newcatalog->database->datname.data));
         catalogInDatname2Hash->oid = newcatalog->oid;
     }
@@ -483,15 +496,17 @@ void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cata
             }
         }
         // datname2oid
-        catalogInDatname2Hash = hash_search(sysdicts->by_datname2oid,
-                                            &newcatalog->database->datname, HASH_REMOVE, &found);
+        catalogInDatname2Hash = hash_search(
+            sysdicts->by_datname2oid, &newcatalog->database->datname, HASH_REMOVE, &found);
     }
     else if (CATALOG_OP_UPDATE == catalogdata->op)
     {
         catalogInOid2Hash = hash_search(sysdicts->by_database, &newcatalog->oid, HASH_FIND, &found);
         if (NULL == catalogInOid2Hash)
         {
-            elog(RLOG_WARNING, "database hash duplicate oid, %u, %s", newcatalog->database->oid,
+            elog(RLOG_WARNING,
+                 "database hash duplicate oid, %u, %s",
+                 newcatalog->database->oid,
                  newcatalog->database->datname.data);
             return;
         }
@@ -503,7 +518,9 @@ void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cata
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
         }
-        rmemcpy0(catalogInOid2Hash->database, 0, newcatalog->database,
+        rmemcpy0(catalogInOid2Hash->database,
+                 0,
+                 newcatalog->database,
                  sizeof(pg_parser_sysdict_pgdatabase));
         // datname2database
         hash_seq_init(&status, sysdicts->by_datname2oid);
@@ -511,16 +528,20 @@ void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cata
         {
             if (catalogInDatname2Hash->oid == newcatalog->oid)
             {
-                hash_search(sysdicts->by_datname2oid, &catalogInDatname2Hash->datname, HASH_REMOVE,
-                            &found);
+                hash_search(
+                    sysdicts->by_datname2oid, &catalogInDatname2Hash->datname, HASH_REMOVE, &found);
                 catalogInDatname2Hash = hash_search(
                     sysdicts->by_datname2oid, &newcatalog->database->datname, HASH_ENTER, &found);
                 if (true == found)
                 {
-                    elog(RLOG_WARNING, "by_datname2oid hash duplicate oid, %u, %s",
-                         catalogInDatname2Hash->oid, catalogInDatname2Hash->datname.data);
+                    elog(RLOG_WARNING,
+                         "by_datname2oid hash duplicate oid, %u, %s",
+                         catalogInDatname2Hash->oid,
+                         catalogInDatname2Hash->datname.data);
                 }
-                rmemcpy1(catalogInDatname2Hash->datname.data, 0, newcatalog->database->datname.data,
+                rmemcpy1(catalogInDatname2Hash->datname.data,
+                         0,
+                         newcatalog->database->datname.data,
                          sizeof(newcatalog->database->datname.data));
                 catalogInDatname2Hash->oid = newcatalog->oid;
                 break;

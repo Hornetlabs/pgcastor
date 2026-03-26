@@ -34,10 +34,10 @@ void class_attribute_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
     pg_sysdict_Form_pg_attribute attribute = NULL;
     char                         sql_exec[MAX_EXEC_SQL_LEN] = {'\0'};
 
-    HASHCTL                  class_hash_ctl;
-    HASHCTL                  attr_hash_ctl;
-    catalog_class_value*     class_entry = NULL;
-    catalog_attribute_value* attr_entry = NULL;
+    HASHCTL                      class_hash_ctl;
+    HASHCTL                      attr_hash_ctl;
+    catalog_class_value*         class_entry = NULL;
+    catalog_attribute_value*     attr_entry = NULL;
 
     rmemset1(&class_hash_ctl, 0, '\0', sizeof(class_hash_ctl));
     class_hash_ctl.keysize = sizeof(Oid);
@@ -282,12 +282,12 @@ void classdata_write(List* class, uint64* offset, sysdict_header_array* array)
 
 HTAB* classcache_load(sysdict_header_array* array)
 {
-    int     r = 0;
-    int     fd = -1;
-    HTAB*   classhtab;
-    HASHCTL hash_ctl;
-    bool    found = false;
-    uint64  fileoffset = 0;
+    int                      r = 0;
+    int                      fd = -1;
+    HTAB*                    classhtab;
+    HASHCTL                  hash_ctl;
+    bool                     found = false;
+    uint64                   fileoffset = 0;
 
     char                     buffer[FILE_BLK_SIZE];
     pg_sysdict_Form_pg_class class;
@@ -407,8 +407,8 @@ catalogdata* class_colvalue2class(void* in_colvalue)
     }
 
     /* relname 1*/
-    rmemcpy1(pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value),
-             (colvalue + 1)->m_valueLen);
+    rmemcpy1(
+        pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* relnamespace 2*/
     sscanf((char*)((colvalue + 2)->m_value), "%u", &pgclass->relnamespace);
@@ -497,8 +497,8 @@ catalogdata* class_colvalue2class_nofilter(void* in_colvalue)
     pgclass->relkind = ((char*)((colvalue + 16)->m_value))[0];
 
     /* relname 1*/
-    rmemcpy1(pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value),
-             (colvalue + 1)->m_valueLen);
+    rmemcpy1(
+        pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* relnamespace 2*/
     sscanf((char*)((colvalue + 2)->m_value), "%u", &pgclass->relnamespace);
@@ -560,8 +560,12 @@ void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
     }
 
     newClass = (catalog_class_value*)catalogdata->catalog;
-    elog(RLOG_DEBUG, "op:%d, newclass, %s,type:%c, %u.%u", catalogdata->op,
-         newClass->class->relname.data, newClass->class->relkind, newClass->class->oid,
+    elog(RLOG_DEBUG,
+         "op:%d, newclass, %s,type:%c, %u.%u",
+         catalogdata->op,
+         newClass->class->relname.data,
+         newClass->class->relkind,
+         newClass->class->oid,
          newClass->class->relfilenode);
 
     if (CATALOG_OP_INSERT == catalogdata->op)
@@ -604,8 +608,12 @@ void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
                 hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, &found);
             if (NULL == prelfilenode2oid)
             {
-                elog(RLOG_ERROR, "put relfilenode2oid hash error, %u.%u.%u, oid:%u",
-                     relfilenode.spcNode, relfilenode.dbNode, relfilenode.relNode, newClass->oid);
+                elog(RLOG_ERROR,
+                     "put relfilenode2oid hash error, %u.%u.%u, oid:%u",
+                     relfilenode.spcNode,
+                     relfilenode.dbNode,
+                     relfilenode.relNode,
+                     newClass->oid);
             }
             prelfilenode2oid->oid = newClass->class->oid;
             rmemcpy1(&prelfilenode2oid->relfilenode, 0, &relfilenode, sizeof(RelFileNode));
@@ -635,7 +643,9 @@ void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
         classInHash = hash_search(sysdicts->by_class, &newClass->oid, HASH_FIND, &found);
         if (NULL == classInHash)
         {
-            elog(RLOG_WARNING, "relation %u,%s can not fond in class hash", newClass->class->oid,
+            elog(RLOG_WARNING,
+                 "relation %u,%s can not fond in class hash",
+                 newClass->class->oid,
                  newClass->class->relname.data);
             return;
         }
@@ -664,8 +674,8 @@ void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
                         hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, &found);
                     if (!found)
                     {
-                        rmemcpy1(&prelfilenode2oid->relfilenode, 0, &relfilenode,
-                                 sizeof(RelFileNode));
+                        rmemcpy1(
+                            &prelfilenode2oid->relfilenode, 0, &relfilenode, sizeof(RelFileNode));
                     }
 
                     /* Then directly replace */

@@ -7,19 +7,19 @@
 #define MEMCACHE_BLOCKSIZE_MAX 1048576
 
 /* 16M */
-#define MEMCACHE_DEFAULT 16
-#define MEMCACHE_MAXSIZE 1048576
+#define MEMCACHE_DEFAULT                      16
+#define MEMCACHE_MAXSIZE                      1048576
 
-#define MEMCACHE_KB2BYTE(kbytes) ((uint64_t)kbytes * (uint64)1024)
-#define MEMCACHE_MB2BYTE(mbytes) (((uint64)MEMCACHE_KB2BYTE(mbytes)) * (uint64)1024)
+#define MEMCACHE_KB2BYTE(kbytes)              ((uint64_t)kbytes * (uint64)1024)
+#define MEMCACHE_MB2BYTE(mbytes)              (((uint64)MEMCACHE_KB2BYTE(mbytes)) * (uint64)1024)
 
-#define MEMCACHE_VNODEMAPCNT 1024
-#define MEMCACHE_VNODEMAPMASK(cnt) ((uint64)cnt - (uint64)1)
+#define MEMCACHE_VNODEMAPCNT                  1024
+#define MEMCACHE_VNODEMAPMASK(cnt)            ((uint64)cnt - (uint64)1)
 #define MEMCACHE_VNUMBER2INDEX(vnumber, mask) ((uint64)vnumber & (uint64)mask)
 
 /* cachedirectory */
 #define MEMCACHE_DIRLEN 256
-#define MEMCACHE_DIR "memcache"
+#define MEMCACHE_DIR    "memcache"
 
 /* send pagesurfacesetswitchwhen setswitch unit */
 #define MEMCACHE_SWAPBATCHCNT 5
@@ -30,39 +30,39 @@
 typedef struct MEMCACHE_PAGENODE
 {
     /* used foridentifierwhether atis use handswitchwhenifas true skip unitpagesurface */
-    bool used;
+    bool       used;
 
     /* device */
-    uint64_t count;
+    uint64_t   count;
 
     /* number begin */
-    uint64_t no;
+    uint64_t   no;
 
     dlistnode* dlnode;
 
     /* hasthe page virtualnumber asinvalid */
-    uint64_t vno;
+    uint64_t   vno;
 
     /* data */
-    uint8_t* data;
+    uint8_t*   data;
 } memcache_pagenode;
 
 typedef struct MEMCACHE_PAGES
 {
     /* unitpage size */
-    int blksize;
+    int                blksize;
 
     /* pagesetswitch setswitch page */
-    int swapcnt;
+    int                swapcnt;
 
     /* piece count */
-    uint64_t pagecnt;
+    uint64_t           pagecnt;
 
     /* unitsectionpointas memcache_pagenode used forpagesetswitchwhen use */
-    dlist* pages;
+    dlist*             pages;
 
     /* emptyidle page getemptyidlepagesurface */
-    dlist* freepages;
+    dlist*             freepages;
 
     /* page addr, contentas memcache_pagenode */
     memcache_pagenode* pageaddr;
@@ -84,14 +84,14 @@ typedef enum MEMCACHE_VNUMBER2PNODE_FLAG
 typedef struct MEMCACHE_VNUMBER2PNODE
 {
     /* diskincontainhasfile */
-    bool hasfile;
+    bool     hasfile;
 
     /* toolbodycontainmeaningcheckseeupsurface meaning */
-    uint8_t flag;
+    uint8_t  flag;
 
     /* virtualnumberfile issetswitchoutgowhen thisvaluewill memorywritewriteto fd specify filein
      * deletevirtualsectionpointwhen needclosethisdescriptor */
-    int fd;
+    int      fd;
 
     /* virtualnumber */
     uint64_t vno;
@@ -109,28 +109,28 @@ typedef struct MEMCACHE_VIRTUALNODE
 typedef struct MEMCACHE
 {
     /* name, used foridentifieruniqueone */
-    char* name;
+    char*                 name;
 
     /* unitpage size */
-    int blksize;
+    int                   blksize;
 
     /* piece count */
-    uint64_t blkcnt;
+    uint64_t              blkcnt;
 
     /* virtualnumber hash */
-    uint64_t vnodemapcnt;
+    uint64_t              vnodemapcnt;
 
     /* virtualnumber begin */
-    uint64_t vnumber;
+    uint64_t              vnumber;
 
     /* size needas blocksize */
-    uint64_t maxsize;
+    uint64_t              maxsize;
 
     /* virtualnumbersectionpointandcachepagemapping */
     memcache_virtualnode* vnodemap;
 
     /* pagenumbercache */
-    memcache_pages* pages;
+    memcache_pages*       pages;
 } memcache;
 
 /* initializeoneunitcache name uniqueoneidentifier atprocessinsidenotneedheavycomplex csize

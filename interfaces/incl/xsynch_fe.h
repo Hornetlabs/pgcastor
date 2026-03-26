@@ -93,7 +93,7 @@ typedef struct XSYNCH_JOB
 /* create specified job type */
 typedef struct XSYNCH_IDENTITYCMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
@@ -102,141 +102,141 @@ typedef struct XSYNCH_IDENTITYCMD
      * no current use
      */
     /* username */
-    char* user;
+    char*          user;
 
     /* password */
-    char* passwd;
+    char*          passwd;
 
     /* job name */
-    char* jobname;
+    char*          jobname;
 } xsynch_identitycmd;
 
 typedef struct XSYNCH_CREATECMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* job name */
-    char* name;
+    char*          name;
 
     /* xsynch_job */
-    List* job;
+    List*          job;
 } xsynch_createcmd;
 
 /* modify process job members */
 typedef struct XSYNCH_ALTERCMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* operation type, add/remove */
-    xsynch_action action;
+    xsynch_action  action;
 
     /* name */
-    char* name;
+    char*          name;
 
     /* xsynch_job */
-    List* job;
+    List*          job;
 } xsynch_altercmd;
 
 /* delete config file for specified job type */
 typedef struct XSYNCH_REMOVECMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* job name */
-    char* name;
+    char*          name;
 } xsynch_removecmd;
 
 /* drop specified job */
 typedef struct XSYNCH_DROPCMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* job name */
-    char* name;
+    char*          name;
 } xsynch_dropcmd;
 
 /* initialize specified job */
 typedef struct XSYNCH_INITCMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* job name */
-    char* name;
+    char*          name;
 } xsynch_initcmd;
 
 /* edit specified job config file */
 typedef struct XSYNCH_EDITCMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* job name */
-    char* name;
+    char*          name;
 } xsynch_editcmd;
 
 /* start specified job */
 typedef struct XSYNCH_STARTCMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* job name */
-    char* name;
+    char*          name;
 } xsynch_startcmd;
 
 /* stop specified job */
 typedef struct XSYNCH_STOPCMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* job name */
-    char* name;
+    char*          name;
 } xsynch_stopcmd;
 
 /* reload config file for specified job */
 typedef struct XSYNCH_RELOADCMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* job name */
-    char* name;
+    char*          name;
 } xsynch_reloadcmd;
 
 /* view basic info of specified job */
 typedef struct XSYNCH_INFOCMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* job name */
-    char* name;
+    char*          name;
 } xsynch_infocmd;
 
 /* view basic info of specified job */
@@ -248,37 +248,37 @@ typedef struct XSYNCH_LISTCMD
 /* periodically return info of specified job */
 typedef struct XSYNCH_WATCHCMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* interval, unit: seconds */
-    int interval;
+    int            interval;
 
     /* job name */
-    char* name;
+    char*          name;
 } xsynch_watchcmd;
 
 /* send config file information */
 typedef struct XSYNCH_CFGFILECMD
 {
-    xsynch_cmd type;
+    xsynch_cmd     type;
 
     /* job type */
     xsynch_jobkind kind;
 
     /* job name */
-    char* name;
+    char*          name;
 
     /* file name */
-    char* filename;
+    char*          filename;
 
     /* file content */
-    int datalen;
+    int            datalen;
 
     /* file content */
-    char* data;
+    char*          data;
 } xsynch_cfgfilecmd;
 
 /* refresh command */
@@ -287,10 +287,10 @@ typedef struct XSYNCH_REFRESHCMD
     xsynch_cmd type;
 
     /* capture name */
-    char* name;
+    char*      name;
 
     /* xsynch_rangevar */
-    List* tables;
+    List*      tables;
 } xsynch_refreshcmd;
 
 #define XSYNCH_NEWCMD(size, tag)             \

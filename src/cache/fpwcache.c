@@ -55,8 +55,13 @@ void fpwcache_add(transcache* transcache, ReorderBufferFPWKey* key, ReorderBuffe
     rmemcpy1(&tuplenode->key, 0, &nodekey, sizeof(ReorderBufferFPWKey));
     tuplenode->lsn = entry->lsn;
 
-    elog(RLOG_DEBUG, "add2fpwcache relfilenode:%u, %u. %u, lsn:%X/%X", nodekey.relfilenode,
-         nodekey.blcknum, nodekey.itemoffset, (uint32)(entry->lsn >> 32), (uint32)(entry->lsn));
+    elog(RLOG_DEBUG,
+         "add2fpwcache relfilenode:%u, %u. %u, lsn:%X/%X",
+         nodekey.relfilenode,
+         nodekey.blcknum,
+         nodekey.itemoffset,
+         (uint32)(entry->lsn >> 32),
+         (uint32)(entry->lsn));
 
     search_result = hash_search(transcache->by_fpwtuples, key, HASH_ENTER, &find);
     if (find)
@@ -110,7 +115,9 @@ static void fpwcache_removebyredolsn(transcache* transcache, XLogRecPtr redolsn)
     ReorderBufferFPWNode*  tuplenode = NULL;
     ReorderBufferFPWEntry* fpwentry = NULL;
 
-    elog(RLOG_DEBUG, "fpwcache_removebyredolsn, redolsn:%X/%X", (uint32)(redolsn >> 32),
+    elog(RLOG_DEBUG,
+         "fpwcache_removebyredolsn, redolsn:%X/%X",
+         (uint32)(redolsn >> 32),
          (uint32)redolsn);
 
     foreach (lc, transcache->fpwtupleslist)
@@ -130,9 +137,13 @@ static void fpwcache_removebyredolsn(transcache* transcache, XLogRecPtr redolsn)
 
                     elog(RLOG_DEBUG,
                          "removefromfpwcache relfilenode:%u, %u. %u, lsn:%X/%X, redolsn:%X/%X",
-                         tuplenode->key.relfilenode, tuplenode->key.blcknum,
-                         tuplenode->key.itemoffset, (uint32)(tuplenode->lsn >> 32),
-                         (uint32)tuplenode->lsn, (uint32)(redolsn >> 32), (uint32)redolsn);
+                         tuplenode->key.relfilenode,
+                         tuplenode->key.blcknum,
+                         tuplenode->key.itemoffset,
+                         (uint32)(tuplenode->lsn >> 32),
+                         (uint32)tuplenode->lsn,
+                         (uint32)(redolsn >> 32),
+                         (uint32)redolsn);
                     hash_search(transcache->by_fpwtuples, &tuplenode->key, HASH_REMOVE, NULL);
                 }
             }
@@ -140,9 +151,13 @@ static void fpwcache_removebyredolsn(transcache* transcache, XLogRecPtr redolsn)
             {
                 elog(RLOG_DEBUG,
                      "removefromfpwcache relfilenode NULL:%u, %u. %u,lsn:%X/%X, redolsn:%X/%X",
-                     tuplenode->key.relfilenode, tuplenode->key.blcknum, tuplenode->key.itemoffset,
-                     (uint32)(tuplenode->lsn >> 32), (uint32)tuplenode->lsn,
-                     (uint32)(redolsn >> 32), (uint32)redolsn);
+                     tuplenode->key.relfilenode,
+                     tuplenode->key.blcknum,
+                     tuplenode->key.itemoffset,
+                     (uint32)(tuplenode->lsn >> 32),
+                     (uint32)tuplenode->lsn,
+                     (uint32)(redolsn >> 32),
+                     (uint32)redolsn);
             }
 
             rfree(tuplenode);
@@ -161,7 +176,8 @@ static void fpwcache_removebyredolsn(transcache* transcache, XLogRecPtr redolsn)
 }
 
 /* Traverse transcache->chkpts to check less than restartlsn, clean up fpw and update redo */
-void fpwcache_calcredolsnbyrestartlsn(transcache* transcache, XLogRecPtr restartlsn,
+void fpwcache_calcredolsnbyrestartlsn(transcache* transcache,
+                                      XLogRecPtr  restartlsn,
                                       XLogRecPtr* redolsn)
 {
     XLogRecPtr      curredolsn = InvalidXLogRecPtr;

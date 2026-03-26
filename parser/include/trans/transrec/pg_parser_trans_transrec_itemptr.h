@@ -13,7 +13,7 @@ typedef struct pg_parser_ItemPointerData
     uint16_t              ip_posid;
 } __attribute__((packed)) __attribute__((aligned(2))) pg_parser_ItemPointerData;
 
-typedef pg_parser_ItemPointerData* pg_parser_ItemPointer;
+typedef pg_parser_ItemPointerData*                    pg_parser_ItemPointer;
 
 typedef struct pg_parser_ItemIdData
 {
@@ -37,9 +37,10 @@ typedef pg_parser_ItemIdData* pg_parser_ItemId;
  * pg_parser_ItemPointerSet
  * Sets a disk item pointer to the specified block and offset.
  */
-#define pg_parser_ItemPointerSet(pointer, blockNumber, offNum) \
-    (pg_parser_AssertMacro(pg_parser_PointerIsValid(pointer)), \
-     pg_parser_BlockIdSet(&((pointer)->ip_blkid), blockNumber), (pointer)->ip_posid = offNum)
+#define pg_parser_ItemPointerSet(pointer, blockNumber, offNum)  \
+    (pg_parser_AssertMacro(pg_parser_PointerIsValid(pointer)),  \
+     pg_parser_BlockIdSet(&((pointer)->ip_blkid), blockNumber), \
+     (pointer)->ip_posid = offNum)
 
 #define pg_parser_BlockIdGetBlockNumber(blockId)               \
     (pg_parser_AssertMacro(pg_parser_BlockIdIsValid(blockId)), \
@@ -50,17 +51,17 @@ typedef pg_parser_ItemIdData* pg_parser_ItemId;
 
 #define pg_parser_ItemPointerGetOffsetNumberNoCheck(pointer) ((pointer)->ip_posid)
 
-#define PG_PARSER_LP_UNUSED 0   /* unused (should always have lp_len=0) */
-#define PG_PARSER_LP_NORMAL 1   /* used (should always have lp_len>0) */
-#define PG_PARSER_LP_REDIRECT 2 /* HOT redirect (should have lp_len=0) */
-#define PG_PARSER_LP_DEAD 3     /* dead, may or may not have storage */
+#define PG_PARSER_LP_UNUSED                                  0 /* unused (should always have lp_len=0) */
+#define PG_PARSER_LP_NORMAL                                  1 /* used (should always have lp_len>0) */
+#define PG_PARSER_LP_REDIRECT                                2 /* HOT redirect (should have lp_len=0) */
+#define PG_PARSER_LP_DEAD                                    3 /* dead, may or may not have storage */
 
-#define pg_parser_ItemIdIsUsed(itemId) ((itemId)->lp_flags != PG_PARSER_LP_UNUSED)
+#define pg_parser_ItemIdIsUsed(itemId)                       ((itemId)->lp_flags != PG_PARSER_LP_UNUSED)
 
-#define pg_parser_ItemIdIsRedirected(itemId) ((itemId)->lp_flags == PG_PARSER_LP_REDIRECT)
+#define pg_parser_ItemIdIsRedirected(itemId)                 ((itemId)->lp_flags == PG_PARSER_LP_REDIRECT)
 
-#define pg_parser_ItemIdIsNormal(itemId) ((itemId)->lp_flags == PG_PARSER_LP_NORMAL)
+#define pg_parser_ItemIdIsNormal(itemId)                     ((itemId)->lp_flags == PG_PARSER_LP_NORMAL)
 
-#define pg_parser_ItemIdHasStorage(itemId) ((itemId)->lp_len != 0)
+#define pg_parser_ItemIdHasStorage(itemId)                   ((itemId)->lp_len != 0)
 
 #endif

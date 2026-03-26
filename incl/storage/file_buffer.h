@@ -48,18 +48,18 @@ typedef struct FILE_BUFFER_EXTRA
 
 typedef struct FILE_BUFFER
 {
-    bool   used;                /* flag indicating whether this buffer is in use */
-    int    bufid;               /* buffer identifier          */
-    int    flag;                /* flag information           */
-    uint64 maxsize;             /* available space for data   */
-    uint64 start;               /* usable offset in data      */
-                                /* flush thread checks if start is 0; if so, skips flush */
-    file_buffer_extra extra;    /* extra information          */
-    void*             privdata; /* private data               */
-                                /* currently stores ff_fileinfo */
-    uint8*              data;   /* data buffer                */
-    struct FILE_BUFFER* next;   /* next node                  */
-    struct FILE_BUFFER* tail;   /* last node                  */
+    bool                used;     /* flag indicating whether this buffer is in use */
+    int                 bufid;    /* buffer identifier          */
+    int                 flag;     /* flag information           */
+    uint64              maxsize;  /* available space for data   */
+    uint64              start;    /* usable offset in data      */
+                                  /* flush thread checks if start is 0; if so, skips flush */
+    file_buffer_extra   extra;    /* extra information          */
+    void*               privdata; /* private data               */
+                                  /* currently stores ff_fileinfo */
+    uint8*              data;     /* data buffer                */
+    struct FILE_BUFFER* next;     /* next node                  */
+    struct FILE_BUFFER* tail;     /* last node                  */
 } file_buffer;
 
 typedef struct FILE_BUFFERS

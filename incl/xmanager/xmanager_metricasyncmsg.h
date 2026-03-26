@@ -10,25 +10,25 @@ typedef struct XMANAGER_METRICASYNCMSG
     xmanager_metricnodetype type;
 
     /* Message type */
-    xmanager_msg msgtype;
+    xmanager_msg            msgtype;
 
     /* Result, 0 success, 1 failure */
-    int8 result;
+    int8                    result;
 
     /* Error code */
-    int errcode;
+    int                     errcode;
 
     /* Node name */
-    char* name;
+    char*                   name;
 
     /* Error message */
-    char* errormsg;
+    char*                   errormsg;
 } xmanager_metricasyncmsg;
 
 typedef struct XMANAGER_METRICASYNCMSGS
 {
     /* Timeout */
-    int timeout;
+    int    timeout;
 
     /* xmanager_metricasyncmsg */
     dlist* msgs;

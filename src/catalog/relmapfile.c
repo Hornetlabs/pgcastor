@@ -35,8 +35,8 @@ void relmapfile_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
     for (index = 0; index < relmapfile->num; index++)
     {
         /* Get class data from by_class by oid, then change relfilenode in class */
-        classInHash = hash_search(sysdicts->by_class, &(relmapfile->mapping + index)->mapoid,
-                                  HASH_FIND, NULL);
+        classInHash = hash_search(
+            sysdicts->by_class, &(relmapfile->mapping + index)->mapoid, HASH_FIND, NULL);
         if (NULL == classInHash)
         {
             continue;
@@ -65,8 +65,11 @@ void relmapfile_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
                 hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, NULL);
             if (NULL == prelfilenode2oid)
             {
-                elog(RLOG_ERROR, "put relfilenode2oid hash error, %u.%u.%u, oid:%u",
-                     relfilenode.spcNode, relfilenode.dbNode, relfilenode.relNode,
+                elog(RLOG_ERROR,
+                     "put relfilenode2oid hash error, %u.%u.%u, oid:%u",
+                     relfilenode.spcNode,
+                     relfilenode.dbNode,
+                     relfilenode.relNode,
                      classInHash->class->oid);
             }
             rmemcpy1(&prelfilenode2oid->relfilenode, 0, &relfilenode, sizeof(RelFileNode));

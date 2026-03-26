@@ -16,42 +16,56 @@
 
 /* By database type */
 static char* get_value_from_colvalue_postgres(int                             dbversion,
-                                              pg_parser_translog_tbcol_value* colvalue, int dtype,
-                                              int map_num);
+                                              pg_parser_translog_tbcol_value* colvalue,
+                                              int                             dtype,
+                                              int                             map_num);
 
-static char* set_value_from_colvalue_postgres(int dbversion, char* new_value,
-                                              pg_parser_translog_tbcol_value* colvalue, int dtype,
-                                              int map_num);
+static char* set_value_from_colvalue_postgres(int                             dbversion,
+                                              char*                           new_value,
+                                              pg_parser_translog_tbcol_value* colvalue,
+                                              int                             dtype,
+                                              int                             map_num);
 
 static char* free_value_from_colvalue_postgres(int                             dbversion,
-                                               pg_parser_translog_tbcol_value* colvalue, int dtype,
-                                               int map_num);
+                                               pg_parser_translog_tbcol_value* colvalue,
+                                               int                             dtype,
+                                               int                             map_num);
 
 /* By database version */
 /* PostgreSQL database */
-static char* get_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue, int dtype,
-                                          int map_num);
-static char* set_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue, char* new_value,
-                                          int dtype, int map_num);
-static char* free_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue, int dtype,
-                                           int map_num);
+static char* get_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue,
+                                          int                             dtype,
+                                          int                             map_num);
+static char* set_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue,
+                                          char*                           new_value,
+                                          int                             dtype,
+                                          int                             map_num);
+static char* free_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue,
+                                           int                             dtype,
+                                           int                             map_num);
 
 /* Database type/version dispatch section begin */
 typedef char* (*get_value_from_colvalue_dbtype_func)(int                             dbversion,
                                                      pg_parser_translog_tbcol_value* colvalue,
-                                                     int dtype, int map_num);
+                                                     int                             dtype,
+                                                     int                             map_num);
 
 typedef char* (*get_value_from_colvalue_dbversion_func)(pg_parser_translog_tbcol_value* colvalue,
-                                                        int dtype, int map_num);
+                                                        int                             dtype,
+                                                        int                             map_num);
 
-typedef char* (*set_value_from_colvalue_dbtype_func)(int dbversion, char* new_value,
+typedef char* (*set_value_from_colvalue_dbtype_func)(int                             dbversion,
+                                                     char*                           new_value,
                                                      pg_parser_translog_tbcol_value* colvalue,
-                                                     int dtype, int map_num);
+                                                     int                             dtype,
+                                                     int                             map_num);
 
 typedef char* (*set_value_from_colvalue_dbversion_func)(pg_parser_translog_tbcol_value* colvalue,
-                                                        char* new_value, int dtype, int map_num);
+                                                        char*                           new_value,
+                                                        int                             dtype,
+                                                        int                             map_num);
 
-#define free_value_from_colvalue_dbtype_func get_value_from_colvalue_dbtype_func
+#define free_value_from_colvalue_dbtype_func    get_value_from_colvalue_dbtype_func
 #define free_value_from_colvalue_dbversion_func get_value_from_colvalue_dbversion_func
 
 typedef struct DEAL_VALUE_FROM_COLVALUE_BYDBTYPE
@@ -72,7 +86,9 @@ typedef struct DEAL_VALUE_FROM_COLVALUE_BYDBVERSION
 
 static deal_value_from_colvalue_bydbtype m_deal_value_from_colvalue_dbtype_distribute[] = {
     {DATABASE_TYPE_NOP, NULL, NULL, NULL},
-    {DATABASE_TYPE_POSTGRESQL, get_value_from_colvalue_postgres, set_value_from_colvalue_postgres,
+    {DATABASE_TYPE_POSTGRESQL,
+     get_value_from_colvalue_postgres,
+     set_value_from_colvalue_postgres,
      free_value_from_colvalue_postgres}};
 
 static int m_deal_value_from_colvalue_bydbtype_cnt =
@@ -81,7 +97,9 @@ static int m_deal_value_from_colvalue_bydbtype_cnt =
 
 static deal_value_from_colvalue_bydbversion m_deal_value_from_colvalue_pg_distribute[] = {
     {PGDBVERSION_NOP, NULL, NULL, NULL},
-    {PGDBVERSION_12, get_value_from_colvalue_pg12, set_value_from_colvalue_pg12,
+    {PGDBVERSION_12,
+     get_value_from_colvalue_pg12,
+     set_value_from_colvalue_pg12,
      free_value_from_colvalue_pg12}};
 
 static int m_deal_value_from_colvalue_pg_cnt = (sizeof(m_deal_value_from_colvalue_pg_distribute)) /
@@ -126,8 +144,9 @@ static const get_value_catalog_column_mapping m_pg_type_mapping_pg12[] = {{TYPE_
 /* ----------pg_type column mapping end---------- */
 
 /* ----------get start---------- */
-static char* get_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue, int dtype,
-                                          int map_num)
+static char* get_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue,
+                                          int                             dtype,
+                                          int                             map_num)
 {
     switch (dtype)
     {
@@ -161,8 +180,9 @@ static char* get_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colval
 }
 
 static char* get_value_from_colvalue_postgres(int                             dbversion,
-                                              pg_parser_translog_tbcol_value* colvalue, int dtype,
-                                              int map_num)
+                                              pg_parser_translog_tbcol_value* colvalue,
+                                              int                             dtype,
+                                              int                             map_num)
 {
     if ((m_deal_value_from_colvalue_pg_cnt - 1) < dbversion ||
         NULL == m_deal_value_from_colvalue_pg_distribute[dbversion].getfunc)
@@ -172,23 +192,25 @@ static char* get_value_from_colvalue_postgres(int                             db
     return m_deal_value_from_colvalue_pg_distribute[dbversion].getfunc(colvalue, dtype, map_num);
 }
 
-static char* get_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue, int dtype, int pnum,
-                                     int dbtype, int dbversion)
+static char* get_value_from_colvalue(
+    pg_parser_translog_tbcol_value* colvalue, int dtype, int pnum, int dbtype, int dbversion)
 {
     if ((m_deal_value_from_colvalue_bydbtype_cnt - 1) < dbtype ||
         NULL == m_deal_value_from_colvalue_dbtype_distribute[dbtype].getfunc)
     {
         return NULL;
     }
-    return m_deal_value_from_colvalue_dbtype_distribute[dbtype].getfunc(dbversion, colvalue, dtype,
-                                                                        pnum);
+    return m_deal_value_from_colvalue_dbtype_distribute[dbtype].getfunc(
+        dbversion, colvalue, dtype, pnum);
 }
 /* ----------get end---------- */
 
 /* ----------set start---------- */
 
-static char* set_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue, char* new_value,
-                                          int dtype, int map_num)
+static char* set_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue,
+                                          char*                           new_value,
+                                          int                             dtype,
+                                          int                             map_num)
 {
     switch (dtype)
     {
@@ -207,35 +229,42 @@ static char* set_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colval
     return NULL;
 }
 
-static char* set_value_from_colvalue_postgres(int dbversion, char* new_value,
-                                              pg_parser_translog_tbcol_value* colvalue, int dtype,
-                                              int map_num)
+static char* set_value_from_colvalue_postgres(int                             dbversion,
+                                              char*                           new_value,
+                                              pg_parser_translog_tbcol_value* colvalue,
+                                              int                             dtype,
+                                              int                             map_num)
 {
     if ((m_deal_value_from_colvalue_pg_cnt - 1) < dbversion ||
         NULL == m_deal_value_from_colvalue_pg_distribute[dbversion].setfunc)
     {
         return NULL;
     }
-    return m_deal_value_from_colvalue_pg_distribute[dbversion].setfunc(colvalue, new_value, dtype,
-                                                                       map_num);
+    return m_deal_value_from_colvalue_pg_distribute[dbversion].setfunc(
+        colvalue, new_value, dtype, map_num);
 }
 
-static char* set_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue, char* new_value,
-                                     int dtype, int pnum, int dbtype, int dbversion)
+static char* set_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue,
+                                     char*                           new_value,
+                                     int                             dtype,
+                                     int                             pnum,
+                                     int                             dbtype,
+                                     int                             dbversion)
 {
     if ((m_deal_value_from_colvalue_bydbtype_cnt - 1) < dbtype ||
         NULL == m_deal_value_from_colvalue_dbtype_distribute[dbtype].setfunc)
     {
         return NULL;
     }
-    return m_deal_value_from_colvalue_dbtype_distribute[dbtype].setfunc(dbversion, new_value,
-                                                                        colvalue, dtype, pnum);
+    return m_deal_value_from_colvalue_dbtype_distribute[dbtype].setfunc(
+        dbversion, new_value, colvalue, dtype, pnum);
 }
 /* ----------set end---------- */
 
 /* ----------free start---------- */
-static char* free_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue, int dtype,
-                                           int map_num)
+static char* free_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colvalue,
+                                           int                             dtype,
+                                           int                             map_num)
 {
     switch (dtype)
     {
@@ -255,8 +284,9 @@ static char* free_value_from_colvalue_pg12(pg_parser_translog_tbcol_value* colva
 }
 
 static char* free_value_from_colvalue_postgres(int                             dbversion,
-                                               pg_parser_translog_tbcol_value* colvalue, int dtype,
-                                               int map_num)
+                                               pg_parser_translog_tbcol_value* colvalue,
+                                               int                             dtype,
+                                               int                             map_num)
 {
     if ((m_deal_value_from_colvalue_pg_cnt - 1) < dbversion ||
         NULL == m_deal_value_from_colvalue_pg_distribute[dbversion].freefunc)
@@ -266,58 +296,70 @@ static char* free_value_from_colvalue_postgres(int                             d
     return m_deal_value_from_colvalue_pg_distribute[dbversion].freefunc(colvalue, dtype, map_num);
 }
 
-static char* free_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue, int dtype, int pnum,
-                                      int dbtype, int dbversion)
+static char* free_value_from_colvalue(
+    pg_parser_translog_tbcol_value* colvalue, int dtype, int pnum, int dbtype, int dbversion)
 {
     if ((m_deal_value_from_colvalue_bydbtype_cnt - 1) < dbtype ||
         NULL == m_deal_value_from_colvalue_dbtype_distribute[dbtype].freefunc)
     {
         return NULL;
     }
-    return m_deal_value_from_colvalue_dbtype_distribute[dbtype].freefunc(dbversion, colvalue, dtype,
-                                                                         pnum);
+    return m_deal_value_from_colvalue_dbtype_distribute[dbtype].freefunc(
+        dbversion, colvalue, dtype, pnum);
 }
 /* ----------free end---------- */
 
-char* get_class_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue, int pnum, int dbtype,
-                                    int dbversion)
+char* get_class_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue,
+                                    int                             pnum,
+                                    int                             dbtype,
+                                    int                             dbversion)
 {
     return get_value_from_colvalue(colvalue, CATALOG_TYPE_CLASS, pnum, dbtype, dbversion);
 }
 
-char* set_class_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue, char* new_value,
-                                    int pnum, int dbtype, int dbversion)
+char* set_class_value_from_colvalue(
+    pg_parser_translog_tbcol_value* colvalue, char* new_value, int pnum, int dbtype, int dbversion)
 {
-    return set_value_from_colvalue(colvalue, new_value, CATALOG_TYPE_CLASS, pnum, dbtype,
-                                   dbversion);
+    return set_value_from_colvalue(
+        colvalue, new_value, CATALOG_TYPE_CLASS, pnum, dbtype, dbversion);
 }
 
-char* free_class_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue, int pnum, int dbtype,
-                                     int dbversion)
+char* free_class_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue,
+                                     int                             pnum,
+                                     int                             dbtype,
+                                     int                             dbversion)
 {
     return free_value_from_colvalue(colvalue, CATALOG_TYPE_CLASS, pnum, dbtype, dbversion);
 }
 
-char* get_attribute_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue, int pnum,
-                                        int dbtype, int dbversion)
+char* get_attribute_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue,
+                                        int                             pnum,
+                                        int                             dbtype,
+                                        int                             dbversion)
 {
     return get_value_from_colvalue(colvalue, CATALOG_TYPE_ATTRIBUTE, pnum, dbtype, dbversion);
 }
 
-char* get_namespace_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue, int pnum,
-                                        int dbtype, int dbversion)
+char* get_namespace_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue,
+                                        int                             pnum,
+                                        int                             dbtype,
+                                        int                             dbversion)
 {
     return get_value_from_colvalue(colvalue, CATALOG_TYPE_NAMESPACE, pnum, dbtype, dbversion);
 }
 
-char* get_type_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue, int pnum, int dbtype,
-                                   int dbversion)
+char* get_type_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue,
+                                   int                             pnum,
+                                   int                             dbtype,
+                                   int                             dbversion)
 {
     return get_value_from_colvalue(colvalue, CATALOG_TYPE_TYPE, pnum, dbtype, dbversion);
 }
 
-char* get_index_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue, int pnum, int dbtype,
-                                    int dbversion)
+char* get_index_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue,
+                                    int                             pnum,
+                                    int                             dbtype,
+                                    int                             dbversion)
 {
     return get_value_from_colvalue(colvalue, CATALOG_TYPE_INDEX, pnum, dbtype, dbversion);
 }

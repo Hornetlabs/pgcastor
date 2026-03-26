@@ -20,7 +20,7 @@
 #include "utils/string/strlcpy.h"
 
 #define HASH_MEM_ALLOC rmalloc0
-#define HASH_MEM_FREE rfree
+#define HASH_MEM_FREE  rfree
 
 /*
  * Constants
@@ -37,19 +37,19 @@
  * a good idea of the maximum number of entries!).  For non-shared hash
  * tables, the initial directory size can be left at the default.
  */
-#define DEF_SEGSIZE 256
+#define DEF_SEGSIZE       256
 #define DEF_SEGSIZE_SHIFT 8 /* must be log2(DEF_SEGSIZE) */
-#define DEF_DIRSIZE 256
-#define DEF_FFACTOR 1 /* default fill factor */
+#define DEF_DIRSIZE       256
+#define DEF_FFACTOR       1 /* default fill factor */
 
 /* Number of freelists to be used for a partitioned hash table. */
 #define NUM_FREELISTS 32
 
 /* A hash bucket is a linked list of HASHELEMENTs */
-typedef HASHELEMENT* HASHBUCKET;
+typedef HASHELEMENT*  HASHBUCKET;
 
 /* A hash segment is an array of bucket headers */
-typedef HASHBUCKET* HASHSEGMENT;
+typedef HASHBUCKET*   HASHSEGMENT;
 
 typedef unsigned char slock_t;
 
@@ -103,21 +103,21 @@ struct HASHHDR
 
     /* These fields can change, but not in a partitioned table */
     /* Also, dsize can't change in a shared table, even if unpartitioned */
-    long   dsize;      /* directory size */
-    long   nsegs;      /* number of allocated segments (<= dsize) */
-    uint32 max_bucket; /* ID of maximum bucket in use */
-    uint32 high_mask;  /* mask to modulo into entire table */
-    uint32 low_mask;   /* mask to modulo into lower half of table */
+    long         dsize;      /* directory size */
+    long         nsegs;      /* number of allocated segments (<= dsize) */
+    uint32       max_bucket; /* ID of maximum bucket in use */
+    uint32       high_mask;  /* mask to modulo into entire table */
+    uint32       low_mask;   /* mask to modulo into lower half of table */
 
     /* These fields are fixed at hashtable creation */
-    Size keysize;        /* hash key length in bytes */
-    Size entrysize;      /* total user element size in bytes */
-    long num_partitions; /* # partitions (must be power of 2), or 0 */
-    long ffactor;        /* target fill factor */
-    long max_dsize;      /* 'dsize' limit if directory is fixed size */
-    long ssize;          /* segment size --- must be power of 2 */
-    int  sshift;         /* segment shift = log2(ssize) */
-    int  nelem_alloc;    /* number of entries to allocate at once */
+    Size         keysize;        /* hash key length in bytes */
+    Size         entrysize;      /* total user element size in bytes */
+    long         num_partitions; /* # partitions (must be power of 2), or 0 */
+    long         ffactor;        /* target fill factor */
+    long         max_dsize;      /* 'dsize' limit if directory is fixed size */
+    long         ssize;          /* segment size --- must be power of 2 */
+    int          sshift;         /* segment shift = log2(ssize) */
+    int          nelem_alloc;    /* number of entries to allocate at once */
 
 #ifdef HASH_STATISTICS
 
@@ -130,7 +130,7 @@ struct HASHHDR
 #endif
 };
 
-#define IS_PARTITIONED(hctl) ((hctl)->num_partitions != 0)
+#define IS_PARTITIONED(hctl)         ((hctl)->num_partitions != 0)
 
 #define FREELIST_IDX(hctl, hashcode) (IS_PARTITIONED(hctl) ? (hashcode) % NUM_FREELISTS : 0)
 
@@ -151,12 +151,12 @@ struct HTAB
     bool            isfixed;  /* if true, don't enlarge */
 
     /* freezing a shared table isn't allowed, so we can keep state here */
-    bool frozen; /* true = no more inserts allowed */
+    bool            frozen; /* true = no more inserts allowed */
 
     /* We keep local copies of these fixed values to reduce contention */
-    Size keysize; /* hash key length in bytes */
-    long ssize;   /* segment size --- must be power of 2 */
-    int  sshift;  /* segment shift = log2(ssize) */
+    Size            keysize; /* hash key length in bytes */
+    long            ssize;   /* segment size --- must be power of 2 */
+    int             sshift;  /* segment shift = log2(ssize) */
 };
 
 /*
@@ -185,21 +185,21 @@ static long hash_accesses, hash_collisions, hash_expansions;
 
 /* ------------------↓↓ Private function prototypes ↓↓------------------ */
 
-static void*       DynaHashAlloc(Size size);
-static int         string_compare(const char* key1, const char* key2, Size keysize);
-static void        hdefault(HTAB* hashp);
-static int         next_pow2_int(long num);
-static bool        init_htab(HTAB* hashp, long nelem);
+static void* DynaHashAlloc(Size size);
+static int string_compare(const char* key1, const char* key2, Size keysize);
+static void hdefault(HTAB* hashp);
+static int next_pow2_int(long num);
+static bool init_htab(HTAB* hashp, long nelem);
 static HASHSEGMENT seg_alloc(HTAB* hashp);
-static int         choose_nelem_alloc(Size entrysize);
-static bool        element_alloc(HTAB* hashp, int nelem, int freelist_idx);
+static int choose_nelem_alloc(Size entrysize);
+static bool element_alloc(HTAB* hashp, int nelem, int freelist_idx);
 // static bool has_seq_scans(HTAB *hashp);
-static bool       expand_table(HTAB* hashp);
-static bool       dir_realloc(HTAB* hashp);
-static void       hash_corrupted(HTAB* hashp);
+static bool expand_table(HTAB* hashp);
+static bool dir_realloc(HTAB* hashp);
+static void hash_corrupted(HTAB* hashp);
 static HASHBUCKET get_hash_entry(HTAB* hashp, int freelist_idx);
-static void       register_seq_scan(HTAB* hashp);
-static void       deregister_seq_scan(HTAB* hashp);
+static void register_seq_scan(HTAB* hashp);
+static void deregister_seq_scan(HTAB* hashp);
 
 /* ------------------↑↑ Private function prototypes ↑↑------------------ */
 
@@ -600,12 +600,12 @@ uint32 get_hash_value(HTAB* hashp, const void* keyPtr)
  */
 void* hash_search(HTAB* hashp, const void* keyPtr, HASHACTION action, bool* foundPtr)
 {
-    return hash_search_with_hash_value(hashp, keyPtr, hashp->hash(keyPtr, hashp->keysize), action,
-                                       foundPtr);
+    return hash_search_with_hash_value(
+        hashp, keyPtr, hashp->hash(keyPtr, hashp->keysize), action, foundPtr);
 }
 
-void* hash_search_with_hash_value(HTAB* hashp, const void* keyPtr, uint32 hashvalue,
-                                  HASHACTION action, bool* foundPtr)
+void* hash_search_with_hash_value(
+    HTAB* hashp, const void* keyPtr, uint32 hashvalue, HASHACTION action, bool* foundPtr)
 {
     HASHHDR*        hctl = hashp->hctl;
     int             freelist_idx = FREELIST_IDX(hctl, hashvalue);
@@ -868,8 +868,8 @@ bool hash_update_hash_key(HTAB* hashp, void* existingEntry, const void* newKeyPt
 
     if (currBucket == NULL)
     {
-        elog(RLOG_ERROR, "hash_update_hash_key argument is not in hashtable \"%s\"",
-             hashp->tabname);
+        elog(
+            RLOG_ERROR, "hash_update_hash_key argument is not in hashtable \"%s\"", hashp->tabname);
     }
 
     oldPrevPtr = prevBucketPtr;
@@ -1111,11 +1111,26 @@ static bool init_htab(HTAB* hashp, long nelem)
     hctl->nelem_alloc = choose_nelem_alloc(hctl->entrysize);
 
 #if HASH_DEBUG
-    fprintf(stderr, "init_htab:\n%s%p\n%s%ld\n%s%ld\n%s%d\n%s%ld\n%s%u\n%s%x\n%s%x\n%s%ld\n",
-            "TABLE POINTER   ", hashp, "DIRECTORY SIZE  ", hctl->dsize, "SEGMENT SIZE    ",
-            hctl->ssize, "SEGMENT SHIFT   ", hctl->sshift, "FILL FACTOR     ", hctl->ffactor,
-            "MAX BUCKET      ", hctl->max_bucket, "HIGH MASK       ", hctl->high_mask,
-            "LOW  MASK       ", hctl->low_mask, "NSEGS           ", hctl->nsegs);
+    fprintf(stderr,
+            "init_htab:\n%s%p\n%s%ld\n%s%ld\n%s%d\n%s%ld\n%s%u\n%s%x\n%s%x\n%s%ld\n",
+            "TABLE POINTER   ",
+            hashp,
+            "DIRECTORY SIZE  ",
+            hctl->dsize,
+            "SEGMENT SIZE    ",
+            hctl->ssize,
+            "SEGMENT SHIFT   ",
+            hctl->sshift,
+            "FILL FACTOR     ",
+            hctl->ffactor,
+            "MAX BUCKET      ",
+            hctl->max_bucket,
+            "HIGH MASK       ",
+            hctl->high_mask,
+            "LOW  MASK       ",
+            hctl->low_mask,
+            "NSEGS           ",
+            hctl->nsegs);
 #endif
     return true;
 }
@@ -1219,21 +1234,6 @@ static bool element_alloc(HTAB* hashp, int nelem, int freelist_idx)
 
     return true;
 }
-
-#if 0
-/* Check if a table has any active scan */
-static bool has_seq_scans(HTAB *hashp)
-{
-	int			i;
-
-	for (i = 0; i < num_seq_scans; i++)
-	{
-		if (seq_scan_tables[i] == hashp)
-			return true;
-	}
-	return false;
-}
-#endif
 
 /*
  * Expand the table by adding one more hash bucket.

@@ -78,7 +78,9 @@ void parserwork_waldecode_onlinerefresh(decodingcontext* decodingctx)
     /* Call pre-parser, dispatch processing based on pre-parser content */
     if (false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
     {
-        elog(RLOG_ERROR, "pg_parser_trans_preTrans error, %08X, %s", rippleerrno,
+        elog(RLOG_ERROR,
+             "pg_parser_trans_preTrans error, %08X, %s",
+             rippleerrno,
              pg_parser_errno_getErrInfo(rippleerrno));
     }
 

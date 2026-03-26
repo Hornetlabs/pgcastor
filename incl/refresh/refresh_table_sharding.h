@@ -24,9 +24,9 @@ extern void refresh_table_sharding_set_shardno(refresh_table_sharding* shard, in
 extern void refresh_table_sharding_set_condition(refresh_table_sharding*  shard,
                                                  refresh_table_condition* cond);
 extern refresh_table_condition* refresh_table_sharding_condition_init(void);
-extern void                     refresh_table_sharding_get_info_from_filename(char*                   filename,
-                                                                              refresh_table_sharding* table_shard);
-extern void                     refresh_table_sharding_free(refresh_table_sharding* shard);
-extern void                     refresh_table_sharding_queuefree(void* data);
+extern void refresh_table_sharding_get_info_from_filename(char*                   filename,
+                                                          refresh_table_sharding* table_shard);
+extern void refresh_table_sharding_free(refresh_table_sharding* shard);
+extern void refresh_table_sharding_queuefree(void* data);
 
 #endif

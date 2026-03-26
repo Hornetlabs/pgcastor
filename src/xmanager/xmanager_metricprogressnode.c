@@ -57,8 +57,10 @@ void xmanager_metricprogressnode_destroy(xmanager_metricnode* metricnode)
 }
 
 /* Serialize progress node */
-bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode, uint8** blk, int* blksize,
-                                        int* blkstart)
+bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
+                                        uint8**              blk,
+                                        int*                 blksize,
+                                        int*                 blkstart)
 {
     bool                         bnew = false;
     int                          len = 0;
@@ -330,8 +332,9 @@ xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkst
 }
 
 /* Get key-value pairs from configuration file */
-static bool xmanager_metricprogressnode_getdatafromcfgfile(const char* config_file, char* key,
-                                                           char* data)
+static bool xmanager_metricprogressnode_getdatafromcfgfile(const char* config_file,
+                                                           char*       key,
+                                                           char*       data)
 {
     FILE* fp = NULL;
     char  fline[1024];
@@ -775,7 +778,8 @@ void* xmanager_metricmsg_assembleprogress(xmanager_metric*     xmetric,
 
     if (NULL == pmetricnode)
     {
-        elog(RLOG_WARNING, "not find valid information in progress %s ",
+        elog(RLOG_WARNING,
+             "not find valid information in progress %s ",
              xmetricprogressnode->base.name);
         return NULL;
     }
@@ -800,12 +804,13 @@ void* xmanager_metricmsg_assembleprogress(xmanager_metric*     xmetric,
 
     if (XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
     {
-        return xmanager_metricmsg_assembleprogresscapture(xmetric, pmetricnode,
-                                                          xmetricprogressnode->progressjop);
+        return xmanager_metricmsg_assembleprogresscapture(
+            xmetric, pmetricnode, xmetricprogressnode->progressjop);
     }
     else
     {
-        elog(RLOG_WARNING, "find invalid information in progress %s ",
+        elog(RLOG_WARNING,
+             "find invalid information in progress %s ",
              xmetricprogressnode->base.name);
         return NULL;
     }

@@ -68,19 +68,4 @@ typedef struct PG_PARSER_SYSDICT_PGRANGE_DICT
     pg_parser_sysdict_pgrange* m_pg_range;
 } pg_parser_sysdict_pgrange_dict;
 
-#if 0
-typedef struct PG_PARSER_SYSDCIT_PGLANGUAGE
-{
-    int32_t                            m_count;
-    pg_parser_sysdict_             *m_pg_language;
-} pg_parser_sysdict_pglanguage;
-
-
-typedef struct PG_PARSER_SYSDICT_PGCONSTRAINT_DICT
-{
-    int32_t                            m_count;
-    pg_parser_sysdict_pgconstraint *m_pg_constraint;
-} pg_parser_sysdict_pgconstraint_dict;
-#endif
-
 #endif

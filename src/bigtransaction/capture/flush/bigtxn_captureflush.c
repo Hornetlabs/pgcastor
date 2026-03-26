@@ -44,9 +44,9 @@ increment_captureflush* bigtxn_captureflush_init(void)
 
 static void bigtxn_captureflush_reloadsyncdatasets(increment_captureflush* wstate)
 {
-    wstate->txnsctx->hsyncdataset =
-        filter_dataset_reload(wstate->txnsctx->sysdicts->by_namespace,
-                              wstate->txnsctx->sysdicts->by_class, wstate->txnsctx->hsyncdataset);
+    wstate->txnsctx->hsyncdataset = filter_dataset_reload(wstate->txnsctx->sysdicts->by_namespace,
+                                                          wstate->txnsctx->sysdicts->by_class,
+                                                          wstate->txnsctx->hsyncdataset);
 }
 
 static void bigtxn_captureflush_reloadstate(increment_captureflush* wstate, int state)
@@ -84,7 +84,11 @@ static bool bigtxn_captureflush_initfile(increment_captureflush*   cflush,
      *  If not exists, create new file
      */
     rmemset1(cflush->path, 0, '\0', MAXPATH);
-    snprintf(cflush->path, MAXPATH, "%s/%lu/%016lX", STORAGE_BIG_TRANSACTION_DIR, cflushfile->xid,
+    snprintf(cflush->path,
+             MAXPATH,
+             "%s/%lu/%016lX",
+             STORAGE_BIG_TRANSACTION_DIR,
+             cflushfile->xid,
              cflushfile->fileid);
     if (0 == stat(cflush->path, &st))
     {
@@ -98,8 +102,11 @@ static bool bigtxn_captureflush_initfile(increment_captureflush*   cflush,
         return true;
     }
 
-    if (false == osal_create_file_with_size(cflush->path, O_RDWR | O_CREAT | O_EXCL | BINARY,
-                                            cflush->maxsize, FILE_BUFFER_SIZE, block))
+    if (false == osal_create_file_with_size(cflush->path,
+                                            O_RDWR | O_CREAT | O_EXCL | BINARY,
+                                            cflush->maxsize,
+                                            FILE_BUFFER_SIZE,
+                                            block))
     {
         elog(RLOG_WARNING, "create file error, %s", strerror(errno));
         return false;
@@ -266,12 +273,16 @@ void* bigtxn_captureflush_main(void* args)
             if (0 != fbuffer->start)
             {
                 /* Write data */
-                if (fbuffer->maxsize != osal_file_pwrite(cflush->fd, (char*)fbuffer->data,
+                if (fbuffer->maxsize != osal_file_pwrite(cflush->fd,
+                                                         (char*)fbuffer->data,
                                                          fbuffer->maxsize,
                                                          ((finfo->blknum - 1) * fbuffer->maxsize)))
                 {
-                    elog(RLOG_WARNING, "big txn capture flush flush error, xid:%lu, fileid:%lu, %s",
-                         cflushlastfile->xid, cflushlastfile->fileid, strerror(errno));
+                    elog(RLOG_WARNING,
+                         "big txn capture flush flush error, xid:%lu, fileid:%lu, %s",
+                         cflushlastfile->xid,
+                         cflushlastfile->fileid,
+                         strerror(errno));
                     thr_node->stat = THRNODE_STAT_ABORT;
                     break;
                 }

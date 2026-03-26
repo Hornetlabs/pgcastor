@@ -27,7 +27,8 @@ onlinerefresh_integratesplittrail* onlinerefresh_integratesplittrail_init(void)
     stctx = (onlinerefresh_integratesplittrail*)rmalloc0(sizeof(onlinerefresh_integratesplittrail));
     if (NULL == stctx)
     {
-        elog(RLOG_WARNING, "onlinerefresh integratesplittrail malloc out of memory, %s",
+        elog(RLOG_WARNING,
+             "onlinerefresh integratesplittrail malloc out of memory, %s",
              strerror(errno));
         return NULL;
     }
@@ -137,8 +138,8 @@ void* onlinerefresh_integratesplittrail_main(void* args)
             continue;
         }
 
-        if (false == loadtrailrecords_filterremainmetadata(splittrail->loadrecords, fileid,
-                                                           splittrail->emitoffset))
+        if (false == loadtrailrecords_filterremainmetadata(
+                         splittrail->loadrecords, fileid, splittrail->emitoffset))
         {
             /* Filtering complete */
             splittrail->filter = false;

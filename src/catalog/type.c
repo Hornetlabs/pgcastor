@@ -387,7 +387,9 @@ void type_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         catalogInHash = hash_search(sysdicts->by_type, &newcatalog->oid, HASH_ENTER, &found);
         if (true == found)
         {
-            elog(RLOG_DEBUG, "by_type hash duplicate oid, %u, %s", catalogInHash->type->oid,
+            elog(RLOG_DEBUG,
+                 "by_type hash duplicate oid, %u, %s",
+                 catalogInHash->type->oid,
                  catalogInHash->type->typname.data);
             if (NULL != catalogInHash->type)
             {
@@ -419,7 +421,9 @@ void type_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         catalogInHash = hash_search(sysdicts->by_type, &newcatalog->oid, HASH_FIND, &found);
         if (NULL == catalogInHash)
         {
-            elog(RLOG_WARNING, "type %s,%u can not fond in type hash", newcatalog->type->oid,
+            elog(RLOG_WARNING,
+                 "type %s,%u can not fond in type hash",
+                 newcatalog->type->oid,
                  newcatalog->type->typname.data);
             return;
         }

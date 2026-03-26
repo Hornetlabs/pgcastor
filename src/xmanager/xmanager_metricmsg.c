@@ -36,13 +36,14 @@ typedef struct XMANAGER_METRICMSGOP
 {
     xmanager_msg type;
     char*        desc;
-    bool (*assemble)(xmanager_metric* xmetric, netpoolentry* npoolentry, dlist* dlmsgs);
-    bool (*parse)(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket);
+    bool         (*assemble)(xmanager_metric* xmetric, netpoolentry* npoolentry, dlist* dlmsgs);
+    bool         (*parse)(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket);
 } xmanager_metricmsgop;
 
 /* Assemble identity return info */
-bool xmanager_metricmsg_assemblecmdresult(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                          xmanager_msg msgtype)
+bool xmanager_metricmsg_assemblecmdresult(xmanager_metric* xmetric,
+                                          netpoolentry*    npoolentry,
+                                          xmanager_msg     msgtype)
 {
     int        flag = 0;
     int        msglen = 0;
@@ -97,8 +98,8 @@ bool xmanager_metricmsg_assemblecmdresult(xmanager_metric* xmetric, netpoolentry
 }
 
 /* Assemble error info */
-bool xmanager_metricmsg_assembleerrormsg(xmanager_metric* xmetric, queue* queue, int type,
-                                         int errorcode, char* errormsg)
+bool xmanager_metricmsg_assembleerrormsg(
+    xmanager_metric* xmetric, queue* queue, int type, int errorcode, char* errormsg)
 {
     uint8      flag = 1;
     int        len = 0;
@@ -178,7 +179,8 @@ bool xmanager_metricmsg_assembleerrormsg(xmanager_metric* xmetric, queue* queue,
 
 /*------------------capture parse begin----------------------------*/
 static bool xmanager_metricmsg_parsecaptureincmsg(xmanager_metric* xmetric,
-                                                  netpoolentry* npoolentry, netpacket* npacket)
+                                                  netpoolentry*    npoolentry,
+                                                  netpacket*       npacket)
 {
     int                         len = 0;
     uint8*                      uptr = NULL;
@@ -210,7 +212,8 @@ static bool xmanager_metricmsg_parsecaptureincmsg(xmanager_metric* xmetric,
         dlist_get(xmetric->metricnodes, &xmetricapturenode, xmanager_metricnode_cmp);
     if (NULL == pxmetriccapturenode)
     {
-        elog(RLOG_WARNING, "xmanager metric capture msg can not get capture by name:%s",
+        elog(RLOG_WARNING,
+             "xmanager metric capture msg can not get capture by name:%s",
              xmetricapturenode.base.name);
         return false;
     }
@@ -272,7 +275,8 @@ static bool xmanager_metricmsg_parsecaptureincmsg(xmanager_metric* xmetric,
 
 /*------------------integrate parse begin----------------------------*/
 static bool xmanager_metricmsg_parseintegrateincmsg(xmanager_metric* xmetric,
-                                                    netpoolentry* npoolentry, netpacket* npacket)
+                                                    netpoolentry*    npoolentry,
+                                                    netpacket*       npacket)
 {
     int                           len = 0;
     uint8*                        uptr = NULL;
@@ -304,7 +308,8 @@ static bool xmanager_metricmsg_parseintegrateincmsg(xmanager_metric* xmetric,
         dlist_get(xmetric->metricnodes, &xmetriintegratenode, xmanager_metricnode_cmp);
     if (NULL == pxmetricintegratenode)
     {
-        elog(RLOG_WARNING, "xmanager metric integrate msg can not get integrate by name:%s",
+        elog(RLOG_WARNING,
+             "xmanager metric integrate msg can not get integrate by name:%s",
              xmetriintegratenode.base.name);
         return false;
     }
@@ -361,28 +366,42 @@ static xmanager_metricmsgop m_metricmsgops[] = {
     {XMANAGER_MSG_ALTERCMD, "XManager Msg Alter", NULL, xmanager_metricmsg_parsealter},
     {XMANAGER_MSG_REMOVECMD, "XManager Msg Remove", NULL, xmanager_metricmsg_parseremove},
     {XMANAGER_MSG_DROPCMD, "XManager Msg Drop", NULL, xmanager_metricmsg_parsedrop},
-    {XMANAGER_MSG_INITCMD, "XManager Msg Init", xmanager_metricmsg_assembleinit,
+    {XMANAGER_MSG_INITCMD,
+     "XManager Msg Init",
+     xmanager_metricmsg_assembleinit,
      xmanager_metricmsg_parseinit},
     {XMANAGER_MSG_EDITCMD, "XManager Msg Edit", NULL, xmanager_metricmsg_parseedit},
-    {XMANAGER_MSG_STARTCMD, "XManager Msg Start", xmanager_metricmsg_assemblestart,
+    {XMANAGER_MSG_STARTCMD,
+     "XManager Msg Start",
+     xmanager_metricmsg_assemblestart,
      xmanager_metricmsg_parsestart},
-    {XMANAGER_MSG_STOPCMD, "XManager Msg Stop", xmanager_metricmsg_assemblestop,
+    {XMANAGER_MSG_STOPCMD,
+     "XManager Msg Stop",
+     xmanager_metricmsg_assemblestop,
      xmanager_metricmsg_parsestop},
     {XMANAGER_MSG_RELOADCMD, "XManager Msg Reload", NULL, NULL},
     {XMANAGER_MSG_INFOCMD, "XManager Msg Info", NULL, xmanager_metricmsg_parseinfo},
     {XMANAGER_MSG_WATCHCMD, "XManager Msg Watch", NULL, xmanager_metricmsg_parsewatch},
     {XMANAGER_MSG_CONFFILECMD, "XManager Msg Conffile", NULL, xmanager_metricmsg_parseconffile},
-    {XMANAGER_MSG_REFRESHCMD, "XManager Msg Refresh", xmanager_metricmsg_assemblerefresh,
+    {XMANAGER_MSG_REFRESHCMD,
+     "XManager Msg Refresh",
+     xmanager_metricmsg_assemblerefresh,
      xmanager_metricmsg_parserefresh},
     {XMANAGER_MSG_LISTCMD, "XManager Msg List", NULL, xmanager_metricmsg_parselist},
 
     /*-----------------------xmanager internal communication begin-----------------*/
-    {XMANAGER_MSG_CAPTUREINCREMENT, "XManager Msg Capture Increment", NULL,
+    {XMANAGER_MSG_CAPTUREINCREMENT,
+     "XManager Msg Capture Increment",
+     NULL,
      xmanager_metricmsg_parsecaptureincmsg},
-    {XMANAGER_MSG_CAPTUREREFRESH, "XManager Msg Capture Online Refresh", NULL,
+    {XMANAGER_MSG_CAPTUREREFRESH,
+     "XManager Msg Capture Online Refresh",
+     NULL,
      xmanager_metricmsg_parsecapturerefresh},
     {XMANAGER_MSG_CAPTUREBIGTXN, "XManager Msg Capture Big Transaction", NULL, NULL},
-    {XMANAGER_MSG_INTEGRATEINCREMENT, "XManager Msg Integrate Increment", NULL,
+    {XMANAGER_MSG_INTEGRATEINCREMENT,
+     "XManager Msg Integrate Increment",
+     NULL,
      xmanager_metricmsg_parseintegrateincmsg},
     {XMANAGER_MSG_INTEGRATEONLINEREFRESH, "XManager Msg Integrate Online Refresh", NULL, NULL},
     {XMANAGER_MSG_INTEGRATEBIGTXN, "XManager Msg Integrate Big Transaction", NULL, NULL},
@@ -400,23 +419,25 @@ char* xmanager_metricmsg_getdesc(xmanager_msg msgtype)
  * Parse data packet
  *  Return false, need to free npoolentry outside
  */
-bool xmanager_metricmsg_assembleresponse(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                         xmanager_msg msgtype, dlist* dlmsgs)
+bool xmanager_metricmsg_assembleresponse(xmanager_metric* xmetric,
+                                         netpoolentry*    npoolentry,
+                                         xmanager_msg     msgtype,
+                                         dlist*           dlmsgs)
 {
     char errormsg[512] = {0};
 
     if (msgtype >= XMANAGER_MSG_MAX)
     {
         snprintf(errormsg, 512, "unknown msgtype %d.", msgtype);
-        return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, msgtype,
-                                                   ERROR_MSGUNSPPORT, errormsg);
+        return xmanager_metricmsg_assembleerrormsg(
+            xmetric, npoolentry->wpackets, msgtype, ERROR_MSGUNSPPORT, errormsg);
     }
 
     if (NULL == m_metricmsgops[msgtype].assemble)
     {
         snprintf(errormsg, 512, "%s unsupport, please wait.", m_metricmsgops[msgtype].desc);
-        return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, msgtype,
-                                                   ERROR_MSGUNSPPORT, errormsg);
+        return xmanager_metricmsg_assembleerrormsg(
+            xmetric, npoolentry->wpackets, msgtype, ERROR_MSGUNSPPORT, errormsg);
     }
 
     return m_metricmsgops[msgtype].assemble(xmetric, npoolentry, dlmsgs);
@@ -426,8 +447,9 @@ bool xmanager_metricmsg_assembleresponse(xmanager_metric* xmetric, netpoolentry*
  * Parse data packet
  *  Return false, need to free npoolentry outside
  */
-bool xmanager_metricmsg_parsenetpacket(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                       netpacket* npacket)
+bool xmanager_metricmsg_parsenetpacket(xmanager_metric* xmetric,
+                                       netpoolentry*    npoolentry,
+                                       netpacket*       npacket)
 {
     int    msgtype = 0;
     uint8* uptr = NULL;
@@ -442,15 +464,15 @@ bool xmanager_metricmsg_parsenetpacket(xmanager_metric* xmetric, netpoolentry* n
     if (msgtype >= XMANAGER_MSG_MAX)
     {
         snprintf(errormsg, 512, "unknown msgtype %d.", msgtype);
-        return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, msgtype,
-                                                   ERROR_MSGUNSPPORT, errormsg);
+        return xmanager_metricmsg_assembleerrormsg(
+            xmetric, npoolentry->wpackets, msgtype, ERROR_MSGUNSPPORT, errormsg);
     }
 
     if (NULL == m_metricmsgops[msgtype].parse)
     {
         snprintf(errormsg, 512, "%s unsupport, please wait.", m_metricmsgops[msgtype].desc);
-        return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, msgtype,
-                                                   ERROR_MSGUNSPPORT, errormsg);
+        return xmanager_metricmsg_assembleerrormsg(
+            xmetric, npoolentry->wpackets, msgtype, ERROR_MSGUNSPPORT, errormsg);
     }
 
     return m_metricmsgops[msgtype].parse(xmetric, npoolentry, npacket);

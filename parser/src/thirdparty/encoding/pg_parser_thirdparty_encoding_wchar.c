@@ -2,7 +2,7 @@
 #include "pg_parser_app_incl.h"
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
-#define HIGHBIT (0x80)
+#define HIGHBIT            (0x80)
 #define IS_HIGHBIT_SET(ch) ((unsigned char)(ch) & HIGHBIT)
 
 /*
@@ -34,8 +34,9 @@
 /*
  * SQL/ASCII
  */
-static int32_t character_ascii2wchar_with_len(const unsigned char* from, character_wchar* to,
-                                              int32_t len)
+static int32_t character_ascii2wchar_with_len(const unsigned char* from,
+                                              character_wchar*     to,
+                                              int32_t              len)
 {
     int32_t cnt = 0;
 
@@ -72,8 +73,9 @@ static int32_t character_ascii_dsplen(const unsigned char* s)
 /*
  * EUC
  */
-static int32_t character_euc2wchar_with_len(const unsigned char* from, character_wchar* to,
-                                            int32_t len)
+static int32_t character_euc2wchar_with_len(const unsigned char* from,
+                                            character_wchar*     to,
+                                            int32_t              len)
 {
     int32_t cnt = 0;
 
@@ -160,8 +162,9 @@ static inline int32_t character_euc_dsplen(const unsigned char* s)
 /*
  * EUC_JP
  */
-static int32_t character_eucjp2wchar_with_len(const unsigned char* from, character_wchar* to,
-                                              int32_t len)
+static int32_t character_eucjp2wchar_with_len(const unsigned char* from,
+                                              character_wchar*     to,
+                                              int32_t              len)
 {
     return character_euc2wchar_with_len(from, to, len);
 }
@@ -197,8 +200,9 @@ static int32_t character_eucjp_dsplen(const unsigned char* s)
 /*
  * EUC_KR
  */
-static int32_t character_euckr2wchar_with_len(const unsigned char* from, character_wchar* to,
-                                              int32_t len)
+static int32_t character_euckr2wchar_with_len(const unsigned char* from,
+                                              character_wchar*     to,
+                                              int32_t              len)
 {
     return character_euc2wchar_with_len(from, to, len);
 }
@@ -217,8 +221,9 @@ static int32_t character_euckr_dsplen(const unsigned char* s)
  * EUC_CN
  *
  */
-static int32_t character_euccn2wchar_with_len(const unsigned char* from, character_wchar* to,
-                                              int32_t len)
+static int32_t character_euccn2wchar_with_len(const unsigned char* from,
+                                              character_wchar*     to,
+                                              int32_t              len)
 {
     int32_t cnt = 0;
 
@@ -290,8 +295,9 @@ static int32_t character_euccn_dsplen(const unsigned char* s)
  * EUC_TW
  *
  */
-static int32_t character_euctw2wchar_with_len(const unsigned char* from, character_wchar* to,
-                                              int32_t len)
+static int32_t character_euctw2wchar_with_len(const unsigned char* from,
+                                              character_wchar*     to,
+                                              int32_t              len)
 {
     int32_t cnt = 0;
 
@@ -382,8 +388,9 @@ static int32_t character_euctw_dsplen(const unsigned char* s)
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t character_wchar2euc_with_len(const character_wchar* from, unsigned char* to,
-                                            int32_t len)
+static int32_t character_wchar2euc_with_len(const character_wchar* from,
+                                            unsigned char*         to,
+                                            int32_t                len)
 {
     int32_t cnt = 0;
 
@@ -443,8 +450,9 @@ static int32_t character_johab_dsplen(const unsigned char* s)
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t character_utf2wchar_with_len(const unsigned char* from, character_wchar* to,
-                                            int32_t len)
+static int32_t character_utf2wchar_with_len(const unsigned char* from,
+                                            character_wchar*     to,
+                                            int32_t              len)
 {
     int32_t  cnt = 0;
     uint32_t c1, c2, c3, c4;
@@ -591,8 +599,9 @@ int32_t character_utf_mblen(const unsigned char* s)
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t character_wchar2utf_with_len(const character_wchar* from, unsigned char* to,
-                                            int32_t len)
+static int32_t character_wchar2utf_with_len(const character_wchar* from,
+                                            unsigned char*         to,
+                                            int32_t                len)
 {
     int32_t cnt = 0;
 
@@ -630,8 +639,9 @@ struct mbinterval
 };
 
 /* auxiliary function for binary search in interval table */
-static int32_t character_mbbisearch(character_wchar ucs, const struct mbinterval* table,
-                                    int32_t max)
+static int32_t character_mbbisearch(character_wchar          ucs,
+                                    const struct mbinterval* table,
+                                    int32_t                  max)
 {
     int32_t min = 0;
     int32_t mid;
@@ -810,8 +820,9 @@ static int32_t character_utf_dsplen(const unsigned char* s)
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t character_mule2wchar_with_len(const unsigned char* from, character_wchar* to,
-                                             int32_t len)
+static int32_t character_mule2wchar_with_len(const unsigned char* from,
+                                             character_wchar*     to,
+                                             int32_t              len)
 {
     int32_t cnt = 0;
 
@@ -863,8 +874,9 @@ static int32_t character_mule2wchar_with_len(const unsigned char* from, characte
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t character_wchar2mule_with_len(const character_wchar* from, unsigned char* to,
-                                             int32_t len)
+static int32_t character_wchar2mule_with_len(const character_wchar* from,
+                                             unsigned char*         to,
+                                             int32_t                len)
 {
     int32_t cnt = 0;
 
@@ -992,8 +1004,9 @@ static int32_t character_mule_dsplen(const unsigned char* s)
 /*
  * ISO8859-1
  */
-static int32_t character_latin12wchar_with_len(const unsigned char* from, character_wchar* to,
-                                               int32_t len)
+static int32_t character_latin12wchar_with_len(const unsigned char* from,
+                                               character_wchar*     to,
+                                               int32_t              len)
 {
     int32_t cnt = 0;
 
@@ -1014,8 +1027,9 @@ static int32_t character_latin12wchar_with_len(const unsigned char* from, charac
  * len: length of from.
  * "from" not necessarily null terminated.
  */
-static int32_t character_wchar2single_with_len(const character_wchar* from, unsigned char* to,
-                                               int32_t len)
+static int32_t character_wchar2single_with_len(const character_wchar* from,
+                                               unsigned char*         to,
+                                               int32_t                len)
 {
     int32_t cnt = 0;
 
@@ -1722,86 +1736,236 @@ bool character_utf8_islegal(const unsigned char* source, int32_t length)
  *-------------------------------------------------------------------
  */
 const character_wchar_tbl character_wchar_table[] = {
-    {character_ascii2wchar_with_len, character_wchar2single_with_len, character_ascii_mblen,
-     character_ascii_dsplen, character_ascii_verifier, 1}, /* PG_SQL_ASCII */
-    {character_eucjp2wchar_with_len, character_wchar2euc_with_len, character_eucjp_mblen,
-     character_eucjp_dsplen, character_eucjp_verifier, 3}, /* PG_EUC_JP */
-    {character_euccn2wchar_with_len, character_wchar2euc_with_len, character_euccn_mblen,
-     character_euccn_dsplen, character_euccn_verifier, 2}, /* PG_EUC_CN */
-    {character_euckr2wchar_with_len, character_wchar2euc_with_len, character_euckr_mblen,
-     character_euckr_dsplen, character_euckr_verifier, 3}, /* PG_EUC_KR */
-    {character_euctw2wchar_with_len, character_wchar2euc_with_len, character_euctw_mblen,
-     character_euctw_dsplen, character_euctw_verifier, 4}, /* PG_EUC_TW */
-    {character_eucjp2wchar_with_len, character_wchar2euc_with_len, character_eucjp_mblen,
-     character_eucjp_dsplen, character_eucjp_verifier, 3}, /* PG_EUC_JIS_2004 */
-    {character_utf2wchar_with_len, character_wchar2utf_with_len, character_utf_mblen,
-     character_utf_dsplen, character_utf8_verifier, 4}, /* PG_UTF8 */
-    {character_mule2wchar_with_len, character_wchar2mule_with_len, character_mule_mblen,
-     character_mule_dsplen, character_mule_verifier, 4}, /* PG_MULE_INTERNAL */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN1 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN2 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN3 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN4 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN5 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN6 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN7 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN8 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN9 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_LATIN10 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1256 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1258 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN866 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN874 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_KOI8R */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1251 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1252 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* ISO-8859-5 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* ISO-8859-6 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* ISO-8859-7 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* ISO-8859-8 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1250 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1253 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1254 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1255 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* PG_WIN1257 */
-    {character_latin12wchar_with_len, character_wchar2single_with_len, character_latin1_mblen,
-     character_latin1_dsplen, character_latin1_verifier, 1}, /* CHARACTER_PG_KOI8U */
+    {character_ascii2wchar_with_len,
+     character_wchar2single_with_len,
+     character_ascii_mblen,
+     character_ascii_dsplen,
+     character_ascii_verifier,
+     1}, /* PG_SQL_ASCII */
+    {character_eucjp2wchar_with_len,
+     character_wchar2euc_with_len,
+     character_eucjp_mblen,
+     character_eucjp_dsplen,
+     character_eucjp_verifier,
+     3}, /* PG_EUC_JP */
+    {character_euccn2wchar_with_len,
+     character_wchar2euc_with_len,
+     character_euccn_mblen,
+     character_euccn_dsplen,
+     character_euccn_verifier,
+     2}, /* PG_EUC_CN */
+    {character_euckr2wchar_with_len,
+     character_wchar2euc_with_len,
+     character_euckr_mblen,
+     character_euckr_dsplen,
+     character_euckr_verifier,
+     3}, /* PG_EUC_KR */
+    {character_euctw2wchar_with_len,
+     character_wchar2euc_with_len,
+     character_euctw_mblen,
+     character_euctw_dsplen,
+     character_euctw_verifier,
+     4}, /* PG_EUC_TW */
+    {character_eucjp2wchar_with_len,
+     character_wchar2euc_with_len,
+     character_eucjp_mblen,
+     character_eucjp_dsplen,
+     character_eucjp_verifier,
+     3}, /* PG_EUC_JIS_2004 */
+    {character_utf2wchar_with_len,
+     character_wchar2utf_with_len,
+     character_utf_mblen,
+     character_utf_dsplen,
+     character_utf8_verifier,
+     4}, /* PG_UTF8 */
+    {character_mule2wchar_with_len,
+     character_wchar2mule_with_len,
+     character_mule_mblen,
+     character_mule_dsplen,
+     character_mule_verifier,
+     4}, /* PG_MULE_INTERNAL */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_LATIN1 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_LATIN2 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_LATIN3 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_LATIN4 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_LATIN5 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_LATIN6 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_LATIN7 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_LATIN8 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_LATIN9 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_LATIN10 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN1256 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN1258 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN866 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN874 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_KOI8R */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN1251 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN1252 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* ISO-8859-5 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* ISO-8859-6 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* ISO-8859-7 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* ISO-8859-8 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN1250 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN1253 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN1254 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN1255 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* PG_WIN1257 */
+    {character_latin12wchar_with_len,
+     character_wchar2single_with_len,
+     character_latin1_mblen,
+     character_latin1_dsplen,
+     character_latin1_verifier,
+     1}, /* CHARACTER_PG_KOI8U */
     {0, 0, character_sjis_mblen, character_sjis_dsplen, character_sjis_verifier, 2}, /* PG_SJIS */
     {0, 0, character_big5_mblen, character_big5_dsplen, character_big5_verifier, 2}, /* PG_BIG5 */
     {0, 0, character_gbk_mblen, character_gbk_dsplen, character_gbk_verifier, 2},    /* PG_GBK */
     {0, 0, character_uhc_mblen, character_uhc_dsplen, character_uhc_verifier, 2},    /* PG_UHC */
-    {0, 0, character_gb18030_mblen, character_gb18030_dsplen, character_gb18030_verifier,
-     4}, /* PG_GB18030 */
-    {0, 0, character_johab_mblen, character_johab_dsplen, character_johab_verifier,
-     3}, /* PG_JOHAB */
-    {0, 0, character_sjis_mblen, character_sjis_dsplen, character_sjis_verifier,
-     2} /* PG_SHIFT_JIS_2004 */
+    {0,
+     0,
+     character_gb18030_mblen,
+     character_gb18030_dsplen,
+     character_gb18030_verifier,
+     4}, /* PG_GB18030
+          */
+    {0, 0, character_johab_mblen, character_johab_dsplen, character_johab_verifier, 3}, /* PG_JOHAB
+                                                                                         */
+    {0,
+     0,
+     character_sjis_mblen,
+     character_sjis_dsplen,
+     character_sjis_verifier,
+     2} /* PG_SHIFT_JIS_2004
+         */
 };
 
 /*
@@ -1826,22 +1990,6 @@ void check_encoding_conversion_args(int32_t expected_src_encoding, int32_t expec
 {
     PG_PARSER_UNUSED(expected_src_encoding);
     PG_PARSER_UNUSED(expected_dest_encoding);
-#if 0
-    if (!PG_VALID_ENCODING(src_encoding))
-        elog(ERROR, "invalid source encoding ID: %d", src_encoding);
-    if (src_encoding != expected_src_encoding && expected_src_encoding >= 0)
-        elog(ERROR, "expected source encoding \"%s\", but got \"%s\"",
-             pg_enc2name_tbl[expected_src_encoding].name,
-             pg_enc2name_tbl[src_encoding].name);
-    if (!PG_VALID_ENCODING(dest_encoding))
-        elog(ERROR, "invalid destination encoding ID: %d", dest_encoding);
-    if (dest_encoding != expected_dest_encoding && expected_dest_encoding >= 0)
-        elog(ERROR, "expected destination encoding \"%s\", but got \"%s\"",
-             pg_enc2name_tbl[expected_dest_encoding].name,
-             pg_enc2name_tbl[dest_encoding].name);
-    if (len < 0)
-        elog(ERROR, "encoding conversion length must not be negative");
-#endif
 }
 
 /*

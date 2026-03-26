@@ -11,104 +11,100 @@
 #define PG_PARSER_TRANSLOG_InvalidRepOriginId 0
 
 /* Pre-parse interface return type definition */
-#define PG_PARSER_TRANSLOG_INVALID (uint8_t)0x00
-#define PG_PARSER_TRANSLOG_HEAP_INSERT (uint8_t)0x01
-#define PG_PARSER_TRANSLOG_HEAP_UPDATE (uint8_t)0x02
-#define PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE (uint8_t)0x03
-#define PG_PARSER_TRANSLOG_HEAP_DELETE (uint8_t)0x04
-#define PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT (uint8_t)0x05
-#define PG_PARSER_TRANSLOG_XACT_COMMIT (uint8_t)0x06
-#define PG_PARSER_TRANSLOG_XACT_ABORT (uint8_t)0x07
-#define PG_PARSER_TRANSLOG_XLOG_SWITCH (uint8_t)0x08
-#define PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE (uint8_t)0x09
-#define PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN (uint8_t)0x0A
-#define PG_PARSER_TRANSLOG_FPW_TUPLE (uint8_t)0x0B
-#define PG_PARSER_TRANSLOG_RELMAP (uint8_t)0x0C
-#define PG_PARSER_TRANSLOG_RUNNING_XACTS (uint8_t)0x0D
-#define PG_PARSER_TRANSLOG_XLOG_RECOVERY (uint8_t)0x0E
+#define PG_PARSER_TRANSLOG_INVALID             (uint8_t)0x00
+#define PG_PARSER_TRANSLOG_HEAP_INSERT         (uint8_t)0x01
+#define PG_PARSER_TRANSLOG_HEAP_UPDATE         (uint8_t)0x02
+#define PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE     (uint8_t)0x03
+#define PG_PARSER_TRANSLOG_HEAP_DELETE         (uint8_t)0x04
+#define PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT  (uint8_t)0x05
+#define PG_PARSER_TRANSLOG_XACT_COMMIT         (uint8_t)0x06
+#define PG_PARSER_TRANSLOG_XACT_ABORT          (uint8_t)0x07
+#define PG_PARSER_TRANSLOG_XLOG_SWITCH         (uint8_t)0x08
+#define PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE     (uint8_t)0x09
+#define PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN   (uint8_t)0x0A
+#define PG_PARSER_TRANSLOG_FPW_TUPLE           (uint8_t)0x0B
+#define PG_PARSER_TRANSLOG_RELMAP              (uint8_t)0x0C
+#define PG_PARSER_TRANSLOG_RUNNING_XACTS       (uint8_t)0x0D
+#define PG_PARSER_TRANSLOG_XLOG_RECOVERY       (uint8_t)0x0E
 #define PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE (uint8_t)0x0F
-#define PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE (uint8_t)0x10
-#define PG_PARSER_TRANSLOG_XACT_ASSIGNMENT (uint8_t)0x11
-#define PG_PARSER_TRANSLOG_XACT_PREPARE (uint8_t)0x12
-#define PG_PARSER_TRANSLOG_HEAP_TRUNCATE (uint8_t)0x13
-#define PG_PARSER_TRANSLOG_SEQ (uint8_t)0x14
-#if 0
-#define PG_PARSER_TRANSLOG_HEAP_INPLACE (uint8_t)0x14
-#define PG_PARSER_TRANSLOG_HEAP_CONFIRM (uint8_t)0x15
-#endif
+#define PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE  (uint8_t)0x10
+#define PG_PARSER_TRANSLOG_XACT_ASSIGNMENT     (uint8_t)0x11
+#define PG_PARSER_TRANSLOG_XACT_PREPARE        (uint8_t)0x12
+#define PG_PARSER_TRANSLOG_HEAP_TRUNCATE       (uint8_t)0x13
+#define PG_PARSER_TRANSLOG_SEQ                 (uint8_t)0x14
 
 /* Secondary parse type definition */
-#define PG_PARSER_TRANSLOG_RETURN_INVALID (uint8_t)0x00
-#define PG_PARSER_TRANSLOG_RETURN_WITH_DATA (uint8_t)0x01
+#define PG_PARSER_TRANSLOG_RETURN_INVALID    (uint8_t)0x00
+#define PG_PARSER_TRANSLOG_RETURN_WITH_DATA  (uint8_t)0x01
 #define PG_PARSER_TRANSLOG_RETURN_WITH_TUPLE (uint8_t)0x02
 
 /* Secondary parse DML type definition */
-#define PG_PARSER_TRANSLOG_DMLTYPE_INVALID (uint8_t)0x00
-#define PG_PARSER_TRANSLOG_DMLTYPE_INSERT (uint8_t)0x01
-#define PG_PARSER_TRANSLOG_DMLTYPE_DELETE (uint8_t)0x02
-#define PG_PARSER_TRANSLOG_DMLTYPE_UPDATE (uint8_t)0x03
+#define PG_PARSER_TRANSLOG_DMLTYPE_INVALID     (uint8_t)0x00
+#define PG_PARSER_TRANSLOG_DMLTYPE_INSERT      (uint8_t)0x01
+#define PG_PARSER_TRANSLOG_DMLTYPE_DELETE      (uint8_t)0x02
+#define PG_PARSER_TRANSLOG_DMLTYPE_UPDATE      (uint8_t)0x03
 #define PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT (uint8_t)0x04
 
 /* Secondary parse DML table type definition */
 #define PG_PARSER_TRANSLOG_TABLETYPE_NORMAL (uint8_t)0x00
-#define PG_PARSER_TRANSLOG_TABLETYPE_SYS (uint8_t)0x01
-#define PG_PARSER_TRANSLOG_TABLETYPE_DICT (uint8_t)0x02
+#define PG_PARSER_TRANSLOG_TABLETYPE_SYS    (uint8_t)0x01
+#define PG_PARSER_TRANSLOG_TABLETYPE_DICT   (uint8_t)0x02
 
 /* DDL type definition */
-#define PG_PARSER_DDLTYPE_CREATE (uint8_t)0x01
-#define PG_PARSER_DDLTYPE_ALTER (uint8_t)0x02
-#define PG_PARSER_DDLTYPE_DROP (uint8_t)0x03
+#define PG_PARSER_DDLTYPE_CREATE  (uint8_t)0x01
+#define PG_PARSER_DDLTYPE_ALTER   (uint8_t)0x02
+#define PG_PARSER_DDLTYPE_DROP    (uint8_t)0x03
 #define PG_PARSER_DDLTYPE_SPECIAL (uint8_t)0x04
 
 /* DDL info definition */
 
 /* DDL create statement info definition */
-#define PG_PARSER_DDLINFO_CREATE_TABLE (uint8_t)0x01
+#define PG_PARSER_DDLINFO_CREATE_TABLE     (uint8_t)0x01
 #define PG_PARSER_DDLINFO_CREATE_NAMESPACE (uint8_t)0x02
-#define PG_PARSER_DDLINFO_CREATE_DATABASE (uint8_t)0x03
-#define PG_PARSER_DDLINFO_CREATE_INDEX (uint8_t)0x04
-#define PG_PARSER_DDLINFO_CREATE_SEQUENCE (uint8_t)0x05
-#define PG_PARSER_DDLINFO_CREATE_VIEW (uint8_t)0x06
-#define PG_PARSER_DDLINFO_CREATE_FUNCTION (uint8_t)0x07
-#define PG_PARSER_DDLINFO_CREATE_TRIGGER (uint8_t)0x08
-#define PG_PARSER_DDLINFO_CREATE_TYPE (uint8_t)0x09
+#define PG_PARSER_DDLINFO_CREATE_DATABASE  (uint8_t)0x03
+#define PG_PARSER_DDLINFO_CREATE_INDEX     (uint8_t)0x04
+#define PG_PARSER_DDLINFO_CREATE_SEQUENCE  (uint8_t)0x05
+#define PG_PARSER_DDLINFO_CREATE_VIEW      (uint8_t)0x06
+#define PG_PARSER_DDLINFO_CREATE_FUNCTION  (uint8_t)0x07
+#define PG_PARSER_DDLINFO_CREATE_TRIGGER   (uint8_t)0x08
+#define PG_PARSER_DDLINFO_CREATE_TYPE      (uint8_t)0x09
 
 /* DDL alter statement info definition */
-#define PG_PARSER_DDLINFO_ALTER_COLUMN_RENAME (uint8_t)0x01
-#define PG_PARSER_DDLINFO_ALTER_COLUMN_NOTNULL (uint8_t)0x02
-#define PG_PARSER_DDLINFO_ALTER_COLUMN_NULL (uint8_t)0x03
-#define PG_PARSER_DDLINFO_ALTER_COLUMN_TYPE (uint8_t)0x04
-#define PG_PARSER_DDLINFO_ALTER_COLUMN_DEFAULT (uint8_t)0x05
-#define PG_PARSER_DDLINFO_ALTER_COLUMN_DROP_DEFAULT (uint8_t)0x06
-#define PG_PARSER_DDLINFO_ALTER_TABLE_ADD_COLUMN (uint8_t)0x07
-#define PG_PARSER_DDLINFO_ALTER_TABLE_RENAME (uint8_t)0x08
-#define PG_PARSER_DDLINFO_ALTER_TABLE_DROP_COLUMN (uint8_t)0x09
-#define PG_PARSER_DDLINFO_ALTER_TABLE_ADD_CONSTRAINT (uint8_t)0x0A
-#define PG_PARSER_DDLINFO_ALTER_TABLE_DROP_CONSTRAINT (uint8_t)0x0B
-#define PG_PARSER_DDLINFO_ALTER_TABLE_NAMESPACE (uint8_t)0x0C
-#define PG_PARSER_DDLINFO_ALTER_TABLE_SET_LOGGED (uint8_t)0x0D
-#define PG_PARSER_DDLINFO_ALTER_TABLE_SET_UNLOGGED (uint8_t)0x0E
-#define PG_PARSER_DDLINFO_ALTER_TABLE_OWNER (uint8_t)0x0F
-#define PG_PARSER_DDLINFO_ALTER_SEQ_RESTART (uint8_t)0x10
+#define PG_PARSER_DDLINFO_ALTER_COLUMN_RENAME            (uint8_t)0x01
+#define PG_PARSER_DDLINFO_ALTER_COLUMN_NOTNULL           (uint8_t)0x02
+#define PG_PARSER_DDLINFO_ALTER_COLUMN_NULL              (uint8_t)0x03
+#define PG_PARSER_DDLINFO_ALTER_COLUMN_TYPE              (uint8_t)0x04
+#define PG_PARSER_DDLINFO_ALTER_COLUMN_DEFAULT           (uint8_t)0x05
+#define PG_PARSER_DDLINFO_ALTER_COLUMN_DROP_DEFAULT      (uint8_t)0x06
+#define PG_PARSER_DDLINFO_ALTER_TABLE_ADD_COLUMN         (uint8_t)0x07
+#define PG_PARSER_DDLINFO_ALTER_TABLE_RENAME             (uint8_t)0x08
+#define PG_PARSER_DDLINFO_ALTER_TABLE_DROP_COLUMN        (uint8_t)0x09
+#define PG_PARSER_DDLINFO_ALTER_TABLE_ADD_CONSTRAINT     (uint8_t)0x0A
+#define PG_PARSER_DDLINFO_ALTER_TABLE_DROP_CONSTRAINT    (uint8_t)0x0B
+#define PG_PARSER_DDLINFO_ALTER_TABLE_NAMESPACE          (uint8_t)0x0C
+#define PG_PARSER_DDLINFO_ALTER_TABLE_SET_LOGGED         (uint8_t)0x0D
+#define PG_PARSER_DDLINFO_ALTER_TABLE_SET_UNLOGGED       (uint8_t)0x0E
+#define PG_PARSER_DDLINFO_ALTER_TABLE_OWNER              (uint8_t)0x0F
+#define PG_PARSER_DDLINFO_ALTER_SEQ_RESTART              (uint8_t)0x10
 #define PG_PARSER_DDLINFO_ALTER_TABLE_REPLICA_IDENTIFITY (uint8_t)0x11
 
 /* DDL drop statement info definition */
 #define PG_PARSER_DDLINFO_DROP_NAMESPACE (uint8_t)0x01
-#define PG_PARSER_DDLINFO_DROP_DATABASE (uint8_t)0x02
-#define PG_PARSER_DDLINFO_DROP_VIEW (uint8_t)0x03
-#define PG_PARSER_DDLINFO_DROP_TABLE (uint8_t)0x04
-#define PG_PARSER_DDLINFO_DROP_INDEX (uint8_t)0x05
-#define PG_PARSER_DDLINFO_DROP_SEQUENCE (uint8_t)0x06
-#define PG_PARSER_DDLINFO_DROP_FUNCTION (uint8_t)0x07
-#define PG_PARSER_DDLINFO_DROP_TRIGGER (uint8_t)0x08
-#define PG_PARSER_DDLINFO_DROP_TYPE (uint8_t)0x09
+#define PG_PARSER_DDLINFO_DROP_DATABASE  (uint8_t)0x02
+#define PG_PARSER_DDLINFO_DROP_VIEW      (uint8_t)0x03
+#define PG_PARSER_DDLINFO_DROP_TABLE     (uint8_t)0x04
+#define PG_PARSER_DDLINFO_DROP_INDEX     (uint8_t)0x05
+#define PG_PARSER_DDLINFO_DROP_SEQUENCE  (uint8_t)0x06
+#define PG_PARSER_DDLINFO_DROP_FUNCTION  (uint8_t)0x07
+#define PG_PARSER_DDLINFO_DROP_TRIGGER   (uint8_t)0x08
+#define PG_PARSER_DDLINFO_DROP_TYPE      (uint8_t)0x09
 
 /* DDL special statement info definition */
 #define PG_PARSER_DDLINFO_TRUNCATE (uint8_t)0x01
-#define PG_PARSER_DDLINFO_REINDEX (uint8_t)0x02
+#define PG_PARSER_DDLINFO_REINDEX  (uint8_t)0x02
 
 /* Page size definition */
-#define PG_PARSER_PAGESIZE_8K (uint32_t)8192
+#define PG_PARSER_PAGESIZE_8K  (uint32_t)8192
 #define PG_PARSER_PAGESIZE_16K (uint32_t)16384
 #define PG_PARSER_PAGESIZE_32K (uint32_t)32786
 #define PG_PARSER_PAGESIZE_64K (uint32_t)65536
@@ -132,8 +128,8 @@ typedef enum PG_PARSER_DATABASE_TYPE
     DATABASE_TYPE_POSTGRESQL
 } pg_parser_database_type;
 
-#define DATABASE_PG127 "pg127"
-#define DATABASE_PG1410 "pg1410"
+#define DATABASE_PG127       "pg127"
+#define DATABASE_PG1410      "pg1410"
 
 #define database_type_define 1
 
@@ -196,15 +192,6 @@ typedef struct PG_PARSER_TRANSLOG_PRE_HEAP_TRUNCATE
     uint32_t                    nrelids;
     uint32_t*                   relids;
 } pg_parser_translog_pre_heap_truncate;
-
-#if 0
-typedef struct PG_PARSER_TRANSLOG_PAGE
-{
-    uint32_t                       m_relfilenode; /* Physical file ID */
-    uint32_t                    m_pageno;           /* Page number */
-    uint8_t*                    m_page;             /* Page data */
-} pg_parser_translog_page;
-#endif
 
 /* Column parse output parameter structure for storing tuple update information */
 typedef struct PG_PARSER_TRANSLOG_TUPLECACHE
@@ -360,11 +347,11 @@ typedef struct PG_PARSER_TRANSLOG_TBCOL_VALUE
     uint32_t m_valueLen; /* Data length */
     char*    m_colName;  /* Column name */
 
-    void* m_value; /* Column data, converted structure based on m_info, m_coltype
-                    * When INFO_COL_IS_TOAST is set in m_info
-                    * Stores out-of-line storage structure
-                    * pg_parser_translog_tbcol_valuetype_external
-                    */
+    void*    m_value; /* Column data, converted structure based on m_info, m_coltype
+                       * When INFO_COL_IS_TOAST is set in m_info
+                       * Stores out-of-line storage structure
+                       * pg_parser_translog_tbcol_valuetype_external
+                       */
 } pg_parser_translog_tbcol_value;
 
 /* Out-of-line storage secondary parse interface */
@@ -384,7 +371,7 @@ typedef struct PG_PARSER_TRANSLOG_EXTERNAL
 /* Custom column */
 typedef struct PG_PARSER_TRANSLOG_TBCOL_VALUETYPE_CUSTOMER
 {
-    pg_parser_translog_tbcol_value* m_value; /* Column value */
+    pg_parser_translog_tbcol_value*                     m_value; /* Column value */
 
     /* next */
     struct PG_PARSER_TRANSLOG_TBCOL_VALUETYPE_CUSTOMER* m_next; /* Next column value */
@@ -433,16 +420,6 @@ typedef struct PG_PARSER_TRANSLOG_SYSTB2DLL_RECORD
     struct PG_PARSER_TRANSLOG_SYSTB2DLL_RECORD* m_next;
 } pg_parser_translog_systb2dll_record;
 
-/* System tables required for DDL */
-#if 0
-typedef struct PG_PARSER_TRANSLOG_SYSTB2DLL_SYSTBS
-{
-    pg_parser_sysdict_pgclass_dict              m_pg_class;    /* todo sysdicts */
-    pg_parser_sysdict_pgnamespace_dict          m_pg_namespace;
-    pg_parser_sysdict_pgtype_dict               m_pg_type;
-} pg_parser_translog_systb2dll_systbs;
-#endif
-
 typedef struct PG_PARSER_TRANSLOG_SYSTB2DDL
 {
     int8_t                               m_debugLevel; /* Debug information level */
@@ -462,14 +439,14 @@ typedef struct PG_PARSER_TRANSLOG_DDLSTMTBASE
 
 #define PG_PARSER_DDL_COLUMN_NOTNULL (uint8_t)0x01
 
-#define PG_PARSER_NODETYPE_VAR (uint8_t)0X01
-#define PG_PARSER_NODETYPE_CONST (uint8_t)0X02
-#define PG_PARSER_NODETYPE_FUNC (uint8_t)0X03
-#define PG_PARSER_NODETYPE_OP (uint8_t)0X04
-#define PG_PARSER_NODETYPE_CHAR (uint8_t)0X05
-#define PG_PARSER_NODETYPE_TYPE (uint8_t)0X06
+#define PG_PARSER_NODETYPE_VAR       (uint8_t)0X01
+#define PG_PARSER_NODETYPE_CONST     (uint8_t)0X02
+#define PG_PARSER_NODETYPE_FUNC      (uint8_t)0X03
+#define PG_PARSER_NODETYPE_OP        (uint8_t)0X04
+#define PG_PARSER_NODETYPE_CHAR      (uint8_t)0X05
+#define PG_PARSER_NODETYPE_TYPE      (uint8_t)0X06
 #define PG_PARSER_NODETYPE_SEPARATOR (uint8_t)0X07
-#define PG_PARSER_NODETYPE_BOOL (uint8_t)0X08
+#define PG_PARSER_NODETYPE_BOOL      (uint8_t)0X08
 
 typedef struct pg_parser_nodetree
 {
@@ -508,7 +485,7 @@ typedef struct pg_parser_node_type
 } pg_parser_node_type;
 
 #define PG_PARSER_BOOLEXPR_AND (uint8_t)0X01
-#define PG_PARSER_BOOLEXPR_OR (uint8_t)0X02
+#define PG_PARSER_BOOLEXPR_OR  (uint8_t)0X02
 #define PG_PARSER_BOOLEXPR_NOT (uint8_t)0X03
 
 typedef struct pg_parser_node_bool
@@ -538,16 +515,16 @@ typedef struct PG_PARSER_OPTION
 
 /*----------- ddlstmt  create table begin---------------*/
 
-#define PG_PARSER_DDL_PARTITION_TABLE_HASH (uint8_t)0x01
-#define PG_PARSER_DDL_PARTITION_TABLE_LIST (uint8_t)0x02
+#define PG_PARSER_DDL_PARTITION_TABLE_HASH  (uint8_t)0x01
+#define PG_PARSER_DDL_PARTITION_TABLE_LIST  (uint8_t)0x02
 #define PG_PARSER_DDL_PARTITION_TABLE_RANGE (uint8_t)0x03
 
 /* Partition table */
 typedef struct PG_PARSER_TRANSLOG_DDLSTMT_CREATETABLE_PARTITIONBY
 {
-    uint8_t   m_partition_type;
-    uint16_t  m_column_num;
-    uint16_t* m_column;            /*
+    uint8_t             m_partition_type;
+    uint16_t            m_column_num;
+    uint16_t*           m_column;  /*
                                     *Here stores an array, sequentially pointing to columns used as partitions,
                                     *starting from 1            If 0, it means the corresponding partition key
                                     *column is            an expression rather than a simple column reference
@@ -576,8 +553,8 @@ typedef struct PG_PARSER_TRANSLOG_DDLSTMT_DEFAULT
 
 #define PG_PARSER_DDL_CONSTRAINT_PRIMARYKEY (uint8_t)0x00
 #define PG_PARSER_DDL_CONSTRAINT_FOREIGNKEY (uint8_t)0x01
-#define PG_PARSER_DDL_CONSTRAINT_UNIQUE (uint8_t)0x02
-#define PG_PARSER_DDL_CONSTRAINT_CHECK (uint8_t)0x03
+#define PG_PARSER_DDL_CONSTRAINT_UNIQUE     (uint8_t)0x02
+#define PG_PARSER_DDL_CONSTRAINT_CHECK      (uint8_t)0x03
 
 /* Primary key constraint */
 typedef struct PG_PARSER_TRANSLOG_DDLSTMT_TBCONSTRAINT_KEY
@@ -615,34 +592,34 @@ typedef struct PG_PARSER_TRANSLOG_DDLSTMT_TBCONSTRAINT_CHECK
 /* Index */
 typedef struct PG_PARSER_TRANSLOG_DDLSTMT_INDEX
 {
-    uint8_t   m_option;
-    uint16_t  m_colcnt;
-    uint16_t* m_column; /*
-                         *Here stores an array, sequentially pointing to columns used as partitions,
-                         *starting from 1 If 0, it means the corresponding partition key column is
-                         *an expression rather than a simple column reference Therefore, the
-                         *corresponding expression needs to be obtained from m_colnode
-                         */
-    uint32_t m_indtype;
-    uint32_t m_indnspoid;
-    uint32_t m_relid;
-    char*    m_indname;
+    uint8_t                         m_option;
+    uint16_t                        m_colcnt;
+    uint16_t*                       m_column; /*
+                                               *Here stores an array, sequentially pointing to columns used as partitions,
+                                               *starting from 1 If 0, it means the corresponding partition key column is
+                                               *an expression rather than a simple column reference Therefore, the
+                                               *corresponding expression needs to be obtained from m_colnode
+                                               */
+    uint32_t                        m_indtype;
+    uint32_t                        m_indnspoid;
+    uint32_t                        m_relid;
+    char*                           m_indname;
     /* Column order is also the column order in multi-column index */
     pg_parser_translog_ddlstmt_col* m_includecols;
     pg_parser_nodetree*             m_colnode; /* Store expression */
 } pg_parser_translog_ddlstmt_index;
 
-#define PG_PARSER_DDL_TABLE_TYPE_NORMAL (uint8_t)0x01
-#define PG_PARSER_DDL_TABLE_TYPE_PARTITION (uint8_t)0x02
-#define PG_PARSER_DDL_TABLE_TYPE_PARTITION_SUB (uint8_t)0x03
+#define PG_PARSER_DDL_TABLE_TYPE_NORMAL         (uint8_t)0x01
+#define PG_PARSER_DDL_TABLE_TYPE_PARTITION      (uint8_t)0x02
+#define PG_PARSER_DDL_TABLE_TYPE_PARTITION_SUB  (uint8_t)0x03
 #define PG_PARSER_DDL_TABLE_TYPE_PARTITION_BOTH (uint8_t)0x04
 
-#define PG_PARSER_DDL_TABLE_LOG_LOGGED (uint8_t)0x00
-#define PG_PARSER_DDL_TABLE_LOG_TEMP (uint8_t)0x01
-#define PG_PARSER_DDL_TABLE_LOG_UNLOGGED (uint8_t)0x02
+#define PG_PARSER_DDL_TABLE_LOG_LOGGED          (uint8_t)0x00
+#define PG_PARSER_DDL_TABLE_LOG_TEMP            (uint8_t)0x01
+#define PG_PARSER_DDL_TABLE_LOG_UNLOGGED        (uint8_t)0x02
 
-#define PG_PARSER_DDL_TABLE_FLAG_NORMAL (uint8_t)0x00
-#define PG_PARSER_DDL_TABLE_FLAG_EMPTY (uint8_t)0x01
+#define PG_PARSER_DDL_TABLE_FLAG_NORMAL         (uint8_t)0x00
+#define PG_PARSER_DDL_TABLE_FLAG_EMPTY          (uint8_t)0x01
 
 /* create table main statement */
 typedef struct PG_PARSER_TRANSLOG_DDLSTMT_CREATETABLE
@@ -732,10 +709,10 @@ typedef struct PG_PARSER_TRANSLOG_DDLSTMT_ALTERCOLUMN
 
 /* type DDL begin*/
 #define PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_COMPOSITE (uint8_t)0X01
-#define PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_ENUM (uint8_t)0X02
-#define PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_RANGE (uint8_t)0X03
-#define PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_DOMAIN (uint8_t)0X04
-#define PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_NULL (uint8_t)0X05
+#define PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_ENUM      (uint8_t)0X02
+#define PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_RANGE     (uint8_t)0X03
+#define PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_DOMAIN    (uint8_t)0X04
+#define PG_PARSER_TRANSLOG_DDLSTMT_TYPE_TYPTYPE_NULL      (uint8_t)0X05
 
 /* ddl create composite type, range type definition */
 typedef struct PG_PARSER_TRANSLOG_DDLSTMT_TYPRANGE
@@ -803,7 +780,8 @@ extern bool pg_parser_trans_TransRecord(pg_parser_translog_translog2col* pg_pars
                                         int32_t*                         pg_parser_errno);
 extern bool pg_parser_trans_TransRecord_GetTuple(
     pg_parser_translog_translog2col* pg_parser_transData,
-    pg_parser_translog_tbcolbase** pg_parser_trans_result, int32_t* pg_parser_errno);
+    pg_parser_translog_tbcolbase**   pg_parser_trans_result,
+    int32_t*                         pg_parser_errno);
 extern bool pg_parser_trans_DDLtrans(pg_parser_translog_systb2ddl* pg_parser_ddl,
                                      pg_parser_translog_ddlstmt**  pg_parser_ddl_result,
                                      int32_t*                      pg_parser_errno);
@@ -822,7 +800,8 @@ extern void pg_parser_trans_ddl_free(pg_parser_translog_systb2ddl* ddl,
                                      pg_parser_translog_ddlstmt*   result);
 
 extern bool pg_parser_trans_matchmissing(pg_parser_translog_tbcol_value* value1,
-                                         pg_parser_translog_tbcol_value* value2, uint16_t valuecnt);
+                                         pg_parser_translog_tbcol_value* value2,
+                                         uint16_t                        valuecnt);
 
 extern void pg_parser_free_value_ext(pg_parser_translog_tbcol_value* value);
 #endif

@@ -34,7 +34,8 @@ static bool increment_integratesync_trailnoandlsn_get(increment_integratesyncsta
     rmemset1(sql_exec, 0, '\0', 1024);
     sprintf(sql_exec,
             "select rewind_fileid, rewind_offset, lsn from %s.sync_status where name = '%s';",
-            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), syncworkstate->base.name);
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+            syncworkstate->base.name);
     res = PQexec(sync_state->conn, sql_exec);
     if (PGRES_TUPLES_OK != PQresultStatus(res))
     {
@@ -53,15 +54,18 @@ static bool increment_integratesync_trailnoandlsn_get(increment_integratesyncsta
 
         /* LSN information */
         syncworkstate->lsn = strtoul(PQgetvalue(res, 0, 2), NULL, 10);
-        elog(RLOG_DEBUG, "get record sync_status, trailno:%lu, emitoffset:%lu, lsn:%lu",
-             syncworkstate->trailno, emitoffset, syncworkstate->lsn);
+        elog(RLOG_DEBUG,
+             "get record sync_status, trailno:%lu, emitoffset:%lu, lsn:%lu",
+             syncworkstate->trailno,
+             emitoffset,
+             syncworkstate->lsn);
         syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata,
                                                      syncworkstate->trailno);
         syncworkstate->callback.setmetricsynclsn(syncworkstate->privdata, syncworkstate->lsn);
         syncworkstate->callback.setmetricsynctrailstart(syncworkstate->privdata, emitoffset);
         /* Set splittrail fileid and emitoffset */
-        syncworkstate->callback.splittrail_fileid_emitoffse_set(syncworkstate->privdata,
-                                                                syncworkstate->trailno, emitoffset);
+        syncworkstate->callback.splittrail_fileid_emitoffse_set(
+            syncworkstate->privdata, syncworkstate->trailno, emitoffset);
         syncworkstate->callback.integratestate_rebuildfilter_set(syncworkstate->privdata,
                                                                  syncworkstate->lsn);
         PQclear(res);
@@ -73,11 +77,13 @@ static bool increment_integratesync_trailnoandlsn_get(increment_integratesyncsta
         sprintf(sql_exec,
                 "INSERT INTO %s.sync_status (name, type, stat, emit_fileid, emit_offset, "
                 "rewind_fileid, rewind_offset, lsn, xid) VALUES ('%s', 0, 0, 0, 0, 0, 0, 0, 0);",
-                guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), syncworkstate->base.name);
+                guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+                syncworkstate->base.name);
         res = PQexec(sync_state->conn, sql_exec);
         if (PGRES_COMMAND_OK != PQresultStatus(res))
         {
-            elog(RLOG_WARNING, "Failed to INSERT INTO sync_status: %s",
+            elog(RLOG_WARNING,
+                 "Failed to INSERT INTO sync_status: %s",
                  PQerrorMessage(sync_state->conn));
             PQclear(res);
             PQfinish(sync_state->conn);

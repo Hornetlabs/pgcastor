@@ -124,14 +124,15 @@ void constraint_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         sscanf(PQgetvalue(res, i, j++), "%u", &constraint->connamespace);
         sscanf(PQgetvalue(res, i, j++), "%c", &constraint->contype);
         sscanf(PQgetvalue(res, i, j++), "%u", &constraint->conrelid);
-        constraint_splitconkey(PQgetvalue(res, i, j++), &constraint->conkey,
-                               &constraint->conkeycnt);
+        constraint_splitconkey(
+            PQgetvalue(res, i, j++), &constraint->conkey, &constraint->conkeycnt);
 
-        entry = (catalog_constraint_value*)hash_search(sysdicts->by_constraint,
-                                                       &constraint->conrelid, HASH_ENTER, &found);
+        entry = (catalog_constraint_value*)hash_search(
+            sysdicts->by_constraint, &constraint->conrelid, HASH_ENTER, &found);
         if (false)
         {
-            elog(RLOG_ERROR, "authid_oid:%u already exist in by_constraint",
+            elog(RLOG_ERROR,
+                 "authid_oid:%u already exist in by_constraint",
                  entry->constraint->conrelid);
         }
 
@@ -187,8 +188,8 @@ catalogdata* constraint_colvalue2constraint(void* in_colvalue)
      */
     sscanf((char*)((colvalue + 7)->m_value), "%u", &pgconstraint->conrelid);
     /* Split conkey */
-    constraint_splitconkey((char*)((colvalue + 18)->m_value), &pgconstraint->conkey,
-                           &pgconstraint->conkeycnt);
+    constraint_splitconkey(
+        (char*)((colvalue + 18)->m_value), &pgconstraint->conkey, &pgconstraint->conkeycnt);
 
     constraintvalue->conrelid = pgconstraint->conrelid;
 
@@ -196,7 +197,9 @@ catalogdata* constraint_colvalue2constraint(void* in_colvalue)
     pgconstraint->contype = ((char*)((colvalue + 3)->m_value))[0];
 
     /* conname 1 */
-    rmemcpy1(pgconstraint->conname.data, 0, (char*)((colvalue + 1)->m_value),
+    rmemcpy1(pgconstraint->conname.data,
+             0,
+             (char*)((colvalue + 1)->m_value),
              (colvalue + 1)->m_valueLen);
 
     /* connamespace 2 */
@@ -241,8 +244,10 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
             hash_search(sysdicts->by_constraint, &newcatalog->conrelid, HASH_ENTER, &found);
         if (true == found)
         {
-            elog(RLOG_WARNING, "by_constraint hash duplicate conrelid, %u, %s",
-                 catalogInHash->constraint->conrelid, catalogInHash->constraint->conname.data);
+            elog(RLOG_WARNING,
+                 "by_constraint hash duplicate conrelid, %u, %s",
+                 catalogInHash->constraint->conrelid,
+                 catalogInHash->constraint->conname.data);
 
             if (NULL != catalogInHash->constraint)
             {
@@ -263,12 +268,16 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
 
         if (newcatalog->constraint->conkeycnt == 0)
         {
-            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint,
+            rmemcpy0(catalogInHash->constraint,
+                     0,
+                     newcatalog->constraint,
                      sizeof(pg_parser_sysdict_pgconstraint));
         }
         else
         {
-            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint,
+            rmemcpy0(catalogInHash->constraint,
+                     0,
+                     newcatalog->constraint,
                      offsetof(pg_parser_sysdict_pgconstraint, conkey));
             catalogInHash->constraint->conkey =
                 (int16_t*)rmalloc0(newcatalog->constraint->conkeycnt * sizeof(int16_t));
@@ -276,15 +285,20 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(catalogInHash->constraint->conkey, 0, '\0',
+            rmemset0(catalogInHash->constraint->conkey,
+                     0,
+                     '\0',
                      newcatalog->constraint->conkeycnt * sizeof(int16_t));
-            rmemcpy0(catalogInHash->constraint->conkey, 0, newcatalog->constraint->conkey,
+            rmemcpy0(catalogInHash->constraint->conkey,
+                     0,
+                     newcatalog->constraint->conkey,
                      newcatalog->constraint->conkeycnt * sizeof(int16_t));
         }
     }
     else if (CATALOG_OP_DELETE == catalogdata->op)
     {
-        elog(RLOG_DEBUG, "CATALOG_OP_DELETE == catalogdata->op %s",
+        elog(RLOG_DEBUG,
+             "CATALOG_OP_DELETE == catalogdata->op %s",
              newcatalog->constraint->conname.data);
         classInHash->class->relhaspk = false;
         catalogInHash =
@@ -308,8 +322,10 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
             hash_search(sysdicts->by_constraint, &newcatalog->conrelid, HASH_FIND, &found);
         if (NULL == catalogInHash)
         {
-            elog(RLOG_WARNING, "by_constraint not found conrelid, %u, %s",
-                 newcatalog->constraint->conrelid, newcatalog->constraint->conname.data);
+            elog(RLOG_WARNING,
+                 "by_constraint not found conrelid, %u, %s",
+                 newcatalog->constraint->conrelid,
+                 newcatalog->constraint->conname.data);
             return;
         }
         if (0 != catalogInHash->constraint->conkeycnt)
@@ -327,12 +343,16 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
 
         if (newcatalog->constraint->conkeycnt == 0)
         {
-            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint,
+            rmemcpy0(catalogInHash->constraint,
+                     0,
+                     newcatalog->constraint,
                      sizeof(pg_parser_sysdict_pgconstraint));
         }
         else
         {
-            rmemcpy0(catalogInHash->constraint, 0, newcatalog->constraint,
+            rmemcpy0(catalogInHash->constraint,
+                     0,
+                     newcatalog->constraint,
                      offsetof(pg_parser_sysdict_pgconstraint, conkey));
             catalogInHash->constraint->conkey =
                 (int16_t*)rmalloc0(newcatalog->constraint->conkeycnt * sizeof(int16_t));
@@ -340,9 +360,13 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(catalogInHash->constraint->conkey, 0, '\0',
+            rmemset0(catalogInHash->constraint->conkey,
+                     0,
+                     '\0',
                      newcatalog->constraint->conkeycnt * sizeof(int16_t));
-            rmemcpy0(catalogInHash->constraint->conkey, 0, newcatalog->constraint->conkey,
+            rmemcpy0(catalogInHash->constraint->conkey,
+                     0,
+                     newcatalog->constraint->conkey,
                      newcatalog->constraint->conkeycnt * sizeof(int16_t));
         }
     }
@@ -382,7 +406,7 @@ void constraint_catalogdatafree(catalogdata* catalogdata)
 
 void constraintdata_write(List* constraint_list, uint64* offset, sysdict_header_array* array)
 {
-    int fd;
+    int                           fd;
 
     uint64                        page_num = 0;
     char                          buffer[FILE_BLK_SIZE];
@@ -422,13 +446,17 @@ void constraintdata_write(List* constraint_list, uint64* offset, sysdict_header_
             *offset += FILE_BLK_SIZE;
             page_offset = PAGE_HEADER_SIZE;
         }
-        rmemcpy1(buffer, page_offset, rippleconstraint,
+        rmemcpy1(buffer,
+                 page_offset,
+                 rippleconstraint,
                  offsetof(pg_parser_sysdict_pgconstraint, conkey));
         page_offset += offsetof(pg_parser_sysdict_pgconstraint, conkey);
 
         if (rippleconstraint->conkeycnt > 0 && rippleconstraint->conkey != NULL)
         {
-            rmemcpy1(buffer, page_offset, rippleconstraint->conkey,
+            rmemcpy1(buffer,
+                     page_offset,
+                     rippleconstraint->conkey,
                      rippleconstraint->conkeycnt * sizeof(int16_t));
             page_offset += (rippleconstraint->conkeycnt * sizeof(int16_t));
         }
@@ -459,14 +487,14 @@ void constraintdata_write(List* constraint_list, uint64* offset, sysdict_header_
 
 HTAB* constraintcache_load(sysdict_header_array* array)
 {
-    int     r = 0;
-    int     fd = -1;
-    HTAB*   constrainthtab;
-    HASHCTL hash_ctl;
-    bool    found = false;
-    uint32  datasize = 0;
-    uint64  offset = 0;
-    uint64  fileoffset = 0;
+    int                           r = 0;
+    int                           fd = -1;
+    HTAB*                         constrainthtab;
+    HASHCTL                       hash_ctl;
+    bool                          found = false;
+    uint32                        datasize = 0;
+    uint64                        offset = 0;
+    uint64                        fileoffset = 0;
 
     char                          buffer[FILE_BLK_SIZE];
     pg_sysdict_Form_pg_constraint rippleconstraint;
@@ -507,7 +535,9 @@ HTAB* constraintcache_load(sysdict_header_array* array)
             }
             rmemset0(rippleconstraint, 0, '\0', sizeof(pg_parser_sysdict_pgconstraint));
 
-            rmemcpy0(rippleconstraint, 0, buffer + offset,
+            rmemcpy0(rippleconstraint,
+                     0,
+                     buffer + offset,
                      offsetof(pg_parser_sysdict_pgconstraint, conkey));
             offset += offsetof(pg_parser_sysdict_pgconstraint, conkey);
 
@@ -520,9 +550,13 @@ HTAB* constraintcache_load(sysdict_header_array* array)
                     rfree(rippleconstraint);
                     elog(RLOG_ERROR, "out of memory conkey");
                 }
-                rmemset0(rippleconstraint->conkey, 0, '\0',
+                rmemset0(rippleconstraint->conkey,
+                         0,
+                         '\0',
                          rippleconstraint->conkeycnt * sizeof(int16_t));
-                rmemcpy0(rippleconstraint->conkey, 0, buffer + offset,
+                rmemcpy0(rippleconstraint->conkey,
+                         0,
+                         buffer + offset,
                          rippleconstraint->conkeycnt * sizeof(int16_t));
                 offset += rippleconstraint->conkeycnt * sizeof(int16_t);
             }
@@ -604,8 +638,8 @@ void constraintcache_write(HTAB* constraintcache, uint64* offset, sysdict_header
 
         if (constraint->conkeycnt > 0 && constraint->conkey != NULL)
         {
-            rmemcpy1(buffer, page_offset, constraint->conkey,
-                     constraint->conkeycnt * sizeof(int16_t));
+            rmemcpy1(
+                buffer, page_offset, constraint->conkey, constraint->conkeycnt * sizeof(int16_t));
             page_offset += constraint->conkeycnt * sizeof(int16_t);
         }
     }

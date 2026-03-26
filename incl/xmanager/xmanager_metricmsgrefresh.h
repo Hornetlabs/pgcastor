@@ -7,13 +7,15 @@
  *  2. Forward refresh message to capture
  *  3. Create async message and mount to xscsci node
  */
-bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                     netpacket* npacket);
+bool xmanager_metricmsg_parserefresh(xmanager_metric* xmetric,
+                                     netpoolentry*    npoolentry,
+                                     netpacket*       npacket);
 
 /*
  * Assemble refresh return message
  */
-bool xmanager_metricmsg_assemblerefresh(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                        dlist* dlmsgs);
+bool xmanager_metricmsg_assemblerefresh(xmanager_metric* xmetric,
+                                        netpoolentry*    npoolentry,
+                                        dlist*           dlmsgs);
 
 #endif

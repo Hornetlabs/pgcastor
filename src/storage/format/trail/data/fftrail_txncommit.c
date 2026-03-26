@@ -30,9 +30,9 @@ bool fftrail_txncommit_serial(void* data, void* state)
      *  RecTail
      */
 
-    int    hdrlen = 0;
-    uint32 tlen = 0;
-    int64  timestamp = 0;
+    int           hdrlen = 0;
+    uint32        tlen = 0;
+    int64         timestamp = 0;
 
     uint8*        uptr = NULL;
     txnstmt*      rstmt = NULL;
@@ -79,8 +79,8 @@ bool fftrail_txncommit_serial(void* data, void* state)
     fbuffer->start += hdrlen;
 
     /* Add content */
-    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_BIGINT, 8,
-                             (uint8*)&timestamp);
+    fftrail_data_data2buffer(
+        &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)&timestamp);
 
     /* Fill header info */
     if (FFSMGR_STATUS_SHIFTFILE == ffstate->status)
@@ -117,12 +117,12 @@ bool fftrail_txncommit_serial(void* data, void* state)
 /* Deserialize transaction end marker */
 bool fftrail_txncommit_deserial(void** data, void* state)
 {
-    uint8  tokenid = 0;   /* token id */
-    uint8  tokeninfo = 0; /* token details */
-    uint32 recoffset = 0;
-    uint32 dataoffset = 0;
-    uint16 subtype = FF_DATA_TYPE_NOP;
-    uint32 tokenlen = 0; /* token length */
+    uint8         tokenid = 0;   /* token id */
+    uint8         tokeninfo = 0; /* token details */
+    uint32        recoffset = 0;
+    uint32        dataoffset = 0;
+    uint16        subtype = FF_DATA_TYPE_NOP;
+    uint32        tokenlen = 0; /* token length */
 
     uint8*        uptr = NULL;
     uint8*        tokendata = NULL; /* token data area */
@@ -190,8 +190,12 @@ bool fftrail_txncommit_deserial(void** data, void* state)
     recoffset += (uint16)fftrail_data_headlen(ffstate->compatibility);
 
     /* Get meaningless data */
-    if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_BIGINT, 8,
+    if (false == fftrail_data_buffer2data(&txndata->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_BIGINT,
+                                          8,
                                           (uint8*)&commit->endtimestamp))
     {
         return false;

@@ -52,69 +52,122 @@ bool fftrail_head_serail(void* data, void* state)
 
     /* fill ffheader content */
     /* add version */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_VERSION, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_STR, (uint16)strlen(ffheader->version),
-                                (uint8*)ffheader->version, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_VERSION,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_STR,
+                                (uint16)strlen(ffheader->version),
+                                (uint8*)ffheader->version,
+                                &len,
+                                uptr);
 
     /* add dbtype */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_DBTYPE, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_INT, sizeof(ffheader->dbtype),
-                                (uint8*)&ffheader->dbtype, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_DBTYPE,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_INT,
+                                sizeof(ffheader->dbtype),
+                                (uint8*)&ffheader->dbtype,
+                                &len,
+                                uptr);
 
     /* add dbversion */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_DBVERSION, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_STR, strlen(ffheader->dbversion),
-                                (uint8*)ffheader->dbversion, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_DBVERSION,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_STR,
+                                strlen(ffheader->dbversion),
+                                (uint8*)ffheader->dbversion,
+                                &len,
+                                uptr);
 
     /* add redolsn */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_REDOLSN, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, sizeof(ffheader->redolsn),
-                                (uint8*)&ffheader->redolsn, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_REDOLSN,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                sizeof(ffheader->redolsn),
+                                (uint8*)&ffheader->redolsn,
+                                &len,
+                                uptr);
 
     /* add restartlsn */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_RESTARTLSN, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, sizeof(ffheader->restartlsn),
-                                (uint8*)&ffheader->restartlsn, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_RESTARTLSN,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                sizeof(ffheader->restartlsn),
+                                (uint8*)&ffheader->restartlsn,
+                                &len,
+                                uptr);
 
     /* add confirmlsn */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_CONFIRMLSN, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, sizeof(ffheader->confirmlsn),
-                                (uint8*)&ffheader->confirmlsn, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_CONFIRMLSN,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                sizeof(ffheader->confirmlsn),
+                                (uint8*)&ffheader->confirmlsn,
+                                &len,
+                                uptr);
 
     /* add filename */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_FILENAME, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_STR, strlen(ffheader->filename),
-                                (uint8*)ffheader->filename, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_FILENAME,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_STR,
+                                strlen(ffheader->filename),
+                                (uint8*)ffheader->filename,
+                                &len,
+                                uptr);
 
     /* add filesize */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_FILESIZE, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, sizeof(ffheader->filesize),
-                                (uint8*)&ffheader->filesize, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_FILESIZE,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                sizeof(ffheader->filesize),
+                                (uint8*)&ffheader->filesize,
+                                &len,
+                                uptr);
 
     /* add compatibility */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_COMPATIBILITY, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_INT, sizeof(ffheader->compatibility),
-                                (uint8*)&ffheader->compatibility, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_COMPATIBILITY,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_INT,
+                                sizeof(ffheader->compatibility),
+                                (uint8*)&ffheader->compatibility,
+                                &len,
+                                uptr);
 
     /* add encryption */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_ENCRYPTION, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_INT, sizeof(ffheader->encryption),
-                                (uint8*)&ffheader->encryption, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_ENCRYPTION,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_INT,
+                                sizeof(ffheader->encryption),
+                                (uint8*)&ffheader->encryption,
+                                &len,
+                                uptr);
 
     /* add startxid */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_STARTXID, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, sizeof(ffheader->startxid),
-                                (uint8*)&ffheader->startxid, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_STARTXID,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                sizeof(ffheader->startxid),
+                                (uint8*)&ffheader->startxid,
+                                &len,
+                                uptr);
 
     /* add endxid */
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_ENDXID, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, sizeof(ffheader->endxid),
-                                (uint8*)&ffheader->endxid, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_ENDXID,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                sizeof(ffheader->endxid),
+                                (uint8*)&ffheader->endxid,
+                                &len,
+                                uptr);
 
     /* add magic identifier */
     ffheader->magic = FTRAIL_MAGIC;
-    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_MAGIC, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&ffheader->magic, &len, uptr);
+    uptr = fftrail_token2buffer(TRAIL_HEAD_TOKEN_MAGIC,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_INT,
+                                4,
+                                (uint8*)&ffheader->magic,
+                                &len,
+                                uptr);
 
     /* byte alignment */
     uptr = rfbuffer->data + rfbuffer->start;

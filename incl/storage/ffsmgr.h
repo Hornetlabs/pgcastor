@@ -35,20 +35,20 @@ typedef struct FFSMGR_IF
     void (*ffsmgr_free)(int type, void* state);
 
     /* Get minimum value */
-    int (*ffsmg_gettokenminsize)(int compatibility);
+    int  (*ffsmg_gettokenminsize)(int compatibility);
 
     /* Get tail value */
-    int (*ffsmg_gettailsize)(int compatibility);
+    int  (*ffsmg_gettailsize)(int compatibility);
 
     /* Used to verify correctness of record */
-    bool (*ffsmgr_validrecord)(ff_cxt_type type, void* state, uint8 infotype, uint64 fileid,
-                               uint8* record);
+    bool (*ffsmgr_validrecord)(
+        ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record);
 
     /* Get grouptype recorded in record */
-    void (*ffsmgr_getrecordgrouptype)(void* state, uint8* record, uint8* grouptype);
+    void   (*ffsmgr_getrecordgrouptype)(void* state, uint8* record, uint8* grouptype);
 
     /* Get subtype recorded in record */
-    bool (*ffsmgr_getrecordsubtype)(void* state, uint8* record, uint16* subtype);
+    bool   (*ffsmgr_getrecordsubtype)(void* state, uint8* record, uint16* subtype);
 
     /* Get lsn recorded in record */
     uint64 (*ffsmgr_getrecordlsn)(void* state, uint8* record);
@@ -63,10 +63,10 @@ typedef struct FFSMGR_IF
     uint16 (*ffsmgr_getrecordlength)(void* state, uint8* record);
 
     /* Set record length */
-    void (*ffsmgr_setrecordlength)(void* state, uint8* record, uint16 reclength);
+    void   (*ffsmgr_setrecordlength)(void* state, uint8* record, uint16 reclength);
 
     /* Whether it is a record of transaction begin */
-    bool (*ffsmgr_isrecordtransstart)(void* state, uint8* record);
+    bool   (*ffsmgr_isrecordtransstart)(void* state, uint8* record);
 
 } ffsmgr_if;
 
@@ -106,64 +106,64 @@ typedef struct FFSMGR_FDATA
 typedef struct FFSMGR_STATE_CALLBACK
 {
     /* Get database identifier */
-    Oid (*getdboid)(void* serial);
+    Oid           (*getdboid)(void* serial);
 
     /* Get database name */
-    char* (*getdbname)(void* serial, Oid dboid);
+    char*         (*getdbname)(void* serial, Oid dboid);
 
     /* Reset dbid */
-    void (*setdboid)(void* serial, Oid dboid);
+    void          (*setdboid)(void* serial, Oid dboid);
 
     /*Get recordcache callback parser thread */
-    void* (*getrecords)(void* parser);
+    void*         (*getrecords)(void* parser);
 
     /* Get parser thread status */
-    int (*getparserstate)(void* parser);
+    int           (*getparserstate)(void* parser);
 
     /*Get txn2filebuffer serialization*/
     file_buffers* (*getfilebuffer)(void* serial);
 
     /*Get redosysdicts serialization*/
-    void (*setredosysdicts)(void* serial, void* catalogdata);
+    void          (*setredosysdicts)(void* serial, void* catalogdata);
 
     /*Append dataset to list */
-    void (*setonlinerefreshdataset)(void* serial, void* dataset);
+    void          (*setonlinerefreshdataset)(void* serial, void* dataset);
 
     /* Get pg_namespace data by oid */
-    void* (*getnamespace)(void* serial, Oid oid);
+    void*         (*getnamespace)(void* serial, Oid oid);
 
     /* Get pg_class data by oid */
-    void* (*getclass)(void* serial, Oid oid);
+    void*         (*getclass)(void* serial, Oid oid);
 
     /* Get pg_index data by oid */
-    void* (*getindex)(void* serial, Oid oid);
+    void*         (*getindex)(void* serial, Oid oid);
 
     /* Get attributes by oid */
-    void* (*getattributes)(void* serial, Oid oid);
+    void*         (*getattributes)(void* serial, Oid oid);
 
     /* Get pg_type by oid */
-    void* (*gettype)(void* serial, Oid oid);
+    void*         (*gettype)(void* serial, Oid oid);
 
     /* Release attributes list, for big transactions only */
-    void (*freeattributes)(void* attrs);
+    void          (*freeattributes)(void* attrs);
 
     /* Apply to system catalog, replacing fftrail_txnmetadata call */
-    void (*catalog2transcache)(void* serial, void* catalog);
+    void          (*catalog2transcache)(void* serial, void* catalog);
 
 } ffsmgr_state_callback;
 
 typedef struct FFSMGR_STATE
 {
-    int   compatibility;
-    int   bufid; /* Cache identifier in corresponding file_buffer  */
-    int   maxbufid;
-    void* privdata; /* External structure, deserialization is parserwork_traildecodecontext
-                     *            Serialization is serialstate
-                     */
-    uint8*                recptr; /* Starting position of record being assembled/parsed        */
-    ffsmgr_status         status;
-    ffsmgr_fdata*         fdata;
-    ffsmgr_if*            ffsmgr;
+    int           compatibility;
+    int           bufid; /* Cache identifier in corresponding file_buffer  */
+    int           maxbufid;
+    void*         privdata; /* External structure, deserialization is parserwork_traildecodecontext
+                             *            Serialization is serialstate
+                             */
+    uint8*        recptr;   /* Starting position of record being assembled/parsed        */
+    ffsmgr_status status;
+    ffsmgr_fdata* fdata;
+    ffsmgr_if*    ffsmgr;
     ffsmgr_state_callback callback;
 } ffsmgr_state;
 

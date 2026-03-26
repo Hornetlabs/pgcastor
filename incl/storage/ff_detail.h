@@ -187,6 +187,6 @@ typedef struct FF_FILEINFO
 } ff_fileinfo;
 
 extern ff_tbindex* ff_tbindex_init(int type, uint32_t keynum);
-extern void        ff_tbindex_free(ff_tbindex* index);
-extern void        ff_tbmetadata_free(ff_tbmetadata* data);
+extern void ff_tbindex_free(ff_tbindex* index);
+extern void ff_tbmetadata_free(ff_tbmetadata* data);
 #endif

@@ -18,7 +18,8 @@
 #include "xmanager/xmanager_metricmsg.h"
 #include "xmanager/xmanager_metricprogressnode.h"
 
-static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath, char* dstpath,
+static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath,
+                                                         char* dstpath,
                                                          char* jobname)
 {
     bool  bvalue = false;
@@ -329,8 +330,9 @@ static bool xmanager_metricmsg_parsecreateinplacejobname(char* srcpath, char* ds
 }
 
 static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
-                                                  netpoolentry* npoolentry, uint8* uptr,
-                                                  char* jobname)
+                                                  netpoolentry*    npoolentry,
+                                                  uint8*           uptr,
+                                                  char*            jobname)
 {
     int                          len = 0;
     int                          jobcnt = 0;
@@ -396,7 +398,9 @@ static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
         pxmetricnode = dlist_get(xmetric->metricnodes, &xmetricnode, xmanager_metricnode_cmp);
         if (NULL == pxmetricnode)
         {
-            elog(RLOG_WARNING, "xmanager recv create progress command, not find %d.%s", jobtype,
+            elog(RLOG_WARNING,
+                 "xmanager recv create progress command, not find %d.%s",
+                 jobtype,
                  name);
             xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
             return false;
@@ -438,8 +442,9 @@ static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
  *  2. Verify if job already exists
  *  3. Add job to xmetric->metricnodes
  */
-bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                    netpacket* npacket)
+bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
+                                    netpoolentry*    npoolentry,
+                                    netpacket*       npacket)
 {
     /* Error code */
     int                  errcode = 0;
@@ -511,11 +516,18 @@ bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric, netpoolentry* npoo
     }
 
     /* Generate new configuration file */
-    snprintf(srcpath, 1024, "%s/sample/%s.cfg.sample", xmetric->configpath,
+    snprintf(srcpath,
+             1024,
+             "%s/sample/%s.cfg.sample",
+             xmetric->configpath,
              xmanager_metricnode_getname(jobtype));
 
-    snprintf(dstpath, 1024, "%s/%s_%s.cfg", xmetric->configpath,
-             xmanager_metricnode_getname(jobtype), jobname);
+    snprintf(dstpath,
+             1024,
+             "%s/%s_%s.cfg",
+             xmetric->configpath,
+             xmanager_metricnode_getname(jobtype),
+             jobname);
 
     if (false == xmanager_metricmsg_parsecreateinplacejobname(srcpath, dstpath, jobname))
     {
@@ -576,6 +588,6 @@ xmanager_metricmsg_parsecreate_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
-                                               XMANAGER_MSG_CREATECMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(
+        xmetric, npoolentry->wpackets, XMANAGER_MSG_CREATECMD, errcode, errormsg);
 }

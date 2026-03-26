@@ -69,13 +69,17 @@ static bool refresh_sharding2db_updatasyncstatustbstat(refresh_sharding2db* shar
     char      sql_exec[1024] = {'\0'};
 
     rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec, "UPDATE \"%s\".\"%s\" SET \"stat\" = %hd WHERE \"name\" = \'%s\' ",
-            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), SYNC_STATUSTABLE_NAME, stat,
+    sprintf(sql_exec,
+            "UPDATE \"%s\".\"%s\" SET \"stat\" = %hd WHERE \"name\" = \'%s\' ",
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+            SYNC_STATUSTABLE_NAME,
+            stat,
             sharding2db->name);
     res = PQexec(sharding2db->syncstats->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING, "Failed to update status table in: %s",
+        elog(RLOG_WARNING,
+             "Failed to update status table in: %s",
              PQerrorMessage(sharding2db->syncstats->base.conn));
         PQclear(res);
         return false;
@@ -93,12 +97,16 @@ static bool refresh_sharding2db_delrefresh(refresh_sharding2db* sharding2db)
     char      sql_exec[1024] = {'\0'};
 
     rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec, "DELETE FROM \"%s\".\"%s\" WHERE \"name\" = \'%s\';",
-            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), SYNC_STATUSTABLE_NAME, sharding2db->name);
+    sprintf(sql_exec,
+            "DELETE FROM \"%s\".\"%s\" WHERE \"name\" = \'%s\';",
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+            SYNC_STATUSTABLE_NAME,
+            sharding2db->name);
     res = PQexec(sharding2db->syncstats->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING, "Failed to update status table in: %s",
+        elog(RLOG_WARNING,
+             "Failed to update status table in: %s",
              PQerrorMessage(sharding2db->syncstats->base.conn));
         PQclear(res);
         return false;
@@ -201,29 +209,46 @@ void* refresh_sharding2db_work(void* args)
         if (0 != table_shard->shardings)
         {
             /* assemble file name */
-            appendStringInfo(file_name, "%s_%s_%d_%d", table_shard->schema, table_shard->table,
-                             table_shard->shardings, table_shard->sharding_no);
+            appendStringInfo(file_name,
+                             "%s_%s_%d_%d",
+                             table_shard->schema,
+                             table_shard->table,
+                             table_shard->shardings,
+                             table_shard->sharding_no);
 
-            appendStringInfo(file_path_complete, "%s/%s/%s_%s/%s/%s", sharding2db->refresh_path,
-                             REFRESH_REFRESH, table_shard->schema, table_shard->table,
-                             REFRESH_COMPLETE, file_name->data);
+            appendStringInfo(file_path_complete,
+                             "%s/%s/%s_%s/%s/%s",
+                             sharding2db->refresh_path,
+                             REFRESH_REFRESH,
+                             table_shard->schema,
+                             table_shard->table,
+                             REFRESH_COMPLETE,
+                             file_name->data);
             if (compress)
             {
-                appendStringInfo(sql, "COPY \"%s\".\"%s\" FROM PROGRAM '%s < %s' WITH BINARY;",
-                                 table_shard->schema, table_shard->table, compress,
+                appendStringInfo(sql,
+                                 "COPY \"%s\".\"%s\" FROM PROGRAM '%s < %s' WITH BINARY;",
+                                 table_shard->schema,
+                                 table_shard->table,
+                                 compress,
                                  file_path_complete->data);
             }
             else
             {
-                appendStringInfo(sql, "COPY \"%s\".\"%s\" FROM '%s' WITH BINARY;",
-                                 table_shard->schema, table_shard->table, file_path_complete->data);
+                appendStringInfo(sql,
+                                 "COPY \"%s\".\"%s\" FROM '%s' WITH BINARY;",
+                                 table_shard->schema,
+                                 table_shard->table,
+                                 file_path_complete->data);
             }
 
             res = PQexec(sharding2db->syncstats->base.conn, sql->data);
             if (PGRES_COMMAND_OK != PQresultStatus(res))
             {
-                elog(RLOG_WARNING, "Failed to copy from data in: %s %s",
-                     PQerrorMessage(sharding2db->syncstats->base.conn), sql->data);
+                elog(RLOG_WARNING,
+                     "Failed to copy from data in: %s %s",
+                     PQerrorMessage(sharding2db->syncstats->base.conn),
+                     sql->data);
                 refresh_sharding2db_checkconn(sharding2db, table_shard);
                 continue;
             }
@@ -244,8 +269,8 @@ void* refresh_sharding2db_work(void* args)
             continue;
         }
 
-        refreshtablesyncstats_markstatdone(table_shard, sharding2db->syncstats->tablesyncstats,
-                                           sharding2db->refresh_path);
+        refreshtablesyncstats_markstatdone(
+            table_shard, sharding2db->syncstats->tablesyncstats, sharding2db->refresh_path);
 
         /* received end, delete file first */
         if (0 == stat(file_path_complete->data, &st))

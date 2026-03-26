@@ -36,9 +36,13 @@ bool fftrail_tail_serail(void* data, void* state)
     uptr += TOKENHDRSIZE;
 
     /* Add token content */
-    uptr = fftrail_token2buffer(TRAIL_TAIL_TOKEN_NEXTTRAILNO, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)&fftrail->nexttrailno,
-                                &reclen, uptr);
+    uptr = fftrail_token2buffer(TRAIL_TAIL_TOKEN_NEXTTRAILNO,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                8,
+                                (uint8*)&fftrail->nexttrailno,
+                                &reclen,
+                                uptr);
 
     /* Add rectail */
     uptr = rfbuffer->data + rfbuffer->start;
@@ -54,9 +58,9 @@ bool fftrail_tail_serail(void* data, void* state)
 /* Deserialize tail info */
 bool fftrail_tail_deserail(void** data, void* state)
 {
-    uint8  tokenid = 0;   /* token id */
-    uint8  tokeninfo = 0; /* token details */
-    uint32 tokenlen = 0;  /* token length */
+    uint8         tokenid = 0;   /* token id */
+    uint8         tokeninfo = 0; /* token details */
+    uint32        tokenlen = 0;  /* token length */
 
     uint8*        uptr = NULL;
     uint8*        tokendata = NULL; /* token data area */

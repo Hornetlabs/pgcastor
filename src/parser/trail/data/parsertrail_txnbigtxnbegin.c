@@ -50,7 +50,8 @@ static void parsertrail_txnbigtxnbegin2hash(parsertrail* parsertrail, ff_txndata
         else
         {
             /* Add abandon */
-            elog(RLOG_WARNING, "txnbigtxn begin the same transaction in hash:%lu",
+            elog(RLOG_WARNING,
+                 "txnbigtxn begin the same transaction in hash:%lu",
                  txndata->header.transid);
         }
 

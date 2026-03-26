@@ -53,51 +53,51 @@
 
 typedef struct xl_xact_parsed_commit
 {
-    TimestampTz xact_time;
-    uint32      xinfo;
+    TimestampTz                xact_time;
+    uint32                     xinfo;
 
-    Oid dbId; /* MyDatabaseId */
-    Oid tsId; /* MyDatabaseTableSpace */
+    Oid                        dbId; /* MyDatabaseId */
+    Oid                        tsId; /* MyDatabaseTableSpace */
 
-    int            nsubxacts;
-    TransactionId* subxacts;
+    int                        nsubxacts;
+    TransactionId*             subxacts;
 
-    int          nrels;
-    RelFileNode* xnodes;
+    int                        nrels;
+    RelFileNode*               xnodes;
 
     int                        nmsgs;
     SharedInvalidationMessage* msgs;
 
-    TransactionId twophase_xid;          /* only for 2PC */
-    char          twophase_gid[GIDSIZE]; /* only for 2PC */
-    int           nabortrels;            /* only for 2PC */
-    RelFileNode*  abortnodes;            /* only for 2PC */
+    TransactionId              twophase_xid;          /* only for 2PC */
+    char                       twophase_gid[GIDSIZE]; /* only for 2PC */
+    int                        nabortrels;            /* only for 2PC */
+    RelFileNode*               abortnodes;            /* only for 2PC */
 
-    XLogRecPtr  origin_lsn;
-    TimestampTz origin_timestamp;
+    XLogRecPtr                 origin_lsn;
+    TimestampTz                origin_timestamp;
 } xl_xact_parsed_commit;
 
 typedef xl_xact_parsed_commit xl_xact_parsed_prepare;
 
 typedef struct xl_xact_parsed_abort
 {
-    TimestampTz xact_time;
-    uint32      xinfo;
+    TimestampTz    xact_time;
+    uint32         xinfo;
 
-    Oid dbId; /* MyDatabaseId */
-    Oid tsId; /* MyDatabaseTableSpace */
+    Oid            dbId; /* MyDatabaseId */
+    Oid            tsId; /* MyDatabaseTableSpace */
 
     int            nsubxacts;
     TransactionId* subxacts;
 
-    int          nrels;
-    RelFileNode* xnodes;
+    int            nrels;
+    RelFileNode*   xnodes;
 
-    TransactionId twophase_xid;          /* only for 2PC */
-    char          twophase_gid[GIDSIZE]; /* only for 2PC */
+    TransactionId  twophase_xid;          /* only for 2PC */
+    char           twophase_gid[GIDSIZE]; /* only for 2PC */
 
-    XLogRecPtr  origin_lsn;
-    TimestampTz origin_timestamp;
+    XLogRecPtr     origin_lsn;
+    TimestampTz    origin_timestamp;
 } xl_xact_parsed_abort;
 
 static void decode_xact_appendsubtxn_obj(List** ptxnstmts, List** psysdicthis, txn* subtxn_obj)
@@ -126,8 +126,9 @@ static void decode_xact_appendsubtxn_obj(List** ptxnstmts, List** psysdicthis, t
 /*
  * On Commit, append the contents of sub-transactions to the main transaction
  */
-static void decode_xact_buildcommittxn(decodingcontext* ctx, pg_parser_translog_pre_trans* pretrans,
-                                       txn* in_txn)
+static void decode_xact_buildcommittxn(decodingcontext*              ctx,
+                                       pg_parser_translog_pre_trans* pretrans,
+                                       txn*                          in_txn)
 {
     int                    index = 0;
     List*                  txnstmts = NULL;
@@ -280,10 +281,15 @@ void onlinerefresh_decode_xact_commit(decodingcontext* ctx, pg_parser_translog_p
     }
 
     txn_ptr->end.wal.lsn = ctx->decode_record->end.wal.lsn;
-    elog(RLOG_DEBUG, "xid:%lu, startlsn:%X/%X, endlsn:%X/%X, confirmed_lsn:%X/%X", txn_ptr->xid,
-         (uint32)(txn_ptr->start.wal.lsn >> 32), (uint32)(txn_ptr->start.wal.lsn),
-         (uint32)(txn_ptr->end.wal.lsn >> 32), (uint32)(txn_ptr->end.wal.lsn),
-         (uint32)(ctx->base.confirmedlsn >> 32), (uint32)(ctx->base.confirmedlsn));
+    elog(RLOG_DEBUG,
+         "xid:%lu, startlsn:%X/%X, endlsn:%X/%X, confirmed_lsn:%X/%X",
+         txn_ptr->xid,
+         (uint32)(txn_ptr->start.wal.lsn >> 32),
+         (uint32)(txn_ptr->start.wal.lsn),
+         (uint32)(txn_ptr->end.wal.lsn >> 32),
+         (uint32)(txn_ptr->end.wal.lsn),
+         (uint32)(ctx->base.confirmedlsn >> 32),
+         (uint32)(ctx->base.confirmedlsn));
 
     /* Check if in redo state */
     if (txn_ptr->end.wal.lsn <= ctx->base.confirmedlsn)
@@ -307,7 +313,8 @@ void onlinerefresh_decode_xact_commit(decodingcontext* ctx, pg_parser_translog_p
 
     /* Update sync dataset */
     filter_dataset_updatedatasets(ctx->trans_cache->addtablepattern,
-                                  ctx->trans_cache->sysdicts->by_namespace, txn_ptr->sysdictHis,
+                                  ctx->trans_cache->sysdicts->by_namespace,
+                                  txn_ptr->sysdictHis,
                                   ctx->trans_cache->hsyncdataset);
 
     /* If it meets filter conditions, then clean up the statements */
@@ -332,9 +339,14 @@ void onlinerefresh_decode_xact_commit(decodingcontext* ctx, pg_parser_translog_p
     }
 
     /* Write transaction to cache */
-    elog(RLOG_DEBUG, "stmtlen:%lu, startlsn:%X/%X, %lu, xid:%lu, walrec:%lu, parserrec:%lu",
-         txn_ptr->stmtsize, (uint32)(txn_ptr->start.wal.lsn >> 32),
-         (uint32)(txn_ptr->start.wal.lsn), txn_ptr->xid, txn_ptr->debugno, g_walrecno,
+    elog(RLOG_DEBUG,
+         "stmtlen:%lu, startlsn:%X/%X, %lu, xid:%lu, walrec:%lu, parserrec:%lu",
+         txn_ptr->stmtsize,
+         (uint32)(txn_ptr->start.wal.lsn >> 32),
+         (uint32)(txn_ptr->start.wal.lsn),
+         txn_ptr->xid,
+         txn_ptr->debugno,
+         g_walrecno,
          g_parserecno);
 
     /* Check and assign extra0 of the last statement */

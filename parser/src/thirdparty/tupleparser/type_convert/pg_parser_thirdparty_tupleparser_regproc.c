@@ -38,8 +38,8 @@ pg_parser_Datum regprocout(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info
     {
         if (nspname)
         {
-            if (!pg_parser_mcxt_malloc(PGFUNC_REGPROC_MCXT, (void**)&result,
-                                       strlen(procname) + strlen(nspname) + 2))
+            if (!pg_parser_mcxt_malloc(
+                    PGFUNC_REGPROC_MCXT, (void**)&result, strlen(procname) + strlen(nspname) + 2))
             {
                 return (pg_parser_Datum)0;
             }

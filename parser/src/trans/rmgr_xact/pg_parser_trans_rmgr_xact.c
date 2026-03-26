@@ -7,41 +7,41 @@
 #include "trans/rmgr_xact/pg_parser_trans_rmgr_xact.h"
 #include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_fmgr.h"
 
-#define PG_PARSER_RMGR_XACT_INFOCNT 6
-#define RMGR_XACT_MCXT NULL
+#define PG_PARSER_RMGR_XACT_INFOCNT       6
+#define RMGR_XACT_MCXT                    NULL
 
-#define PG_PARSER_RMGR_XACT_STATUS_ABORT (uint8_t)0x01
+#define PG_PARSER_RMGR_XACT_STATUS_ABORT  (uint8_t)0x01
 #define PG_PARSER_RMGR_XACT_STATUS_COMMIT (uint8_t)0x02
 
-#define MinSizeOfXactSubxacts offsetof(pg_parser_xl_xact_subxacts, subxacts)
+#define MinSizeOfXactSubxacts             offsetof(pg_parser_xl_xact_subxacts, subxacts)
 
-typedef bool (*pg_parser_trans_transrec_rmgr_info_func_pre)(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno);
+typedef bool (*pg_parser_trans_transrec_rmgr_info_func_pre)(pg_parser_XLogReaderState*    state,
+                                                            pg_parser_translog_pre_base** result,
+                                                            int32_t* pg_parser_errno);
 // todo two-phase commit
-static bool pg_parser_trans_rmgr_xact_commit(pg_parser_trans_transrec_decode_XLogReaderState* state,
+static bool pg_parser_trans_rmgr_xact_commit(pg_parser_XLogReaderState*    state,
                                              pg_parser_translog_pre_base** result,
                                              int32_t*                      pg_parser_errno);
 
-static bool pg_parser_trans_rmgr_xact_abort(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                            pg_parser_translog_pre_base**                    result,
-                                            int32_t* pg_parser_errno);
+static bool pg_parser_trans_rmgr_xact_abort(pg_parser_XLogReaderState*    state,
+                                            pg_parser_translog_pre_base** result,
+                                            int32_t*                      pg_parser_errno);
 
-static bool pg_parser_trans_rmgr_xact_commit_prepare(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno);
+static bool pg_parser_trans_rmgr_xact_commit_prepare(pg_parser_XLogReaderState*    state,
+                                                     pg_parser_translog_pre_base** result,
+                                                     int32_t*                      pg_parser_errno);
 
-static bool pg_parser_trans_rmgr_xact_abort_prepare(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno);
+static bool pg_parser_trans_rmgr_xact_abort_prepare(pg_parser_XLogReaderState*    state,
+                                                    pg_parser_translog_pre_base** result,
+                                                    int32_t*                      pg_parser_errno);
 
-static bool pg_parser_trans_rmgr_xact_assignment(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno);
+static bool pg_parser_trans_rmgr_xact_assignment(pg_parser_XLogReaderState*    state,
+                                                 pg_parser_translog_pre_base** result,
+                                                 int32_t*                      pg_parser_errno);
 
-static bool pg_parser_trans_rmgr_xact_prepare(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno);
+static bool pg_parser_trans_rmgr_xact_prepare(pg_parser_XLogReaderState*    state,
+                                              pg_parser_translog_pre_base** result,
+                                              int32_t*                      pg_parser_errno);
 
 typedef struct PG_PARSER_TRANS_RMGR_XLOG
 {
@@ -60,8 +60,9 @@ static pg_parser_trans_rmgr_xact m_record_rmgr_xlog_info[] = {
 
 };
 
-bool pg_parser_trans_rmgr_xact_pre(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                   pg_parser_translog_pre_base** result, int32_t* pg_parser_errno)
+bool pg_parser_trans_rmgr_xact_pre(pg_parser_XLogReaderState*    state,
+                                   pg_parser_translog_pre_base** result,
+                                   int32_t*                      pg_parser_errno)
 {
     uint8_t info = state->decoded_record->xl_info;
     int8_t  infocnts = PG_PARSER_RMGR_XACT_INFOCNT;
@@ -113,7 +114,8 @@ static size_t pg_parser_strlcpy(char* dst, const char* src, size_t siz)
     return (s - src - 1); /* count does not include NUL */
 }
 
-static void ParseCommitRecord(uint8_t info, pg_parser_xl_xact_commit* xlrec,
+static void ParseCommitRecord(uint8_t                          info,
+                              pg_parser_xl_xact_commit*        xlrec,
                               pg_parser_xl_xact_parsed_commit* parsed)
 {
     char* data = ((char*)xlrec) + pg_parser_MinSizeOfXactCommit;
@@ -150,8 +152,8 @@ static void ParseCommitRecord(uint8_t info, pg_parser_xl_xact_commit* xlrec,
 
         parsed->nsubxacts = xl_subxacts->nsubxacts;
 
-        pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)&parsed->subxacts,
-                              parsed->nsubxacts * sizeof(uint32_t));
+        pg_parser_mcxt_malloc(
+            RMGR_XACT_MCXT, (void**)&parsed->subxacts, parsed->nsubxacts * sizeof(uint32_t));
         rmemcpy0(parsed->subxacts, 0, xl_subxacts->subxacts, parsed->nsubxacts * sizeof(uint32_t));
 
         data += MinSizeOfXactSubxacts;
@@ -163,9 +165,12 @@ static void ParseCommitRecord(uint8_t info, pg_parser_xl_xact_commit* xlrec,
         pg_parser_xl_xact_relfilenodes* xl_relfilenodes = (pg_parser_xl_xact_relfilenodes*)data;
 
         parsed->nrels = xl_relfilenodes->nrels;
-        pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)&parsed->xnodes,
+        pg_parser_mcxt_malloc(RMGR_XACT_MCXT,
+                              (void**)&parsed->xnodes,
                               xl_relfilenodes->nrels * sizeof(pg_parser_RelFileNode));
-        rmemcpy0(parsed->xnodes, 0, xl_relfilenodes->xnodes,
+        rmemcpy0(parsed->xnodes,
+                 0,
+                 xl_relfilenodes->xnodes,
                  xl_relfilenodes->nrels * sizeof(pg_parser_RelFileNode));
 
         data += pg_parser_MinSizeOfXactRelfilenodes;
@@ -179,9 +184,12 @@ static void ParseCommitRecord(uint8_t info, pg_parser_xl_xact_commit* xlrec,
         parsed->nmsgs = xl_invals->nmsgs;
         parsed->msgs = xl_invals->msgs;
 
-        pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)&parsed->msgs,
+        pg_parser_mcxt_malloc(RMGR_XACT_MCXT,
+                              (void**)&parsed->msgs,
                               xl_invals->nmsgs * sizeof(pg_parser_SharedInvalidationMessage));
-        rmemcpy0(parsed->msgs, 0, xl_invals->msgs,
+        rmemcpy0(parsed->msgs,
+                 0,
+                 xl_invals->msgs,
                  xl_invals->nmsgs * sizeof(pg_parser_SharedInvalidationMessage));
 
         data += pg_parser_MinSizeOfXactInvals;
@@ -219,7 +227,8 @@ static void ParseCommitRecord(uint8_t info, pg_parser_xl_xact_commit* xlrec,
     }
 }
 
-static void ParseAbortRecord(uint8_t info, pg_parser_xl_xact_abort* xlrec,
+static void ParseAbortRecord(uint8_t                         info,
+                             pg_parser_xl_xact_abort*        xlrec,
                              pg_parser_xl_xact_parsed_abort* parsed)
 {
     char* data = ((char*)xlrec) + pg_parser_MinSizeOfXactCommit;
@@ -256,8 +265,8 @@ static void ParseAbortRecord(uint8_t info, pg_parser_xl_xact_abort* xlrec,
 
         parsed->nsubxacts = xl_subxacts->nsubxacts;
 
-        pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)&parsed->subxacts,
-                              parsed->nsubxacts * sizeof(uint32_t));
+        pg_parser_mcxt_malloc(
+            RMGR_XACT_MCXT, (void**)&parsed->subxacts, parsed->nsubxacts * sizeof(uint32_t));
         rmemcpy0(parsed->subxacts, 0, xl_subxacts->subxacts, parsed->nsubxacts * sizeof(uint32_t));
 
         data += MinSizeOfXactSubxacts;
@@ -269,9 +278,12 @@ static void ParseAbortRecord(uint8_t info, pg_parser_xl_xact_abort* xlrec,
         pg_parser_xl_xact_relfilenodes* xl_relfilenodes = (pg_parser_xl_xact_relfilenodes*)data;
 
         parsed->nrels = xl_relfilenodes->nrels;
-        pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)&parsed->xnodes,
+        pg_parser_mcxt_malloc(RMGR_XACT_MCXT,
+                              (void**)&parsed->xnodes,
                               xl_relfilenodes->nrels * sizeof(pg_parser_RelFileNode));
-        rmemcpy0(parsed->xnodes, 0, xl_relfilenodes->xnodes,
+        rmemcpy0(parsed->xnodes,
+                 0,
+                 xl_relfilenodes->xnodes,
                  xl_relfilenodes->nrels * sizeof(pg_parser_RelFileNode));
 
         data += pg_parser_MinSizeOfXactRelfilenodes;
@@ -309,7 +321,7 @@ static void ParseAbortRecord(uint8_t info, pg_parser_xl_xact_abort* xlrec,
     }
 }
 
-static bool pg_parser_trans_rmgr_xact_commit(pg_parser_trans_transrec_decode_XLogReaderState* state,
+static bool pg_parser_trans_rmgr_xact_commit(pg_parser_XLogReaderState*    state,
                                              pg_parser_translog_pre_base** result,
                                              int32_t*                      pg_parser_errno)
 {
@@ -326,8 +338,8 @@ static bool pg_parser_trans_rmgr_xact_commit(pg_parser_trans_transrec_decode_XLo
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)(&trans),
-                               sizeof(pg_parser_translog_pre_trans)))
+    if (!pg_parser_mcxt_malloc(
+            RMGR_XACT_MCXT, (void**)(&trans), sizeof(pg_parser_translog_pre_trans)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_06;
         return false;
@@ -340,8 +352,8 @@ static bool pg_parser_trans_rmgr_xact_commit(pg_parser_trans_transrec_decode_XLo
 
     trans->m_time = xlrec->xact_time;
 
-    if (!pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)&trans->m_transdata,
-                               sizeof(pg_parser_xl_xact_parsed_commit)))
+    if (!pg_parser_mcxt_malloc(
+            RMGR_XACT_MCXT, (void**)&trans->m_transdata, sizeof(pg_parser_xl_xact_parsed_commit)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_06;
         return false;
@@ -353,9 +365,9 @@ static bool pg_parser_trans_rmgr_xact_commit(pg_parser_trans_transrec_decode_XLo
     return true;
 }
 
-static bool pg_parser_trans_rmgr_xact_abort(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                            pg_parser_translog_pre_base**                    result,
-                                            int32_t* pg_parser_errno)
+static bool pg_parser_trans_rmgr_xact_abort(pg_parser_XLogReaderState*    state,
+                                            pg_parser_translog_pre_base** result,
+                                            int32_t*                      pg_parser_errno)
 {
     pg_parser_xl_xact_abort*      xlrec = (pg_parser_xl_xact_abort*)state->main_data;
     uint8_t                       info = state->decoded_record->xl_info;
@@ -370,8 +382,8 @@ static bool pg_parser_trans_rmgr_xact_abort(pg_parser_trans_transrec_decode_XLog
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)(&trans),
-                               sizeof(pg_parser_translog_pre_trans)))
+    if (!pg_parser_mcxt_malloc(
+            RMGR_XACT_MCXT, (void**)(&trans), sizeof(pg_parser_translog_pre_trans)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_06;
         return false;
@@ -383,8 +395,8 @@ static bool pg_parser_trans_rmgr_xact_abort(pg_parser_trans_transrec_decode_XLog
     trans->m_status = PG_PARSER_RMGR_XACT_STATUS_ABORT;
     trans->m_time = xlrec->xact_time;
 
-    if (!pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)&trans->m_transdata,
-                               sizeof(pg_parser_xl_xact_parsed_abort)))
+    if (!pg_parser_mcxt_malloc(
+            RMGR_XACT_MCXT, (void**)&trans->m_transdata, sizeof(pg_parser_xl_xact_parsed_abort)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_06;
         return false;
@@ -395,9 +407,9 @@ static bool pg_parser_trans_rmgr_xact_abort(pg_parser_trans_transrec_decode_XLog
     return true;
 }
 
-static bool pg_parser_trans_rmgr_xact_commit_prepare(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno)
+static bool pg_parser_trans_rmgr_xact_commit_prepare(pg_parser_XLogReaderState*    state,
+                                                     pg_parser_translog_pre_base** result,
+                                                     int32_t*                      pg_parser_errno)
 {
     bool pre_result = false;
     pre_result = pg_parser_trans_rmgr_xact_commit(state, result, pg_parser_errno);
@@ -405,9 +417,9 @@ static bool pg_parser_trans_rmgr_xact_commit_prepare(
     return pre_result;
 }
 
-static bool pg_parser_trans_rmgr_xact_abort_prepare(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno)
+static bool pg_parser_trans_rmgr_xact_abort_prepare(pg_parser_XLogReaderState*    state,
+                                                    pg_parser_translog_pre_base** result,
+                                                    int32_t*                      pg_parser_errno)
 {
     bool pre_result = false;
     pre_result = pg_parser_trans_rmgr_xact_abort(state, result, pg_parser_errno);
@@ -415,15 +427,15 @@ static bool pg_parser_trans_rmgr_xact_abort_prepare(
     return pre_result;
 }
 
-static bool pg_parser_trans_rmgr_xact_assignment(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno)
+static bool pg_parser_trans_rmgr_xact_assignment(pg_parser_XLogReaderState*    state,
+                                                 pg_parser_translog_pre_base** result,
+                                                 int32_t*                      pg_parser_errno)
 {
     pg_parser_xl_xact_assignment*      assignment = (pg_parser_xl_xact_assignment*)state->main_data;
     pg_parser_translog_pre_assignment* trans = NULL;
 
-    if (!pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)(&trans),
-                               sizeof(pg_parser_translog_pre_assignment)))
+    if (!pg_parser_mcxt_malloc(
+            RMGR_XACT_MCXT, (void**)(&trans), sizeof(pg_parser_translog_pre_assignment)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_06;
         return false;
@@ -432,22 +444,25 @@ static bool pg_parser_trans_rmgr_xact_assignment(
     trans->m_base.m_xid = pg_parser_XLogRecGetXid(state);
     trans->m_base.m_originid = state->record_origin;
     pg_parser_mcxt_malloc(
-        RMGR_XACT_MCXT, (void**)(&trans->m_assignment),
+        RMGR_XACT_MCXT,
+        (void**)(&trans->m_assignment),
         sizeof(pg_parser_xl_xact_assignment) + sizeof(uint32_t) * assignment->nsubxacts);
-    rmemcpy0(trans->m_assignment, 0, assignment,
+    rmemcpy0(trans->m_assignment,
+             0,
+             assignment,
              sizeof(pg_parser_xl_xact_assignment) + sizeof(uint32_t) * assignment->nsubxacts);
     *result = (pg_parser_translog_pre_base*)trans;
     return true;
 }
 
-static bool pg_parser_trans_rmgr_xact_prepare(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno)
+static bool pg_parser_trans_rmgr_xact_prepare(pg_parser_XLogReaderState*    state,
+                                              pg_parser_translog_pre_base** result,
+                                              int32_t*                      pg_parser_errno)
 {
     pg_parser_translog_pre_base* trans = NULL;
 
-    if (!pg_parser_mcxt_malloc(RMGR_XACT_MCXT, (void**)(&trans),
-                               sizeof(pg_parser_translog_pre_base)))
+    if (!pg_parser_mcxt_malloc(
+            RMGR_XACT_MCXT, (void**)(&trans), sizeof(pg_parser_translog_pre_base)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_06;
         return false;

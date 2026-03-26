@@ -6,21 +6,21 @@
 #include "utils/list/list_func.h"
 
 /* Listen port */
-int g_walcachemaxsize = 64;
-int g_transmaxnum = 128;
-int g_blocksize = 8192; /* transaction log block size */
-int g_walsegsize = 16;  /* transaction log file size */
-int g_idbtype = DATABASE_TYPE_POSTGRESQL;
-int g_idbversion = 0;
-int g_parserddl = 1;
-int g_loglevel = RLOG_INFO;
-int g_refreshstragety = 1;
-int g_max_work_per_refresh = 10;
-int g_max_page_per_refreshsharding = 1000;
+int                      g_walcachemaxsize = 64;
+int                      g_transmaxnum = 128;
+int                      g_blocksize = 8192; /* transaction log block size */
+int                      g_walsegsize = 16;  /* transaction log file size */
+int                      g_idbtype = DATABASE_TYPE_POSTGRESQL;
+int                      g_idbversion = 0;
+int                      g_parserddl = 1;
+int                      g_loglevel = RLOG_INFO;
+int                      g_refreshstragety = 1;
+int                      g_max_work_per_refresh = 10;
+int                      g_max_page_per_refreshsharding = 1000;
 
 /* Listen IP address */
 /*---------------------capture config begin------------------------*/
-static capture_cfg g_capturecfg = {0};
+static capture_cfg       g_capturecfg = {0};
 
 static struct config_int ConfigureNamesIntCapture[] = {
     {{
@@ -73,7 +73,9 @@ static struct config_int ConfigureNamesIntCapture[] = {
      999999,
      NULL,
      NULL},
-    {{CFG_KEY_TCP_KEEPALIVE, PGC_INTERNAL, gettext_noop("tcp keepalive, enable 1, disable 0"),
+    {{CFG_KEY_TCP_KEEPALIVE,
+      PGC_INTERNAL,
+      gettext_noop("tcp keepalive, enable 1, disable 0"),
       NULL},
      &(g_capturecfg.tcp_keepalive),
      1,
@@ -190,8 +192,10 @@ static struct config_string ConfigureNamesStringCapture[] = {
      "127",
      NULL,
      NULL},
-    {{CFG_KEY_CATALOGSCHEMA, PGC_INTERNAL,
-      gettext_noop("The schema where the sync_status table is located"), NULL},
+    {{CFG_KEY_CATALOGSCHEMA,
+      PGC_INTERNAL,
+      gettext_noop("The schema where the sync_status table is located"),
+      NULL},
      &(g_capturecfg.xsynchschema),
      "xsynch",
      NULL,
@@ -227,7 +231,7 @@ static struct config_string ConfigureNamesStringCapture[] = {
 /*---------------------capture config   end------------------------*/
 
 /*---------------------integrate config begin---------------------------*/
-static integrate_cfg g_integratecfg = {0};
+static integrate_cfg     g_integratecfg = {0};
 
 static struct config_int ConfigureNamesIntIntegrate[] = {
     {{
@@ -268,7 +272,9 @@ static struct config_int ConfigureNamesIntIntegrate[] = {
      999999,
      NULL,
      NULL},
-    {{CFG_KEY_TCP_KEEPALIVE, PGC_INTERNAL, gettext_noop("tcp keepalive, enable 1, disable 0"),
+    {{CFG_KEY_TCP_KEEPALIVE,
+      PGC_INTERNAL,
+      gettext_noop("tcp keepalive, enable 1, disable 0"),
       NULL},
      &(g_integratecfg.tcp_keepalive),
      1,
@@ -368,8 +374,10 @@ static struct config_string ConfigureNamesStringIntegrate[] = {
      "/opt/ripple/capture/trail",
      NULL,
      NULL},
-    {{CFG_KEY_CATALOGSCHEMA, PGC_INTERNAL,
-      gettext_noop("The schema where the sync_status table is located"), NULL},
+    {{CFG_KEY_CATALOGSCHEMA,
+      PGC_INTERNAL,
+      gettext_noop("The schema where the sync_status table is located"),
+      NULL},
      &(g_integratecfg.xsynchschema),
      "xsynch",
      NULL,
@@ -406,7 +414,7 @@ static struct config_string ConfigureNamesStringIntegrate[] = {
 
 /*---------------------receivelog config begin--------------------------*/
 
-static receivewal_cfg m_receivewalcfg = {0};
+static receivewal_cfg    m_receivewalcfg = {0};
 
 static struct config_int ConfigureNamesIntReceivewal[] = {
     {{CFG_KEY_TIMELINE, PGC_INTERNAL, gettext_noop("start specified timeline"), NULL},
@@ -440,25 +448,32 @@ static struct config_string ConfigureNamesStringReceivewal[] = {
      "log",
      NULL,
      NULL},
-    {{CFG_KEY_PRIMARY_CONN_INFO, PGC_INTERNAL, gettext_noop("database server connect string"),
+    {{CFG_KEY_PRIMARY_CONN_INFO,
+      PGC_INTERNAL,
+      gettext_noop("database server connect string"),
       NULL},
      &(m_receivewalcfg.primaryconninfo),
      "",
      NULL,
      NULL},
-    {{CFG_KEY_SLOT_NAME, PGC_INTERNAL, gettext_noop("physical replication use specified slot"),
+    {{CFG_KEY_SLOT_NAME,
+      PGC_INTERNAL,
+      gettext_noop("physical replication use specified slot"),
       NULL},
      &(m_receivewalcfg.primaryslotname),
      "",
      NULL,
      NULL},
-    {{CFG_KEY_STARTPOS, PGC_INTERNAL, gettext_noop("start replication replication lsn, XX/XXX"),
+    {{CFG_KEY_STARTPOS,
+      PGC_INTERNAL,
+      gettext_noop("start replication replication lsn, XX/XXX"),
       NULL},
      &(m_receivewalcfg.startpos),
      "",
      NULL,
      NULL},
-    {{CFG_KEY_RESTORE_COMMAND, PGC_INTERNAL,
+    {{CFG_KEY_RESTORE_COMMAND,
+      PGC_INTERNAL,
       gettext_noop("After archiving at the source, use a command to retrieve it from the archive"),
       NULL},
      &(m_receivewalcfg.restorecommand),
@@ -472,7 +487,7 @@ static struct config_string ConfigureNamesStringReceivewal[] = {
 
 /*---------------------xmanager config begin----------------------------*/
 
-static xmanager_cfg m_xmanagercfg = {0};
+static xmanager_cfg      m_xmanagercfg = {0};
 
 static struct config_int ConfigureNamesIntXmanager[] = {
     {{CFG_KEY_PORT, PGC_INTERNAL, gettext_noop("target host listen port"), NULL},
@@ -482,7 +497,9 @@ static struct config_int ConfigureNamesIntXmanager[] = {
      999999,
      NULL,
      NULL},
-    {{CFG_KEY_TCP_KEEPALIVE, PGC_INTERNAL, gettext_noop("tcp keepalive, enable 1, disable 0"),
+    {{CFG_KEY_TCP_KEEPALIVE,
+      PGC_INTERNAL,
+      gettext_noop("tcp keepalive, enable 1, disable 0"),
       NULL},
      &(m_xmanagercfg.tcp_keepalive),
      1,
@@ -577,11 +594,11 @@ static struct config_generic** guc_variables = NULL;
 static int                     num_guc_variables = 0;
 
 /* Vector capacity */
-static int size_guc_variables;
+static int                     size_guc_variables;
 
-List* g_table = NULL;
-List* g_tableexclude = NULL;
-List* g_addtablepattern = NULL;
+List*                          g_table = NULL;
+List*                          g_tableexclude = NULL;
+List*                          g_addtablepattern = NULL;
 
 static void guc_capturedebug(void)
 {
@@ -707,9 +724,9 @@ static void guc_xmanagerdebug(void)
 
     printf("host:               %s\n", m_xmanagercfg.host == NULL ? "NULL" : m_xmanagercfg.host);
 
-    printf("unixdomaindir:      %s\n", m_xmanagercfg.unixdomaindir == NULL
-                                           ? RMANAGER_UNIXDOMAINDIR
-                                           : m_xmanagercfg.unixdomaindir);
+    printf(
+        "unixdomaindir:      %s\n",
+        m_xmanagercfg.unixdomaindir == NULL ? RMANAGER_UNIXDOMAINDIR : m_xmanagercfg.unixdomaindir);
 
     printf("port:       %d\n", m_xmanagercfg.port);
 
@@ -725,11 +742,17 @@ static void guc_xmanagerdebug(void)
 static guc_cfg m_guccfg[] = {
     {PROC_TYPE_NOP, NULL, NULL, NULL},
     {PROC_TYPE_CAPTURE, ConfigureNamesIntCapture, ConfigureNamesStringCapture, guc_capturedebug},
-    {PROC_TYPE_INTEGRATE, ConfigureNamesIntIntegrate, ConfigureNamesStringIntegrate,
+    {PROC_TYPE_INTEGRATE,
+     ConfigureNamesIntIntegrate,
+     ConfigureNamesStringIntegrate,
      guc_integratedebug},
-    {PROC_TYPE_PGRECEIVEWAL, ConfigureNamesIntReceivewal, ConfigureNamesStringReceivewal,
+    {PROC_TYPE_PGRECEIVEWAL,
+     ConfigureNamesIntReceivewal,
+     ConfigureNamesStringReceivewal,
      guc_receivewaldebug},
-    {PROC_TYPE_XMANAGER, ConfigureNamesIntXmanager, ConfigureNamesStringXmanager,
+    {PROC_TYPE_XMANAGER,
+     ConfigureNamesIntXmanager,
+     ConfigureNamesStringXmanager,
      guc_xmanagerdebug}};
 
 /* Print information */
@@ -884,8 +907,11 @@ static struct config_generic* find_option(const char* name)
      * By equating const char ** with struct config_generic *, we are assuming
      * the name field is first in config_generic.
      */
-    res = (struct config_generic**)bsearch((void*)&key, (void*)guc_variables, num_guc_variables,
-                                           sizeof(struct config_generic*), guc_var_compare);
+    res = (struct config_generic**)bsearch((void*)&key,
+                                           (void*)guc_variables,
+                                           num_guc_variables,
+                                           sizeof(struct config_generic*),
+                                           guc_var_compare);
     if (res)
     {
         return *res;
@@ -895,7 +921,8 @@ static struct config_generic* find_option(const char* name)
     return NULL;
 }
 
-static void guc_parseConfigFile(const char* config_file, ConfigVariable** head_p,
+static void guc_parseConfigFile(const char*      config_file,
+                                ConfigVariable** head_p,
                                 ConfigVariable** tail_p)
 {
     FILE* fp = NULL;
@@ -1040,7 +1067,8 @@ static void guc_parseConfigFile(const char* config_file, ConfigVariable** head_p
             if (true == quota)
             {
                 elog(RLOG_ERROR,
-                     "configuration item:%s is incorrect, missing double quotation marks", key);
+                     "configuration item:%s is incorrect, missing double quotation marks",
+                     key);
             }
         }
         else
@@ -1171,8 +1199,10 @@ static bool parse_int(const char* value, int* result)
     return true;
 }
 
-static bool parse_and_validate_value(struct config_generic* record, const char* name,
-                                     const char* value, union config_var_val* newval)
+static bool parse_and_validate_value(struct config_generic* record,
+                                     const char*            name,
+                                     const char*            value,
+                                     union config_var_val*  newval)
 {
     switch (record->vartype)
     {
@@ -1187,8 +1217,12 @@ static bool parse_and_validate_value(struct config_generic* record, const char* 
 
             if (newval->intval < conf->min || newval->intval > conf->max)
             {
-                elog(RLOG_ERROR, "%d is outside the valid range for parameter %s (%d .. %d)",
-                     newval->intval, name, conf->min, conf->max);
+                elog(RLOG_ERROR,
+                     "%d is outside the valid range for parameter %s (%d .. %d)",
+                     newval->intval,
+                     name,
+                     conf->min,
+                     conf->max);
                 return false;
             }
         }

@@ -120,8 +120,8 @@ HTAB* attributecache_load(sysdict_header_array* array)
             }
             rmemset0(attr, 0, '\0', sizeof(pg_parser_sysdict_pgattributes));
             rmemcpy0(attr, 0, buffer + offset, sizeof(pg_parser_sysdict_pgattributes));
-            entry = (catalog_attribute_value*)hash_search(attributehtab, &attr->attrelid,
-                                                          HASH_ENTER, &found);
+            entry = (catalog_attribute_value*)hash_search(
+                attributehtab, &attr->attrelid, HASH_ENTER, &found);
             if (!found)
             {
                 entry->attrs = NIL;
@@ -221,8 +221,8 @@ catalogdata* class_colvalue2attribute(void* in_colvalue)
     sscanf((char*)((colvalue + 4)->m_value), "%hd", &pgattribute->attlen);
 
     /* attname 1 */
-    rmemcpy1(pgattribute->attname.data, 0, (char*)((colvalue + 1)->m_value),
-             (colvalue + 1)->m_valueLen);
+    rmemcpy1(
+        pgattribute->attname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* attndims 6 */
     sscanf((char*)((colvalue + 6)->m_value), "%d", &pgattribute->attndims);
@@ -323,8 +323,8 @@ catalogdata* class_colvalue2attribute_pg14(void* in_colvalue)
     sscanf((char*)((colvalue + 4)->m_value), "%hd", &pgattribute->attlen);
 
     /* attname 1 */
-    rmemcpy1(pgattribute->attname.data, 0, (char*)((colvalue + 1)->m_value),
-             (colvalue + 1)->m_valueLen);
+    rmemcpy1(
+        pgattribute->attname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* attndims 6 */
     sscanf((char*)((colvalue + 6)->m_value), "%d", &pgattribute->attndims);
@@ -421,7 +421,9 @@ void attribute_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
         attrInHash = hash_search(sysdicts->by_attribute, &pgattr->attrelid, HASH_FIND, &found);
         if (NULL == attrInHash)
         {
-            elog(RLOG_WARNING, "attribute %u, %s can not fond in attribute hash", pgattr->attrelid,
+            elog(RLOG_WARNING,
+                 "attribute %u, %s can not fond in attribute hash",
+                 pgattr->attrelid,
                  pgattr->attname.data);
             return;
         }
@@ -441,7 +443,9 @@ void attribute_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
         }
 
         /* No match found, which indicates an issue, directly append and log WARNING */
-        elog(RLOG_WARNING, "attribute %u, %s can not fond in attribute hash", pgattr->attrelid,
+        elog(RLOG_WARNING,
+             "attribute %u, %s can not fond in attribute hash",
+             pgattr->attrelid,
              pgattr->attname.data);
 
         /* Reallocate space */
@@ -460,7 +464,9 @@ void attribute_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
         attrInHash = hash_search(sysdicts->by_attribute, &pgattr->attrelid, HASH_FIND, &found);
         if (NULL == attrInHash)
         {
-            elog(RLOG_WARNING, "attribute %u, %s can not fond in attribute hash", pgattr->attrelid,
+            elog(RLOG_WARNING,
+                 "attribute %u, %s can not fond in attribute hash",
+                 pgattr->attrelid,
                  pgattr->attname.data);
             return;
         }

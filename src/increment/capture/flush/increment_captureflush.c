@@ -202,14 +202,18 @@ void* increment_captureflush_main(void* args)
             }
 
             /* Write data */
-            osal_file_pwrite(cflush->fd, (char*)fbuffer->data, fbuffer->maxsize,
+            osal_file_pwrite(cflush->fd,
+                             (char*)fbuffer->data,
+                             fbuffer->maxsize,
                              ((finfo->blknum - 1) * FILE_BUFFER_SIZE));
             osal_file_data_sync(cflush->fd);
 
             cflush->base.fileid = finfo->fileid;
             cflush->base.fileoffset = ((finfo->blknum - 1) * FILE_BUFFER_SIZE) + fbuffer->start;
 
-            elog(RLOG_DEBUG, "---------fileid:%lu:%lu", cflush->base.fileid,
+            elog(RLOG_DEBUG,
+                 "---------fileid:%lu:%lu",
+                 cflush->base.fileid,
                  cflush->base.fileoffset);
             /* Set status thread, current parsed and persisted lsn */
             cflush->callback.setmetricflushlsn(cflush->privdata,
@@ -234,7 +238,9 @@ void* increment_captureflush_main(void* args)
             }
             cflush->base.curtlid = fbuffer->extra.rewind.curtlid;
 
-            elog(RLOG_DEBUG, "************fileid:%lu:%lu", cflush->base.fileid,
+            elog(RLOG_DEBUG,
+                 "************fileid:%lu:%lu",
+                 cflush->base.fileid,
                  cflush->base.fileoffset);
             /* Flush data to disk, no lock needed */
             misc_stat_decodewrite(&cflush->base, &cflush->basefd);
@@ -250,9 +256,10 @@ void* increment_captureflush_main(void* args)
                                                    fbuffer->extra.chkpoint.sysdicts);
 
                 /* Update sync dataset */
-                if (filter_dataset_updatedatasets(
-                        cflush->txnsctx->addtablepattern, cflush->txnsctx->sysdicts->by_namespace,
-                        fbuffer->extra.chkpoint.sysdicts, cflush->txnsctx->hsyncdataset))
+                if (filter_dataset_updatedatasets(cflush->txnsctx->addtablepattern,
+                                                  cflush->txnsctx->sysdicts->by_namespace,
+                                                  fbuffer->extra.chkpoint.sysdicts,
+                                                  cflush->txnsctx->hsyncdataset))
                 {
                     filter_dataset_flush(cflush->txnsctx->hsyncdataset);
                 }
@@ -352,7 +359,7 @@ void increment_captureflush_destroy(increment_captureflush* wstate)
 
 static void increment_captureflush_reloadsyncdatasets(increment_captureflush* wstate)
 {
-    wstate->txnsctx->hsyncdataset =
-        filter_dataset_reload(wstate->txnsctx->sysdicts->by_namespace,
-                              wstate->txnsctx->sysdicts->by_class, wstate->txnsctx->hsyncdataset);
+    wstate->txnsctx->hsyncdataset = filter_dataset_reload(wstate->txnsctx->sysdicts->by_namespace,
+                                                          wstate->txnsctx->sysdicts->by_class,
+                                                          wstate->txnsctx->hsyncdataset);
 }

@@ -14,11 +14,11 @@ typedef struct PG_PARSER_SYSDICT_PGCONSTRAINT
 
 typedef pg_parser_sysdict_pgconstraint* pg_sysdict_Form_pg_constraint;
 
-#define CONSTRAINT_CHECK 'c'
-#define CONSTRAINT_FOREIGN 'f'
-#define CONSTRAINT_PRIMARY 'p'
-#define CONSTRAINT_UNIQUE 'u'
-#define CONSTRAINT_TRIGGER 't'
+#define CONSTRAINT_CHECK     'c'
+#define CONSTRAINT_FOREIGN   'f'
+#define CONSTRAINT_PRIMARY   'p'
+#define CONSTRAINT_UNIQUE    'u'
+#define CONSTRAINT_TRIGGER   't'
 #define CONSTRAINT_EXCLUSION 'x'
 
 typedef enum pg_sysdict_ConstraintCategory

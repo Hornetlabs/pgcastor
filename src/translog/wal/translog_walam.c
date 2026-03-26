@@ -80,7 +80,8 @@ static translog_recvlog_dbtyperoutine m_pgtyperoutine[] = {
 /*----------------------------------database version   end-----------------------*/
 
 /* get database version by database type */
-bool translog_recvlog_getdbversion(translog_recvlog_dbtype type, PGconn* conn,
+bool translog_recvlog_getdbversion(translog_recvlog_dbtype     type,
+                                   PGconn*                     conn,
                                    translog_recvlog_dbversion* dbversion)
 {
     if (TRANSLOG_RECVLOG_DBTYPE_MAX <= type)
@@ -91,8 +92,8 @@ bool translog_recvlog_getdbversion(translog_recvlog_dbtype type, PGconn* conn,
 
     if (NULL == m_pgtyperoutine[type].getdbversion)
     {
-        elog(RLOG_WARNING, "%s database unsupport get database version",
-             m_pgtyperoutine[type].desc);
+        elog(
+            RLOG_WARNING, "%s database unsupport get database version", m_pgtyperoutine[type].desc);
         return false;
     }
 

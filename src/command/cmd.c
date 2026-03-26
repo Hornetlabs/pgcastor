@@ -37,8 +37,12 @@ static proc2cmd m_typ2cmd[] = {
     {OPTYPE_STOP, PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_STOPCMD, "stop", cmd_stop, "stop error"},
     {OPTYPE_STATUS, PROC2CMDFLAG_NOP, XMANAGER_MSG_NOP, "status", cmd_status, "status error"},
     {OPTYPE_RELOAD, PROC2CMDFLAG_NOP, XMANAGER_MSG_RELOADCMD, "reload", cmd_reload, "reload error"},
-    {OPTYPE_ONLINEREFRESH, PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_CAPTUREREFRESH, "onlinerefresh",
-     cmd_onlinerefresh, "onlinerefresh error"}};
+    {OPTYPE_ONLINEREFRESH,
+     PROC2CMDFLAG_XMANAGER,
+     XMANAGER_MSG_CAPTUREREFRESH,
+     "onlinerefresh",
+     cmd_onlinerefresh,
+     "onlinerefresh error"}};
 
 bool cmd(optype type, void* extra_config)
 {

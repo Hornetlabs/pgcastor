@@ -10,8 +10,9 @@
 
 pg_parser_translog_ddlstmt* pg_parser_DDL_truncate(
     pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record, pg_parser_ddlstate* ddlstate,
-    int32_t* pg_parser_errno)
+    pg_parser_translog_systb2dll_record* current_record,
+    pg_parser_ddlstate*                  ddlstate,
+    int32_t*                             pg_parser_errno)
 {
     // pg_parser_translog_ddlstmt *result = NULL;
     // pg_parser_translog_ddlstmt_drop_base *truncate = NULL;

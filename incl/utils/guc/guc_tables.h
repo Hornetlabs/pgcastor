@@ -30,11 +30,11 @@ typedef struct config_var_value
 struct config_generic
 {
     /* constant fields, must be set correctly in initial value: */
-    const char* name; /* name of variable - MUST BE FIRST */
-    GucFlags    reload;
-    const char* short_desc; /* short desc. of this variable's purpose */
-    const char* long_desc;  /* long desc. of this variable's purpose */
-    int         flags;      /* flag bits, see guc.h */
+    const char*      name; /* name of variable - MUST BE FIRST */
+    GucFlags         reload;
+    const char*      short_desc; /* short desc. of this variable's purpose */
+    const char*      long_desc;  /* long desc. of this variable's purpose */
+    int              flags;      /* flag bits, see guc.h */
     /* variable fields, initialized at runtime: */
     enum config_type vartype;      /* type of variable (set only at startup) */
     int              status;       /* status bits, see below */
@@ -43,35 +43,35 @@ struct config_generic
     void*            extra;        /* "extra" pointer for current actual value */
     char*            sourcefile;   /* file current setting is from (NULL if not
                                     * set in config file) */
-    int sourceline;                /* line in source file */
+    int              sourceline;   /* line in source file */
 };
 
 struct config_int
 {
     struct config_generic gen;
     /* constant fields, must be set correctly in initial value: */
-    int*             variable;
-    int              boot_val;
-    int              min;
-    int              max;
-    GucIntCheckHook  check_hook;
-    GucIntAssignHook assign_hook;
+    int*                  variable;
+    int                   boot_val;
+    int                   min;
+    int                   max;
+    GucIntCheckHook       check_hook;
+    GucIntAssignHook      assign_hook;
     /* variable fields, initialized at runtime: */
-    int   reset_val;
-    void* reset_extra;
+    int                   reset_val;
+    void*                 reset_extra;
 };
 
 struct config_string
 {
     struct config_generic gen;
     /* constant fields, must be set correctly in initial value: */
-    char**              variable;
-    const char*         boot_val;
-    GucStringCheckHook  check_hook;
-    GucStringAssignHook assign_hook;
+    char**                variable;
+    const char*           boot_val;
+    GucStringCheckHook    check_hook;
+    GucStringAssignHook   assign_hook;
     /* variable fields, initialized at runtime: */
-    char* reset_val;
-    void* reset_extra;
+    char*                 reset_val;
+    void*                 reset_extra;
 };
 
 #endif

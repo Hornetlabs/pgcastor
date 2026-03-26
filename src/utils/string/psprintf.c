@@ -15,11 +15,11 @@
 #include "app_incl.h"
 #include "utils/string/psprintf.h"
 
-#define MaxAllocSize ((Size)0x3fffffff) /* 1 gigabyte - 1 */
+#define MaxAllocSize       ((Size)0x3fffffff) /* 1 gigabyte - 1 */
 #define PSPRINTF_MEM_ALLOC rmalloc0
-#define PSPRINTF_MEM_FREE rfree
+#define PSPRINTF_MEM_FREE  rfree
 
-#define ps_unlikely(x) __builtin_expect((x) != 0, 0)
+#define ps_unlikely(x)     __builtin_expect((x) != 0, 0)
 
 /*
  * psprintf

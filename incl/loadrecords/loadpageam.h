@@ -7,22 +7,22 @@ typedef struct LOADPAGEROUTINE
     loadpage* (*loadpageinit)(void);
 
     /* Set data source */
-    bool (*loadpagesetfilesource)(loadpage* loadpage, char* fsource);
+    bool      (*loadpagesetfilesource)(loadpage* loadpage, char* fsource);
 
     /* Set type, WAL/TRAIL */
-    void (*loadpagesettype)(loadpage* loadpage, int type);
+    void      (*loadpagesettype)(loadpage* loadpage, int type);
 
     /* Set starting point for loading */
-    void (*loadpagesetstartpos)(loadpage* loadpage, recpos pos);
+    void      (*loadpagesetstartpos)(loadpage* loadpage, recpos pos);
 
     /* Close file descriptor */
-    void (*loadpageclose)(loadpage* loadpage);
+    void      (*loadpageclose)(loadpage* loadpage);
 
     /* Load page */
-    bool (*loadpage)(loadpage* loadpage, mpage* mp);
+    bool      (*loadpage)(loadpage* loadpage, mpage* mp);
 
     /* Memory release */
-    void (*loadpagefree)(loadpage* loadpage);
+    void      (*loadpagefree)(loadpage* loadpage);
 } loadpageroutine;
 
 /* Get getpage information */

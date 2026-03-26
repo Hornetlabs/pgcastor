@@ -206,7 +206,8 @@ static void increment_integraterebuild_delonlinerefresdataset(
                 onlinerefresh_persist_electionrewindbyuuid(rebuild_obj->olpersist,
                                                            &endnode->onlinerefreshno);
                 onlinerefresh_integratefilterdataset_delete(
-                    rebuild_obj->honlinerefreshfilterdataset, endnode->refreshtables,
+                    rebuild_obj->honlinerefreshfilterdataset,
+                    endnode->refreshtables,
                     endnode->txid);
                 onlinerefresh_integratedataset_delete(rebuild_obj->onlinerefreshdataset,
                                                       uuid->data);
@@ -423,8 +424,10 @@ static void increment_integraterebuild_transcatalog2transcache(
 
 /* Only returns false on big transaction abnormal exit and term signal */
 static bool increment_integraterebuild_specialtxn(increment_integraterebuild* rebuild_obj,
-                                                  thrnode* thr_node, txn* txn_obj, txn** ntxn,
-                                                  int* txbundlesize)
+                                                  thrnode*                    thr_node,
+                                                  txn*                        txn_obj,
+                                                  txn**                       ntxn,
+                                                  int*                        txbundlesize)
 {
     recpos                              pos = {{'\0'}};
     txn*                                cur_txn = NULL;
@@ -554,7 +557,8 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
 
         /* Create onlinerefresh filter dataset */
         onlinerefresh_integratefilterdataset_add(rebuild_obj->honlinerefreshfilterdataset,
-                                                 onlinerefresh->refreshtables, onlinerefresh->txid);
+                                                 onlinerefresh->refreshtables,
+                                                 onlinerefresh->txid);
         datasetnode = onlinerefresh_integratedatasetnode_init();
         onlinerefresh_integratedatasetnode_no_set(datasetnode, onlinerefresh->no->data);
         onlinerefresh_integratedatasetnode_txid_set(datasetnode, onlinerefresh->txid);
@@ -599,7 +603,8 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
                 onlinerefresh_persist_electionrewindbyuuid(rebuild_obj->olpersist,
                                                            &endnode->onlinerefreshno);
                 onlinerefresh_integratefilterdataset_delete(
-                    rebuild_obj->honlinerefreshfilterdataset, endnode->refreshtables,
+                    rebuild_obj->honlinerefreshfilterdataset,
+                    endnode->refreshtables,
                     endnode->txid);
                 onlinerefresh_integratedataset_delete(rebuild_obj->onlinerefreshdataset,
                                                       stmtnode->stmt);
@@ -838,8 +843,8 @@ void* increment_integraterebuild_main(void* args)
             /* Used to handle specified transactions: refresh/onlinerefreshbegin/onlinerefreshend */
             if (true == increment_integraterebuild_isspecialtxn(txnnode))
             {
-                if (false == increment_integraterebuild_specialtxn(rebuild_obj, thr_node, txnnode,
-                                                                   &ntxn, &txbundlesize))
+                if (false == increment_integraterebuild_specialtxn(
+                                 rebuild_obj, thr_node, txnnode, &ntxn, &txbundlesize))
                 {
                     /* term exit or other independent thread exit, return to upper while loop
                      * waiting for term */
@@ -884,8 +889,8 @@ void* increment_integraterebuild_main(void* args)
                         relid = values->m_relid;
                     }
 
-                    filterdatasetentry = hash_search(rebuild_obj->honlinerefreshfilterdataset,
-                                                     &relid, HASH_FIND, &find);
+                    filterdatasetentry = hash_search(
+                        rebuild_obj->honlinerefreshfilterdataset, &relid, HASH_FIND, &find);
                     if (false == find)
                     {
                         tmpstmt = lappend(tmpstmt, stmtnode);
@@ -1014,7 +1019,8 @@ void* increment_integraterebuild_main(void* args)
                 ntxn = (txn*)rmalloc0(sizeof(txn));
                 if (NULL == ntxn)
                 {
-                    elog(RLOG_WARNING, "integrate rebuild txn init out of memory, %s",
+                    elog(RLOG_WARNING,
+                         "integrate rebuild txn init out of memory, %s",
                          strerror(errno));
                     thr_node->stat = THRNODE_STAT_ABORT;
                     break;

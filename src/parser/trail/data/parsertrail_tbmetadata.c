@@ -108,13 +108,13 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
     pg_sysdict_Form_pg_attribute attribute = NULL;
     catalog_index_value*         index_value = NULL;
 
-    HASHCTL           hctl = {0};
-    txn*              cur_txn = parsertrail->lasttxn;
-    bool              add_txn = false;
-    txnstmt*          stmt = NULL;
-    txnstmt_metadata* metadata = NULL;
-    ListCell*         sys_begin = NULL;
-    ListCell*         index_cell = NULL;
+    HASHCTL                      hctl = {0};
+    txn*                         cur_txn = parsertrail->lasttxn;
+    bool                         add_txn = false;
+    txnstmt*                     stmt = NULL;
+    txnstmt_metadata*            metadata = NULL;
+    ListCell*                    sys_begin = NULL;
+    ListCell*                    index_cell = NULL;
 
     /*
      * Check if exists in hash table, add if not found
@@ -174,8 +174,8 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
     }
 
     /* Add data to by_attribute */
-    attrentry = hash_search(parsertrail->transcache->sysdicts->by_attribute, &fftbmd->oid,
-                            HASH_ENTER, &found);
+    attrentry = hash_search(
+        parsertrail->transcache->sysdicts->by_attribute, &fftbmd->oid, HASH_ENTER, &found);
     if (false == found)
     {
         attrentry->attrelid = fftbmd->oid;
@@ -199,11 +199,13 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
         rmemset0(attribute, 0, '\0', sizeof(pg_parser_sysdict_pgattributes));
         attribute->attrelid = fftbmd->oid;
         attribute->atttypid = fftbmd->columns[index].typid;
-        rmemcpy1(attribute->attname.data, 0, fftbmd->columns[index].column,
+        rmemcpy1(attribute->attname.data,
+                 0,
+                 fftbmd->columns[index].column,
                  strlen(fftbmd->columns[index].column));
         /* Add data to by_type */
-        typeentry = hash_search(parsertrail->transcache->sysdicts->by_type, &attribute->atttypid,
-                                HASH_ENTER, &found);
+        typeentry = hash_search(
+            parsertrail->transcache->sysdicts->by_type, &attribute->atttypid, HASH_ENTER, &found);
         if (false == found)
         {
             typeentry->oid = attribute->atttypid;
@@ -215,7 +217,9 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
             }
             rmemset0(typeentry->type, 0, '\0', sizeof(pg_parser_sysdict_pgtype));
             typeentry->type->oid = attribute->atttypid;
-            rmemcpy1(typeentry->type->typname.data, 0, fftbmd->columns[index].typename,
+            rmemcpy1(typeentry->type->typname.data,
+                     0,
+                     fftbmd->columns[index].typename,
                      strlen(fftbmd->columns[index].typename));
         }
         attribute->atttypmod = parsertrail_tbmetadata_gettypmod(&fftbmd->columns[index]);
@@ -316,7 +320,9 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
                     indexcatalog->indisprimary = isprimary;
                     indexcatalog->indisreplident = metaindex->index_identify;
                     indexcatalog->indnatts = metaindex->index_key_num;
-                    rmemcpy0(indexcatalog->indkey, 0, metaindex->index_key,
+                    rmemcpy0(indexcatalog->indkey,
+                             0,
+                             metaindex->index_key,
                              sizeof(uint32) * metaindex->index_key_num);
 
                     indexvalue->oid = indexcatalog->indrelid;
@@ -346,7 +352,7 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
     /* Assemble sysdictHis */
     if (fftbmd)
     {
-        int index_attrs = 0;
+        int                  index_attrs = 0;
         /* pg_class */
         catalogdata*         catalog_class = rmalloc0(sizeof(catalogdata));
         catalog_class_value* class_value = rmalloc0(sizeof(catalog_class_value));
@@ -474,7 +480,9 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
             }
             rmemset0(type_value->type, 0, 0, sizeof(pg_parser_sysdict_pgtype));
             type_value->type->oid = fftbmd->columns[index_attrs].typid;
-            rmemcpy1(type_value->type->typname.data, 0, fftbmd->columns[index_attrs].typename,
+            rmemcpy1(type_value->type->typname.data,
+                     0,
+                     fftbmd->columns[index_attrs].typename,
                      strlen(fftbmd->columns[index_attrs].typename));
             catalog_type->catalog = (void*)type_value;
 
@@ -535,15 +543,17 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
                             elog(RLOG_WARNING, "oom");
                             return false;
                         }
-                        rmemset0(indexcatalog->indkey, 0, 0,
-                                 sizeof(uint32) * metaindex->index_key_num);
+                        rmemset0(
+                            indexcatalog->indkey, 0, 0, sizeof(uint32) * metaindex->index_key_num);
 
                         indexcatalog->indrelid = fftbmd->oid;
                         indexcatalog->indexrelid = metaindex->index_oid;
                         indexcatalog->indisprimary = isprimary;
                         indexcatalog->indisreplident = metaindex->index_identify;
                         indexcatalog->indnatts = metaindex->index_key_num;
-                        rmemcpy0(indexcatalog->indkey, 0, metaindex->index_key,
+                        rmemcpy0(indexcatalog->indkey,
+                                 0,
+                                 metaindex->index_key,
                                  sizeof(uint32) * metaindex->index_key_num);
 
                         indexvalue->oid = indexcatalog->indrelid;

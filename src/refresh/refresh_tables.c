@@ -181,7 +181,8 @@ refresh_tables* refresh_tables_copy(refresh_tables* refreshtables)
     return new_tables;
 }
 
-bool refresh_tables_hasrepeat(refresh_tables* syncdataset, refresh_tables* newdataset,
+bool refresh_tables_hasrepeat(refresh_tables* syncdataset,
+                              refresh_tables* newdataset,
                               refresh_table** prepeattable)
 {
     refresh_table* table_new = NULL;
@@ -276,11 +277,11 @@ static void refresh_table_get_table_from_filename(char* filename, refresh_table*
 
 refresh_tables* refresh_tables_gen_from_file(char* path)
 {
-    int table_cnt               = 0;
-    refresh_tables* result      = NULL;
-    refresh_table*  table_prev  = NULL;
-    DIR* compdir                = NULL;
-    struct dirent* entry        = NULL;
+    int             table_cnt = 0;
+    refresh_tables* result = NULL;
+    refresh_table*  table_prev = NULL;
+    DIR*            compdir = NULL;
+    struct dirent*  entry = NULL;
 
     compdir = osal_open_dir(path);
     if (NULL == compdir)
@@ -328,13 +329,13 @@ refresh_tables* refresh_tables_gen_from_file(char* path)
 /* Generate a refresh file to record the number of shards in the table */
 bool refresh_tables_flush(refresh_tables* rtables)
 {
-    int fd                      = -1;
-    uint32 totallen             = 0;
-    uint32 len                  = 0;
-    uint8* uptr                 = NULL;
-    uint8* data                 = NULL;
-    refresh_table* rtable       = NULL;
-    char filepath[MAXPATH]      = { 0 };
+    int            fd = -1;
+    uint32         totallen = 0;
+    uint32         len = 0;
+    uint8*         uptr = NULL;
+    uint8*         data = NULL;
+    refresh_table* rtable = NULL;
+    char           filepath[MAXPATH] = {0};
 
     snprintf(filepath, MAXPATH, "%s/%s", REFRESH_REFRESH, REFRESH_REFRESHTABLES);
     fd = osal_basic_open_file(filepath, O_RDWR | O_CREAT | BINARY);
@@ -364,7 +365,7 @@ bool refresh_tables_flush(refresh_tables* rtables)
     uptr = data;
     rmemcpy1(uptr, 0, &totallen, 4);
     uptr += 4;
- 
+
     /* 填充数据 */
     for (rtable = rtables->tables; NULL != rtable; rtable = rtable->next)
     {
@@ -390,14 +391,14 @@ bool refresh_tables_flush(refresh_tables* rtables)
 /* Load refresh file */
 refresh_tables* refresh_tables_load(void)
 {
-    int fd                      = -1;
-    uint32 fsize                = 0;
-    uint32 totallen             = 0;
-    uint8* uptr                 = NULL;
-    uint8* data                 = NULL;
-    refresh_table* rtable       = NULL;
-    refresh_tables* rtables     = NULL;
-    char filepath[MAXPATH]      = { 0 };
+    int             fd = -1;
+    uint32          fsize = 0;
+    uint32          totallen = 0;
+    uint8*          uptr = NULL;
+    uint8*          data = NULL;
+    refresh_table*  rtable = NULL;
+    refresh_tables* rtables = NULL;
+    char            filepath[MAXPATH] = {0};
 
     snprintf(filepath, MAXPATH, "%s/%s", REFRESH_REFRESH, REFRESH_REFRESHTABLES);
     fd = osal_basic_open_file(filepath, O_RDWR | BINARY);

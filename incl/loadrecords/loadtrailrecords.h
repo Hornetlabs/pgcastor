@@ -3,17 +3,17 @@
 
 typedef struct LOADTRAILRECOREDS
 {
-    loadrecords loadrecords;
+    loadrecords      loadrecords;
 
     /* Trail file compatible version */
-    int    compatibility;
-    uint64 fileid;
-    uint64 foffset;
-    recpos orgpos;
+    int              compatibility;
+    uint64           fileid;
+    uint64           foffset;
+    recpos           orgpos;
 
     /* Store cross-page/file records */
-    recordcross recordcross;
-    mpage*      mp;
+    recordcross      recordcross;
+    mpage*           mp;
 
     /* Temporary linked list for complete records, should be TAIL/HEAD/DBMETA types */
     dlist*           remainrecords;
@@ -59,8 +59,9 @@ void loadtrailrecords_filter(loadtrailrecords* loadrecords, uint64 fileid, uint6
  *   true           Still need to continue filtering
  *   false          No need to continue filtering
  */
-bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64 fileid,
-                                           uint64 foffset);
+bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords,
+                                           uint64            fileid,
+                                           uint64            foffset);
 
 /* Release */
 void loadtrailrecords_free(loadtrailrecords* loadrecords);

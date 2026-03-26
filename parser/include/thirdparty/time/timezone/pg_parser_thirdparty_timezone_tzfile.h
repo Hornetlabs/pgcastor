@@ -16,7 +16,7 @@
  * Information about time zone files.
  */
 
-#define TIME_TZDEFAULT "/etc/localtime"
+#define TIME_TZDEFAULT  "/etc/localtime"
 #define TIME_TZDEFRULES "posixrules"
 
 /*

@@ -333,8 +333,10 @@ bool threads_countsubmgrjobthredsabovework(threads* thrs, List* jobthreads, int*
  *  return true:  no logic errors encountered during execution
  *  return false: logic error encountered during execution
  */
-bool threads_setsubmgrjobthredstermandcountexit(threads* thrs, List* jobthreads, int skipcnt,
-                                                int* scnt)
+bool threads_setsubmgrjobthredstermandcountexit(threads* thrs,
+                                                List*    jobthreads,
+                                                int      skipcnt,
+                                                int*     scnt)
 {
     int       jobcnt = 0;
     ListCell* lc = NULL;
@@ -461,9 +463,14 @@ bool threads_addpersist(threads* thrs, uint64* pno, char* name)
  *
  *  pthrnode                return value
  */
-bool threads_addpersistthread(threads* thrs, thrnode** pthrnode, thrnode_identity identity,
-                              uint64 persistno, void* data, thrdatafree free,
-                              threxitcondition exitcondition, thrmain tmain)
+bool threads_addpersistthread(threads*         thrs,
+                              thrnode**        pthrnode,
+                              thrnode_identity identity,
+                              uint64           persistno,
+                              void*            data,
+                              thrdatafree      free,
+                              threxitcondition exitcondition,
+                              thrmain          tmain)
 {
     thrref*     thr_ref = NULL;
     thrnode*    thr_node = NULL;
@@ -529,9 +536,14 @@ bool threads_addpersistthread(threads* thrs, thrnode** pthrnode, thrnode_identit
 }
 
 /* add manager thread */
-bool threads_addsubmanger(threads* thrs, thrnode_identity identity, uint64 persistno,
-                          thrsubmgr** pthrsubmgr, void* data, thrdatafree free,
-                          threxitcondition exitcondition, thrmain tmain)
+bool threads_addsubmanger(threads*         thrs,
+                          thrnode_identity identity,
+                          uint64           persistno,
+                          thrsubmgr**      pthrsubmgr,
+                          void*            data,
+                          thrdatafree      free,
+                          threxitcondition exitcondition,
+                          thrmain          tmain)
 {
     thrnode*   thr_node = NULL;
     thrsubmgr* thr_submgr = NULL;
@@ -588,8 +600,13 @@ bool threads_addsubmanger(threads* thrs, thrnode_identity identity, uint64 persi
 }
 
 /* add worker thread */
-bool threads_addjobthread(threads* thrs, thrnode_identity identity, uint64 submgrno, void* data,
-                          thrdatafree free, threxitcondition exitcondition, thrmain tmain)
+bool threads_addjobthread(threads*         thrs,
+                          thrnode_identity identity,
+                          uint64           submgrno,
+                          void*            data,
+                          thrdatafree      free,
+                          threxitcondition exitcondition,
+                          thrmain          tmain)
 {
     thrref*    thr_ref = NULL;
     thrnode*   thr_node = NULL;
@@ -808,7 +825,7 @@ static void threads_tmgrabort(threads* thrs, thrsubmgr* thr_submgr)
 /* manager node exit */
 static void threads_tmgrexit(threads* thrs, thrsubmgr* thr_submgr, bool holdlock)
 {
-    int iret = 0;
+    int      iret = 0;
     /* manager thread node */
     thrnode* thr_node = NULL;
 
@@ -1139,7 +1156,9 @@ void threads_startthread(threads* thrs)
         /* create worker thread */
         osal_thread_create(&thr_node->thrid, NULL, thr_node->tmain, thr_node);
 
-        elog(RLOG_DEBUG, "start thrid:%lu, threadname:%s", thr_node->thrid,
+        elog(RLOG_DEBUG,
+             "start thrid:%lu, threadname:%s",
+             thr_node->thrid,
              m_threadname[thr_node->identity].name);
 
         /* set thread name */
@@ -1175,8 +1194,8 @@ void threads_thrnoderecycle(threads* thrs)
         if (THRNODE_TYPE_TMGR == thr_node->type)
         {
             /* clean up manager node */
-            thrs->thrsubmgrs = dlist_deletebyvalue(thrs->thrsubmgrs, &thr_node->no,
-                                                   threads_thrsubmgrcmp, thrsubmgr_free);
+            thrs->thrsubmgrs = dlist_deletebyvalue(
+                thrs->thrsubmgrs, &thr_node->no, threads_thrsubmgrcmp, thrsubmgr_free);
         }
 
         /* reclaim node */

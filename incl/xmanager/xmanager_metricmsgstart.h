@@ -8,12 +8,14 @@
  *  3. Create async message and mount to xscsci node
  *  4. Execute initialization command
  */
-extern bool xmanager_metricmsg_parsestart(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                          netpacket* npacket);
+extern bool xmanager_metricmsg_parsestart(xmanager_metric* xmetric,
+                                          netpoolentry*    npoolentry,
+                                          netpacket*       npacket);
 
 /*
  * Assemble start return message
  */
-extern bool xmanager_metricmsg_assemblestart(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                             dlist* dlmsgs);
+extern bool xmanager_metricmsg_assemblestart(xmanager_metric* xmetric,
+                                             netpoolentry*    npoolentry,
+                                             dlist*           dlmsgs);
 #endif

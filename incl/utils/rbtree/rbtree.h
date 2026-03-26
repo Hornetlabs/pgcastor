@@ -16,7 +16,7 @@ typedef struct RBTREE_NODE
     struct RBTREE_NODE* parent; /* Parent node   */
 } rbtreenode;
 
-typedef int (*treenodedatacmp)(void* v1, void* v2);
+typedef int  (*treenodedatacmp)(void* v1, void* v2);
 typedef void (*treenodedatafree)(void* v1);
 typedef void (*treenodedebug)(void* v1);
 

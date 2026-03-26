@@ -326,16 +326,26 @@ static void xscsci_precommand_create(xsciscistat* xscisc, xsynch_cmd* cmd)
     if (XSYNCH_JOBKIND_MANAGER == createcmd->kind)
     {
         /* create xmanager config file from template */
-        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config",
-                 "manager", createcmd->name);
+        snprintf(confpath,
+                 sizeof(confpath),
+                 "%s/%s/%s_%s.cfg",
+                 xscisc->xsynchhome,
+                 "config",
+                 "manager",
+                 createcmd->name);
         if (0 == stat(confpath, &st))
         {
             printf("xmanager %s already exists\n", createcmd->name);
             return;
         }
 
-        snprintf(samplepath, sizeof(samplepath), "%s/%s/%s/%s", xscisc->xsynchhome, "config",
-                 "sample", "manager.cfg.sample");
+        snprintf(samplepath,
+                 sizeof(samplepath),
+                 "%s/%s/%s/%s",
+                 xscisc->xsynchhome,
+                 "config",
+                 "sample",
+                 "manager.cfg.sample");
 
         if (false == xscsci_precommand_createconf_fromsample(samplepath, confpath))
         {
@@ -423,8 +433,13 @@ static void xscsci_precommand_remove(xsciscistat* xscisc, xsynch_cmd* cmd)
     if (XSYNCH_JOBKIND_MANAGER == removecmd->kind)
     {
         /* delete config file */
-        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config",
-                 "manager", removecmd->name);
+        snprintf(confpath,
+                 sizeof(confpath),
+                 "%s/%s/%s_%s.cfg",
+                 xscisc->xsynchhome,
+                 "config",
+                 "manager",
+                 removecmd->name);
         if (0 == unlink(confpath))
         {
             printf("Remove xmanager %s\n", removecmd->name);
@@ -504,8 +519,13 @@ static void xscsci_precommand_drop(xsciscistat* xscisc, xsynch_cmd* cmd)
     if (XSYNCH_JOBKIND_MANAGER == dropcmd->kind)
     {
         /* delete data directory */
-        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config",
-                 "manager", dropcmd->name);
+        snprintf(confpath,
+                 sizeof(confpath),
+                 "%s/%s/%s_%s.cfg",
+                 xscisc->xsynchhome,
+                 "config",
+                 "manager",
+                 dropcmd->name);
         xscsci_precommand_getdatafromcfgfile(confpath, "data", data);
 
         if (false == xscsci_precommand_removedir(data))
@@ -673,8 +693,13 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     if (XSYNCH_JOBKIND_MANAGER == editcmd->kind)
     {
-        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config",
-                 "manager", editcmd->name);
+        snprintf(confpath,
+                 sizeof(confpath),
+                 "%s/%s/%s_%s.cfg",
+                 xscisc->xsynchhome,
+                 "config",
+                 "manager",
+                 editcmd->name);
         sprintf(syscmd, "vim %s", confpath);
         system(syscmd);
         printf("Edit manager %s\n", editcmd->name);
@@ -704,11 +729,28 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    snprintf(cfgpath, 512, "%s/%s/.%s_%d-%d-%d-%02d%02d%02d.conf", xscisc->xsynchhome, "config",
-             editcmd->name, pcnow->tm_year + 1900, pcnow->tm_mon + 1, pcnow->tm_mday,
-             pcnow->tm_hour, pcnow->tm_min, pcnow->tm_sec);
-    snprintf(filename, 512, "%s_%d-%d-%d-%02d%02d%02d.conf", editcmd->name, pcnow->tm_year + 1900,
-             pcnow->tm_mon + 1, pcnow->tm_mday, pcnow->tm_hour, pcnow->tm_min, pcnow->tm_sec);
+    snprintf(cfgpath,
+             512,
+             "%s/%s/.%s_%d-%d-%d-%02d%02d%02d.conf",
+             xscisc->xsynchhome,
+             "config",
+             editcmd->name,
+             pcnow->tm_year + 1900,
+             pcnow->tm_mon + 1,
+             pcnow->tm_mday,
+             pcnow->tm_hour,
+             pcnow->tm_min,
+             pcnow->tm_sec);
+    snprintf(filename,
+             512,
+             "%s_%d-%d-%d-%02d%02d%02d.conf",
+             editcmd->name,
+             pcnow->tm_year + 1900,
+             pcnow->tm_mon + 1,
+             pcnow->tm_mday,
+             pcnow->tm_hour,
+             pcnow->tm_min,
+             pcnow->tm_sec);
     fd = open(cfgpath, O_WRONLY | O_CREAT | O_EXCL, 0644);
     if (fd < 0)
     {
@@ -800,8 +842,14 @@ static void xscsci_precommand_init(xsciscistat* xscisc, xsynch_cmd* cmd)
             printf("Init xmanager %s getcwd failed \n", initcmd->name);
             return;
         }
-        snprintf(syscmd, sizeof(syscmd), "%s/xmanager -f  %s/%s/%s_%s.cfg init", cwd,
-                 xscisc->xsynchhome, "config", "manager", initcmd->name);
+        snprintf(syscmd,
+                 sizeof(syscmd),
+                 "%s/xmanager -f  %s/%s/%s_%s.cfg init",
+                 cwd,
+                 xscisc->xsynchhome,
+                 "config",
+                 "manager",
+                 initcmd->name);
         if (0 == system(syscmd))
         {
             printf("Init xmanager %s\n", initcmd->name);
@@ -851,8 +899,14 @@ static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
             printf("start xmanager %s getcwd failed \n", startcmd->name);
             return;
         }
-        snprintf(syscmd, sizeof(syscmd), "%s/xmanager -f  %s/%s/%s_%s.cfg start", cwd,
-                 xscisc->xsynchhome, "config", "manager", startcmd->name);
+        snprintf(syscmd,
+                 sizeof(syscmd),
+                 "%s/xmanager -f  %s/%s/%s_%s.cfg start",
+                 cwd,
+                 xscisc->xsynchhome,
+                 "config",
+                 "manager",
+                 startcmd->name);
         if (0 == system(syscmd))
         {
             printf("start xmanager %s\n", startcmd->name);
@@ -866,8 +920,14 @@ static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
             printf("start xmanager %s getcwd failed \n", startcmd->name);
             return;
         }
-        snprintf(syscmd, sizeof(syscmd), "%s/xmanager -f  %s/%s/%s_%s.cfg start", cwd,
-                 xscisc->xsynchhome, "config", "manager", startcmd->name);
+        snprintf(syscmd,
+                 sizeof(syscmd),
+                 "%s/xmanager -f  %s/%s/%s_%s.cfg start",
+                 cwd,
+                 xscisc->xsynchhome,
+                 "config",
+                 "manager",
+                 startcmd->name);
         if (0 == system(syscmd))
         {
             printf("start xmanager %s\n", startcmd->name);

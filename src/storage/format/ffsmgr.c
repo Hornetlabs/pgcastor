@@ -18,21 +18,21 @@ typedef struct FFORMATSMGR
 } fformatsmgr;
 
 /* trail format */
-static ffsmgr_if m_ffsmgrtrail = {.ffsmgr_init = fftrail_init,
-                                  .ffsmgr_serial = fftrail_serial,
-                                  .ffsmgr_deserial = fftrail_deserial,
-                                  .ffsmgr_free = fftrail_free,
-                                  .ffsmg_gettokenminsize = fftrail_gettokenminsize,
-                                  .ffsmg_gettailsize = fftrail_taillen,
-                                  .ffsmgr_validrecord = fftrail_validrecord,
-                                  .ffsmgr_getrecordsubtype = fftrail_getrecordsubtype,
-                                  .ffsmgr_getrecordlsn = fftrail_getrecordlsn,
-                                  .ffsmgr_getrecordgrouptype = fftrail_getrecordgrouptype,
-                                  .ffsmgr_getrecorddataoffset = fftrail_getrecorddataoffset,
-                                  .ffsmgr_getrecordtotallength = fftrail_getrecordtotallength,
-                                  .ffsmgr_getrecordlength = fftrail_getrecordlength,
-                                  .ffsmgr_setrecordlength = fftrail_setrecordlength,
-                                  .ffsmgr_isrecordtransstart = fftrail_isrecordtransstart};
+static ffsmgr_if   m_ffsmgrtrail = {.ffsmgr_init = fftrail_init,
+                                    .ffsmgr_serial = fftrail_serial,
+                                    .ffsmgr_deserial = fftrail_deserial,
+                                    .ffsmgr_free = fftrail_free,
+                                    .ffsmg_gettokenminsize = fftrail_gettokenminsize,
+                                    .ffsmg_gettailsize = fftrail_taillen,
+                                    .ffsmgr_validrecord = fftrail_validrecord,
+                                    .ffsmgr_getrecordsubtype = fftrail_getrecordsubtype,
+                                    .ffsmgr_getrecordlsn = fftrail_getrecordlsn,
+                                    .ffsmgr_getrecordgrouptype = fftrail_getrecordgrouptype,
+                                    .ffsmgr_getrecorddataoffset = fftrail_getrecorddataoffset,
+                                    .ffsmgr_getrecordtotallength = fftrail_getrecordtotallength,
+                                    .ffsmgr_getrecordlength = fftrail_getrecordlength,
+                                    .ffsmgr_setrecordlength = fftrail_setrecordlength,
+                                    .ffsmgr_isrecordtransstart = fftrail_isrecordtransstart};
 
 static fformatsmgr m_ffsmgrsw[] = {{FFSMG_IF_TYPE_TRAIL, &m_ffsmgrtrail}};
 

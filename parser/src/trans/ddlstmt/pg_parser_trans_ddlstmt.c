@@ -16,13 +16,15 @@ typedef struct pg_parser_DDL_kindWithFunc
 
 static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_escape(
     pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record, pg_parser_ddlstate* ddlstate,
-    int32_t* pg_parser_errno);
+    pg_parser_translog_systb2dll_record* current_record,
+    pg_parser_ddlstate*                  ddlstate,
+    int32_t*                             pg_parser_errno);
 
 static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_index_drop_escape(
     pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record, pg_parser_ddlstate* ddlstate,
-    int32_t* pg_parser_errno);
+    pg_parser_translog_systb2dll_record* current_record,
+    pg_parser_ddlstate*                  ddlstate,
+    int32_t*                             pg_parser_errno);
 
 static pg_parser_DDL_kindWithFunc m_ddl_transfunc[] = {
     {PG_PARSER_DDL_TABLE_TRUNCATE, pg_parser_DDL_truncate},
@@ -93,8 +95,8 @@ bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
     {
         if (!ddlstate.m_inddl)
         {
-            current_result = pg_parser_ddl_firstTransDDL(pg_parser_ddl, current_record, &ddlstate,
-                                                         pg_parser_errno);
+            current_result = pg_parser_ddl_firstTransDDL(
+                pg_parser_ddl, current_record, &ddlstate, pg_parser_errno);
         }
         else
         {
@@ -102,8 +104,8 @@ bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
             {
                 if (m_ddl_transfunc[i].m_ddlKind == ddlstate.m_ddlKind)
                 {
-                    current_result = m_ddl_transfunc[i].m_transfunc(pg_parser_ddl, current_record,
-                                                                    &ddlstate, pg_parser_errno);
+                    current_result = m_ddl_transfunc[i].m_transfunc(
+                        pg_parser_ddl, current_record, &ddlstate, pg_parser_errno);
                     break;
                 }
             }
@@ -137,8 +139,9 @@ bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
 
 pg_parser_translog_ddlstmt* pg_parser_ddl_firstTransDDL(
     pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record, pg_parser_ddlstate* ddlstate,
-    int32_t* pg_parser_errno)
+    pg_parser_translog_systb2dll_record* current_record,
+    pg_parser_ddlstate*                  ddlstate,
+    int32_t*                             pg_parser_errno)
 {
     int32_t                     i = 0;
     pg_parser_translog_ddlstmt* current_result = NULL;
@@ -165,8 +168,8 @@ pg_parser_translog_ddlstmt* pg_parser_ddl_firstTransDDL(
         {
             if (m_ddl_transfunc[i].m_ddlKind == ddlstate->m_ddlKind)
             {
-                current_result = m_ddl_transfunc[i].m_transfunc(pg_parser_ddl, current_record,
-                                                                ddlstate, pg_parser_errno);
+                current_result = m_ddl_transfunc[i].m_transfunc(
+                    pg_parser_ddl, current_record, ddlstate, pg_parser_errno);
             }
         }
     }
@@ -199,8 +202,9 @@ void pg_parser_ddl_init_ddlstate(pg_parser_ddlstate* ddlstate)
 
 static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_index_drop_escape(
     pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record, pg_parser_ddlstate* ddlstate,
-    int32_t* pg_parser_errno)
+    pg_parser_translog_systb2dll_record* current_record,
+    pg_parser_ddlstate*                  ddlstate,
+    int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
 
@@ -209,17 +213,22 @@ static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_index_drop_escape(
 
     if (IS_DELETE(current_record->m_record))
     {
-        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND,
-                                       pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
+                                       SYS_DEPEND,
+                                       pg_parser_ddl->m_dbtype,
+                                       pg_parser_ddl->m_dbversion))
         {
             char* temp_objid = NULL;
             char* temp_classid = NULL;
-            temp_objid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "objid", current_record->m_record->m_old_values,
-                current_record->m_record->m_valueCnt, temp_objid);
-            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "classid", current_record->m_record->m_old_values,
-                current_record->m_record->m_valueCnt, temp_objid);
+            temp_objid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("objid",
+                                                            current_record->m_record->m_old_values,
+                                                            current_record->m_record->m_valueCnt,
+                                                            temp_objid);
+            temp_classid =
+                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                   current_record->m_record->m_old_values,
+                                                   current_record->m_record->m_valueCnt,
+                                                   temp_objid);
             if (!strcmp(ddlstate->m_reloid_char, temp_objid) &&
                 !strcmp(RelationRelationIdChar, temp_classid))
             {
@@ -233,8 +242,9 @@ static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_index_drop_escape(
 }
 static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_escape(
     pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record, pg_parser_ddlstate* ddlstate,
-    int32_t* pg_parser_errno)
+    pg_parser_translog_systb2dll_record* current_record,
+    pg_parser_ddlstate*                  ddlstate,
+    int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
 
@@ -243,17 +253,22 @@ static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_escape(
 
     if (IS_INSERT(current_record->m_record))
     {
-        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND,
-                                       pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
+                                       SYS_DEPEND,
+                                       pg_parser_ddl->m_dbtype,
+                                       pg_parser_ddl->m_dbversion))
         {
             char* temp_objid = NULL;
             char* temp_classid = NULL;
-            temp_objid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "objid", current_record->m_record->m_new_values,
-                current_record->m_record->m_valueCnt, temp_objid);
-            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "classid", current_record->m_record->m_new_values,
-                current_record->m_record->m_valueCnt, temp_classid);
+            temp_objid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("objid",
+                                                            current_record->m_record->m_new_values,
+                                                            current_record->m_record->m_valueCnt,
+                                                            temp_objid);
+            temp_classid =
+                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                   current_record->m_record->m_new_values,
+                                                   current_record->m_record->m_valueCnt,
+                                                   temp_classid);
             if (!strcmp(ddlstate->m_reloid_char, temp_objid) &&
                 !strcmp(RelationRelationIdChar, temp_classid))
             {
@@ -265,17 +280,22 @@ static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_escape(
     }
     if (IS_DELETE(current_record->m_record))
     {
-        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname, SYS_DEPEND,
-                                       pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+        if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
+                                       SYS_DEPEND,
+                                       pg_parser_ddl->m_dbtype,
+                                       pg_parser_ddl->m_dbversion))
         {
             char* temp_objid = NULL;
             char* temp_classid = NULL;
-            temp_objid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "objid", current_record->m_record->m_old_values,
-                current_record->m_record->m_valueCnt, temp_objid);
-            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "classid", current_record->m_record->m_old_values,
-                current_record->m_record->m_valueCnt, temp_objid);
+            temp_objid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("objid",
+                                                            current_record->m_record->m_old_values,
+                                                            current_record->m_record->m_valueCnt,
+                                                            temp_objid);
+            temp_classid =
+                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                   current_record->m_record->m_old_values,
+                                                   current_record->m_record->m_valueCnt,
+                                                   temp_objid);
             if (!strcmp(ddlstate->m_reloid_char, temp_objid) &&
                 !strcmp(RelationRelationIdChar, temp_classid))
             {
@@ -301,8 +321,10 @@ char* ddl_char_tolower(char* output)
     }
     return output;
 }
-bool pg_parser_check_table_name(char* tablename, SysdictName sysdictnum, int16_t dbtype,
-                                char* dbversion)
+bool pg_parser_check_table_name(char*       tablename,
+                                SysdictName sysdictnum,
+                                int16_t     dbtype,
+                                char*       dbversion)
 {
     PG_PARSER_UNUSED(dbtype);
     PG_PARSER_UNUSED(dbversion);

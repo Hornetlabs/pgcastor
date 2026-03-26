@@ -10,22 +10,22 @@ typedef struct PG_PARSER_OID2TYPE_CONVERT
 
 /* index type */
 /* OID definition of index in pg */
-#define PG_PARSER_INDEX_HEAP_TYPID (uint32_t)2
-#define PG_PARSER_INDEX_BTREE_TYPID (uint32_t)403
-#define PG_PARSER_INDEX_HASH_TYPID (uint32_t)405
-#define PG_PARSER_INDEX_GIST_TYPID (uint32_t)783
-#define PG_PARSER_INDEX_GIN_TYPID (uint32_t)2742
+#define PG_PARSER_INDEX_HEAP_TYPID   (uint32_t)2
+#define PG_PARSER_INDEX_BTREE_TYPID  (uint32_t)403
+#define PG_PARSER_INDEX_HASH_TYPID   (uint32_t)405
+#define PG_PARSER_INDEX_GIST_TYPID   (uint32_t)783
+#define PG_PARSER_INDEX_GIN_TYPID    (uint32_t)2742
 #define PG_PARSER_INDEX_SPGIST_TYPID (uint32_t)4000
-#define PG_PARSER_INDEX_BRIN_TYPID (uint32_t)3580
+#define PG_PARSER_INDEX_BRIN_TYPID   (uint32_t)3580
 
 /* Definition value of index within parsing program */
-#define PG_PARSER_DDLSTMT_INDEXTYPE_HEAP (uint8_t)0x00
-#define PG_PARSER_DDLSTMT_INDEXTYPE_BTREE (uint8_t)0x01
-#define PG_PARSER_DDLSTMT_INDEXTYPE_HASH (uint8_t)0x02
-#define PG_PARSER_DDLSTMT_INDEXTYPE_GIST (uint8_t)0x03
-#define PG_PARSER_DDLSTMT_INDEXTYPE_GIN (uint8_t)0x04
-#define PG_PARSER_DDLSTMT_INDEXTYPE_SPGIST (uint8_t)0x05
-#define PG_PARSER_DDLSTMT_INDEXTYPE_BRIN (uint8_t)0x06
+#define PG_PARSER_DDLSTMT_INDEXTYPE_HEAP    (uint8_t)0x00
+#define PG_PARSER_DDLSTMT_INDEXTYPE_BTREE   (uint8_t)0x01
+#define PG_PARSER_DDLSTMT_INDEXTYPE_HASH    (uint8_t)0x02
+#define PG_PARSER_DDLSTMT_INDEXTYPE_GIST    (uint8_t)0x03
+#define PG_PARSER_DDLSTMT_INDEXTYPE_GIN     (uint8_t)0x04
+#define PG_PARSER_DDLSTMT_INDEXTYPE_SPGIST  (uint8_t)0x05
+#define PG_PARSER_DDLSTMT_INDEXTYPE_BRIN    (uint8_t)0x06
 
 #define PG_PARSER_INDEX_TYPE_CONVERT_MAXNUM 7
 
@@ -39,13 +39,13 @@ const pg_parser_oid2type_convert pg_parser_index_type_convert_box[] = {
     {PG_PARSER_INDEX_BRIN_TYPID, PG_PARSER_DDLSTMT_INDEXTYPE_BRIN}};
 
 /* sequence type */
-#define PG_PARSER_TYPE_INT2_OID (uint32_t)21
-#define PG_PARSER_TYPE_INT4_OID (uint32_t)23
-#define PG_PARSER_TYPE_INT5_OID (uint32_t)20
+#define PG_PARSER_TYPE_INT2_OID           (uint32_t)21
+#define PG_PARSER_TYPE_INT4_OID           (uint32_t)23
+#define PG_PARSER_TYPE_INT5_OID           (uint32_t)20
 
-#define PG_PARSER_DDLSTMT_SEQTYPE_INT2 (uint32_t)0
-#define PG_PARSER_DDLSTMT_SEQTYPE_INT4 (uint32_t)1
-#define PG_PARSER_DDLSTMT_SEQTYPE_INT8 (uint32_t)2
+#define PG_PARSER_DDLSTMT_SEQTYPE_INT2    (uint32_t)0
+#define PG_PARSER_DDLSTMT_SEQTYPE_INT4    (uint32_t)1
+#define PG_PARSER_DDLSTMT_SEQTYPE_INT8    (uint32_t)2
 
 #define PG_PARSER_SEQ_TYPE_CONVERT_MAXNUM 3
 

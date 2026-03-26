@@ -53,8 +53,15 @@ pg_parser_Datum macaddr_out(pg_parser_Datum attr)
         return (pg_parser_Datum)0;
     }
 
-    snprintf(result, 32, "%02x:%02x:%02x:%02x:%02x:%02x", addr->a, addr->b, addr->c, addr->d,
-             addr->e, addr->f);
+    snprintf(result,
+             32,
+             "%02x:%02x:%02x:%02x:%02x:%02x",
+             addr->a,
+             addr->b,
+             addr->c,
+             addr->d,
+             addr->e,
+             addr->f);
 
     return (pg_parser_Datum)result;
 }
@@ -69,8 +76,17 @@ pg_parser_Datum macaddr8_out(pg_parser_Datum attr)
         return (pg_parser_Datum)0;
     }
 
-    snprintf(result, 32, "%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x", addr->a, addr->b, addr->c,
-             addr->d, addr->e, addr->f, addr->g, addr->h);
+    snprintf(result,
+             32,
+             "%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x",
+             addr->a,
+             addr->b,
+             addr->c,
+             addr->d,
+             addr->e,
+             addr->f,
+             addr->g,
+             addr->h);
 
     return (pg_parser_Datum)result;
 }

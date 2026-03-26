@@ -19,7 +19,7 @@ typedef struct XSYNCH_FEBUILDMSG_ASSEMBLE
     xsynch_cmdtag cmd;
     char*         desc;
 
-    bool (*assemble)(xsynch_cmd* cmd, xsynch_exbuffer msg);
+    bool          (*assemble)(xsynch_cmd* cmd, xsynch_exbuffer msg);
 } xsynch_febuildmsg_assemble;
 
 /* identity message */

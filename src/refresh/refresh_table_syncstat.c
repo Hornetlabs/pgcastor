@@ -89,13 +89,14 @@ void refreshtablesyncstat_cnt_set(int cnt, refresh_table_syncstat* syncstat)
 }
 
 /* traverse refresh directory based on tablesyncstats, generate queue */
-bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, void* queue_ptr,
-                                     char* refreshdir)
+bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats,
+                                     void*                    queue_ptr,
+                                     char*                    refreshdir)
 {
-    DIR* compdir                    = NULL;
-    struct dirent* entry            = NULL;
-    StringInfo path                 = NULL;
-    refresh_table_syncstat* tables  = NULL;
+    DIR*                    compdir = NULL;
+    struct dirent*          entry = NULL;
+    StringInfo              path = NULL;
+    refresh_table_syncstat* tables = NULL;
 
     path = makeStringInfo();
 
@@ -106,8 +107,13 @@ bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, vo
 
         resetStringInfo(path);
 
-        appendStringInfo(path, "%s/%s/%s_%s/%s", refreshdir, REFRESH_REFRESH, tables->schema,
-                         tables->table, REFRESH_COMPLETE);
+        appendStringInfo(path,
+                         "%s/%s/%s_%s/%s",
+                         refreshdir,
+                         REFRESH_REFRESH,
+                         tables->schema,
+                         tables->table,
+                         REFRESH_COMPLETE);
         compdir = osal_open_dir(path->data);
         if (NULL == compdir)
         {
@@ -165,11 +171,17 @@ bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, vo
                 }
             }
 
-            elog(RLOG_DEBUG, "refresh monitor, queue gen: %s.%s %4d %4d", table_shard->schema,
-                 table_shard->table, table_shard->shardings, table_shard->sharding_no);
+            elog(RLOG_DEBUG,
+                 "refresh monitor, queue gen: %s.%s %4d %4d",
+                 table_shard->schema,
+                 table_shard->table,
+                 table_shard->shardings,
+                 table_shard->sharding_no);
             if (temp_table_state->stat)
             {
-                elog(RLOG_DEBUG, "refresh monitor, stat [%d]: %d", table_shard->sharding_no - 1,
+                elog(RLOG_DEBUG,
+                     "refresh monitor, stat [%d]: %d",
+                     table_shard->sharding_no - 1,
                      temp_table_state->stat[table_shard->sharding_no - 1]);
             }
 
@@ -188,8 +200,8 @@ bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, vo
 /* Clean up the file directory based on tablesyncstats->tablesyncall */
 bool refresh_table_syncstat_cleardirbyall(refresh_table_syncstats* tablesyncstats, char* refreshdir)
 {
-    StringInfo path                     = NULL;
-    refresh_table_syncstat* tables      = NULL;
+    StringInfo              path = NULL;
+    refresh_table_syncstat* tables = NULL;
 
     path = makeStringInfo();
 
@@ -197,10 +209,8 @@ bool refresh_table_syncstat_cleardirbyall(refresh_table_syncstats* tablesyncstat
     for (tables = tablesyncstats->tablesyncall; tables != NULL; tables = tables->next)
     {
         resetStringInfo(path);
-        appendStringInfo(path, "%s/%s/%s_%s", refreshdir,
-                                              REFRESH_REFRESH,
-                                              tables->schema,
-                                              tables->table);
+        appendStringInfo(
+            path, "%s/%s/%s_%s", refreshdir, REFRESH_REFRESH, tables->schema, tables->table);
         osal_remove_dir(path->data);
     }
     /* cleanup */
@@ -210,8 +220,8 @@ bool refresh_table_syncstat_cleardirbyall(refresh_table_syncstats* tablesyncstat
 
 void refresh_table_syncstat_free(refresh_table_syncstat* tablesyncstat)
 {
-    refresh_table_syncstat* next        = NULL;
-    refresh_table_syncstat* current     = tablesyncstat;
+    refresh_table_syncstat* next = NULL;
+    refresh_table_syncstat* current = tablesyncstat;
 
     if (NULL == tablesyncstat)
     {

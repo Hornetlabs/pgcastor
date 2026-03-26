@@ -212,7 +212,8 @@ void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* 
 }
 
 bool refreshtablesyncstats_markstatdone(refresh_table_sharding*  tablesharding,
-                                        refresh_table_syncstats* tablesyncstats, char* refreshdir)
+                                        refresh_table_syncstats* tablesyncstats,
+                                        char*                    refreshdir)
 {
     refresh_table_syncstat* current_table = NULL;
 
@@ -237,8 +238,11 @@ bool refreshtablesyncstats_markstatdone(refresh_table_sharding*  tablesharding,
                     REFRESH_TABLE_SYNCS_SHARD_STAT_DONE;
             }
 
-            elog(RLOG_DEBUG, "refresh worker, queue: %s.%s %4d %4d, mark done",
-                 tablesharding->schema, tablesharding->table, tablesharding->shardings,
+            elog(RLOG_DEBUG,
+                 "refresh worker, queue: %s.%s %4d %4d, mark done",
+                 tablesharding->schema,
+                 tablesharding->table,
+                 tablesharding->shardings,
                  tablesharding->sharding_no);
 
             if (current_table->completecnt == current_table->cnt)
@@ -427,14 +431,21 @@ bool refresh_table_syncstats_write(refresh_table_syncstat* stats, char* refresh_
 
     initStringInfo(&path);
 
-    appendStringInfo(&path, "%s/%s/%s_%s/%s", refresh_path, REFRESH_REFRESH, stats->schema,
-                     stats->table, REFRESH_STATS);
+    appendStringInfo(&path,
+                     "%s/%s/%s_%s/%s",
+                     refresh_path,
+                     REFRESH_REFRESH,
+                     stats->schema,
+                     stats->table,
+                     REFRESH_STATS);
 
     fd = osal_basic_open_file(path.data, O_RDWR | O_CREAT | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_WARNING, "can't openfile: %s, error: %s, please check!", path.data,
+        elog(RLOG_WARNING,
+             "can't openfile: %s, error: %s, please check!",
+             path.data,
              strerror(errno));
         result = false;
         goto refresh_table_syncstats_write_error;
@@ -513,14 +524,16 @@ bool refresh_table_syncstats_read(refresh_table_syncstat* stats, char* refresh_p
 
     initStringInfo(&path);
 
-    appendStringInfo(&path, "%s/%s_%s/%s", refresh_path, stats->schema, stats->table,
-                     REFRESH_STATS);
+    appendStringInfo(
+        &path, "%s/%s_%s/%s", refresh_path, stats->schema, stats->table, REFRESH_STATS);
 
     fd = osal_basic_open_file(path.data, O_RDONLY | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_WARNING, "can't openfile: %s, error: %s, please check!", path.data,
+        elog(RLOG_WARNING,
+             "can't openfile: %s, error: %s, please check!",
+             path.data,
              strerror(errno));
         result = false;
         goto refresh_table_syncstats_read_error;

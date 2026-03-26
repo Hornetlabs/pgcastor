@@ -9,7 +9,7 @@
  * Using worst case here ensures all character set conversions will not overflow
  */
 #define CONV_MAX_CONVERSION_GROWTH 4
-#define CONV_MCXT NULL
+#define CONV_MCXT                  NULL
 
 const enc2gettext enc2gettext_tbl[] = {{SQL_ASCII, "US-ASCII", "SQL_ASCII"},
                                        {UTF8, "UTF-8", "UTF8"},
@@ -54,7 +54,7 @@ const enc2gettext enc2gettext_tbl[] = {{SQL_ASCII, "US-ASCII", "SQL_ASCII"},
                                        {SHIFT_JIS_2004, "SHIFT_JISX0213", "SHIFT_JISX0213"},
                                        {MULE_INTERNAL, "MULE_INTERNAL", "MULE_INTERNAL"}};
 
-const int32_t enc2gettext_tbl_num = (sizeof(enc2gettext_tbl) / sizeof(enc2gettext));
+const int32_t     enc2gettext_tbl_num = (sizeof(enc2gettext_tbl) / sizeof(enc2gettext));
 
 /**
  * @brief Save existing conversion rules source charset target charset conversion function
@@ -238,7 +238,9 @@ static pg_parser_FmgrBuiltinEncoding* pg_parser_getEncodingConvFunc(int32_t dest
     return res;
 }
 
-char* pg_parser_encoding_convert(char* src_str, bool* needfree, char* dest_encoding,
+char* pg_parser_encoding_convert(char* src_str,
+                                 bool* needfree,
+                                 char* dest_encoding,
                                  char* src_encoding)
 {
     pg_parser_FmgrBuiltinEncoding* res = NULL;
@@ -246,8 +248,8 @@ char* pg_parser_encoding_convert(char* src_str, bool* needfree, char* dest_encod
     int32_t                        src_len = strlen(src_str);
     int32_t                        dest_len = src_len * CONV_MAX_CONVERSION_GROWTH;
 
-    int32_t dest_encode = pg_parser_encoding_getEncodingNum(dest_encoding);
-    int32_t src_encode = pg_parser_encoding_getEncodingNum(src_encoding);
+    int32_t                        dest_encode = pg_parser_encoding_getEncodingNum(dest_encoding);
+    int32_t                        src_encode = pg_parser_encoding_getEncodingNum(src_encoding);
     if (dest_encode == src_encode)
     {
         return src_str;

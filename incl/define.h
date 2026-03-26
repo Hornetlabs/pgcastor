@@ -39,91 +39,91 @@ typedef enum CAPTURERELOAD_STATUS
     CAPTURERELOAD_STATUS_RELOADING_WRITE = 0x02
 } capturereload_status;
 
-#define DBTYPE_POSTGRES "postgres"
-#define DBVERSION_POSTGRES_12 "12"
+#define DBTYPE_POSTGRES             "postgres"
+#define DBVERSION_POSTGRES_12       "12"
 
-#define LOCK_FILE "proc.lock"
-#define CONTROL_FILE "ripple.ctrl"
-#define DECODE_BASE_FILE "base.dat"
-#define CACHEDIR "cache"
-#define STAT "stat"
-#define STAT_DECODE "decode.stat"
-#define CONSTRAINT_FILE "catalog/constraint.bat"
-#define SYSDICTS_FILE "catalog/sysdicts.bat"
-#define SYSDICTS_TMP_FILE "catalog/sysdicts.bat.tmp"
-#define SYNC_STATUSTABLE_NAME "sync_status"
-#define CATALOG_DIR "catalog"
-#define FILTER_DIR "filter"
-#define STORAGE_TRAIL_DIR "trail"
+#define LOCK_FILE                   "proc.lock"
+#define CONTROL_FILE                "ripple.ctrl"
+#define DECODE_BASE_FILE            "base.dat"
+#define CACHEDIR                    "cache"
+#define STAT                        "stat"
+#define STAT_DECODE                 "decode.stat"
+#define CONSTRAINT_FILE             "catalog/constraint.bat"
+#define SYSDICTS_FILE               "catalog/sysdicts.bat"
+#define SYSDICTS_TMP_FILE           "catalog/sysdicts.bat.tmp"
+#define SYNC_STATUSTABLE_NAME       "sync_status"
+#define CATALOG_DIR                 "catalog"
+#define FILTER_DIR                  "filter"
+#define STORAGE_TRAIL_DIR           "trail"
 #define STORAGE_BIG_TRANSACTION_DIR "bigtxn"
-#define FILTER_OIDS_FILE "oids.bat"
-#define CAPTURE_STATUS_FILE "capture.stat"
-#define INTEGRATE_STATUS_FILE "integrate.stat"
-#define CAPTURE_STATUS_FILE_TEMP "capture.stat.tmp"
-#define INTEGRATE_STATUS_FILE_TEMP "integrate.stat.tmp"
-#define FILTER_DATASET_TMP "filterdataset.dat.tmp"
-#define FILTER_DATASET "filterdataset.dat"
-#define ONLINEREFRESH_DAT "onlinerefresh.dat"
-#define ONLINEREFRESH_STATUS "onlinerefresh.status"
-#define REFRESH_STATS "stats.dat"
-#define BIGTRANSACTION_FILE "bigtransaction.status"
-#define BIGTRANSACTION_FILE_TEMP "bigtransaction.status.tmp"
-#define ONLINEREFRESHABANDON_DAT "onlinerefreshabandon.dat"
-#define REFRESH_STATUS "refresh.status"
-#define REFRESH_REFRESHTABLES "refreshtables.dat"
+#define FILTER_OIDS_FILE            "oids.bat"
+#define CAPTURE_STATUS_FILE         "capture.stat"
+#define INTEGRATE_STATUS_FILE       "integrate.stat"
+#define CAPTURE_STATUS_FILE_TEMP    "capture.stat.tmp"
+#define INTEGRATE_STATUS_FILE_TEMP  "integrate.stat.tmp"
+#define FILTER_DATASET_TMP          "filterdataset.dat.tmp"
+#define FILTER_DATASET              "filterdataset.dat"
+#define ONLINEREFRESH_DAT           "onlinerefresh.dat"
+#define ONLINEREFRESH_STATUS        "onlinerefresh.status"
+#define REFRESH_STATS               "stats.dat"
+#define BIGTRANSACTION_FILE         "bigtransaction.status"
+#define BIGTRANSACTION_FILE_TEMP    "bigtransaction.status.tmp"
+#define ONLINEREFRESHABANDON_DAT    "onlinerefreshabandon.dat"
+#define REFRESH_STATUS              "refresh.status"
+#define REFRESH_REFRESHTABLES       "refreshtables.dat"
 
-#define TIMEZONE "PRC"
-#define NUMERIC "zh_CN.UTF-8"
-#define MONETARY "zh_CN.UTF-8"
-#define ORGENCODING "UTF8"
-#define DSTENCODING "UTF8"
+#define TIMEZONE                    "PRC"
+#define NUMERIC                     "zh_CN.UTF-8"
+#define MONETARY                    "zh_CN.UTF-8"
+#define ORGENCODING                 "UTF8"
+#define DSTENCODING                 "UTF8"
 
-#define TBINCLUDE "table"
-#define TBEXCLUDE "tableexclude"
-#define ADDTABLEPATTERN "addtablepattern"
+#define TBINCLUDE                   "table"
+#define TBEXCLUDE                   "tableexclude"
+#define ADDTABLEPATTERN             "addtablepattern"
 
-#define REFRESH_INCREMENT "increment"
-#define REFRESH_REFRESH "refresh"
-#define REFRESH_PARTIAL "partial"
-#define REFRESH_COMPLETE "complete"
-#define REFRESH_ONLINEREFRESH "onlinerefresh"
+#define REFRESH_INCREMENT           "increment"
+#define REFRESH_REFRESH             "refresh"
+#define REFRESH_PARTIAL             "partial"
+#define REFRESH_COMPLETE            "complete"
+#define REFRESH_ONLINEREFRESH       "onlinerefresh"
 
-#define MAX_MAPPINGS 62
-#define CONTROL_FILE_SIZE 1024
-#define DECODE_STAT CONTROL_FILE_SIZE
-#define FILE_BLK_SIZE 8192
-#define FILE_SIZE (1024 * 1024)
-#define PAGE_HEADER_SIZE 4
-#define FirstNormalObjectId 16384
-#define SYNCNAMESPACE_MAXOID 15233
+#define MAX_MAPPINGS                62
+#define CONTROL_FILE_SIZE           1024
+#define DECODE_STAT                 CONTROL_FILE_SIZE
+#define FILE_BLK_SIZE               8192
+#define FILE_SIZE                   (1024 * 1024)
+#define PAGE_HEADER_SIZE            4
+#define FirstNormalObjectId         16384
+#define SYNCNAMESPACE_MAXOID        15233
 
-#define BIG_MEMORY (FILE_SIZE)
+#define BIG_MEMORY                  (FILE_SIZE)
 
-#define FILE_BLK_MOD(offset) (FILE_BLK_SIZE - (offset % FILE_BLK_SIZE))
+#define FILE_BLK_MOD(offset)        (FILE_BLK_SIZE - (offset % FILE_BLK_SIZE))
 
-#define MAXPATH 512
-#define ABSPATH 1024
-#define LINESIZE 1024
-#define COMMANDSIZE 2048
+#define MAXPATH                     512
+#define ABSPATH                     1024
+#define LINESIZE                    1024
+#define COMMANDSIZE                 2048
 
-#define FILEID2DIR(fileid) (fileid % 256)
+#define FILEID2DIR(fileid)          (fileid % 256)
 
-#define FILE_OFFSET_INVALID 0x80000000
+#define FILE_OFFSET_INVALID         0x80000000
 
-#define PG_DFAULT_TABLESPACE 1663
-#define MAX_EXEC_SQL_LEN 1024
+#define PG_DFAULT_TABLESPACE        1663
+#define MAX_EXEC_SQL_LEN            1024
 
-#define MAGIC 0x1571
-#define SYSDICT_MAGIC 0x134DAD1
+#define MAGIC                       0x1571
+#define SYSDICT_MAGIC               0x134DAD1
 
-#define WAIT 10
-#define WAITS_PER_SEC 1
+#define WAIT                        10
+#define WAITS_PER_SEC               1
 
-#define FILE_BUFFER_SIZE 65536
-#define FILE_BUFFER_MINSIZE 16
-#define FILE_BUFFER_MAXSIZE 128
-#define KB2BYTE(kbytes) ((uint64_t)kbytes * (uint64)1024)
-#define MB2BYTE(mbytes) (((uint64)KB2BYTE(mbytes)) * (uint64)1024)
+#define FILE_BUFFER_SIZE            65536
+#define FILE_BUFFER_MINSIZE         16
+#define FILE_BUFFER_MAXSIZE         128
+#define KB2BYTE(kbytes)             ((uint64_t)kbytes * (uint64)1024)
+#define MB2BYTE(mbytes)             (((uint64)KB2BYTE(mbytes)) * (uint64)1024)
 
 typedef enum WORK_STATUS
 {
@@ -141,7 +141,7 @@ typedef enum WORK_STATUS
 /* poll timeout in milliseconds */
 #define NET_POLLTIMEOUT 50
 
-#define NET_HBTIME 5000
+#define NET_HBTIME      5000
 
 /* network timeout in milliseconds */
 #define NET_TIMEOUT 60000
@@ -177,21 +177,21 @@ typedef enum WORK_STATUS
 
 /*-------------------------integrate parser status end-------------------------*/
 
-#define UNUSED(x) (void)(x)
+#define UNUSED(x)                     (void)(x)
 
-#define NAMEDATALEN 64
+#define NAMEDATALEN                   64
 
-#define FROZEN_TXNID 2
-#define REFRESH_TXNID 1
-#define BIGTXN_TXNID 1
+#define FROZEN_TXNID                  2
+#define REFRESH_TXNID                 1
+#define BIGTXN_TXNID                  1
 
-#define REFRESH_LSN 1
-#define FRISTVALID_LSN 2
-#define MAX_LSN 0xFFFFFFFFFFFFFFFF
+#define REFRESH_LSN                   1
+#define FRISTVALID_LSN                2
+#define MAX_LSN                       0xFFFFFFFFFFFFFFFF
 
-#define CHECK_TRANSIND_START_FALSE 0
-#define CHECK_TRANSIND_START_TRUE 1
+#define CHECK_TRANSIND_START_FALSE    0
+#define CHECK_TRANSIND_START_TRUE     1
 #define CHECK_TRANSIND_START_METADATA 2
-#define CHECK_TRANSIND_START_OTHER 3
+#define CHECK_TRANSIND_START_OTHER    3
 
 #endif

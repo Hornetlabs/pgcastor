@@ -1,7 +1,7 @@
 #ifndef _DLIST_H
 #define _DLIST_H
 
-typedef int (*dlistvaluecmp)(void* vala, void* valb);
+typedef int  (*dlistvaluecmp)(void* vala, void* valb);
 
 typedef void (*dlistvaluefree)(void* value);
 
@@ -66,7 +66,9 @@ extern dlist* dlist_delete(dlist* dl, dlistnode* dlnode, dlistvaluefree valuefre
  *  valuecmp    value comparison function
  *  valuefree   value free function, may be NULL; if NULL, dlistnode->value is not freed
  */
-extern dlist* dlist_deletebyvalue(dlist* dl, void* value, dlistvaluecmp valuecmp,
+extern dlist* dlist_deletebyvalue(dlist*         dl,
+                                  void*          value,
+                                  dlistvaluecmp  valuecmp,
                                   dlistvaluefree valuefree);
 
 /*
@@ -77,7 +79,9 @@ extern dlist* dlist_deletebyvalue(dlist* dl, void* value, dlistvaluecmp valuecmp
  *  valuecmp    value comparison function
  *  valuefree   value free function, may be NULL; if NULL, dlistnode->value is not freed
  */
-extern dlist* dlist_deletebyvaluefirstmatch(dlist* dl, void* value, dlistvaluecmp valuecmp,
+extern dlist* dlist_deletebyvaluefirstmatch(dlist*         dl,
+                                            void*          value,
+                                            dlistvaluecmp  valuecmp,
                                             dlistvaluefree valuefree);
 
 /*

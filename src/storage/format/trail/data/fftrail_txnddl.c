@@ -25,8 +25,8 @@ bool fftrail_txnddl_serial(void* data, void* state)
      *      stmtdata        length
      *  RecTail
      */
-    int    hdrlen = 0;
-    uint32 tlen = 0;
+    int           hdrlen = 0;
+    uint32        tlen = 0;
 
     uint8*        uptr = NULL;
     txnstmt*      rstmt = NULL;   /* Content to write to trail file */
@@ -75,20 +75,32 @@ bool fftrail_txnddl_serial(void* data, void* state)
 
     /* Add content */
     /* DDL type */
-    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2,
+    fftrail_data_data2buffer(&txndata->header,
+                             ffstate,
+                             &fbuffer,
+                             FTRAIL_TOKENDATATYPE_SMALLINT,
+                             2,
                              (uint8*)&ddlstmt->type);
 
     /* DDL subtype */
-    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2,
+    fftrail_data_data2buffer(&txndata->header,
+                             ffstate,
+                             &fbuffer,
+                             FTRAIL_TOKENDATATYPE_SMALLINT,
+                             2,
                              (uint8*)&ddlstmt->subtype);
 
     /* DDL string length */
-    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4,
-                             (uint8*)&rstmt->len);
+    fftrail_data_data2buffer(
+        &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&rstmt->len);
 
     /* DDL string content */
-    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR,
-                             rstmt->len, (uint8*)ddlstmt->ddlstmt);
+    fftrail_data_data2buffer(&txndata->header,
+                             ffstate,
+                             &fbuffer,
+                             FTRAIL_TOKENDATATYPE_STR,
+                             rstmt->len,
+                             (uint8*)ddlstmt->ddlstmt);
 
     /* Fill header info */
     if (FFSMGR_STATUS_SHIFTFILE == ffstate->status)
@@ -126,12 +138,12 @@ bool fftrail_txnddl_serial(void* data, void* state)
 /* Deserialize ddl info */
 bool fftrail_txnddl_deserial(void** data, void* state)
 {
-    uint8  tokenid = 0;   /* token id */
-    uint8  tokeninfo = 0; /* token details */
-    uint32 recoffset = 0;
-    uint32 dataoffset = 0;
-    uint16 subtype = FF_DATA_TYPE_NOP;
-    uint32 tokenlen = 0; /* token length */
+    uint8         tokenid = 0;   /* token id */
+    uint8         tokeninfo = 0; /* token details */
+    uint32        recoffset = 0;
+    uint32        dataoffset = 0;
+    uint16        subtype = FF_DATA_TYPE_NOP;
+    uint32        tokenlen = 0; /* token length */
 
     uint8*        uptr = NULL;
     txnstmt_ddl*  ddlstmt = NULL;
@@ -205,22 +217,36 @@ bool fftrail_txnddl_deserial(void** data, void* state)
      *  2. Data assembly
      */
     /* Get DDL type */
-    if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&ddlstmt->type))
+    if (false == fftrail_data_buffer2data(&txndata->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_SMALLINT,
+                                          2,
+                                          (uint8*)&ddlstmt->type))
     {
         return false;
     }
 
     /* Get DDL subtype */
-    if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_SMALLINT, 2,
+    if (false == fftrail_data_buffer2data(&txndata->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_SMALLINT,
+                                          2,
                                           (uint8*)&ddlstmt->subtype))
     {
         return false;
     }
     /* Get DDL string length */
-    if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&rstmt->len))
+    if (false == fftrail_data_buffer2data(&txndata->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_INT,
+                                          4,
+                                          (uint8*)&rstmt->len))
     {
         return false;
     }
@@ -232,8 +258,12 @@ bool fftrail_txnddl_deserial(void** data, void* state)
     }
     rmemset0(ddlstmt->ddlstmt, 0, '\0', rstmt->len + 1);
     /* Get DDL string content */
-    if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                          FTRAIL_TOKENDATATYPE_STR, rstmt->len,
+    if (false == fftrail_data_buffer2data(&txndata->header,
+                                          ffstate,
+                                          &recoffset,
+                                          &dataoffset,
+                                          FTRAIL_TOKENDATATYPE_STR,
+                                          rstmt->len,
                                           (uint8*)ddlstmt->ddlstmt))
     {
         return false;

@@ -79,7 +79,10 @@ void misc_controldata_load(void)
         }
         else
         {
-            elog(RLOG_ERROR, "could not read file %s : %d of %zu", CONTROL_FILE, r,
+            elog(RLOG_ERROR,
+                 "could not read file %s : %d of %zu",
+                 CONTROL_FILE,
+                 r,
                  sizeof(controlfiledata));
         }
     }

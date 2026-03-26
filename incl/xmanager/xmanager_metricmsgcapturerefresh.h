@@ -5,6 +5,7 @@
  * Handle capture refresh command
  */
 extern bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric,
-                                                   netpoolentry* npoolentry, netpacket* npacket);
+                                                   netpoolentry*    npoolentry,
+                                                   netpacket*       npacket);
 
 #endif

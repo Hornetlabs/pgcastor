@@ -195,7 +195,10 @@ memcache* memcache_init(char* name, int csize, int blksize)
     }
     /*--------------Page related initialization   end----------------------------*/
 
-    elog(RLOG_INFO, "init memcache:%s, size:%lu, blkcnt:%lu", name, mcache->maxsize,
+    elog(RLOG_INFO,
+         "init memcache:%s, size:%lu, blkcnt:%lu",
+         name,
+         mcache->maxsize,
          mcache->pages->pagecnt);
 
     /* Create directory */
@@ -222,7 +225,8 @@ static int memcache_vn2pnode_cmp(void* s1, void* s2)
 }
 
 /* Get virtual node by virtual number */
-static bool memcache_getvn2pnodebyvnumber(memcache_virtualnode* vnode, uint64_t vnumber,
+static bool memcache_getvn2pnodebyvnumber(memcache_virtualnode*    vnode,
+                                          uint64_t                 vnumber,
                                           memcache_vnumber2pnode** pvn2pnode)
 {
     dlistnode*              dlnode = NULL;
@@ -251,8 +255,9 @@ static bool memcache_getvn2pnodebyvnumber(memcache_virtualnode* vnode, uint64_t 
 }
 
 /* Swap virtual page to disk and mark page as not in memory */
-static bool memcache_vnumber2pnodeswap(memcache* mcache, memcache_vnumber2pnode* vn2pnode,
-                                       uint8* blk)
+static bool memcache_vnumber2pnodeswap(memcache*               mcache,
+                                       memcache_vnumber2pnode* vn2pnode,
+                                       uint8*                  blk)
 {
     char vfile[MEMCACHE_DIRLEN] = {0};
 
@@ -271,8 +276,12 @@ static bool memcache_vnumber2pnodeswap(memcache* mcache, memcache_vnumber2pnode*
 
     if (mcache->blksize != osal_file_pwrite(vn2pnode->fd, (char*)blk, mcache->blksize, 0))
     {
-        elog(RLOG_WARNING, "pwrite file %s/%s/%016lX error, %s", MEMCACHE_DIR, mcache->name,
-             vn2pnode->vno, strerror(errno));
+        elog(RLOG_WARNING,
+             "pwrite file %s/%s/%016lX error, %s",
+             MEMCACHE_DIR,
+             mcache->name,
+             vn2pnode->vno,
+             strerror(errno));
         return false;
     }
 
@@ -286,8 +295,9 @@ static bool memcache_vnumber2pnodeswap(memcache* mcache, memcache_vnumber2pnode*
 }
 
 /* Load virtual page into memory */
-static bool memcache_vnumber2pnodeload(memcache* mcache, memcache_vnumber2pnode* vn2pnode,
-                                       uint8* blk)
+static bool memcache_vnumber2pnodeload(memcache*               mcache,
+                                       memcache_vnumber2pnode* vn2pnode,
+                                       uint8*                  blk)
 {
     char vfile[MEMCACHE_DIRLEN] = {0};
     if (-1 == vn2pnode->fd)
@@ -306,8 +316,12 @@ static bool memcache_vnumber2pnodeload(memcache* mcache, memcache_vnumber2pnode*
 
     if (mcache->blksize != osal_file_pread(vn2pnode->fd, (char*)blk, mcache->blksize, 0))
     {
-        elog(RLOG_WARNING, "pread file %s/%s/%016lX error, %s", MEMCACHE_DIR, mcache->name,
-             vn2pnode->vno, strerror(errno));
+        elog(RLOG_WARNING,
+             "pread file %s/%s/%016lX error, %s",
+             MEMCACHE_DIR,
+             mcache->name,
+             vn2pnode->vno,
+             strerror(errno));
         return false;
     }
 
@@ -685,8 +699,8 @@ memcache_putvnode_done:
     }
 
     /* Clean up vnode node */
-    vnode->nodes = dlist_deletebyvaluefirstmatch(vnode->nodes, vn2pnode, memcache_vn2pnode_cmp,
-                                                 memcache_vnumber2pnode_freefordlist);
+    vnode->nodes = dlist_deletebyvaluefirstmatch(
+        vnode->nodes, vn2pnode, memcache_vn2pnode_cmp, memcache_vnumber2pnode_freefordlist);
     return;
 }
 

@@ -56,8 +56,10 @@ void xmanager_metriccapturenode_destroy(xmanager_metricnode* metricnode)
 }
 
 /* Serialize capture node */
-bool xmanager_metriccapturenode_serial(xmanager_metricnode* metricnode, uint8** blk, int* blksize,
-                                       int* blkstart)
+bool xmanager_metriccapturenode_serial(xmanager_metricnode* metricnode,
+                                       uint8**              blk,
+                                       int*                 blksize,
+                                       int*                 blkstart)
 {
     bool                        bnew = false;
     int                         len = 0;
@@ -360,37 +362,55 @@ void* xmanager_metricmsg_assemblecapture(xmanager_metricnode* pxmetricnode)
     /* Calculate and save column value length */
     /* redolsn + len */
     msglen += 4;
-    valuelen[0] = snprintf(values[0], 32, "%X/%X", (uint32)(xmetriccapturenode->redolsn >> 32),
+    valuelen[0] = snprintf(values[0],
+                           32,
+                           "%X/%X",
+                           (uint32)(xmetriccapturenode->redolsn >> 32),
                            (uint32)(xmetriccapturenode->redolsn));
     msglen += valuelen[0];
 
     /* restartlsn + len */
     msglen += 4;
-    valuelen[1] = snprintf(values[1], 32, "%X/%X", (uint32)(xmetriccapturenode->restartlsn >> 32),
+    valuelen[1] = snprintf(values[1],
+                           32,
+                           "%X/%X",
+                           (uint32)(xmetriccapturenode->restartlsn >> 32),
                            (uint32)(xmetriccapturenode->restartlsn));
     msglen += valuelen[1];
 
     /* confirmlsn + len */
     msglen += 4;
-    valuelen[2] = snprintf(values[2], 32, "%X/%X", (uint32)(xmetriccapturenode->confirmlsn >> 32),
+    valuelen[2] = snprintf(values[2],
+                           32,
+                           "%X/%X",
+                           (uint32)(xmetriccapturenode->confirmlsn >> 32),
                            (uint32)(xmetriccapturenode->confirmlsn));
     msglen += valuelen[2];
 
     /* loadlsn + len */
     msglen += 4;
-    valuelen[3] = snprintf(values[3], 32, "%X/%X", (uint32)(xmetriccapturenode->loadlsn >> 32),
+    valuelen[3] = snprintf(values[3],
+                           32,
+                           "%X/%X",
+                           (uint32)(xmetriccapturenode->loadlsn >> 32),
                            (uint32)(xmetriccapturenode->loadlsn));
     msglen += valuelen[3];
 
     /* parselsn + len */
     msglen += 4;
-    valuelen[4] = snprintf(values[4], 32, "%X/%X", (uint32)(xmetriccapturenode->parselsn >> 32),
+    valuelen[4] = snprintf(values[4],
+                           32,
+                           "%X/%X",
+                           (uint32)(xmetriccapturenode->parselsn >> 32),
                            (uint32)(xmetriccapturenode->parselsn));
     msglen += valuelen[4];
 
     /* flushlsn + len */
     msglen += 4;
-    valuelen[5] = snprintf(values[5], 32, "%X/%X", (uint32)(xmetriccapturenode->flushlsn >> 32),
+    valuelen[5] = snprintf(values[5],
+                           32,
+                           "%X/%X",
+                           (uint32)(xmetriccapturenode->flushlsn >> 32),
                            (uint32)(xmetriccapturenode->flushlsn));
     msglen += valuelen[5];
 

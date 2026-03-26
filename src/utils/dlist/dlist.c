@@ -259,7 +259,9 @@ dlist* dlist_deletebyvalue(dlist* dl, void* value, dlistvaluecmp valuecmp, dlist
  *  valuecmp    value match function
  *  valuefree   value free function, can be NULL, when NULL, does not free dlistnode->value
  */
-dlist* dlist_deletebyvaluefirstmatch(dlist* dl, void* value, dlistvaluecmp valuecmp,
+dlist* dlist_deletebyvaluefirstmatch(dlist*         dl,
+                                     void*          value,
+                                     dlistvaluecmp  valuecmp,
                                      dlistvaluefree valuefree)
 {
     dlistnode* dlnode = NULL;

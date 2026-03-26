@@ -10,12 +10,12 @@ extern volatile bool g_closestd;
 extern volatile int  g_xsynchstat;
 extern volatile int  g_gotsigreload;
 
-extern uint64 g_walrecno;
-extern uint64 g_parserecno;
+extern uint64        g_walrecno;
+extern uint64        g_parserecno;
 
 /* program type (capture/integrate/receivewal/xmanager) */
-extern int g_proctype;
+extern int           g_proctype;
 
-extern int g_loglevel;
+extern int           g_loglevel;
 
 #endif

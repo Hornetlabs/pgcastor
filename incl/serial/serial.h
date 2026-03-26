@@ -13,7 +13,9 @@ void serialstate_init(serialstate* serialstate);
 
 file_buffers* serialstate_getfilebuffer(void* privdata);
 
-void serialstate_fbuffer_set(serialstate* serialstate, uint64 fileid, uint64 fileoffset,
+void serialstate_fbuffer_set(serialstate*      serialstate,
+                             uint64            fileid,
+                             uint64            fileoffset,
                              FullTransactionId xid);
 
 void serialstate_ffsmgr_set(serialstate* serialstate, int serialtype);

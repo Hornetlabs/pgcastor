@@ -9,7 +9,8 @@
 
 void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_parser_ddl,
                                      pg_parser_translog_systb2dll_record* current_record,
-                                     pg_parser_ddlstate* ddlstate, int32_t* pg_parser_errno)
+                                     pg_parser_ddlstate*                  ddlstate,
+                                     int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_tbcol_values* record_trans = current_record->m_record;
     /* TODO Capture all DDL statement information.
@@ -21,8 +22,10 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_CLASS,
-                                   pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                   SYS_CLASS,
+                                   pg_parser_ddl->m_dbtype,
+                                   pg_parser_ddl->m_dbversion))
     {
         /*
          * Whenever we execute a CREATE operation in the database, a record is inserted into
@@ -138,8 +141,10 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
             ddlstate->m_inddl = false;
         }
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_ATTRIBUTE,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_ATTRIBUTE,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * Add field to table, only one column can be added at a time, so the next statement of this
@@ -160,8 +165,10 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_ALTER_ADD_COLUMN;
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_ATTRDEF,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_ATTRDEF,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * When creating table with default values, PG records in WAL log in the following order:
@@ -173,17 +180,21 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         uint32_t m_reloid;
         pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
                              "DEBUG, DDL PARSER: capture alter table add default begin \n");
-        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "adrelid", record_trans->m_new_values, record_trans->m_valueCnt,
-            ddlstate->m_reloid_char);
+        ddlstate->m_reloid_char =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("adrelid",
+                                                         record_trans->m_new_values,
+                                                         record_trans->m_valueCnt,
+                                                         ddlstate->m_reloid_char);
         m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_ALTER_COLUMN_DEFAULT;
         ddlstate->m_reloid = m_reloid;
         ddlstate->m_att_def = record_trans;
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_NAMESPACE,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_NAMESPACE,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * Insert a record into pg_namespace table, regarded as create schema (create namespace).
@@ -202,8 +213,10 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         ddlstate->m_owner = (uint32_t)strtoul(temp_str, NULL, 10);
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_CONSTRAINT,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_CONSTRAINT,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * Insert a record into pg_constraint table, regarded as creating a new foreign key.
@@ -217,8 +230,10 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         ddlstate->m_constraint = record_trans;
         ddlstate->m_inddl = true;
     }
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_DATABASE,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_DATABASE,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * Insert a record into pg_database table, regarded as creating a new database, no parsing
@@ -229,43 +244,10 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         ddlstate->m_ddlKind = PG_PARSER_DDL_DATABASE_CREATE;
         ddlstate->m_inddl = true;
     }
-#if 0
-    else if (!strcmp(PG_SYSDICT_PG_PROC_NAME, ddl_char_tolower(record_trans->m_base.m_tbname)))
-    {
-
-        /*
-         * Insert a record into pg_proc table, regarded as creating a function or stored procedure.
-         */
-        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
-                                                         record_trans->m_new_values,
-                                                         record_trans->m_valueCnt,
-                                                         ddlstate->m_reloid_char);
-        ddlstate->m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
-        ddlstate->m_ddlKind = PG_PARSER_DDL_FUNCTION_CREATE;
-        //todo create function
-        ddlstate->m_inddl = true;
-    }
-#endif
-// todo trigger
-#if 0
-    else if (!strcmp(PG_SYSDICT_PG_TRIGGER_NAME, ddl_char_tolower(record_trans->m_base.m_tbname)))
-    {
-        /*
-         * Insert a record into pg_trigger table, regarded as creating a trigger.
-         */
-
-        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
-                                                                record_trans->m_new_values,
-                                                                record_trans->m_valueCnt,
-                                                                ddlstate->m_reloid_char);
-        ddlstate->m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
-        ddlstate->m_ddlKind = PG_PARSER_DDL_TRIGGER_CREATE;
-
-        ddlstate->m_inddl = true;
-    }
-#endif
-    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname, SYS_TYPE,
-                                        pg_parser_ddl->m_dbtype, pg_parser_ddl->m_dbversion))
+    else if (pg_parser_check_table_name(record_trans->m_base.m_tbname,
+                                        SYS_TYPE,
+                                        pg_parser_ddl->m_dbtype,
+                                        pg_parser_ddl->m_dbversion))
     {
         /*
          * Insert a record into pg_type table, regarded as creating a type create type
@@ -273,8 +255,8 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
          */
         char* temp_oid = NULL;
         char* temp_nspoid = NULL;
-        temp_oid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("oid", record_trans->m_new_values,
-                                                                record_trans->m_valueCnt, temp_oid);
+        temp_oid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
+            "oid", record_trans->m_new_values, record_trans->m_valueCnt, temp_oid);
         temp_nspoid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
             "typnamespace", record_trans->m_new_values, record_trans->m_valueCnt, temp_nspoid);
         pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
@@ -286,9 +268,11 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
 
         ddlstate->m_nspname_oid_char = temp_nspoid;
 
-        ddlstate->m_type_domain = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "typbasetype", record_trans->m_new_values, record_trans->m_valueCnt,
-            ddlstate->m_type_domain);
+        ddlstate->m_type_domain =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("typbasetype",
+                                                         record_trans->m_new_values,
+                                                         record_trans->m_valueCnt,
+                                                         ddlstate->m_type_domain);
         ddlstate->m_type_item = record_trans;
         ddlstate->m_inddl = true;
     }

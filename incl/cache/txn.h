@@ -31,71 +31,71 @@ typedef enum TXN_TYPE
 } txn_type;
 
 /*----------------online refresh flag operations begin-----------------*/
-#define TXN_SET_ONLINEREFRESHTXN(flag) (flag |= TXN_FLAG_ONLINEREFRESH)
+#define TXN_SET_ONLINEREFRESHTXN(flag)   (flag |= TXN_FLAG_ONLINEREFRESH)
 #define TXN_UNSET_ONLINEREFRESHTXN(flag) (flag &= ~(TXN_FLAG_ONLINEREFRESH))
-#define TXN_ISONLINEREFRESHTXN(flag) (flag & TXN_FLAG_ONLINEREFRESH)
+#define TXN_ISONLINEREFRESHTXN(flag)     (flag & TXN_FLAG_ONLINEREFRESH)
 
 /*----------------online refresh flag operations   end-----------------*/
 
 /*----------------big transaction flag operations begin------------------------*/
 
-#define TXN_SET_BIGTXN(flag) (flag |= TXN_FLAG_BIGTXN)
+#define TXN_SET_BIGTXN(flag)   (flag |= TXN_FLAG_BIGTXN)
 #define TXN_UNSET_BIGTXN(flag) (flag &= ~(TXN_FLAG_BIGTXN))
-#define TXN_ISBIGTXN(flag) (flag & TXN_FLAG_BIGTXN)
+#define TXN_ISBIGTXN(flag)     (flag & TXN_FLAG_BIGTXN)
 
 /*----------------big transaction flag operations   end------------------------*/
 
-#define TXN_SET_TRANS_TOAST(flag) (flag |= TXN_FLAG_TOAST)
-#define TXN_UNSET_TRANS_TOAST(flag) (flag &= ~(TXN_FLAG_TOAST))
-#define TXN_CHECK_TRANS_TOAST(flag) (flag & TXN_FLAG_TOAST)
+#define TXN_SET_TRANS_TOAST(flag)    (flag |= TXN_FLAG_TOAST)
+#define TXN_UNSET_TRANS_TOAST(flag)  (flag &= ~(TXN_FLAG_TOAST))
+#define TXN_CHECK_TRANS_TOAST(flag)  (flag & TXN_FLAG_TOAST)
 
-#define TXN_SET_TRANS_DDL(flag) (flag |= TXN_FLAG_DDL)
-#define TXN_UNSET_TRANS_DDL(flag) (flag &= ~(TXN_FLAG_DDL))
-#define TXN_CHECK_TRANS_DDL(flag) (flag & TXN_FLAG_DDL)
+#define TXN_SET_TRANS_DDL(flag)      (flag |= TXN_FLAG_DDL)
+#define TXN_UNSET_TRANS_DDL(flag)    (flag &= ~(TXN_FLAG_DDL))
+#define TXN_CHECK_TRANS_DDL(flag)    (flag & TXN_FLAG_DDL)
 
-#define TXN_SET_TRANS_INHASH(flag) (flag |= TXN_FLAG_INHASH)
+#define TXN_SET_TRANS_INHASH(flag)   (flag |= TXN_FLAG_INHASH)
 #define TXN_CHECK_TRANS_INHASH(flag) (flag & TXN_FLAG_INHASH)
 
-#define TXN_CHECK_COULD_SAVE(flag) ((TXN_CHECK_TRANS_TOAST(flag)) || (TXN_CHECK_TRANS_DDL(flag)))
+#define TXN_CHECK_COULD_SAVE(flag)   ((TXN_CHECK_TRANS_TOAST(flag)) || (TXN_CHECK_TRANS_DDL(flag)))
 
 typedef struct TXN
 {
-    FullTransactionId xid; /* transaction ID                   */
-                           /*
-                            * if no xid, the transaction has no content
-                            * currently used for:
-                            *  checkpoint parsed in parser thread that has no xid
-                            *
-                            */
-    bool filter;           /*
-                            * flag to indicate whether this transaction should be filtered
-                            * true = filter, false = do not filter
-                            */
-    bool     commit;       /* transaction end indicator in big transactions */
-    uint32   curtlid;      /* current timeline id */
-    uint16   flag; /* flags for transaction special handling (toast/ddl/bigtxn/onlinerefresh) */
-    txn_type type; /* transaction type             */
-    int64    endtimestamp; /* transaction end timestamp */
-    uint64   segno;        /* file number for read/write */
-    uint64   stmtsize;
-    uint64   debugno;
-    recpos   start;
-    recpos   end;
-    recpos   redo;
-    recpos   restart;
-    recpos   confirm;
-    HTAB*    toast_hash; /* toast data cache                                   */
-    List*    sysdict;    /* system dictionary (struct: txn_sysdict)                     */
-    List*    sysdictHis; /* historical system dictionary (struct: catalogdata)  */
-    List*    stmts;      /* statements written to relay thread cache on commit (struct: txnstmt) */
-    HTAB*    hsyncdataset; /*
-                            * handles the following scenario:
-                            *  1. begin;                           ---start a transaction
-                            *  2. create table sample(...)         ---matches addtablepattern
-                            *  3. insert into sample values(...)   ---table does not exist in global
-                            * hsyncdataset    so we need txn->hsyncdataset to handle this scenario
-                            *  4. commit
-                            */
+    FullTransactionId xid;     /* transaction ID                   */
+                               /*
+                                * if no xid, the transaction has no content
+                                * currently used for:
+                                *  checkpoint parsed in parser thread that has no xid
+                                *
+                                */
+    bool              filter;  /*
+                                * flag to indicate whether this transaction should be filtered
+                                * true = filter, false = do not filter
+                                */
+    bool              commit;  /* transaction end indicator in big transactions */
+    uint32            curtlid; /* current timeline id */
+    uint16      flag; /* flags for transaction special handling (toast/ddl/bigtxn/onlinerefresh) */
+    txn_type    type; /* transaction type             */
+    int64       endtimestamp; /* transaction end timestamp */
+    uint64      segno;        /* file number for read/write */
+    uint64      stmtsize;
+    uint64      debugno;
+    recpos      start;
+    recpos      end;
+    recpos      redo;
+    recpos      restart;
+    recpos      confirm;
+    HTAB*       toast_hash; /* toast data cache                                   */
+    List*       sysdict;    /* system dictionary (struct: txn_sysdict)                     */
+    List*       sysdictHis; /* historical system dictionary (struct: catalogdata)  */
+    List*       stmts; /* statements written to relay thread cache on commit (struct: txnstmt) */
+    HTAB*       hsyncdataset; /*
+                               * handles the following scenario:
+                               *  1. begin;                           ---start a transaction
+                               *  2. create table sample(...)         ---matches addtablepattern
+                               *  3. insert into sample values(...)   ---table does not exist in global
+                               * hsyncdataset    so we need txn->hsyncdataset to handle this scenario
+                               *  4. commit
+                               */
     HTAB*       oidmap;
     struct TXN* prev;
     struct TXN* next;

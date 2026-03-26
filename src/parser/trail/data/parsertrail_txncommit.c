@@ -86,7 +86,8 @@ bool parsertrail_txncommitapply(parsertrail* parsertrail, void* data)
                 stmt->extra0.wal.lsn = txndata->header.orgpos;
             }
         }
-        elog(RLOG_DEBUG, "decodingctx->currenttxn->end.wal.lsn %lu",
+        elog(RLOG_DEBUG,
+             "decodingctx->currenttxn->end.wal.lsn %lu",
              parsertrail->lasttxn->end.wal.lsn);
     }
 
@@ -105,7 +106,10 @@ bool parsertrail_txncommitapply(parsertrail* parsertrail, void* data)
 
     parsertrail->dtxns = dlist_put(parsertrail->dtxns, copy_txn);
     parsertrail->lasttxn = NULL;
-    elog(RLOG_DEBUG, "commit transaction:%lu : %lu/%lu", txndata->header.transid,
-         record_obj->end.trail.fileid, record_obj->end.trail.offset);
+    elog(RLOG_DEBUG,
+         "commit transaction:%lu : %lu/%lu",
+         txndata->header.transid,
+         record_obj->end.trail.fileid,
+         record_obj->end.trail.offset);
     return true;
 }

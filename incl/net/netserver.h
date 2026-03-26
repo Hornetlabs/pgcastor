@@ -1,7 +1,7 @@
 #ifndef _NETSERVER_H
 #define _NETSERVER_H
 
-#define NETSERVER_HOSTMAXLEN 1024
+#define NETSERVER_HOSTMAXLEN      1024
 #define NETSERVER_DEFAULTSOCKSIZE 8
 
 typedef bool (*netserver_handler)(void* netserver, rsocket sock);

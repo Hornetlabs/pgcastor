@@ -101,8 +101,11 @@ static bool onlinerefresh_integrate_gettrailno(onlinerefresh_integrate*         
 
     resetStringInfo(sql);
     appendStringInfo(
-        sql, "select rewind_fileid, rewind_offset, lsn from \"%s\".\"%s\" where name = '%s';",
-        catalog_schema, SYNC_STATUSTABLE_NAME, name);
+        sql,
+        "select rewind_fileid, rewind_offset, lsn from \"%s\".\"%s\" where name = '%s';",
+        catalog_schema,
+        SYNC_STATUSTABLE_NAME,
+        name);
     res = conn_exec(conn, sql->data);
     if (NULL == res)
     {
@@ -121,8 +124,10 @@ static bool onlinerefresh_integrate_gettrailno(onlinerefresh_integrate*         
         /* lsn info */
         lsn = strtoul(PQgetvalue(res, 0, 2), NULL, 10);
         elog(RLOG_DEBUG,
-             "onlinerefreshget record sync_status, trailno:%lu, emitoffset:%lu, lsn:%lu", trailno,
-             emitoffset, lsn);
+             "onlinerefreshget record sync_status, trailno:%lu, emitoffset:%lu, lsn:%lu",
+             trailno,
+             emitoffset,
+             lsn);
         PQclear(res);
     }
     PQfinish(conn);
@@ -178,7 +183,12 @@ onlinerefresh_integrate_setsynctableretry:
             "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
             "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
             "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
-            catalog_schema, SYNC_STATUSTABLE_NAME, uuid, REFRESH_REFRESH, index, 2);
+            catalog_schema,
+            SYNC_STATUSTABLE_NAME,
+            uuid,
+            REFRESH_REFRESH,
+            index,
+            2);
         res = conn_exec(conn, sql->data);
         if (NULL == res)
         {
@@ -264,7 +274,11 @@ onlinerefresh_integrate_incsetsynctableretry:
         "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
         "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
         "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
-        catalog_schema, SYNC_STATUSTABLE_NAME, uuid, REFRESH_INCREMENT, 2);
+        catalog_schema,
+        SYNC_STATUSTABLE_NAME,
+        uuid,
+        REFRESH_INCREMENT,
+        2);
     res = conn_exec(conn, sql->data);
     if (NULL == res)
     {
@@ -405,8 +419,11 @@ static bool onlinerefresh_integrate_startrefreshjob(onlinerefresh_integrate* oli
         /* Register job thread */
         if (false == threads_addjobthread(olintegrate->thrsmgr->parents,
                                           THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_JOB,
-                                          olintegrate->thrsmgr->submgrref.no, (void*)shard2db,
-                                          refresh_sharding2db_free, NULL, refresh_sharding2db_work))
+                                          olintegrate->thrsmgr->submgrref.no,
+                                          (void*)shard2db,
+                                          refresh_sharding2db_free,
+                                          NULL,
+                                          refresh_sharding2db_work))
         {
             elog(RLOG_WARNING, "refresh integrate start job error");
             return false;
@@ -487,7 +504,10 @@ static bool onlinerefresh_integrate_startincrementjob(onlinerefresh_integrate* o
         return false;
     }
     rmemset1(oliloadrecord->splittrailctx->capturedata, 0, '\0', MAXPGPATH);
-    snprintf(oliloadrecord->splittrailctx->capturedata, MAXPGPATH, "%s/%s", olintegrate->data,
+    snprintf(oliloadrecord->splittrailctx->capturedata,
+             MAXPGPATH,
+             "%s/%s",
+             olintegrate->data,
              STORAGE_TRAIL_DIR);
 
     /* Set load path */
@@ -507,8 +527,10 @@ static bool onlinerefresh_integrate_startincrementjob(onlinerefresh_integrate* o
     /* Register apply thread */
     if (false == threads_addjobthread(olintegrate->thrsmgr->parents,
                                       THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_SYNC,
-                                      olintegrate->thrsmgr->submgrref.no, (void*)olisync,
-                                      onlinerefresh_integrateincsync_free, NULL,
+                                      olintegrate->thrsmgr->submgrref.no,
+                                      (void*)olisync,
+                                      onlinerefresh_integrateincsync_free,
+                                      NULL,
                                       onlinerefresh_integrateincsync_main))
     {
         elog(RLOG_WARNING, "onlinerefresh integrate start increment sync job error");
@@ -518,8 +540,10 @@ static bool onlinerefresh_integrate_startincrementjob(onlinerefresh_integrate* o
     /* Register rebuild thread */
     if (false == threads_addjobthread(olintegrate->thrsmgr->parents,
                                       THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_REBUILD,
-                                      olintegrate->thrsmgr->submgrref.no, (void*)olirebuild,
-                                      onlinerefresh_integraterebuild_free, NULL,
+                                      olintegrate->thrsmgr->submgrref.no,
+                                      (void*)olirebuild,
+                                      onlinerefresh_integraterebuild_free,
+                                      NULL,
                                       onlinerefresh_integraterebuild_main))
     {
         elog(RLOG_WARNING, "onlinerefresh integrate start increment rebuild job error");
@@ -529,8 +553,10 @@ static bool onlinerefresh_integrate_startincrementjob(onlinerefresh_integrate* o
     /* Register parser thread */
     if (false == threads_addjobthread(olintegrate->thrsmgr->parents,
                                       THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_PARSER,
-                                      olintegrate->thrsmgr->submgrref.no, (void*)oliparsertrail,
-                                      onlinerefresh_integrateparsertrail_free, NULL,
+                                      olintegrate->thrsmgr->submgrref.no,
+                                      (void*)oliparsertrail,
+                                      onlinerefresh_integrateparsertrail_free,
+                                      NULL,
                                       onlinerefresh_integrateparsertrail_main))
     {
         elog(RLOG_WARNING, "onlinerefresh integrate start increment parsertrail job error");
@@ -540,8 +566,10 @@ static bool onlinerefresh_integrate_startincrementjob(onlinerefresh_integrate* o
     /* Register loadrecords thread */
     if (false == threads_addjobthread(olintegrate->thrsmgr->parents,
                                       THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_LOADRECORDS,
-                                      olintegrate->thrsmgr->submgrref.no, (void*)oliloadrecord,
-                                      onlinerefresh_integratesplittrail_free, NULL,
+                                      olintegrate->thrsmgr->submgrref.no,
+                                      (void*)oliloadrecord,
+                                      onlinerefresh_integratesplittrail_free,
+                                      NULL,
                                       onlinerefresh_integratesplittrail_main))
     {
         elog(RLOG_WARNING, "onlinerefresh integrate start increment splittrail job error");
@@ -571,8 +599,11 @@ void* onlinerefresh_integrate_manage(void* args)
     olintegrate = (onlinerefresh_integrate*)thr_node->data;
 
     uuid = uuid2string(&olintegrate->no);
-    sprintf(olintegrate->data, "%s/%s/%s", guc_getConfigOption(CFG_KEY_TRAIL_DIR),
-            REFRESH_ONLINEREFRESH, uuid);
+    sprintf(olintegrate->data,
+            "%s/%s/%s",
+            guc_getConfigOption(CFG_KEY_TRAIL_DIR),
+            REFRESH_ONLINEREFRESH,
+            uuid);
 
     rfree(uuid);
 
@@ -635,9 +666,11 @@ void* onlinerefresh_integrate_manage(void* args)
             {
                 /* Set idle threads to exit and count exited threads */
                 jobcnt = olintegrate->parallelcnt;
-                if (false == threads_setsubmgrjobthredstermandcountexit(
-                                 olintegrate->thrsmgr->parents, olintegrate->thrsmgr->childthrrefs,
-                                 0, &jobcnt))
+                if (false ==
+                    threads_setsubmgrjobthredstermandcountexit(olintegrate->thrsmgr->parents,
+                                                               olintegrate->thrsmgr->childthrrefs,
+                                                               0,
+                                                               &jobcnt))
                 {
                     elog(RLOG_WARNING, "integrate refresh set job threads term in idle error");
                     thr_node->stat = THRNODE_STAT_ABORT;
@@ -844,7 +877,8 @@ void* onlinerefresh_integrate_manage(void* args)
                     threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
                 if (NULL == incsync_thrnode)
                 {
-                    elog(RLOG_WARNING, "integrate onlinerefresh can not get sync thread by no:%lu",
+                    elog(RLOG_WARNING,
+                         "integrate onlinerefresh can not get sync thread by no:%lu",
                          thr_ref->no);
                     thr_node->stat = THRNODE_STAT_ABORT;
                     osal_thread_exit(NULL);
@@ -906,8 +940,8 @@ void* onlinerefresh_integrate_manage(void* args)
 onlinerefresh_integrate_main_done:
     /* All threads have exited, management thread can exit */
     jobcnt = olintegrate->thrsmgr->childthrrefs->length;
-    threads_setsubmgrjobthredsfree(olintegrate->thrsmgr->parents,
-                                   olintegrate->thrsmgr->childthrrefs, 0, jobcnt);
+    threads_setsubmgrjobthredsfree(
+        olintegrate->thrsmgr->parents, olintegrate->thrsmgr->childthrrefs, 0, jobcnt);
     /* make compiler happy */
     return NULL;
 }

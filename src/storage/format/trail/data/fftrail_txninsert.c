@@ -16,12 +16,12 @@
 /* Database info serialization */
 bool fftrail_txninsert_serial(void* data, void* state)
 {
-    int    hdrlen = 0;
-    uint32 dbmdno = 0;
-    uint32 tbmdno = 0;
-    uint32 tlen = 0;
-    int    colid = 0;
-    int    i = 0;
+    int                              hdrlen = 0;
+    uint32                           dbmdno = 0;
+    uint32                           tbmdno = 0;
+    uint32                           tlen = 0;
+    int                              colid = 0;
+    int                              i = 0;
 
     uint8*                           tmpuptr = NULL;
     uint8*                           uptr = NULL;
@@ -43,8 +43,13 @@ fftrail_txninsert_serial_retry:
     do
     {
         /* Write table to trail file */
-        fftrail_tbmetadata_serial(false, rstmt->database, colvalues->m_relid,
-                                  txndata->header.transid, &dbmdno, &tbmdno, state);
+        fftrail_tbmetadata_serial(false,
+                                  rstmt->database,
+                                  colvalues->m_relid,
+                                  txndata->header.transid,
+                                  &dbmdno,
+                                  &tbmdno,
+                                  state);
     } while (FFSMGR_STATUS_SHIFTFILE ==
              ffstate->status); /* Content switched, need to write again */
 
@@ -112,23 +117,31 @@ fftrail_txninsert_serial_retry:
         }
 
         /* colid(2) */
-        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT,
-                                 2, (uint8*)&colid);
+        fftrail_data_data2buffer(
+            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&colid);
 
         /* flag(2) */
-        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT,
-                                 2, (uint8*)&flag);
+        fftrail_data_data2buffer(
+            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&flag);
 
         /* (length 4) */
-        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4,
+        fftrail_data_data2buffer(&txndata->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_INT,
+                                 4,
                                  (uint8*)&col.m_valueLen);
 
         /* Write column values */
         if (0 != col.m_valueLen)
         {
             /* data* */
-            fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR,
-                                     col.m_valueLen, (uint8*)col.m_value);
+            fftrail_data_data2buffer(&txndata->header,
+                                     ffstate,
+                                     &fbuffer,
+                                     FTRAIL_TOKENDATATYPE_STR,
+                                     col.m_valueLen,
+                                     (uint8*)col.m_value);
         }
     }
 
@@ -173,17 +186,17 @@ fftrail_txninsert_serial_retry:
 /* Deserialize insert info */
 bool fftrail_txninsert_deserial(void** data, void* state)
 {
-    bool   found = false;
-    uint8  tokenid = 0;   /* token id */
-    uint8  tokeninfo = 0; /* token details */
-    uint32 recoffset = 0;
-    uint32 dataoffset = 0;
-    uint16 subtype = FF_DATA_TYPE_NOP;
-    uint16 colid;
-    uint16 flag = 0;
-    uint32 mlen = 0;
-    uint32 tokenlen = 0; /* token length */
-    uint64 totallen = 0;
+    bool                             found = false;
+    uint8                            tokenid = 0;   /* token id */
+    uint8                            tokeninfo = 0; /* token details */
+    uint32                           recoffset = 0;
+    uint32                           dataoffset = 0;
+    uint16                           subtype = FF_DATA_TYPE_NOP;
+    uint16                           colid;
+    uint16                           flag = 0;
+    uint32                           mlen = 0;
+    uint32                           tokenlen = 0; /* token length */
+    uint64                           totallen = 0;
 
     uint8*                           uptr = NULL;
     uint8*                           tokendata = NULL; /* token data area */
@@ -324,8 +337,13 @@ bool fftrail_txninsert_deserial(void** data, void* state)
     {
         /* Get insert column info */
         /* Get colid */
-        if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&colid))
+        if (false == fftrail_data_buffer2data(&txndata->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_SMALLINT,
+                                              2,
+                                              (uint8*)&colid))
         {
             return false;
         }
@@ -347,8 +365,13 @@ bool fftrail_txninsert_deserial(void** data, void* state)
         rmemcpy0(col->m_colName, 0, tbdeserialentry->columns[colid - 1].column, mlen);
 
         /* Get flag */
-        if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&flag))
+        if (false == fftrail_data_buffer2data(&txndata->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_SMALLINT,
+                                              2,
+                                              (uint8*)&flag))
         {
             return false;
         }
@@ -376,8 +399,12 @@ bool fftrail_txninsert_deserial(void** data, void* state)
         totallen -= 2;
 
         /* Get column value length */
-        if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_INT, 4,
+        if (false == fftrail_data_buffer2data(&txndata->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_INT,
+                                              4,
                                               (uint8*)&col->m_valueLen))
         {
             return false;
@@ -393,9 +420,13 @@ bool fftrail_txninsert_deserial(void** data, void* state)
             rmemset0(col->m_value, 0, '\0', col->m_valueLen + 1);
 
             /* Get column info content */
-            if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset,
-                                                  &dataoffset, FTRAIL_TOKENDATATYPE_STR,
-                                                  col->m_valueLen, (uint8*)col->m_value))
+            if (false == fftrail_data_buffer2data(&txndata->header,
+                                                  ffstate,
+                                                  &recoffset,
+                                                  &dataoffset,
+                                                  FTRAIL_TOKENDATATYPE_STR,
+                                                  col->m_valueLen,
+                                                  (uint8*)col->m_value))
             {
                 return false;
             }

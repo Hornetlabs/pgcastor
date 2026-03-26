@@ -19,8 +19,9 @@
 /*
  * Handle capture onlinerefresh command
  */
-bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                            netpacket* npacket)
+bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric,
+                                            netpoolentry*    npoolentry,
+                                            netpacket*       npacket)
 {
     /*
      * 1. Get capture metric node
@@ -68,8 +69,8 @@ bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric, netpoolent
     rmemcpy0(errmsg, 0, uptr, resultlen);
 
     /* Get capture node */
-    fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
-                        xmanager_metricfd2node_cmp);
+    fd2node = dlist_get(
+        xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
     xmetricnode = fd2node->metricnode;
 
     /* Get xscsci node */
@@ -155,8 +156,9 @@ bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric, netpoolent
         return true;
     }
 
-    if (false == xmanager_metricmsg_assembleresponse(xmetric, npoolentry, XMANAGER_MSG_REFRESHCMD,
-                                                     xmetricxscscinode->asyncmsgs->results))
+    if (false ==
+        xmanager_metricmsg_assembleresponse(
+            xmetric, npoolentry, XMANAGER_MSG_REFRESHCMD, xmetricxscscinode->asyncmsgs->results))
     {
         elog(RLOG_WARNING, "assemble response to xscsci error, close xscsci connect");
 
@@ -164,9 +166,10 @@ bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric, netpoolent
         netpool_del(xmetric->npool, npoolentry->fd);
 
         /* Remove metricnode from list */
-        xmetric->metricnodes =
-            dlist_deletebyvaluefirstmatch(xmetric->metricnodes, xmetricxscscinode,
-                                          xmanager_metricnode_cmp, xmanager_metricnode_destroyvoid);
+        xmetric->metricnodes = dlist_deletebyvaluefirstmatch(xmetric->metricnodes,
+                                                             xmetricxscscinode,
+                                                             xmanager_metricnode_cmp,
+                                                             xmanager_metricnode_destroyvoid);
 
         /* Remove data from fd mapping list */
         xmetric->fd2metricnodes =

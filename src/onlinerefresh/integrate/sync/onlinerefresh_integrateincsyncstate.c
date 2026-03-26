@@ -41,12 +41,16 @@ static bool onlinerefresh_integrateincsync_delinc(onlinerefresh_integrateincsync
     char      sql_exec[1024] = {'\0'};
 
     rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec, "DELETE FROM \"%s\".\"%s\" WHERE \"name\" = \'%s\';",
-            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA), SYNC_STATUSTABLE_NAME, syncwork->base.name);
+    sprintf(sql_exec,
+            "DELETE FROM \"%s\".\"%s\" WHERE \"name\" = \'%s\';",
+            guc_getConfigOption(CFG_KEY_CATALOGSCHEMA),
+            SYNC_STATUSTABLE_NAME,
+            syncwork->base.name);
     res = PQexec(syncwork->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING, "Failed to update status table in: %s",
+        elog(RLOG_WARNING,
+             "Failed to update status table in: %s",
              PQerrorMessage(syncwork->base.conn));
         PQclear(res);
         return false;

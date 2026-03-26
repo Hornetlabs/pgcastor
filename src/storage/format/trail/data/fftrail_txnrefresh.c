@@ -81,21 +81,29 @@ bool fftrail_txnrefresh_serial(void* data, void* state)
         txndata->header.totallength += len;
         /* Add content */
         /* Refresh schema length */
-        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT,
-                                 2, (uint8*)&len);
+        fftrail_data_data2buffer(
+            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&len);
 
         /* Refresh schema content */
-        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR, len,
+        fftrail_data_data2buffer(&txndata->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_STR,
+                                 len,
                                  (uint8*)table->schema);
 
         len = strlen(table->table);
         txndata->header.totallength += len;
         /* Refresh table length */
-        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT,
-                                 2, (uint8*)&len);
+        fftrail_data_data2buffer(
+            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&len);
 
         /* Refresh string content */
-        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR, len,
+        fftrail_data_data2buffer(&txndata->header,
+                                 ffstate,
+                                 &fbuffer,
+                                 FTRAIL_TOKENDATATYPE_STR,
+                                 len,
                                  (uint8*)table->table);
         table = table->next;
     }
@@ -148,14 +156,14 @@ bool fftrail_txnrefresh_serial(void* data, void* state)
 /* Deserialize refresh info */
 bool fftrail_txnrefresh_deserial(void** data, void* state)
 {
-    uint8  tokenid = 0;   /* token id */
-    uint8  tokeninfo = 0; /* token details */
-    uint32 recoffset = 0;
-    uint32 dataoffset = 0;
-    uint16 subtype = FF_DATA_TYPE_NOP;
-    uint32 len = 0;
-    uint32 tokenlen = 0; /* token length */
-    uint64 totallen = 0;
+    uint8           tokenid = 0;   /* token id */
+    uint8           tokeninfo = 0; /* token details */
+    uint32          recoffset = 0;
+    uint32          dataoffset = 0;
+    uint16          subtype = FF_DATA_TYPE_NOP;
+    uint32          len = 0;
+    uint32          tokenlen = 0; /* token length */
+    uint64          totallen = 0;
 
     uint8*          uptr = NULL;
     uint8*          tokendata = NULL; /* token data area */
@@ -229,8 +237,13 @@ bool fftrail_txnrefresh_deserial(void** data, void* state)
     {
         table = refresh_table_init();
         /* Get schema type */
-        if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&len))
+        if (false == fftrail_data_buffer2data(&txndata->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_SMALLINT,
+                                              2,
+                                              (uint8*)&len))
         {
             return false;
         }
@@ -242,15 +255,25 @@ bool fftrail_txnrefresh_deserial(void** data, void* state)
         rmemset0(table->schema, 0, '\0', len + 1);
 
         /* Get schema subtype */
-        if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_STR, len, (uint8*)table->schema))
+        if (false == fftrail_data_buffer2data(&txndata->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_STR,
+                                              len,
+                                              (uint8*)table->schema))
         {
             return false;
         }
         totallen -= (2 + len);
         /* Get schema string length */
-        if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&len))
+        if (false == fftrail_data_buffer2data(&txndata->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_SMALLINT,
+                                              2,
+                                              (uint8*)&len))
         {
             return false;
         }
@@ -263,8 +286,13 @@ bool fftrail_txnrefresh_deserial(void** data, void* state)
         rmemset0(table->table, 0, '\0', len + 1);
 
         /* Get schema string content */
-        if (false == fftrail_data_buffer2data(&txndata->header, ffstate, &recoffset, &dataoffset,
-                                              FTRAIL_TOKENDATATYPE_STR, len, (uint8*)table->table))
+        if (false == fftrail_data_buffer2data(&txndata->header,
+                                              ffstate,
+                                              &recoffset,
+                                              &dataoffset,
+                                              FTRAIL_TOKENDATATYPE_STR,
+                                              len,
+                                              (uint8*)table->table))
         {
             return false;
         }

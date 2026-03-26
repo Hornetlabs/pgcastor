@@ -20,8 +20,9 @@
  *4. Delete data and conf files
  *5. Return success message
  */
-bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                    netpacket* npacket)
+bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
+                                    netpoolentry*    npoolentry,
+                                    netpacket*       npacket)
 {
     int                  len = 0;
     int                  jobtype = 0;
@@ -47,7 +48,9 @@ bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric, netpoolentry* npoo
     if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 2048, "ERROR: xmanager parse remove command, unsupport %s",
+        snprintf(errormsg,
+                 2048,
+                 "ERROR: xmanager parse remove command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parseremove_error;
     }
@@ -108,9 +111,10 @@ bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric, netpoolentry* npoo
     }
 
     /* Remove metricnode from list */
-    xmetric->metricnodes =
-        dlist_deletebyvalue(xmetric->metricnodes, &xmetricnode, xmanager_metricnode_cmp,
-                            xmanager_metricnode_destroyvoid);
+    xmetric->metricnodes = dlist_deletebyvalue(xmetric->metricnodes,
+                                               &xmetricnode,
+                                               xmanager_metricnode_cmp,
+                                               xmanager_metricnode_destroyvoid);
 
     xmanager_metricnode_flush(xmetric->metricnodes);
 
@@ -129,6 +133,6 @@ xmanager_metricmsg_parseremove_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
-                                               XMANAGER_MSG_REMOVECMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(
+        xmetric, npoolentry->wpackets, XMANAGER_MSG_REMOVECMD, errcode, errormsg);
 }

@@ -47,8 +47,10 @@
 #include "metric/capture/metric_capture.h"
 #include "increment/capture/increment_capture.h"
 
-static void capturestate_write_set_misc_callback(void* state, XLogRecPtr confirm,
-                                                 XLogRecPtr restart, XLogRecPtr redo)
+static void capturestate_write_set_misc_callback(void*      state,
+                                                 XLogRecPtr confirm,
+                                                 XLogRecPtr restart,
+                                                 XLogRecPtr redo)
 {
     increment_capture* inccapture = state;
     inccapture->writestate->base.confirmedlsn = confirm;
@@ -165,7 +167,9 @@ static void capturestate_trailstartset(void* privdata, uint64 trailstart)
 }
 
 /* Capture end set capturestate confirmlsn */
-static void capturestate_walsynclsn_set(void* privdata, XLogRecPtr redolsn, XLogRecPtr restartlsn,
+static void capturestate_walsynclsn_set(void*      privdata,
+                                        XLogRecPtr redolsn,
+                                        XLogRecPtr restartlsn,
                                         XLogRecPtr confirmlsn)
 {
     increment_capture* inccapture = NULL;

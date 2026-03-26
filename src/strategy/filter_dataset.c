@@ -139,8 +139,10 @@ filter_dataset_initpairslistbyrefreshtables_error:
 }
 
 /* Rebuild refreshtables from filters */
-bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables, List* filters,
-                                                HTAB* hnamespace, HTAB* hclass)
+bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables,
+                                                List*            filters,
+                                                HTAB*            hnamespace,
+                                                HTAB*            hclass)
 {
     bool                           found = false;
     Oid                            nspoid = INVALIDOID;
@@ -153,7 +155,7 @@ bool filter_dataset_buildrefreshtablesbyfilters(refresh_tables** prtables, List*
     pg_parser_sysdict_pgclass*     sysdictclass = NULL;
     pg_parser_sysdict_pgnamespace* sysdictnsp = NULL;
 
-    HASH_SEQ_STATUS status;
+    HASH_SEQ_STATUS                status;
 
     hash_seq_init(&status, hclass);
     while (NULL != (classentry = hash_seq_search(&status)))
@@ -236,9 +238,9 @@ static List* filter_dataset_initpairslist(List* rulelist)
     List*        filter_list = NULL;
     filter_pair* filter_pair_obj = NULL;
 
-    char table[64] = {'\0'};
-    char schema[64] = {'\0'};
-    char temp[1024] = {'\0'};
+    char         table[64] = {'\0'};
+    char         schema[64] = {'\0'};
+    char         temp[1024] = {'\0'};
 
     /* Build sync strategy based on input parameters */
     foreach (cell, rulelist)
@@ -401,7 +403,7 @@ bool filter_dataset_init(List* tbincludes, List* tbexcludes, HTAB* namespace, HT
 
     /* 64 + 64 + 1 + 1 - 1 */
     /* nspname + relname + . + \\n - 1 null terminator */
-    char nsp_relname[129] = {'\0'};
+    char                           nsp_relname[129] = {'\0'};
 
     snprintf(filepath_tmp, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET_TMP);
     snprintf(filepath, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET);
@@ -682,8 +684,10 @@ HTAB* filter_dataset_load(HTAB* namespace, HTAB* class)
 
         if (temp_oid == INVALIDOID)
         {
-            elog(RLOG_WARNING, "when convert dataset2oid to oid2dataset, oid invalid, table: %s.%s",
-                 scan_d2o_entry->dataset.schema, scan_d2o_entry->dataset.table);
+            elog(RLOG_WARNING,
+                 "when convert dataset2oid to oid2dataset, oid invalid, table: %s.%s",
+                 scan_d2o_entry->dataset.schema,
+                 scan_d2o_entry->dataset.table);
         }
 
         temp_o2d_entry = hash_search(oid2dataset_htab, &temp_oid, HASH_ENTER, NULL);
@@ -848,7 +852,10 @@ bool filter_dataset_add(HTAB* oid2datasets, Oid oid, char* schema, char* table)
     o2d_entry = hash_search(oid2datasets, &oid, HASH_ENTER, NULL);
     if (!o2d_entry)
     {
-        elog(RLOG_WARNING, "can't find entry to oid2datasets hash, oid: %u, %s.%s", oid, schema,
+        elog(RLOG_WARNING,
+             "can't find entry to oid2datasets hash, oid: %u, %s.%s",
+             oid,
+             schema,
              table);
     }
 
@@ -868,7 +875,10 @@ bool filter_dataset_modify(HTAB* oid2datasets, Oid oid, char* schema, char* tabl
     o2d_entry = hash_search(oid2datasets, &oid, HASH_FIND, NULL);
     if (!o2d_entry)
     {
-        elog(RLOG_DEBUG, "can't find entry from oid2datasets hash, oid: %u, %s.%s", oid, schema,
+        elog(RLOG_DEBUG,
+             "can't find entry from oid2datasets hash, oid: %u, %s.%s",
+             oid,
+             schema,
              table);
         return false;
     }
@@ -910,7 +920,7 @@ bool filter_dataset_flush(HTAB* oid2datasets)
 
     /* 64 + 64 + 1 + 1 - 1 */
     /* nspname + relname + . + \\n - 1 null terminator */
-    char nsp_relname[129] = {'\0'};
+    char                    nsp_relname[129] = {'\0'};
 
     snprintf(filepath_tmp, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET_TMP);
     snprintf(filepath, MAXPATH, "%s/%s", FILTER_DIR, FILTER_DATASET);
@@ -989,7 +999,9 @@ refresh_tables* filter_dataset_buildrefreshtables(HTAB* hfilters)
     return refreshtables;
 }
 
-bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List* sysdicthis,
+bool filter_dataset_updatedatasets(List* addtablepattern,
+                                   HTAB* namespace,
+                                   List* sysdicthis,
                                    HTAB* syncdatasets)
 {
     bool                     found = false;
@@ -1017,8 +1029,11 @@ bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List*
         if (CATALOG_TYPE_CLASS == catalog_data->type)
         {
             classvalue = (catalog_class_value*)catalog_data->catalog;
-            elog(RLOG_DEBUG, "syncdatasets op:%d, classvalue, %s, %u.%u", catalog_data->op,
-                 classvalue->class->relname.data, classvalue->class->oid,
+            elog(RLOG_DEBUG,
+                 "syncdatasets op:%d, classvalue, %s, %u.%u",
+                 catalog_data->op,
+                 classvalue->class->relname.data,
+                 classvalue->class->oid,
                  classvalue->class->relnamespace);
 
             if ('p' != classvalue->class->relkind && 'r' != classvalue->class->relkind)

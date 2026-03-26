@@ -171,7 +171,9 @@ static TimeLineID splitwork_wal_get_timelineid_from_file(char* buffer, size_t le
     return result;
 }
 
-static bool splitwork_wal_history_file_read(char** buffer, size_t* len, char* dpath,
+static bool splitwork_wal_history_file_read(char**   buffer,
+                                            size_t*  len,
+                                            char*    dpath,
                                             uint32_t timeline)
 {
     int  fd = -1;

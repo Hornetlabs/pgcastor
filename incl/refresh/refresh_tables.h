@@ -36,7 +36,8 @@ extern void refresh_freetables(refresh_tables* refreshtables);
 
 extern refresh_tables* refresh_tables_copy(refresh_tables* refreshtables);
 
-extern bool refresh_tables_hasrepeat(refresh_tables* syncdataset, refresh_tables* newdataset,
+extern bool refresh_tables_hasrepeat(refresh_tables* syncdataset,
+                                     refresh_tables* newdataset,
                                      refresh_table** prepeattable);
 
 extern bool refresh_tables_hasnew(HTAB* syncdataset, refresh_tables* newdataset);
@@ -46,6 +47,5 @@ extern refresh_tables* refresh_tables_gen_from_file(char* path);
 extern bool refresh_tables_flush(refresh_tables* rtables);
 
 extern refresh_tables* refresh_tables_load(void);
-
 
 #endif

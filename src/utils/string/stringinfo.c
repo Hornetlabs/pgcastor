@@ -16,11 +16,11 @@
 #include "utils/string/stringinfo.h"
 #include "utils/string/psprintf.h"
 
-#define STRINGINFO_MEM_ALLOC rmalloc0
-#define STRINGINFO_MEM_FREE rfree
+#define STRINGINFO_MEM_ALLOC   rmalloc0
+#define STRINGINFO_MEM_FREE    rfree
 #define STRINGINFO_MEM_REALLOC rrealloc0
 
-#define MaxAllocSize ((Size)0x3fffffff) /* 1 gigabyte - 1 */
+#define MaxAllocSize           ((Size)0x3fffffff) /* 1 gigabyte - 1 */
 
 /*
  * makeStringInfo
@@ -299,7 +299,8 @@ void enlargeStringInfo(StringInfo str, int needed)
         elog(RLOG_ERROR,
              "out of memory,"
              " Cannot enlarge string buffer containing %d bytes by %d more bytes",
-             str->len, needed);
+             str->len,
+             needed);
     }
 
     needed += str->len + 1; /* total space required now */
@@ -339,9 +340,9 @@ void enlargeStringInfo(StringInfo str, int needed)
 
 char* strSpecialCharReplace(char* input)
 {
-    int length = strlen(input) + 1;
-    int spec_num = 0;
-    int lstpos = 0;
+    int   length = strlen(input) + 1;
+    int   spec_num = 0;
+    int   lstpos = 0;
 
     /* Add characters that need escaping to this string */
     char* spc_character = "\'";

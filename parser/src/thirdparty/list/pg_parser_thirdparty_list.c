@@ -154,7 +154,8 @@ pg_parser_List* pg_parser_lcons(void* datum, pg_parser_List* list)
     return list;
 }
 
-static pg_parser_List* pg_parser_list_delete_cell(pg_parser_List* list, pg_parser_ListCell* cell,
+static pg_parser_List* pg_parser_list_delete_cell(pg_parser_List*     list,
+                                                  pg_parser_ListCell* cell,
                                                   pg_parser_ListCell* prev)
 {
     /*

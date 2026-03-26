@@ -32,8 +32,10 @@ rsocket osal_accept(rsocket sockfd, struct sockaddr* addr, socklen_t* addrlen);
 int osal_getsockname(rsocket sockfd, struct sockaddr* addr, socklen_t* addrlen);
 
 /* Get available address */
-int osal_getaddrinfo(const char* node, const char* service, const struct addrinfo* hints,
-                     struct addrinfo** res);
+int osal_getaddrinfo(const char*            node,
+                     const char*            service,
+                     const struct addrinfo* hints,
+                     struct addrinfo**      res);
 
 /* Event poll */
 int osal_poll(struct pollfd* fds, nfds_t nfds, int timeout);
@@ -50,7 +52,12 @@ bool osal_net_write(rsocket sockfd, uint8* buffer, int amount);
 /*
  * Get address by name or ip address
  * */
-bool osal_host2sockaddr(struct sockaddr_in* addr, const char* host, const char* service, int family,
-                        int socktype, int protocol, int passive);
+bool osal_host2sockaddr(struct sockaddr_in* addr,
+                        const char*         host,
+                        const char*         service,
+                        int                 family,
+                        int                 socktype,
+                        int                 protocol,
+                        int                 passive);
 
 #endif

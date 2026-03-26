@@ -19,22 +19,22 @@ typedef struct XMANAGER_METRICNODE
     xmanager_metricnodetype type;
 
     /* Reserved, not used yet, for future automatic networking */
-    bool remote;
+    bool                    remote;
 
     /* Status */
     xmanager_metricnodestat stat;
 
     /* Name */
-    char* name;
+    char*                   name;
 
     /* Working directory, can be empty */
-    char* data;
+    char*                   data;
 
     /* Config directory, can be empty */
-    char* conf;
+    char*                   conf;
 
     /* Trail file directory, can be empty */
-    char* traildir;
+    char*                   traildir;
 } xmanager_metricnode;
 
 typedef struct XMANAGER_METRICFD2NODE
@@ -49,16 +49,16 @@ typedef struct XMANAGER_METRICREGNODE
     xmanager_metricnodetype nodetype;
 
     /* Message type */
-    xmanager_msg msgtype;
+    xmanager_msg            msgtype;
 
     /* Used to indicate if operation succeeded, only contains msg on error, 0 success 1 failure */
-    int result;
+    int                     result;
 
     /* Error code */
-    int errcode;
+    int                     errcode;
 
     /* Error message */
-    char* msg;
+    char*                   msg;
 
     /* Node */
     xmanager_metricfd2node* metricfd2node;
@@ -73,8 +73,9 @@ extern int xmanager_metricnode_serialsize(xmanager_metricnode* metricnode);
 extern void xmanager_metricnode_serial(xmanager_metricnode* metricnode, uint8* blk, int* blkstart);
 
 /* Deserialize */
-extern bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode, uint8* blk,
-                                         int* blkstart);
+extern bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode,
+                                         uint8*               blk,
+                                         int*                 blkstart);
 
 extern xmanager_metricnode* xmanager_metricnode_init(xmanager_metricnodetype nodetype);
 

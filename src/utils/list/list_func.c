@@ -16,7 +16,7 @@
 #include "utils/list/list_func.h"
 
 #define LIST_MEM_ALLOC rmalloc0
-#define LIST_MEM_FREE rfree
+#define LIST_MEM_FREE  rfree
 
 /*
  * Routines to simplify writing assertions about the type of a list; a
@@ -24,7 +24,7 @@
  */
 #define IsPointerList(l) ((l) == NIL || IsA((l), List))
 #define IsIntegerList(l) ((l) == NIL || IsA((l), IntList))
-#define IsOidList(l) ((l) == NIL || IsA((l), OidList))
+#define IsOidList(l)     ((l) == NIL || IsA((l), OidList))
 
 static bool simple_equal(const void* a, const void* b);
 

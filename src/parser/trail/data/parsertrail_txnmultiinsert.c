@@ -74,20 +74,25 @@ static void parsertrail_txnmultiinsert2hash(parsertrail* parsertrail, ff_txndata
     {
         elog(RLOG_DEBUG,
              "multiinsert into %s.%s, colnvalues->m_rowCnt:%u colnvalues->m_valueCnt:%u begin",
-             colnvalues->m_base.m_schemaname, colnvalues->m_base.m_tbname, colnvalues->m_rowCnt,
+             colnvalues->m_base.m_schemaname,
+             colnvalues->m_base.m_tbname,
+             colnvalues->m_rowCnt,
              colnvalues->m_valueCnt);
         for (i = 0; i < colnvalues->m_rowCnt; i++)
         {
             for (index = 0; index < colnvalues->m_valueCnt; index++)
             {
-                elog(RLOG_DEBUG, "column:%s, value:%s",
+                elog(RLOG_DEBUG,
+                     "column:%s, value:%s",
                      colnvalues->m_rows[i].m_new_values[index].m_colName,
                      colnvalues->m_rows[i].m_new_values[index].m_value == NULL
                          ? "NULL"
                          : (char*)(colnvalues->m_rows[i].m_new_values[index].m_value));
             }
         }
-        elog(RLOG_DEBUG, "multiinsert %s.%s end", colnvalues->m_base.m_schemaname,
+        elog(RLOG_DEBUG,
+             "multiinsert %s.%s end",
+             colnvalues->m_base.m_schemaname,
              colnvalues->m_base.m_tbname);
     }
 

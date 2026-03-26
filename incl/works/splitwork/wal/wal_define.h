@@ -19,7 +19,7 @@ typedef struct XLogPageHeaderData
      * xl_tot_len not xl_len in the initial header.  Also note that the
      * continuation data isn't necessarily aligned.
      */
-    uint32 xlp_rem_len; /* total len of remaining data for record */
+    uint32     xlp_rem_len; /* total len of remaining data for record */
 } XLogPageHeaderData;
 
 #define SizeOfXLogShortPHD MAXALIGN(sizeof(XLogPageHeaderData))
@@ -51,7 +51,7 @@ typedef struct XLogRecord
     uint8         xl_info;    /* flag bits, see below */
     RmgrId        xl_rmid;    /* resource manager for this record */
     /* 2 bytes of padding here, initialize to zero */
-    pg_crc32c xl_crc; /* CRC for this record */
+    pg_crc32c     xl_crc; /* CRC for this record */
 
     /* XLogRecordBlockHeaders and XLogRecordDataHeader follow, no padding */
 } XLogRecord;
@@ -85,26 +85,29 @@ typedef enum XLOG_RMGR_ENUM
 } XLOG_RMGR_ENUM;
 
 #define XLR_INFO_MASK 0x0F
-#define XLOG_SWITCH 0x40
+#define XLOG_SWITCH   0x40
 #define IsSwitchXlog(rmid, info) \
     (rmid == XLOG_RMGR_XLOG_ID && ((info & ~XLR_INFO_MASK) == XLOG_SWITCH))
 
-#define XLogSegmentOffset(xlogptr, wal_segsz_bytes) ((xlogptr) & ((wal_segsz_bytes) - 1))
+#define XLogSegmentOffset(xlogptr, wal_segsz_bytes)  ((xlogptr) & ((wal_segsz_bytes) - 1))
 
 #define XLByteToSeg(xlrp, logSegNo, wal_segsz_bytes) logSegNo = (xlrp) / (wal_segsz_bytes)
 
 #define XLByteInSeg(xlrp, logSegNo, wal_segsz_bytes) (((xlrp) / (wal_segsz_bytes)) == (logSegNo))
 
-#define XLogSegmentsPerXLogId(wal_segsz_bytes) (UINT64CONST(0x100000000) / (wal_segsz_bytes))
+#define XLogSegmentsPerXLogId(wal_segsz_bytes)       (UINT64CONST(0x100000000) / (wal_segsz_bytes))
 
 #define XLogFileName(fname, tli, logSegNo, wal_segsz_bytes)                 \
-    snprintf(fname, MAXFNAMELEN, "%08X%08X%08X", tli,                       \
+    snprintf(fname,                                                         \
+             MAXFNAMELEN,                                                   \
+             "%08X%08X%08X",                                                \
+             tli,                                                           \
              (uint32)((logSegNo) / XLogSegmentsPerXLogId(wal_segsz_bytes)), \
              (uint32)((logSegNo) % XLogSegmentsPerXLogId(wal_segsz_bytes)))
 
-#define XlogGetPagePtr(xlrp, page_size) (xlrp - (xlrp % page_size))
+#define XlogGetPagePtr(xlrp, page_size)           (xlrp - (xlrp % page_size))
 
-#define IsXlogPageBegin(xlrp, page_size) ((xlrp % page_size) == 0)
+#define IsXlogPageBegin(xlrp, page_size)          ((xlrp % page_size) == 0)
 
 #define IsXLogSegmentBegin(xlrp, wal_segsz_bytes) ((xlrp % wal_segsz_bytes) == 0)
 

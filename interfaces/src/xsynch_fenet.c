@@ -106,8 +106,10 @@ bool xsynch_fenet_isconn(xsynch_conn* conn)
 }
 
 /* get available address */
-static int xsynch_getaddrinfo(const char* node, const char* service, const struct addrinfo* hints,
-                              struct addrinfo** res)
+static int xsynch_getaddrinfo(const char*            node,
+                              const char*            service,
+                              const struct addrinfo* hints,
+                              struct addrinfo**      res)
 {
     if (NULL != node && node[0] == '*')
     {
@@ -134,8 +136,13 @@ static int xsynch_getaddrinfo(const char* node, const char* service, const struc
 /*
  * get address by name or ip address
  * */
-static bool xsynch_host2sockaddr(struct sockaddr_in* addr, const char* host, const char* service,
-                                 int family, int socktype, int protocol, int passive)
+static bool xsynch_host2sockaddr(struct sockaddr_in* addr,
+                                 const char*         host,
+                                 const char*         service,
+                                 int                 family,
+                                 int                 socktype,
+                                 int                 protocol,
+                                 int                 passive)
 {
     int              ret = 0;
     struct addrinfo  hints;
@@ -213,8 +220,8 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
     if (XSYNCH_SOCKTYPE_TCP == conn->socktype)
     {
         domain = AF_INET;
-        if (false == xsynch_host2sockaddr(&addrin, conn->host, conn->port, domain, SOCK_STREAM,
-                                          IPPROTO_TCP, 1))
+        if (false == xsynch_host2sockaddr(
+                         &addrin, conn->host, conn->port, domain, SOCK_STREAM, IPPROTO_TCP, 1))
         {
             conn->errcode = 1;
             xsynch_exbufferdata_reset(conn->errmsg);
@@ -228,7 +235,11 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
     else if (XSYNCH_SOCKTYPE_UNIXDOMAIN == conn->socktype)
     {
         domain = AF_LOCAL;
-        snprintf(unixdoamin, 512, "%s/%s%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX,
+        snprintf(unixdoamin,
+                 512,
+                 "%s/%s%s",
+                 RMANAGER_UNIXDOMAINDIR,
+                 RMANAGER_UNIXDOMAINPREFIX,
                  conn->port);
         if (sizeof(addrun.sun_path) <= strlen(unixdoamin))
         {
@@ -261,19 +272,34 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
 
         if (1 == conn->keepalive)
         {
-            setsockopt(conn->sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&conn->keepalive,
+            setsockopt(conn->sock,
+                       SOL_SOCKET,
+                       SO_KEEPALIVE,
+                       (char*)&conn->keepalive,
                        sizeof(conn->keepalive));
 
-            setsockopt(conn->sock, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&conn->keepaliveidle,
+            setsockopt(conn->sock,
+                       IPPROTO_TCP,
+                       TCP_KEEPIDLE,
+                       (char*)&conn->keepaliveidle,
                        sizeof(conn->keepaliveidle));
 
-            setsockopt(conn->sock, IPPROTO_TCP, TCP_KEEPINTVL, (char*)&conn->keepaliveinterval,
+            setsockopt(conn->sock,
+                       IPPROTO_TCP,
+                       TCP_KEEPINTVL,
+                       (char*)&conn->keepaliveinterval,
                        sizeof(conn->keepaliveinterval));
 
-            setsockopt(conn->sock, IPPROTO_TCP, TCP_KEEPCNT, (char*)&conn->keepalivecount,
+            setsockopt(conn->sock,
+                       IPPROTO_TCP,
+                       TCP_KEEPCNT,
+                       (char*)&conn->keepalivecount,
                        sizeof(conn->keepalivecount));
 
-            setsockopt(conn->sock, IPPROTO_TCP, TCP_USER_TIMEOUT, (char*)&conn->usertimeout,
+            setsockopt(conn->sock,
+                       IPPROTO_TCP,
+                       TCP_USER_TIMEOUT,
+                       (char*)&conn->usertimeout,
                        sizeof(conn->usertimeout));
         }
     }

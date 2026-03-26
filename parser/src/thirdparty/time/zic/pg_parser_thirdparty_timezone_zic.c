@@ -26,10 +26,10 @@ typedef int32_t lineno_t;
 /* define */
 
 #if __WORDSIZE == 64
-#define TIME_INT64CONST(x) ((int64_t)(x))
+#define TIME_INT64CONST(x)  ((int64_t)(x))
 #define TIME_UINT64CONST(x) ((uint64_t)(x))
 #else
-#define TIME_INT64CONST(x) ((int64)x##LL)
+#define TIME_INT64CONST(x)  ((int64)x##LL)
 #define TIME_UINT64CONST(x) ((uint64)x##ULL)
 #endif
 
@@ -41,18 +41,18 @@ typedef int32_t lineno_t;
 #define TIME_INT64_MIN (-TIME_INT64CONST(0x7FFFFFFFFFFFFFFF) - 1)
 #define TIME_INT64_MAX TIME_INT64CONST(0x7FFFFFFFFFFFFFFF)
 
-#define ZIC_MIN TIME_INT64_MIN
-#define ZIC_MAX TIME_INT64_MAX
+#define ZIC_MIN        TIME_INT64_MIN
+#define ZIC_MAX        TIME_INT64_MAX
 /*
  * Which fields are which on a Zone continuation line.
  */
-#define ZFC_STDOFF 0
-#define ZFC_RULE 1
-#define ZFC_FORMAT 2
-#define ZFC_TILYEAR 3
-#define ZFC_TILMONTH 4
-#define ZFC_TILDAY 5
-#define ZFC_TILTIME 6
+#define ZFC_STDOFF      0
+#define ZFC_RULE        1
+#define ZFC_FORMAT      2
+#define ZFC_TILYEAR     3
+#define ZFC_TILMONTH    4
+#define ZFC_TILDAY      5
+#define ZFC_TILTIME     6
 #define ZONEC_MINFIELDS 3
 #define ZONEC_MAXFIELDS 7
 
@@ -60,14 +60,14 @@ typedef int32_t lineno_t;
  * Which fields are which on a Zone line.
  */
 
-#define ZF_NAME 1
-#define ZF_STDOFF 2
-#define ZF_RULE 3
-#define ZF_FORMAT 4
-#define ZF_TILYEAR 5
-#define ZF_TILMONTH 6
-#define ZF_TILDAY 7
-#define ZF_TILTIME 8
+#define ZF_NAME        1
+#define ZF_STDOFF      2
+#define ZF_RULE        3
+#define ZF_FORMAT      4
+#define ZF_TILYEAR     5
+#define ZF_TILMONTH    6
+#define ZF_TILDAY      7
+#define ZF_TILTIME     8
 #define ZONE_MINFIELDS 5
 #define ZONE_MAXFIELDS 9
 
@@ -77,38 +77,38 @@ typedef int32_t lineno_t;
 
 #define YR_MINIMUM 0
 #define YR_MAXIMUM 1
-#define YR_ONLY 2
+#define YR_ONLY    2
 
 /*
  * Line codes.
  */
 
-#define LC_RULE 0
-#define LC_ZONE 1
-#define LC_LINK 2
-#define LC_LEAP 3
+#define LC_RULE    0
+#define LC_ZONE    1
+#define LC_LINK    2
+#define LC_LEAP    3
 #define LC_EXPIRES 4
 
 /*
  * Which files are which on a Rule line.
  */
 
-#define RF_NAME 1
-#define RF_LOYEAR 2
-#define RF_HIYEAR 3
-#define RF_COMMAND 4
-#define RF_MONTH 5
-#define RF_DAY 6
-#define RF_TOD 7
-#define RF_SAVE 8
-#define RF_ABBRVAR 9
+#define RF_NAME     1
+#define RF_LOYEAR   2
+#define RF_HIYEAR   3
+#define RF_COMMAND  4
+#define RF_MONTH    5
+#define RF_DAY      6
+#define RF_TOD      7
+#define RF_SAVE     8
+#define RF_ABBRVAR  9
 #define RULE_FIELDS 10
 
 /*
  * Which fields are which on a Link line.
  */
 
-#define LF_TARGET 1
+#define LF_TARGET   1
 #define LF_LINKNAME 2
 #define LINK_FIELDS 3
 
@@ -116,14 +116,14 @@ typedef int32_t lineno_t;
  *    r_dycode        r_dayofmonth    r_wday
  */
 
-#define DC_DOM 0 /* 1..31 */    /* unused */
-#define DC_DOWGEQ 1 /* 1..31 */ /* 0..6 (Sun..Sat) */
-#define DC_DOWLEQ 2 /* 1..31 */ /* 0..6 (Sun..Sat) */
+#define DC_DOM               0 /* 1..31 */ /* unused */
+#define DC_DOWGEQ            1 /* 1..31 */ /* 0..6 (Sun..Sat) */
+#define DC_DOWLEQ            2 /* 1..31 */ /* 0..6 (Sun..Sat) */
 
-#define TIME_T_BITS_IN_FILE 64
+#define TIME_T_BITS_IN_FILE  64
 
 #define ZIC_VERSION_PRE_2013 '2'
-#define ZIC_VERSION '3'
+#define ZIC_VERSION          '3'
 
 #ifndef ZIC_MAX_ABBR_LEN_WO_WARN
 #define ZIC_MAX_ABBR_LEN_WO_WARN 6
@@ -135,8 +135,8 @@ static zic_t const max_time = TIME_MAXVAL(zic_t, TIME_T_BITS_IN_FILE);
 
 /* The minimum, and one less than the maximum, values specified by
    the -r option.  These default to MIN_TIME and MAX_TIME.  */
-static zic_t lo_time = TIME_MINVAL(zic_t, TIME_T_BITS_IN_FILE);
-static zic_t hi_time = TIME_MAXVAL(zic_t, TIME_T_BITS_IN_FILE);
+static zic_t       lo_time = TIME_MINVAL(zic_t, TIME_T_BITS_IN_FILE);
+static zic_t       hi_time = TIME_MAXVAL(zic_t, TIME_T_BITS_IN_FILE);
 
 /* enum, struct, union */
 typedef enum zic_percent_z_len_bound
@@ -255,17 +255,23 @@ struct timerange
     int32_t   leapbase, leapcount;
 };
 
-static struct lookup const lasts[] = {
-    {"last-Sunday", TIME_TM_SUNDAY},     {"last-Monday", TIME_TM_MONDAY},
-    {"last-Tuesday", TIME_TM_TUESDAY},   {"last-Wednesday", TIME_TM_WEDNESDAY},
-    {"last-Thursday", TIME_TM_THURSDAY}, {"last-Friday", TIME_TM_FRIDAY},
-    {"last-Saturday", TIME_TM_SATURDAY}, {NULL, 0}};
+static struct lookup const lasts[] = {{"last-Sunday", TIME_TM_SUNDAY},
+                                      {"last-Monday", TIME_TM_MONDAY},
+                                      {"last-Tuesday", TIME_TM_TUESDAY},
+                                      {"last-Wednesday", TIME_TM_WEDNESDAY},
+                                      {"last-Thursday", TIME_TM_THURSDAY},
+                                      {"last-Friday", TIME_TM_FRIDAY},
+                                      {"last-Saturday", TIME_TM_SATURDAY},
+                                      {NULL, 0}};
 
-static struct lookup const wday_names[] = {
-    {"Sunday", TIME_TM_SUNDAY},     {"Monday", TIME_TM_MONDAY},
-    {"Tuesday", TIME_TM_TUESDAY},   {"Wednesday", TIME_TM_WEDNESDAY},
-    {"Thursday", TIME_TM_THURSDAY}, {"Friday", TIME_TM_FRIDAY},
-    {"Saturday", TIME_TM_SATURDAY}, {NULL, 0}};
+static struct lookup const wday_names[] = {{"Sunday", TIME_TM_SUNDAY},
+                                           {"Monday", TIME_TM_MONDAY},
+                                           {"Tuesday", TIME_TM_TUESDAY},
+                                           {"Wednesday", TIME_TM_WEDNESDAY},
+                                           {"Thursday", TIME_TM_THURSDAY},
+                                           {"Friday", TIME_TM_FRIDAY},
+                                           {"Saturday", TIME_TM_SATURDAY},
+                                           {NULL, 0}};
 
 static struct lookup const mon_names[] = {{"January", TIME_TM_JANUARY},
                                           {"February", TIME_TM_FEBRUARY},
@@ -291,7 +297,7 @@ static const int32_t len_months[2][TIME_MONSPERYEAR] = {
     {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
     {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
 
-static const int32_t len_years[2] = {TIME_DAYSPERNYEAR, TIME_DAYSPERLYEAR};
+static const int32_t       len_years[2] = {TIME_DAYSPERNYEAR, TIME_DAYSPERLYEAR};
 
 static struct lookup const zi_line_codes[] = {
     {"Rule", LC_RULE}, {"Zone", LC_ZONE}, {"Link", LC_LINK}, {NULL, 0}};
@@ -310,66 +316,83 @@ enum
 
 /* static function statement */
 static char** getfields(char* cp);
-static void   infile(const char* name, struct zicinfo* local_zicinfo);
-static void   memory_exhausted(const char* msg);
+static void infile(const char* name, struct zicinfo* local_zicinfo);
+static void memory_exhausted(const char* msg);
 static size_t size_product(size_t nitems, size_t itemsize);
-static bool   is_space(char a);
-static bool   inzcont(char** fields, int32_t nfields, struct zicinfo* local_zicinfo);
-static bool   inzsub(char** fields, int32_t nfields, bool iscont, struct zicinfo* local_zicinfo);
-static bool   namecheck(const char* name);
-static bool   componentcheck(char const* name, char const* component, char const* component_end);
-static char*  ecpyalloc(char const* str);
-static void*  memcheck(void* ptr);
-static zic_t  gethms(char const* string, char const* errstring);
-static zic_t  oadd(zic_t t1, zic_t t2);
-static void   time_overflow(void);
-static void   rulesub(struct rule* rp, const char* loyearp, const char* hiyearp, const char* typep,
-                      const char* monthp, const char* dayp, const char* timep);
+static bool is_space(char a);
+static bool inzcont(char** fields, int32_t nfields, struct zicinfo* local_zicinfo);
+static bool inzsub(char** fields, int32_t nfields, bool iscont, struct zicinfo* local_zicinfo);
+static bool namecheck(const char* name);
+static bool componentcheck(char const* name, char const* component, char const* component_end);
+static char* ecpyalloc(char const* str);
+static void* memcheck(void* ptr);
+static zic_t gethms(char const* string, char const* errstring);
+static zic_t oadd(zic_t t1, zic_t t2);
+static void time_overflow(void);
+static void rulesub(struct rule* rp,
+                    const char*  loyearp,
+                    const char*  hiyearp,
+                    const char*  typep,
+                    const char*  monthp,
+                    const char*  dayp,
+                    const char*  timep);
 static const struct lookup* byword(const char* word, const struct lookup* table);
-static bool                 ciprefix(char const* abbr, char const* word);
-static char                 lowerit(char a);
-static bool                 ciequal(const char* ap, const char* bp);
-static zic_t                rpytime(const struct rule* rp, zic_t wantedy);
-static zic_t                tadd(zic_t t1, zic_t t2);
-static void*   growalloc(void* ptr, size_t itemsize, ptrdiff_t nitems, ptrdiff_t* nitems_alloc);
-static void*   erealloc(void* ptr, size_t size);
-static void    inrule(char** fields, int32_t nfields, struct zicinfo* local_zicinfo);
-static zic_t   getsave(char*, bool*);
-static bool    inzone(char** fields, int32_t nfields, struct zicinfo* local_zicinfo);
-static void    inlink(char** fields, int32_t nfields, struct zicinfo* local_zicinfo);
-static void    associate(struct zicinfo* local_zicinfo);
+static bool ciprefix(char const* abbr, char const* word);
+static char lowerit(char a);
+static bool ciequal(const char* ap, const char* bp);
+static zic_t rpytime(const struct rule* rp, zic_t wantedy);
+static zic_t tadd(zic_t t1, zic_t t2);
+static void* growalloc(void* ptr, size_t itemsize, ptrdiff_t nitems, ptrdiff_t* nitems_alloc);
+static void* erealloc(void* ptr, size_t size);
+static void inrule(char** fields, int32_t nfields, struct zicinfo* local_zicinfo);
+static zic_t getsave(char*, bool*);
+static bool inzone(char** fields, int32_t nfields, struct zicinfo* local_zicinfo);
+static void inlink(char** fields, int32_t nfields, struct zicinfo* local_zicinfo);
+static void associate(struct zicinfo* local_zicinfo);
 static int32_t rcomp(const void* cp1, const void* cp2);
-static void    eat(char const* name, lineno_t num, struct zicinfo* local_zicinfo);
-static void    eats(char const* name, lineno_t num, char const* rname, lineno_t rnum,
-                    struct zicinfo* local_zicinfo);
-static void    outzone(const struct zone* zpfirst, ptrdiff_t zonecount,
-                       pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo);
-static void*   emalloc(size_t size);
-static void    updateminmax(const zic_t x, struct zicinfo* local_zicinfo);
-static bool    want_bloat(struct zicinfo* local_zicinfo);
-static size_t doabbr(char* abbr, struct zone const* zp, char const* letters, bool isdst, zic_t save,
-                     bool doquotes);
-static char const*      abbroffset(char* buf, zic_t offset);
-static bool             is_alpha(char a);
-static int32_t          addtype(zic_t, char const*, bool, bool, bool, struct zicinfo*);
-static void             newabbr(const char* string, struct zicinfo* local_zicinfo);
-static void             addtt(zic_t starttime, int32_t type, struct zicinfo* local_zicinfo);
-static void             writezone(const char* const string, char version, int32_t defaulttype,
-                                  pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo);
-static int32_t          atcomp(const void* avp, const void* bvp);
-static struct timerange limitrange(struct timerange r, zic_t lo, zic_t hi, zic_t const* ats,
-                                   unsigned char const* types, struct zicinfo* local_zicinfo);
-static void             convert(const int32_t val, char* const buf);
-static void             convert64(const zic_t val, char* const buf);
-static void    loop_append_char(int32_t loop, char* arr, pg_parser_StringInfo local_tzdata);
-static void    puttzcode(const int32_t val, pg_parser_StringInfo local_tzdata);
-static void    puttzcodepass(zic_t val, int32_t pass, pg_parser_StringInfo local_tzdata);
-static void    free_data(struct zicinfo* local_zicinfo);
+static void eat(char const* name, lineno_t num, struct zicinfo* local_zicinfo);
+static void eats(char const*     name,
+                 lineno_t        num,
+                 char const*     rname,
+                 lineno_t        rnum,
+                 struct zicinfo* local_zicinfo);
+static void outzone(const struct zone*   zpfirst,
+                    ptrdiff_t            zonecount,
+                    pg_parser_StringInfo local_tzdata,
+                    struct zicinfo*      local_zicinfo);
+static void* emalloc(size_t size);
+static void updateminmax(const zic_t x, struct zicinfo* local_zicinfo);
+static bool want_bloat(struct zicinfo* local_zicinfo);
+static size_t doabbr(
+    char* abbr, struct zone const* zp, char const* letters, bool isdst, zic_t save, bool doquotes);
+static char const* abbroffset(char* buf, zic_t offset);
+static bool is_alpha(char a);
+static int32_t addtype(zic_t, char const*, bool, bool, bool, struct zicinfo*);
+static void newabbr(const char* string, struct zicinfo* local_zicinfo);
+static void addtt(zic_t starttime, int32_t type, struct zicinfo* local_zicinfo);
+static void writezone(const char* const    string,
+                      char                 version,
+                      int32_t              defaulttype,
+                      pg_parser_StringInfo local_tzdata,
+                      struct zicinfo*      local_zicinfo);
+static int32_t atcomp(const void* avp, const void* bvp);
+static struct timerange limitrange(struct timerange     r,
+                                   zic_t                lo,
+                                   zic_t                hi,
+                                   zic_t const*         ats,
+                                   unsigned char const* types,
+                                   struct zicinfo*      local_zicinfo);
+static void convert(const int32_t val, char* const buf);
+static void convert64(const zic_t val, char* const buf);
+static void loop_append_char(int32_t loop, char* arr, pg_parser_StringInfo local_tzdata);
+static void puttzcode(const int32_t val, pg_parser_StringInfo local_tzdata);
+static void puttzcodepass(zic_t val, int32_t pass, pg_parser_StringInfo local_tzdata);
+static void free_data(struct zicinfo* local_zicinfo);
 static int32_t stringzone(char* result, struct zone const* zpfirst, ptrdiff_t zonecount);
 static int32_t rule_cmp(struct rule const* a, struct rule const* b);
 static int32_t stringoffset(char* result, zic_t offset);
 static int32_t stringrule(char* result, struct rule* const rp, zic_t save, zic_t stdoff);
-static void    local_qsort(void* a, size_t n, size_t es, int (*cmp)(const void*, const void*));
+static void local_qsort(void* a, size_t n, size_t es, int (*cmp)(const void*, const void*));
 /* static functions */
 
 static int32_t stringrule(char* result, struct rule* const rp, zic_t save, zic_t stdoff)
@@ -787,8 +810,12 @@ static void convert64(const zic_t val, char* const buf)
     }
 }
 
-static struct timerange limitrange(struct timerange r, zic_t lo, zic_t hi, zic_t const* ats,
-                                   unsigned char const* types, struct zicinfo* local_zicinfo)
+static struct timerange limitrange(struct timerange     r,
+                                   zic_t                lo,
+                                   zic_t                hi,
+                                   zic_t const*         ats,
+                                   unsigned char const* types,
+                                   struct zicinfo*      local_zicinfo)
 {
     while (0 < r.count && ats[r.base] < lo)
     {
@@ -827,9 +854,10 @@ static int32_t atcomp(const void* avp, const void* bvp)
 
 static void addtt(zic_t starttime, int32_t type, struct zicinfo* local_zicinfo)
 {
-    local_zicinfo->attypes =
-        (struct attype*)growalloc(local_zicinfo->attypes, sizeof *local_zicinfo->attypes,
-                                  local_zicinfo->timecnt, &local_zicinfo->timecnt_alloc);
+    local_zicinfo->attypes = (struct attype*)growalloc(local_zicinfo->attypes,
+                                                       sizeof *local_zicinfo->attypes,
+                                                       local_zicinfo->timecnt,
+                                                       &local_zicinfo->timecnt_alloc);
     local_zicinfo->attypes[local_zicinfo->timecnt].at = starttime;
     local_zicinfo->attypes[local_zicinfo->timecnt].dontmerge = false;
     local_zicinfo->attypes[local_zicinfo->timecnt].type = type;
@@ -874,7 +902,11 @@ static void newabbr(const char* string, struct zicinfo* local_zicinfo)
     local_zicinfo->charcnt += i;
 }
 
-static int32_t addtype(zic_t utoff, char const* abbr, bool isdst, bool ttisstd, bool ttisut,
+static int32_t addtype(zic_t           utoff,
+                       char const*     abbr,
+                       bool            isdst,
+                       bool            ttisstd,
+                       bool            ttisut,
                        struct zicinfo* local_zicinfo)
 {
     int32_t i, j;
@@ -1036,8 +1068,8 @@ static char const* abbroffset(char* buf, zic_t offset)
     }
 }
 
-static size_t doabbr(char* abbr, struct zone const* zp, char const* letters, bool isdst, zic_t save,
-                     bool doquotes)
+static size_t doabbr(
+    char* abbr, struct zone const* zp, char const* letters, bool isdst, zic_t save, bool doquotes)
 {
     char*       cp = NULL;
     char*       slashp = NULL;
@@ -1118,8 +1150,8 @@ static void* emalloc(size_t size)
 /*
  * Error handling.
  */
-static void eats(char const* name, lineno_t num, char const* rname, lineno_t rnum,
-                 struct zicinfo* local_zicinfo)
+static void eats(
+    char const* name, lineno_t num, char const* rname, lineno_t rnum, struct zicinfo* local_zicinfo)
 {
     local_zicinfo->filename = name;
     local_zicinfo->linenum = num;
@@ -1259,9 +1291,10 @@ static void inlink(char** fields, int32_t nfields, struct zicinfo* local_zicinfo
     l.l_linenum = local_zicinfo->linenum;
     l.l_target = ecpyalloc(fields[LF_TARGET]);
     l.l_linkname = ecpyalloc(fields[LF_LINKNAME]);
-    local_zicinfo->links =
-        (struct link*)growalloc(local_zicinfo->links, sizeof *local_zicinfo->links,
-                                local_zicinfo->nlinks, &local_zicinfo->nlinks_alloc);
+    local_zicinfo->links = (struct link*)growalloc(local_zicinfo->links,
+                                                   sizeof *local_zicinfo->links,
+                                                   local_zicinfo->nlinks,
+                                                   &local_zicinfo->nlinks_alloc);
     local_zicinfo->links[local_zicinfo->nlinks++] = l;
 }
 
@@ -1283,7 +1316,9 @@ static bool inzone(char** fields, int32_t nfields, struct zicinfo* local_zicinfo
             fprintf(stderr,
                     "duplicate zone name %s"
                     " (file \"%s\", line %d)",
-                    fields[ZF_NAME], zones[i].z_filename, zones[i].z_linenum);
+                    fields[ZF_NAME],
+                    zones[i].z_filename,
+                    zones[i].z_linenum);
             return false;
         }
     }
@@ -1355,17 +1390,23 @@ static void inrule(char** fields, int32_t nfields, struct zicinfo* local_zicinfo
     r.r_filename = local_zicinfo->filename;
     r.r_linenum = local_zicinfo->linenum;
     r.r_save = getsave(fields[RF_SAVE], &r.r_isdst);
-    rulesub(&r, fields[RF_LOYEAR], fields[RF_HIYEAR], fields[RF_COMMAND], fields[RF_MONTH],
-            fields[RF_DAY], fields[RF_TOD]);
+    rulesub(&r,
+            fields[RF_LOYEAR],
+            fields[RF_HIYEAR],
+            fields[RF_COMMAND],
+            fields[RF_MONTH],
+            fields[RF_DAY],
+            fields[RF_TOD]);
     r.r_name = ecpyalloc(fields[RF_NAME]);
     r.r_abbrvar = ecpyalloc(fields[RF_ABBRVAR]);
     if ((uint32_t)local_zicinfo->max_abbrvar_len < strlen(r.r_abbrvar))
     {
         local_zicinfo->max_abbrvar_len = strlen(r.r_abbrvar);
     }
-    local_zicinfo->rules =
-        (struct rule*)growalloc(local_zicinfo->rules, sizeof *local_zicinfo->rules,
-                                local_zicinfo->nrules, &local_zicinfo->nrules_alloc);
+    local_zicinfo->rules = (struct rule*)growalloc(local_zicinfo->rules,
+                                                   sizeof *local_zicinfo->rules,
+                                                   local_zicinfo->nrules,
+                                                   &local_zicinfo->nrules_alloc);
     local_zicinfo->rules[local_zicinfo->nrules++] = r;
 }
 
@@ -1702,8 +1743,13 @@ static const struct lookup* byword(const char* word, const struct lookup* table)
     return foundlp;
 }
 
-static void rulesub(struct rule* rp, const char* loyearp, const char* hiyearp, const char* typep,
-                    const char* monthp, const char* dayp, const char* timep)
+static void rulesub(struct rule* rp,
+                    const char*  loyearp,
+                    const char*  hiyearp,
+                    const char*  typep,
+                    const char*  monthp,
+                    const char*  dayp,
+                    const char*  timep)
 {
     const struct lookup* lp = NULL;
     const char*          cp = NULL;
@@ -1712,7 +1758,7 @@ static void rulesub(struct rule* rp, const char* loyearp, const char* hiyearp, c
     char                 xs;
 
     /* PG: year_tmp is to avoid sscanf portability issues */
-    int32_t year_tmp;
+    int32_t              year_tmp;
 
     if ((lp = byword(monthp, mon_names)) == NULL)
     {
@@ -1914,8 +1960,17 @@ static zic_t gethms(char const* string, char const* errstring)
     {
         sign = 1;
     }
-    switch (sscanf(string, "%d%c%d%c%d%c%1d%*[0]%c%*[0123456789]%c", &hh, &hhx, &mm, &mmx, &ss,
-                   &ssx, &tenths, &xr, &xs))
+    switch (sscanf(string,
+                   "%d%c%d%c%d%c%1d%*[0]%c%*[0123456789]%c",
+                   &hh,
+                   &hhx,
+                   &mm,
+                   &mmx,
+                   &ss,
+                   &ssx,
+                   &tenths,
+                   &xr,
+                   &xs))
     {
         default:
             ok = false;
@@ -2106,7 +2161,10 @@ static bool inzsub(char** fields, int32_t nfields, bool iscont, struct zicinfo* 
     {
         z.z_untilrule.r_filename = local_zicinfo->filename;
         z.z_untilrule.r_linenum = local_zicinfo->linenum;
-        rulesub(&z.z_untilrule, fields[i_untilyear], "only", "",
+        rulesub(&z.z_untilrule,
+                fields[i_untilyear],
+                "only",
+                "",
                 (nfields > i_untilmonth) ? fields[i_untilmonth] : "Jan",
                 (nfields > i_untilday) ? fields[i_untilday] : "1",
                 (nfields > i_untiltime) ? fields[i_untiltime] : "0");
@@ -2122,9 +2180,10 @@ static bool inzsub(char** fields, int32_t nfields, bool iscont, struct zicinfo* 
             return false;
         }
     }
-    local_zicinfo->zones =
-        (struct zone*)growalloc(local_zicinfo->zones, sizeof *local_zicinfo->zones,
-                                local_zicinfo->nzones, &local_zicinfo->nzones_alloc);
+    local_zicinfo->zones = (struct zone*)growalloc(local_zicinfo->zones,
+                                                   sizeof *local_zicinfo->zones,
+                                                   local_zicinfo->nzones,
+                                                   &local_zicinfo->nzones_alloc);
     local_zicinfo->zones[local_zicinfo->nzones++] = z;
 
     /*
@@ -2306,8 +2365,10 @@ static void infile(const char* name, struct zicinfo* local_zicinfo)
     }
 }
 
-static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount,
-                    pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo)
+static void outzone(const struct zone*   zpfirst,
+                    ptrdiff_t            zonecount,
+                    pg_parser_StringInfo local_tzdata,
+                    struct zicinfo*      local_zicinfo)
 {
     const struct zone* zp = NULL;
     struct rule*       rp = NULL;
@@ -2487,8 +2548,12 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount,
         {
             save = zp->z_save;
             doabbr(startbuf, zp, NULL, zp->z_isdst, save, false);
-            type = addtype(oadd(zp->z_stdoff, save), startbuf, zp->z_isdst, startttisstd,
-                           startttisut, local_zicinfo);
+            type = addtype(oadd(zp->z_stdoff, save),
+                           startbuf,
+                           zp->z_isdst,
+                           startttisstd,
+                           startttisut,
+                           local_zicinfo);
             if (usestart)
             {
                 addtt(starttime, type, local_zicinfo);
@@ -2516,7 +2581,10 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount,
                 for (j = 0; j < zp->z_nrules; ++j)
                 {
                     rp = &zp->z_rules[j];
-                    eats(zp->z_filename, zp->z_linenum, rp->r_filename, rp->r_linenum,
+                    eats(zp->z_filename,
+                         zp->z_linenum,
+                         rp->r_filename,
+                         rp->r_linenum,
                          local_zicinfo);
                     rp->r_todo = year >= rp->r_loyear && year <= rp->r_hiyear;
                     if (rp->r_todo)
@@ -2561,7 +2629,10 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount,
                         {
                             continue;
                         }
-                        eats(zp->z_filename, zp->z_linenum, rp->r_filename, rp->r_linenum,
+                        eats(zp->z_filename,
+                             zp->z_linenum,
+                             rp->r_filename,
+                             rp->r_linenum,
                              local_zicinfo);
                         offset = rp->r_todisut ? 0 : stdoff;
                         if (!rp->r_todisstd)
@@ -2583,11 +2654,17 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount,
                         {
                             char const* dup_rules_msg = "two rules for same instant";
 
-                            eats(zp->z_filename, zp->z_linenum, rp->r_filename, rp->r_linenum,
+                            eats(zp->z_filename,
+                                 zp->z_linenum,
+                                 rp->r_filename,
+                                 rp->r_linenum,
                                  local_zicinfo);
                             fprintf(stderr, "%s", dup_rules_msg);
                             rp = &zp->z_rules[k];
-                            eats(zp->z_filename, zp->z_linenum, rp->r_filename, rp->r_linenum,
+                            eats(zp->z_filename,
+                                 zp->z_linenum,
+                                 rp->r_filename,
+                                 rp->r_linenum,
                                  local_zicinfo);
                             fprintf(stderr, "%s", dup_rules_msg);
                         }
@@ -2620,7 +2697,10 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount,
                             doabbr(startbuf, zp, rp->r_abbrvar, rp->r_isdst, rp->r_save, false);
                         }
                     }
-                    eats(zp->z_filename, zp->z_linenum, rp->r_filename, rp->r_linenum,
+                    eats(zp->z_filename,
+                         zp->z_linenum,
+                         rp->r_filename,
+                         rp->r_linenum,
                          local_zicinfo);
                     doabbr(ab, zp, rp->r_abbrvar, rp->r_isdst, rp->r_save, false);
                     offset = oadd(zp->z_stdoff, rp->r_save);
@@ -2629,8 +2709,8 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount,
                     {
                         break;
                     }
-                    type = addtype(offset, ab, rp->r_isdst, rp->r_todisstd, rp->r_todisut,
-                                   local_zicinfo);
+                    type = addtype(
+                        offset, ab, rp->r_isdst, rp->r_todisstd, rp->r_todisut, local_zicinfo);
                     if (defaulttype < 0 && !rp->r_isdst)
                     {
                         defaulttype = type;
@@ -2724,7 +2804,8 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount,
         }
         if (!lastat || lastat->at < rpytime(&xr, local_zicinfo->max_year - 1))
         {
-            addtt(rpytime(&xr, local_zicinfo->max_year + 1), lastat ? lastat->type : defaulttype,
+            addtt(rpytime(&xr, local_zicinfo->max_year + 1),
+                  lastat ? lastat->type : defaulttype,
                   local_zicinfo);
             local_zicinfo->attypes[local_zicinfo->timecnt - 1].dontmerge = true;
         }
@@ -2735,8 +2816,11 @@ static void outzone(const struct zone* zpfirst, ptrdiff_t zonecount,
     pg_parser_mcxt_free(ZIC_MCXT, (void*)envvar);
 }
 
-static void writezone(const char* const string, char version, int32_t defaulttype,
-                      pg_parser_StringInfo local_tzdata, struct zicinfo* local_zicinfo)
+static void writezone(const char* const    string,
+                      char                 version,
+                      int32_t              defaulttype,
+                      pg_parser_StringInfo local_tzdata,
+                      struct zicinfo*      local_zicinfo)
 {
     ptrdiff_t          i, j;
     int32_t            pass;
@@ -2749,7 +2833,7 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
      * Allocate the ATS and TYPES arrays via a single malloc, as this is a bit
      * faster.
      */
-    zic_t* ats = (zic_t*)emalloc(PG_PARSER_MAXALIGN(size_product(nats, sizeof *ats + 1)));
+    zic_t*           ats = (zic_t*)emalloc(PG_PARSER_MAXALIGN(size_product(nats, sizeof *ats + 1)));
 
     void*            typesptr = ats + nats;
     unsigned char*   types = (unsigned char*)typesptr;
@@ -2760,8 +2844,8 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
      */
     if (local_zicinfo->timecnt > 1)
     {
-        local_qsort(local_zicinfo->attypes, local_zicinfo->timecnt, sizeof *local_zicinfo->attypes,
-                    atcomp);
+        local_qsort(
+            local_zicinfo->attypes, local_zicinfo->timecnt, sizeof *local_zicinfo->attypes, atcomp);
     }
 
     /*
@@ -2989,8 +3073,10 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
             {
                 local_zicinfo->isdsts[mrudst] = -1;
                 type = addtype(local_zicinfo->utoffs[mrudst],
-                               &local_zicinfo->chars[local_zicinfo->desigidx[mrudst]], true,
-                               local_zicinfo->ttisstds[mrudst], local_zicinfo->ttisuts[mrudst],
+                               &local_zicinfo->chars[local_zicinfo->desigidx[mrudst]],
+                               true,
+                               local_zicinfo->ttisstds[mrudst],
+                               local_zicinfo->ttisuts[mrudst],
                                local_zicinfo);
                 local_zicinfo->isdsts[mrudst] = 1;
                 omittype[type] = false;
@@ -3000,8 +3086,10 @@ static void writezone(const char* const string, char version, int32_t defaulttyp
             {
                 local_zicinfo->isdsts[mrustd] = -1;
                 type = addtype(local_zicinfo->utoffs[mrustd],
-                               &local_zicinfo->chars[local_zicinfo->desigidx[mrustd]], false,
-                               local_zicinfo->ttisstds[mrustd], local_zicinfo->ttisuts[mrustd],
+                               &local_zicinfo->chars[local_zicinfo->desigidx[mrustd]],
+                               false,
+                               local_zicinfo->ttisstds[mrustd],
+                               local_zicinfo->ttisuts[mrustd],
                                local_zicinfo);
                 local_zicinfo->isdsts[mrustd] = 0;
                 omittype[type] = false;

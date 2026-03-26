@@ -21,8 +21,9 @@
  *  3、add/remove job
  *4. Assemble return message
  */
-bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                   netpacket* npacket)
+bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric,
+                                   netpoolentry*    npoolentry,
+                                   netpacket*       npacket)
 {
     uint8_t                      action = 0;
     int                          len = 0;
@@ -54,7 +55,9 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric, netpoolentry* npool
     if (XMANAGER_METRICNODETYPE_PROCESS != jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 2048, "ERROR: xmanager parse alter command, unsupport %s",
+        snprintf(errormsg,
+                 2048,
+                 "ERROR: xmanager parse alter command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parsealter_error;
     }
@@ -122,7 +125,8 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric, netpoolentry* npool
         {
             errcode = ERROR_MSGUNSPPORT;
             snprintf(
-                errormsg, 2048,
+                errormsg,
+                2048,
                 "ERROR: xmanager recv alter progress command, need jobtype less then HGRECEIVELOG");
             goto xmanager_metricmsg_parsealter_error;
         }
@@ -152,9 +156,10 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric, netpoolentry* npool
         /* Remove directly delete */
         if (XMANAGER_METRICNODEACTION_REMOVE == action)
         {
-            xmetricprogressnode->progressjop =
-                dlist_deletebyvalue(xmetricprogressnode->progressjop, &xmetricnode,
-                                    xmanager_metricnode_cmp, xmanager_metricnode_destroyvoid);
+            xmetricprogressnode->progressjop = dlist_deletebyvalue(xmetricprogressnode->progressjop,
+                                                                   &xmetricnode,
+                                                                   xmanager_metricnode_cmp,
+                                                                   xmanager_metricnode_destroyvoid);
             continue;
         }
 
@@ -163,7 +168,8 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric, netpoolentry* npool
             dlist_get(xmetricprogressnode->progressjop, &xmetricnode, xmanager_metricnode_cmp);
         if (NULL != pxmetricnode)
         {
-            elog(RLOG_WARNING, "xmanager recv alter progress command, %s already in progressjob ",
+            elog(RLOG_WARNING,
+                 "xmanager recv alter progress command, %s already in progressjob ",
                  xmetricnode.name);
             continue;
         }
@@ -180,7 +186,8 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric, netpoolentry* npool
                     if (jobtype == tmpxmetricnode->type)
                     {
                         errcode = ERROR_MSGEXIST;
-                        snprintf(errormsg, 2048,
+                        snprintf(errormsg,
+                                 2048,
                                  "ERROR: xmanager recv alter progress command, capture %s already "
                                  "exists",
                                  jobname);
@@ -195,7 +202,9 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric, netpoolentry* npool
         if (NULL == pxmetricnode)
         {
             errcode = ERROR_NOENT;
-            snprintf(errormsg, 2048, "ERROR: xmanager recv alter progress command, not find %s",
+            snprintf(errormsg,
+                     2048,
+                     "ERROR: xmanager recv alter progress command, not find %s",
                      jobname);
             goto xmanager_metricmsg_parsealter_error;
         }
@@ -235,6 +244,6 @@ xmanager_metricmsg_parsealter_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_ALTERCMD,
-                                               errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(
+        xmetric, npoolentry->wpackets, XMANAGER_MSG_ALTERCMD, errcode, errormsg);
 }

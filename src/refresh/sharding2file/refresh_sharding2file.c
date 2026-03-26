@@ -140,14 +140,27 @@ void* refresh_sharding2file_work(void* args)
         cond = table_shard->sharding_condition;
 
         /* assemble file name */
-        appendStringInfo(file_name, "%s_%s_%d_%d", table_shard->schema, table_shard->table,
-                         table_shard->shardings, table_shard->sharding_no);
+        appendStringInfo(file_name,
+                         "%s_%s_%d_%d",
+                         table_shard->schema,
+                         table_shard->table,
+                         table_shard->shardings,
+                         table_shard->sharding_no);
 
-        appendStringInfo(file_path_partial, "%s/%s_%s/%s/%s", shard->refresh_path,
-                         table_shard->schema, table_shard->table, REFRESH_PARTIAL, file_name->data);
+        appendStringInfo(file_path_partial,
+                         "%s/%s_%s/%s/%s",
+                         shard->refresh_path,
+                         table_shard->schema,
+                         table_shard->table,
+                         REFRESH_PARTIAL,
+                         file_name->data);
 
-        appendStringInfo(file_path_complete, "%s/%s_%s/%s/%s", shard->refresh_path,
-                         table_shard->schema, table_shard->table, REFRESH_COMPLETE,
+        appendStringInfo(file_path_complete,
+                         "%s/%s_%s/%s/%s",
+                         shard->refresh_path,
+                         table_shard->schema,
+                         table_shard->table,
+                         REFRESH_COMPLETE,
                          file_name->data);
 
         if (compress)
@@ -155,22 +168,30 @@ void* refresh_sharding2file_work(void* args)
             appendStringInfo(str,
                              "COPY (SELECT * FROM \"%s\".\"%s\" WHERE CTID >= '(%u, 0)' "
                              "AND CTID < '(%u, 0)') TO PROGRAM '%s > %s' BINARY;",
-                             table_shard->schema, table_shard->table,
-                             cond ? cond->left_condition : 0, cond ? cond->right_condition : 0,
-                             compress, file_path_partial->data);
+                             table_shard->schema,
+                             table_shard->table,
+                             cond ? cond->left_condition : 0,
+                             cond ? cond->right_condition : 0,
+                             compress,
+                             file_path_partial->data);
         }
         else
         {
             appendStringInfo(str,
                              "COPY (SELECT * FROM \"%s\".\"%s\" WHERE CTID >= '(%u, 0)' "
                              "AND CTID < '(%u, 0)') TO '%s' BINARY;",
-                             table_shard->schema, table_shard->table,
-                             cond ? cond->left_condition : 0, cond ? cond->right_condition : 0,
+                             table_shard->schema,
+                             table_shard->table,
+                             cond ? cond->left_condition : 0,
+                             cond ? cond->right_condition : 0,
                              file_path_partial->data);
         }
 
-        elog(RLOG_DEBUG, "capture refresh worker, queue copy ready: %s.%s %4d %4d",
-             table_shard->schema, table_shard->table, table_shard->shardings,
+        elog(RLOG_DEBUG,
+             "capture refresh worker, queue copy ready: %s.%s %4d %4d",
+             table_shard->schema,
+             table_shard->table,
+             table_shard->shardings,
              table_shard->sharding_no);
         res = PQexec(shard->conn, str->data);
         if (PGRES_COMMAND_OK != PQresultStatus(res))
@@ -182,15 +203,20 @@ void* refresh_sharding2file_work(void* args)
         }
         PQclear(res);
 
-        elog(RLOG_DEBUG, "capture refresh worker, queue copy done: %s.%s %4d %4d",
-             table_shard->schema, table_shard->table, table_shard->shardings,
+        elog(RLOG_DEBUG,
+             "capture refresh worker, queue copy done: %s.%s %4d %4d",
+             table_shard->schema,
+             table_shard->table,
+             table_shard->shardings,
              table_shard->sharding_no);
 
         /* move to complete */
         if (osal_durable_rename(file_path_partial->data, file_path_complete->data, RLOG_WARNING) !=
             0)
         {
-            elog(RLOG_WARNING, "Error renaming file %s 2 %s", file_path_partial->data,
+            elog(RLOG_WARNING,
+                 "Error renaming file %s 2 %s",
+                 file_path_partial->data,
                  file_path_complete->data);
         }
 

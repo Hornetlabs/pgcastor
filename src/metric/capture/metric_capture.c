@@ -642,28 +642,44 @@ void* metric_capture_main(void* args)
             trailno = mcapture->trailno;
             trailstart = mcapture->trailstart;
 
-            elog(RLOG_INFO, "XSYNCH Capture RedoLSN:            %X/%X",
-                 (uint32)(mcapture->redolsn >> 32), (uint32)(mcapture->redolsn));
-            elog(RLOG_INFO, "XSYNCH Capture RestartLSN:         %X/%X",
-                 (uint32)(mcapture->restartlsn >> 32), (uint32)(mcapture->restartlsn));
-            elog(RLOG_INFO, "XSYNCH Capture ConfirmLSN:         %X/%X",
-                 (uint32)(mcapture->confirmlsn >> 32), (uint32)(mcapture->confirmlsn));
-            elog(RLOG_INFO, "XSYNCH Capture LoadLSN:            %X/%X",
-                 (uint32)(mcapture->loadlsn >> 32), (uint32)(mcapture->loadlsn));
-            elog(RLOG_INFO, "XSYNCH Capture ParseLSN:           %X/%X",
-                 (uint32)(mcapture->parselsn >> 32), (uint32)(mcapture->parselsn));
-            elog(RLOG_INFO, "XSYNCH Capture FlushLSN:           %X/%X",
-                 (uint32)(mcapture->flushlsn >> 32), (uint32)(mcapture->flushlsn));
+            elog(RLOG_INFO,
+                 "XSYNCH Capture RedoLSN:            %X/%X",
+                 (uint32)(mcapture->redolsn >> 32),
+                 (uint32)(mcapture->redolsn));
+            elog(RLOG_INFO,
+                 "XSYNCH Capture RestartLSN:         %X/%X",
+                 (uint32)(mcapture->restartlsn >> 32),
+                 (uint32)(mcapture->restartlsn));
+            elog(RLOG_INFO,
+                 "XSYNCH Capture ConfirmLSN:         %X/%X",
+                 (uint32)(mcapture->confirmlsn >> 32),
+                 (uint32)(mcapture->confirmlsn));
+            elog(RLOG_INFO,
+                 "XSYNCH Capture LoadLSN:            %X/%X",
+                 (uint32)(mcapture->loadlsn >> 32),
+                 (uint32)(mcapture->loadlsn));
+            elog(RLOG_INFO,
+                 "XSYNCH Capture ParseLSN:           %X/%X",
+                 (uint32)(mcapture->parselsn >> 32),
+                 (uint32)(mcapture->parselsn));
+            elog(RLOG_INFO,
+                 "XSYNCH Capture FlushLSN:           %X/%X",
+                 (uint32)(mcapture->flushlsn >> 32),
+                 (uint32)(mcapture->flushlsn));
             elog(RLOG_INFO, "XSYNCH Capture ParseTimestamp:     %lu", mcapture->parsetimestamp);
             elog(RLOG_INFO, "XSYNCH Capture FlushTimestamp:     %lu", mcapture->flushtimestamp);
-            elog(RLOG_INFO, "XSYNCH Capture Trail:              %lX/%lX", mcapture->trailno,
+            elog(RLOG_INFO,
+                 "XSYNCH Capture Trail:              %lX/%lX",
+                 mcapture->trailno,
                  mcapture->trailstart);
 
             /* Persist data to disk */
             fd = osal_basic_open_file(CAPTURE_STATUS_FILE_TEMP, O_RDWR | O_CREAT | BINARY);
             if (-1 == fd)
             {
-                elog(RLOG_WARNING, "open file:capture/%s error, %s", CAPTURE_STATUS_FILE_TEMP,
+                elog(RLOG_WARNING,
+                     "open file:capture/%s error, %s",
+                     CAPTURE_STATUS_FILE_TEMP,
                      strerror(errno));
                 continue;
             }
@@ -675,7 +691,9 @@ void* metric_capture_main(void* args)
             if (osal_durable_rename(CAPTURE_STATUS_FILE_TEMP, CAPTURE_STATUS_FILE, RLOG_WARNING) !=
                 0)
             {
-                elog(RLOG_WARNING, "Error renaming capture file %s 2 %s", CAPTURE_STATUS_FILE_TEMP,
+                elog(RLOG_WARNING,
+                     "Error renaming capture file %s 2 %s",
+                     CAPTURE_STATUS_FILE_TEMP,
                      CAPTURE_STATUS_FILE);
             }
         }

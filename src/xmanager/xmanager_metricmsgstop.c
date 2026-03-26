@@ -20,8 +20,9 @@
 #include "xmanager/xmanager_metricmsgstop.h"
 #include "xmanager/xmanager_metricmsg.h"
 
-bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                  netpacket* npacket)
+bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric,
+                                  netpoolentry*    npoolentry,
+                                  netpacket*       npacket)
 {
     int                        len = 0;
     int                        jobtype = 0;
@@ -50,7 +51,9 @@ bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric, netpoolentry* npoole
     if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 2048, "ERROR: xmanager parse stop command, unsupport %s",
+        snprintf(errormsg,
+                 2048,
+                 "ERROR: xmanager parse stop command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parsestop_error;
     }
@@ -93,7 +96,10 @@ bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric, netpoolentry* npoole
     else if (XMANAGER_METRICNODESTAT_INIT == pxmetricnode->stat)
     {
         errcode = ERROR_MSGCOMMAND;
-        snprintf(errormsg, 2048, " %s not init, use init command init %s node.", jobname,
+        snprintf(errormsg,
+                 2048,
+                 " %s not init, use init command init %s node.",
+                 jobname,
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parsestop_error;
     }
@@ -104,8 +110,8 @@ bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric, netpoolentry* npoole
      *  2、Create async wait message
      */
     /* Get xscsci node */
-    fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd),
-                        xmanager_metricfd2node_cmp);
+    fd2node = dlist_get(
+        xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
     xmetricxscscinode = (xmanager_metricxscscinode*)fd2node->metricnode;
 
     /* Create async wait message */
@@ -127,13 +133,20 @@ bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric, netpoolentry* npoole
     /* Execute start command execcmd */
     if (XMANAGER_METRICNODETYPE_PGRECEIVELOG == jobtype)
     {
-        snprintf(execcmd, 1024, "%s/bin/pgreceivelog/receivelog -f %s stop", xmetric->xsynchpath,
+        snprintf(execcmd,
+                 1024,
+                 "%s/bin/pgreceivelog/receivelog -f %s stop",
+                 xmetric->xsynchpath,
                  pxmetricnode->conf);
     }
     else
     {
-        snprintf(execcmd, 1024, "%s/bin/%s -f %s stop", xmetric->xsynchpath,
-                 xmanager_metricnode_getname(jobtype), pxmetricnode->conf);
+        snprintf(execcmd,
+                 1024,
+                 "%s/bin/%s -f %s stop",
+                 xmetric->xsynchpath,
+                 xmanager_metricnode_getname(jobtype),
+                 pxmetricnode->conf);
     }
 
     /* Execute execcmd command */
@@ -162,15 +175,16 @@ xmanager_metricmsg_parsestop_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_STOPCMD,
-                                               errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(
+        xmetric, npoolentry->wpackets, XMANAGER_MSG_STOPCMD, errcode, errormsg);
 }
 
 /*
  * Assemble start response message
  */
-bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                     dlist* dlmsgs)
+bool xmanager_metricmsg_assemblestop(xmanager_metric* xmetric,
+                                     netpoolentry*    npoolentry,
+                                     dlist*           dlmsgs)
 {
     uint8                    u8value = 0;
     uint16                   u16value = 0;

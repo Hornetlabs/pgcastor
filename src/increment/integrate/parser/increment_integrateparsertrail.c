@@ -146,8 +146,8 @@ increment_integrateparsertrail* increment_integrateparsertrail_init(void)
     {
         elog(RLOG_ERROR, "out of memory");
     }
-    rmemset0(integrateparsertrail->parsertrail.transcache->sysdicts, 0, '\0',
-             sizeof(cache_sysdicts));
+    rmemset0(
+        integrateparsertrail->parsertrail.transcache->sysdicts, 0, '\0', sizeof(cache_sysdicts));
     integrateparsertrail->state = INTEGRATE_STATUS_PARSER_INIT;
 
     return integrateparsertrail;
@@ -260,8 +260,8 @@ static bool increment_integrateparsertrail_txns2queue(increment_integrateparsert
             while ((entry = hash_seq_search(&status)) != NULL)
             {
                 txn_free(entry);
-                hash_search(parser->parsertrail.transcache->by_txns, &entry->xid, HASH_REMOVE,
-                            NULL);
+                hash_search(
+                    parser->parsertrail.transcache->by_txns, &entry->xid, HASH_REMOVE, NULL);
             }
         }
         else if (TXN_TYPE_ONLINEREFRESH_ABANDON == txn_obj->type)

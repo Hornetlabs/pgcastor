@@ -31,8 +31,9 @@ extern bool xsynch_exbufferdata_enlarge(xsynch_exbuffer exbuffer, size_t needed)
 extern bool xsynch_exbufferdata_append(xsynch_exbuffer exbuffer, const char* fmt, ...);
 
 /* append binary data */
-extern bool xsynch_exbufferdata_appendbinary(xsynch_exbuffer exbuffer, const char* data,
-                                             size_t datalen);
+extern bool xsynch_exbufferdata_appendbinary(xsynch_exbuffer exbuffer,
+                                             const char*     data,
+                                             size_t          datalen);
 
 /* append string */
 extern bool xsynch_exbufferdata_appendstr(xsynch_exbuffer exbuffer, const char* data);

@@ -5,8 +5,8 @@
 
 #define pg_parser_thirdparty_Min(x, y) ((x) < (y) ? (x) : (y))
 
-int32_t pg_parser_lz_decompress(const char* source, int32_t slen, char* dest, int32_t rawsize,
-                                bool check_complete)
+int32_t pg_parser_lz_decompress(
+    const char* source, int32_t slen, char* dest, int32_t rawsize, bool check_complete)
 {
     const unsigned char* sp;
     const unsigned char* srcend;
@@ -95,8 +95,8 @@ int32_t pg_parser_lz_decompress(const char* source, int32_t slen, char* dest, in
 }
 
 #define unlikely(x) __builtin_expect((x) != 0, 0)
-int32_t pg_parser_pg14_pglz_decompress(const char* source, int32_t slen, char* dest,
-                                       int32_t rawsize, bool check_complete)
+int32_t pg_parser_pg14_pglz_decompress(
+    const char* source, int32_t slen, char* dest, int32_t rawsize, bool check_complete)
 {
     const unsigned char* sp;
     const unsigned char* srcend;

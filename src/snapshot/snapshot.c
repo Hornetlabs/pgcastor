@@ -10,15 +10,15 @@
 
 snapshot* snapshot_buildfromdb(PGconn* conn)
 {
-    bool        found = false;
-    uint32      xid = 0;
-    uint32      len = 0;
-    PGresult*   res = NULL;
-    char*       start = NULL;
-    char*       name = NULL;
-    const char* result = NULL;
-    snapshot*   snapshot_obj = NULL;
-    char        stmt[MAX_EXEC_SQL_LEN] = {'\0'};
+    bool          found = false;
+    uint32        xid = 0;
+    uint32        len = 0;
+    PGresult*     res = NULL;
+    char*         start = NULL;
+    char*         name = NULL;
+    const char*   result = NULL;
+    snapshot*     snapshot_obj = NULL;
+    char          stmt[MAX_EXEC_SQL_LEN] = {'\0'};
 
     HASHCTL       hashCtl = {'\0'};
     snapshot_xid* entry = NULL;

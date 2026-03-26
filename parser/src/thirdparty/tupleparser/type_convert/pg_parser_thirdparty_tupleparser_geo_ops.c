@@ -76,15 +76,15 @@ typedef struct
     double A, B, C;
 } LINE;
 
-#define LDELIM '('
-#define RDELIM ')'
-#define DELIM ','
+#define LDELIM    '('
+#define RDELIM    ')'
+#define DELIM     ','
 #define LDELIM_EP '['
 #define RDELIM_EP ']'
-#define LDELIM_C '<'
-#define RDELIM_C '>'
-#define LDELIM_L '{'
-#define RDELIM_L '}'
+#define LDELIM_C  '<'
+#define RDELIM_C  '>'
+#define LDELIM_L  '{'
+#define RDELIM_L  '}'
 
 enum path_delim
 {
@@ -94,8 +94,8 @@ enum path_delim
 };
 
 static char* path_encode(enum path_delim path_delim, int32_t npts, Point* pt);
-static void  pair_encode(double x, double y, pg_parser_StringInfo str);
-static void  single_encode(double x, pg_parser_StringInfo str);
+static void pair_encode(double x, double y, pg_parser_StringInfo str);
+static void single_encode(double x, pg_parser_StringInfo str);
 /***********************************************************************
  **
  **        Routines for 2D points.
@@ -138,9 +138,11 @@ pg_parser_Datum path_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
     bool  is_toast = false;
     bool  need_free = false;
     char* result = NULL;
-    PATH* path =
-        (PATH*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr, &is_toast, &need_free,
-                                       info->zicinfo->dbtype, info->zicinfo->dbversion);
+    PATH* path = (PATH*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                &is_toast,
+                                                &need_free,
+                                                info->zicinfo->dbtype,
+                                                info->zicinfo->dbversion);
     if (is_toast)
     {
         info->valueinfo = INFO_COL_IS_TOAST;
@@ -174,9 +176,11 @@ pg_parser_Datum poly_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
     bool     is_toast = false;
     bool     need_free = false;
     char*    result = NULL;
-    POLYGON* poly =
-        (POLYGON*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr, &is_toast, &need_free,
-                                          info->zicinfo->dbtype, info->zicinfo->dbversion);
+    POLYGON* poly = (POLYGON*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                      &is_toast,
+                                                      &need_free,
+                                                      info->zicinfo->dbtype,
+                                                      info->zicinfo->dbversion);
     if (is_toast)
     {
         info->valueinfo = INFO_COL_IS_TOAST;

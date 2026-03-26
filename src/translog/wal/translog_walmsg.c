@@ -23,7 +23,7 @@ bool translog_walmsg_sendkeepalivemsg(XLogRecPtr startpos, PGconn* conn)
      * 17---24          apply               standby applied lsn
      * 25               replyrequest        whether to send heartbeat
      */
-    char replybuf[1 + 8 + 8 + 8 + 8 + 1];
+    char        replybuf[1 + 8 + 8 + 8 + 8 + 1];
 
     /* get timestamp */
     tnow = dt_gettimestamp();

@@ -19,9 +19,9 @@ bool fftrail_dbmetadata_serial(void* data, void* state)
      * 3. Write GROUP info
      * 4. Write header
      */
-    uint16 reclen = 0; /* Data length */
-    int    hdrlen = 0; /* Header length */
-    int    tmplen = 0; /* Temp variable used in calculation */
+    uint16         reclen = 0; /* Data length */
+    int            hdrlen = 0; /* Header length */
+    int            tmplen = 0; /* Temp variable used in calculation */
 
     uint8*         uptr = NULL;
     ff_dbmetadata* ffdbmd = NULL;
@@ -103,8 +103,8 @@ bool fftrail_dbmetadata_serial(void* data, void* state)
     rfbuffer->start += reclen;
 
     /* Increase GROUP info */
-    FTRAIL_GROUP2BUFFER(put, FFTRAIL_GROUPTYPE_DATA, FFTRAIL_INFOTYPE_GROUP, reclen,
-                        ffstate->recptr)
+    FTRAIL_GROUP2BUFFER(
+        put, FFTRAIL_GROUPTYPE_DATA, FFTRAIL_INFOTYPE_GROUP, reclen, ffstate->recptr)
 
     /* Increase header info */
     fftrail_data_hdrserail(&ffdbmd->header, ffstate);
@@ -116,12 +116,12 @@ bool fftrail_dbmetadata_serial(void* data, void* state)
 /* Database metadata deserialization */
 bool fftrail_dbmetadata_deserial(void** data, void* state)
 {
-    uint8  tokenid = 0;   /* token ID */
-    uint8  tokeninfo = 0; /* token info */
-    uint16 blkoffset = 0;
-    uint16 tmplen = 0;       /* Data temp length */
-    uint32 tokenlen = 0;     /* Token length */
-    uint8* tokendata = NULL; /* Token data area */
+    uint8          tokenid = 0;   /* token ID */
+    uint8          tokeninfo = 0; /* token info */
+    uint16         blkoffset = 0;
+    uint16         tmplen = 0;       /* Data temp length */
+    uint32         tokenlen = 0;     /* Token length */
+    uint8*         tokendata = NULL; /* Token data area */
 
     uint8*         uptr = NULL;
     ff_dbmetadata* ffdbmd = NULL;

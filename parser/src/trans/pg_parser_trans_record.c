@@ -18,29 +18,29 @@
 #include "trans/rmgr_seq/pg_parser_trans_rmgr_seq.h"
 
 /* DEFINE */
-#define PG_PARSER_RMGRCNTS 7
+#define PG_PARSER_RMGRCNTS          7
 #define PG_PARSER_GETTUPLE_RMGRCNTS 2
 
-#define PARSER_MCXT NULL
+#define PARSER_MCXT                 NULL
 /* typedef statement */
 
 /* Define function pointer for pre-processing FMGR */
-typedef bool (*pg_parser_trans_transrec_rmgrfunc_pre)(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_pre_base** result,
-    int32_t* pg_parser_errno);
+typedef bool (*pg_parser_trans_transrec_rmgrfunc_pre)(pg_parser_XLogReaderState*    state,
+                                                      pg_parser_translog_pre_base** result,
+                                                      int32_t* pg_parser_errno);
 
 /* Define function pointer for FMGR processing during secondary parsing */
-typedef bool (*pg_parser_trans_transrec_rmgrfunc_trans)(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_tbcolbase** result,
-    int32_t* pg_parser_errno);
+typedef bool (*pg_parser_trans_transrec_rmgrfunc_trans)(pg_parser_XLogReaderState*     state,
+                                                        pg_parser_translog_tbcolbase** result,
+                                                        int32_t* pg_parser_errno);
 
 /* static function statement */
 static bool pg_parser_trans_transrec_decode_checkPreTransParam(
     pg_parser_translog_pre* pg_parser_pre_data);
 
-static bool deal_invalid_record(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                pg_parser_translog_pre_base**                    pg_parser_result,
-                                int32_t*                                         pg_parser_errno);
+static bool deal_invalid_record(pg_parser_XLogReaderState*    state,
+                                pg_parser_translog_pre_base** pg_parser_result,
+                                int32_t*                      pg_parser_errno);
 
 typedef struct PG_PARSER_TRANS_RMGR
 {
@@ -59,9 +59,11 @@ static pg_parser_trans_rmgr m_record_rmgr[] = {
     {PG_PARSER_TRANSLOG_RMGR_XACT_ID, pg_parser_trans_rmgr_xact_pre, NULL},
     {PG_PARSER_TRANSLOG_RMGR_RELMAP_ID, pg_parser_trans_rmgr_relmap_pre, NULL},
     {PG_PARSER_TRANSLOG_RMGR_STANDBY_ID, pg_parser_trans_rmgr_standby_pre, NULL},
-    {PG_PARSER_TRANSLOG_RMGR_HEAP2_ID, pg_parser_trans_rmgr_heap2_pre,
+    {PG_PARSER_TRANSLOG_RMGR_HEAP2_ID,
+     pg_parser_trans_rmgr_heap2_pre,
      pg_parser_trans_rmgr_heap2_trans},
-    {PG_PARSER_TRANSLOG_RMGR_HEAP_ID, pg_parser_trans_rmgr_heap_pre,
+    {PG_PARSER_TRANSLOG_RMGR_HEAP_ID,
+     pg_parser_trans_rmgr_heap_pre,
      pg_parser_trans_rmgr_heap_trans},
     {PG_PARSER_TRANSLOG_RMGR_SEQ_ID, pg_parser_trans_rmgr_seq_pre, NULL}};
 
@@ -75,11 +77,11 @@ bool pg_parser_trans_preTrans(pg_parser_translog_pre*       pg_parser_pre_data,
                               pg_parser_translog_pre_base** pg_parser_result,
                               int32_t*                      pg_parser_errno)
 {
-    pg_parser_trans_transrec_decode_XLogReaderState* readstate = NULL;
-    int32_t                                          index = 0;
-    int8_t                                           rmgrcnts = PG_PARSER_RMGRCNTS;
-    pg_parser_XLogRecord* record = (pg_parser_XLogRecord*)pg_parser_pre_data->m_record;
-    bool                  pre_trans_result = false;
+    pg_parser_XLogReaderState* readstate = NULL;
+    int32_t                    index = 0;
+    int8_t                     rmgrcnts = PG_PARSER_RMGRCNTS;
+    pg_parser_XLogRecord*      record = (pg_parser_XLogRecord*)pg_parser_pre_data->m_record;
+    bool                       pre_trans_result = false;
     /* Check passed-in parameters in JNI */
     // todo
     if (!pg_parser_trans_transrec_decode_checkPreTransParam(pg_parser_pre_data))
@@ -99,9 +101,13 @@ bool pg_parser_trans_preTrans(pg_parser_translog_pre*       pg_parser_pre_data,
     readstate->pre_trans_data = pg_parser_pre_data;
 
     /* Directly parse record during pre-parsing, data saved in readstate */
-    if (!pg_parser_trans_transrec_decodeXlogRecord(
-            readstate, record, pg_parser_pre_data->m_pagesize, pg_parser_errno, true,
-            pg_parser_pre_data->m_dbtype, pg_parser_pre_data->m_dbversion))
+    if (!pg_parser_trans_transrec_decodeXlogRecord(readstate,
+                                                   record,
+                                                   pg_parser_pre_data->m_pagesize,
+                                                   pg_parser_errno,
+                                                   true,
+                                                   pg_parser_pre_data->m_dbtype,
+                                                   pg_parser_pre_data->m_dbversion))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_FUNCERR_PRE_DECODE;
         return false;
@@ -128,8 +134,8 @@ bool pg_parser_trans_preTrans(pg_parser_translog_pre*       pg_parser_pre_data,
             return false;
         }
         /* If there is full page write in record that does not need parsing, it needs to be saved */
-        if (!pg_parser_check_fpw(readstate, pg_parser_result, pg_parser_errno,
-                                 pg_parser_pre_data->m_dbtype))
+        if (!pg_parser_check_fpw(
+                readstate, pg_parser_result, pg_parser_errno, pg_parser_pre_data->m_dbtype))
         {
             if (ERRNO_SUCCESS != *pg_parser_errno)
             {
@@ -168,12 +174,12 @@ static bool pg_parser_trans_transrec_decode_checkPreTransParam(
     return true;
 }
 
-static bool deal_invalid_record(pg_parser_trans_transrec_decode_XLogReaderState* readstate,
-                                pg_parser_translog_pre_base**                    pg_parser_result,
-                                int32_t*                                         pg_parser_errno)
+static bool deal_invalid_record(pg_parser_XLogReaderState*    readstate,
+                                pg_parser_translog_pre_base** pg_parser_result,
+                                int32_t*                      pg_parser_errno)
 {
-    if (!pg_parser_mcxt_malloc(PARSER_MCXT, (void**)(pg_parser_result),
-                               sizeof(pg_parser_translog_pre_base)))
+    if (!pg_parser_mcxt_malloc(
+            PARSER_MCXT, (void**)(pg_parser_result), sizeof(pg_parser_translog_pre_base)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_00;
         return false;
@@ -190,11 +196,11 @@ bool pg_parser_trans_TransRecord(pg_parser_translog_translog2col* pg_parser_tran
                                  pg_parser_translog_tbcolbase**   pg_parser_trans_result,
                                  int32_t*                         pg_parser_errno)
 {
-    pg_parser_trans_transrec_decode_XLogReaderState* readstate = NULL;
-    pg_parser_XLogRecord* record = (pg_parser_XLogRecord*)pg_parser_transData->m_record;
-    bool                  result = false;
-    int32_t               index = 0;
-    int8_t                rmgrcnts = PG_PARSER_RMGRCNTS;
+    pg_parser_XLogReaderState* readstate = NULL;
+    pg_parser_XLogRecord*      record = (pg_parser_XLogRecord*)pg_parser_transData->m_record;
+    bool                       result = false;
+    int32_t                    index = 0;
+    int8_t                     rmgrcnts = PG_PARSER_RMGRCNTS;
 
     readstate = pg_parser_trans_transrec_decode_XLogReader_Allocate();
     if (NULL == readstate)
@@ -204,9 +210,13 @@ bool pg_parser_trans_TransRecord(pg_parser_translog_translog2col* pg_parser_tran
     }
     readstate->pg_parser_errno = pg_parser_errno;
     /* Directly parse record during pre-parsing, data saved in readstate */
-    if (!pg_parser_trans_transrec_decodeXlogRecord(
-            readstate, record, pg_parser_transData->m_pagesize, pg_parser_errno, false,
-            pg_parser_transData->m_dbtype, pg_parser_transData->m_dbversion))
+    if (!pg_parser_trans_transrec_decodeXlogRecord(readstate,
+                                                   record,
+                                                   pg_parser_transData->m_pagesize,
+                                                   pg_parser_errno,
+                                                   false,
+                                                   pg_parser_transData->m_dbtype,
+                                                   pg_parser_transData->m_dbversion))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_FUNCERR_PRE_DECODE;
         pg_parser_log_errlog(pg_parser_transData->m_debugLevel,
@@ -234,8 +244,10 @@ bool pg_parser_trans_TransRecord(pg_parser_translog_translog2col* pg_parser_tran
         "    proc: %d\n"
         "m_dbcharset: %s\n"
         "m_tartgetcharset: %s\n",
-        pg_parser_transData->m_walLevel, pg_parser_transData->m_debugLevel,
-        pg_parser_transData->m_dbtype, pg_parser_transData->m_pagesize,
+        pg_parser_transData->m_walLevel,
+        pg_parser_transData->m_debugLevel,
+        pg_parser_transData->m_dbtype,
+        pg_parser_transData->m_pagesize,
         pg_parser_transData->m_tuplecnt,
         pg_parser_transData->m_dbversion ? pg_parser_transData->m_dbversion : "NULL",
         pg_parser_transData->m_sysdicts->m_pg_class.m_count,
@@ -264,8 +276,8 @@ bool pg_parser_trans_TransRecord(pg_parser_translog_translog2col* pg_parser_tran
                                  record->xl_rmid);
             return false;
         }
-        result = m_record_rmgr[index].m_rmgrfunc_trans(readstate, pg_parser_trans_result,
-                                                       pg_parser_errno);
+        result = m_record_rmgr[index].m_rmgrfunc_trans(
+            readstate, pg_parser_trans_result, pg_parser_errno);
         break;
     }
 
@@ -287,11 +299,11 @@ bool pg_parser_trans_TransRecord_GetTuple(pg_parser_translog_translog2col* pg_pa
                                           pg_parser_translog_tbcolbase**   pg_parser_trans_result,
                                           int32_t*                         pg_parser_errno)
 {
-    pg_parser_trans_transrec_decode_XLogReaderState* readstate = NULL;
-    pg_parser_XLogRecord* record = (pg_parser_XLogRecord*)pg_parser_transData->m_record;
-    bool                  result = false;
-    int32_t               index = 0;
-    int8_t                rmgrcnts = PG_PARSER_GETTUPLE_RMGRCNTS;
+    pg_parser_XLogReaderState* readstate = NULL;
+    pg_parser_XLogRecord*      record = (pg_parser_XLogRecord*)pg_parser_transData->m_record;
+    bool                       result = false;
+    int32_t                    index = 0;
+    int8_t                     rmgrcnts = PG_PARSER_GETTUPLE_RMGRCNTS;
 
     readstate = pg_parser_trans_transrec_decode_XLogReader_Allocate();
     if (NULL == readstate)
@@ -301,9 +313,13 @@ bool pg_parser_trans_TransRecord_GetTuple(pg_parser_translog_translog2col* pg_pa
     }
     readstate->pg_parser_errno = pg_parser_errno;
     /* Directly parse record during pre-parsing, data saved in readstate */
-    if (!pg_parser_trans_transrec_decodeXlogRecord(
-            readstate, record, pg_parser_transData->m_pagesize, pg_parser_errno, false,
-            pg_parser_transData->m_dbtype, pg_parser_transData->m_dbversion))
+    if (!pg_parser_trans_transrec_decodeXlogRecord(readstate,
+                                                   record,
+                                                   pg_parser_transData->m_pagesize,
+                                                   pg_parser_errno,
+                                                   false,
+                                                   pg_parser_transData->m_dbtype,
+                                                   pg_parser_transData->m_dbversion))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_FUNCERR_PRE_DECODE;
         pg_parser_log_errlog(pg_parser_transData->m_debugLevel,
@@ -330,8 +346,8 @@ bool pg_parser_trans_TransRecord_GetTuple(pg_parser_translog_translog2col* pg_pa
                                  record->xl_rmid);
             return false;
         }
-        result = m_record_rmgr_get_tuple[index].m_rmgrfunc_trans(readstate, pg_parser_trans_result,
-                                                                 pg_parser_errno);
+        result = m_record_rmgr_get_tuple[index].m_rmgrfunc_trans(
+            readstate, pg_parser_trans_result, pg_parser_errno);
         break;
     }
 
@@ -369,8 +385,8 @@ bool pg_parser_trans_external_trans(pg_parser_translog_external*     pg_parser_e
     pg_parser_translog_tbcol_value*         result = NULL;
     pg_parser_translog_convertinfo_with_zic zicinfo = {'\0'};
     PG_PARSER_UNUSED(pg_parser_errno);
-    if (!pg_parser_mcxt_malloc(PARSER_MCXT, (void**)&result,
-                               sizeof(pg_parser_translog_tbcol_value)))
+    if (!pg_parser_mcxt_malloc(
+            PARSER_MCXT, (void**)&result, sizeof(pg_parser_translog_tbcol_value)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_EXTERNAL_MEMERR_ALLOC_00;
         pg_parser_log_errlog(pg_parser_exdata->m_debuglevel,
@@ -387,7 +403,9 @@ bool pg_parser_trans_external_trans(pg_parser_translog_external*     pg_parser_e
     zicinfo.errorno = pg_parser_errno;
     zicinfo.debuglevel = pg_parser_exdata->m_debuglevel;
     if (!pg_parser_convert_attr_to_str_external_value(
-            (pg_parser_Datum)pg_parser_exdata->m_chunkdata, pg_parser_exdata->m_typout, result,
+            (pg_parser_Datum)pg_parser_exdata->m_chunkdata,
+            pg_parser_exdata->m_typout,
+            result,
             &zicinfo))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_EXTERNAL_MEMERR_ALLOC_01;
@@ -409,7 +427,8 @@ bool pg_parser_trans_external_trans(pg_parser_translog_external*     pg_parser_e
  *
  */
 bool pg_parser_trans_matchmissing(pg_parser_translog_tbcol_value* v1,
-                                  pg_parser_translog_tbcol_value* v2, uint16_t valuecnt)
+                                  pg_parser_translog_tbcol_value* v2,
+                                  uint16_t                        valuecnt)
 {
     int                             colindex = 0;
     pg_parser_translog_tbcol_value* value1 = NULL;

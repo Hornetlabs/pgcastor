@@ -234,16 +234,24 @@ bool onlinerefresh_persist_write(onlinerefresh_persist* persist)
         rmemset1(node, 0, '\0', ONLINEREFRESHPERSIST_FILE_NODE_LEN);
 
         bufferoffset += sizeof(tbcnt);
-        rmemcpy1(node, bufferoffset, &persistnode->begin.trail.fileid,
+        rmemcpy1(node,
+                 bufferoffset,
+                 &persistnode->begin.trail.fileid,
                  sizeof(persistnode->begin.trail.fileid));
         bufferoffset += sizeof(persistnode->begin.trail.fileid);
-        rmemcpy1(node, bufferoffset, &persistnode->begin.trail.offset,
+        rmemcpy1(node,
+                 bufferoffset,
+                 &persistnode->begin.trail.offset,
                  sizeof(persistnode->begin.trail.offset));
         bufferoffset += sizeof(persistnode->begin.trail.offset);
-        rmemcpy1(node, bufferoffset, &persistnode->end.trail.fileid,
+        rmemcpy1(node,
+                 bufferoffset,
+                 &persistnode->end.trail.fileid,
                  sizeof(persistnode->end.trail.fileid));
         bufferoffset += sizeof(persistnode->end.trail.fileid);
-        rmemcpy1(node, bufferoffset, &persistnode->end.trail.offset,
+        rmemcpy1(node,
+                 bufferoffset,
+                 &persistnode->end.trail.offset,
                  sizeof(persistnode->end.trail.offset));
         bufferoffset += sizeof(persistnode->end.trail.offset);
         rmemcpy1(node, bufferoffset, &persistnode->stat, sizeof(persistnode->stat));
@@ -405,7 +413,8 @@ onlinerefresh_persist* onlinerefresh_persist_read(void)
         persistnode->refreshtbs = refresh_table_syncstats_init();
         if (!persistnode->refreshtbs)
         {
-            elog(RLOG_WARNING, "open bigtxn persistnode refreshtbs malloc persistnode error %s",
+            elog(RLOG_WARNING,
+                 "open bigtxn persistnode refreshtbs malloc persistnode error %s",
                  strerror(errno));
             onlinerefresh_persistnode_free(persistnode);
             onlinerefresh_persist_free(persist);
@@ -419,16 +428,24 @@ onlinerefresh_persist* onlinerefresh_persist_read(void)
         // tbcnt = get64bit(&buffer);
         rmemcpy1(&tbcnt, 0, buffer + bufferoffset, sizeof(tbcnt));
         bufferoffset += sizeof(tbcnt);
-        rmemcpy1(&persistnode->begin.trail.fileid, 0, buffer + bufferoffset,
+        rmemcpy1(&persistnode->begin.trail.fileid,
+                 0,
+                 buffer + bufferoffset,
                  sizeof(persistnode->begin.trail.fileid));
         bufferoffset += sizeof(persistnode->begin.trail.fileid);
-        rmemcpy1(&persistnode->begin.trail.offset, 0, buffer + bufferoffset,
+        rmemcpy1(&persistnode->begin.trail.offset,
+                 0,
+                 buffer + bufferoffset,
                  sizeof(persistnode->begin.trail.offset));
         bufferoffset += sizeof(persistnode->begin.trail.offset);
-        rmemcpy1(&persistnode->end.trail.fileid, 0, buffer + bufferoffset,
+        rmemcpy1(&persistnode->end.trail.fileid,
+                 0,
+                 buffer + bufferoffset,
                  sizeof(persistnode->end.trail.fileid));
         bufferoffset += sizeof(persistnode->end.trail.fileid);
-        rmemcpy1(&persistnode->end.trail.offset, 0, buffer + bufferoffset,
+        rmemcpy1(&persistnode->end.trail.offset,
+                 0,
+                 buffer + bufferoffset,
                  sizeof(persistnode->end.trail.offset));
         bufferoffset += sizeof(persistnode->end.trail.offset);
         rmemcpy1(&persistnode->stat, 0, buffer + bufferoffset, sizeof(persistnode->stat));
@@ -451,8 +468,8 @@ onlinerefresh_persist* onlinerefresh_persist_read(void)
             read_size = osal_file_pread(fd, synctable, ONLINEREFRESHPERSIST_FILE_TABLE_LEN, offset);
             if (read_size <= 0)
             {
-                elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path,
-                     strerror(errno));
+                elog(
+                    RLOG_WARNING, "try read file %s head, read 0, error %s", path, strerror(errno));
                 onlinerefresh_persistnode_free(persistnode);
                 onlinerefresh_persist_free(persist);
                 osal_file_close(fd);
@@ -463,10 +480,12 @@ onlinerefresh_persist* onlinerefresh_persist_read(void)
 
             rmemcpy1(&new_syncstat->cnt, 0, buffer + bufferoffset, sizeof(new_syncstat->cnt));
             bufferoffset += sizeof(new_syncstat->cnt);
-            rmemcpy1(&new_syncstat->completecnt, 0, buffer + bufferoffset,
-                     new_syncstat->completecnt);
+            rmemcpy1(
+                &new_syncstat->completecnt, 0, buffer + bufferoffset, new_syncstat->completecnt);
             bufferoffset += sizeof(new_syncstat->completecnt);
-            rmemcpy1(&new_syncstat->tablestat, 0, buffer + bufferoffset,
+            rmemcpy1(&new_syncstat->tablestat,
+                     0,
+                     buffer + bufferoffset,
                      sizeof(new_syncstat->tablestat));
             bufferoffset += sizeof(new_syncstat->tablestat);
             rmemcpy1(&new_syncstat->oid, 0, buffer + bufferoffset, sizeof(new_syncstat->oid));
@@ -487,7 +506,9 @@ onlinerefresh_persist* onlinerefresh_persist_read(void)
                 new_syncstat->stat = (int8_t*)rmalloc0(new_syncstat->cnt * sizeof(int8_t));
                 if (NULL == new_syncstat->stat)
                 {
-                    elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path,
+                    elog(RLOG_WARNING,
+                         "try read file %s head, read 0, error %s",
+                         path,
                          strerror(errno));
                     onlinerefresh_persistnode_free(persist);
                     osal_file_close(fd);
@@ -495,11 +516,13 @@ onlinerefresh_persist* onlinerefresh_persist_read(void)
                 }
                 rmemset0(new_syncstat->stat, 0, '\0', new_syncstat->cnt * sizeof(int8_t));
 
-                read_size = osal_file_pread(fd, (char*)new_syncstat->stat,
-                                            (new_syncstat->cnt * sizeof(int8_t)), offset);
+                read_size = osal_file_pread(
+                    fd, (char*)new_syncstat->stat, (new_syncstat->cnt * sizeof(int8_t)), offset);
                 if (read_size <= 0)
                 {
-                    elog(RLOG_WARNING, "try read file %s head, read 0, error %s", path,
+                    elog(RLOG_WARNING,
+                         "try read file %s head, read 0, error %s",
+                         path,
                          strerror(errno));
                     refresh_table_syncstat_free(new_syncstat);
                     onlinerefresh_persistnode_free(persist);
@@ -541,8 +564,8 @@ void onlinerefresh_persist_removebyuuid(onlinerefresh_persist* persist, uuid_t* 
         return;
     }
 
-    persist->dpersistnodes = dlist_deletebyvalue(persist->dpersistnodes, (void*)uuid,
-                                                 onlinerefresh_persist_delectbyuuidcmp, NULL);
+    persist->dpersistnodes = dlist_deletebyvalue(
+        persist->dpersistnodes, (void*)uuid, onlinerefresh_persist_delectbyuuidcmp, NULL);
     return;
 }
 

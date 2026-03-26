@@ -86,7 +86,7 @@ typedef struct CONSTRAINT_VALUE
 
 typedef struct OPERATOR_VALUE
 {
-    Oid                         oid;
+    Oid oid;
     pg_sysdict_Form_pg_operator operator;
 } catalog_operator_value;
 
@@ -163,16 +163,20 @@ catalogdata* catalog_copy(catalogdata* catalog_in);
 
 catalogdata* catalog_colvalued2catalog(int dbtype, int dbversion, void* in_colvalues);
 
-Oid catalog_get_oid_by_relfilenode(HTAB* relfilenode_htab, List* sysdicthis, List* sysdict,
-                                   uint32_t dboid, uint32_t tbspcoid, uint32_t relfilenode,
-                                   bool report_error);
+Oid catalog_get_oid_by_relfilenode(HTAB*    relfilenode_htab,
+                                   List*    sysdicthis,
+                                   List*    sysdict,
+                                   uint32_t dboid,
+                                   uint32_t tbspcoid,
+                                   uint32_t relfilenode,
+                                   bool     report_error);
 
 void* catalog_get_class_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid oid);
 
 void* catalog_get_database_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid oid);
 
-void* catalog_get_attribute_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis,
-                                    Oid attrelid, int16_t attnum);
+void* catalog_get_attribute_sysdict(
+    HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid attrelid, int16_t attnum);
 
 void* catalog_get_namespace_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid oid);
 

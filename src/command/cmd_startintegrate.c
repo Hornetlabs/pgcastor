@@ -56,50 +56,70 @@ static bool cmd_startintegratethreads(increment_integrate* incintegrate)
      * begin---------------------------------*/
     /* Threads are started in reverse order of exit, i.e., first started exits last */
     /* Start apply thread */
-    if (false == threads_addpersistthread(
-                     incintegrate->threads, &thrnode, THRNODE_IDENTITY_INC_INTEGRATE_SYNC,
-                     incintegrate->persistno, (void*)incintegrate->syncworkstate, NULL, NULL,
-                     increment_integratesync_main))
+    if (false == threads_addpersistthread(incintegrate->threads,
+                                          &thrnode,
+                                          THRNODE_IDENTITY_INC_INTEGRATE_SYNC,
+                                          incintegrate->persistno,
+                                          (void*)incintegrate->syncworkstate,
+                                          NULL,
+                                          NULL,
+                                          increment_integratesync_main))
     {
         elog(RLOG_WARNING, "add integrate increment bigtxn sync persist to threads error");
         return false;
     }
 
     /* Start rebuild thread */
-    if (false == threads_addpersistthread(incintegrate->threads, &thrnode,
+    if (false == threads_addpersistthread(incintegrate->threads,
+                                          &thrnode,
                                           THRNODE_IDENTITY_INC_INTEGRATE_REBUILD,
-                                          incintegrate->persistno, (void*)incintegrate->rebuild,
-                                          NULL, NULL, increment_integraterebuild_main))
+                                          incintegrate->persistno,
+                                          (void*)incintegrate->rebuild,
+                                          NULL,
+                                          NULL,
+                                          increment_integraterebuild_main))
     {
         elog(RLOG_WARNING, "add integrate increment rebuild persist to threads error");
         return false;
     }
 
     /* Start parser thread */
-    if (false == threads_addpersistthread(incintegrate->threads, &thrnode,
+    if (false == threads_addpersistthread(incintegrate->threads,
+                                          &thrnode,
                                           THRNODE_IDENTITY_INC_INTEGRATE_PARSER,
-                                          incintegrate->persistno, (void*)incintegrate->decodingctx,
-                                          NULL, NULL, increment_integrateparsertrail_main))
+                                          incintegrate->persistno,
+                                          (void*)incintegrate->decodingctx,
+                                          NULL,
+                                          NULL,
+                                          increment_integrateparsertrail_main))
     {
         elog(RLOG_WARNING, "add integrate increment parser persist to threads error");
         return false;
     }
 
     /* Start split trail thread */
-    if (false == threads_addpersistthread(
-                     incintegrate->threads, &thrnode, THRNODE_IDENTITY_INC_INTEGRATE_LOADRECORDS,
-                     incintegrate->persistno, (void*)incintegrate->splittrailctx, NULL, NULL,
-                     increment_integratesplitrail_main))
+    if (false == threads_addpersistthread(incintegrate->threads,
+                                          &thrnode,
+                                          THRNODE_IDENTITY_INC_INTEGRATE_LOADRECORDS,
+                                          incintegrate->persistno,
+                                          (void*)incintegrate->splittrailctx,
+                                          NULL,
+                                          NULL,
+                                          increment_integratesplitrail_main))
     {
         elog(RLOG_WARNING, "add integrate increment splittrail persist to threads error");
         return false;
     }
 
     /* Start metric thread */
-    if (false ==
-        threads_addpersistthread(incintegrate->threads, &thrnode, THRNODE_IDENTITY_INTEGRATE_METRIC,
-                                 incintegrate->persistno, (void*)incintegrate->integratestate, NULL,
-                                 NULL, metric_integrate_main))
+    if (false == threads_addpersistthread(incintegrate->threads,
+                                          &thrnode,
+                                          THRNODE_IDENTITY_INTEGRATE_METRIC,
+                                          incintegrate->persistno,
+                                          (void*)incintegrate->integratestate,
+                                          NULL,
+                                          NULL,
+                                          metric_integrate_main))
     {
         elog(RLOG_WARNING, "add integrate increment metric persist to threads error");
         return false;

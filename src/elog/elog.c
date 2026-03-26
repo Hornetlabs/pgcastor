@@ -14,14 +14,14 @@ typedef struct ELOG_ERRORSTACK
 typedef struct ELOG_ERRORSTATCKS
 {
     /* Latest log record position */
-    int level;
+    int             level;
 
     /* Error stack */
     elog_errorstack estacks[ELOG_ERRORSTACKSIZE];
 } elog_errorstacks;
 
 /* log level string */
-static char* m_loglevel[] = {"LOG_DEBUG", "LOG_INFO", "LOG_WARNING", "LOG_ERR", NULL};
+static char*             m_loglevel[] = {"LOG_DEBUG", "LOG_INFO", "LOG_WARNING", "LOG_ERR", NULL};
 
 static bool              m_init = false;
 static int               m_logfd = -1;
@@ -33,7 +33,7 @@ static char*             m_logdir = NULL;
 static char*             m_jobname = NULL;
 static elog_errorstacks* m_errorstack = NULL;
 
-static pthread_mutex_t m_loglock;
+static pthread_mutex_t   m_loglock;
 
 /* Initialize error stack */
 bool log_initerrorstack(void)
@@ -117,9 +117,17 @@ void log_init(void)
     m_month = (pcnow->tm_mon + 1);
     m_day = pcnow->tm_mday;
 
-    snprintf(m_logfilename, MAXPATH, "%s/%s_%d-%d-%d-%02d%02d%02d.log", m_logdir, m_jobname,
-             pcnow->tm_year + 1900, pcnow->tm_mon + 1, pcnow->tm_mday, pcnow->tm_hour,
-             pcnow->tm_min, pcnow->tm_sec);
+    snprintf(m_logfilename,
+             MAXPATH,
+             "%s/%s_%d-%d-%d-%02d%02d%02d.log",
+             m_logdir,
+             m_jobname,
+             pcnow->tm_year + 1900,
+             pcnow->tm_mon + 1,
+             pcnow->tm_mday,
+             pcnow->tm_hour,
+             pcnow->tm_min,
+             pcnow->tm_sec);
 
     /* Open file */
     m_logfd = osal_basic_open_file(m_logfilename, O_RDWR | O_CREAT | BINARY);
@@ -165,9 +173,19 @@ void rlog(const char* filename, int line, int level, const char* format, ...)
         return;
     }
 
-    pos = snprintf(logInfo, MAX_LOGLINESIZE, logFormat, pcnow->tm_year + 1900, pcnow->tm_mon + 1,
-                   pcnow->tm_mday, pcnow->tm_hour, pcnow->tm_min, pcnow->tm_sec,
-                   tval.tv_usec / 1000, filename, line, m_loglevel[level]);
+    pos = snprintf(logInfo,
+                   MAX_LOGLINESIZE,
+                   logFormat,
+                   pcnow->tm_year + 1900,
+                   pcnow->tm_mon + 1,
+                   pcnow->tm_mday,
+                   pcnow->tm_hour,
+                   pcnow->tm_min,
+                   pcnow->tm_sec,
+                   tval.tv_usec / 1000,
+                   filename,
+                   line,
+                   m_loglevel[level]);
 
     if (pos == (MAX_LOGLINESIZE - 1))
     {
@@ -190,9 +208,17 @@ void rlog(const char* filename, int line, int level, const char* format, ...)
             m_year = (pcnow->tm_year + 1900);
             m_month = (pcnow->tm_mon + 1);
             m_day = pcnow->tm_mday;
-            snprintf(m_logfilename, MAXPATH, "%s/%s_%d-%d-%d-%02d%02d%02d.log", m_logdir, m_jobname,
-                     pcnow->tm_year + 1900, pcnow->tm_mon + 1, pcnow->tm_mday, pcnow->tm_hour,
-                     pcnow->tm_min, pcnow->tm_sec);
+            snprintf(m_logfilename,
+                     MAXPATH,
+                     "%s/%s_%d-%d-%d-%02d%02d%02d.log",
+                     m_logdir,
+                     m_jobname,
+                     pcnow->tm_year + 1900,
+                     pcnow->tm_mon + 1,
+                     pcnow->tm_mday,
+                     pcnow->tm_hour,
+                     pcnow->tm_min,
+                     pcnow->tm_sec);
 
             m_logfd = osal_basic_open_file(m_logfilename, O_RDWR | O_CREAT | BINARY);
             if (m_logfd < 0)
@@ -203,9 +229,17 @@ void rlog(const char* filename, int line, int level, const char* format, ...)
         }
         else
         {
-            snprintf(logfilname, MAXPATH, "%s/%s_%d-%d-%d-%02d%02d%02d.log", m_logdir, m_jobname,
-                     pcnow->tm_year + 1900, pcnow->tm_mon + 1, pcnow->tm_mday, pcnow->tm_hour,
-                     pcnow->tm_min, pcnow->tm_sec);
+            snprintf(logfilname,
+                     MAXPATH,
+                     "%s/%s_%d-%d-%d-%02d%02d%02d.log",
+                     m_logdir,
+                     m_jobname,
+                     pcnow->tm_year + 1900,
+                     pcnow->tm_mon + 1,
+                     pcnow->tm_mday,
+                     pcnow->tm_hour,
+                     pcnow->tm_min,
+                     pcnow->tm_sec);
 
             /* Date has changed, so switch log file */
             if (m_year != (pcnow->tm_year + 1900) || m_month != (pcnow->tm_mon + 1) ||
@@ -246,7 +280,9 @@ void rlog(const char* filename, int line, int level, const char* format, ...)
         }
 
         rmemset1(m_errorstack->estacks[m_errorstack->level].emsg, 0, '\0', MAX_LOGLINESIZE);
-        snprintf(m_errorstack->estacks[m_errorstack->level].emsg, MAX_LOGLINESIZE, "ERROR: %s",
+        snprintf(m_errorstack->estacks[m_errorstack->level].emsg,
+                 MAX_LOGLINESIZE,
+                 "ERROR: %s",
                  logInfo + pos);
         m_errorstack->level++;
     }

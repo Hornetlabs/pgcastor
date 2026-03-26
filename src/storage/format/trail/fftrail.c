@@ -97,9 +97,9 @@ static bool fftrail_validdata(int compatibility, uint8* data)
     r_crc32c crc32 = 0;
     r_crc32c crc32rec = 0;
 
-    uint8* uptr = NULL;
-    uint8* crcuptr = NULL;
-    uint8* tokendata = NULL;
+    uint8*   uptr = NULL;
+    uint8*   crcuptr = NULL;
+    uint8*   tokendata = NULL;
 
     /* Get record data */
     uptr = data;
@@ -133,8 +133,10 @@ static bool fftrail_validdata(int compatibility, uint8* data)
     FTRAIL_BUFFER2TOKEN(get, crcuptr, tokenid, tokeninfo, tokenlen, tokendata)
     if (TRAIL_TOKENDATAHDR_ID_CRC32 != tokenid || FFTRAIL_INFOTYPE_TOKEN != tokeninfo)
     {
-        elog(RLOG_WARNING, "invalid record, hope TRAIL_TOKENDATAHDR_ID_CRC32:%u, got:%u",
-             TRAIL_TOKENDATAHDR_ID_CRC32, tokenid);
+        elog(RLOG_WARNING,
+             "invalid record, hope TRAIL_TOKENDATAHDR_ID_CRC32:%u, got:%u",
+             TRAIL_TOKENDATAHDR_ID_CRC32,
+             tokenid);
         return false;
     }
     crc32rec = CONCAT(get, 32bit)(&tokendata);
@@ -145,7 +147,9 @@ static bool fftrail_validdata(int compatibility, uint8* data)
 
     if (!EQ_CRC32C(crc32rec, crc32))
     {
-        elog(RLOG_WARNING, "trail record crc error, crc in record %08X, calc crc:%08X", crc32rec,
+        elog(RLOG_WARNING,
+             "trail record crc error, crc in record %08X, calc crc:%08X",
+             crc32rec,
              crc32);
         return false;
     }
@@ -237,8 +241,8 @@ static bool fftrail_validftail(int compatibility, uint64 fileid, uint8* tail)
     return true;
 }
 
-bool fftrail_validrecord(ff_cxt_type type, void* state, uint8 infotype, uint64 fileid,
-                         uint8* record)
+bool fftrail_validrecord(
+    ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record)
 {
     bool          result = false;
     ffsmgr_state* ffstate = NULL;
@@ -281,10 +285,10 @@ bool fftrail_validrecord(ff_cxt_type type, void* state, uint8 infotype, uint64 f
  */
 bool fftrail_serialpreshiftblock(void* state)
 {
-    bool   shiftfile = false;
-    int    minsize = 0;
-    int    timeout = 0;
-    uint64 freespc = 0;
+    bool          shiftfile = false;
+    int           minsize = 0;
+    int           timeout = 0;
+    uint64        freespc = 0;
 
     file_buffer*  fbuffer = NULL;    /* Cache info */
     file_buffer*  tmpfbuffer = NULL; /* Cache info */
@@ -506,8 +510,10 @@ bool fftrail_serialshiffile(void* state)
 }
 
 /* Add specific data to buffer */
-uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype, uint16 tdatalen, uint8* tdata,
-                           uint8* buffer)
+uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype,
+                           uint16               tdatalen,
+                           uint8*               tdata,
+                           uint8*               buffer)
 {
     uint8* _uptr_ = NULL;
 
@@ -539,8 +545,10 @@ uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype, uint16 tdatalen, uint8* 
 }
 
 /* Write specific data from buffer to data */
-uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype, uint64 tdatalen, uint8* tdata,
-                           uint8* buffer)
+uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype,
+                           uint64               tdatalen,
+                           uint8*               tdata,
+                           uint8*               buffer)
 {
     uint8* _uptr_ = NULL;
 
@@ -585,8 +593,13 @@ uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype, uint64 tdatalen, uint8* 
  *      tlen             Total length including token
  *      buffer           Token content saved to this cache, return new address space
  */
-uint8* fftrail_token2buffer(uint8 tid, uint8 tinfo, ftrail_tokendatatype tdtype, uint16 tdatalen,
-                            uint8* tdata, uint32* tlen, uint8* buffer)
+uint8* fftrail_token2buffer(uint8                tid,
+                            uint8                tinfo,
+                            ftrail_tokendatatype tdtype,
+                            uint16               tdatalen,
+                            uint8*               tdata,
+                            uint32*              tlen,
+                            uint8*               buffer)
 {
     uint32 _tokenlen_ = 0;
     uint8* uptr = NULL;

@@ -14,28 +14,28 @@
 #include "thirdparty/tupleparser/common/pg_parser_thirdparty_tupleparser_pgfunc.h"
 #include "thirdparty/common/pg_parser_thirdparty_snprintf.h"
 
-#define PGFUNC_FLOAT_MCXT NULL
+#define PGFUNC_FLOAT_MCXT           NULL
 
-#define FLOAT_MANTISSA_BITS 23
-#define FLOAT_EXPONENT_BITS 8
-#define FLOAT_BIAS 127
-#define FLOAT_SHORTEST_DECIMAL_LEN 16
+#define FLOAT_MANTISSA_BITS         23
+#define FLOAT_EXPONENT_BITS         8
+#define FLOAT_BIAS                  127
+#define FLOAT_SHORTEST_DECIMAL_LEN  16
 
 #define DOUBLE_SHORTEST_DECIMAL_LEN 25
-#define DOUBLE_MANTISSA_BITS 52
-#define DOUBLE_EXPONENT_BITS 11
-#define DOUBLE_BIAS 1023
+#define DOUBLE_MANTISSA_BITS        52
+#define DOUBLE_EXPONENT_BITS        11
+#define DOUBLE_BIAS                 1023
 
-#define STRICTLY_SHORTEST 0
+#define STRICTLY_SHORTEST           0
 
-#define FLOAT_POW5_INV_BITCOUNT 59
-#define FLOAT_POW5_BITCOUNT 61
+#define FLOAT_POW5_INV_BITCOUNT     59
+#define FLOAT_POW5_BITCOUNT         61
 
-#define DOUBLE_POW5_INV_BITCOUNT 122
-#define DOUBLE_POW5_BITCOUNT 121
+#define DOUBLE_POW5_INV_BITCOUNT    122
+#define DOUBLE_POW5_BITCOUNT        121
 
-#define FLT_DIG __FLT_DIG__
-#define DBL_DIG __DBL_DIG__
+#define FLT_DIG                     __FLT_DIG__
+#define DBL_DIG                     __DBL_DIG__
 
 typedef struct floating_decimal_32
 {
@@ -735,37 +735,45 @@ static const char DIGIT_TABLE[200] = {
 
 /* static function statement */
 
-static float    DatumGetFloat4(pg_parser_Datum X);
+static float DatumGetFloat4(pg_parser_Datum X);
 static uint32_t float_to_bits(const float f);
-static int32_t  copy_special_str(char* const result, const bool sign, const bool exponent,
-                                 const bool mantissa);
-static bool     f2d_small_int(const uint32_t ieeeMantissa, const uint32_t ieeeExponent,
-                              floating_decimal_32* v);
-static int32_t  log10Pow2(const int32_t e);
+static int32_t copy_special_str(char* const result,
+                                const bool  sign,
+                                const bool  exponent,
+                                const bool  mantissa);
+static bool f2d_small_int(const uint32_t       ieeeMantissa,
+                          const uint32_t       ieeeExponent,
+                          floating_decimal_32* v);
+static int32_t log10Pow2(const int32_t e);
 static uint32_t pow5bits(const int32_t e);
 static uint32_t mulShift32(const uint32_t m, const uint64_t factor, const int32_t shift);
 static uint32_t mulPow5InvDivPow2(const uint32_t m, const uint32_t q, const int32_t j);
 static uint32_t pow5Factor(uint32_t value);
-static bool     multipleOfPowerOf5(const uint32_t value, const uint32_t p);
-static int32_t  log10Pow5(const int32_t e);
+static bool multipleOfPowerOf5(const uint32_t value, const uint32_t p);
+static int32_t log10Pow5(const int32_t e);
 static uint32_t mulPow5divPow2(const uint32_t m, const uint32_t i, const int32_t j);
-static bool     multipleOfPowerOf2(const uint32_t value, const uint32_t p);
+static bool multipleOfPowerOf2(const uint32_t value, const uint32_t p);
 static floating_decimal_32 f2d(const int32_t ieeeMantissa, const int32_t ieeeExponent);
-static int32_t             d_to_chars(floating_decimal_64 v, const bool sign, char* const result);
-static int32_t  f_to_chars(const floating_decimal_32 v, const bool sign, char* const result);
-static int32_t  float_to_shortest_decimal_bufn(float f, char* result);
-static int32_t  float_to_shortest_decimal_buf(float f, char* result);
-static bool     d2d_small_int(const uint64_t ieeeMantissa, const uint32_t ieeeExponent,
-                              floating_decimal_64* v);
-static uint64_t mulShiftAll(const uint64_t m, const uint64_t* const mul, const int32_t j,
-                            uint64_t* const vp, uint64_t* const vm, const uint32_t mmShift);
+static int32_t d_to_chars(floating_decimal_64 v, const bool sign, char* const result);
+static int32_t f_to_chars(const floating_decimal_32 v, const bool sign, char* const result);
+static int32_t float_to_shortest_decimal_bufn(float f, char* result);
+static int32_t float_to_shortest_decimal_buf(float f, char* result);
+static bool d2d_small_int(const uint64_t       ieeeMantissa,
+                          const uint32_t       ieeeExponent,
+                          floating_decimal_64* v);
+static uint64_t mulShiftAll(const uint64_t        m,
+                            const uint64_t* const mul,
+                            const int32_t         j,
+                            uint64_t* const       vp,
+                            uint64_t* const       vm,
+                            const uint32_t        mmShift);
 static uint64_t div5(const uint64_t x);
 static uint64_t div10(const uint64_t x);
 static uint64_t div100(const uint64_t x);
 static floating_decimal_64 d2d(const uint64_t ieeeMantissa, const uint32_t ieeeExponent);
-static int32_t             double_to_shortest_decimal_bufn(double f, char* result);
-static int32_t             double_to_shortest_decimal_buf(double f, char* result);
-static uint32_t            decimalLength(const uint64_t v);
+static int32_t double_to_shortest_decimal_bufn(double f, char* result);
+static int32_t double_to_shortest_decimal_buf(double f, char* result);
+static uint32_t decimalLength(const uint64_t v);
 static int32_t to_chars_df(const floating_decimal_64 v, const uint32_t olength, char* const result);
 static int32_t to_chars_f(const floating_decimal_32 v, const uint32_t olength, char* const result);
 static uint64_t div1e8(const uint64_t x);
@@ -802,8 +810,10 @@ static uint32_t float_to_bits(const float f)
     return bits;
 }
 
-static int32_t copy_special_str(char* const result, const bool sign, const bool exponent,
-                                const bool mantissa)
+static int32_t copy_special_str(char* const result,
+                                const bool  sign,
+                                const bool  exponent,
+                                const bool  mantissa)
 {
     if (mantissa)
     {
@@ -823,7 +833,8 @@ static int32_t copy_special_str(char* const result, const bool sign, const bool 
     return sign + 1;
 }
 
-static bool f2d_small_int(const uint32_t ieeeMantissa, const uint32_t ieeeExponent,
+static bool f2d_small_int(const uint32_t       ieeeMantissa,
+                          const uint32_t       ieeeExponent,
                           floating_decimal_32* v)
 {
     const int32_t e2 = (int32_t)ieeeExponent - FLOAT_BIAS - FLOAT_MANTISSA_BITS;
@@ -906,30 +917,11 @@ static uint32_t mulShift32(const uint32_t m, const uint64_t factor, const int32_
     const uint64_t bits0 = (uint64_t)m * factorLo;
     const uint64_t bits1 = (uint64_t)m * factorHi;
 
-#if 0
-    /*
-     * On 32-bit platforms we can avoid a 64-bit shift-right since we only
-     * need the upper 32 bits of the result and the shift value is > 32.
-     */
-    const uint32_t bits0Hi = (uint32_t) (bits0 >> 32);
-    uint32_t        bits1Lo = (uint32_t) (bits1);
-    uint32_t        bits1Hi = (uint32_t) (bits1 >> 32);
-
-    bits1Lo += bits0Hi;
-    bits1Hi += (bits1Lo < bits0Hi);
-
-    const int32_t s = shift - 32;
-
-    return (bits1Hi << (32 - s)) | (bits1Lo >> s);
-
-#else /* RYU_32_BIT_PLATFORM */
-
     const uint64_t sum = (bits0 >> 32) + bits1;
     const uint64_t shiftedSum = sum >> (shift - 32);
 
     return (uint32_t)shiftedSum;
 
-#endif /* RYU_32_BIT_PLATFORM */
 }
 
 static uint32_t mulPow5InvDivPow2(const uint32_t m, const uint32_t q, const int32_t j)
@@ -998,12 +990,12 @@ static floating_decimal_32 f2d(const int32_t ieeeMantissa, const int32_t ieeeExp
 #endif
 
     /* Step 2: Determine the interval of legal decimal representations. */
-    const int32_t mv = 4 * m2;
-    const int32_t mp = 4 * m2 + 2;
+    const int32_t       mv = 4 * m2;
+    const int32_t       mp = 4 * m2 + 2;
 
     /* Implicit bool -> int32_t conversion. True is 1, false is 0. */
-    const int32_t mmShift = ieeeMantissa != 0 || ieeeExponent <= 1;
-    const int32_t mm = 4 * m2 - 1 - mmShift;
+    const int32_t       mmShift = ieeeMantissa != 0 || ieeeExponent <= 1;
+    const int32_t       mm = 4 * m2 - 1 - mmShift;
 
     /* Step 3: Convert to a decimal power base using 64-bit arithmetic. */
     int32_t             vr, vp, vm;
@@ -1270,7 +1262,7 @@ static uint64_t div1e8(const uint64_t x)
 static int32_t to_chars_df(const floating_decimal_64 v, const uint32_t olength, char* const result)
 {
     /* Step 5: Print the decimal representation. */
-    int32_t index = 0;
+    int32_t  index = 0;
 
     uint64_t output = v.mantissa;
     int32_t  exp = v.exponent;
@@ -1426,7 +1418,7 @@ static int32_t to_chars_df(const floating_decimal_64 v, const uint32_t olength, 
 static int32_t to_chars_f(const floating_decimal_32 v, const uint32_t olength, char* const result)
 {
     /* Step 5: Print the decimal representation. */
-    int32_t index = 0;
+    int32_t  index = 0;
 
     uint32_t output = v.mantissa;
     int32_t  exp = v.exponent;
@@ -1545,7 +1537,7 @@ static int32_t to_chars_f(const floating_decimal_32 v, const uint32_t olength, c
 static int32_t d_to_chars(floating_decimal_64 v, const bool sign, char* const result)
 {
     /* Step 5: Print the decimal representation. */
-    int32_t index = 0;
+    int32_t  index = 0;
 
     uint64_t output = v.mantissa;
     uint32_t olength = decimalLength(output);
@@ -1725,7 +1717,7 @@ static int32_t d_to_chars(floating_decimal_64 v, const bool sign, char* const re
 static int32_t f_to_chars(const floating_decimal_32 v, const bool sign, char* const result)
 {
     /* Step 5: Print the decimal representation. */
-    int32_t index = 0;
+    int32_t  index = 0;
 
     uint32_t output = v.mantissa;
     uint32_t olength = decimalLength(output);
@@ -1921,7 +1913,8 @@ pg_parser_Datum float4out(pg_parser_Datum attr)
     return (pg_parser_Datum)ascii;
 }
 
-static bool d2d_small_int(const uint64_t ieeeMantissa, const uint32_t ieeeExponent,
+static bool d2d_small_int(const uint64_t       ieeeMantissa,
+                          const uint32_t       ieeeExponent,
                           floating_decimal_64* v)
 {
     const int32_t e2 = (int32_t)ieeeExponent - DOUBLE_BIAS - DOUBLE_MANTISSA_BITS;
@@ -1973,8 +1966,12 @@ static uint64_t mulShift64(const uint64_t m, const uint64_t* const mul, const in
     return (uint64_t)(((b0 >> 64) + b2) >> (j - 64));
 }
 
-static uint64_t mulShiftAll(const uint64_t m, const uint64_t* const mul, const int32_t j,
-                            uint64_t* const vp, uint64_t* const vm, const uint32_t mmShift)
+static uint64_t mulShiftAll(const uint64_t        m,
+                            const uint64_t* const mul,
+                            const int32_t         j,
+                            uint64_t* const       vp,
+                            uint64_t* const       vm,
+                            const uint32_t        mmShift)
 {
     *vp = mulShift64(4 * m + 2, mul, j);
     *vm = mulShift64(4 * m - 1 - mmShift, mul, j);
@@ -2012,23 +2009,23 @@ static floating_decimal_64 d2d(const uint64_t ieeeMantissa, const uint32_t ieeeE
 #endif
 
     /* Step 2: Determine the interval of legal decimal representations. */
-    const uint64_t mv = 4 * m2;
+    const uint64_t      mv = 4 * m2;
 
     /* Implicit bool -> int32_t conversion. True is 1, false is 0. */
-    const uint32_t mmShift = ieeeMantissa != 0 || ieeeExponent <= 1;
+    const uint32_t      mmShift = ieeeMantissa != 0 || ieeeExponent <= 1;
 
     /* We would compute mp and mm like this: */
     /* uint64_t mp = 4 * m2 + 2; */
     /* uint64_t mm = mv - 1 - mmShift; */
 
     /* Step 3: Convert to a decimal power base using 128-bit arithmetic. */
-    uint64_t vr, vp, vm;
-    int32_t  e10;
-    bool     vmIsTrailingZeros = false;
-    bool     vrIsTrailingZeros = false;
-    uint32_t removed = 0;
-    uint8_t  lastRemovedDigit = 0;
-    uint64_t output;
+    uint64_t            vr, vp, vm;
+    int32_t             e10;
+    bool                vmIsTrailingZeros = false;
+    bool                vrIsTrailingZeros = false;
+    uint32_t            removed = 0;
+    uint8_t             lastRemovedDigit = 0;
+    uint64_t            output;
 
     floating_decimal_64 fd;
 

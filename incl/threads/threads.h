@@ -219,29 +219,29 @@ typedef enum THRNODE_STAT
     THRNODE_STAT_FREE,       /* marks the node as reclaimable    */
 } thrnode_stat;
 
-typedef void (*thrdatafree)(void* args);
-typedef bool (*threxitcondition)(void* args);
+typedef void  (*thrdatafree)(void* args);
+typedef bool  (*threxitcondition)(void* args);
 typedef void* (*thrmain)(void* args);
 
 typedef struct THREADS
 {
     /* other thread ids, minimum value is THRNODE_NO_NORMAL */
-    uint64 no;
+    uint64          no;
 
     /* persistent thread ids, maximum value is THRNODE_NO_NORMAL */
-    uint64 persistno;
+    uint64          persistno;
 
     /* lock */
     pthread_mutex_t lock;
 
     /* persistent threads */
-    dlist* thrpersist;
+    dlist*          thrpersist;
 
     /* sub-manager threads */
-    dlist* thrsubmgrs;
+    dlist*          thrsubmgrs;
 
     /* thread list */
-    dlist* thrnodes;
+    dlist*          thrnodes;
 } threads;
 
 /* threadnoderef */
@@ -255,13 +255,13 @@ typedef struct THRREF
 typedef struct THRSUBMGR
 {
     /* owning persistent thread node */
-    thrref persistref;
+    thrref   persistref;
 
     /* manager thread */
-    thrref submgrref;
+    thrref   submgrref;
 
     /* sub-threads */
-    List* childthrrefs;
+    List*    childthrrefs;
 
     /* parent thread pool */
     threads* parents;
@@ -270,18 +270,18 @@ typedef struct THRSUBMGR
 typedef struct THRNODE
 {
     /* thread type flag, persistent/dynamic, see above */
-    int type;
+    int              type;
 
     /* thread identity */
-    int identity;
+    int              identity;
 
     /* state, see above */
-    int stat;
+    int              stat;
 
-    pthread_t thrid;
+    pthread_t        thrid;
 
     /* thread id, greater than THRNODE_NO_NORMAL */
-    uint64 no;
+    uint64           no;
 
     /*
      * when this is a manager thread, thrsubmgr is not NULL, points to itself
@@ -300,10 +300,10 @@ typedef struct THRPERSIST
     uint64 no;
 
     /* name */
-    char name[NAMEDATALEN];
+    char   name[NAMEDATALEN];
 
     /* persistent thread references */
-    List* thrrefs;
+    List*  thrrefs;
 } thrpersist;
 
 /* thread pool initialization */
@@ -337,8 +337,10 @@ bool threads_countsubmgrjobthredsabovework(threads* thrs, List* jobthreads, int*
  *  return true:  no logic errors encountered during execution
  *  return false: logic error encountered during execution
  */
-bool threads_setsubmgrjobthredstermandcountexit(threads* thrs, List* jobthreads, int skipcnt,
-                                                int* scnt);
+bool threads_setsubmgrjobthredstermandcountexit(threads* thrs,
+                                                List*    jobthreads,
+                                                int      skipcnt,
+                                                int*     scnt);
 
 /* add a persistent thread node */
 bool threads_addpersist(threads* thrs, uint64* pno, char* name);
@@ -350,18 +352,33 @@ bool threads_addpersist(threads* thrs, uint64* pno, char* name);
  *
  *  pthrnode                return value
  */
-bool threads_addpersistthread(threads* thrs, thrnode** pthrnode, thrnode_identity identity,
-                              uint64 persistno, void* data, thrdatafree free,
-                              threxitcondition exitcondition, thrmain tmain);
+bool threads_addpersistthread(threads*         thrs,
+                              thrnode**        pthrnode,
+                              thrnode_identity identity,
+                              uint64           persistno,
+                              void*            data,
+                              thrdatafree      free,
+                              threxitcondition exitcondition,
+                              thrmain          tmain);
 
 /* add manager thread */
-bool threads_addsubmanger(threads* thrs, thrnode_identity identity, uint64 persistno,
-                          thrsubmgr** pthrsubmgr, void* data, thrdatafree free,
-                          threxitcondition exitcondition, thrmain tmain);
+bool threads_addsubmanger(threads*         thrs,
+                          thrnode_identity identity,
+                          uint64           persistno,
+                          thrsubmgr**      pthrsubmgr,
+                          void*            data,
+                          thrdatafree      free,
+                          threxitcondition exitcondition,
+                          thrmain          tmain);
 
 /* add worker thread */
-bool threads_addjobthread(threads* thrs, thrnode_identity identity, uint64 submgrno, void* data,
-                          thrdatafree free, threxitcondition exitcondition, thrmain tmain);
+bool threads_addjobthread(threads*         thrs,
+                          thrnode_identity identity,
+                          uint64           submgrno,
+                          void*            data,
+                          thrdatafree      free,
+                          threxitcondition exitcondition,
+                          thrmain          tmain);
 
 /* thread exit, called when SIGTERM is received */
 bool threads_exit(threads* thrs);

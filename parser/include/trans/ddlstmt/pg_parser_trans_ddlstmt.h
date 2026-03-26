@@ -52,9 +52,9 @@ static const pg_parser_sysdict_with_name pg_parser_postgresql_v127[] = {
 
 #define PG_SYSDICT_PG_TEMPTABLE_NAME "pg_temp"
 
-#define IS_INSERT(x) (PG_PARSER_TRANSLOG_DMLTYPE_INSERT == x->m_base.m_dmltype)
-#define IS_DELETE(x) (PG_PARSER_TRANSLOG_DMLTYPE_DELETE == x->m_base.m_dmltype)
-#define IS_UPDATE(x) (PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == x->m_base.m_dmltype)
+#define IS_INSERT(x)                 (PG_PARSER_TRANSLOG_DMLTYPE_INSERT == x->m_base.m_dmltype)
+#define IS_DELETE(x)                 (PG_PARSER_TRANSLOG_DMLTYPE_DELETE == x->m_base.m_dmltype)
+#define IS_UPDATE(x)                 (PG_PARSER_TRANSLOG_DMLTYPE_UPDATE == x->m_base.m_dmltype)
 
 #define PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(colname, values, cnt, return_str)  \
     pg_parser_ddl_getColumnValueByName(colname, values, cnt);                 \
@@ -133,76 +133,76 @@ typedef enum DDLKind
     /* Long parse (DDL that requires multiple records to parse) end */
 } DDLKind;
 
-#define PG_PARSER_DDL_TRANSDDL_NUM_SHORT PG_PARSER_DDL_DATABASE_DROP + 1
-#define PG_PARSER_DDL_TRANSDDL_NUM_MAX PG_PARSER_DDL_TYPE_DROP + 1
+#define PG_PARSER_DDL_TRANSDDL_NUM_SHORT                             PG_PARSER_DDL_DATABASE_DROP + 1
+#define PG_PARSER_DDL_TRANSDDL_NUM_MAX                               PG_PARSER_DDL_TYPE_DROP + 1
 
-#define PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_BEGIN 0x00
+#define PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_BEGIN               0x00
 #define PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP 0x01
-#define PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_UPDATE_STEP 0x02
-#define PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_DELETE_STEP 0x03
+#define PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_UPDATE_STEP           0x02
+#define PG_PARSER_DDL_ALTER_LOG_GET_TEMP_CLASS_DELETE_STEP           0x03
 
 typedef struct pg_parser_ddlstate
 {
-    DDLKind m_ddlKind;
-    bool    m_inddl;
+    DDLKind                                  m_ddlKind;
+    bool                                     m_inddl;
 
     /* Table name and namespace name. */
-    char*           m_relname;
-    char*           m_nspname;
-    uint32_t        m_reloid;
-    uint32_t        m_owner;
-    char*           m_reloid_char;
-    uint32_t        m_nspname_oid;
-    char*           m_nspname_oid_char;
-    char            m_relpersistence;
-    pg_parser_List* m_attList;
+    char*                                    m_relname;
+    char*                                    m_nspname;
+    uint32_t                                 m_reloid;
+    uint32_t                                 m_owner;
+    char*                                    m_reloid_char;
+    uint32_t                                 m_nspname_oid;
+    char*                                    m_nspname_oid_char;
+    char                                     m_relpersistence;
+    pg_parser_List*                          m_attList;
     /* Array of parent table OIDs for table inheritance */
-    uint32_t  m_inherits_cnt;
-    uint32_t* m_inherits_oid;
+    uint32_t                                 m_inherits_cnt;
+    uint32_t*                                m_inherits_oid;
     /* Whether table is logged */
-    bool m_unlogged;
+    bool                                     m_unlogged;
     /* Whether constraint is local */
-    bool m_cons_is_local;
+    bool                                     m_cons_is_local;
     /* Whether table is temporary */
-    bool m_temp;
+    bool                                     m_temp;
     /* Step flag when modifying whether table is logged */
-    uint32_t m_reloid_temp;
-    uint8_t  m_log_step;
+    uint32_t                                 m_reloid_temp;
+    uint8_t                                  m_log_step;
 
     /* Table rename. */
-    char*    m_nspoid_new;
-    char*    m_relname_new;
-    uint32_t m_relfile_node_new;
-    uint8_t  m_alter_coltype_step;
+    char*                                    m_nspoid_new;
+    char*                                    m_relname_new;
+    uint32_t                                 m_relfile_node_new;
+    uint8_t                                  m_alter_coltype_step;
 
     /* Partitioned table */
-    bool                             m_get_partition;
-    pg_parser_translog_tbcol_values* m_partition;
-    pg_parser_nodetree*              m_partitionsub_node;
-    pg_parser_translog_tbcol_values* m_inherits;
-    pg_parser_List*                  m_attrdef_list;
+    bool                                     m_get_partition;
+    pg_parser_translog_tbcol_values*         m_partition;
+    pg_parser_nodetree*                      m_partitionsub_node;
+    pg_parser_translog_tbcol_values*         m_inherits;
+    pg_parser_List*                          m_attrdef_list;
 
     /* Table column rename and default value, store one pg_attribute information */
-    pg_parser_translog_tbcol_values* m_att;
+    pg_parser_translog_tbcol_values*         m_att;
 
     /* Index related */
-    pg_parser_translog_tbcol_values* m_index;
-    char*                            m_amoid_char;
+    pg_parser_translog_tbcol_values*         m_index;
+    char*                                    m_amoid_char;
 
     /* Sequence related */
-    pg_parser_translog_tbcol_values* m_sequence;
+    pg_parser_translog_tbcol_values*         m_sequence;
 
     /* Store default value information. */
-    pg_parser_translog_tbcol_values* m_att_def;
+    pg_parser_translog_tbcol_values*         m_att_def;
 
     /* Store constraint information. */
-    pg_parser_translog_tbcol_values* m_constraint;
+    pg_parser_translog_tbcol_values*         m_constraint;
 
     /* Store function definition information. */
-    char* m_func_def;
+    char*                                    m_func_def;
 
     /* Store trigger definition information. */
-    char* m_trig_def;
+    char*                                    m_trig_def;
 
     /* Store type information. */
     pg_parser_translog_tbcol_values*         m_type_item;
@@ -215,14 +215,15 @@ typedef struct pg_parser_ddlstate
     pg_parser_translog_convertinfo_with_zic* m_zicinfo;
 
     /* Store view definition information. */
-    pg_parser_translog_tbcol_values* m_view_def;
-    char                             m_relkind;
+    pg_parser_translog_tbcol_values*         m_view_def;
+    char                                     m_relkind;
 } pg_parser_ddlstate;
 
 typedef pg_parser_translog_ddlstmt* (*pg_parser_DDL_transDDLFunc)(
     pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record, pg_parser_ddlstate* ddlstate,
-    int32_t* pg_parser_errno);
+    pg_parser_translog_systb2dll_record* current_record,
+    pg_parser_ddlstate*                  ddlstate,
+    int32_t*                             pg_parser_errno);
 
 extern bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
                                           pg_parser_translog_ddlstmt**  pg_parser_ddl_result,
@@ -230,6 +231,8 @@ extern bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parse
 
 extern char* ddl_char_tolower(char* output);
 
-extern bool pg_parser_check_table_name(char* tablename, SysdictName sysdictnum, int16_t dbtype,
-                                       char* dbversion);
+extern bool pg_parser_check_table_name(char*       tablename,
+                                       SysdictName sysdictnum,
+                                       int16_t     dbtype,
+                                       char*       dbversion);
 #endif

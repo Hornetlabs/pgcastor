@@ -25,7 +25,9 @@ typedef struct DECODINGCONTEXT_PRIVDATACALLBACK
     void (*setparserlsn)(void* privdata, XLogRecPtr confirm, XLogRecPtr restart, XLogRecPtr redo);
 
     /* capturestate set redo, restart, confirm lsn */
-    void (*setmetricsynclsn)(void* privdata, XLogRecPtr redolsn, XLogRecPtr restartlsn,
+    void (*setmetricsynclsn)(void*      privdata,
+                             XLogRecPtr redolsn,
+                             XLogRecPtr restartlsn,
                              XLogRecPtr confirmlsn);
 
     /* Set capturestate timestamp */
@@ -36,40 +38,40 @@ typedef struct DECODINGCONTEXT_PRIVDATACALLBACK
 typedef struct DECODINGCONTEXT
 {
     /* Used to indicate whether to filter big transactions, true filter, false not filter */
-    bool filterbigtrans;
+    bool                         filterbigtrans;
 
     /* Status value, rewind, normal */
-    int32        stat;
-    capturebase  base;
-    decodewalpre walpre;
+    int32                        stat;
+    capturebase                  base;
+    decodewalpre                 walpre;
 
     /* Parsed database identifier */
-    Oid database;
+    Oid                          database;
 
     /* Parsed lsn, default value is 2, refresh transaction lsn is 1 */
-    XLogRecPtr parselsn;
+    XLogRecPtr                   parselsn;
 
     /* Conversion information, numeric(show lc_numeric), money(show lc_monetary
      * ), source/target charset(pg_database->encoding), timezone information(show timezone) */
-    char*        tzname;
-    char*        monetary;
-    char*        numeric;
-    char*        orgdbcharset;
-    char*        tgtdbcharset;
-    rewind_info* rewind_ptr;
-    txn*         refreshtxn;
-    dlist*       onlinerefresh;
-    transcache*  trans_cache;
+    char*                        tzname;
+    char*                        monetary;
+    char*                        numeric;
+    char*                        orgdbcharset;
+    char*                        tgtdbcharset;
+    rewind_info*                 rewind_ptr;
+    txn*                         refreshtxn;
+    dlist*                       onlinerefresh;
+    transcache*                  trans_cache;
 
     /* Source of parsed record */
-    record* decode_record;
-    queue*  recordqueue;
+    record*                      decode_record;
+    queue*                       recordqueue;
 
     /* Cache for saving complete transactions */
-    cache_txn* parser2txns;
+    cache_txn*                   parser2txns;
 
     /* Big transaction cache */
-    cache_txn* parser2bigtxns;
+    cache_txn*                   parser2bigtxns;
 
     /* Upper layer structure */
     void*                        privdata; /* Content is: increment_capture*/

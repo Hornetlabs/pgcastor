@@ -1,11 +1,11 @@
 #include "app_incl.h"
 #include "utils/path/path.h"
 
-#define skip_drive(path) (path)
+#define skip_drive(path)          (path)
 
 #define IS_NONWINDOWS_DIR_SEP(ch) ((ch) == '/')
 
-#define IS_DIR_SEP(ch) IS_NONWINDOWS_DIR_SEP(ch)
+#define IS_DIR_SEP(ch)            IS_NONWINDOWS_DIR_SEP(ch)
 
 static void trim_trailing_separator(char* path)
 {

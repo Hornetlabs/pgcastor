@@ -1,7 +1,7 @@
 #include "app_incl.h"
 #include "utils/uint64array/uint64array.h"
 
-#define UINT64_ARRAY_LEN 1024
+#define UINT64_ARRAY_LEN           1024
 #define UINT64_ARRAY_CNT2SIZE(cnt) ((cnt) * (uint64)8)
 
 /* Initialization function */

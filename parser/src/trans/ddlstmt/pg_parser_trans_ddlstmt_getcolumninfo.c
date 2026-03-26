@@ -7,7 +7,8 @@
 #include "sysdict/pg_parser_sysdict_getinfo.h"
 
 char* pg_parser_ddl_getColumnValueByName(char*                           column_name,
-                                         pg_parser_translog_tbcol_value* record_value, uint16_t cnt)
+                                         pg_parser_translog_tbcol_value* record_value,
+                                         uint16_t                        cnt)
 {
     int32_t i = 0;
     for (i = 0; i < cnt; i++)
@@ -35,7 +36,8 @@ char* pg_parser_ddl_getColumnValueByName(char*                           column_
 }
 
 bool pg_parser_ddl_get_pg_class_info(pg_parser_ddlstate*              ddlstate,
-                                     pg_parser_translog_tbcol_values* record, bool isnew)
+                                     pg_parser_translog_tbcol_values* record,
+                                     bool                             isnew)
 {
     char*                           temp_str = NULL;
     pg_parser_translog_tbcol_value* values = NULL;
@@ -95,7 +97,8 @@ bool pg_parser_ddl_get_pg_class_info(pg_parser_ddlstate*              ddlstate,
 }
 
 bool pg_parser_ddl_get_attribute_info(pg_parser_ddlstate*              ddlstate,
-                                      pg_parser_translog_tbcol_values* record, bool isnew)
+                                      pg_parser_translog_tbcol_values* record,
+                                      bool                             isnew)
 {
     char*                           temp_str = NULL;
     int16_t                         attnum = 0;
@@ -134,9 +137,11 @@ bool pg_parser_ddl_get_attribute_info(pg_parser_ddlstate*              ddlstate,
     return true;
 }
 
-bool pg_parser_ddl_checkChangeColumn(char* column_name, pg_parser_translog_tbcol_value* record_new,
-                                     pg_parser_translog_tbcol_value* record_old, uint16_t cnt,
-                                     int32_t* pg_parser_errno)
+bool pg_parser_ddl_checkChangeColumn(char*                           column_name,
+                                     pg_parser_translog_tbcol_value* record_new,
+                                     pg_parser_translog_tbcol_value* record_old,
+                                     uint16_t                        cnt,
+                                     int32_t*                        pg_parser_errno)
 {
     char *new = NULL, *old = NULL;
 
@@ -161,45 +166,3 @@ bool pg_parser_ddl_checkChangeColumn(char* column_name, pg_parser_translog_tbcol
         return false;
     }
 }
-#if 0
-bool pg_parser_ddl_getTypnameByOid(pg_parser_translog_systb2ddl *pg_parser_ddl,
-                                       uint32_t typid,
-                                       char **typname)
-{
-    return pg_parser_sysdict_getTypeNameByOid(typid,
-                                                 &pg_parser_ddl->m_systbs->m_pg_type,
-                                                 typname);
-}
-
-bool pg_parser_ddl_getRelname(pg_parser_translog_systb2ddl *pg_parser_ddl,
-                                 char *reloid_char,
-                                 char **relname)
-{
-    return pg_parser_sysdict_getRelNameByOid((uint32_t)strtoul(reloid_char, NULL, 10),
-                                              &pg_parser_ddl->m_systbs->m_pg_class,
-                                              relname);
-}
-
-bool pg_parser_ddl_getNameSpace(pg_parser_translog_systb2ddl *pg_parser_ddl,
-                                   char *nspoid_char,
-                                   char **nspname)
-{
-    return pg_parser_sysdict_getNspNameByOid((uint32_t)strtoul(nspoid_char, NULL, 10),
-                                              &pg_parser_ddl->m_systbs->m_pg_namespace,
-                                              nspname);
-}
-
-bool pg_parser_ddl_getRelNameSpace(pg_parser_translog_systb2ddl *pg_parser_ddl,
-                                      char *reloid_char,
-                                      char **nspname)
-{
-    uint32_t nspid = pg_parser_InvalidOid;
-
-    if (!pg_parser_sysdict_getNspidByRelid((uint32_t)strtoul(reloid_char, NULL, 10),
-                                              &pg_parser_ddl->m_systbs->m_pg_class,
-                                              &nspid))
-        return false;
-
-    return pg_parser_sysdict_getNspNameByOid(nspid, &pg_parser_ddl->m_systbs->m_pg_namespace, nspname);
-}
-#endif

@@ -76,8 +76,8 @@ static char* rebuild_makehatb(rebuild* rebuild, txnstmt_prepared* stmtprepared, 
     {
         hash_entry->tableop.optype = table_optype.optype;
         hash_entry->tableop.relid = table_optype.relid;
-        hash_entry->rbtree = rbtree_init(rebuild_preparestmt_cmp, rebuild_preparestmt_free,
-                                         rebuild_preparestmt_debug);
+        hash_entry->rbtree = rbtree_init(
+            rebuild_preparestmt_cmp, rebuild_preparestmt_free, rebuild_preparestmt_debug);
         if (NULL == hash_entry->rbtree)
         {
             elog(RLOG_WARNING, "rebuild makehatb rbtree out of memory");
@@ -221,8 +221,12 @@ void rebuild_reset(rebuild* rebuild)
     return;
 }
 
-static txnstmt* rebuild_initpreparestmt(rebuild* rebuild, Oid relid, uint8 op, uint32 colcnt,
-                                        char* preparedstmt, uint32 preparedstmtlen)
+static txnstmt* rebuild_initpreparestmt(rebuild* rebuild,
+                                        Oid      relid,
+                                        uint8    op,
+                                        uint32   colcnt,
+                                        char*    preparedstmt,
+                                        uint32   preparedstmtlen)
 {
     uint32            len = 0;
     char*             stmtname = NULL;
@@ -313,7 +317,9 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild, txnstmt* stmt, List**
     nvalues = (pg_parser_translog_tbcol_nvalues*)stmt->stmt;
 
     preparestmtname = makeStringInfo();
-    appendStringInfo(preparestmtname, "insert into \"%s\".\"%s\" (", nvalues->m_base.m_schemaname,
+    appendStringInfo(preparestmtname,
+                     "insert into \"%s\".\"%s\" (",
+                     nvalues->m_base.m_schemaname,
                      nvalues->m_base.m_tbname);
 
     /* Assemble column names */
@@ -366,7 +372,9 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild, txnstmt* stmt, List**
     else
     {
         /* No need to bind values, can execute directly */
-        elog(RLOG_WARNING, "%s.%s no column, not currently supported", nvalues->m_base.m_schemaname,
+        elog(RLOG_WARNING,
+             "%s.%s no column, not currently supported",
+             nvalues->m_base.m_schemaname,
              nvalues->m_base.m_tbname);
         deleteStringInfo(preparestmtname);
         return false;
@@ -376,9 +384,12 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild, txnstmt* stmt, List**
     for (index_rowcnt = 0; index_rowcnt < nvalues->m_rowCnt; index_rowcnt++)
     {
         /* Initialize txnstmt */
-        nstmt =
-            rebuild_initpreparestmt(rebuild, nvalues->m_relid, PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
-                                    colcnts, preparestmtname->data, preparestmtname->len);
+        nstmt = rebuild_initpreparestmt(rebuild,
+                                        nvalues->m_relid,
+                                        PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
+                                        colcnts,
+                                        preparestmtname->data,
+                                        preparestmtname->len);
         if (NULL == nstmt)
         {
             deleteStringInfo(preparestmtname);
@@ -444,7 +455,9 @@ static bool rebuild_prepared_insert(rebuild* rebuild, txnstmt* stmt, List** lsts
 
     /* Allocate memory */
     preparedstmt = makeStringInfo();
-    appendStringInfo(preparedstmt, "insert into \"%s\".\"%s\" (", row->m_base.m_schemaname,
+    appendStringInfo(preparedstmt,
+                     "insert into \"%s\".\"%s\" (",
+                     row->m_base.m_schemaname,
                      row->m_base.m_tbname);
 
     /* Assemble column names */
@@ -472,7 +485,9 @@ static bool rebuild_prepared_insert(rebuild* rebuild, txnstmt* stmt, List** lsts
     }
     else
     {
-        elog(RLOG_WARNING, "%s.%s no column, not currently supported", row->m_base.m_schemaname,
+        elog(RLOG_WARNING,
+             "%s.%s no column, not currently supported",
+             row->m_base.m_schemaname,
              row->m_base.m_tbname);
         deleteStringInfo(preparedstmt);
         return false;
@@ -497,8 +512,12 @@ static bool rebuild_prepared_insert(rebuild* rebuild, txnstmt* stmt, List** lsts
     }
     appendStringInfo(preparedstmt, " );");
 
-    nstmt = rebuild_initpreparestmt(rebuild, row->m_relid, PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
-                                    colcnt, preparedstmt->data, preparedstmt->len);
+    nstmt = rebuild_initpreparestmt(rebuild,
+                                    row->m_relid,
+                                    PG_PARSER_TRANSLOG_DMLTYPE_INSERT,
+                                    colcnt,
+                                    preparedstmt->data,
+                                    preparedstmt->len);
     if (NULL == nstmt)
     {
         deleteStringInfo(preparedstmt);
@@ -540,8 +559,11 @@ static bool rebuild_prepared_insert(rebuild* rebuild, txnstmt* stmt, List** lsts
 }
 
 /* Concatenate bind parameters function */
-static int rebuild_appendbindparam(StringInfoData* stmt, pg_parser_translog_tbcol_value* values,
-                                   int count, int nParams, bool with_comma)
+static int rebuild_appendbindparam(StringInfoData*                 stmt,
+                                   pg_parser_translog_tbcol_value* values,
+                                   int                             count,
+                                   int                             nParams,
+                                   bool                            with_comma)
 {
     bool is_first = true;
     int  index_colcnt = 0;
@@ -585,15 +607,19 @@ static bool rebuild_prepared_delete(rebuild* rebuild, txnstmt* stmt, List** lsts
 
     /* Allocate space */
     preparedstmt = makeStringInfo();
-    appendStringInfo(preparedstmt, "DELETE FROM \"%s\".\"%s\" WHERE ", row->m_base.m_schemaname,
+    appendStringInfo(preparedstmt,
+                     "DELETE FROM \"%s\".\"%s\" WHERE ",
+                     row->m_base.m_schemaname,
                      row->m_base.m_tbname);
 
     /* No primary key or unique constraint */
     if (false == row->m_haspkey &&
         false == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
-        appendStringInfo(preparedstmt, "CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
-                         row->m_base.m_schemaname, row->m_base.m_tbname);
+        appendStringInfo(preparedstmt,
+                         "CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
+                         row->m_base.m_schemaname,
+                         row->m_base.m_tbname);
     }
 
     colcnt = rebuild_appendbindparam(preparedstmt, row->m_old_values, row->m_valueCnt, 0, false);
@@ -604,8 +630,12 @@ static bool rebuild_prepared_delete(rebuild* rebuild, txnstmt* stmt, List** lsts
         appendStringInfo(preparedstmt, " LIMIT 1)");
     }
 
-    nstmt = rebuild_initpreparestmt(rebuild, row->m_relid, PG_PARSER_TRANSLOG_DMLTYPE_DELETE,
-                                    colcnt, preparedstmt->data, preparedstmt->len);
+    nstmt = rebuild_initpreparestmt(rebuild,
+                                    row->m_relid,
+                                    PG_PARSER_TRANSLOG_DMLTYPE_DELETE,
+                                    colcnt,
+                                    preparedstmt->data,
+                                    preparedstmt->len);
     if (NULL == nstmt)
     {
         deleteStringInfo(preparedstmt);
@@ -662,8 +692,8 @@ static bool rebuild_prepared_update(rebuild* rebuild, txnstmt* stmt, List** lsts
 
     /* Allocate space */
     preparedstmt = makeStringInfo();
-    appendStringInfo(preparedstmt, "UPDATE \"%s\".\"%s\" SET ", row->m_base.m_schemaname,
-                     row->m_base.m_tbname);
+    appendStringInfo(
+        preparedstmt, "UPDATE \"%s\".\"%s\" SET ", row->m_base.m_schemaname, row->m_base.m_tbname);
 
     /* New values */
     colcnt = rebuild_appendbindparam(preparedstmt, row->m_new_values, row->m_valueCnt, 0, true);
@@ -671,20 +701,26 @@ static bool rebuild_prepared_update(rebuild* rebuild, txnstmt* stmt, List** lsts
     if (row->m_haspkey || true == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
         appendStringInfo(preparedstmt, " WHERE ");
-        colcnt = rebuild_appendbindparam(preparedstmt, row->m_old_values, row->m_valueCnt, colcnt,
-                                         false);
+        colcnt = rebuild_appendbindparam(
+            preparedstmt, row->m_old_values, row->m_valueCnt, colcnt, false);
     }
     else
     {
-        appendStringInfo(preparedstmt, " WHERE CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
-                         row->m_base.m_schemaname, row->m_base.m_tbname);
-        colcnt = rebuild_appendbindparam(preparedstmt, row->m_old_values, row->m_valueCnt, colcnt,
-                                         false);
+        appendStringInfo(preparedstmt,
+                         " WHERE CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
+                         row->m_base.m_schemaname,
+                         row->m_base.m_tbname);
+        colcnt = rebuild_appendbindparam(
+            preparedstmt, row->m_old_values, row->m_valueCnt, colcnt, false);
         appendStringInfo(preparedstmt, " LIMIT 1)");
     }
 
-    nstmt = rebuild_initpreparestmt(rebuild, row->m_relid, PG_PARSER_TRANSLOG_DMLTYPE_UPDATE,
-                                    colcnt, preparedstmt->data, preparedstmt->len);
+    nstmt = rebuild_initpreparestmt(rebuild,
+                                    row->m_relid,
+                                    PG_PARSER_TRANSLOG_DMLTYPE_UPDATE,
+                                    colcnt,
+                                    preparedstmt->data,
+                                    preparedstmt->len);
     if (NULL == nstmt)
     {
         deleteStringInfo(preparedstmt);

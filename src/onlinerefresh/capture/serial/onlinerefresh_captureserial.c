@@ -71,7 +71,8 @@ static bool onlinerefresh_captureserial_loadsysdictsfromfile(transcache* dictcac
  * Put buffer into flush, need to set buffer's flag before putting
  */
 static bool onlinerefresh_captureserial_buffer2waitflush(onlinerefresh_captureserial* serial_task,
-                                                         txn* txn, bool put_end)
+                                                         txn*                         txn,
+                                                         bool                         put_end)
 {
     /*
      * 1、Get new cache
@@ -225,8 +226,8 @@ static bool onlinerefresh_captureserial_txn2disk(serialstate* serialstate, txn* 
                 goto trfwork_serial_txn2disk_reset;
             }
         }
-        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_DATA, (void*)&txndata,
-                                                        serialstate->ffsmgrstate);
+        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(
+            FFTRAIL_CXT_TYPE_DATA, (void*)&txndata, serialstate->ffsmgrstate);
 
         if (rstmt->type == TXNSTMT_TYPE_ONLINEREFRESH_INCREMENT_END)
         {

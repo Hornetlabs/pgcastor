@@ -18,13 +18,13 @@ typedef enum PG_PARSER_TRANS_RMGR_HEAP_INFO
 } pg_parser_trans_rmgr_heap_info;
 
 #define PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_OPMASK 0x70
-#define PG_PARSER_XLOG_HEAP_INIT_PAGE 0x80
+#define PG_PARSER_XLOG_HEAP_INIT_PAGE             0x80
 
 /* Marker values for insert statements in logical mode */
 #define PG_PARSER_TRANS_XLH_INSERT_ALL_VISIBLE_CLEARED (1 << 0)
-#define PG_PARSER_TRANS_XLH_INSERT_LAST_IN_MULTI (1 << 1)
-#define PG_PARSER_TRANS_XLH_INSERT_IS_SPECULATIVE (1 << 2)
-#define PG_PARSER_TRANS_XLH_INSERT_CONTAINS_NEW_TUPLE (1 << 3)
+#define PG_PARSER_TRANS_XLH_INSERT_LAST_IN_MULTI       (1 << 1)
+#define PG_PARSER_TRANS_XLH_INSERT_IS_SPECULATIVE      (1 << 2)
+#define PG_PARSER_TRANS_XLH_INSERT_CONTAINS_NEW_TUPLE  (1 << 3)
 
 /* heap flag for pg < 10 */
 #define PG_PARSER_HEAP_HASOID 0x0008 /* has an object-id field */
@@ -36,10 +36,10 @@ typedef enum PG_PARSER_TRANS_RMGR_HEAP_INFO
 
 /* delete statement flag */
 #define PG_PARSER_TRANS_XLH_DELETE_ALL_VISIBLE_CLEARED (1 << 0)
-#define PG_PARSER_TRANS_XLH_DELETE_CONTAINS_OLD_TUPLE (1 << 1)
-#define PG_PARSER_TRANS_XLH_DELETE_CONTAINS_OLD_KEY (1 << 2)
-#define PG_PARSER_TRANS_XLH_DELETE_IS_SUPER (1 << 3)
-#define PG_PARSER_TRANS_XLH_DELETE_IS_PARTITION_MOVE (1 << 4)
+#define PG_PARSER_TRANS_XLH_DELETE_CONTAINS_OLD_TUPLE  (1 << 1)
+#define PG_PARSER_TRANS_XLH_DELETE_CONTAINS_OLD_KEY    (1 << 2)
+#define PG_PARSER_TRANS_XLH_DELETE_IS_SUPER            (1 << 3)
+#define PG_PARSER_TRANS_XLH_DELETE_IS_PARTITION_MOVE   (1 << 4)
 
 /* convenience macro for checking whether any form of old tuple was logged */
 #define PG_PARSER_TRANS_XLH_DELETE_CONTAINS_OLD \
@@ -49,11 +49,11 @@ typedef enum PG_PARSER_TRANS_RMGR_HEAP_INFO
 #define PG_PARSER_TRANS_XLH_UPDATE_OLD_ALL_VISIBLE_CLEARED (1 << 0)
 /* PD_ALL_VISIBLE was cleared in the 2nd page */
 #define PG_PARSER_TRANS_XLH_UPDATE_NEW_ALL_VISIBLE_CLEARED (1 << 1)
-#define PG_PARSER_TRANS_XLH_UPDATE_CONTAINS_OLD_TUPLE (1 << 2)
-#define PG_PARSER_TRANS_XLH_UPDATE_CONTAINS_OLD_KEY (1 << 3)
-#define PG_PARSER_TRANS_XLH_UPDATE_CONTAINS_NEW_TUPLE (1 << 4)
-#define PG_PARSER_TRANS_XLH_UPDATE_PREFIX_FROM_OLD (1 << 5)
-#define PG_PARSER_TRANS_XLH_UPDATE_SUFFIX_FROM_OLD (1 << 6)
+#define PG_PARSER_TRANS_XLH_UPDATE_CONTAINS_OLD_TUPLE      (1 << 2)
+#define PG_PARSER_TRANS_XLH_UPDATE_CONTAINS_OLD_KEY        (1 << 3)
+#define PG_PARSER_TRANS_XLH_UPDATE_CONTAINS_NEW_TUPLE      (1 << 4)
+#define PG_PARSER_TRANS_XLH_UPDATE_PREFIX_FROM_OLD         (1 << 5)
+#define PG_PARSER_TRANS_XLH_UPDATE_SUFFIX_FROM_OLD         (1 << 6)
 
 /* convenience macro for checking whether any form of old tuple was logged */
 #define PG_PARSER_TRANS_XLH_UPDATE_CONTAINS_OLD \
@@ -116,32 +116,33 @@ typedef struct pg_parser_xl_heap_update
 #define pg_parser_SizeOfHeapUpdate \
     (offsetof(pg_parser_xl_heap_update, new_offnum) + sizeof(uint16_t))
 
-extern bool pg_parser_trans_rmgr_heap2_pre(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                           pg_parser_translog_pre_base**                    result,
-                                           int32_t* pg_parser_errno);
+extern bool pg_parser_trans_rmgr_heap2_pre(pg_parser_XLogReaderState*    state,
+                                           pg_parser_translog_pre_base** result,
+                                           int32_t*                      pg_parser_errno);
 
-extern bool pg_parser_trans_rmgr_heap_pre(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                          pg_parser_translog_pre_base**                    result,
-                                          int32_t* pg_parser_errno);
+extern bool pg_parser_trans_rmgr_heap_pre(pg_parser_XLogReaderState*    state,
+                                          pg_parser_translog_pre_base** result,
+                                          int32_t*                      pg_parser_errno);
 
-extern bool pg_parser_trans_rmgr_heap_trans(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                            pg_parser_translog_tbcolbase**                   result,
-                                            int32_t* pg_parser_errno);
+extern bool pg_parser_trans_rmgr_heap_trans(pg_parser_XLogReaderState*     state,
+                                            pg_parser_translog_tbcolbase** result,
+                                            int32_t*                       pg_parser_errno);
 
-extern bool pg_parser_trans_rmgr_heap2_trans(pg_parser_trans_transrec_decode_XLogReaderState* state,
+extern bool pg_parser_trans_rmgr_heap2_trans(pg_parser_XLogReaderState*     state,
                                              pg_parser_translog_tbcolbase** result,
                                              int32_t*                       pg_parser_errno);
 
-extern bool pg_parser_trans_rmgr_heap_trans_get_tuple(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_tbcolbase** result,
-    int32_t* pg_parser_errno);
+extern bool pg_parser_trans_rmgr_heap_trans_get_tuple(pg_parser_XLogReaderState*     state,
+                                                      pg_parser_translog_tbcolbase** result,
+                                                      int32_t* pg_parser_errno);
 
-extern bool pg_parser_trans_rmgr_heap2_trans_get_tuple(
-    pg_parser_trans_transrec_decode_XLogReaderState* state, pg_parser_translog_tbcolbase** result,
-    int32_t* pg_parser_errno);
+extern bool pg_parser_trans_rmgr_heap2_trans_get_tuple(pg_parser_XLogReaderState*     state,
+                                                       pg_parser_translog_tbcolbase** result,
+                                                       int32_t* pg_parser_errno);
 
-bool pg_parser_check_fpw(pg_parser_trans_transrec_decode_XLogReaderState* readstate,
-                         pg_parser_translog_pre_base** pg_parser_result, int32_t* pg_parser_errno,
-                         int16_t dbtype);
+bool pg_parser_check_fpw(pg_parser_XLogReaderState*    readstate,
+                         pg_parser_translog_pre_base** pg_parser_result,
+                         int32_t*                      pg_parser_errno,
+                         int16_t                       dbtype);
 
 #endif

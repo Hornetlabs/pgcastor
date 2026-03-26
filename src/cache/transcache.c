@@ -88,8 +88,13 @@ static void transcache_dlist_append(decodingcontext* ctx, txn* txn)
  *  bset            Input parameter, indicates whether to update restartlsn and confirmlsn when
  * calling this function true        Need to update false       No need to update
  */
-void transcache_dlist_remove(void* in_ctx, txn* txn, bool* brestart, XLogRecPtr* restartlsn,
-                             bool* bconfirm, XLogRecPtr* confirmlsn, bool bset)
+void transcache_dlist_remove(void*       in_ctx,
+                             txn*        txn,
+                             bool*       brestart,
+                             XLogRecPtr* restartlsn,
+                             bool*       bconfirm,
+                             XLogRecPtr* confirmlsn,
+                             bool        bset)
 {
     decodingcontext* ctx = NULL;
     if (NULL == txn)
@@ -112,8 +117,11 @@ void transcache_dlist_remove(void* in_ctx, txn* txn, bool* brestart, XLogRecPtr*
             {
                 *restartlsn = txn->start.wal.lsn;
             }
-            elog(RLOG_DEBUG, "restartlsn update by:xid:%lu, %X/%X", txn->xid,
-                 (uint32)(txn->start.wal.lsn >> 32), (uint32)(txn->start.wal.lsn));
+            elog(RLOG_DEBUG,
+                 "restartlsn update by:xid:%lu, %X/%X",
+                 txn->xid,
+                 (uint32)(txn->start.wal.lsn >> 32),
+                 (uint32)(txn->start.wal.lsn));
         }
 
         if (NULL == txn->next)
@@ -254,10 +262,14 @@ void transcache_removeTXNByXid(transcache* in_transcache, uint64_t xid)
     }
     else
     {
-        elog(RLOG_DEBUG, "txn lsn info :restart:%X/%X, confirm:%X/%X, redo:%X/%X,",
-             (uint32)(txn_entry->restart.wal.lsn >> 32), (uint32)(txn_entry->restart.wal.lsn),
-             (uint32)(txn_entry->confirm.wal.lsn >> 32), (uint32)(txn_entry->confirm.wal.lsn),
-             (uint32)(txn_entry->redo.wal.lsn >> 32), (uint32)(txn_entry->redo.wal.lsn));
+        elog(RLOG_DEBUG,
+             "txn lsn info :restart:%X/%X, confirm:%X/%X, redo:%X/%X,",
+             (uint32)(txn_entry->restart.wal.lsn >> 32),
+             (uint32)(txn_entry->restart.wal.lsn),
+             (uint32)(txn_entry->confirm.wal.lsn >> 32),
+             (uint32)(txn_entry->confirm.wal.lsn),
+             (uint32)(txn_entry->redo.wal.lsn >> 32),
+             (uint32)(txn_entry->redo.wal.lsn));
         rmemset1(txn_entry, 0, '\0', sizeof(txn));
     }
     // elog(RLOG_INFO, "remove txn, found:%d, xid:%lu", find, xid);
@@ -346,8 +358,11 @@ bool transcache_refreshlsn(void* in_ctx, txn* txn)
             {
                 ctx->base.restartlsn = txn->start.wal.lsn;
                 txn->restart.wal.lsn = txn->start.wal.lsn;
-                elog(RLOG_DEBUG, "restartlsn update by:xid:%lu, %X/%X", txn->xid,
-                     (uint32)(txn->start.wal.lsn >> 32), (uint32)(txn->start.wal.lsn));
+                elog(RLOG_DEBUG,
+                     "restartlsn update by:xid:%lu, %X/%X",
+                     txn->xid,
+                     (uint32)(txn->start.wal.lsn >> 32),
+                     (uint32)(txn->start.wal.lsn));
             }
 
             if (NULL == txn->next)
@@ -381,8 +396,8 @@ bool transcache_refreshlsn(void* in_ctx, txn* txn)
     txn->redo.wal.lsn = ctx->base.redolsn;
     if (NULL != ctx->callback.setmetricsynclsn)
     {
-        ctx->callback.setmetricsynclsn(ctx->privdata, ctx->base.redolsn, ctx->base.restartlsn,
-                                       ctx->base.confirmedlsn);
+        ctx->callback.setmetricsynclsn(
+            ctx->privdata, ctx->base.redolsn, ctx->base.restartlsn, ctx->base.confirmedlsn);
     }
 
     return true;

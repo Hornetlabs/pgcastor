@@ -53,7 +53,8 @@ void namespace_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         entry = hash_search(sysdicts->by_namespace, &namespace->oid, HASH_ENTER, &found);
         if (found)
         {
-            elog(RLOG_ERROR, "namespace_oid:%u already exist in by_namespace",
+            elog(RLOG_ERROR,
+                 "namespace_oid:%u already exist in by_namespace",
                  entry->namespace->oid);
         }
         entry->oid = namespace->oid;
@@ -178,7 +179,8 @@ HTAB* namespacecache_load(sysdict_header_array* array)
             entry = hash_search(namespacehtab, &namespace->oid, HASH_ENTER, &found);
             if (found)
             {
-                elog(RLOG_ERROR, "namespace_oid:%u already exist in by_namespace",
+                elog(RLOG_ERROR,
+                     "namespace_oid:%u already exist in by_namespace",
                      entry->namespace->oid);
             }
             entry->oid = namespace->oid;
@@ -240,8 +242,8 @@ catalogdata* namespace_colvalue2namespace(void* in_colvalue)
     namespacevalue->namespace = pgnamespace;
 
     /* nspname 1 */
-    rmemcpy1(pgnamespace->nspname.data, 0, (char*)((colvalue + 1)->m_value),
-             (colvalue + 1)->m_valueLen);
+    rmemcpy1(
+        pgnamespace->nspname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* oid 0 */
     sscanf((char*)((colvalue + 0)->m_value), "%u", &pgnamespace->oid);
@@ -269,8 +271,10 @@ void namespace_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
         catalogInHash = hash_search(sysdicts->by_namespace, &newcatalog->oid, HASH_ENTER, &found);
         if (true == found)
         {
-            elog(RLOG_WARNING, "by_namespace hash duplicate oid, %u, %s",
-                 catalogInHash->namespace->oid, catalogInHash->namespace->nspname.data);
+            elog(RLOG_WARNING,
+                 "by_namespace hash duplicate oid, %u, %s",
+                 catalogInHash->namespace->oid,
+                 catalogInHash->namespace->nspname.data);
 
             if (NULL != catalogInHash->namespace)
             {
@@ -304,8 +308,10 @@ void namespace_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cat
         catalogInHash = hash_search(sysdicts->by_namespace, &newcatalog->oid, HASH_FIND, &found);
         if (NULL == catalogInHash)
         {
-            elog(RLOG_WARNING, "namespace %s,%u can not fond in namespace hash",
-                 newcatalog->namespace->oid, newcatalog->namespace->nspname.data);
+            elog(RLOG_WARNING,
+                 "namespace %s,%u can not fond in namespace hash",
+                 newcatalog->namespace->oid,
+                 newcatalog->namespace->nspname.data);
             return;
         }
         rfree(catalogInHash->namespace);

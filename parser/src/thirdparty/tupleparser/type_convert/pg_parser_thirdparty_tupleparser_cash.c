@@ -201,49 +201,89 @@ pg_parser_Datum cash_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
         default:
             if (cs_precedes)
             {
-                sprintf(result, "%s%s%s%s%s", signsymbol, (sep_by_space == 2) ? " " : "", csymbol,
-                        (sep_by_space == 1) ? " " : "", bufptr);
+                sprintf(result,
+                        "%s%s%s%s%s",
+                        signsymbol,
+                        (sep_by_space == 2) ? " " : "",
+                        csymbol,
+                        (sep_by_space == 1) ? " " : "",
+                        bufptr);
             }
             else
             {
-                sprintf(result, "%s%s%s%s%s", signsymbol, (sep_by_space == 2) ? " " : "", bufptr,
-                        (sep_by_space == 1) ? " " : "", csymbol);
+                sprintf(result,
+                        "%s%s%s%s%s",
+                        signsymbol,
+                        (sep_by_space == 2) ? " " : "",
+                        bufptr,
+                        (sep_by_space == 1) ? " " : "",
+                        csymbol);
             }
             break;
         case 2:
             if (cs_precedes)
             {
-                sprintf(result, "%s%s%s%s%s", csymbol, (sep_by_space == 1) ? " " : "", bufptr,
-                        (sep_by_space == 2) ? " " : "", signsymbol);
+                sprintf(result,
+                        "%s%s%s%s%s",
+                        csymbol,
+                        (sep_by_space == 1) ? " " : "",
+                        bufptr,
+                        (sep_by_space == 2) ? " " : "",
+                        signsymbol);
             }
             else
             {
-                sprintf(result, "%s%s%s%s%s", bufptr, (sep_by_space == 1) ? " " : "", csymbol,
-                        (sep_by_space == 2) ? " " : "", signsymbol);
+                sprintf(result,
+                        "%s%s%s%s%s",
+                        bufptr,
+                        (sep_by_space == 1) ? " " : "",
+                        csymbol,
+                        (sep_by_space == 2) ? " " : "",
+                        signsymbol);
             }
             break;
         case 3:
             if (cs_precedes)
             {
-                sprintf(result, "%s%s%s%s%s", signsymbol, (sep_by_space == 2) ? " " : "", csymbol,
-                        (sep_by_space == 1) ? " " : "", bufptr);
+                sprintf(result,
+                        "%s%s%s%s%s",
+                        signsymbol,
+                        (sep_by_space == 2) ? " " : "",
+                        csymbol,
+                        (sep_by_space == 1) ? " " : "",
+                        bufptr);
             }
             else
             {
-                sprintf(result, "%s%s%s%s%s", bufptr, (sep_by_space == 1) ? " " : "", signsymbol,
-                        (sep_by_space == 2) ? " " : "", csymbol);
+                sprintf(result,
+                        "%s%s%s%s%s",
+                        bufptr,
+                        (sep_by_space == 1) ? " " : "",
+                        signsymbol,
+                        (sep_by_space == 2) ? " " : "",
+                        csymbol);
             }
             break;
         case 4:
             if (cs_precedes)
             {
-                sprintf(result, "%s%s%s%s%s", csymbol, (sep_by_space == 2) ? " " : "", signsymbol,
-                        (sep_by_space == 1) ? " " : "", bufptr);
+                sprintf(result,
+                        "%s%s%s%s%s",
+                        csymbol,
+                        (sep_by_space == 2) ? " " : "",
+                        signsymbol,
+                        (sep_by_space == 1) ? " " : "",
+                        bufptr);
             }
             else
             {
-                sprintf(result, "%s%s%s%s%s", bufptr, (sep_by_space == 1) ? " " : "", csymbol,
-                        (sep_by_space == 2) ? " " : "", signsymbol);
+                sprintf(result,
+                        "%s%s%s%s%s",
+                        bufptr,
+                        (sep_by_space == 1) ? " " : "",
+                        csymbol,
+                        (sep_by_space == 2) ? " " : "",
+                        signsymbol);
             }
             break;
     }

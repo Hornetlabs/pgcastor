@@ -11,12 +11,12 @@
 #include "loadrecords/loadrecords.h"
 #include "loadrecords/loadwalrecords.h"
 
-#define XLOG_PAGE_MAGIC_PG127 0xD101
-#define XLOG_PAGE_MAGIC_PG149 0xD10D
-#define XLOG_PAGE_MAGIC_PG95 0xD087
+#define XLOG_PAGE_MAGIC_PG127            0xD101
+#define XLOG_PAGE_MAGIC_PG149            0xD10D
+#define XLOG_PAGE_MAGIC_PG95             0xD087
 
-#define RecoedMaxAllocSize ((Size)0x3fffffff) /* 1 gigabyte - 1 */
-#define RecordAllocSizeIsValid(size) ((Size)(size) <= RecoedMaxAllocSize)
+#define RecoedMaxAllocSize               ((Size)0x3fffffff) /* 1 gigabyte - 1 */
+#define RecordAllocSizeIsValid(size)     ((Size)(size) <= RecoedMaxAllocSize)
 #define updateCurrentPtr(cur, load, off) cur = (load)->block_startptr + off
 
 typedef struct totalLen
@@ -299,8 +299,11 @@ bool loadwalrecords_checkend(XLogRecPtr cur, loadwalrecords* rctl)
 #define CHECK_STATUS_REWIND(start, end) (start && end ? true : false)
 
 /* split from block header */
-static bool splitStartWithBlockBegin(char* currentBuf, loadwalrecords* loadrecords, mpage* buff,
-                                     XLogRecPtr* currentPtr, uint32_t* offset)
+static bool splitStartWithBlockBegin(char*           currentBuf,
+                                     loadwalrecords* loadrecords,
+                                     mpage*          buff,
+                                     XLogRecPtr*     currentPtr,
+                                     uint32_t*       offset)
 {
     XLogPageHeader phdr = (XLogPageHeader)(currentBuf);
     bool           seg_first = false;
@@ -310,8 +313,10 @@ static bool splitStartWithBlockBegin(char* currentBuf, loadwalrecords* loadrecor
     {
         /* on verification failure, wait 200ms */
         wal_usleep(20 * 1000);
-        elog(RLOG_DEBUG, "page header magic check failed, wait, lsn:%X/%X",
-             (uint32)(loadrecords->startptr >> 32), (uint32)loadrecords->startptr);
+        elog(RLOG_DEBUG,
+             "page header magic check failed, wait, lsn:%X/%X",
+             (uint32)(loadrecords->startptr >> 32),
+             (uint32)loadrecords->startptr);
         return false;
     }
 
@@ -345,7 +350,8 @@ static bool splitStartWithBlockBegin(char* currentBuf, loadwalrecords* loadrecor
             /* when not in same wal file */
             if (!check_is_same_segno(
                     loadrecords->startptr,
-                    loadrecords->page_last_record_incomplete->record->start.wal.lsn, loadrecords))
+                    loadrecords->page_last_record_incomplete->record->start.wal.lsn,
+                    loadrecords))
             {
                 /* close file descriptor, reopen previous file on read */
                 loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
@@ -384,8 +390,8 @@ static bool splitStartWithBlockBegin(char* currentBuf, loadwalrecords* loadrecor
                      "record split, page hdr remain len > incomplete record len, waitting");
 
                 /* when not in same wal file */
-                if (!check_is_same_segno(loadrecords->startptr, record_cross->record->start.wal.lsn,
-                                         loadrecords))
+                if (!check_is_same_segno(
+                        loadrecords->startptr, record_cross->record->start.wal.lsn, loadrecords))
                 {
                     /* close file descriptor, reopen previous file on read */
                     loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
@@ -425,16 +431,18 @@ static bool splitStartWithBlockBegin(char* currentBuf, loadwalrecords* loadrecor
                     !check_prev_lsn((XLogRecord*)complete_record->data, loadrecords->prev))
                 {
                     /* when not in same wal file */
-                    if (!check_is_same_segno(loadrecords->startptr, complete_record->start.wal.lsn,
-                                             loadrecords))
+                    if (!check_is_same_segno(
+                            loadrecords->startptr, complete_record->start.wal.lsn, loadrecords))
                     {
                         /* close file descriptor, reopen previous file on read */
                         loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
                     }
 
                     loadrecords->startptr = complete_record->start.wal.lsn;
-                    elog(RLOG_DEBUG, "record crc or prev check failed, lsn:%X/%X",
-                         (uint32)(loadrecords->startptr >> 32), (uint32)loadrecords->startptr);
+                    elog(RLOG_DEBUG,
+                         "record crc or prev check failed, lsn:%X/%X",
+                         (uint32)(loadrecords->startptr >> 32),
+                         (uint32)loadrecords->startptr);
                     /* free */
                     recordcross_free(record_cross);
                     loadrecords->page_last_record_incomplete = NULL;
@@ -480,7 +488,9 @@ static bool splitStartWithBlockBegin(char* currentBuf, loadwalrecords* loadrecor
                 realSize = (realSize <= freeSpace) ? realSize : freeSpace;
 
                 /* copy */
-                rmemcpy0(record_cross->record->data, record_cross->remainlen, buff->data + *offset,
+                rmemcpy0(record_cross->record->data,
+                         record_cross->remainlen,
+                         buff->data + *offset,
                          realSize);
 
                 record_cross->remainlen += realSize;
@@ -540,8 +550,10 @@ static bool splitStartWithBlockBegin(char* currentBuf, loadwalrecords* loadrecor
             wal_usleep(20 * 1000);
 
             /* no incomplete record and page header records remaining length */
-            elog(RLOG_INFO, "split record, have remain data, may flush slow, try again, lsn:%X/%X",
-                 (uint32)(*currentPtr >> 32), currentPtr);
+            elog(RLOG_INFO,
+                 "split record, have remain data, may flush slow, try again, lsn:%X/%X",
+                 (uint32)(*currentPtr >> 32),
+                 currentPtr);
             return false;
         }
     }
@@ -549,8 +561,11 @@ static bool splitStartWithBlockBegin(char* currentBuf, loadwalrecords* loadrecor
 }
 
 /* split from record start */
-static bool splitStartWithRecordBegin(char* currentBuf, loadwalrecords* loadrecords, mpage* buff,
-                                      XLogRecPtr* currentPtr, uint32_t* offset)
+static bool splitStartWithRecordBegin(char*           currentBuf,
+                                      loadwalrecords* loadrecords,
+                                      mpage*          buff,
+                                      XLogRecPtr*     currentPtr,
+                                      uint32_t*       offset)
 {
     /* read 4-byte length information */
     totalLen* total_len = (totalLen*)(buff->data + *offset);
@@ -683,8 +698,10 @@ static bool splitStartWithRecordBegin(char* currentBuf, loadwalrecords* loadreco
             wal_usleep(20 * 1000);
 
             loadrecords->startptr = recordEntry->start.wal.lsn;
-            elog(RLOG_DEBUG, "record crc or prev check failed, lsn:%X/%X",
-                 (uint32)(loadrecords->startptr >> 32), (uint32)loadrecords->startptr);
+            elog(RLOG_DEBUG,
+                 "record crc or prev check failed, lsn:%X/%X",
+                 (uint32)(loadrecords->startptr >> 32),
+                 (uint32)loadrecords->startptr);
             record_free(recordEntry);
 
             return false;
@@ -811,7 +828,7 @@ bool loadwalrecords_merge_seg_last_record(loadwalrecords* rctl)
     recordcross* f_record = rctl->page_last_record_incomplete;
     recordcross* l_record = rctl->seg_first_incomplete_next;
 
-    record* record = NULL;
+    record*      record = NULL;
 
     /* check if exists, if not exists is error case, return directly */
     if (!rctl->page_last_record_incomplete)
@@ -845,8 +862,10 @@ bool loadwalrecords_merge_seg_last_record(loadwalrecords* rctl)
         !check_prev_lsn((XLogRecord*)record->data, rctl->prev))
     {
         /* verification should not fail, there is a problem here */
-        elog(RLOG_ERROR, "when split rewind, record crc or prev check failed, lsn:%X/%X",
-             (uint32)(rctl->startptr >> 32), (uint32)rctl->startptr);
+        elog(RLOG_ERROR,
+             "when split rewind, record crc or prev check failed, lsn:%X/%X",
+             (uint32)(rctl->startptr >> 32),
+             (uint32)rctl->startptr);
     }
 
     /* verification passed */

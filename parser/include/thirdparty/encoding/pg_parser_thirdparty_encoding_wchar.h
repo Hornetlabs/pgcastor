@@ -7,10 +7,10 @@ typedef uint32_t character_wchar;
  */
 #define MAX_MULTIBYTE_CHAR_LEN 4
 
-#define HIGHBIT (0x80)
-#define IS_HIGHBIT_SET(ch) ((unsigned char)(ch) & HIGHBIT)
+#define HIGHBIT                (0x80)
+#define IS_HIGHBIT_SET(ch)     ((unsigned char)(ch) & HIGHBIT)
 
-#define conv_lengthof(array) (sizeof(array) / sizeof((array)[0]))
+#define conv_lengthof(array)   (sizeof(array) / sizeof((array)[0]))
 
 /*
  * various definitions for EUC
@@ -86,7 +86,7 @@ typedef uint32_t character_wchar;
 #define LC_ISO8859_2 0x82 /* ISO8859 Latin 2 */
 #define LC_ISO8859_3 0x83 /* ISO8859 Latin 3 */
 #define LC_ISO8859_4 0x84 /* ISO8859 Latin 4 */
-#define LC_TIS620 0x85    /* Thai (not supported yet) */
+#define LC_TIS620    0x85 /* Thai (not supported yet) */
 #define LC_ISO8859_7 0x86 /* Greek (not supported yet) */
 #define LC_ISO8859_6 0x87 /* Arabic (not supported yet) */
 #define LC_ISO8859_8 0x88 /* Hebrew (not supported yet) */
@@ -96,9 +96,9 @@ typedef uint32_t character_wchar;
  * However, there might be a chance that 0x8b could be used
  * in later versions of Emacs.
  */
-#define LC_KOI8_R 0x8b     /* Cyrillic KOI8-R */
-#define LC_ISO8859_5 0x8c  /* ISO8859 Cyrillic */
-#define LC_ISO8859_9 0x8d  /* ISO8859 Latin 5 (not supported yet) */
+#define LC_KOI8_R     0x8b /* Cyrillic KOI8-R */
+#define LC_ISO8859_5  0x8c /* ISO8859 Cyrillic */
+#define LC_ISO8859_9  0x8d /* ISO8859 Latin 5 (not supported yet) */
 #define LC_ISO8859_15 0x8e /* ISO8859 Latin 15 (not supported yet) */
 /* #define CONTROL_1        0x8f    control characters (unused) */
 
@@ -110,12 +110,12 @@ typedef uint32_t character_wchar;
  * 0x9a-0x9d are free. 0x9e and 0x9f are reserved.
  */
 #define LC_JISX0208_1978 0x90 /* Japanese Kanji, old JIS (not supported) */
-#define LC_GB2312_80 0x91     /* Chinese */
-#define LC_JISX0208 0x92      /* Japanese Kanji (JIS X 0208) */
-#define LC_KS5601 0x93        /* Korean */
-#define LC_JISX0212 0x94      /* Japanese Kanji (JIS X 0212) */
-#define LC_CNS11643_1 0x95    /* CNS 11643-1992 Plane 1 */
-#define LC_CNS11643_2 0x96    /* CNS 11643-1992 Plane 2 */
+#define LC_GB2312_80     0x91 /* Chinese */
+#define LC_JISX0208      0x92 /* Japanese Kanji (JIS X 0208) */
+#define LC_KS5601        0x93 /* Korean */
+#define LC_JISX0212      0x94 /* Japanese Kanji (JIS X 0212) */
+#define LC_CNS11643_1    0x95 /* CNS 11643-1992 Plane 1 */
+#define LC_CNS11643_2    0x96 /* CNS 11643-1992 Plane 2 */
 #define LC_JISX0213_1                           \
     0x97 /* Japanese Kanji (JIS X 0213 Plane 1) \
           * (not supported) */
@@ -133,9 +133,9 @@ typedef uint32_t character_wchar;
  * Postgres-specific prefix bytes for "private" single byte encodings
  * (According to the MULE docs, we should be using 0x9e for this)
  */
-#define LCPRV1_A 0x9a
-#define LCPRV1_B 0x9b
-#define IS_LCPRV1(c) ((unsigned char)(c) == LCPRV1_A || (unsigned char)(c) == LCPRV1_B)
+#define LCPRV1_A             0x9a
+#define LCPRV1_B             0x9b
+#define IS_LCPRV1(c)         ((unsigned char)(c) == LCPRV1_A || (unsigned char)(c) == LCPRV1_B)
 #define IS_LCPRV1_A_RANGE(c) ((unsigned char)(c) >= 0xa0 && (unsigned char)(c) <= 0xdf)
 #define IS_LCPRV1_B_RANGE(c) ((unsigned char)(c) >= 0xe0 && (unsigned char)(c) <= 0xef)
 
@@ -143,9 +143,9 @@ typedef uint32_t character_wchar;
  * Postgres-specific prefix bytes for "private" multibyte encodings
  * (According to the MULE docs, we should be using 0x9f for this)
  */
-#define LCPRV2_A 0x9c
-#define LCPRV2_B 0x9d
-#define IS_LCPRV2(c) ((unsigned char)(c) == LCPRV2_A || (unsigned char)(c) == LCPRV2_B)
+#define LCPRV2_A             0x9c
+#define LCPRV2_B             0x9d
+#define IS_LCPRV2(c)         ((unsigned char)(c) == LCPRV2_A || (unsigned char)(c) == LCPRV2_B)
 #define IS_LCPRV2_A_RANGE(c) ((unsigned char)(c) >= 0xf0 && (unsigned char)(c) <= 0xf4)
 #define IS_LCPRV2_B_RANGE(c) ((unsigned char)(c) >= 0xf5 && (unsigned char)(c) <= 0xfe)
 
@@ -164,7 +164,7 @@ typedef uint32_t character_wchar;
 #define LC_VISCII_UPPER                                                 \
     0xa3                        /* Vietnamese VISCII1.1 upper-case (not \
                                  * supported) */
-#define LC_ARABIC_DIGIT 0xa4    /* Arabic digit (not supported) */
+#define LC_ARABIC_DIGIT    0xa4 /* Arabic digit (not supported) */
 #define LC_ARABIC_1_COLUMN 0xa5 /* Arabic 1-column (not supported) */
 #define LC_ASCII_RIGHT_TO_LEFT                  \
     0xa6 /* ASCII (left half of ISO8859-1) with \
@@ -193,7 +193,7 @@ typedef uint32_t character_wchar;
 #define LC_UNICODE_SUBSET                                     \
     0xf4                   /* Unicode characters of the range \
                             * U+0100..U+24FF. (not supported) */
-#define LC_ETHIOPIC 0xf5   /* Ethiopic characters (not supported) */
+#define LC_ETHIOPIC   0xf5 /* Ethiopic characters (not supported) */
 #define LC_CNS11643_3 0xf6 /* CNS 11643-1992 Plane 3 */
 #define LC_CNS11643_4 0xf7 /* CNS 11643-1992 Plane 4 */
 #define LC_CNS11643_5 0xf8 /* CNS 11643-1992 Plane 5 */
@@ -338,19 +338,21 @@ extern const character_enc2gettext character_enc2gettext_tbl[];
 /*
  * character_wchar stuff
  */
-typedef int32_t (*mb2wchar_with_len_converter)(const unsigned char* from, character_wchar* to,
-                                               int32_t len);
+typedef int32_t                    (*mb2wchar_with_len_converter)(const unsigned char* from,
+                                               character_wchar*     to,
+                                               int32_t              len);
 
-typedef int32_t (*wchar2mb_with_len_converter)(const character_wchar* from, unsigned char* to,
-                                               int32_t len);
+typedef int32_t                    (*wchar2mb_with_len_converter)(const character_wchar* from,
+                                               unsigned char*         to,
+                                               int32_t                len);
 
-typedef int32_t (*mblen_converter)(const unsigned char* mbstr);
+typedef int32_t                    (*mblen_converter)(const unsigned char* mbstr);
 
-typedef int32_t (*mbdisplaylen_converter)(const unsigned char* mbstr);
+typedef int32_t                    (*mbdisplaylen_converter)(const unsigned char* mbstr);
 
-typedef bool (*mbcharacter_incrementer)(unsigned char* mbstr, int32_t len);
+typedef bool                       (*mbcharacter_incrementer)(unsigned char* mbstr, int32_t len);
 
-typedef int32_t (*mbverifier)(const unsigned char* mbstr, int32_t len);
+typedef int32_t                    (*mbverifier)(const unsigned char* mbstr, int32_t len);
 
 typedef struct
 {
@@ -358,10 +360,10 @@ typedef struct
                                                     * string to a wchar */
     wchar2mb_with_len_converter wchar2mb_with_len; /* convert a wchar string
                                                     * to a multibyte */
-    mblen_converter        mblen;                  /* get byte length of a char */
-    mbdisplaylen_converter dsplen;                 /* get display width of a char */
-    mbverifier             mbverify;               /* verify multibyte sequence */
-    int32_t                maxmblen;               /* max bytes for a char in this encoding */
+    mblen_converter             mblen;             /* get byte length of a char */
+    mbdisplaylen_converter      dsplen;            /* get display width of a char */
+    mbverifier                  mbverify;          /* verify multibyte sequence */
+    int32_t                     maxmblen;          /* max bytes for a char in this encoding */
 } character_wchar_tbl;
 
 extern const character_wchar_tbl character_wchar_table[];
@@ -416,36 +418,36 @@ typedef struct
     const uint32_t* chars32;
 
     /* Radix tree for 1-byte inputs */
-    uint32_t b1root;   /* offset of table in the chars[16|32] array */
-    uint8_t  b1_lower; /* min allowed value for a single byte input */
-    uint8_t  b1_upper; /* max allowed value for a single byte input */
+    uint32_t        b1root;   /* offset of table in the chars[16|32] array */
+    uint8_t         b1_lower; /* min allowed value for a single byte input */
+    uint8_t         b1_upper; /* max allowed value for a single byte input */
 
     /* Radix tree for 2-byte inputs */
-    uint32_t b2root;     /* offset of 1st byte's table */
-    uint8_t  b2_1_lower; /* min/max allowed value for 1st input byte */
-    uint8_t  b2_1_upper;
-    uint8_t  b2_2_lower; /* min/max allowed value for 2nd input byte */
-    uint8_t  b2_2_upper;
+    uint32_t        b2root;     /* offset of 1st byte's table */
+    uint8_t         b2_1_lower; /* min/max allowed value for 1st input byte */
+    uint8_t         b2_1_upper;
+    uint8_t         b2_2_lower; /* min/max allowed value for 2nd input byte */
+    uint8_t         b2_2_upper;
 
     /* Radix tree for 3-byte inputs */
-    uint32_t b3root;     /* offset of 1st byte's table */
-    uint8_t  b3_1_lower; /* min/max allowed value for 1st input byte */
-    uint8_t  b3_1_upper;
-    uint8_t  b3_2_lower; /* min/max allowed value for 2nd input byte */
-    uint8_t  b3_2_upper;
-    uint8_t  b3_3_lower; /* min/max allowed value for 3rd input byte */
-    uint8_t  b3_3_upper;
+    uint32_t        b3root;     /* offset of 1st byte's table */
+    uint8_t         b3_1_lower; /* min/max allowed value for 1st input byte */
+    uint8_t         b3_1_upper;
+    uint8_t         b3_2_lower; /* min/max allowed value for 2nd input byte */
+    uint8_t         b3_2_upper;
+    uint8_t         b3_3_lower; /* min/max allowed value for 3rd input byte */
+    uint8_t         b3_3_upper;
 
     /* Radix tree for 4-byte inputs */
-    uint32_t b4root;     /* offset of 1st byte's table */
-    uint8_t  b4_1_lower; /* min/max allowed value for 1st input byte */
-    uint8_t  b4_1_upper;
-    uint8_t  b4_2_lower; /* min/max allowed value for 2nd input byte */
-    uint8_t  b4_2_upper;
-    uint8_t  b4_3_lower; /* min/max allowed value for 3rd input byte */
-    uint8_t  b4_3_upper;
-    uint8_t  b4_4_lower; /* min/max allowed value for 4th input byte */
-    uint8_t  b4_4_upper;
+    uint32_t        b4root;     /* offset of 1st byte's table */
+    uint8_t         b4_1_lower; /* min/max allowed value for 1st input byte */
+    uint8_t         b4_1_upper;
+    uint8_t         b4_2_lower; /* min/max allowed value for 2nd input byte */
+    uint8_t         b4_2_upper;
+    uint8_t         b4_3_lower; /* min/max allowed value for 3rd input byte */
+    uint8_t         b4_3_upper;
+    uint8_t         b4_4_lower; /* min/max allowed value for 4th input byte */
+    uint8_t         b4_4_upper;
 
 } character_mb_radix_tree;
 
@@ -506,26 +508,48 @@ extern int32_t character_mic_mblen(const unsigned char* mbstr);
 extern int32_t character_encoding_verifymb(int32_t encoding, const char* mbstr, int32_t len);
 
 /* src/thirdparty/encoding/convert_func/pg_parser_thirdparty_encoding_convert.c */
-extern void local2local(const unsigned char* l, unsigned char* p, int32_t len, int32_t src_encoding,
-                        int32_t dest_encoding, const unsigned char* tab);
+extern void local2local(const unsigned char* l,
+                        unsigned char*       p,
+                        int32_t              len,
+                        int32_t              src_encoding,
+                        int32_t              dest_encoding,
+                        const unsigned char* tab);
 extern void conv_ascii2mic(const unsigned char* l, unsigned char* p, int32_t len);
 extern void conv_mic2ascii(const unsigned char* mic, unsigned char* p, int32_t len);
-extern void latin2mic(const unsigned char* l, unsigned char* p, int32_t len, int32_t lc,
-                      int32_t encoding);
-extern void mic2latin(const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc,
-                      int32_t encoding);
-extern void latin2mic_with_table(const unsigned char* l, unsigned char* p, int32_t len, int32_t lc,
-                                 int32_t encoding, const unsigned char* tab);
-extern void mic2latin_with_table(const unsigned char* mic, unsigned char* p, int32_t len,
-                                 int32_t lc, int32_t encoding, const unsigned char* tab);
+extern void latin2mic(
+    const unsigned char* l, unsigned char* p, int32_t len, int32_t lc, int32_t encoding);
+extern void mic2latin(
+    const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc, int32_t encoding);
+extern void latin2mic_with_table(const unsigned char* l,
+                                 unsigned char*       p,
+                                 int32_t              len,
+                                 int32_t              lc,
+                                 int32_t              encoding,
+                                 const unsigned char* tab);
+extern void mic2latin_with_table(const unsigned char* mic,
+                                 unsigned char*       p,
+                                 int32_t              len,
+                                 int32_t              lc,
+                                 int32_t              encoding,
+                                 const unsigned char* tab);
 
-void UtfToLocal(const unsigned char* utf, int32_t len, unsigned char* iso,
-                const character_mb_radix_tree* map, const character_utf_to_local_combined* cmap,
-                int32_t cmapsize, utf_local_conversion_func conv_func, int32_t encoding);
+void UtfToLocal(const unsigned char*                   utf,
+                int32_t                                len,
+                unsigned char*                         iso,
+                const character_mb_radix_tree*         map,
+                const character_utf_to_local_combined* cmap,
+                int32_t                                cmapsize,
+                utf_local_conversion_func              conv_func,
+                int32_t                                encoding);
 
-void LocalToUtf(const unsigned char* iso, int32_t len, unsigned char* utf,
-                const character_mb_radix_tree* map, const character_local_to_utf_combined* cmap,
-                int32_t cmapsize, utf_local_conversion_func conv_func, int32_t encoding);
+void LocalToUtf(const unsigned char*                   iso,
+                int32_t                                len,
+                unsigned char*                         utf,
+                const character_mb_radix_tree*         map,
+                const character_local_to_utf_combined* cmap,
+                int32_t                                cmapsize,
+                utf_local_conversion_func              conv_func,
+                int32_t                                encoding);
 
 /* src/thirdparty/encoding/convert_func/pg_parser_thiedparty_encoding_convert_func_big5.c */
 extern unsigned short BIG5toCNS(unsigned short big5, unsigned char* lc);

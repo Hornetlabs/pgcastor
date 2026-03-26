@@ -98,8 +98,11 @@ static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
         uint32 remain = 0;
         int    shard_no = 1;
 
-        appendStringInfo(str, "select pg_relation_size('\"%s\".\"%s\"')/%d;", table->schema,
-                         table->table, g_blocksize);
+        appendStringInfo(str,
+                         "select pg_relation_size('\"%s\".\"%s\"')/%d;",
+                         table->schema,
+                         table->table,
+                         g_blocksize);
         res = PQexec(conn, str->data);
         if (PGRES_TUPLES_OK != PQresultStatus(res))
         {
@@ -143,8 +146,12 @@ static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
             refresh_table_sharding_set_shardno(table_shard, 0);
             refresh_table_sharding_set_condition(table_shard, NULL);
 
-            elog(RLOG_DEBUG, "capture refresh queue: %s.%s %4d %4d", table_shard->schema,
-                 table_shard->table, table_shard->shardings, table_shard->sharding_no);
+            elog(RLOG_DEBUG,
+                 "capture refresh queue: %s.%s %4d %4d",
+                 table_shard->schema,
+                 table_shard->table,
+                 table_shard->shardings,
+                 table_shard->sharding_no);
             /* add to cache */
             queue_put(rcapture->tqueue, (void*)table_shard);
             continue;
@@ -174,8 +181,12 @@ static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
             cond->left_condition = left;
             cond->right_condition = right;
 
-            elog(RLOG_DEBUG, "capture refresh queue: %s.%s %4d %4d", table_shard->schema,
-                 table_shard->table, table_shard->shardings, table_shard->sharding_no);
+            elog(RLOG_DEBUG,
+                 "capture refresh queue: %s.%s %4d %4d",
+                 table_shard->schema,
+                 table_shard->table,
+                 table_shard->shardings,
+                 table_shard->sharding_no);
 
             /* add to cache */
             queue_put(rcapture->tqueue, (void*)table_shard);
@@ -210,8 +221,8 @@ static void refresh_capture_trymkdir(refresh_tables* tables)
     for (table = tables->tables; table != NULL; table = table->next)
     {
         resetStringInfo(path);
-        appendStringInfo(path, "%s/%s/%s_%s", data_path, REFRESH_REFRESH, table->schema,
-                         table->table);
+        appendStringInfo(
+            path, "%s/%s/%s_%s", data_path, REFRESH_REFRESH, table->schema, table->table);
 
         elog(RLOG_DEBUG, "path:%s", path->data);
         if (!osal_dir_exist(path->data))
@@ -262,10 +273,13 @@ static bool refresh_capture_startjobs(refresh_capture* rcapture)
         sharding2file->tqueue = rcapture->tqueue;
 
         /* register worker thread */
-        if (false ==
-            threads_addjobthread(rcapture->thrsmgr->parents, THRNODE_IDENTITY_CAPTURE_REFRESH_JOB,
-                                 rcapture->thrsmgr->submgrref.no, (void*)sharding2file,
-                                 refresh_sharding2file_free, NULL, refresh_sharding2file_work))
+        if (false == threads_addjobthread(rcapture->thrsmgr->parents,
+                                          THRNODE_IDENTITY_CAPTURE_REFRESH_JOB,
+                                          rcapture->thrsmgr->submgrref.no,
+                                          (void*)sharding2file,
+                                          refresh_sharding2file_free,
+                                          NULL,
+                                          refresh_sharding2file_work))
         {
             elog(RLOG_WARNING, "refresh capture start job error");
             return false;
@@ -427,9 +441,9 @@ void* refresh_capture_main(void* args)
 
             /* set idle threads to exit and count exited threads */
             jobcnt = rcapture->thrsmgr->childthrrefs->length;
-            if (false == threads_setsubmgrjobthredstermandcountexit(rcapture->thrsmgr->parents,
-                                                                    rcapture->thrsmgr->childthrrefs,
-                                                                    0, &jobcnt))
+            if (false ==
+                threads_setsubmgrjobthredstermandcountexit(
+                    rcapture->thrsmgr->parents, rcapture->thrsmgr->childthrrefs, 0, &jobcnt))
             {
                 elog(RLOG_WARNING, "capture refresh set job threads term in idle error");
                 thr_node->stat = THRNODE_STAT_ABORT;
@@ -444,7 +458,8 @@ void* refresh_capture_main(void* args)
 
             /* all threads have exited, set sub-thread state to FREE */
             threads_setsubmgrjobthredsfree(rcapture->thrsmgr->parents,
-                                           rcapture->thrsmgr->childthrrefs, 0,
+                                           rcapture->thrsmgr->childthrrefs,
+                                           0,
                                            rcapture->parallelcnt);
 
             /* set this thread to exit */

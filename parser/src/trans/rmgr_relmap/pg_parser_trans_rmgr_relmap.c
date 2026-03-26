@@ -9,8 +9,9 @@
 
 #define RMGR_RELMAP_MCXT NULL
 
-bool pg_parser_trans_rmgr_relmap_pre(pg_parser_trans_transrec_decode_XLogReaderState* state,
-                                     pg_parser_translog_pre_base** result, int32_t* pg_parser_errno)
+bool pg_parser_trans_rmgr_relmap_pre(pg_parser_XLogReaderState*    state,
+                                     pg_parser_translog_pre_base** result,
+                                     int32_t*                      pg_parser_errno)
 {
     pg_parser_translog_pre_relmap* relmap_result = NULL;
     uint8_t                        info = state->decoded_record->xl_info;
@@ -26,11 +27,12 @@ bool pg_parser_trans_rmgr_relmap_pre(pg_parser_trans_transrec_decode_XLogReaderS
             return false;
         }
 
-        pg_parser_mcxt_malloc(RMGR_RELMAP_MCXT, (void**)&relmap_result,
-                              sizeof(pg_parser_translog_pre_relmap));
+        pg_parser_mcxt_malloc(
+            RMGR_RELMAP_MCXT, (void**)&relmap_result, sizeof(pg_parser_translog_pre_relmap));
         if (newmap->num_mappings > 0)
         {
-            pg_parser_mcxt_malloc(RMGR_RELMAP_MCXT, (void**)&(relmap_result->m_mapping),
+            pg_parser_mcxt_malloc(RMGR_RELMAP_MCXT,
+                                  (void**)&(relmap_result->m_mapping),
                                   sizeof(pg_parser_RelMapping) * newmap->num_mappings);
         }
 
@@ -41,7 +43,9 @@ bool pg_parser_trans_rmgr_relmap_pre(pg_parser_trans_transrec_decode_XLogReaderS
         relmap_result->m_dboid = xlrec->dbid;
         if (newmap->num_mappings > 0)
         {
-            rmemcpy0(relmap_result->m_mapping, 0, newmap->mappings,
+            rmemcpy0(relmap_result->m_mapping,
+                     0,
+                     newmap->mappings,
                      sizeof(pg_parser_RelMapping) * relmap_result->m_count);
         }
         *result = (pg_parser_translog_pre_base*)relmap_result;

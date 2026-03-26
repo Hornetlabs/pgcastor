@@ -262,8 +262,10 @@ void range_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
         catalogInHash = hash_search(sysdicts->by_range, &newcatalog->rngtypid, HASH_ENTER, &found);
         if (true == found)
         {
-            elog(RLOG_WARNING, "by_range hash duplicate oid, %u, %u",
-                 catalogInHash->range->rngtypid, catalogInHash->range->rngsubtype);
+            elog(RLOG_WARNING,
+                 "by_range hash duplicate oid, %u, %u",
+                 catalogInHash->range->rngtypid,
+                 catalogInHash->range->rngsubtype);
 
             if (NULL != catalogInHash->range)
             {
@@ -295,7 +297,9 @@ void range_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
         catalogInHash = hash_search(sysdicts->by_range, &newcatalog->rngtypid, HASH_FIND, &found);
         if (NULL == catalogInHash)
         {
-            elog(RLOG_WARNING, "by_range hash duplicate oid, %u, %u", newcatalog->range->rngtypid,
+            elog(RLOG_WARNING,
+                 "by_range hash duplicate oid, %u, %u",
+                 newcatalog->range->rngtypid,
                  newcatalog->range->rngsubtype);
             return;
         }

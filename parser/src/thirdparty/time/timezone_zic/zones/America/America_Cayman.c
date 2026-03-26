@@ -4,4 +4,5 @@
 char* PG_America_Cayman[] = {
     (char*)"Zone	America/Panama	-5:18:08 -	LMT	1890",
     (char*)"			-5:19:36 -	CMT	1908 Apr 22 # Colón Mean Time",
-    (char*)"			-5:00	-	EST", (char*)"Link America/Panama America/Cayman"};
+    (char*)"			-5:00	-	EST",
+    (char*)"Link America/Panama America/Cayman"};

@@ -9,8 +9,8 @@ typedef struct PARSERTRAIL
     ffsmgr_state* ffsmgrstate;
 
     /* Committed transaction */
-    dlist*     dtxns;
-    cache_txn* parser2txn;
+    dlist*        dtxns;
+    cache_txn*    parser2txn;
 } parsertrail;
 
 typedef bool (*parsertrailtokenapplyfunc)(parsertrail* parsertrail, void* data);

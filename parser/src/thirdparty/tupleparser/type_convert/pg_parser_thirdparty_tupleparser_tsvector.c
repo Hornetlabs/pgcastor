@@ -17,7 +17,7 @@
 
 #define PGFUNC_TSVECTOR_MCXT NULL
 
-#define TOUCHAR(x) (*((const unsigned char*)(x)))
+#define TOUCHAR(x)           (*((const unsigned char*)(x)))
 /* The second argument of t_iseq() must be a plain ASCII character */
 #define t_iseq(x, c) (TOUCHAR(x) == (unsigned char)(c))
 
@@ -38,7 +38,7 @@ typedef struct
 
 typedef TSVectorData* TSVector;
 
-typedef uint16_t WordEntryPos;
+typedef uint16_t      WordEntryPos;
 
 typedef struct
 {
@@ -55,16 +55,18 @@ typedef struct
 #define POSDATALEN(x, e) (((e)->haspos) ? (_POSVECPTR(x, e)->npos) : 0)
 #define POSDATAPTR(x, e) (_POSVECPTR(x, e)->pos)
 
-#define WEP_GETPOS(x) ((x) & 0x3fff)
+#define WEP_GETPOS(x)    ((x) & 0x3fff)
 #define WEP_GETWEIGHT(x) ((x) >> 14)
 
 pg_parser_Datum tsvectorout(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
-    bool     is_toast = false;
-    bool     need_free = false;
-    TSVector out =
-        (TSVector)pg_parser_detoast_datum((struct pg_parser_varlena*)attr, &is_toast, &need_free,
-                                          info->zicinfo->dbtype, info->zicinfo->dbversion);
+    bool       is_toast = false;
+    bool       need_free = false;
+    TSVector   out = (TSVector)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                     &is_toast,
+                                                     &need_free,
+                                                     info->zicinfo->dbtype,
+                                                     info->zicinfo->dbversion);
     char*      outbuf;
     int32_t    i, lenbuf = 0, pp;
     WordEntry* ptr = ARRPTR(out);

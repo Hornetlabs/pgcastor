@@ -23,8 +23,10 @@ extern xmanager_metricnode* xmanager_metricintegratenode_init(void);
 extern void xmanager_metricintegratenode_destroy(xmanager_metricnode* metricnode);
 
 /* Serialize integrate node */
-extern bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode, uint8** blk,
-                                                int* blksize, int* blkstart);
+extern bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode,
+                                                uint8**              blk,
+                                                int*                 blksize,
+                                                int*                 blkstart);
 
 /* Deserialize to integrate node */
 extern xmanager_metricnode* xmanager_metricintegratenode_deserial(uint8* blk, int* blkstart);

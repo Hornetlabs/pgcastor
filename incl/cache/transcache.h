@@ -31,10 +31,10 @@ typedef struct CHECKPOINTS
 typedef struct TRANSCACHE
 {
     /* total size used by statement cache */
-    uint64 totalsize;
+    uint64          totalsize;
 
     /* space occupied by capture_buffer transaction cache */
-    uint64 capture_buffer;
+    uint64          capture_buffer;
 
     /*
      * Maintenance logic:
@@ -43,13 +43,13 @@ typedef struct TRANSCACHE
      *      In the serialization thread, after restartlsn is updated, check whether to remove
      *          nodes from chkpts; when removing nodes, also clean fpwcache data.
      */
-    checkpoints* chkpts;
-    txn_dlist*   transdlist;
-    HTAB*        by_txns; /* pending transaction cache, key: transactionid, entry: txn */
+    checkpoints*    chkpts;
+    txn_dlist*      transdlist;
+    HTAB*           by_txns; /* pending transaction cache, key: transactionid, entry: txn */
 
     /* FPW (full page write) cache */
-    HTAB* by_fpwtuples;  /* hash table for storing full page write tuples */
-    List* fpwtupleslist; /* linked list of hash keys and lsn */
+    HTAB*           by_fpwtuples;  /* hash table for storing full page write tuples */
+    List*           fpwtupleslist; /* linked list of hash keys and lsn */
 
     cache_sysdicts* sysdicts; /* system dictionary cache */
 
@@ -57,13 +57,13 @@ typedef struct TRANSCACHE
      * Sync dataset
      */
     /* table include rules */
-    List* tableincludes;
+    List*           tableincludes;
 
     /* table exclude rules */
-    List* tableexcludes;
+    List*           tableexcludes;
 
     /* new table pattern rules */
-    List* addtablepattern;
+    List*           addtablepattern;
 
     /*
      * Sync dataset keyed by relid
@@ -72,20 +72,25 @@ typedef struct TRANSCACHE
      *  During runtime, when new tables match tableaddpattern rules, they are added to the sync
      * dataset
      */
-    HTAB* hsyncdataset;
+    HTAB*           hsyncdataset;
 
     /*
      * Dataset that causes transactions to be filtered
      *    Key: Oid
      *    Value: filter_oid2datasetnode
      */
-    HTAB* htxnfilterdataset;
+    HTAB*           htxnfilterdataset;
 } transcache;
 
 typedef transcache txnscontext;
 
-extern void transcache_dlist_remove(void* in_ctx, txn* txn, bool* brestart, XLogRecPtr* restartlsn,
-                                    bool* bconfirm, XLogRecPtr* confirmlsn, bool bset);
+extern void transcache_dlist_remove(void*       in_ctx,
+                                    txn*        txn,
+                                    bool*       brestart,
+                                    XLogRecPtr* restartlsn,
+                                    bool*       bconfirm,
+                                    XLogRecPtr* confirmlsn,
+                                    bool        bset);
 
 extern txn* transcache_getTXNByXid(void* in_ctx, uint64_t xid);
 

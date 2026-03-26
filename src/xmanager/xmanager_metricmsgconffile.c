@@ -19,8 +19,9 @@
  *2. Verify job already exists
  *3. Overwrite conf file
  */
-bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric, netpoolentry* npoolentry,
-                                      netpacket* npacket)
+bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric,
+                                      netpoolentry*    npoolentry,
+                                      netpacket*       npacket)
 {
     int                  fd = 0;
     int                  len = 0;
@@ -49,7 +50,9 @@ bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric, netpoolentry* np
     if (XMANAGER_METRICNODETYPE_PROCESS <= jobtype)
     {
         errcode = ERROR_MSGCOMMANDUNVALID;
-        snprintf(errormsg, 2048, "xmanager parse conffile command, unsupport %s",
+        snprintf(errormsg,
+                 2048,
+                 "xmanager parse conffile command, unsupport %s",
                  xmanager_metricnode_getname(jobtype));
         goto xmanager_metricmsg_parseconffile_error;
     }
@@ -121,7 +124,11 @@ bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric, netpoolentry* np
     if (osal_durable_rename(tmppath, pxmetricnode->conf, RLOG_DEBUG))
     {
         errcode = ERROR_OPENFILEERROR;
-        snprintf(errormsg, 2048, "ERROR: %s does not renaming file %s:%s .", jobname, tmppath,
+        snprintf(errormsg,
+                 2048,
+                 "ERROR: %s does not renaming file %s:%s .",
+                 jobname,
+                 tmppath,
                  strerror(errno));
         goto xmanager_metricmsg_parseconffile_error;
     }
@@ -141,6 +148,6 @@ xmanager_metricmsg_parseconffile_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets,
-                                               XMANAGER_MSG_CONFFILECMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(
+        xmetric, npoolentry->wpackets, XMANAGER_MSG_CONFFILECMD, errcode, errormsg);
 }

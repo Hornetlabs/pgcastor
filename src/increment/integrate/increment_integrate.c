@@ -388,7 +388,8 @@ static bool increment_integrate_isbigtxnsigterm(void* privdata, FullTransactionI
 }
 
 /* syncwork sets splittrail fileid and working state */
-static void increment_integrate_splittrail_fileid_emitoffset_set(void* privdata, uint64 fileid,
+static void increment_integrate_splittrail_fileid_emitoffset_set(void*  privdata,
+                                                                 uint64 fileid,
                                                                  uint64 emitoffset)
 {
     increment_integrate* incintegrate = NULL;
@@ -669,9 +670,9 @@ increment_integrate* increment_integrate_init(void)
 /* Start refresh */
 bool increment_integrate_startrefresh(increment_integrate* incintegrate)
 {
-    int iret                        = 0;
-    ListCell* lc                    = NULL;
-    refresh_integrate* rintegrate   = NULL;
+    int                iret = 0;
+    ListCell*          lc = NULL;
+    refresh_integrate* rintegrate = NULL;
 
     iret = osal_thread_lock(&incintegrate->refreshlock);
     if (0 != iret)
@@ -695,8 +696,12 @@ bool increment_integrate_startrefresh(increment_integrate* incintegrate)
         /* Register refresh management thread */
         if (false == threads_addsubmanger(incintegrate->threads,
                                           THRNODE_IDENTITY_INTEGRATE_REFRESH_MGR,
-                                          incintegrate->persistno, &rintegrate->thrsmgr,
-                                          (void*)rintegrate, NULL, NULL, refresh_integrate_main))
+                                          incintegrate->persistno,
+                                          &rintegrate->thrsmgr,
+                                          (void*)rintegrate,
+                                          NULL,
+                                          NULL,
+                                          refresh_integrate_main))
         {
             elog(RLOG_WARNING, "integrate start refresh mgr failed");
             return false;
@@ -710,10 +715,10 @@ bool increment_integrate_startrefresh(increment_integrate* incintegrate)
 /* Recycle refresh nodes */
 bool increment_integrate_tryjoinonrefresh(increment_integrate* incintegrate)
 {
-    int iret                        = 0;
-    List*  nl                       = NULL;
-    ListCell* lc                    = NULL;
-    refresh_integrate* rintegrate   = NULL;
+    int                iret = 0;
+    List*              nl = NULL;
+    ListCell*          lc = NULL;
+    refresh_integrate* rintegrate = NULL;
 
     iret = osal_thread_lock(&incintegrate->refreshlock);
     if (0 != iret)
@@ -733,7 +738,7 @@ bool increment_integrate_tryjoinonrefresh(increment_integrate* incintegrate)
 
         /*
          * refresh is already done
-         *  1. Clean up the refreshtable file directory 
+         *  1. Clean up the refreshtable file directory
          *  2. Resource release
          */
         refresh_table_syncstat_cleardirbyall(rintegrate->sync_stats, rintegrate->refresh_path);
@@ -831,10 +836,14 @@ bool increment_integrate_startonlinerefresh(increment_integrate* incintegrate)
         olrintegrate->stat = ONLINEREFRESH_INTEGRATE_STARTING;
 
         /* Register onlinerefresh management thread */
-        if (false ==
-            threads_addsubmanger(incintegrate->threads, THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_MGR,
-                                 incintegrate->persistno, &olrintegrate->thrsmgr,
-                                 (void*)olrintegrate, NULL, NULL, onlinerefresh_integrate_manage))
+        if (false == threads_addsubmanger(incintegrate->threads,
+                                          THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_MGR,
+                                          incintegrate->persistno,
+                                          &olrintegrate->thrsmgr,
+                                          (void*)olrintegrate,
+                                          NULL,
+                                          NULL,
+                                          onlinerefresh_integrate_manage))
         {
             elog(RLOG_WARNING, "start onlinerefresh mgr failed");
             osal_thread_unlock(&incintegrate->onlinerefreshlock);
@@ -916,8 +925,8 @@ bool increment_integrate_onlinerefreshload(increment_integrate* incintegrate)
         refreshtbs = refresh_table_syncstats_tablesyncing2tables(olrintegrate->tablesyncstats);
 
         /* Create onlinerefresh filter dataset */
-        onlinerefresh_integratefilterdataset_add(incintegrate->rebuild->honlinerefreshfilterdataset,
-                                                 refreshtbs, olrintegrate->txid);
+        onlinerefresh_integratefilterdataset_add(
+            incintegrate->rebuild->honlinerefreshfilterdataset, refreshtbs, olrintegrate->txid);
         datasetnode = onlinerefresh_integratedatasetnode_init();
         onlinerefresh_integratedatasetnode_no_set(datasetnode, olrintegrate->no.data);
         onlinerefresh_integratedatasetnode_txid_set(datasetnode, olrintegrate->txid);
@@ -960,10 +969,14 @@ bool increment_integrate_startbigtxn(increment_integrate* incintegrate)
         bigtxnintegrate->stat = BIGTXN_INTEGRATEMANAGER_STAT_INPROCESS;
 
         /* Start bigtxn manager thread */
-        if (false ==
-            threads_addsubmanger(incintegrate->threads, THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNMGR,
-                                 incintegrate->persistno, &bigtxnintegrate->thrsmgr,
-                                 (void*)bigtxnintegrate, NULL, NULL, bigtxn_integratemanager_main))
+        if (false == threads_addsubmanger(incintegrate->threads,
+                                          THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNMGR,
+                                          incintegrate->persistno,
+                                          &bigtxnintegrate->thrsmgr,
+                                          (void*)bigtxnintegrate,
+                                          NULL,
+                                          NULL,
+                                          bigtxn_integratemanager_main))
         {
             elog(RLOG_WARNING, "integrate start bigtxn manager failed");
             osal_thread_unlock(&incintegrate->bigtxnlock);
@@ -1001,8 +1014,12 @@ bool increment_integrate_tryjoinonbigtxn(increment_integrate* incintegrate)
 
         /* Delete xid corresponding big transaction folder */
         rmemset1(path, 0, '\0', MAXPGPATH);
-        snprintf(path, MAXPGPATH, "%s/%s/%lu", guc_getConfigOption(CFG_KEY_TRAIL_DIR),
-                 STORAGE_BIG_TRANSACTION_DIR, bigtxnintegrate->xid);
+        snprintf(path,
+                 MAXPGPATH,
+                 "%s/%s/%lu",
+                 guc_getConfigOption(CFG_KEY_TRAIL_DIR),
+                 STORAGE_BIG_TRANSACTION_DIR,
+                 bigtxnintegrate->xid);
         osal_remove_dir(path);
 
         incintegrate->bigtxnmgr =

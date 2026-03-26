@@ -4,8 +4,9 @@ BasedOnStyle: Google
 # 缩进设置
 IndentWidth: 4
 UseTab: Never
+ContinuationIndentWidth: 4
 
-# 大括号风格 (Allman style)
+# 大括号风格 (Allman style) - { 单独占一行
 BreakBeforeBraces: Allman
 
 # 空格设置
@@ -15,19 +16,33 @@ SpacesInAngles: false
 SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
 
-# 对齐设置 - 只对齐变量声明, 不对齐函数体中的赋值
+# 打开的括号后对齐方式
+AlignAfterOpenBracket: Align
+
+# 对齐设置
 AlignConsecutiveDeclarations:
   Enabled: true
-  AcrossEmptyLines: false
-  AcrossComments: false
+  AcrossEmptyLines: true
+  AcrossComments: true
   AlignCompound: false
-  AlignFunctionPointers: false
+  AlignFunctionDeclarations: false
+  AlignFunctionPointers: true
   PadOperators: false
+
+# 宏定义对齐
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: false
+
+# 变量定义完成后等号无需对齐
 AlignConsecutiveAssignments:
   Enabled: false
+
 AlignEscapedNewlines: Left
 AlignOperands: Align
-AlignTrailingComments: true
+AlignTrailingComments:
+  Kind: Always
 
 # 换行设置
 ColumnLimit: 100
@@ -38,9 +53,16 @@ AllowShortBlocksOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: false
 AlwaysBreakAfterReturnType: None
 
-# 其他设置
+# 指针左对齐 (char* buffer 而不是 char *buffer)
 PointerAlignment: Left
 DerivePointerAlignment: false
+
+# 必须插入大括号 (不允许省略 {})
+InsertBraces: true
+
+BinPackArguments: false
+BinPackParameters: false
+
+# 其他设置
 SortIncludes: false
 IncludeBlocks: Regroup
-InsertBraces: true

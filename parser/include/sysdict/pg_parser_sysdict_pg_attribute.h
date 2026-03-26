@@ -1,9 +1,9 @@
 #ifndef PG_PARSER_SYSDICT_PG_ATTRIBUTE_H
 #define PG_PARSER_SYSDICT_PG_ATTRIBUTE_H
 
-#define AttributeRelationId 1249
+#define AttributeRelationId          1249
 #define AttributeRelation_Rowtype_Id 75
-#define pg_parser_InvalidAttrNumber 0
+#define pg_parser_InvalidAttrNumber  0
 typedef struct PG_PARSER_SYSDICT_PGATTRIBUTES
 {
     uint32_t           attrelid; /* OID of relation containing this attribute */
@@ -34,15 +34,15 @@ typedef struct PG_PARSER_SYSDICT_PGATTRIBUTES
     pg_parser_text attoptions[1];
     pg_parser_text attfdwoptions[1];
 
-    anyarray attmissingval;
+    anyarray       attmissingval;
 
 #endif
 } pg_parser_sysdict_pgattributes;
 
 typedef pg_parser_sysdict_pgattributes* pg_sysdict_Form_pg_attribute;
 
-#define PG_SYSDICT_ATTRIBUTE_IDENTITY_ALWAYS 'a'
+#define PG_SYSDICT_ATTRIBUTE_IDENTITY_ALWAYS     'a'
 #define PG_SYSDICT_ATTRIBUTE_IDENTITY_BY_DEFAULT 'd'
-#define PG_SYSDICT_ATTRIBUTE_GENERATED_STORED 's'
+#define PG_SYSDICT_ATTRIBUTE_GENERATED_STORED    's'
 
 #endif

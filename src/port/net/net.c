@@ -70,8 +70,10 @@ bool osal_setunblock(rsocket sockfd)
 }
 
 /* Get available address */
-int osal_getaddrinfo(const char* node, const char* service, const struct addrinfo* hints,
-                     struct addrinfo** res)
+int osal_getaddrinfo(const char*            node,
+                     const char*            service,
+                     const struct addrinfo* hints,
+                     struct addrinfo**      res)
 {
     if (NULL != node && node[0] == '*')
     {
@@ -215,8 +217,13 @@ bool osal_net_write(rsocket sockfd, uint8* buffer, int amount)
 /*
  * Get address by name or IP address
  * */
-bool osal_host2sockaddr(struct sockaddr_in* addr, const char* host, const char* service, int family,
-                        int socktype, int protocol, int passive)
+bool osal_host2sockaddr(struct sockaddr_in* addr,
+                        const char*         host,
+                        const char*         service,
+                        int                 family,
+                        int                 socktype,
+                        int                 protocol,
+                        int                 passive)
 {
     int              ret = 0;
     struct addrinfo  hints;

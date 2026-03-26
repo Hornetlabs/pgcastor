@@ -15,7 +15,7 @@ typedef struct pg_parser_xl_running_xacts
     uint32_t xids[FLEXIBLE_ARRAY_MEMBER];
 } pg_parser_xl_running_xacts;
 
-extern bool pg_parser_trans_rmgr_standby_pre(pg_parser_trans_transrec_decode_XLogReaderState* state,
+extern bool pg_parser_trans_rmgr_standby_pre(pg_parser_XLogReaderState*    state,
                                              pg_parser_translog_pre_base** result,
                                              int32_t*                      pg_parser_errno);
 

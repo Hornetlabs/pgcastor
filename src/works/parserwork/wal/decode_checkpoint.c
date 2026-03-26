@@ -93,14 +93,17 @@ void decode_chkpt(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
         ctx->trans_cache->chkpts->tail->next = chkptnode;
         ctx->trans_cache->chkpts->tail = chkptnode;
     }
-    elog(RLOG_DEBUG, "add checkpoint:%X/%X", (uint32)(chkptnode->redolsn >> 32),
+    elog(RLOG_DEBUG,
+         "add checkpoint:%X/%X",
+         (uint32)(chkptnode->redolsn >> 32),
          (uint32)(chkptnode->redolsn));
 
     /* Check if timeline has changed */
     if (prechkpt->m_this_timeline != prechkpt->m_prev_timeline)
     {
         /* Timeline changed, create a transaction with xid = 0 */
-        txn = txn_init(InvalidTransactionId, ctx->decode_record->start.wal.lsn,
+        txn = txn_init(InvalidTransactionId,
+                       ctx->decode_record->start.wal.lsn,
                        ctx->decode_record->end.wal.lsn);
 
         /* Set timeline */
@@ -115,7 +118,8 @@ void decode_chkpt(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
     if (InvalidTransactionId == chkptnode->xid &&
         ctx->decode_record->start.wal.lsn > ctx->base.confirmedlsn)
     {
-        txn = txn_init(InvalidTransactionId, ctx->decode_record->start.wal.lsn,
+        txn = txn_init(InvalidTransactionId,
+                       ctx->decode_record->start.wal.lsn,
                        ctx->decode_record->end.wal.lsn);
 
         /* Update redo/restart/confirm lsn based on transaction startlsn/endlsn */
@@ -134,7 +138,8 @@ void decode_recovery(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
     if (recovery->m_this_timeline != recovery->m_prev_timeline)
     {
         /* Timeline changed, create a transaction with xid = 0 */
-        txn = txn_init(InvalidTransactionId, ctx->decode_record->start.wal.lsn,
+        txn = txn_init(InvalidTransactionId,
+                       ctx->decode_record->start.wal.lsn,
                        ctx->decode_record->end.wal.lsn);
 
         /* Set timeline */

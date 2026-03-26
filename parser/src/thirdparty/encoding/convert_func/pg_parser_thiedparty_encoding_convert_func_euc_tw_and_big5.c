@@ -17,7 +17,7 @@
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_wchar.h"
 
 #define ENCODING_GROWTH_RATE 4
-#define EUCTW_BIG5_MCXT NULL
+#define EUCTW_BIG5_MCXT      NULL
 
 /* ----------
  * conv_proc(

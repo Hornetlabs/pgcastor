@@ -19,8 +19,9 @@
 #include "storage/trail/data/fftrail_txncommit.h"
 
 /* remove from private data field */
-static bool fftrail_txnmetadata_remove(fftrail_privdata* privdata, catalogdata* catalogdata,
-                                       Oid dboid)
+static bool fftrail_txnmetadata_remove(fftrail_privdata* privdata,
+                                       catalogdata*      catalogdata,
+                                       Oid               dboid)
 {
     bool                       found = false;
     List*                      ls = NULL;

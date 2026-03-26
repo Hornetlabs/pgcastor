@@ -11,10 +11,10 @@ checkpoint* databaserecv_checkpoint_get(PGconn* conn)
     PGresult*   res = NULL;
     checkpoint* checkpoint_obj = NULL;
 
-    uint32 tlid = 0;
-    uint32 epoch = 0;
-    uint32 nextfullxid = 0;
-    uint32 hi = 0, lo = 0;
+    uint32      tlid = 0;
+    uint32      epoch = 0;
+    uint32      nextfullxid = 0;
+    uint32      hi = 0, lo = 0;
 
     /* get checkpoint info of current database */
     sprintf(stmtsql, "SELECT redo_lsn, timeline_id, next_xid FROM pg_control_checkpoint();");
@@ -67,7 +67,7 @@ XLogRecPtr databaserecv_currentlsn_get(PGconn* conn)
     XLogRecPtr currentlsn = 0;
     PGresult*  res = NULL;
 
-    uint32 hi = 0, lo = 0;
+    uint32     hi = 0, lo = 0;
 
     /* get current database currentlsn info */
     res = conn_exec(conn, "SELECT pg_current_wal_insert_lsn();");
@@ -318,7 +318,8 @@ bool databaserecv_trigger_set(PGconn* conn)
     }
 
     /* 1. Create function */
-    snprintf(stmt, MAX_EXEC_SQL_LEN,
+    snprintf(stmt,
+             MAX_EXEC_SQL_LEN,
              "CREATE OR REPLACE FUNCTION public.xsc_set_supplement() "
              "    RETURNS event_trigger  "
              "    AS $$                  "
@@ -350,7 +351,8 @@ bool databaserecv_trigger_set(PGconn* conn)
 
     /* 2. Create trigger */
     /* Check if trigger exists, create if not */
-    snprintf(stmt, MAX_EXEC_SQL_LEN,
+    snprintf(stmt,
+             MAX_EXEC_SQL_LEN,
              "SELECT oid FROM pg_event_trigger WHERE evtname = 'xsc_set_supplement_trigger'");
     res = conn_exec(conn, stmt);
     if (NULL == res)
@@ -362,7 +364,8 @@ bool databaserecv_trigger_set(PGconn* conn)
         PQclear(res);
 
         /* Create trigger 1, get table info after CREATE TABLE DDL */
-        snprintf(stmt, MAX_EXEC_SQL_LEN,
+        snprintf(stmt,
+                 MAX_EXEC_SQL_LEN,
                  "CREATE EVENT TRIGGER xsc_set_supplement_trigger                      "
                  "    ON DDL_COMMAND_END                                     "
                  "    WHEN TAG IN ('CREATE TABLE','CREATE TABLE AS')         "
@@ -390,7 +393,9 @@ bool databaserecv_synctable_set(PGconn* conn)
         return false;
     }
 
-    snprintf(stmt, MAX_EXEC_SQL_LEN, "SELECT oid FROM pg_namespace WHERE nspname = '%s';",
+    snprintf(stmt,
+             MAX_EXEC_SQL_LEN,
+             "SELECT oid FROM pg_namespace WHERE nspname = '%s';",
              guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
     res = conn_exec(conn, stmt);
     if (NULL == res)
@@ -402,8 +407,8 @@ bool databaserecv_synctable_set(PGconn* conn)
     {
         PQclear(res);
         /* Create schema */
-        snprintf(stmt, MAX_EXEC_SQL_LEN, "CREATE SCHEMA %s",
-                 guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
+        snprintf(
+            stmt, MAX_EXEC_SQL_LEN, "CREATE SCHEMA %s", guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
         res = conn_exec(conn, stmt);
         if (NULL == res)
         {
@@ -413,7 +418,9 @@ bool databaserecv_synctable_set(PGconn* conn)
     PQclear(res);
 
     /* Grant permission on schema */
-    snprintf(stmt, MAX_EXEC_SQL_LEN, "GRANT ALL ON SCHEMA %s TO PUBLIC ;",
+    snprintf(stmt,
+             MAX_EXEC_SQL_LEN,
+             "GRANT ALL ON SCHEMA %s TO PUBLIC ;",
              guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
     res = conn_exec(conn, stmt);
     if (NULL == res)
@@ -423,7 +430,8 @@ bool databaserecv_synctable_set(PGconn* conn)
     PQclear(res);
 
     /* Create sync table */
-    snprintf(stmt, MAX_EXEC_SQL_LEN,
+    snprintf(stmt,
+             MAX_EXEC_SQL_LEN,
              "CREATE TABLE IF NOT EXISTS %s.sync_status (name CHAR(64) UNIQUE, type smallint, stat "
              "smallint, emit_fileid text, emit_offset text, rewind_fileid text, rewind_offset "
              "text, xid text, lsn text);",
@@ -489,7 +497,10 @@ bool databaserecv_identifysystem(PGconn* conn, TimeLineID* dbtli, XLogRecPtr* db
         elog(RLOG_WARNING,
              "could not identify system: got %d rows and %d fields, expected %d rows and %d or "
              "more fields",
-             PQntuples(res), PQnfields(res), 1, 3);
+             PQntuples(res),
+             PQnfields(res),
+             1,
+             3);
 
         PQclear(res);
         return false;
@@ -531,7 +542,10 @@ bool databaserecv_showwalsegmentsize(PGconn* conn, uint32* segsize)
         elog(RLOG_WARNING,
              "could not fetch WAL segment size: got %d rows and %d fields, expected %d rows and %d "
              "or more fields",
-             PQntuples(res), PQnfields(res), 1, 1);
+             PQntuples(res),
+             PQnfields(res),
+             1,
+             1);
 
         PQclear(res);
         return false;
@@ -577,7 +591,10 @@ bool databaserecv_showwalblocksize(PGconn* conn, int* blksize)
         elog(RLOG_WARNING,
              "could not fetch WAL block size: got %d rows and %d fields, expected %d rows and %d "
              "or more fields",
-             PQntuples(res), PQnfields(res), 1, 1);
+             PQntuples(res),
+             PQnfields(res),
+             1,
+             1);
 
         PQclear(res);
         return false;
@@ -615,7 +632,10 @@ bool databaserecv_showserverversion(PGconn* conn, char** strversion)
         elog(RLOG_WARNING,
              "could not fetch server_version: got %d rows and %d fields, expected %d rows and %d "
              "or more fields",
-             PQntuples(res), PQnfields(res), 1, 1);
+             PQntuples(res),
+             PQnfields(res),
+             1,
+             1);
 
         PQclear(res);
         return false;
@@ -680,8 +700,11 @@ bool databaserecv_timelinehistory(PGconn* conn, TimeLineID tli, char** pfilename
     res = PQexec(conn, sqlcmd);
     if (PGRES_TUPLES_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING, "could not send replication command %s, %s,%s", sqlcmd,
-             PQresultErrorMessage(res), PQresultErrorField(res, PG_DIAG_SQLSTATE));
+        elog(RLOG_WARNING,
+             "could not send replication command %s, %s,%s",
+             sqlcmd,
+             PQresultErrorMessage(res),
+             PQresultErrorField(res, PG_DIAG_SQLSTATE));
         PQclear(res);
         return false;
     }
@@ -691,7 +714,10 @@ bool databaserecv_timelinehistory(PGconn* conn, TimeLineID tli, char** pfilename
         elog(RLOG_WARNING,
              "unexpected response to TIMELINE_HISTORY command: got %d rows and %d fields, expected "
              "%d rows and %d fields",
-             PQntuples(res), PQnfields(res), 1, 2);
+             PQntuples(res),
+             PQnfields(res),
+             1,
+             2);
         PQclear(res);
         return false;
     }
@@ -731,8 +757,10 @@ bool databaserecv_timelinehistory(PGconn* conn, TimeLineID tli, char** pfilename
 }
 
 /* Execute start replication */
-bool databaserecv_startreplication(PGconn* conn, TimeLineID tli, XLogRecPtr startpos,
-                                   char* slotname)
+bool databaserecv_startreplication(PGconn*    conn,
+                                   TimeLineID tli,
+                                   XLogRecPtr startpos,
+                                   char*      slotname)
 {
     PGresult* res = NULL;
     char      sqlslot[128] = {0};
@@ -748,14 +776,21 @@ bool databaserecv_startreplication(PGconn* conn, TimeLineID tli, XLogRecPtr star
     }
 
     /* Compose start replication command */
-    snprintf(sqlcmd, MAX_EXEC_SQL_LEN, "START_REPLICATION %s%X/%X TIMELINE %u", sqlslot,
-             (uint32)(startpos >> 32), (uint32)startpos, tli);
+    snprintf(sqlcmd,
+             MAX_EXEC_SQL_LEN,
+             "START_REPLICATION %s%X/%X TIMELINE %u",
+             sqlslot,
+             (uint32)(startpos >> 32),
+             (uint32)startpos,
+             tli);
 
     res = PQexec(conn, sqlcmd);
     if (PGRES_COPY_BOTH != PQresultStatus(res))
     {
-        elog(RLOG_WARNING, "could not send replication command START_REPLICATION : %s, %s",
-             PQresultErrorMessage(res), PQresultErrorField(res, PG_DIAG_SQLSTATE));
+        elog(RLOG_WARNING,
+             "could not send replication command START_REPLICATION : %s, %s",
+             PQresultErrorMessage(res),
+             PQresultErrorField(res, PG_DIAG_SQLSTATE));
 
         PQclear(res);
         return false;

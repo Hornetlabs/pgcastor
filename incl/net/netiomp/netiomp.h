@@ -26,19 +26,19 @@ typedef void (*rnetiompreset)(netiompbase* base);
 typedef bool (*rnetiompcreate)(netiompbase** base);
 
 /* Add descriptor and event type */
-typedef int (*rnetiompadd)(netiompbase* base, int fd, uint16 flag);
+typedef int  (*rnetiompadd)(netiompbase* base, int fd, uint16 flag);
 
 /* Delete descriptor */
-typedef int (*rnetiompdel)(netiompbase* base, int fd);
+typedef int  (*rnetiompdel)(netiompbase* base, int fd);
 
 /* Modify descriptor */
-typedef int (*rnetiompmodify)(netiompbase* base, int fd);
+typedef int  (*rnetiompmodify)(netiompbase* base, int fd);
 
 /* Event listening */
-typedef int (*rnetiomp)(netiompbase* base);
+typedef int  (*rnetiomp)(netiompbase* base);
 
 /* Get event */
-typedef int (*rnetiompgetevent)(netiompbase* base, int pos);
+typedef int  (*rnetiompgetevent)(netiompbase* base, int pos);
 
 /* MemoryReclaim */
 typedef void (*rnetiompfree)(netiompbase* base);

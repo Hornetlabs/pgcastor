@@ -75,33 +75,33 @@ static inline int list_length(const List* l)
  * in the second cons cell.
  */
 
-#define lnext(lc) ((lc)->next)
-#define lfirst(lc) ((lc)->data.ptr_value)
+#define lnext(lc)      ((lc)->next)
+#define lfirst(lc)     ((lc)->data.ptr_value)
 #define lfirst_int(lc) ((lc)->data.int_value)
 #define lfirst_oid(lc) ((lc)->data.oid_value)
 // #define lfirst_node(type,lc)	castNode(type, lfirst(lc))
 
-#define linitial(l) lfirst(list_head(l))
+#define linitial(l)     lfirst(list_head(l))
 #define linitial_int(l) lfirst_int(list_head(l))
 #define linitial_oid(l) lfirst_oid(list_head(l))
 // #define linitial_node(type,l)	castNode(type, linitial(l))
 
-#define lsecond(l) lfirst(lnext(list_head(l)))
+#define lsecond(l)     lfirst(lnext(list_head(l)))
 #define lsecond_int(l) lfirst_int(lnext(list_head(l)))
 #define lsecond_oid(l) lfirst_oid(lnext(list_head(l)))
 // #define lsecond_node(type,l)	castNode(type, lsecond(l))
 
-#define lthird(l) lfirst(lnext(lnext(list_head(l))))
+#define lthird(l)     lfirst(lnext(lnext(list_head(l))))
 #define lthird_int(l) lfirst_int(lnext(lnext(list_head(l))))
 #define lthird_oid(l) lfirst_oid(lnext(lnext(list_head(l))))
 // #define lthird_node(type,l)		castNode(type, lthird(l))
 
-#define lfourth(l) lfirst(lnext(lnext(lnext(list_head(l)))))
+#define lfourth(l)     lfirst(lnext(lnext(lnext(list_head(l)))))
 #define lfourth_int(l) lfirst_int(lnext(lnext(lnext(list_head(l)))))
 #define lfourth_oid(l) lfirst_oid(lnext(lnext(lnext(list_head(l)))))
 // #define lfourth_node(type,l)	castNode(type, lfourth(l))
 
-#define llast(l) lfirst(list_tail(l))
+#define llast(l)     lfirst(list_tail(l))
 #define llast_int(l) lfirst_int(list_tail(l))
 #define llast_oid(l) lfirst_oid(list_tail(l))
 // #define llast_node(type,l)		castNode(type, llast(l))
@@ -109,22 +109,22 @@ static inline int list_length(const List* l)
 /*
  * Convenience macros for building fixed-length lists
  */
-#define list_make1(x1) lcons(x1, NIL)
-#define list_make2(x1, x2) lcons(x1, list_make1(x2))
-#define list_make3(x1, x2, x3) lcons(x1, list_make2(x2, x3))
-#define list_make4(x1, x2, x3, x4) lcons(x1, list_make3(x2, x3, x4))
-#define list_make5(x1, x2, x3, x4, x5) lcons(x1, list_make4(x2, x3, x4, x5))
+#define list_make1(x1)                     lcons(x1, NIL)
+#define list_make2(x1, x2)                 lcons(x1, list_make1(x2))
+#define list_make3(x1, x2, x3)             lcons(x1, list_make2(x2, x3))
+#define list_make4(x1, x2, x3, x4)         lcons(x1, list_make3(x2, x3, x4))
+#define list_make5(x1, x2, x3, x4, x5)     lcons(x1, list_make4(x2, x3, x4, x5))
 
-#define list_make1_int(x1) lcons_int(x1, NIL)
-#define list_make2_int(x1, x2) lcons_int(x1, list_make1_int(x2))
-#define list_make3_int(x1, x2, x3) lcons_int(x1, list_make2_int(x2, x3))
-#define list_make4_int(x1, x2, x3, x4) lcons_int(x1, list_make3_int(x2, x3, x4))
+#define list_make1_int(x1)                 lcons_int(x1, NIL)
+#define list_make2_int(x1, x2)             lcons_int(x1, list_make1_int(x2))
+#define list_make3_int(x1, x2, x3)         lcons_int(x1, list_make2_int(x2, x3))
+#define list_make4_int(x1, x2, x3, x4)     lcons_int(x1, list_make3_int(x2, x3, x4))
 #define list_make5_int(x1, x2, x3, x4, x5) lcons_int(x1, list_make4_int(x2, x3, x4, x5))
 
-#define list_make1_oid(x1) lcons_oid(x1, NIL)
-#define list_make2_oid(x1, x2) lcons_oid(x1, list_make1_oid(x2))
-#define list_make3_oid(x1, x2, x3) lcons_oid(x1, list_make2_oid(x2, x3))
-#define list_make4_oid(x1, x2, x3, x4) lcons_oid(x1, list_make3_oid(x2, x3, x4))
+#define list_make1_oid(x1)                 lcons_oid(x1, NIL)
+#define list_make2_oid(x1, x2)             lcons_oid(x1, list_make1_oid(x2))
+#define list_make3_oid(x1, x2, x3)         lcons_oid(x1, list_make2_oid(x2, x3))
+#define list_make4_oid(x1, x2, x3, x4)     lcons_oid(x1, list_make3_oid(x2, x3, x4))
 #define list_make5_oid(x1, x2, x3, x4, x5) lcons_oid(x1, list_make4_oid(x2, x3, x4, x5))
 
 /*
@@ -151,7 +151,8 @@ static inline int list_length(const List* l)
  */
 #define forboth(cell1, list1, cell2, list2)                      \
     for ((cell1) = list_head(list1), (cell2) = list_head(list2); \
-         (cell1) != NULL && (cell2) != NULL; (cell1) = lnext(cell1), (cell2) = lnext(cell2))
+         (cell1) != NULL && (cell2) != NULL;                     \
+         (cell1) = lnext(cell1), (cell2) = lnext(cell2))
 
 /*
  * for_both_cell -
@@ -179,24 +180,34 @@ static inline int list_length(const List* l)
  * forfour -
  *	  the same for four lists
  */
-#define forfour(cell1, list1, cell2, list2, cell3, list3, cell4, list4)                      \
-    for ((cell1) = list_head(list1), (cell2) = list_head(list2), (cell3) = list_head(list3), \
-        (cell4) = list_head(list4);                                                          \
-         (cell1) != NULL && (cell2) != NULL && (cell3) != NULL && (cell4) != NULL;           \
-         (cell1) = lnext(cell1), (cell2) = lnext(cell2), (cell3) = lnext(cell3),             \
+#define forfour(cell1, list1, cell2, list2, cell3, list3, cell4, list4)            \
+    for ((cell1) = list_head(list1),                                               \
+        (cell2) = list_head(list2),                                                \
+        (cell3) = list_head(list3),                                                \
+        (cell4) = list_head(list4);                                                \
+         (cell1) != NULL && (cell2) != NULL && (cell3) != NULL && (cell4) != NULL; \
+         (cell1) = lnext(cell1),                                                   \
+        (cell2) = lnext(cell2),                                                    \
+        (cell3) = lnext(cell3),                                                    \
         (cell4) = lnext(cell4))
 
 /*
  * forfive -
  *	  the same for five lists
  */
-#define forfive(cell1, list1, cell2, list2, cell3, list3, cell4, list4, cell5, list5)        \
-    for ((cell1) = list_head(list1), (cell2) = list_head(list2), (cell3) = list_head(list3), \
-        (cell4) = list_head(list4), (cell5) = list_head(list5);                              \
-         (cell1) != NULL && (cell2) != NULL && (cell3) != NULL && (cell4) != NULL &&         \
-         (cell5) != NULL;                                                                    \
-         (cell1) = lnext(cell1), (cell2) = lnext(cell2), (cell3) = lnext(cell3),             \
-        (cell4) = lnext(cell4), (cell5) = lnext(cell5))
+#define forfive(cell1, list1, cell2, list2, cell3, list3, cell4, list4, cell5, list5) \
+    for ((cell1) = list_head(list1),                                                  \
+        (cell2) = list_head(list2),                                                   \
+        (cell3) = list_head(list3),                                                   \
+        (cell4) = list_head(list4),                                                   \
+        (cell5) = list_head(list5);                                                   \
+         (cell1) != NULL && (cell2) != NULL && (cell3) != NULL && (cell4) != NULL &&  \
+         (cell5) != NULL;                                                             \
+         (cell1) = lnext(cell1),                                                      \
+        (cell2) = lnext(cell2),                                                       \
+        (cell3) = lnext(cell3),                                                       \
+        (cell4) = lnext(cell4),                                                       \
+        (cell5) = lnext(cell5))
 
 extern List* lappend(List* list, void* datum);
 extern List* lappend_int(List* list, int datum);
@@ -214,9 +225,9 @@ extern List* list_concat(List* list1, List* list2);
 extern List* list_truncate(List* list, int new_size);
 
 extern ListCell* list_nth_cell(const List* list, int n);
-extern void*     list_nth(const List* list, int n);
-extern int       list_nth_int(const List* list, int n);
-extern Oid       list_nth_oid(const List* list, int n);
+extern void* list_nth(const List* list, int n);
+extern int list_nth_int(const List* list, int n);
+extern Oid list_nth_oid(const List* list, int n);
 // #define list_nth_node(type,list,n)	castNode(type, list_nth(list, n))
 
 extern bool list_member(const List* list, const void* datum);
@@ -274,34 +285,34 @@ extern List* list_qsort(const List* list, list_qsort_comparator cmp);
  */
 #ifdef ENABLE_LIST_COMPAT
 
-#define lfirsti(lc) lfirst_int(lc)
-#define lfirsto(lc) lfirst_oid(lc)
+#define lfirsti(lc)               lfirst_int(lc)
+#define lfirsto(lc)               lfirst_oid(lc)
 
-#define makeList1(x1) list_make1(x1)
-#define makeList2(x1, x2) list_make2(x1, x2)
-#define makeList3(x1, x2, x3) list_make3(x1, x2, x3)
+#define makeList1(x1)             list_make1(x1)
+#define makeList2(x1, x2)         list_make2(x1, x2)
+#define makeList3(x1, x2, x3)     list_make3(x1, x2, x3)
 #define makeList4(x1, x2, x3, x4) list_make4(x1, x2, x3, x4)
 
-#define makeListi1(x1) list_make1_int(x1)
-#define makeListi2(x1, x2) list_make2_int(x1, x2)
+#define makeListi1(x1)            list_make1_int(x1)
+#define makeListi2(x1, x2)        list_make2_int(x1, x2)
 
-#define makeListo1(x1) list_make1_oid(x1)
-#define makeListo2(x1, x2) list_make2_oid(x1, x2)
+#define makeListo1(x1)            list_make1_oid(x1)
+#define makeListo2(x1, x2)        list_make2_oid(x1, x2)
 
-#define lconsi(datum, list) lcons_int(datum, list)
-#define lconso(datum, list) lcons_oid(datum, list)
+#define lconsi(datum, list)       lcons_int(datum, list)
+#define lconso(datum, list)       lcons_oid(datum, list)
 
-#define lappendi(list, datum) lappend_int(list, datum)
-#define lappendo(list, datum) lappend_oid(list, datum)
+#define lappendi(list, datum)     lappend_int(list, datum)
+#define lappendo(list, datum)     lappend_oid(list, datum)
 
-#define nconc(l1, l2) list_concat(l1, l2)
+#define nconc(l1, l2)             list_concat(l1, l2)
 
-#define nth(n, list) list_nth(list, n)
+#define nth(n, list)              list_nth(list, n)
 
-#define member(datum, list) list_member(list, datum)
-#define ptrMember(datum, list) list_member_ptr(list, datum)
-#define intMember(datum, list) list_member_int(list, datum)
-#define oidMember(datum, list) list_member_oid(list, datum)
+#define member(datum, list)       list_member(list, datum)
+#define ptrMember(datum, list)    list_member_ptr(list, datum)
+#define intMember(datum, list)    list_member_int(list, datum)
+#define oidMember(datum, list)    list_member_oid(list, datum)
 
 /*
  * Note that the old lremove() determined equality via pointer
@@ -309,27 +320,27 @@ extern List* list_qsort(const List* list, list_qsort_comparator cmp);
  * keep the same behavior, we therefore need to map lremove() calls to
  * list_delete_ptr() rather than list_delete()
  */
-#define lremove(elem, list) list_delete_ptr(list, elem)
-#define LispRemove(elem, list) list_delete(list, elem)
-#define lremovei(elem, list) list_delete_int(list, elem)
-#define lremoveo(elem, list) list_delete_oid(list, elem)
+#define lremove(elem, list)       list_delete_ptr(list, elem)
+#define LispRemove(elem, list)    list_delete(list, elem)
+#define lremovei(elem, list)      list_delete_int(list, elem)
+#define lremoveo(elem, list)      list_delete_oid(list, elem)
 
-#define ltruncate(n, list) list_truncate(list, n)
+#define ltruncate(n, list)        list_truncate(list, n)
 
-#define set_union(l1, l2) list_union(l1, l2)
-#define set_uniono(l1, l2) list_union_oid(l1, l2)
-#define set_ptrUnion(l1, l2) list_union_ptr(l1, l2)
+#define set_union(l1, l2)         list_union(l1, l2)
+#define set_uniono(l1, l2)        list_union_oid(l1, l2)
+#define set_ptrUnion(l1, l2)      list_union_ptr(l1, l2)
 
-#define set_difference(l1, l2) list_difference(l1, l2)
-#define set_differenceo(l1, l2) list_difference_oid(l1, l2)
+#define set_difference(l1, l2)    list_difference(l1, l2)
+#define set_differenceo(l1, l2)   list_difference_oid(l1, l2)
 #define set_ptrDifference(l1, l2) list_difference_ptr(l1, l2)
 
-#define equali(l1, l2) equal(l1, l2)
-#define equalo(l1, l2) equal(l1, l2)
+#define equali(l1, l2)            equal(l1, l2)
+#define equalo(l1, l2)            equal(l1, l2)
 
-#define freeList(list) list_free(list)
+#define freeList(list)            list_free(list)
 
-#define listCopy(list) list_copy(list)
+#define listCopy(list)            list_copy(list)
 
 extern int length(List* list);
 #endif /* ENABLE_LIST_COMPAT */

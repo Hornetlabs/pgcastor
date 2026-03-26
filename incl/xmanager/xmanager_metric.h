@@ -13,8 +13,8 @@ typedef struct XMANAGER_METRIC
     queue*   metricqueue;
     char     padding1[CACHELINE_SIZE];
     void*    privdata;
-    void (*privdatadestroy)(void* args);
-    char padding2[CACHELINE_SIZE];
+    void     (*privdatadestroy)(void* args);
+    char     padding2[CACHELINE_SIZE];
 } xmanager_metric;
 
 extern xmanager_metric* xmanager_metric_init(void);

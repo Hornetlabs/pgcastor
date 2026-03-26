@@ -51,51 +51,51 @@
 
 typedef struct xl_xact_parsed_commit
 {
-    TimestampTz xact_time;
-    uint32      xinfo;
+    TimestampTz                xact_time;
+    uint32                     xinfo;
 
-    Oid dbId; /* MyDatabaseId */
-    Oid tsId; /* MyDatabaseTableSpace */
+    Oid                        dbId; /* MyDatabaseId */
+    Oid                        tsId; /* MyDatabaseTableSpace */
 
-    int            nsubxacts;
-    TransactionId* subxacts;
+    int                        nsubxacts;
+    TransactionId*             subxacts;
 
-    int          nrels;
-    RelFileNode* xnodes;
+    int                        nrels;
+    RelFileNode*               xnodes;
 
     int                        nmsgs;
     SharedInvalidationMessage* msgs;
 
-    TransactionId twophase_xid;          /* only for 2PC */
-    char          twophase_gid[GIDSIZE]; /* only for 2PC */
-    int           nabortrels;            /* only for 2PC */
-    RelFileNode*  abortnodes;            /* only for 2PC */
+    TransactionId              twophase_xid;          /* only for 2PC */
+    char                       twophase_gid[GIDSIZE]; /* only for 2PC */
+    int                        nabortrels;            /* only for 2PC */
+    RelFileNode*               abortnodes;            /* only for 2PC */
 
-    XLogRecPtr  origin_lsn;
-    TimestampTz origin_timestamp;
+    XLogRecPtr                 origin_lsn;
+    TimestampTz                origin_timestamp;
 } xl_xact_parsed_commit;
 
 typedef xl_xact_parsed_commit xl_xact_parsed_prepare;
 
 typedef struct xl_xact_parsed_abort
 {
-    TimestampTz xact_time;
-    uint32      xinfo;
+    TimestampTz    xact_time;
+    uint32         xinfo;
 
-    Oid dbId; /* MyDatabaseId */
-    Oid tsId; /* MyDatabaseTableSpace */
+    Oid            dbId; /* MyDatabaseId */
+    Oid            tsId; /* MyDatabaseTableSpace */
 
     int            nsubxacts;
     TransactionId* subxacts;
 
-    int          nrels;
-    RelFileNode* xnodes;
+    int            nrels;
+    RelFileNode*   xnodes;
 
-    TransactionId twophase_xid;          /* only for 2PC */
-    char          twophase_gid[GIDSIZE]; /* only for 2PC */
+    TransactionId  twophase_xid;          /* only for 2PC */
+    char           twophase_gid[GIDSIZE]; /* only for 2PC */
 
-    XLogRecPtr  origin_lsn;
-    TimestampTz origin_timestamp;
+    XLogRecPtr     origin_lsn;
+    TimestampTz    origin_timestamp;
 } xl_xact_parsed_abort;
 
 static void decode_xact_appendsubtxn(List** ptxnstmts, List** psysdicthis, txn* subtxn_ptr)
@@ -119,7 +119,8 @@ static void decode_xact_appendsubtxn(List** ptxnstmts, List** psysdicthis, txn* 
     subtxn_ptr->sysdictHis = NULL;
 }
 
-static void check_online_refresh_node_need_clean(onlinerefresh* olnode, dlistnode* dlnode,
+static void check_online_refresh_node_need_clean(onlinerefresh*   olnode,
+                                                 dlistnode*       dlnode,
                                                  decodingcontext* ctx)
 {
     if (olnode->state == ONLINEREFRESH_STATE_FULLSNAPSHOT && onlinerefresh_xids_isnull(olnode))
@@ -250,8 +251,10 @@ static void check_online_refresh_xids(decodingcontext* ctx, TransactionId xid)
 /*
  * At Commit, append content from subtransactions to the main transaction
  */
-static void decode_xact_buildcommittxn(decodingcontext* ctx, pg_parser_translog_pre_trans* pretrans,
-                                       txn* in_txn_ptr, bool redo)
+static void decode_xact_buildcommittxn(decodingcontext*              ctx,
+                                       pg_parser_translog_pre_trans* pretrans,
+                                       txn*                          in_txn_ptr,
+                                       bool                          redo)
 {
     int                    index = 0;
     List*                  txnstmts = NULL;
@@ -484,10 +487,15 @@ void decode_xact_commit(decodingcontext* ctx, pg_parser_translog_pre_base* pbase
     }
 
     txn_ptr->end.wal.lsn = ctx->decode_record->end.wal.lsn;
-    elog(RLOG_DEBUG, "xid:%lu, startlsn:%X/%X, endlsn:%X/%X, confirmed_lsn:%X/%X", txn_ptr->xid,
-         (uint32)(txn_ptr->start.wal.lsn >> 32), (uint32)(txn_ptr->start.wal.lsn),
-         (uint32)(txn_ptr->end.wal.lsn >> 32), (uint32)(txn_ptr->end.wal.lsn),
-         (uint32)(ctx->base.confirmedlsn >> 32), (uint32)(ctx->base.confirmedlsn));
+    elog(RLOG_DEBUG,
+         "xid:%lu, startlsn:%X/%X, endlsn:%X/%X, confirmed_lsn:%X/%X",
+         txn_ptr->xid,
+         (uint32)(txn_ptr->start.wal.lsn >> 32),
+         (uint32)(txn_ptr->start.wal.lsn),
+         (uint32)(txn_ptr->end.wal.lsn >> 32),
+         (uint32)(txn_ptr->end.wal.lsn),
+         (uint32)(ctx->base.confirmedlsn >> 32),
+         (uint32)(ctx->base.confirmedlsn));
 
     /* Check if in redo */
     if (txn_ptr->end.wal.lsn <= ctx->base.confirmedlsn)
@@ -521,7 +529,8 @@ void decode_xact_commit(decodingcontext* ctx, pg_parser_translog_pre_base* pbase
 
     /* Update sync dataset */
     filter_dataset_updatedatasets(ctx->trans_cache->addtablepattern,
-                                  ctx->trans_cache->sysdicts->by_namespace, txn_ptr->sysdictHis,
+                                  ctx->trans_cache->sysdicts->by_namespace,
+                                  txn_ptr->sysdictHis,
                                   ctx->trans_cache->hsyncdataset);
 
     /* If filter conditions are met, cleanup statements */
@@ -552,9 +561,14 @@ void decode_xact_commit(decodingcontext* ctx, pg_parser_translog_pre_base* pbase
     }
 
     /* Write transaction to cache */
-    elog(RLOG_DEBUG, "stmtlen:%lu, startlsn:%X/%X, %lu, xid:%lu, walrec:%lu, parserrec:%lu",
-         txn_ptr->stmtsize, (uint32)(txn_ptr->start.wal.lsn >> 32),
-         (uint32)(txn_ptr->start.wal.lsn), txn_ptr->xid, txn_ptr->debugno, g_walrecno,
+    elog(RLOG_DEBUG,
+         "stmtlen:%lu, startlsn:%X/%X, %lu, xid:%lu, walrec:%lu, parserrec:%lu",
+         txn_ptr->stmtsize,
+         (uint32)(txn_ptr->start.wal.lsn >> 32),
+         (uint32)(txn_ptr->start.wal.lsn),
+         txn_ptr->xid,
+         txn_ptr->debugno,
+         g_walrecno,
          g_parserecno);
 
     /* Check and assign extra0 for the last statement */
@@ -616,8 +630,8 @@ void decode_xact_commit_emit(decodingcontext* ctx, pg_parser_translog_pre_base* 
         ctx->stat = DECODINGCONTEXT_RUNNING;
         if (ctx->callback.setparserlsn)
         {
-            ctx->callback.setparserlsn(ctx->privdata, ctx->base.confirmedlsn, ctx->base.restartlsn,
-                                       ctx->base.restartlsn);
+            ctx->callback.setparserlsn(
+                ctx->privdata, ctx->base.confirmedlsn, ctx->base.restartlsn, ctx->base.restartlsn);
         }
         else
         {
@@ -626,9 +640,12 @@ void decode_xact_commit_emit(decodingcontext* ctx, pg_parser_translog_pre_base* 
 
         elog(RLOG_INFO,
              "commit emit rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
-             (uint32)(ctx->base.redolsn >> 32), (uint32)ctx->base.redolsn,
-             (uint32)(ctx->base.restartlsn >> 32), (uint32)ctx->base.restartlsn,
-             (uint32)(ctx->base.confirmedlsn >> 32), (uint32)ctx->base.confirmedlsn);
+             (uint32)(ctx->base.redolsn >> 32),
+             (uint32)ctx->base.redolsn,
+             (uint32)(ctx->base.restartlsn >> 32),
+             (uint32)ctx->base.restartlsn,
+             (uint32)(ctx->base.confirmedlsn >> 32),
+             (uint32)ctx->base.confirmedlsn);
         rewind_stat_setemited(ctx->rewind_ptr);
         redo = false;
     }
@@ -644,8 +661,10 @@ void decode_xact_commit_emit(decodingcontext* ctx, pg_parser_translog_pre_base* 
             ctx->stat = DECODINGCONTEXT_RUNNING;
             if (ctx->callback.setparserlsn)
             {
-                ctx->callback.setparserlsn(ctx->privdata, ctx->base.confirmedlsn,
-                                           ctx->base.restartlsn, ctx->base.restartlsn);
+                ctx->callback.setparserlsn(ctx->privdata,
+                                           ctx->base.confirmedlsn,
+                                           ctx->base.restartlsn,
+                                           ctx->base.restartlsn);
             }
             else
             {
@@ -655,19 +674,27 @@ void decode_xact_commit_emit(decodingcontext* ctx, pg_parser_translog_pre_base* 
             elog(RLOG_INFO,
                  "commit emit rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: "
                  "%X/%X",
-                 (uint32)(ctx->base.redolsn >> 32), (uint32)ctx->base.redolsn,
-                 (uint32)(ctx->base.restartlsn >> 32), (uint32)ctx->base.restartlsn,
-                 (uint32)(ctx->base.confirmedlsn >> 32), (uint32)ctx->base.confirmedlsn);
+                 (uint32)(ctx->base.redolsn >> 32),
+                 (uint32)ctx->base.redolsn,
+                 (uint32)(ctx->base.restartlsn >> 32),
+                 (uint32)ctx->base.restartlsn,
+                 (uint32)(ctx->base.confirmedlsn >> 32),
+                 (uint32)ctx->base.confirmedlsn);
             rewind_stat_setemited(ctx->rewind_ptr);
             redo = false;
         }
     }
 
     txn_ptr->end.wal.lsn = ctx->decode_record->end.wal.lsn;
-    elog(RLOG_DEBUG, "xid:%lu, startlsn:%X/%X, endlsn:%X/%X, confirmed_lsn:%X/%X", txn_ptr->xid,
-         (uint32)(txn_ptr->start.wal.lsn >> 32), (uint32)(txn_ptr->start.wal.lsn),
-         (uint32)(txn_ptr->end.wal.lsn >> 32), (uint32)(txn_ptr->end.wal.lsn),
-         (uint32)(ctx->base.confirmedlsn >> 32), (uint32)(ctx->base.confirmedlsn));
+    elog(RLOG_DEBUG,
+         "xid:%lu, startlsn:%X/%X, endlsn:%X/%X, confirmed_lsn:%X/%X",
+         txn_ptr->xid,
+         (uint32)(txn_ptr->start.wal.lsn >> 32),
+         (uint32)(txn_ptr->start.wal.lsn),
+         (uint32)(txn_ptr->end.wal.lsn >> 32),
+         (uint32)(txn_ptr->end.wal.lsn),
+         (uint32)(ctx->base.confirmedlsn >> 32),
+         (uint32)(ctx->base.confirmedlsn));
 
     if (NULL != txn_ptr->sysdict)
     {
@@ -695,7 +722,8 @@ void decode_xact_commit_emit(decodingcontext* ctx, pg_parser_translog_pre_base* 
 
     /* Update sync dataset */
     filter_dataset_updatedatasets(ctx->trans_cache->addtablepattern,
-                                  ctx->trans_cache->sysdicts->by_namespace, txn_ptr->sysdictHis,
+                                  ctx->trans_cache->sysdicts->by_namespace,
+                                  txn_ptr->sysdictHis,
                                   ctx->trans_cache->hsyncdataset);
 
     /* If filter conditions are met, cleanup statements */
@@ -720,9 +748,14 @@ void decode_xact_commit_emit(decodingcontext* ctx, pg_parser_translog_pre_base* 
     }
 
     /* Write transaction to cache */
-    elog(RLOG_DEBUG, "stmtlen:%lu, startlsn:%X/%X, %lu, xid:%lu, walrec:%lu, parserrec:%lu",
-         txn_ptr->stmtsize, (uint32)(txn_ptr->start.wal.lsn >> 32),
-         (uint32)(txn_ptr->start.wal.lsn), txn_ptr->xid, txn_ptr->debugno, g_walrecno,
+    elog(RLOG_DEBUG,
+         "stmtlen:%lu, startlsn:%X/%X, %lu, xid:%lu, walrec:%lu, parserrec:%lu",
+         txn_ptr->stmtsize,
+         (uint32)(txn_ptr->start.wal.lsn >> 32),
+         (uint32)(txn_ptr->start.wal.lsn),
+         txn_ptr->xid,
+         txn_ptr->debugno,
+         g_walrecno,
          g_parserecno);
 
     /* Check and assign extra0 for the last statement */
@@ -896,8 +929,8 @@ void decode_xact_abort_emit(decodingcontext* ctx, pg_parser_translog_pre_base* p
         ctx->stat = DECODINGCONTEXT_RUNNING;
         if (ctx->callback.setparserlsn)
         {
-            ctx->callback.setparserlsn(ctx->privdata, ctx->base.confirmedlsn, ctx->base.restartlsn,
-                                       ctx->base.restartlsn);
+            ctx->callback.setparserlsn(
+                ctx->privdata, ctx->base.confirmedlsn, ctx->base.restartlsn, ctx->base.restartlsn);
         }
         else
         {
@@ -906,9 +939,12 @@ void decode_xact_abort_emit(decodingcontext* ctx, pg_parser_translog_pre_base* p
 
         elog(RLOG_INFO,
              "abort emit rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
-             (uint32)(ctx->base.redolsn >> 32), (uint32)ctx->base.redolsn,
-             (uint32)(ctx->base.restartlsn >> 32), (uint32)ctx->base.restartlsn,
-             (uint32)(ctx->base.confirmedlsn >> 32), (uint32)ctx->base.confirmedlsn);
+             (uint32)(ctx->base.redolsn >> 32),
+             (uint32)ctx->base.redolsn,
+             (uint32)(ctx->base.restartlsn >> 32),
+             (uint32)ctx->base.restartlsn,
+             (uint32)(ctx->base.confirmedlsn >> 32),
+             (uint32)ctx->base.confirmedlsn);
         rewind_stat_setemited(ctx->rewind_ptr);
     }
     /* Check if in xips */
@@ -924,8 +960,10 @@ void decode_xact_abort_emit(decodingcontext* ctx, pg_parser_translog_pre_base* p
             ctx->stat = DECODINGCONTEXT_RUNNING;
             if (ctx->callback.setparserlsn)
             {
-                ctx->callback.setparserlsn(ctx->privdata, ctx->base.confirmedlsn,
-                                           ctx->base.restartlsn, ctx->base.restartlsn);
+                ctx->callback.setparserlsn(ctx->privdata,
+                                           ctx->base.confirmedlsn,
+                                           ctx->base.restartlsn,
+                                           ctx->base.restartlsn);
             }
             else
             {
@@ -935,9 +973,12 @@ void decode_xact_abort_emit(decodingcontext* ctx, pg_parser_translog_pre_base* p
             elog(
                 RLOG_INFO,
                 "abort emit rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
-                (uint32)(ctx->base.redolsn >> 32), (uint32)ctx->base.redolsn,
-                (uint32)(ctx->base.restartlsn >> 32), (uint32)ctx->base.restartlsn,
-                (uint32)(ctx->base.confirmedlsn >> 32), (uint32)ctx->base.confirmedlsn);
+                (uint32)(ctx->base.redolsn >> 32),
+                (uint32)ctx->base.redolsn,
+                (uint32)(ctx->base.restartlsn >> 32),
+                (uint32)ctx->base.restartlsn,
+                (uint32)(ctx->base.confirmedlsn >> 32),
+                (uint32)ctx->base.confirmedlsn);
             rewind_stat_setemited(ctx->rewind_ptr);
         }
     }

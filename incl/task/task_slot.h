@@ -47,12 +47,12 @@ typedef struct TASK_SLOTS
     task_slot* task_slots; /* Thread information */
 } task_slots;
 
-extern void        taskslot_stat_setidle(task_slot* slot);
-extern void        taskslot_stat_setwork(task_slot* slot);
-extern void        taskslot_stat_setterm(task_slot* slot);
-extern void        taskslot_stat_setexit(task_slot* slot);
-extern int         taskslot_stat_get(task_slot* slot);
+extern void taskslot_stat_setidle(task_slot* slot);
+extern void taskslot_stat_setwork(task_slot* slot);
+extern void taskslot_stat_setterm(task_slot* slot);
+extern void taskslot_stat_setexit(task_slot* slot);
+extern int taskslot_stat_get(task_slot* slot);
 extern task_slots* taskslots_init(void);
-extern task_slot*  taskslot_init(int cnt);
+extern task_slot* taskslot_init(int cnt);
 
 #endif

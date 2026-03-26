@@ -75,12 +75,20 @@ static void onlinerefresh_capture_print(onlinerefresh_capture* olcapture)
     refresh_table*     table = NULL;
 
     uuid = uuid2string(olcapture->no);
-    elog(RLOG_INFO, "onlinerefresh capture :%s, increment: %d, txid:%lu, redo:%X/%X", uuid,
-         olcapture->increment, olcapture->txid, (uint32)(olcapture->redo.wal.lsn >> 32),
+    elog(RLOG_INFO,
+         "onlinerefresh capture :%s, increment: %d, txid:%lu, redo:%X/%X",
+         uuid,
+         olcapture->increment,
+         olcapture->txid,
+         (uint32)(olcapture->redo.wal.lsn >> 32),
          (uint32)(olcapture->redo.wal.lsn));
 
-    elog(RLOG_INFO, "onlinerefresh capture:%s, snapshot: %s, xmin:%lu, xmax:%lu", uuid,
-         olcapture->snapshot->name, olcapture->snapshot->xmin, olcapture->snapshot->xmax);
+    elog(RLOG_INFO,
+         "onlinerefresh capture:%s, snapshot: %s, xmin:%lu, xmax:%lu",
+         uuid,
+         olcapture->snapshot->name,
+         olcapture->snapshot->xmin,
+         olcapture->snapshot->xmax);
     hash_seq_init(&snap_status, olcapture->snapshot->xids);
     while (NULL != (entry = hash_seq_search(&snap_status)))
     {
@@ -91,8 +99,8 @@ static void onlinerefresh_capture_print(onlinerefresh_capture* olcapture)
     table = olcapture->tables->tables;
     while (NULL != table)
     {
-        elog(RLOG_INFO, "onlinerefresh refresh table:%s - %s.%s", uuid, table->schema,
-             table->table);
+        elog(
+            RLOG_INFO, "onlinerefresh refresh table:%s - %s.%s", uuid, table->schema, table->table);
         table = table->next;
     }
 
@@ -191,7 +199,8 @@ static bool onlinerefresh_capture_gettlidfromparser(void* args, TimeLineID* tlid
     thr_node = threads_getthrnodebyno(olcapture->thrsmgr->parents, thr_ref_obj->no);
     if (NULL == thr_node)
     {
-        elog(RLOG_WARNING, "capture onlinerefresh can not get parser thread by no:%lu",
+        elog(RLOG_WARNING,
+             "capture onlinerefresh can not get parser thread by no:%lu",
              thr_ref_obj->no);
         return false;
     }
@@ -376,8 +385,8 @@ static bool onlinerefresh_capture_trymkdatadir(onlinerefresh_capture* olcapture)
     {
         /* Generate main directory */
         uuid_str = uuid2string(olcapture->no);
-        sprintf(path, "%s/%s/%s", guc_getConfigOption(CFG_KEY_DATA), REFRESH_ONLINEREFRESH,
-                uuid_str);
+        sprintf(
+            path, "%s/%s/%s", guc_getConfigOption(CFG_KEY_DATA), REFRESH_ONLINEREFRESH, uuid_str);
         onlinerefresh_capture_setdata(olcapture, rstrdup(path));
         rfree(uuid_str);
     }
@@ -387,7 +396,9 @@ static bool onlinerefresh_capture_trymkdatadir(onlinerefresh_capture* olcapture)
     {
         if (0 != osal_make_dir(olcapture->data))
         {
-            elog(RLOG_WARNING, "could not create directory:%s, %s", olcapture->data,
+            elog(RLOG_WARNING,
+                 "could not create directory:%s, %s",
+                 olcapture->data,
                  strerror(errno));
             return false;
         }
@@ -413,8 +424,8 @@ static bool onlinerefresh_capture_trymkrefreshdir(onlinerefresh_capture* olcaptu
     for (table = tables->tables; table != NULL; table = table->next)
     {
         resetStringInfo(path);
-        appendStringInfo(path, "%s/%s/%s_%s", olcapture->data, REFRESH_REFRESH, table->schema,
-                         table->table);
+        appendStringInfo(
+            path, "%s/%s/%s_%s", olcapture->data, REFRESH_REFRESH, table->schema, table->table);
         if (!osal_dir_exist(path->data))
         {
             resetStringInfo(path_partial);
@@ -430,14 +441,18 @@ static bool onlinerefresh_capture_trymkrefreshdir(onlinerefresh_capture* olcaptu
 
             if (0 != osal_make_dir(path_partial->data))
             {
-                elog(RLOG_WARNING, "could not create directory:%s, %s", path_partial->data,
+                elog(RLOG_WARNING,
+                     "could not create directory:%s, %s",
+                     path_partial->data,
                      strerror(errno));
                 return false;
             }
 
             if (0 != osal_make_dir(path_complete->data))
             {
-                elog(RLOG_WARNING, "could not create directory:%s, %s", path_complete->data,
+                elog(RLOG_WARNING,
+                     "could not create directory:%s, %s",
+                     path_complete->data,
                      strerror(errno));
                 return false;
             }
@@ -499,10 +514,13 @@ static bool onlinerefresh_capture_startrefreshjob(onlinerefresh_capture* olcaptu
         sharding2file->tqueue = olcapture->refreshtqueue;
 
         /* Register job thread */
-        if (false == threads_addjobthread(
-                         olcapture->thrsmgr->parents, THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_JOB,
-                         olcapture->thrsmgr->submgrref.no, (void*)sharding2file,
-                         refresh_sharding2file_free, NULL, refresh_sharding2file_work))
+        if (false == threads_addjobthread(olcapture->thrsmgr->parents,
+                                          THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_JOB,
+                                          olcapture->thrsmgr->submgrref.no,
+                                          (void*)sharding2file,
+                                          refresh_sharding2file_free,
+                                          NULL,
+                                          refresh_sharding2file_work))
         {
             elog(RLOG_WARNING, "onlinerefresh capture start job error");
             return false;
@@ -601,30 +619,39 @@ static bool onlinerefresh_capture_startincrementjob(onlinerefresh_capture* olcap
      * Start all threads
      */
     /* Register flush thread */
-    if (false == threads_addjobthread(
-                     olcapture->thrsmgr->parents, THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_FLUSH,
-                     olcapture->thrsmgr->submgrref.no, (void*)cflush,
-                     onlinerefresh_captureflush_free, NULL, onlinerefresh_captureflush_main))
+    if (false == threads_addjobthread(olcapture->thrsmgr->parents,
+                                      THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_FLUSH,
+                                      olcapture->thrsmgr->submgrref.no,
+                                      (void*)cflush,
+                                      onlinerefresh_captureflush_free,
+                                      NULL,
+                                      onlinerefresh_captureflush_main))
     {
         elog(RLOG_WARNING, "onlinerefresh capture start increment flush job error");
         return false;
     }
 
     /* Register serialization thread */
-    if (false == threads_addjobthread(
-                     olcapture->thrsmgr->parents, THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_SERIAL,
-                     olcapture->thrsmgr->submgrref.no, (void*)cserial,
-                     onlinerefresh_captureserial_free, NULL, onlinerefresh_captureserial_main))
+    if (false == threads_addjobthread(olcapture->thrsmgr->parents,
+                                      THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_SERIAL,
+                                      olcapture->thrsmgr->submgrref.no,
+                                      (void*)cserial,
+                                      onlinerefresh_captureserial_free,
+                                      NULL,
+                                      onlinerefresh_captureserial_main))
     {
         elog(RLOG_WARNING, "onlinerefresh capture start increment serial job error");
         return false;
     }
 
     /* Register parser thread */
-    if (false == threads_addjobthread(
-                     olcapture->thrsmgr->parents, THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_PARSER,
-                     olcapture->thrsmgr->submgrref.no, (void*)cparser,
-                     onlinerefresh_captureparser_free, NULL, onlinerefresh_captureparser_main))
+    if (false == threads_addjobthread(olcapture->thrsmgr->parents,
+                                      THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_PARSER,
+                                      olcapture->thrsmgr->submgrref.no,
+                                      (void*)cparser,
+                                      onlinerefresh_captureparser_free,
+                                      NULL,
+                                      onlinerefresh_captureparser_main))
     {
         elog(RLOG_WARNING, "onlinerefresh capture start increment parser job error");
         return false;
@@ -633,8 +660,10 @@ static bool onlinerefresh_capture_startincrementjob(onlinerefresh_capture* olcap
     /* Register loadrecords thread */
     if (false == threads_addjobthread(olcapture->thrsmgr->parents,
                                       THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_LOADRECORDS,
-                                      olcapture->thrsmgr->submgrref.no, (void*)cloadrecord,
-                                      onlinerefresh_captureloadrecord_free, NULL,
+                                      olcapture->thrsmgr->submgrref.no,
+                                      (void*)cloadrecord,
+                                      onlinerefresh_captureloadrecord_free,
+                                      NULL,
                                       onlinerefresh_captureloadrecord_main))
     {
         elog(RLOG_WARNING, "onlinerefresh capture start increment parser job error");
@@ -677,8 +706,11 @@ static bool onlinerefresh_capture_tables2shardings(onlinerefresh_capture* olcapt
         uint32 remain = 0;
         int    shard_no = 1;
 
-        appendStringInfo(str, "select pg_relation_size('\"%s\".\"%s\"')/%d;", table->schema,
-                         table->table, g_blocksize);
+        appendStringInfo(str,
+                         "select pg_relation_size('\"%s\".\"%s\"')/%d;",
+                         table->schema,
+                         table->table,
+                         g_blocksize);
         res = PQexec(conn, str->data);
         if (PGRES_TUPLES_OK != PQresultStatus(res))
         {
@@ -722,8 +754,12 @@ static bool onlinerefresh_capture_tables2shardings(onlinerefresh_capture* olcapt
             refresh_table_sharding_set_shardno(table_shard, 0);
             refresh_table_sharding_set_condition(table_shard, NULL);
 
-            elog(RLOG_DEBUG, "capture refresh mgr, queue: %s.%s %4d %4d", table_shard->schema,
-                 table_shard->table, table_shard->shardings, table_shard->sharding_no);
+            elog(RLOG_DEBUG,
+                 "capture refresh mgr, queue: %s.%s %4d %4d",
+                 table_shard->schema,
+                 table_shard->table,
+                 table_shard->shardings,
+                 table_shard->sharding_no);
             /* Add to cache */
             queue_put(olcapture->refreshtqueue, (void*)table_shard);
             continue;
@@ -753,8 +789,12 @@ static bool onlinerefresh_capture_tables2shardings(onlinerefresh_capture* olcapt
             cond->left_condition = left;
             cond->right_condition = right;
 
-            elog(RLOG_DEBUG, "capture refresh mgr, queue: %s.%s %4d %4d", table_shard->schema,
-                 table_shard->table, table_shard->shardings, table_shard->sharding_no);
+            elog(RLOG_DEBUG,
+                 "capture refresh mgr, queue: %s.%s %4d %4d",
+                 table_shard->schema,
+                 table_shard->table,
+                 table_shard->shardings,
+                 table_shard->sharding_no);
 
             /* Add to cache */
             queue_put(olcapture->refreshtqueue, (void*)table_shard);
@@ -805,7 +845,7 @@ void* onlinerefresh_capture_main(void* args)
     thrnode*                   incloadrec_thr_node = NULL;
     onlinerefresh_capture*     olcapture = NULL;
 
-    thrnode* thr_node = (thrnode*)args;
+    thrnode*                   thr_node = (thrnode*)args;
     olcapture = (onlinerefresh_capture*)thr_node->data;
 
     /* Check status */
@@ -885,7 +925,8 @@ void* onlinerefresh_capture_main(void* args)
         incloadrec_thr_node = threads_getthrnodebyno(olcapture->thrsmgr->parents, thr_ref_obj->no);
         if (NULL == incloadrec_thr_node)
         {
-            elog(RLOG_WARNING, "capture onlinerefresh can not get load record thread by no:%lu",
+            elog(RLOG_WARNING,
+                 "capture onlinerefresh can not get load record thread by no:%lu",
                  thr_ref_obj->no);
             thr_node->stat = THRNODE_STAT_ABORT;
             pthread_exit(NULL);
@@ -897,7 +938,8 @@ void* onlinerefresh_capture_main(void* args)
         incparser_thr_node = threads_getthrnodebyno(olcapture->thrsmgr->parents, thr_ref_obj->no);
         if (NULL == incparser_thr_node)
         {
-            elog(RLOG_WARNING, "capture onlinerefresh can not get parser thread by no:%lu",
+            elog(RLOG_WARNING,
+                 "capture onlinerefresh can not get parser thread by no:%lu",
                  thr_ref_obj->no);
             thr_node->stat = THRNODE_STAT_ABORT;
             pthread_exit(NULL);
@@ -909,7 +951,8 @@ void* onlinerefresh_capture_main(void* args)
         incserial_thr_node = threads_getthrnodebyno(olcapture->thrsmgr->parents, thr_ref_obj->no);
         if (NULL == incserial_thr_node)
         {
-            elog(RLOG_WARNING, "capture onlinerefresh can not get serial thread by no:%lu",
+            elog(RLOG_WARNING,
+                 "capture onlinerefresh can not get serial thread by no:%lu",
                  thr_ref_obj->no);
             thr_node->stat = THRNODE_STAT_ABORT;
             pthread_exit(NULL);
@@ -921,7 +964,8 @@ void* onlinerefresh_capture_main(void* args)
         incflush_thr_node = threads_getthrnodebyno(olcapture->thrsmgr->parents, thr_ref_obj->no);
         if (NULL == incflush_thr_node)
         {
-            elog(RLOG_WARNING, "capture onlinerefresh can not get inc flush thread by no:%lu",
+            elog(RLOG_WARNING,
+                 "capture onlinerefresh can not get inc flush thread by no:%lu",
                  thr_ref_obj->no);
             thr_node->stat = THRNODE_STAT_ABORT;
             pthread_exit(NULL);
@@ -1007,9 +1051,11 @@ void* onlinerefresh_capture_main(void* args)
 
             /* Set idle threads to exit and count the number of exited threads */
             jobcnt = olcapture->parallelcnt;
-            if (false == threads_setsubmgrjobthredstermandcountexit(
-                             olcapture->thrsmgr->parents, olcapture->thrsmgr->childthrrefs, skipcnt,
-                             &jobcnt))
+            if (false ==
+                threads_setsubmgrjobthredstermandcountexit(olcapture->thrsmgr->parents,
+                                                           olcapture->thrsmgr->childthrrefs,
+                                                           skipcnt,
+                                                           &jobcnt))
             {
                 elog(RLOG_WARNING, "capture refresh set job threads term in idle error");
                 thr_node->stat = THRNODE_STAT_ABORT;
@@ -1022,8 +1068,8 @@ void* onlinerefresh_capture_main(void* args)
             }
 
             /* Set stock data thread to exit, skip the first 4 increment threads */
-            threads_setsubmgrjobthredsfree(olcapture->thrsmgr->parents,
-                                           olcapture->thrsmgr->childthrrefs, skipcnt, jobcnt);
+            threads_setsubmgrjobthredsfree(
+                olcapture->thrsmgr->parents, olcapture->thrsmgr->childthrrefs, skipcnt, jobcnt);
 
             jobstat = ONLINEREFRESH_CAPTURE_STAT_JOBWAITINCREMENTDONE;
 
@@ -1081,8 +1127,8 @@ void* onlinerefresh_capture_main(void* args)
 
             /* All threads have exited, management thread can exit */
             jobcnt = olcapture->thrsmgr->childthrrefs->length - olcapture->parallelcnt;
-            threads_setsubmgrjobthredsfree(olcapture->thrsmgr->parents,
-                                           olcapture->thrsmgr->childthrrefs, 0, jobcnt);
+            threads_setsubmgrjobthredsfree(
+                olcapture->thrsmgr->parents, olcapture->thrsmgr->childthrrefs, 0, jobcnt);
 
             /* Set this thread to exit */
             thr_node->stat = THRNODE_STAT_EXIT;

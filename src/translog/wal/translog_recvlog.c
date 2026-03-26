@@ -167,7 +167,8 @@ bool translog_recvlog_setrestorecmd(translog_recvlog* recvwal, char* restorecmd)
         index++;
         if (index >= dlen)
         {
-            elog(RLOG_WARNING, "config item restore_command:%s is incorrectly configured.",
+            elog(RLOG_WARNING,
+                 "config item restore_command:%s is incorrectly configured.",
                  restorecmd);
             return false;
         }
@@ -224,7 +225,8 @@ bool translog_recvlog_setsysidentifier(translog_recvlog* recvwal, char* sysident
 /*
  * execute SHOW wal_segment_size to get transaction log size
  */
-static bool translog_recvlog_showwalsegsize(translog_recvlog* recvwal, PGconn* conn,
+static bool translog_recvlog_showwalsegsize(translog_recvlog*    recvwal,
+                                            PGconn*              conn,
                                             translog_walcontrol* walctrl)
 {
     uint32 segsize = 0;
@@ -246,7 +248,8 @@ static bool translog_recvlog_showwalsegsize(translog_recvlog* recvwal, PGconn* c
  *  2. set control file status to work
  *  3. flush control file to disk
  */
-static bool translog_recvlog_identifysystem(translog_recvlog* recvwal, PGconn* conn,
+static bool translog_recvlog_identifysystem(translog_recvlog*    recvwal,
+                                            PGconn*              conn,
                                             translog_walcontrol* walctrl)
 {
     TimeLineID dbtli = InvalidTimeLineID;
@@ -272,8 +275,10 @@ static bool translog_recvlog_identifysystem(translog_recvlog* recvwal, PGconn* c
 
     if (recvwal->dbtli > dbtli)
     {
-        elog(RLOG_WARNING, "recvwal's database timeline %u large than database timeline %u",
-             recvwal->dbtli, dbtli);
+        elog(RLOG_WARNING,
+             "recvwal's database timeline %u large than database timeline %u",
+             recvwal->dbtli,
+             dbtli);
         return false;
     }
     translog_recvlog_setdbtli(recvwal, dbtli);
@@ -380,8 +385,11 @@ static bool translog_recvlog_execrestorecmd(translog_recvlog* recvwal)
     }
 
     /* filename */
-    snprintf(walfile, NAMEDATALEN, "%08X%08X%08X", /* directory/timeline segno size */
-             recvwal->tli, (uint32)((recvwal->segno) / PGWALSEGMENTSPERXLOGID(recvwal->segsize)),
+    snprintf(walfile,
+             NAMEDATALEN,
+             "%08X%08X%08X", /* directory/timeline segno size */
+             recvwal->tli,
+             (uint32)((recvwal->segno) / PGWALSEGMENTSPERXLOGID(recvwal->segsize)),
              (uint32)((recvwal->segno) % PGWALSEGMENTSPERXLOGID(recvwal->segsize)));
 
     /* command */
@@ -469,7 +477,7 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
      * 4. get timeline file
      * 5. start streaming replication
      */
-    translog_recvlog_stat jobstat = TRANSLOG_RECVLOG_STAT_NOP;
+    translog_recvlog_stat       jobstat = TRANSLOG_RECVLOG_STAT_NOP;
     /* flag to indicate receiving end command from source */
     bool                        endcmd = false;
     int                         error = 0;
@@ -615,8 +623,11 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
         }
         else if (TRANSLOG_RECVLOG_STAT_STARTREPLICATION == jobstat)
         {
-            elog(RLOG_INFO, "start replication at timeline:%u, pos:%08X/%08X,", recvwal->tli,
-                 (uint32)(recvwal->startpos >> 32), (uint32)recvwal->startpos);
+            elog(RLOG_INFO,
+                 "start replication at timeline:%u, pos:%08X/%08X,",
+                 recvwal->tli,
+                 (uint32)(recvwal->startpos >> 32),
+                 (uint32)recvwal->startpos);
 
             /* execute start replication */
             if (false == translog_recvlog_startreplication(recvwal, conn))
@@ -714,7 +725,8 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
                             elog(RLOG_WARNING,
                                  "exec restore command error, stop replication at timeline:%u, "
                                  "pos:%08X/%08X",
-                                 recvwal->tli, (uint32)(recvwal->startpos >> 32),
+                                 recvwal->tli,
+                                 (uint32)(recvwal->startpos >> 32),
                                  (uint32)recvwal->startpos);
                             goto translog_recvwallog_done;
                         }

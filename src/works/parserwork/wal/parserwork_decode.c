@@ -69,7 +69,9 @@ void parserwork_waldecode(decodingcontext* decodingctx)
     /* Call pre-parsing and dispatch based on pre-parsed content */
     if (false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
     {
-        elog(RLOG_ERROR, "pg_parser_trans_preTrans error, %08X, %s", rippleerrno,
+        elog(RLOG_ERROR,
+             "pg_parser_trans_preTrans error, %08X, %s",
+             rippleerrno,
              pg_parser_errno_getErrInfo(rippleerrno));
     }
 

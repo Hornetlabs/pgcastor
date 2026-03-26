@@ -23,7 +23,7 @@
 typedef void (*xscscisigfunc)(int signo);
 
 /* Global variables */
-sigset_t UnBlockSig, BlockSig;
+sigset_t     UnBlockSig, BlockSig;
 
 /* initialize xscsci stat */
 static xsciscistat* xscsci_init(void)

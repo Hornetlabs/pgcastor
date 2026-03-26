@@ -127,8 +127,8 @@ bool netclient_conn(netclient* netclient)
 
     if (NETCLIENT_PROTOCOLTYPE_IPTCP == netclient->protocoltype)
     {
-        bret = osal_host2sockaddr(&addrin, netclient->svrhost, netclient->svrport, domain,
-                                  SOCK_STREAM, IPPROTO_TCP, 1);
+        bret = osal_host2sockaddr(
+            &addrin, netclient->svrhost, netclient->svrport, domain, SOCK_STREAM, IPPROTO_TCP, 1);
         if (false == bret)
         {
             elog(RLOG_WARNING, "can not get addr info, %s", strerror(errno));
@@ -140,7 +140,11 @@ bool netclient_conn(netclient* netclient)
     else if (NETCLIENT_PROTOCOLTYPE_UNIXDOMAIN == netclient->protocoltype)
     {
         domain = AF_LOCAL;
-        snprintf(unixdoamin, 512, "%s/%s%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX,
+        snprintf(unixdoamin,
+                 512,
+                 "%s/%s%s",
+                 RMANAGER_UNIXDOMAINDIR,
+                 RMANAGER_UNIXDOMAINPREFIX,
                  netclient->svrport);
         if (sizeof(addrun.sun_path) <= strlen(unixdoamin))
         {
@@ -169,18 +173,18 @@ bool netclient_conn(netclient* netclient)
 
     if (keep_alive)
     {
-        osal_setsockopt(netclient->fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&keep_alive,
-                        sizeof(keep_alive));
+        osal_setsockopt(
+            netclient->fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&keep_alive, sizeof(keep_alive));
 
         osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&idle, sizeof(idle));
 
-        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPINTVL, (char*)&interval,
-                        sizeof(interval));
+        osal_setsockopt(
+            netclient->fd, IPPROTO_TCP, TCP_KEEPINTVL, (char*)&interval, sizeof(interval));
 
         osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPCNT, (char*)&count, sizeof(count));
 
-        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_USER_TIMEOUT, (char*)&timeout,
-                        sizeof(timeout));
+        osal_setsockopt(
+            netclient->fd, IPPROTO_TCP, TCP_USER_TIMEOUT, (char*)&timeout, sizeof(timeout));
     }
 
     /* Connect to target */
@@ -437,8 +441,8 @@ static bool netclient_send(netclient* netclient)
 }
 
 /* Create connection and send data */
-bool netclient_senddata(netclient_protocoltype ptype, char* host, char* port, uint8* data,
-                        int datalen)
+bool netclient_senddata(
+    netclient_protocoltype ptype, char* host, char* port, uint8* data, int datalen)
 {
     bool       bret = true;
     int        intervaltimeout = 0;
@@ -560,21 +564,21 @@ netclient_senddata_done:
 /* Create listen event and wait for event trigger, process triggered event */
 bool netclient_desc(netclient* netclient)
 {
-    int iret = 0;
-    int event = 0;  /* Event type */
-    int revent = 0; /* Triggered event */
+    int        iret = 0;
+    int        event = 0;  /* Event type */
+    int        revent = 0; /* Triggered event */
 
     /* Data length recorded in message, default set to header length */
-    uint32 msglen = NETMSG_TYPE_HDR_SIZE;
+    uint32     msglen = NETMSG_TYPE_HDR_SIZE;
 
     uint8      head[NETMSG_TYPE_HDR_SIZE] = {0};
     uint8*     ruptr = NULL;
     netpacket* netpacket = NULL;
 
     /* FOR DEBUG BEGIN */
-    uint8* uptr = NULL;
-    uint32 debugmsgtype = 0;
-    uint32 debugmsglen = 0;
+    uint8*     uptr = NULL;
+    uint32     debugmsgtype = 0;
+    uint32     debugmsglen = 0;
 
     /* FOR DEBUG END */
 

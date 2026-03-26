@@ -3,23 +3,23 @@
 
 typedef struct METRIC_CAPTURE
 {
-    XLogRecPtr redolsn;
-    XLogRecPtr restartlsn;
-    XLogRecPtr confirmlsn;
-    XLogRecPtr loadlsn;
-    XLogRecPtr parselsn;
-    XLogRecPtr flushlsn;
-    uint64     trailno;
-    uint64     trailstart;
-    uint64     parsetimestamp;
-    uint64     flushtimestamp;
+    XLogRecPtr      redolsn;
+    XLogRecPtr      restartlsn;
+    XLogRecPtr      confirmlsn;
+    XLogRecPtr      loadlsn;
+    XLogRecPtr      parselsn;
+    XLogRecPtr      flushlsn;
+    uint64          trailno;
+    uint64          trailstart;
+    uint64          parsetimestamp;
+    uint64          flushtimestamp;
 
     pthread_mutex_t dlpacketslock;
     dlist*          dlpackets;
     char            padding[CACHELINE_SIZE];
-    void (*addonlinerefresh)(void* privdata, void* rtables);
-    void* privdata;
-    char  padding1[CACHELINE_SIZE];
+    void            (*addonlinerefresh)(void* privdata, void* rtables);
+    void*           privdata;
+    char            padding1[CACHELINE_SIZE];
 } metric_capture;
 
 /* state main thread */

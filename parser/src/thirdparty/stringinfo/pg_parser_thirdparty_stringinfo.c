@@ -4,7 +4,7 @@
 #include "common/pg_parser_define.h"
 #include "thirdparty/stringinfo/pg_parser_thirdparty_stringinfo.h"
 
-#define STRINGINFO_MCXT NULL
+#define STRINGINFO_MCXT      NULL
 
 #define STRINFO_MaxAllocSize ((size_t)0x3fffffff) /* 1 gigabyte - 1 */
 

@@ -38,9 +38,13 @@ bool fftrail_reset_serail(void* data, void* state)
     uptr += TOKENHDRSIZE;
 
     /* add token content */
-    uptr = fftrail_token2buffer(TRAIL_RESET_TOKEN_NEXTTRAILNO, FFTRAIL_INFOTYPE_TOKEN,
-                                FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)&ffreset->nexttrailno,
-                                &reclen, uptr);
+    uptr = fftrail_token2buffer(TRAIL_RESET_TOKEN_NEXTTRAILNO,
+                                FFTRAIL_INFOTYPE_TOKEN,
+                                FTRAIL_TOKENDATATYPE_BIGINT,
+                                8,
+                                (uint8*)&ffreset->nexttrailno,
+                                &reclen,
+                                uptr);
 
     /* add rec tail */
     uptr = rfbuffer->data + rfbuffer->start;
@@ -56,9 +60,9 @@ bool fftrail_reset_serail(void* data, void* state)
 /* deserialize reset info */
 bool fftrail_reset_deserail(void** data, void* state)
 {
-    uint8  tokenid = 0;   /* token identifier */
-    uint8  tokeninfo = 0; /* token details */
-    uint32 tokenlen = 0;  /* token length */
+    uint8         tokenid = 0;   /* token identifier */
+    uint8         tokeninfo = 0; /* token details */
+    uint32        tokenlen = 0;  /* token length */
 
     uint8*        uptr = NULL;
     uint8*        tokendata = NULL; /* token data area */

@@ -87,11 +87,17 @@ bool parsertrail_trailheadapply(parsertrail* parsertrail, void* data)
         elog(RLOG_DEBUG, "startxid:         %lu", ffheader->startxid);
         elog(RLOG_DEBUG, "endxid:           %lu", ffheader->endxid);
         elog(RLOG_DEBUG, "redolsn:          %u", ffheader->redolsn);
-        elog(RLOG_DEBUG, "redolsn:          %08X/%08X", (uint32)(ffheader->redolsn >> 32),
+        elog(RLOG_DEBUG,
+             "redolsn:          %08X/%08X",
+             (uint32)(ffheader->redolsn >> 32),
              (uint32)(ffheader->redolsn & 0xFFFFFFFF));
-        elog(RLOG_DEBUG, "restartlsn:       %08X/%08X", (uint32)(ffheader->restartlsn >> 32),
+        elog(RLOG_DEBUG,
+             "restartlsn:       %08X/%08X",
+             (uint32)(ffheader->restartlsn >> 32),
              (uint32)(ffheader->restartlsn & 0xFFFFFFFF));
-        elog(RLOG_DEBUG, "confirmlsn:       %08X/%08X", (uint32)(ffheader->confirmlsn >> 32),
+        elog(RLOG_DEBUG,
+             "confirmlsn:       %08X/%08X",
+             (uint32)(ffheader->confirmlsn >> 32),
              (uint32)(ffheader->confirmlsn & 0xFFFFFFFF));
         elog(RLOG_DEBUG, "----------Trail File Header   End------------");
     }

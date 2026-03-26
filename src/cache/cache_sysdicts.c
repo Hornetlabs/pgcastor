@@ -115,7 +115,9 @@ void cache_sysdictsload(void** ref_sysdicts)
     }
     if ((r = osal_file_read(fd, buffer, FILE_BLK_SIZE)) > 0)
     {
-        rmemcpy0(array, 0, buffer + sizeof(sysdict_header),
+        rmemcpy0(array,
+                 0,
+                 buffer + sizeof(sysdict_header),
                  (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
     }
 
@@ -529,7 +531,8 @@ void cache_sysdicts_txnsysdicthisitem2cache(cache_sysdicts* sysdicts, ListCell* 
     /* Process based on different data types */
     if ((m_sysdict2cachecnt - 1) < catalog_data->type)
     {
-        elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d",
+        elog(RLOG_ERROR,
+             "sysdicthis 2 transcache logical error, unknown type:%d",
              catalog_data->type);
     }
 
@@ -624,7 +627,8 @@ void cache_sysdicts_txnsysdicthisfree(List* sysdicthis)
         /* Process based on different data types */
         if ((m_sysdict2cachecnt - 1) < catalog_data->type)
         {
-            elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d",
+            elog(RLOG_ERROR,
+                 "sysdicthis 2 transcache logical error, unknown type:%d",
                  catalog_data->type);
         }
 
@@ -656,7 +660,8 @@ void cache_sysdicts_catalogdatafreevoid(void* args)
     /* Process based on different data types */
     if ((m_sysdict2cachecnt - 1) < catalog_data->type)
     {
-        elog(RLOG_WARNING, "sysdicthis 2 transcache logical error, unknown type:%d",
+        elog(RLOG_WARNING,
+             "sysdicthis 2 transcache logical error, unknown type:%d",
              catalog_data->type);
         return;
     }
@@ -723,8 +728,8 @@ void sysdictscache_write(cache_sysdicts* sysdicts, XLogRecPtr redolsn)
 
     indexcache_write(sysdicts->by_index, &offset, array);
 
-    rmemcpy1(buffer, sizeof(sysdict_header), array,
-             (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
+    rmemcpy1(
+        buffer, sizeof(sysdict_header), array, (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
 
     fd = osal_basic_open_file(SYSDICTS_TMP_FILE, O_RDWR | O_CREAT | BINARY);
 

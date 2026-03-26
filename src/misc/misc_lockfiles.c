@@ -113,7 +113,9 @@ void misc_lockfiles_create(const char* filename)
                 elog(RLOG_ERROR,
                      "lock file %s already exists, Is another ripple (PID %d) running in data "
                      "directory:%s",
-                     filename, (int)other_pid, wdata);
+                     filename,
+                     (int)other_pid,
+                     wdata);
             }
         }
 
@@ -198,7 +200,10 @@ long misc_lockfiles_getpid(void)
         }
         else
         {
-            elog(RLOG_ERROR, "could not access file:%s/%s, error:%s", wdata, LOCK_FILE,
+            elog(RLOG_ERROR,
+                 "could not access file:%s/%s, error:%s",
+                 wdata,
+                 LOCK_FILE,
                  strerror(errno));
         }
     }

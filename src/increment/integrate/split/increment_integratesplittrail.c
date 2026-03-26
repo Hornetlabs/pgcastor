@@ -34,7 +34,8 @@ void increment_integratesplittrail_state_set(increment_integratesplittrail* spli
  *    emitoffset set to emitoffset
  */
 void increment_integratesplittrail_emit_set(increment_integratesplittrail* splittrail,
-                                            uint64 fileid, uint64 emitoffset)
+                                            uint64                         fileid,
+                                            uint64                         emitoffset)
 {
     /* Reset filtering start point */
     splittrail->loadrecords->fileid = fileid;
@@ -42,8 +43,8 @@ void increment_integratesplittrail_emit_set(increment_integratesplittrail* split
     splittrail->emitoffset = emitoffset;
 
     /* Reset parsing and filtering start points */
-    loadtrailrecords_setloadposition(splittrail->loadrecords, splittrail->loadrecords->fileid,
-                                     splittrail->loadrecords->foffset);
+    loadtrailrecords_setloadposition(
+        splittrail->loadrecords, splittrail->loadrecords->fileid, splittrail->loadrecords->foffset);
 }
 
 static bool increment_integratesplittrail_state_checkandset(
@@ -214,8 +215,8 @@ void* increment_integratesplitrail_main(void* args)
             continue;
         }
 
-        if (false == loadtrailrecords_filterremainmetadata(splittrail->loadrecords, fileid,
-                                                           splittrail->emitoffset))
+        if (false == loadtrailrecords_filterremainmetadata(
+                         splittrail->loadrecords, fileid, splittrail->emitoffset))
         {
             splittrail->filter = false;
         }
