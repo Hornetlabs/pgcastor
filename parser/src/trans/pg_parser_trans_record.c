@@ -72,7 +72,7 @@ static pg_parser_trans_rmgr m_record_rmgr_get_tuple[] = {
     {PG_PARSER_TRANSLOG_RMGR_HEAP_ID, NULL, pg_parser_trans_rmgr_heap_trans_get_tuple}};
 
 /* Pre-parse interface */
-// Name with ref in marks input/output parameters
+/* Name with ref in marks input/output parameters */
 bool pg_parser_trans_preTrans(pg_parser_translog_pre*       pg_parser_pre_data,
                               pg_parser_translog_pre_base** pg_parser_result,
                               int32_t*                      pg_parser_errno)
@@ -83,7 +83,6 @@ bool pg_parser_trans_preTrans(pg_parser_translog_pre*       pg_parser_pre_data,
     pg_parser_XLogRecord*      record = (pg_parser_XLogRecord*)pg_parser_pre_data->m_record;
     bool                       pre_trans_result = false;
     /* Check passed-in parameters in JNI */
-    // todo
     if (!pg_parser_trans_transrec_decode_checkPreTransParam(pg_parser_pre_data))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_FUNCERR_PRE_CHECK;

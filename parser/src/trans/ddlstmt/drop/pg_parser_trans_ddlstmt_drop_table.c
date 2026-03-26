@@ -72,7 +72,6 @@ pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_table(
     PG_PARSER_UNUSED(current_record);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_DROP_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {

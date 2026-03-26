@@ -35,7 +35,6 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_view(
                                             pg_parser_ddl->m_dbversion))
         {
             /* nothing need to do */
-            // ddlstate->m_view_def = current_record->m_record;
         }
         else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
                                             SYS_DEPEND,
@@ -72,7 +71,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_view(
 {
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
-    // todo COMPLETE
     pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
                          "DEBUG, DDL PARSER: create view(ignore) end \n");
     pg_parser_ddl_init_ddlstate(ddlstate);

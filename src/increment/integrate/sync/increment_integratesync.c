@@ -191,7 +191,6 @@ void* increment_integratesync_main(void* args)
         increment_integratesync_state_set(syncworkstate, INCREMENT_INTEGRATESYNC_STATE_WORK);
 
         /* Sync data */
-        // elog(RLOG_DEBUG, "[DEBUG] xid:%lu, %d", entry->xid, entry->stmts->length);
         if (NULL != entry->stmts)
         {
             while (false == syncstate_applytxn(sync_state, thr_node, (void*)entry, true))

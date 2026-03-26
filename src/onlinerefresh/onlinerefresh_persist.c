@@ -425,7 +425,6 @@ onlinerefresh_persist* onlinerefresh_persist_read(void)
         buffer = (uint8*)node;
 
         /* Get begin, end fileid and offset */
-        // tbcnt = get64bit(&buffer);
         rmemcpy1(&tbcnt, 0, buffer + bufferoffset, sizeof(tbcnt));
         bufferoffset += sizeof(tbcnt);
         rmemcpy1(&persistnode->begin.trail.fileid,
@@ -497,7 +496,7 @@ onlinerefresh_persist* onlinerefresh_persist_read(void)
 
             offset += ONLINEREFRESHPERSIST_FILE_TABLE_LEN;
 
-            // Copy table info
+            /* Copy table info */
             refresh_table_syncstat_schema_set(schema, new_syncstat);
             refresh_table_syncstat_table_set(table, new_syncstat);
 

@@ -47,7 +47,6 @@ void database_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "pg_database query failed");
     }
 
-    // Print row data
     for (i = 0; i < PQntuples(res); i++)
     {
         database = (pg_sysdict_Form_pg_database)rmalloc0(sizeof(pg_parser_sysdict_pgdatabase));
@@ -468,7 +467,6 @@ void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cata
                  0,
                  newcatalog->database,
                  sizeof(pg_parser_sysdict_pgdatabase));
-        // datname2oid
         catalogInDatname2Hash = hash_search(
             sysdicts->by_datname2oid, &newcatalog->database->datname, HASH_ENTER, &found);
         if (true == found)
@@ -495,7 +493,6 @@ void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cata
                 rfree(catalogInOid2Hash->database);
             }
         }
-        // datname2oid
         catalogInDatname2Hash = hash_search(
             sysdicts->by_datname2oid, &newcatalog->database->datname, HASH_REMOVE, &found);
     }
@@ -522,7 +519,6 @@ void database_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* cata
                  0,
                  newcatalog->database,
                  sizeof(pg_parser_sysdict_pgdatabase));
-        // datname2database
         hash_seq_init(&status, sysdicts->by_datname2oid);
         while ((catalogInDatname2Hash = hash_seq_search(&status)) != NULL)
         {

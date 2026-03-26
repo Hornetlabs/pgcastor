@@ -1234,37 +1234,9 @@ static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis,
                     }
                     break;
                 }
-                // case CATALOG_TYPE_OPERATOR:
-                //{
-                //     catalog_operator_value *temp_operator_value =
-                //         (catalog_operator_value *) dict->catalog;
-                //     if (temp_operator_value->oid == *(Oid *)search_variable)
-                //     {
-                //         sysdicthis_result = (void *)temp_operator_value->operator;
-                //     }
-                //     break;
-                // }
-                // case CATALOG_TYPE_AUTHID:
-                //{
-                //     catalog_authid_value *temp_authid_value =
-                //         (catalog_authid_value *) dict->catalog;
-                //     if (temp_authid_value->oid == *(Oid *)search_variable)
-                //     {
-                //         sysdicthis_result = (void *)temp_authid_value->authid;
-                //     }
-                //     break;
-                // }
-
                 /* index is not returned here */
                 case CATALOG_TYPE_INDEX:
                 {
-                    // catalog_index_value *temp_index_value =
-                    //     (catalog_index_value *) dict->catalog;
-                    // if (temp_index_value->oid == *(Oid *)search_variable)
-                    // {
-                    //     sysdicthis_result = (void *)temp_index_value->index;
-                    // }
-                    // break;
                     return NULL;
                 }
                 default:

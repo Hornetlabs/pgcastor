@@ -407,14 +407,12 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_add_constr
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_13;
         return NULL;
     }
-    // todo free
     if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                (void**)&cons_return,
                                sizeof(pg_parser_translog_ddlstmt_tbconstraint)))
@@ -629,7 +627,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_add_constr
         cons_return->m_type = PG_PARSER_DDL_CONSTRAINT_UNIQUE;
         ukey->m_colcnt = ddlstate->m_attList->length;
 
-        // todo free
         if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
                                    (void**)&column,
                                    sizeof(pg_parser_translog_ddlstmt_col) * ukey->m_colcnt))

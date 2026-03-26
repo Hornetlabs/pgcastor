@@ -1319,7 +1319,6 @@ static void heap_assemble_delete(decodingcontext*                 decodingctx,
     else
     {
         uint32_t stmt_len = 0;
-        // txn->stmtsize += 20;
         txn->stmtsize += stmt->len;
         decodingctx->trans_cache->totalsize += stmt->len;
         txn->stmts = lappend(txn->stmts, (void*)stmt);
@@ -1518,14 +1517,12 @@ static void heap_assemble_update(decodingcontext*                 decodingctx,
     /* No old values exist, warn */
     if (!have_data)
     {
-        // elog(RLOG_WARNING, "decode heap update, all of old values missing, ignore");
         rfree(stmt->stmt);
         rfree(stmt);
     }
     else
     {
         uint32_t stmt_len = 0;
-        // txn->stmtsize += 20;
         txn->stmtsize += stmt->len;
         decodingctx->trans_cache->totalsize += stmt->len;
         txn->stmts = lappend(txn->stmts, (void*)stmt);
@@ -1656,7 +1653,6 @@ static void heap_assemble_multi_insert(decodingcontext*                  decodin
         deleteStringInfo(result_str);
         deleteStringInfo(column_name_str);
         deleteStringInfo(column_value_str);
-        // txn->stmtsize += 20;
         txn->stmtsize += stmt->len;
         decodingctx->trans_cache->totalsize += stmt->len;
         txn->stmts = lappend(txn->stmts, (void*)stmt);

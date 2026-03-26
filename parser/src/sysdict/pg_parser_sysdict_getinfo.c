@@ -220,11 +220,8 @@ static int32_t getcount_from_pgclass_by_relfilenode(pg_parser_sysdicts* sysdict,
                                                     uint32_t            relfilenode)
 {
     int32_t i = 0;
-    // printf("\nfrom tb info, want relfilenode :%u\n", relfilenode);
     for (i = 0; i < sysdict->m_pg_class.m_count; i++)
     {
-        // printf("\nfrom tb info, relfilenode :%u\n",
-        //         sysdict->m_pg_class.m_pg_class[i].relfilenode);
         if (sysdict->m_pg_class.m_pg_class[i].relfilenode == relfilenode)
         {
             /* Found */

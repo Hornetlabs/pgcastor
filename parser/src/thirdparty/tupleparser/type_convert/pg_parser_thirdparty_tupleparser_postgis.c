@@ -715,8 +715,8 @@ static inline uint64_t double_to_bits(const double d)
 typedef struct floating_decimal_64
 {
     uint64_t mantissa;
-    // Decimal exponent's range is -324 to 308
-    // inclusive, and can fit in a short if needed.
+    /* Decimal exponent's range is -324 to 308 */
+    /* inclusive, and can fit in a short if needed. */
     int32_t  exponent;
 } floating_decimal_64;
 
@@ -756,27 +756,27 @@ static inline bool d2d_small_int(const uint64_t             ieeeMantissa,
 
     if (e2 > 0)
     {
-        // f = m2 * 2^e2 >= 2^53 is an integer.
-        // Ignore this case for now.
+        /* f = m2 * 2^e2 >= 2^53 is an integer. */
+        /* Ignore this case for now. */
         return false;
     }
 
     if (e2 < -52)
     {
-        // f < 1.
+        /* f < 1. */
         return false;
     }
 
-    // Since 2^52 <= m2 < 2^53 and 0 <= -e2 <= 52: 1 <= f = m2 / 2^-e2 < 2^53.
-    // Test if the lower -e2 bits of the significand are 0, i.e. whether the fraction is 0.
+    /* Since 2^52 <= m2 < 2^53 and 0 <= -e2 <= 52: 1 <= f = m2 / 2^-e2 < 2^53. */
+    /* Test if the lower -e2 bits of the significand are 0, i.e. whether the fraction is 0. */
     if (fraction != 0)
     {
         return false;
     }
 
-    // f is an integer in the range [1, 2^53).
-    // Note: mantissa might contain trailing (decimal) 0's.
-    // Note: since 2^53 < 10^16, there is no need to adjust decimalLength17().
+    /* f is an integer in the range [1, 2^53). */
+    /* Note: mantissa might contain trailing (decimal) 0's. */
+    /* Note: since 2^53 < 10^16, there is no need to adjust decimalLength17(). */
     v->mantissa = m2 >> -e2;
     v->exponent = 0;
     return true;
@@ -878,23 +878,23 @@ static inline floating_decimal_64 d2d(const uint64_t ieeeMantissa, const uint32_
     const bool          even = (m2 & 1) == 0;
     const bool          acceptBounds = even;
 
-    // Step 2: Determine the interval of valid decimal representations.
+    /* Step 2: Determine the interval of valid decimal representations. */
     const uint64_t      mv = 4 * m2;
-    // Implicit bool -> int32_t conversion. True is 1, false is 0.
+    /* Implicit bool -> int32_t conversion. True is 1, false is 0. */
     const uint32_t      mmShift = ieeeMantissa != 0 || ieeeExponent <= 1;
-    // We would compute mp and mm like this:
-    // uint64_t mp = 4 * m2 + 2;
-    // uint64_t mm = mv - 1 - mmShift;
+    /* We would compute mp and mm like this: */
+    /* uint64_t mp = 4 * m2 + 2; */
+    /* uint64_t mm = mv - 1 - mmShift; */
 
-    // Step 3: Convert to a decimal power base using 128-bit arithmetic.
+    /* Step 3: Convert to a decimal power base using 128-bit arithmetic. */
     uint64_t            vr, vp, vm;
     int32_t             e10;
     bool                vmIsTrailingZeros = false;
     bool                vrIsTrailingZeros = false;
     if (e2 >= 0)
     {
-        // I tried special-casing q == 0, but there was no effect on performance.
-        // This expression is slightly faster than max(0, log10Pow2(e2) - 1).
+        /* I tried special-casing q == 0, but there was no effect on performance. */
+        /* This expression is slightly faster than max(0, log10Pow2(e2) - 1). */
         const uint32_t q = log10Pow2(e2) - (e2 > 3);
         const int32_t  k = DOUBLE_POW5_INV_BITCOUNT + pow5bits((int32_t)q) - 1;
         const int32_t  i = -e2 + (int32_t)q + k;
@@ -904,9 +904,11 @@ static inline floating_decimal_64 d2d(const uint64_t ieeeMantissa, const uint32_
 
         if (q <= 21)
         {
-            // This should use q <= 22, but I think 21 is also safe. Smaller values
-            // may still be safe, but it's more difficult to reason about them.
-            // Only one of mp, mv, and mm can be a multiple of 5, if any.
+            /*
+             * This should use q <= 22, but I think 21 is also safe. Smaller values
+             * may still be safe, but it's more difficult to reason about them.
+             * Only one of mp, mv, and mm can be a multiple of 5, if any.
+             */
             const uint32_t mvMod5 = ((uint32_t)mv) - 5 * ((uint32_t)div5(mv));
             if (mvMod5 == 0)
             {
@@ -914,21 +916,23 @@ static inline floating_decimal_64 d2d(const uint64_t ieeeMantissa, const uint32_
             }
             else if (acceptBounds)
             {
-                // Same as min(e2 + (~mm & 1), pow5Factor(mm)) >= q
-                // <=> e2 + (~mm & 1) >= q && pow5Factor(mm) >= q
-                // <=> true && pow5Factor(mm) >= q, since e2 >= q.
+                /*
+                 * Same as min(e2 + (~mm & 1), pow5Factor(mm)) >= q
+                 * <=> e2 + (~mm & 1) >= q && pow5Factor(mm) >= q
+                 * <=> true && pow5Factor(mm) >= q, since e2 >= q.
+                 */
                 vmIsTrailingZeros = multipleOfPowerOf5(mv - 1 - mmShift, q);
             }
             else
             {
-                // Same as min(e2 + 1, pow5Factor(mp)) >= q.
+                /* Same as min(e2 + 1, pow5Factor(mp)) >= q. */
                 vp -= multipleOfPowerOf5(mv + 2, q);
             }
         }
     }
     else
     {
-        // This expression is slightly faster than max(0, log10Pow5(-e2) - 1).
+        /* This expression is slightly faster than max(0, log10Pow5(-e2) - 1). */
         const uint32_t q = log10Pow5(-e2) - (-e2 > 1);
         const int32_t  i = -e2 - (int32_t)q;
         const int32_t  k = pow5bits(i) - DOUBLE_POW5_BITCOUNT;
@@ -937,35 +941,36 @@ static inline floating_decimal_64 d2d(const uint64_t ieeeMantissa, const uint32_
         vr = mulShiftAll(m2, DOUBLE_POW5_SPLIT[i], j, &vp, &vm, mmShift);
         if (q <= 1)
         {
-            // {vr,vp,vm} is trailing zeros if {mv,mp,mm} has at least q trailing 0 bits.
-            // mv = 4 * m2, so it always has at least two trailing 0 bits.
+            /* {vr,vp,vm} is trailing zeros if {mv,mp,mm} has at least q trailing 0 bits. */
+            /* mv = 4 * m2, so it always has at least two trailing 0 bits. */
             vrIsTrailingZeros = true;
             if (acceptBounds)
             {
-                // mm = mv - 1 - mmShift, so it has 1 trailing 0 bit iff mmShift == 1.
+                /* mm = mv - 1 - mmShift, so it has 1 trailing 0 bit iff mmShift == 1. */
                 vmIsTrailingZeros = mmShift == 1;
             }
             else
             {
-                // mp = mv + 2, so it always has at least one trailing 0 bit.
+                /* mp = mv + 2, so it always has at least one trailing 0 bit. */
                 --vp;
             }
         }
         else if (q < 63)
-        {  // TODO(ulfjack): Use a tighter bound here.
-            // We want to know if the full product has at least q trailing zeros.
-            // We need to compute min(p2(mv), p5(mv) - e2) >= q
-            // <=> p2(mv) >= q && p5(mv) - e2 >= q
-            // <=> p2(mv) >= q (because -e2 >= q)
+        { /* TODO(ulfjack): Use a tighter bound here. */
+            /* We want to know if the full product has at least q trailing zeros.
+             * We need to compute min(p2(mv), p5(mv) - e2) >= q
+             * <=> p2(mv) >= q && p5(mv) - e2 >= q
+             * <=> p2(mv) >= q (because -e2 >= q)
+             */
             vrIsTrailingZeros = multipleOfPowerOf2(mv, q);
         }
     }
 
-    // Step 4: Find the shortest decimal representation in the interval of valid representations.
-    // On average, we remove ~2 digits.
+    /* Step 4: Find the shortest decimal representation in the interval of valid representations. */
+    /* On average, we remove ~2 digits. */
     if (vmIsTrailingZeros || vrIsTrailingZeros)
     {
-        // General case, which happens rarely (~0.7%).
+        /* General case, which happens rarely (~0.7%). */
         for (;;)
         {
             const uint64_t vpDiv10 = div10(vp);
@@ -1008,21 +1013,21 @@ static inline floating_decimal_64 d2d(const uint64_t ieeeMantissa, const uint32_
         }
         if (vrIsTrailingZeros && lastRemovedDigit == 5 && vr % 2 == 0)
         {
-            // Round even if the exact number is .....50..0.
+            /* Round even if the exact number is .....50..0. */
             lastRemovedDigit = 4;
         }
-        // We need to take vr + 1 if vr is outside bounds or we need to round up.
+        /* We need to take vr + 1 if vr is outside bounds or we need to round up. */
         output =
             vr + ((vr == vm && (!acceptBounds || !vmIsTrailingZeros)) || lastRemovedDigit >= 5);
     }
     else
     {
-        // Specialized for the common case (~99.3%). Percentages below are relative to this.
+        /* Specialized for the common case (~99.3%). Percentages below are relative to this. */
         bool           roundUp = false;
         const uint64_t vpDiv100 = div100(vp);
         const uint64_t vmDiv100 = div100(vm);
         if (vpDiv100 > vmDiv100)
-        {  // Optimization: remove two digits at a time (~86.2%).
+        { /* Optimization: remove two digits at a time (~86.2%). */
             const uint64_t vrDiv100 = div100(vr);
             const uint32_t vrMod100 = ((uint32_t)vr) - 100 * ((uint32_t)vrDiv100);
             roundUp = vrMod100 >= 50;
@@ -1031,10 +1036,12 @@ static inline floating_decimal_64 d2d(const uint64_t ieeeMantissa, const uint32_
             vm = vmDiv100;
             removed += 2;
         }
-        // Loop iterations below (approximately), without optimization above:
-        // 0: 0.03%, 1: 13.8%, 2: 70.6%, 3: 14.0%, 4: 1.40%, 5: 0.14%, 6+: 0.02%
-        // Loop iterations below (approximately), with optimization above:
-        // 0: 70.6%, 1: 27.8%, 2: 1.40%, 3: 0.14%, 4+: 0.02%
+        /*
+         * Loop iterations below (approximately), without optimization above:
+         * 0: 0.03%, 1: 13.8%, 2: 70.6%, 3: 14.0%, 4: 1.40%, 5: 0.14%, 6+: 0.02%
+         * Loop iterations below (approximately), with optimization above:
+         * 0: 70.6%, 1: 27.8%, 2: 1.40%, 3: 0.14%, 4+: 0.02%
+         */
         for (;;)
         {
             const uint64_t vpDiv10 = div10(vp);
@@ -1052,7 +1059,7 @@ static inline floating_decimal_64 d2d(const uint64_t ieeeMantissa, const uint32_
             vm = vmDiv10;
             ++removed;
         }
-        // We need to take vr + 1 if vr is outside bounds or we need to round up.
+        /* We need to take vr + 1 if vr is outside bounds or we need to round up. */
         output = vr + (vr == vm || roundUp);
     }
 
@@ -1173,7 +1180,7 @@ static inline int32_t to_chars_uint64(uint64_t output, uint32_t olength, char* c
 
     if ((output >> 32) != 0)
     {
-        // Expensive 64-bit division.
+        /* Expensive 64-bit division. */
         const uint64_t q = div1e8(output);
         uint32_t       output2 = ((uint32_t)output) - 100000000 * ((uint32_t)q);
         const uint32_t c = output2 % 10000;
@@ -1357,10 +1364,10 @@ static inline int32_t to_chars_fixed(const floating_decimal_64 v,
 
 static int32_t d2sexp_buffered_n(double f, uint32_t precision, char* result)
 {
-    // Step 1: Decode the floating-point number, and unify normalized and subnormal cases.
+    /* Step 1: Decode the floating-point number, and unify normalized and subnormal cases. */
     const uint64_t bits = double_to_bits(f);
 
-    // Decode bits into sign, mantissa, and exponent.
+    /* Decode bits into sign, mantissa, and exponent. */
     const bool     ieeeSign = ((bits >> (DOUBLE_MANTISSA_BITS + DOUBLE_EXPONENT_BITS)) & 1) != 0;
     const uint64_t ieeeMantissa = bits & ((1ull << DOUBLE_MANTISSA_BITS) - 1);
     const uint32_t ieeeExponent =
@@ -1372,7 +1379,7 @@ static int32_t d2sexp_buffered_n(double f, uint32_t precision, char* result)
     int32_t             index = 0;
     int32_t             exp = 0;
 
-    // Case distinction; exit early for the easy cases.
+    /* Case distinction; exit early for the easy cases. */
     if (ieeeExponent == ((1u << DOUBLE_EXPONENT_BITS) - 1u) ||
         (ieeeExponent == 0 && ieeeMantissa == 0))
     {
@@ -1382,10 +1389,12 @@ static int32_t d2sexp_buffered_n(double f, uint32_t precision, char* result)
     isSmallInt = d2d_small_int(ieeeMantissa, ieeeExponent, &v);
     if (isSmallInt)
     {
-        // For small integers in the range [1, 2^53), v.mantissa might contain trailing (decimal)
-        // zeros. For scientific notation we need to move these zeros into the exponent. (This is
-        // not needed for fixed-point notation, so it might be beneficial to trim trailing zeros in
-        // to_chars only if needed - once fixed-point notation output is implemented.)
+        /*
+         * For small integers in the range [1, 2^53), v.mantissa might contain trailing (decimal)
+         * zeros. For scientific notation we need to move these zeros into the exponent. (This is
+         * not needed for fixed-point notation, so it might be beneficial to trim trailing zeros in
+         * to_chars only if needed - once fixed-point notation output is implemented.)
+         */
         for (;;)
         {
             const uint64_t q = div10(v.mantissa);
@@ -1403,13 +1412,13 @@ static int32_t d2sexp_buffered_n(double f, uint32_t precision, char* result)
         v = d2d(ieeeMantissa, ieeeExponent);
     }
 
-    // Print first the mantissa using the fixed point notation, then add the exponent manually
+    /* Print first the mantissa using the fixed point notation, then add the exponent manually */
     olength = (int32_t)decimalLength17(v.mantissa);
     original_ieeeExponent = v.exponent + olength - 1;
     v.exponent = 1 - olength;
     index = to_chars_fixed(v, ieeeSign, precision, result);
 
-    // Print the exponent.
+    /* Print the exponent. */
     result[index++] = 'e';
     exp = original_ieeeExponent;
     if (exp < 0)
@@ -1444,10 +1453,10 @@ static int32_t d2sexp_buffered_n(double f, uint32_t precision, char* result)
 
 static int32_t d2sfixed_buffered_n(double f, uint32_t precision, char* result)
 {
-    // Step 1: Decode the floating-point number, and unify normalized and subnormal cases.
+    /* Step 1: Decode the floating-point number, and unify normalized and subnormal cases. */
     const uint64_t bits = double_to_bits(f);
 
-    // Decode bits into sign, mantissa, and exponent.
+    /* Decode bits into sign, mantissa, and exponent. */
     const bool     ieeeSign = ((bits >> (DOUBLE_MANTISSA_BITS + DOUBLE_EXPONENT_BITS)) & 1) != 0;
     const uint64_t ieeeMantissa = bits & ((1ull << DOUBLE_MANTISSA_BITS) - 1);
     const uint32_t ieeeExponent =
@@ -1455,7 +1464,7 @@ static int32_t d2sfixed_buffered_n(double f, uint32_t precision, char* result)
     floating_decimal_64 v;
     bool                isSmallInt = false;
 
-    // Case distinction; exit early for the easy cases.
+    /* Case distinction; exit early for the easy cases. */
     if (ieeeExponent == ((1u << DOUBLE_EXPONENT_BITS) - 1u) ||
         (ieeeExponent == 0 && ieeeMantissa == 0))
     {
@@ -1466,10 +1475,12 @@ static int32_t d2sfixed_buffered_n(double f, uint32_t precision, char* result)
 
     if (isSmallInt)
     {
-        // For small integers in the range [1, 2^53), v.mantissa might contain trailing (decimal)
-        // zeros. For scientific notation we need to move these zeros into the exponent. (This is
-        // not needed for fixed-point notation, so it might be beneficial to trim trailing zeros in
-        // to_chars only if needed - once fixed-point notation output is implemented.)
+        /*
+         * For small integers in the range [1, 2^53), v.mantissa might contain trailing (decimal)
+         * zeros. For scientific notation we need to move these zeros into the exponent. (This is
+         * not needed for fixed-point notation, so it might be beneficial to trim trailing zeros in
+         * to_chars only if needed - once fixed-point notation output is implemented.)
+         */
         for (;;)
         {
             const uint64_t q = div10(v.mantissa);
@@ -2405,7 +2416,7 @@ static uint8_t* rt_raster_to_wkb(rt_raster raster, int outasin, uint32_t* wkbsiz
         {
             /* Write data */
             uint32_t datasize = raster->width * raster->height * pixbytes;
-            // todo, offline here
+            /* todo, offline here */
             char*    band_result = rt_band_get_data(band);
 
             if (!band_result)
@@ -2633,9 +2644,9 @@ static int32_t gserialized2_get_srid(const GSERIALIZED* g)
 #define G2FLAG_RESERVED2             0x80 /* RESERVED FOR FUTURE VERSIONS */
 
 #define G2FLAG_X_SOLID               0x00000001
-#define G2FLAG_X_CHECKED_VALID       0x00000002  // To Be Implemented?
-#define G2FLAG_X_IS_VALID            0x00000004  // To Be Implemented?
-#define G2FLAG_X_HAS_HASH            0x00000008  // To Be Implemented?
+#define G2FLAG_X_CHECKED_VALID       0x00000002 /* To Be Implemented? */
+#define G2FLAG_X_IS_VALID            0x00000004 /* To Be Implemented? */
+#define G2FLAG_X_HAS_HASH            0x00000008 /* To Be Implemented? */
 
 #define G2FLAGS_GET_VERSION(gflags)  (((gflags) & G2FLAG_VER_0) >> 6)
 #define G2FLAGS_GET_Z(gflags)        ((gflags) & G2FLAG_Z)

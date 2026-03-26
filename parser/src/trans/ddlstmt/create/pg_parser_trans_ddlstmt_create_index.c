@@ -109,14 +109,12 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_index(
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_CREATE_INDEX_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_23;
         return NULL;
     }
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_CREATE_INDEX_MCXT, (void**)&index_return, sizeof(pg_parser_translog_ddlstmt_index)))
     {
@@ -162,7 +160,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_index(
     {
         index_return->m_option |= PG_PARSER_DDL_INDEX_UNIQUE;
     }
-    // todo free
     if (!pg_parser_mcxt_malloc(DDL_CREATE_INDEX_MCXT,
                                (void**)&column,
                                sizeof(pg_parser_translog_ddlstmt_col) * index_return->m_colcnt))

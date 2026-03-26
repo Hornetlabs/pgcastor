@@ -1529,9 +1529,8 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
                     break;
 
                 default:
+                    /* todo error handling */
                     break;
-                    // printf("ERROR, unrecognized boolop: %d\n",
-                    //      (int32_t) expr->boolop);
             }
             if (node)
             {
@@ -1644,8 +1643,7 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
                     break;
 
                 default:
-                    // printf("ERROR, unrecognized partition strategy: %d\n",
-                    //      (int) spec->strategy);
+                    /* todo error handling */
                     break;
             }
             if (spec)
@@ -1809,9 +1807,7 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
         }
         break;
         default:
-            // printf("WARNING, unsupport node type: [%d]: %s\n",
-            //         (int32_t) pg_parser_NodeTagType(node),
-            //         pg_parser_NodeTagName(node));
+            /* todo error handling */
             context->nodetree = pg_parser_append_nodetree_with_type(
                 context->nodetree, (void*)("[UNSUPPORT NODE]"), PG_PARSER_NODETYPE_CHAR);
             pg_parser_mcxt_free(NODE_MCXT, node);

@@ -53,7 +53,7 @@ void type_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "pg_type query failed");
     }
 
-    // Print row data
+    /* Print row data */
     for (i = 0; i < PQntuples(res); i++)
     {
         type = (pg_sysdict_Form_pg_type)rmalloc0(sizeof(pg_parser_sysdict_pgtype));

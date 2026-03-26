@@ -59,7 +59,7 @@ void decode_seq(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
         return;
     }
 
-    // Get current transaction info
+    /* Get current transaction info */
     txn = transcache_getTXNByXid((void*)ctx, pbase->m_xid);
     seq_oid = catalog_get_oid_by_relfilenode(ctx->trans_cache->sysdicts->by_relfilenode,
                                              txn->sysdictHis,

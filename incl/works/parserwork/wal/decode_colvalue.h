@@ -28,13 +28,6 @@ typedef enum CATALOG_MAPNUM_PG_TYPE
     TYPE_MAPNUM_TYPNAME = 1
 } catalog_mapnum_pg_type;
 
-// typedef enum CATALOG_MAPNUM_PG_INDEX
-// {
-//     INDEX_MAPNUM_INDEXRELID  = 0,
-//     INDEX_MAPNUM_INDRELID    = 1,
-//     INDEX_MAPNUM_INDISUNIQUE = 2
-// } catalog_mapnum_pg_index;
-
 extern char* get_class_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue,
                                            int                             pnum,
                                            int                             dbtype,

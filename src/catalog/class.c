@@ -81,7 +81,6 @@ void class_attribute_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "pg_class query failed");
     }
 
-    // Print row data
     for (i = 0; i < PQntuples(res); i++)
     {
         class = (pg_sysdict_Form_pg_class)rmalloc0(sizeof(pg_parser_sysdict_pgclass));

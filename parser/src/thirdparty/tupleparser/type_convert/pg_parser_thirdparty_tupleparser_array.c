@@ -168,7 +168,7 @@ static bool array_isspace(char ch)
     return false;
 }
 
-// todo Big-endian and Little-endian
+/* todo Big-endian and Little-endian */
 static int32_t pg_strcasecmp(const char* s1, const char* s2)
 {
     for (;;)
@@ -182,15 +182,11 @@ static int32_t pg_strcasecmp(const char* s1, const char* s2)
             {
                 ch1 += 'a' - 'A';
             }
-            // else if (IS_HIGHBIT_SET(ch1) && isupper(ch1))
-            //     ch1 = tolower(ch1);
 
             if (ch2 >= 'A' && ch2 <= 'Z')
             {
                 ch2 += 'a' - 'A';
             }
-            // else if (IS_HIGHBIT_SET(ch2) && isupper(ch2))
-            //     ch2 = tolower(ch2);
 
             if (ch1 != ch2)
             {
@@ -517,7 +513,7 @@ pg_parser_thirdparty_tupleparser_array_clean_and_do_deep_assemble:
 /* When array type cannot be simply returned as string, we need to assemble it */
 static pg_parser_Datum array_out_assemble(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
-    // todo
+    /* todo */
     PG_PARSER_UNUSED(attr);
     PG_PARSER_UNUSED(info);
     return (pg_parser_Datum)pg_parser_mcxt_strdup(">NOT SUPPORTED<");

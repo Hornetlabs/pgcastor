@@ -179,9 +179,6 @@ static long hash_accesses, hash_collisions, hash_expansions;
 #endif
 
 #define MAX_SEQ_SCANS 100
-// static HTAB *seq_scan_tables[MAX_SEQ_SCANS];	/* tables being scanned */
-// static int	seq_scan_level[MAX_SEQ_SCANS];	/* subtransaction nest level */
-// static int	num_seq_scans = 0;
 
 /* ------------------↓↓ Private function prototypes ↓↓------------------ */
 
@@ -193,7 +190,6 @@ static bool init_htab(HTAB* hashp, long nelem);
 static HASHSEGMENT seg_alloc(HTAB* hashp);
 static int choose_nelem_alloc(Size entrysize);
 static bool element_alloc(HTAB* hashp, int nelem, int freelist_idx);
-// static bool has_seq_scans(HTAB *hashp);
 static bool expand_table(HTAB* hashp);
 static bool dir_realloc(HTAB* hashp);
 static void hash_corrupted(HTAB* hashp);
@@ -1034,7 +1030,6 @@ static bool init_htab(HTAB* hashp, long nelem)
     HASHSEGMENT* segp;
     int          nbuckets;
     int          nsegs;
-    // int			i;
 
     /*
      * initialize mutexes if it's a partitioned table

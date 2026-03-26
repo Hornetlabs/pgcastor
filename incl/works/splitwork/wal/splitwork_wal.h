@@ -8,23 +8,6 @@ typedef enum splitwork_wal_status
     SPLITWORK_WAL_STATUS_NORMAL
 } splitwork_wal_status;
 
-// typedef struct SPLITWAL_INCOMPLETERECORD
-// {
-//     uint32      len;                /* Save original length */
-//     uint32      incomplete_len;     /* Stored length */
-//     XLogRecPtr  startlsn;           /* Starting lsn, first incomplete record at wal file start is
-//     recorded as record end lsn */ char       *record;             /* record data */
-// }splitwal_incompleteRecord;
-
-// typedef struct SPLITWAL_PAGEBUFFER
-// {
-//     uint32              size;                   /* block size */
-//     XLogRecPtr          startptr;               /* lsn where block starts */
-//     char               *buf;                    /* Data */
-//     splitwal_incompleteRecord   *incomplete;             /* (If exists) Last incomplete record of
-//     block */
-// }splitwal_pageBuffer;
-
 typedef struct TimeLine2lsn
 {
     TimeLineID timeline;
@@ -36,29 +19,6 @@ typedef struct timelineMAP
     uint32_t size;
     List*    map; /* Save TimeLine2lsn */
 } timelineMAP;
-
-// typedef struct SPLITWAL_WALREADCTL
-// {
-//     bool        wait;           /* Wait flag */
-//     bool        change;         /* Status change flag */
-//     bool        need_decrypt;
-//     int         status;         /* Status information, rewind or normal */
-//     int         fd;             /* File descriptor */
-//     TimeLineID  timeline;       /* Timeline */
-//     char       *inpath;         /* wal folder path */
-//     XLogRecPtr  change_startptr; /* Starting lsn after state switch */
-//     XLogRecPtr  startptr;       /* Starting lsn */
-//     XLogRecPtr  endptr;         /* Ending lsn */
-//     uint32      blcksz;         /* Block size of wal file */
-//     uint32      walsz;          /* wal file size */
-//     XLogRecPtr  prev;           /* lsn of last divided record */
-//     XLogSegNo sendSegNo;
-//     uint32 sendOff;
-//     splitwal_incompleteRecord *seg_first_incomplete;      /* (If exists) First incomplete record
-//     of current file*
-//     */ splitwal_incompleteRecord *seg_first_incomplete_next; /* (If exists)
-//     First incomplete record of next wal file*/
-// } splitwal_WalReadCtl;
 
 typedef struct SPLITWALCTX_PRIVDATACALLBACK
 {

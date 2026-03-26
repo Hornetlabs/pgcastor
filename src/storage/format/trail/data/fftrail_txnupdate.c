@@ -55,7 +55,7 @@ fftrail_txnupdate_serial_retry:
     {
         /* Write table to trail file */
         fftrail_tbmetadata_serial(false,
-                                  rstmt->database,  // colvalues->m_base.m_dbid,
+                                  rstmt->database, /* colvalues->m_base.m_dbid, */
                                   colvalues->m_relid,
                                   txndata->header.transid,
                                   &dbmdno,
@@ -378,7 +378,7 @@ bool fftrail_txnupdate_deserial(void** data, void* state)
     rmemset0(tbcolbase.m_tbname, 0, '\0', NAMEDATALEN);
     rmemcpy0(tbcolbase.m_tbname, 0, tbdeserialentry->table, NAMEDATALEN);
 
-    // Allocate m_new_values space
+    /* Allocate m_new_values space */
     mlen = sizeof(pg_parser_translog_tbcol_value) * tbdeserialentry->colcnt;
     colvalues->m_new_values = (pg_parser_translog_tbcol_value*)rmalloc0(mlen);
     if (NULL == colvalues->m_new_values)

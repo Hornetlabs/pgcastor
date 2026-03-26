@@ -246,7 +246,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_type(
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_47;
         return NULL;
     }
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_DROP_TYPE_MCXT, (void**)&type_return, sizeof(pg_parser_translog_ddlstmt_drop_base)))
     {

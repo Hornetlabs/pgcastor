@@ -210,7 +210,6 @@ static void init_heap_trans_data(pg_parser_translog_translog2col* trans_data,
     trans_data->m_debugLevel = decodingctx->walpre.m_debugLevel;
     trans_data->m_walLevel = decodingctx->walpre.m_walLevel;
 
-    // todo free
     /* Build convert structure */
     trans_data->m_convert = rmalloc0(sizeof(pg_parser_translog_convertinfo));
     trans_data->m_convert->m_dbcharset = decodingctx->orgdbcharset;
@@ -351,7 +350,7 @@ void onlinerefresh_decode_heap(decodingcontext* decodingctx, pg_parser_translog_
         trans_restart = true;
     }
 
-    // Get current transaction information
+    /* Get current transaction information */
     txn = trans_cache_onlinerefresh_getTXNByXid((void*)decodingctx, pbase->m_xid);
 
     /* Get oid through relfilenode */

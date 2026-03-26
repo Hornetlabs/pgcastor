@@ -41,7 +41,7 @@ static void parsertrail_txnupdate2hash(parsertrail* parsertrail, ff_txndata* txn
         txn_entry = (txn*)hash_search(tx_htab, &xid, HASH_ENTER, &find);
         if (!find)
         {
-            // Initialize
+            /* Initialize */
             txn_initset(txn_entry, xid, InvalidXLogRecPtr);
         }
         else

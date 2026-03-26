@@ -55,7 +55,7 @@ fftrail_txndelete_serial_retry:
     {
         /* Write table to trail file */
         fftrail_tbmetadata_serial(false,
-                                  rstmt->database,  // colvalues->m_base.m_dbid,
+                                  rstmt->database, /* colvalues->m_base.m_dbid, */
                                   colvalues->m_relid,
                                   txndata->header.transid,
                                   &dbmdno,

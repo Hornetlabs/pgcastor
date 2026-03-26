@@ -296,7 +296,6 @@ bool syncstate_applytxn(syncstate* sync_state, void* thr_node_ptr, void* txn_ptr
     thr_node = (thrnode*)thr_node_ptr;
     txn_entry = (txn*)txn_ptr;
 
-    // elog(RLOG_DEBUG, "begin, %d", txn_entry->stmts->length);
 stmts_write_retry:
 
     if (THRNODE_STAT_TERM == thr_node->stat)
@@ -509,7 +508,6 @@ bool syncstate_bigtxn_applytxn(syncstate* sync_state, void* thr_node_ptr, void* 
     thr_node = (thrnode*)thr_node_ptr;
     txn_entry = (txn*)txn_ptr;
 
-    // elog(RLOG_DEBUG, "begin, %d", txn_entry->stmts->length);
 stmts_write_retry:
     if (THRNODE_STAT_TERM == thr_node->stat)
     {

@@ -61,7 +61,6 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_type(
                                                            temp_relkind);
                     if (!temp_relkind)
                     {
-                        // errcode
                         return false;
                     }
                     /* Current record in pg_class has relkind r or p, represents this is a table
@@ -505,14 +504,12 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_type(
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_CREATE_TYPE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_38;
         return NULL;
     }
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_CREATE_TYPE_MCXT, (void**)&type_return, sizeof(pg_parser_translog_ddlstmt_type)))
     {
@@ -546,7 +543,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_type(
 
         type_return->m_typvalcnt = ddlstate->m_type_record_natts;
         type_return->m_typnspid = strtoul(ddlstate->m_nspname_oid_char, NULL, 10);
-        // todo free
         if (!pg_parser_mcxt_malloc(
                 DDL_CREATE_TYPE_MCXT,
                 (void**)&typcol,
@@ -588,7 +584,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_type(
         type_return->m_typvalcnt = ddlstate->m_enumlist->length;
         type_return->m_typnspid = strtoul(ddlstate->m_nspname_oid_char, NULL, 10);
 
-        // todo free
         if (!pg_parser_mcxt_malloc(
                 DDL_CREATE_TYPE_MCXT,
                 (void**)&enumvalue,
@@ -629,7 +624,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_type(
         type_return->m_typvalcnt = 1;
         type_return->m_typnspid = strtoul(ddlstate->m_nspname_oid_char, NULL, 10);
 
-        // todo free
         if (!pg_parser_mcxt_malloc(DDL_CREATE_TYPE_MCXT,
                                    (void**)&rangedef,
                                    sizeof(pg_parser_translog_ddlstmt_typrange)))

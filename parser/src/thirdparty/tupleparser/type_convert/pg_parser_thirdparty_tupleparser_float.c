@@ -921,7 +921,6 @@ static uint32_t mulShift32(const uint32_t m, const uint64_t factor, const int32_
     const uint64_t shiftedSum = sum >> (shift - 32);
 
     return (uint32_t)shiftedSum;
-
 }
 
 static uint32_t mulPow5InvDivPow2(const uint32_t m, const uint32_t q, const int32_t j)

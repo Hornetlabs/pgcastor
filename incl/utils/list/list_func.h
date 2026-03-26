@@ -75,36 +75,30 @@ static inline int list_length(const List* l)
  * in the second cons cell.
  */
 
-#define lnext(lc)      ((lc)->next)
-#define lfirst(lc)     ((lc)->data.ptr_value)
-#define lfirst_int(lc) ((lc)->data.int_value)
-#define lfirst_oid(lc) ((lc)->data.oid_value)
-// #define lfirst_node(type,lc)	castNode(type, lfirst(lc))
+#define lnext(lc)       ((lc)->next)
+#define lfirst(lc)      ((lc)->data.ptr_value)
+#define lfirst_int(lc)  ((lc)->data.int_value)
+#define lfirst_oid(lc)  ((lc)->data.oid_value)
 
 #define linitial(l)     lfirst(list_head(l))
 #define linitial_int(l) lfirst_int(list_head(l))
 #define linitial_oid(l) lfirst_oid(list_head(l))
-// #define linitial_node(type,l)	castNode(type, linitial(l))
 
-#define lsecond(l)     lfirst(lnext(list_head(l)))
-#define lsecond_int(l) lfirst_int(lnext(list_head(l)))
-#define lsecond_oid(l) lfirst_oid(lnext(list_head(l)))
-// #define lsecond_node(type,l)	castNode(type, lsecond(l))
+#define lsecond(l)      lfirst(lnext(list_head(l)))
+#define lsecond_int(l)  lfirst_int(lnext(list_head(l)))
+#define lsecond_oid(l)  lfirst_oid(lnext(list_head(l)))
 
-#define lthird(l)     lfirst(lnext(lnext(list_head(l))))
-#define lthird_int(l) lfirst_int(lnext(lnext(list_head(l))))
-#define lthird_oid(l) lfirst_oid(lnext(lnext(list_head(l))))
-// #define lthird_node(type,l)		castNode(type, lthird(l))
+#define lthird(l)       lfirst(lnext(lnext(list_head(l))))
+#define lthird_int(l)   lfirst_int(lnext(lnext(list_head(l))))
+#define lthird_oid(l)   lfirst_oid(lnext(lnext(list_head(l))))
 
-#define lfourth(l)     lfirst(lnext(lnext(lnext(list_head(l)))))
-#define lfourth_int(l) lfirst_int(lnext(lnext(lnext(list_head(l)))))
-#define lfourth_oid(l) lfirst_oid(lnext(lnext(lnext(list_head(l)))))
-// #define lfourth_node(type,l)	castNode(type, lfourth(l))
+#define lfourth(l)      lfirst(lnext(lnext(lnext(list_head(l)))))
+#define lfourth_int(l)  lfirst_int(lnext(lnext(lnext(list_head(l)))))
+#define lfourth_oid(l)  lfirst_oid(lnext(lnext(lnext(list_head(l)))))
 
-#define llast(l)     lfirst(list_tail(l))
-#define llast_int(l) lfirst_int(list_tail(l))
-#define llast_oid(l) lfirst_oid(list_tail(l))
-// #define llast_node(type,l)		castNode(type, llast(l))
+#define llast(l)        lfirst(list_tail(l))
+#define llast_int(l)    lfirst_int(list_tail(l))
+#define llast_oid(l)    lfirst_oid(list_tail(l))
 
 /*
  * Convenience macros for building fixed-length lists
@@ -228,7 +222,6 @@ extern ListCell* list_nth_cell(const List* list, int n);
 extern void* list_nth(const List* list, int n);
 extern int list_nth_int(const List* list, int n);
 extern Oid list_nth_oid(const List* list, int n);
-// #define list_nth_node(type,list,n)	castNode(type, list_nth(list, n))
 
 extern bool list_member(const List* list, const void* datum);
 extern bool list_member_ptr(const List* list, const void* datum);

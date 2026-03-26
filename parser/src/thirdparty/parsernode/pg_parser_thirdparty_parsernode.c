@@ -1424,7 +1424,7 @@ static pg_parser_BoolExpr* _readBoolExpr(char** strtok_ptr, int16_t dbtype, char
     }
     else
     {
-        // printf("ERROR: unrecognized boolop \"%.*s\"\n", length, token);
+        /* todo error handling */
     }
 
     READ_NODE_FIELD(args);
@@ -2042,8 +2042,7 @@ static pg_parser_RangeTblEntry* _readRangeTblEntry(char**  strtok_ptr,
             /* no extra fields */
             break;
         default:
-            // printf("ERROR: unrecognized RTE kind: %d\n",
-            //       (int32_t) local_node->rtekind);
+            /* todo error handling */
             break;
     }
 
@@ -2604,8 +2603,6 @@ static pg_parser_ForeignScan* _readForeignScan(char** strtok_ptr, int16_t dbtype
 
     READ_DONE();
 }
-
-
 
 /*
  * ReadCommonJoin
@@ -3486,7 +3483,7 @@ static pg_parser_Node* parseNodeString(char** strtok_ptr, int16_t dbtype, char* 
     }
     else if (MATCH("CUSTOMSCAN", 10))
     {
-        // printf("ERROR: can't parser CustomScan in front\n");
+        /* todo error handling */
         return_value = NULL;
     }
     else if (MATCH("JOIN", 4))
@@ -3591,7 +3588,7 @@ static pg_parser_Node* parseNodeString(char** strtok_ptr, int16_t dbtype, char* 
     }
     else if (MATCH("EXTENSIBLENODE", 14))
     {
-        // printf("ERROR: can't parser extensiblenode in front\n");
+        /* todo error handling */
         return_value = NULL;
     }
     else if (MATCH("PARTITIONBOUNDSPEC", 18))
@@ -3604,7 +3601,7 @@ static pg_parser_Node* parseNodeString(char** strtok_ptr, int16_t dbtype, char* 
     }
     else
     {
-        // printf("ERROR: badly formatted node string \"%.32s\"...", token);
+        /* todo error handling */
         return_value = NULL; /* keep compiler quiet */
     }
 
@@ -3635,15 +3632,16 @@ static pg_parser_Datum readDatum(bool typbyval, char** strtok_ptr, bool* need_fr
     token = pg_parser_strtok(&tokenLength, strtok_ptr); /* read the '[' */
     if (token == NULL || token[0] != '[')
     {
-        // printf("ERROR: expected \"[\" to start datum, but got \"%s\"; length = %zu\n",
-        //      token ? token : "[NULL]", length);
+        /* todo error handling */
+        return (pg_parser_Datum)0;
     }
 
     if (typbyval)
     {
         if (length > (size_t)sizeof(pg_parser_Datum))
         {
-            // printf("ERROR: byval datum but length = %zu\n", length);
+            /* todo error handling */
+            return (pg_parser_Datum)0;
         }
         res = (pg_parser_Datum)0;
         s = (char*)(&res);
@@ -3672,8 +3670,8 @@ static pg_parser_Datum readDatum(bool typbyval, char** strtok_ptr, bool* need_fr
     token = pg_parser_strtok(&tokenLength, strtok_ptr); /* read the ']' */
     if (token == NULL || token[0] != ']')
     {
-        // printf("ERROR: expected \"]\" to end datum, but got \"%s\"; length = %zu\n",
-        //      token ? token : "[NULL]", length);
+        /* todo error handling */
+        return (pg_parser_Datum)0;
     }
 
     return res;

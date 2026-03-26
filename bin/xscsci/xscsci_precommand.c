@@ -183,7 +183,7 @@ static bool xscsci_precommand_getdatafromcfgfile(const char* config_file, char* 
             uptr++;
         }
 
-        // table get;
+        /* table get */
         if ('=' != *uptr)
         {
             /* ended */

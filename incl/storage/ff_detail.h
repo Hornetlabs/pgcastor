@@ -161,7 +161,7 @@ typedef struct FF_TBMETADATA
     List*      index; /* Index information ff_tbindex */
 } ff_tbmetadata;
 
-// Flag identifier
+/* Flag identifier */
 typedef enum FF_FLAG
 {
     FF_COL_IS_NORMAL = 0x00,  /* Normal column */

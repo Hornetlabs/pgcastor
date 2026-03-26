@@ -46,7 +46,7 @@ bool refresh_tables_add(refresh_table* table, refresh_tables* tables)
         elog(RLOG_ERROR, "table or tables is NULL");
     }
 
-    // insert to list head
+    /* insert to list head */
     table->next = tables->tables;
     table->prev = NULL;
     if (NULL != tables->tables)

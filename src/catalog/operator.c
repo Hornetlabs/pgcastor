@@ -36,7 +36,7 @@ void operator_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "pg_operator query failed");
     }
 
-    // Print row data
+    /* Print row data */
     for (i = 0; i < PQntuples(res); i++)
     {
         operator = (pg_sysdict_Form_pg_operator)rmalloc0(sizeof(pg_parser_sysdict_pgoperator));

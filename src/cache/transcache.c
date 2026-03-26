@@ -272,7 +272,6 @@ void transcache_removeTXNByXid(transcache* in_transcache, uint64_t xid)
              (uint32)(txn_entry->redo.wal.lsn));
         rmemset1(txn_entry, 0, '\0', sizeof(txn));
     }
-    // elog(RLOG_INFO, "remove txn, found:%d, xid:%lu", find, xid);
     return;
 }
 

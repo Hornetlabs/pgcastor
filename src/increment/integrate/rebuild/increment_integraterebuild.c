@@ -489,7 +489,7 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
             *ntxn = NULL;
             *txbundlesize = 0;
         }
-        // Convert type
+        /* Convert type */
         onlinerefresh = (txnstmt_onlinerefresh*)stmtnode->stmt;
 
         /* Wait for cached transactions to finish applying */
@@ -651,8 +651,10 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
     }
     else if (TXNSTMT_TYPE_BIGTXN_BEGIN == stmtnode->type)
     {
-        // todo: delete persist, big transaction starts when receiving end, won't update rewind
-        // point until complete, will always start big transaction if not ended
+        /*
+         * todo: delete persist, big transaction starts when receiving end, won't update rewind
+         * point until complete, will always start big transaction if not ended
+         */
         increment_integraterebuild_addbigtxnpersist(rebuild_obj, txn_obj);
     }
     else if (TXNSTMT_TYPE_BIGTXN_END == stmtnode->type)

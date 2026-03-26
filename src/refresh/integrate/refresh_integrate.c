@@ -480,7 +480,7 @@ bool refresh_integrate_read(refresh_integrate** refresh)
         return true;
     }
 
-    // todo: error handling
+    /* todo: error handling */
     rintegrate = refresh_integrate_init();
     if (rintegrate == NULL)
     {
@@ -552,7 +552,7 @@ bool refresh_integrate_read(refresh_integrate** refresh)
 
         offset += REFRESH_FILE_TABLE_LEN;
 
-        // copy table info
+        /* copy table info */
         refresh_table_syncstat_schema_set(schema, new_syncstat);
         refresh_table_syncstat_table_set(table, new_syncstat);
 

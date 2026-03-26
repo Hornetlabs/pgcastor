@@ -420,7 +420,6 @@ static void parserwork_wal_rewind_ptr(decodingcontext* decodingctx, dlist* recor
         }
 
         /* Call rewind_ptr function */
-        // g_parserecno++;
         if (decodingctx->rewind_ptr->stat == REWIND_SEARCHCHECKPOINT)
         {
             rewind_fastrewind(decodingctx);

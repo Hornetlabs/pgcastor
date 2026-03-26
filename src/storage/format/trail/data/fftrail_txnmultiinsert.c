@@ -45,7 +45,7 @@ fftrail_txnmultiinsert_serial_retry:
     {
         /* Write table to trail file */
         fftrail_tbmetadata_serial(false,
-                                  rstmt->database,  // colnvalues->m_base.m_dbid,
+                                  rstmt->database, /* colnvalues->m_base.m_dbid, */
                                   colnvalues->m_relid,
                                   txndata->header.transid,
                                   &dbmdno,

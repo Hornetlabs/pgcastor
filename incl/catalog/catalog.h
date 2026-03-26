@@ -114,7 +114,7 @@ typedef struct CATALOG_INDEX_HASH_ENTRY
     List* index_list; /* catalog_index_value */
 } catalog_index_hash_entry;
 
-// database datname mapping oid
+/* database datname mapping oid */
 typedef struct DATNAME2OID_VALUE
 {
     pg_parser_NameData datname;

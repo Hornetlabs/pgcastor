@@ -88,7 +88,7 @@ struct pg_parser_varlena* pg_parser_heap_tuple_fetch_attr(struct pg_parser_varle
     {
         /* TOAST pointer for extended memory storage, should not enter here, if entered, report
          * error */
-        // printf("WARNING: VARATT IS EXTERNAL EXPANDED\n");
+        /* todo error handling */
         return NULL;
     }
     else

@@ -582,7 +582,6 @@ static pg_parser_translog_ddlstmt* prepare_create_table(decodingcontext*        
     appendStringInfo(result, ";");
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -619,7 +618,6 @@ static pg_parser_translog_ddlstmt* prepare_create_table(decodingcontext*        
                          table->m_tabname,
                          rolename);
         stmt_owner->len = strlen(owner->data);
-        // txn->stmtsize += 20;
         txn->stmtsize += stmt_owner->len;
         decodingctx->trans_cache->totalsize += stmt_owner->len;
         temp_stmt->type = PG_PARSER_DDLTYPE_ALTER;
@@ -656,7 +654,6 @@ static pg_parser_translog_ddlstmt* prepare_create_table(decodingcontext*        
         appendStringInfo(
             ident, "ALTER TABLE \"%s\".\"%s\" REPLICA IDENTITY FULL;", nspname, table->m_tabname);
         stmt_ident->len = ident->len;
-        // txn->stmtsize += 20;
         txn->stmtsize += stmt_ident->len;
         decodingctx->trans_cache->totalsize += stmt_ident->len;
         temp_stmt->type = PG_PARSER_DDLTYPE_ALTER;
@@ -687,7 +684,6 @@ static pg_parser_translog_ddlstmt* prepare_create_namespace(decodingcontext*    
     appendStringInfo(result, "CREATE SCHEMA \"%s\";", schema->m_value);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -721,7 +717,6 @@ static pg_parser_translog_ddlstmt* prepare_create_namespace(decodingcontext*    
 
         appendStringInfo(owner, "ALTER SCHEMA \"%s\" OWNER TO \"%s\";", schema->m_value, rolename);
         stmt_owner->len = strlen(owner->data);
-        // txn->stmtsize += 20;
         txn->stmtsize += stmt_owner->len;
         decodingctx->trans_cache->totalsize += stmt_owner->len;
         temp_stmt->type = PG_PARSER_DDLTYPE_ALTER;
@@ -806,7 +801,6 @@ static pg_parser_translog_ddlstmt* prepare_create_index(decodingcontext*        
     appendStringInfo(result, ");");
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -858,7 +852,6 @@ static pg_parser_translog_ddlstmt* prepare_create_sequence(decodingcontext*     
     appendStringInfo(result, ";");
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -946,7 +939,6 @@ static pg_parser_translog_ddlstmt* prepare_create_type(decodingcontext*         
     }
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -984,7 +976,6 @@ static pg_parser_translog_ddlstmt* prepare_create_type(decodingcontext*         
                          typ->m_type_name,
                          rolename);
         stmt_owner->len = strlen(owner->data);
-        // txn->stmtsize += 20;
         txn->stmtsize += stmt_owner->len;
         decodingctx->trans_cache->totalsize += stmt_owner->len;
         temp_stmt->type = PG_PARSER_DDLTYPE_ALTER;
@@ -1016,7 +1007,6 @@ static pg_parser_translog_ddlstmt* prepare_drop_namespace(decodingcontext*      
     appendStringInfo(result, "DROP SCHEMA \"%s\";", schema->m_value);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1059,7 +1049,6 @@ static pg_parser_translog_ddlstmt* prepare_drop_table(decodingcontext*          
     appendStringInfo(result, "DROP TABLE \"%s\".\"%s\";", nspname, table->m_name);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1101,7 +1090,6 @@ static pg_parser_translog_ddlstmt* prepare_drop_index(decodingcontext*          
     appendStringInfo(result, "DROP INDEX \"%s\".\"%s\";", nspname, index->m_name);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1135,7 +1123,6 @@ static pg_parser_translog_ddlstmt* prepare_drop_sequence(decodingcontext*       
     appendStringInfo(result, "DROP SEQUENCE \"%s\".\"%s\";", nspname, seq->m_name);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1169,7 +1156,6 @@ static pg_parser_translog_ddlstmt* prepare_drop_type(decodingcontext*           
     appendStringInfo(result, "DROP TYPE \"%s\".\"%s\";", nspname, typ->m_name);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1219,7 +1205,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_rename_column(
                      rename->m_colname_new);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1276,7 +1261,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_alter_column_null_set(
     }
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1351,7 +1335,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_alter_column_type(
     }
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1401,7 +1384,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_alter_column_drop_default
                      alter->m_colname);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1455,7 +1437,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_alter_column_default(
     appendStringInfo(result, ");");
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1564,7 +1545,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_add_column(
     appendStringInfo(result, ";");
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1610,7 +1590,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_rename(
                      table->m_relname_new);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1657,7 +1636,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_alter_column_drop_column(
         result, "ALTER TABLE \"%s\".\"%s\" DROP COLUMN \"%s\";", nspname, relname, drop->m_colname);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1785,7 +1763,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_add_constraint(
     }
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1838,7 +1815,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_drop_constraint(
                      cons->m_consname);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1886,7 +1862,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_alter_column_alter_schema
                      nspname_new);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1927,7 +1902,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_set_logged(
     appendStringInfo(result, "ALTER TABLE \"%s\".\"%s\" SET LOGGED;", nspname, setlog->m_relname);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -1968,7 +1942,6 @@ static pg_parser_translog_ddlstmt* prepare_alter_table_set_unlogged(
     appendStringInfo(result, "ALTER TABLE \"%s\".\"%s\" SET UNLOGGED;", nspname, setlog->m_relname);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -2015,7 +1988,6 @@ static pg_parser_translog_ddlstmt* prepare_truncate_table(decodingcontext*      
     appendStringInfo(result, "TRUNCATE TABLE \"%s\".\"%s\";", nspname, table->m_name);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -2062,7 +2034,6 @@ static pg_parser_translog_ddlstmt* prepare_reindex(decodingcontext*            d
     appendStringInfo(result, "REINDEX INDEX \"%s\".\"%s\";", nspname, index->m_name);
 
     stmt->len = strlen(result->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = ddl_result->m_base.m_ddltype;
@@ -2309,7 +2280,6 @@ void heap_ddl_assemble_truncate(decodingcontext* decodingctx, txn* txn, uint32_t
     appendStringInfo(truncate_stmt, "%s;", relname);
 
     stmt->len = strlen(truncate_stmt->data);
-    // txn->stmtsize += 20;
     txn->stmtsize += stmt->len;
     decodingctx->trans_cache->totalsize += stmt->len;
     dstmt->type = PG_PARSER_DDLTYPE_SPECIAL;

@@ -36,7 +36,6 @@ void enum_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "pg_enum query failed");
     }
 
-    // Print row data
     for (i = 0; i < PQntuples(res); i++)
     {
         enum_obj = (pg_sysdict_Form_pg_enum)rmalloc0(sizeof(pg_parser_sysdict_pgenum));

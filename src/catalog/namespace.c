@@ -37,7 +37,7 @@ void namespace_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "pg_namespace query failed");
     }
 
-    // Print row data
+    /* Print row data */
     for (i = 0; i < PQntuples(res); i++)
     {
         namespace = (pg_sysdict_Form_pg_namespace)rmalloc0(sizeof(pg_parser_sysdict_pgnamespace));

@@ -1014,7 +1014,7 @@ static void guc_parseConfigFile(const char*      config_file,
             rfree(key);
             continue;
         }
-        // table get;
+        /* table get; */
         if ('=' != *uptr)
         {
             /* done */

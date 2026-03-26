@@ -87,7 +87,7 @@ snapshot* snapshot_buildfromdb(PGconn* conn)
         start = strstr(result, ",");
         while (start != NULL)
         {
-            // Use sscanf to extract numbers
+            /* Use sscanf to extract numbers */
             xid = 0;
             start++;
             if (sscanf(start, "%u", &xid) == 1)

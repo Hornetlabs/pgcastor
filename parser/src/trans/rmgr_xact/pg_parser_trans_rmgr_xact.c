@@ -18,7 +18,6 @@
 typedef bool (*pg_parser_trans_transrec_rmgr_info_func_pre)(pg_parser_XLogReaderState*    state,
                                                             pg_parser_translog_pre_base** result,
                                                             int32_t* pg_parser_errno);
-// todo two-phase commit
 static bool pg_parser_trans_rmgr_xact_commit(pg_parser_XLogReaderState*    state,
                                              pg_parser_translog_pre_base** result,
                                              int32_t*                      pg_parser_errno);

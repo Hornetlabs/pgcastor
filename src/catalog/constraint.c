@@ -108,7 +108,6 @@ void constraint_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "pg_constraint query failed");
     }
 
-    // Print row data
     for (i = 0; i < PQntuples(res); i++)
     {
         constraint =
@@ -317,7 +316,6 @@ void constraint_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
     }
     else if (CATALOG_OP_UPDATE == catalogdata->op)
     {
-        // elog(RLOG_ERROR, "unknown op:%d", catalogdata->op);
         catalogInHash =
             hash_search(sysdicts->by_constraint, &newcatalog->conrelid, HASH_FIND, &found);
         if (NULL == catalogInHash)

@@ -58,7 +58,7 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
             }
             ddlstate->m_inddl = true;
         }
-        // todo rewrite (this will never be reached)
+        /* todo rewrite (this will never be reached) */
         else if (PG_SYSDICT_RELKIND_RELATION == relkind[0])
         {
             /*

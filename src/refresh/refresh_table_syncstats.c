@@ -91,15 +91,15 @@ void refresh_table_syncstats_tablesyncing_set(refresh_tables*          refreshta
 
     while (cur_table)
     {
-        // create a new sync status node
+        /* create a new sync status node */
         refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // copy table information
+        /* copy table information */
         refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
         refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
         refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
-        // insert into tablesyncall
+        /* insert into tablesyncall */
         new_syncstat->next = tablesyncstats->tablesyncing;
         if (tablesyncstats->tablesyncing)
         {
@@ -139,15 +139,15 @@ void refresh_table_syncstats_tablesyncall_set(refresh_tables*          refreshta
 
     while (cur_table)
     {
-        // create a new sync status node
+        /* create a new sync status node */
         refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // copy table information
+        /* copy table information */
         refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
         refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
         refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
-        // insert into tablesyncall
+        /* insert into tablesyncall */
         new_syncstat->next = tablesyncstats->tablesyncall;
         if (tablesyncstats->tablesyncall)
         {
@@ -187,15 +187,15 @@ void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* 
 
     while (cur_table)
     {
-        // create a new sync status node
+        /* create a new sync status node */
         refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // copy table information
+        /* copy table information */
         refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
         refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
         refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
-        // insert into tablesyncall
+        /* insert into tablesyncall */
         new_syncstat->next = tablesyncstats->tablesyncall;
         if (tablesyncstats->tablesyncall)
         {
@@ -654,17 +654,17 @@ void refresh_table_syncstats_tablesyncall_setfromfile(refresh_tables*          r
 
     while (cur_table)
     {
-        // create a new sync status node
+        /* create a new sync status node */
         refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // copy table information
+        /* copy table information */
         refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
         refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
         refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
         refresh_table_syncstats_read(new_syncstat, refresh_path);
 
-        // insert into tablesyncall
+        /* insert into tablesyncall */
         new_syncstat->next = tablesyncstats->tablesyncall;
         if (tablesyncstats->tablesyncall)
         {
@@ -701,17 +701,17 @@ void refresh_table_syncstats_tablesyncing_setfromfile(refresh_tables*          r
 
     while (cur_table)
     {
-        // create a new sync status node
+        /* create a new sync status node */
         refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // copy table information
+        /* copy table information */
         refresh_table_syncstat_schema_set(cur_table->schema, new_syncstat);
         refresh_table_syncstat_table_set(cur_table->table, new_syncstat);
         refresh_table_syncstat_oid_set(cur_table->oid, new_syncstat);
 
         refresh_table_syncstats_read(new_syncstat, refresh_path);
 
-        // insert into tablesyncall
+        /* insert into tablesyncall */
         new_syncstat->next = tablesyncstats->tablesyncing;
         if (tablesyncstats->tablesyncing)
         {
@@ -758,10 +758,10 @@ refresh_tables* refresh_table_syncstats_tablesyncing2tables(refresh_table_syncst
 
     while (cur_table)
     {
-        // create a new sync status node
+        /* create a new sync status node */
         refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
 
-        // copy table information
+        /* copy table information */
         table = refresh_table_init();
 
         refresh_table_setschema(new_syncstat->schema, table);

@@ -39,7 +39,7 @@ void proc_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "pg_proc query failed");
     }
 
-    // Print row data
+    /* Print row data */
     for (i = 0; i < PQntuples(res); i++)
     {
         proc = (pg_sysdict_Form_pg_proc)rmalloc0(sizeof(pg_parser_sysdict_pgproc));

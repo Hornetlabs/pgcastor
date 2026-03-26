@@ -821,7 +821,7 @@ recurse:
                                val);
                 if (val->type != jbvString)
                 {
-                    // printf("error in deal JBI_OBJECT_KEY\n");
+                    /* todo error handling */
                 }
 
                 /* Set state for next call */
@@ -860,7 +860,6 @@ recurse:
             }
     }
 
-    // printf("invalid iterator state");
     return -1;
 }
 

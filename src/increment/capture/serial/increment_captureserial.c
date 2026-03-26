@@ -429,7 +429,6 @@ static bool increment_captureserial_recovery(increment_captureserialstate* captu
                                                    serial_state->ffsmgrstate);
 
     /*Stable after delete*/
-    // serial_state->ffsmgrstate->fdata->extradata = (void*)captureserialstate->dictcache;
 
     /* Put buffer into wait flush cache */
     rmemcpy1(&fbuffer->extra, 0, &in_fbuffer->extra, sizeof(file_buffer_extra));

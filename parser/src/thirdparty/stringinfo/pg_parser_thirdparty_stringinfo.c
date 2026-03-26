@@ -18,7 +18,7 @@ pg_parser_StringInfo pg_parser_makeStringInfo(void)
     pg_parser_StringInfo res;
     if (!pg_parser_mcxt_malloc(STRINGINFO_MCXT, (void**)&res, sizeof(pg_parser_StringInfoData)))
     {
-        // printf("something wrong in malloc stringinfp\n");
+        /* todo error handling */
         return NULL;
     }
     pg_parser_initStringInfo(res);
@@ -36,7 +36,7 @@ void pg_parser_initStringInfo(pg_parser_StringInfo str)
     int32_t size = 1024; /* initial default buffer size */
     if (!pg_parser_mcxt_malloc(STRINGINFO_MCXT, (void**)&(str->data), size))
     {
-        // printf("something wrong in malloc stringinfp\n");
+        /* todo error handling */
         str->maxlen = 0;
     }
     else
@@ -267,7 +267,7 @@ void pg_parser_enlargeStringInfo(pg_parser_StringInfo str, int32_t needed)
 
     if (!pg_parser_mcxt_realloc(STRINGINFO_MCXT, (void**)&(str->data), newlen))
     {
-        // printf("something wrong in repalloc stringinfo\n");
+        /* todo error handling */
         str->maxlen = 0;
     }
     else

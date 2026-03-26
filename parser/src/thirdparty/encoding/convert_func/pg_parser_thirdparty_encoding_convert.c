@@ -13,25 +13,6 @@
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_conv.h"
 #include "thirdparty/encoding/pg_parser_thirdparty_encoding_convfunc.h"
 
-static void report_invalid_encoding(int32_t encoding, const char* mbstr, int32_t len)
-{
-    (void)(encoding);
-    (void)(mbstr);
-    (void)(len);
-    // printf("ERROR: invalid encoding: %d\n", encoding);
-}
-
-static void report_untranslatable_char(int32_t     src_encoding,
-                                       int32_t     dest_encoding,
-                                       const char* mbstr,
-                                       int32_t     len)
-{
-    (void)(src_encoding);
-    (void)(dest_encoding);
-    (void)(mbstr);
-    (void)(len);
-    // printf("ERROR: untranslatable char\n");
-}
 /*
  * local2local: a generic single byte charset encoding
  * conversion between two ASCII-superset encodings.
@@ -59,7 +40,8 @@ void local2local(const unsigned char* l,
         c1 = *l;
         if (c1 == 0)
         {
-            report_invalid_encoding(src_encoding, (const char*)l, len);
+            /* todo error handling */
+            return;
         }
         if (!IS_HIGHBIT_SET(c1))
         {
@@ -74,7 +56,8 @@ void local2local(const unsigned char* l,
             }
             else
             {
-                report_untranslatable_char(src_encoding, dest_encoding, (const char*)l, len);
+                /* todo error handling */
+                return;
             }
         }
         l++;
@@ -100,7 +83,8 @@ void latin2mic(const unsigned char* l, unsigned char* p, int32_t len, int32_t lc
         c1 = *l;
         if (c1 == 0)
         {
-            report_invalid_encoding(encoding, (const char*)l, len);
+            /* todo error handling */
+            return;
         }
         if (IS_HIGHBIT_SET(c1))
         {
@@ -131,7 +115,8 @@ void mic2latin(
         c1 = *mic;
         if (c1 == 0)
         {
-            report_invalid_encoding(MULE_INTERNAL, (const char*)mic, len);
+            /* todo error handling */
+            return;
         }
         if (!IS_HIGHBIT_SET(c1))
         {
@@ -146,11 +131,13 @@ void mic2latin(
 
             if (len < l)
             {
-                report_invalid_encoding(MULE_INTERNAL, (const char*)mic, len);
+                /* todo error handling */
+                return;
             }
             if (l != 2 || c1 != lc || !IS_HIGHBIT_SET(mic[1]))
             {
-                report_untranslatable_char(MULE_INTERNAL, encoding, (const char*)mic, len);
+                /* todo error handling */
+                return;
             }
             *p++ = mic[1];
             mic += 2;
@@ -176,7 +163,8 @@ void conv_ascii2mic(const unsigned char* l, unsigned char* p, int32_t len)
         c1 = *l;
         if (c1 == 0 || IS_HIGHBIT_SET(c1))
         {
-            report_invalid_encoding(SQL_ASCII, (const char*)l, len);
+            /* todo error handling */
+            return;
         }
         *p++ = c1;
         l++;
@@ -197,7 +185,8 @@ void conv_mic2ascii(const unsigned char* mic, unsigned char* p, int32_t len)
         c1 = *mic;
         if (c1 == 0 || IS_HIGHBIT_SET(c1))
         {
-            report_untranslatable_char(MULE_INTERNAL, SQL_ASCII, (const char*)mic, len);
+            /* todo error handling */
+            return;
         }
         *p++ = c1;
         mic++;
@@ -232,7 +221,8 @@ void latin2mic_with_table(const unsigned char* l,
         c1 = *l;
         if (c1 == 0)
         {
-            report_invalid_encoding(encoding, (const char*)l, len);
+            /* todo error handling */
+            return;
         }
         if (!IS_HIGHBIT_SET(c1))
         {
@@ -248,7 +238,8 @@ void latin2mic_with_table(const unsigned char* l,
             }
             else
             {
-                report_untranslatable_char(encoding, MULE_INTERNAL, (const char*)l, len);
+                /* todo error handling */
+                return;
             }
         }
         l++;
@@ -283,7 +274,8 @@ void mic2latin_with_table(const unsigned char* mic,
         c1 = *mic;
         if (c1 == 0)
         {
-            report_invalid_encoding(MULE_INTERNAL, (const char*)mic, len);
+            /* todo error handling */
+            return;
         }
         if (!IS_HIGHBIT_SET(c1))
         {
@@ -298,12 +290,13 @@ void mic2latin_with_table(const unsigned char* mic,
 
             if (len < l)
             {
-                report_invalid_encoding(MULE_INTERNAL, (const char*)mic, len);
+                /* todo error handling */
+                return;
             }
             if (l != 2 || c1 != lc || !IS_HIGHBIT_SET(mic[1]) || (c2 = tab[mic[1] - HIGHBIT]) == 0)
             {
-                report_untranslatable_char(MULE_INTERNAL, encoding, (const char*)mic, len);
-                break; /* keep compiler quiet */
+                /* todo error handling */
+                return;
             }
             *p++ = c2;
             mic += 2;
@@ -526,7 +519,8 @@ void UtfToLocal(const unsigned char*                   utf,
 
     if (!CHARACTER_VALID_ENCODING(encoding))
     {
-        // printf("ERROR, invalid encoding number: %d", encoding);
+        /* todo error handling */
+        return;
     }
 
     for (; len > 0; len -= l)
@@ -581,8 +575,8 @@ void UtfToLocal(const unsigned char*                   utf,
         }
         else
         {
-            // printf("ERROR, unsupported character length %d", l);
-            iutf = 0; /* keep compiler quiet */
+            /* todo error handling */
+            return;
         }
         iutf = (b1 << 24 | b2 << 16 | b3 << 8 | b4);
 
@@ -633,8 +627,8 @@ void UtfToLocal(const unsigned char*                   utf,
                 }
                 else
                 {
-                    // printf("ERROR, unsupported character length %d", l);
-                    iutf2 = 0; /* keep compiler quiet */
+                    /* todo error handling */
+                    return;
                 }
 
                 cutf[0] = iutf;
@@ -680,13 +674,15 @@ void UtfToLocal(const unsigned char*                   utf,
         }
 
         /* failed to translate this character */
-        report_untranslatable_char(UTF8, encoding, (const char*)(utf - l), len);
+        /* todo error handling */
+        return;
     }
 
     /* if we broke out of loop early, must be invalid input */
     if (len > 0)
     {
-        report_invalid_encoding(UTF8, (const char*)utf, len);
+        /* todo error handling */
+        return;
     }
 
     *iso = '\0';
@@ -729,7 +725,8 @@ void LocalToUtf(const unsigned char*                   iso,
 
     if (!CHARACTER_VALID_ENCODING(encoding))
     {
-        // printf("ERROR, invalid encoding number: %d", encoding);
+        /* todo error handling */
+        return;
     }
 
     for (; len > 0; len -= l)
@@ -784,8 +781,8 @@ void LocalToUtf(const unsigned char*                   iso,
         }
         else
         {
-            // printf("ERROR, unsupported character length %d", l);
-            iiso = 0; /* keep compiler quiet */
+            /* todo error handling */
+            return;
         }
         iiso = (b1 << 24 | b2 << 16 | b3 << 8 | b4);
 
@@ -827,13 +824,15 @@ void LocalToUtf(const unsigned char*                   iso,
         }
 
         /* failed to translate this character */
-        report_untranslatable_char(encoding, UTF8, (const char*)(iso - l), len);
+        /* todo error handling */
+        return;
     }
 
     /* if we broke out of loop early, must be invalid input */
     if (len > 0)
     {
-        report_invalid_encoding(encoding, (const char*)iso, len);
+        /* todo error handling */
+        return;
     }
 
     *utf = '\0';

@@ -2037,7 +2037,6 @@ typedef struct pg_parser_AlternativeSubPlan
     pg_parser_List* subplans; /* SubPlan(s) with equivalent results */
 } pg_parser_AlternativeSubPlan;
 
-
 typedef struct pg_parser_PartitionBoundSpec
 {
     pg_parser_NodeTag type;

@@ -60,7 +60,7 @@ static uint32* index_make_key_from_vector(char* vector_str, int32 natt)
         if (result[index_col] == 0)
         {
             /* Abnormal case, index column may be an expression */
-            // todo liuzihe error
+            /* todo error hanlding */
         }
 
         rmemset1(temp_convert, 0, 0, 12);

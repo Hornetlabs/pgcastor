@@ -37,7 +37,7 @@ void range_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "pg_range query failed");
     }
 
-    // Print row data
+    /* Print row data */
     for (i = 0; i < PQntuples(res); i++)
     {
         range = (pg_sysdict_Form_pg_range)rmalloc0(sizeof(pg_parser_sysdict_pgrange));

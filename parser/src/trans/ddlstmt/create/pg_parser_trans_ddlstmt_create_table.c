@@ -502,7 +502,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table(
 
     PG_PARSER_UNUSED(pg_parser_ddl);
 
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_CREATE_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
@@ -510,7 +509,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table(
         *pg_parser_errno = 1;
         return NULL;
     }
-    // todo free
     if (!pg_parser_mcxt_malloc(DDL_CREATE_TABLE_MCXT,
                                (void**)&table_return,
                                sizeof(pg_parser_translog_ddlstmt_createtable)))
@@ -547,7 +545,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table(
     table_return->m_tabname = ddlstate->m_relname;
     table_return->m_nspoid = strtoul(ddlstate->m_nspname_oid_char, NULL, 10);
     table_return->m_owner = ddlstate->m_owner;
-    // todo free
     if (!pg_parser_mcxt_malloc(DDL_CREATE_TABLE_MCXT,
                                (void**)&column,
                                sizeof(pg_parser_translog_ddlstmt_col) * table_return->m_colcnt))
@@ -649,7 +646,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table(
     return result;
 }
 
-// todo inherits processing
 static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition(
     pg_parser_translog_systb2ddl* pg_parser_ddl,
     pg_parser_ddlstate*           ddlstate,
@@ -672,7 +668,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
 
     PG_PARSER_UNUSED(pg_parser_ddl);
 
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_CREATE_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
@@ -680,7 +675,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
         *pg_parser_errno = 1;
         return NULL;
     }
-    // todo free
     if (!pg_parser_mcxt_malloc(DDL_CREATE_TABLE_MCXT,
                                (void**)&table_return,
                                sizeof(pg_parser_translog_ddlstmt_createtable)))
@@ -720,7 +714,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
     table_return->m_relid = ddlstate->m_reloid;
     table_return->m_nspoid = strtoul(ddlstate->m_nspname_oid_char, NULL, 10);
     table_return->m_owner = ddlstate->m_owner;
-    // todo free
     if (!pg_parser_mcxt_malloc(DDL_CREATE_TABLE_MCXT,
                                (void**)&column,
                                sizeof(pg_parser_translog_ddlstmt_col) * table_return->m_colcnt))
@@ -791,7 +784,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
         partition->m_partition_type = PG_PARSER_DDL_PARTITION_TABLE_RANGE;
     }
 
-    // todo free
     if (!pg_parser_mcxt_malloc(DDL_CREATE_TABLE_MCXT,
                                (void**)&partition->m_column,
                                sizeof(uint16_t) * partition->m_column_num))
@@ -887,7 +879,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
     return result;
 }
 
-// todo pg_nodetree processing
 static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition_sub(
     pg_parser_translog_systb2ddl* pg_parser_ddl,
     pg_parser_ddlstate*           ddlstate,
@@ -904,7 +895,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
 
     PG_PARSER_UNUSED(pg_parser_ddl);
 
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_CREATE_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
@@ -912,7 +902,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
         *pg_parser_errno = 1;
         return NULL;
     }
-    // todo free
     if (!pg_parser_mcxt_malloc(DDL_CREATE_TABLE_MCXT,
                                (void**)&table_return,
                                sizeof(pg_parser_translog_ddlstmt_createtable)))
@@ -952,7 +941,6 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
     table_return->m_relid = ddlstate->m_reloid;
     table_return->m_nspoid = strtoul(ddlstate->m_nspname_oid_char, NULL, 10);
     table_return->m_owner = ddlstate->m_owner;
-    // todo free
     if (!pg_parser_mcxt_malloc(DDL_CREATE_TABLE_MCXT,
                                (void**)&column,
                                sizeof(pg_parser_translog_ddlstmt_col) * table_return->m_colcnt))

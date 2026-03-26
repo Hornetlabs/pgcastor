@@ -61,7 +61,6 @@ static void onlinerefresh_captureflush_initfile(onlinerefresh_captureflush* cflu
     }
     blockcnt = (cflush->maxsize / FILE_BUFFER_SIZE);
 
-    //    elog(RLOG_WARNING, "blockcnt:%d", blockcnt);
     for (index = 0; index < blockcnt; index++)
     {
         if (write(fd, block, FILE_BUFFER_SIZE) != FILE_BUFFER_SIZE)

@@ -25,3 +25,11 @@ c_cpp_properties.json
 Makefile.global
 Makefile
 /.cache
+
+*.stat
+*.lock
+*.ctrl
+*.dat
+*.bat
+*.log
+

@@ -833,7 +833,6 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
         /* Has full page write, extract tuple */
         if (pg_parser_XLogRecHasBlockImage(state, 0))
         {
-            // todo deal free
             if (!pg_parser_mcxt_malloc(
                     TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
             {
@@ -1213,7 +1212,6 @@ static bool pg_parser_trans_rmgr_heap2_minsert_get_tuple(pg_parser_XLogReaderSta
         /* Has full page write, extract tuple */
         if (pg_parser_XLogRecHasBlockImage(state, 0))
         {
-            // todo deal free
             if (!pg_parser_mcxt_malloc(
                     TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
             {
@@ -1640,8 +1638,6 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
         if (!(xlrec->flags & PG_PARSER_TRANS_XLH_DELETE_CONTAINS_OLD))
         {
             /* Filter toast in logical mode, do not use goto here */
-            // if (!strcmp(tbinfo.scname, "pg_toast") && !strncmp(tbinfo.tbname, "pg_toast", 8))
-            //{
             int index_colnum = 0;
             if (!pg_parser_mcxt_malloc(
                     TRANS_RMGR_HEAP_MCXT,
@@ -1681,15 +1677,6 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
                 pg_parser_mcxt_free(TRANS_RMGR_HEAP_MCXT, zicinfo.zicdata);
             }
             return true;
-            //}
-            // else
-            //{
-            //    *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_DELETE_LOGICAL_FLAG;
-            //    pg_parser_log_errlog(state->trans_data->m_debugLevel,
-            //                            "ERROR: trans record is [heap2 delete],"
-            //                            "logical flag check failed\n");
-            //    return false;
-            //}
         }
         datalen = pg_parser_XLogRecGetDataLen(state) - pg_parser_SizeOfHeapDelete;
         if (0 == datalen)

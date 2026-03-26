@@ -40,7 +40,6 @@ void authid_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         elog(RLOG_ERROR, "authid query failed");
     }
 
-    // Print row data
     for (i = 0; i < PQntuples(res); i++)
     {
         authid = (pg_sysdict_Form_pg_authid)rmalloc0(sizeof(pg_parser_sysdict_pgauthid));

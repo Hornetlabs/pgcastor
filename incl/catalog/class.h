@@ -5,7 +5,6 @@ void class_attribute_getfromdb(PGconn* conn, cache_sysdicts* sysdicts);
 
 bool bool_judgment(char* str);
 
-// void classdata_write(List* class);
 void classdata_write(List* class, uint64* offset, sysdict_header_array* array);
 
 HTAB* classcache_load(sysdict_header_array* array);

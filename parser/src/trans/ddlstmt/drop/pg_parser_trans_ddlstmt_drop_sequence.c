@@ -44,14 +44,12 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_sequence(
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    // todo free
     if (!pg_parser_mcxt_malloc(
             DDL_DROP_SEQUENCE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_43;
         return NULL;
     }
-    // todo free
     if (!pg_parser_mcxt_malloc(DDL_DROP_SEQUENCE_MCXT,
                                (void**)&seq_return,
                                sizeof(pg_parser_translog_ddlstmt_drop_base)))

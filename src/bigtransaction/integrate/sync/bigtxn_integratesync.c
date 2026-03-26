@@ -276,7 +276,6 @@ void* bigtxn_integrateincsync_main(void* args)
                     goto bigtxn_integrateincsync_main_exit;
                 }
             }
-            // bigtxn_integrateincsync_delinc(syncwork);
             elog(RLOG_INFO, "bigtxn commit %lu", entry->xid);
 
             thr_node->stat = THRNODE_STAT_EXIT;

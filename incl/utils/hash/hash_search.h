@@ -118,7 +118,6 @@ typedef struct
  */
 extern HTAB* hash_create(const char* tabname, long nelem, HASHCTL* info, int flags);
 extern void hash_destroy(HTAB* hashp);
-// extern void hash_stats(const char *where, HTAB *hashp);
 extern void* hash_search(HTAB* hashp, const void* keyPtr, HASHACTION action, bool* foundPtr);
 extern uint32 get_hash_value(HTAB* hashp, const void* keyPtr);
 extern void* hash_search_with_hash_value(
@@ -129,11 +128,6 @@ extern void hash_seq_init(HASH_SEQ_STATUS* status, HTAB* hashp);
 extern void* hash_seq_search(HASH_SEQ_STATUS* status);
 extern void hash_seq_term(HASH_SEQ_STATUS* status);
 extern void hash_freeze(HTAB* hashp);
-// extern Size hash_estimate_size(long num_entries, Size entrysize);
-// extern long hash_select_dirsize(long num_entries);
-// extern Size hash_get_shared_size(HASHCTL *info, int flags);
-// extern void AtEOXact_HashTables(bool isCommit);
-// extern void AtEOSubXact_HashTables(bool isCommit, int nestDepth);
 
 /*
  * prototypes for functions in hashfn.c
@@ -145,8 +139,6 @@ extern void hash_freeze(HTAB* hashp);
 extern uint32 string_hash(const void* key, Size keysize);
 extern uint32 tag_hash(const void* key, Size keysize);
 extern uint32 uint32_hash(const void* key, Size keysize);
-// extern uint32 bitmap_hash(const void *key, Size keysize);
-// extern int	bitmap_match(const void *key1, const void *key2, Size keysize);
 
 extern int my_log2(long num);
 
