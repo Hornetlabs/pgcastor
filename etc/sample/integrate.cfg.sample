@@ -1,0 +1,50 @@
+# Job name
+jobname = integrate
+
+# Log directory, must exist. If not configured, logs will be stored in: data/log
+log_dir = /opt/pgcastor/log
+
+# Integrate log level: info / debug
+log_level = info
+
+# Directory for integrate local data
+data = /opt/pgcastor/integratedata
+
+# Target database connection
+url = "port=5438 dbname=postgres user=postgres"
+
+# Trail file directory, should be the capture data directory
+trail_dir = /opt/pgcastor/capturedata
+
+# Trail file size (MB), must match capture
+trail_max_size = 16
+
+# Schema for status tables during initialization, recommended to create a separate schema
+catalog_schema = pgcastor
+
+# Number of threads for existing data application
+max_work_per_refresh = 10
+
+# Compression method, currently only supports bzip2 (for existing data, must match capture configuration)
+compress_algorithm = bunzip2
+
+# Compression level
+compress_level = 9
+
+# Compatibility version
+compatibility = 10
+
+# Whether to truncate tables during existing data apply, 0=no / 1=yes
+truncate_table = 0
+
+# Whether to merge transactions, 0=no / 1=yes (defaults to 0 if not configured)
+mergetxn = 1
+
+# Transaction merge threshold -- number of statements per transaction, range: (0, 10000000)
+txbundlesize = 1000
+
+# Maximum memory usage for integrate job (MB)
+integrate_buffer = 8192
+
+# Integrate application mode. Allowed values: burst or empty
+integrate_method = burst

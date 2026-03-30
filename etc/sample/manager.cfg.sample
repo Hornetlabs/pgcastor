@@ -1,0 +1,35 @@
+# Job name
+jobname = xmanager
+
+# Log directory, must exist. If not configured, logs will be stored in: data/log
+log_dir = /opt/pgcastor/log
+
+# xmanager log level: info / debug
+log_level = info
+
+# Directory for xmanager local cache
+data = /opt/pgcastor/xmanagerdata
+
+# Network port number
+port = 6543
+
+# xmanager local IP address
+host = 127.0.0.1
+
+# Enable TCP keepalive mechanism, 0=off, 1=on
+tcp_keepalive = 1
+
+# Timeout for waiting for peer ACK, in milliseconds, range: 0-300000
+tcp_user_timeout = 60000
+
+# Time TCP connection is inactive before sending keepalive probes, in seconds, range: 0-300
+tcp_keepalives_idle = 30
+
+# Keepalive probe interval, in seconds, range: 0-300
+tcp_keepalives_interval = 3
+
+# Number of keepalive probes, range: 0-100
+tcp_keepalives_count = 10
+
+# Unix domain socket directory
+unixdomaindir = /tmp

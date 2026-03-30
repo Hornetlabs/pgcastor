@@ -1,0 +1,59 @@
+# Job name
+jobname = capture
+
+# Log directory, must exist. If not configured, logs will be stored in: data/log
+log_dir = /opt/pgcastor/log
+
+# Log level, supports debug/info/warning/error
+log_level = info
+
+# Working directory
+data = /opt/pgcastor/capturedata
+
+# Database connection string
+url = "port=5432 dbname=postgres user=postgres"
+
+# Database transaction log (WAL) path
+wal_dir = /opt/postgresql/data/pg_wal
+
+# Database type (postgres)
+dbtype = postgres
+
+# Database version [ 12 | 13 | 14 ]
+dbversion = 12
+
+# Schema where sync status tables are stored
+catalog_schema = pgcastor
+
+# Trail file size (MB)
+trail_max_size = 16
+
+# Maximum memory usage for capture job (MB)
+capture_buffer = 8192
+
+# Whether to synchronize existing data, 0=off/1=on
+refreshstragety = 0
+
+# Number of threads for existing data sync
+max_work_per_refresh = 10
+
+# Sharding threshold for existing tables
+max_page_per_refreshsharding = 10000
+
+# Enable DDL sync, 1=on, 0=off
+ddl = 1
+
+# Tables to synchronize
+table = "public.test"
+
+# Tables to exclude (schema.table), can be multiple lines
+# tableexclude = *.*
+
+# Tables captured by CREATE TABLE
+# addtablepattern = "pulic.azfgasga"
+
+# Compression method, currently only supports bzip2 (for existing data)
+compress_algorithm = bzip2
+
+# Compatibility version --- trail file format, not yet enabled
+compatibility = 10
