@@ -868,6 +868,7 @@ void* onlinerefresh_integrate_manage(void* args)
             if (false == olintegrate->increment)
             {
                 /* No incremental thread, set this thread to exit */
+                olintegrate->stat = ONLINEREFRESH_INTEGRATE_DONE;
                 thr_node->stat = THRNODE_STAT_EXIT;
                 break;
             }
@@ -898,8 +899,8 @@ void* onlinerefresh_integrate_manage(void* args)
             }
 
             /* Set this thread to exit */
-            thr_node->stat = THRNODE_STAT_EXIT;
             olintegrate->stat = ONLINEREFRESH_INTEGRATE_DONE;
+            thr_node->stat = THRNODE_STAT_EXIT;
             break;
         }
     }
