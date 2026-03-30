@@ -48,8 +48,8 @@ static int32 parsertrail_tbmetadata_gettypmod(ff_column* column)
             typmod = -1;
         }
     }
-    else if (typid == PG_SYSDICT_TIMEOID || typid == PG_SYSDICT_TIMETZOID ||
-             typid == PG_SYSDICT_TIMESTAMPOID || typid == PG_SYSDICT_TIMESTAMPTZOID)
+    else if (typid == PG_SYSDICT_TIMEOID || typid == PG_SYSDICT_TIMETZOID || typid == PG_SYSDICT_TIMESTAMPOID ||
+             typid == PG_SYSDICT_TIMESTAMPTZOID)
     {
         /* time(p), timetz(p), timestamp(p), timestamptz(p) */
         if (precision >= 0)
@@ -125,12 +125,10 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
         rmemset1(&hctl, 0, 0, sizeof(hctl));
         hctl.keysize = sizeof(Oid);
         hctl.entrysize = sizeof(catalog_class_value);
-        parsertrail->transcache->sysdicts->by_class =
-            hash_create("decodehclass", 1024, &hctl, HASH_ELEM | HASH_BLOBS);
+        parsertrail->transcache->sysdicts->by_class = hash_create("decodehclass", 1024, &hctl, HASH_ELEM | HASH_BLOBS);
     }
 
-    classentry =
-        hash_search(parsertrail->transcache->sysdicts->by_class, &fftbmd->oid, HASH_ENTER, &found);
+    classentry = hash_search(parsertrail->transcache->sysdicts->by_class, &fftbmd->oid, HASH_ENTER, &found);
     if (false == found)
     {
         /* Add */
@@ -169,13 +167,11 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
         rmemset1(&hctl, 0, 0, sizeof(hctl));
         hctl.keysize = sizeof(Oid);
         hctl.entrysize = sizeof(catalog_type_value);
-        parsertrail->transcache->sysdicts->by_type =
-            hash_create("decodehtype", 2048, &hctl, HASH_ELEM | HASH_BLOBS);
+        parsertrail->transcache->sysdicts->by_type = hash_create("decodehtype", 2048, &hctl, HASH_ELEM | HASH_BLOBS);
     }
 
     /* Add data to by_attribute */
-    attrentry = hash_search(
-        parsertrail->transcache->sysdicts->by_attribute, &fftbmd->oid, HASH_ENTER, &found);
+    attrentry = hash_search(parsertrail->transcache->sysdicts->by_attribute, &fftbmd->oid, HASH_ENTER, &found);
     if (false == found)
     {
         attrentry->attrelid = fftbmd->oid;
@@ -199,13 +195,9 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
         rmemset0(attribute, 0, '\0', sizeof(pg_parser_sysdict_pgattributes));
         attribute->attrelid = fftbmd->oid;
         attribute->atttypid = fftbmd->columns[index].typid;
-        rmemcpy1(attribute->attname.data,
-                 0,
-                 fftbmd->columns[index].column,
-                 strlen(fftbmd->columns[index].column));
+        rmemcpy1(attribute->attname.data, 0, fftbmd->columns[index].column, strlen(fftbmd->columns[index].column));
         /* Add data to by_type */
-        typeentry = hash_search(
-            parsertrail->transcache->sysdicts->by_type, &attribute->atttypid, HASH_ENTER, &found);
+        typeentry = hash_search(parsertrail->transcache->sysdicts->by_type, &attribute->atttypid, HASH_ENTER, &found);
         if (false == found)
         {
             typeentry->oid = attribute->atttypid;
@@ -236,13 +228,11 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
         rmemset1(&hctl, 0, 0, sizeof(hctl));
         hctl.keysize = sizeof(Oid);
         hctl.entrysize = sizeof(catalog_index_hash_entry);
-        parsertrail->transcache->sysdicts->by_index =
-            hash_create("decodehindex", 1024, &hctl, HASH_ELEM | HASH_BLOBS);
+        parsertrail->transcache->sysdicts->by_index = hash_create("decodehindex", 1024, &hctl, HASH_ELEM | HASH_BLOBS);
     }
 
     /* Add data to by_index */
-    indexentry =
-        hash_search(parsertrail->transcache->sysdicts->by_index, &fftbmd->oid, HASH_ENTER, &found);
+    indexentry = hash_search(parsertrail->transcache->sysdicts->by_index, &fftbmd->oid, HASH_ENTER, &found);
     if (false == found)
     {
         /* Add */
@@ -320,10 +310,7 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
                     indexcatalog->indisprimary = isprimary;
                     indexcatalog->indisreplident = metaindex->index_identify;
                     indexcatalog->indnatts = metaindex->index_key_num;
-                    rmemcpy0(indexcatalog->indkey,
-                             0,
-                             metaindex->index_key,
-                             sizeof(uint32) * metaindex->index_key_num);
+                    rmemcpy0(indexcatalog->indkey, 0, metaindex->index_key, sizeof(uint32) * metaindex->index_key_num);
 
                     indexvalue->oid = indexcatalog->indrelid;
                     indexvalue->index = indexcatalog;
@@ -543,8 +530,7 @@ static bool parsertrail_tbmetadata2hash(parsertrail* parsertrail, ff_tbmetadata*
                             elog(RLOG_WARNING, "oom");
                             return false;
                         }
-                        rmemset0(
-                            indexcatalog->indkey, 0, 0, sizeof(uint32) * metaindex->index_key_num);
+                        rmemset0(indexcatalog->indkey, 0, 0, sizeof(uint32) * metaindex->index_key_num);
 
                         indexcatalog->indrelid = fftbmd->oid;
                         indexcatalog->indexrelid = metaindex->index_oid;

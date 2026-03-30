@@ -45,8 +45,7 @@ typedef struct
     inet_struct inet_data;
 } inet;
 
-static char* pg_parser_inet_net_ntop(
-    int32_t af, const void* src, int32_t bits, char* dst, size_t size);
+static char* pg_parser_inet_net_ntop(int32_t af, const void* src, int32_t bits, char* dst, size_t size);
 static int32_t decoct(const unsigned char* src, int32_t bytes, char* dst, size_t size);
 
 static char* inet_net_ntop_ipv4(const unsigned char* src, int32_t bits, char* dst, size_t size);
@@ -147,10 +146,12 @@ static char* inet_net_ntop_ipv6(const unsigned char* src, int32_t bits, char* ds
      */
     char  tmp[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255/128"];
     char* tp;
+
     struct
     {
         int32_t base, len;
     } best, cur;
+
     uint32_t words[NS_IN6ADDRSZ / NS_INT16SZ];
     int32_t  i;
 
@@ -232,8 +233,7 @@ static char* inet_net_ntop_ipv6(const unsigned char* src, int32_t bits, char* ds
         }
         /* Is this address an encapsulated IPv4? */
         if (i == 6 && best.base == 0 &&
-            (best.len == 6 || (best.len == 7 && words[7] != 0x0001) ||
-             (best.len == 5 && words[5] == 0xffff)))
+            (best.len == 6 || (best.len == 7 && words[7] != 0x0001) || (best.len == 5 && words[5] == 0xffff)))
         {
             int32_t n;
 
@@ -287,8 +287,7 @@ static char* inet_net_ntop_ipv6(const unsigned char* src, int32_t bits, char* ds
  * author:
  *    Paul Vixie (ISC), October 1998
  */
-static char* pg_parser_inet_net_ntop(
-    int32_t af, const void* src, int32_t bits, char* dst, size_t size)
+static char* pg_parser_inet_net_ntop(int32_t af, const void* src, int32_t bits, char* dst, size_t size)
 {
     /*
      * We need to cover both the address family constants used by the PG inet

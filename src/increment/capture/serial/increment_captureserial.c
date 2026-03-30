@@ -29,8 +29,7 @@
 #include "increment/capture/serial/increment_captureserial.h"
 
 /* Apply sysdict this system dictionary */
-static void increment_captureserial_sysdicthis2sysdict(increment_captureserialstate* cserial,
-                                                       List*                         his)
+static void increment_captureserial_sysdicthis2sysdict(increment_captureserialstate* cserial, List* his)
 {
     if (NULL == his)
     {
@@ -62,8 +61,8 @@ static void increment_captureserial_settimestamp(serialstate* serialstate, txn* 
 /* Flush entry data to disk */
 static void increment_captureserial_txn2disk(serialstate* serialstate, txn* txn)
 {
-    bool first = true;
-    bool txnformetadata = true; /* Used to identify if current transaction only contains metadata */
+    bool       first = true;
+    bool       txnformetadata = true; /* Used to identify if current transaction only contains metadata */
     ListCell*  lc = NULL;
     ff_txndata txndata = {{0}};
 
@@ -83,8 +82,7 @@ static void increment_captureserial_txn2disk(serialstate* serialstate, txn* txn)
 
         if (TXNSTMT_TYPE_SYSDICTHIS == rstmt->type)
         {
-            increment_captureserial_sysdicthis2sysdict((increment_captureserialstate*)serialstate,
-                                                       txn->sysdictHis);
+            increment_captureserial_sysdicthis2sysdict((increment_captureserialstate*)serialstate, txn->sysdictHis);
             continue;
         }
 
@@ -128,8 +126,9 @@ static void increment_captureserial_txn2disk(serialstate* serialstate, txn* txn)
                 goto trfwork_serial_txn2disk_reset;
             }
         }
-        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(
-            FFTRAIL_CXT_TYPE_DATA, (void*)&txndata, serialstate->ffsmgrstate);
+        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_DATA,
+                                                        (void*)&txndata,
+                                                        serialstate->ffsmgrstate);
     }
     increment_captureserial_settimestamp(serialstate, txn);
 }
@@ -150,8 +149,8 @@ static void increment_captureserial_fbuffer_lsnset(increment_captureserialstate*
 {
     file_buffer* fbuffer = NULL;
 
-    fbuffer = file_buffer_getbybufid(captureserialstate->base.txn2filebuffer,
-                                     captureserialstate->base.ffsmgrstate->bufid);
+    fbuffer =
+        file_buffer_getbybufid(captureserialstate->base.txn2filebuffer, captureserialstate->base.ffsmgrstate->bufid);
 
     fbuffer->extra.chkpoint.redolsn.wal.lsn = captureserialstate->redolsn;
     fbuffer->extra.rewind.restartlsn.wal.lsn = captureserialstate->restartlsn;
@@ -161,8 +160,7 @@ static void increment_captureserial_fbuffer_lsnset(increment_captureserialstate*
 }
 
 /* Set timeline info */
-static void increment_captureserial_timeline_set(increment_captureserialstate* captureserialstate,
-                                                 TimeLineID                    curtlid)
+static void increment_captureserial_timeline_set(increment_captureserialstate* captureserialstate, TimeLineID curtlid)
 {
     captureserialstate->curtlid = curtlid;
 }
@@ -170,8 +168,7 @@ static void increment_captureserial_timeline_set(increment_captureserialstate* c
 /*
  * Put buffer into flush, need to set buffer flag before putting
  */
-static void increment_captureserial_buffer2waitflush(
-    increment_captureserialstate* captureserialstate, txn* txn)
+static void increment_captureserial_buffer2waitflush(increment_captureserialstate* captureserialstate, txn* txn)
 {
     /*
      * 1. Get new buffer cache
@@ -190,8 +187,7 @@ static void increment_captureserial_buffer2waitflush(
 
     serial_state = (serialstate*)captureserialstate;
 
-    foldbuffer =
-        file_buffer_getbybufid(serial_state->txn2filebuffer, serial_state->ffsmgrstate->bufid);
+    foldbuffer = file_buffer_getbybufid(serial_state->txn2filebuffer, serial_state->ffsmgrstate->bufid);
     if (0 == foldbuffer->start)
     {
         return;
@@ -230,8 +226,8 @@ static void increment_captureserial_buffer2waitflush(
             foldbuffer->flag |= FILE_BUFFER_FLAG_REDO;
             foldbuffer->extra.chkpoint.redolsn.wal.lsn = captureserialstate->redolsn;
             /* System catalog changes between two checkpoints */
-            foldbuffer->extra.chkpoint.sysdicts = catalog_sysdict_filterbylsn(
-                &captureserialstate->redosysdicts, captureserialstate->redolsn);
+            foldbuffer->extra.chkpoint.sysdicts =
+                catalog_sysdict_filterbylsn(&captureserialstate->redosysdicts, captureserialstate->redolsn);
             flush = true;
         }
 
@@ -311,8 +307,7 @@ static void increment_captureserial_buffer2waitflush(
 }
 
 /* Serialize fault recovery */
-static bool increment_captureserial_recovery(increment_captureserialstate* captureserialstate,
-                                             uint64                        fileoffset)
+static bool increment_captureserial_recovery(increment_captureserialstate* captureserialstate, uint64 fileoffset)
 {
     bool         shiftfile = false;
     int          bufid = 0;
@@ -336,8 +331,7 @@ static bool increment_captureserial_recovery(increment_captureserialstate* captu
     }
 
     serial_state = (serialstate*)captureserialstate;
-    in_fbuffer =
-        file_buffer_getbybufid(serial_state->txn2filebuffer, serial_state->ffsmgrstate->bufid);
+    in_fbuffer = file_buffer_getbybufid(serial_state->txn2filebuffer, serial_state->ffsmgrstate->bufid);
     if (0 == fileoffset)
     {
         return false;
@@ -382,8 +376,7 @@ static bool increment_captureserial_recovery(increment_captureserialstate* captu
     }
 
     fftail.nexttrailno = (finfo->fileid + 1);
-    serial_state->ffsmgrstate->ffsmgr->ffsmgr_serial(
-        FFTRAIL_CXT_TYPE_RESET, &fftail, (void*)serial_state->ffsmgrstate);
+    serial_state->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_RESET, &fftail, (void*)serial_state->ffsmgrstate);
 
     /* Re-fetch fbuffer */
     while (1)
@@ -425,8 +418,7 @@ static bool increment_captureserial_recovery(increment_captureserialstate* captu
 
     /* Initialize header info */
     serial_state->ffsmgrstate->bufid = bufid;
-    serial_state->ffsmgrstate->ffsmgr->ffsmgr_init(FFSMGR_IF_OPTYPE_SERIAL,
-                                                   serial_state->ffsmgrstate);
+    serial_state->ffsmgrstate->ffsmgr->ffsmgr_init(FFSMGR_IF_OPTYPE_SERIAL, serial_state->ffsmgrstate);
 
     /*Stable after delete*/
 
@@ -495,8 +487,7 @@ static void increment_captureserial_setonlinerefreshdataset(void* serial, void* 
         {
             void* node = lfirst(cell);
 
-            captureserialstate->onlinerefreshdataset =
-                lappend(captureserialstate->onlinerefreshdataset, node);
+            captureserialstate->onlinerefreshdataset = lappend(captureserialstate->onlinerefreshdataset, node);
         }
         list_free(dataset_list);
     }
@@ -588,10 +579,8 @@ void increment_captureserial_ffsmgr_setcallback(increment_captureserialstate* ws
     wstate->base.ffsmgrstate->callback.getattributes = increment_captureserial_getattributes;
     wstate->base.ffsmgrstate->callback.gettype = increment_captureserial_gettype;
     wstate->base.ffsmgrstate->callback.setredosysdicts = increment_captureserial_setredosysdicts;
-    wstate->base.ffsmgrstate->callback.catalog2transcache =
-        increment_captureserial_transcatalog2transcache;
-    wstate->base.ffsmgrstate->callback.setonlinerefreshdataset =
-        increment_captureserial_setonlinerefreshdataset;
+    wstate->base.ffsmgrstate->callback.catalog2transcache = increment_captureserial_transcatalog2transcache;
+    wstate->base.ffsmgrstate->callback.setonlinerefreshdataset = increment_captureserial_setonlinerefreshdataset;
     wstate->base.ffsmgrstate->callback.setdboid = NULL;
     wstate->base.ffsmgrstate->callback.getrecords = NULL;
     wstate->base.ffsmgrstate->callback.getparserstate = NULL;
@@ -645,10 +634,10 @@ static bool capture_serialstate_transcache_setfromfile(transcache* dictcache)
  */
 void* increment_captureserial_main(void* args)
 {
-    int          iret = 0; /* Additional output parameter when getting transaction from cache */
-    txn*         entry = NULL;
-    thrnode*     thr_node = NULL;
-    serialstate* serial_state = NULL;
+    int                           iret = 0; /* Additional output parameter when getting transaction from cache */
+    txn*                          entry = NULL;
+    thrnode*                      thr_node = NULL;
+    serialstate*                  serial_state = NULL;
     increment_captureserialstate* wstate = NULL;
     capturebase                   dbase = {0};
 
@@ -660,8 +649,7 @@ void* increment_captureserial_main(void* args)
     /* Check state */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "increment capture serial stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "increment capture serial stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }

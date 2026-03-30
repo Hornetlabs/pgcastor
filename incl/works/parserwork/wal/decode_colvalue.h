@@ -33,8 +33,11 @@ extern char* get_class_value_from_colvalue(pg_parser_translog_tbcol_value* colva
                                            int                             dbtype,
                                            int                             dbversion);
 
-extern char* set_class_value_from_colvalue(
-    pg_parser_translog_tbcol_value* colvalue, char* new_value, int pnum, int dbtype, int dbversion);
+extern char* set_class_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue,
+                                           char*                           new_value,
+                                           int                             pnum,
+                                           int                             dbtype,
+                                           int                             dbversion);
 
 extern char* free_class_value_from_colvalue(pg_parser_translog_tbcol_value* colvalue,
                                             int                             pnum,

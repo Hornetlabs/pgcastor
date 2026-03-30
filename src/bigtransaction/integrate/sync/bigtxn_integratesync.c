@@ -17,9 +17,7 @@
 #include "bigtransaction/integrate/sync/bigtxn_integratesync.h"
 
 /* Error handling, re-execute all stmt */
-static bool bigtxn_integrateincsync_restart_applytxn(syncstate* syncstate,
-                                                     thrnode*   thrnode,
-                                                     txn*       cur_txn)
+static bool bigtxn_integrateincsync_restart_applytxn(syncstate* syncstate, thrnode* thrnode, txn* cur_txn)
 {
     if (0 == cur_txn->stmts->length)
     {
@@ -45,9 +43,7 @@ static bool bigtxn_integrateincsync_updatasyncstatus(bigtxn_integrateincsync* sy
     res = PQexec(syncwork->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING,
-             "Failed to update status table in: %s",
-             PQerrorMessage(syncwork->base.conn));
+        elog(RLOG_WARNING, "Failed to update status table in: %s", PQerrorMessage(syncwork->base.conn));
         PQclear(res);
         return false;
     }
@@ -91,8 +87,7 @@ void* bigtxn_integrateincsync_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "integrate bigtxn sync stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "integrate bigtxn sync stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -183,8 +178,7 @@ void* bigtxn_integrateincsync_main(void* args)
                         continue;
                     }
 
-                    if (false ==
-                        bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
+                    if (false == bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
                     {
                         continue;
                     }
@@ -223,8 +217,7 @@ void* bigtxn_integrateincsync_main(void* args)
                         continue;
                     }
 
-                    if (false ==
-                        bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
+                    if (false == bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
                     {
                         continue;
                     }
@@ -261,8 +254,7 @@ void* bigtxn_integrateincsync_main(void* args)
                         continue;
                     }
 
-                    if (false ==
-                        bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
+                    if (false == bigtxn_integrateincsync_restart_applytxn(sync_state, thr_node, cur_txn))
                     {
                         continue;
                     }

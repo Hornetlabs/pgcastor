@@ -14,11 +14,10 @@ typedef struct pg_parser_DDL_kindWithFunc
     pg_parser_DDL_transDDLFunc m_transfunc;
 } pg_parser_DDL_kindWithFunc;
 
-static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_escape(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno);
+static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_escape(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                              pg_parser_translog_systb2dll_record* current_record,
+                                                              pg_parser_ddlstate*                  ddlstate,
+                                                              int32_t*                             pg_parser_errno);
 
 static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_index_drop_escape(
     pg_parser_translog_systb2ddl*        pg_parser_ddl,
@@ -27,49 +26,47 @@ static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_index_drop_escape(
     int32_t*                             pg_parser_errno);
 
 static pg_parser_DDL_kindWithFunc m_ddl_transfunc[] = {
-    {PG_PARSER_DDL_TABLE_TRUNCATE, pg_parser_DDL_truncate},
-    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_TYPE_SHORT,
-     pg_parser_DDL_alter_table_column_alter_type_short},
-    {PG_PARSER_DDL_REINDEX, pg_parser_DDL_reindex},
-    {PG_PARSER_DDL_TABLE_ALTER_TABLE_RENAME, pg_parser_DDL_alter_table_renameTable},
-    {PG_PARSER_DDL_TABLE_ALTER_NAMESPACE, pg_parser_DDL_alter_table_namespace},
-    {PG_PARSER_DDL_TABLE_ALTER_DROP_COLUMN, pg_parser_DDL_alter_table_drop_column},
-    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_RENAME, pg_parser_DDL_alter_table_rename_column},
-    {PG_PARSER_DDL_NAMESPACE_CREATE, pg_parser_DDL_create_schema},
-    {PG_PARSER_DDL_NAMESPACE_DROP, pg_parser_DDL_drop_schema},
-    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_NOTNULL, pg_parser_DDL_alter_table_column_notnull},
-    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_NULL, pg_parser_DDL_alter_table_column_null},
-    {PG_PARSER_DDL_DATABASE_CREATE, pg_parser_DDL_create_database},
-    {PG_PARSER_DDL_DATABASE_DROP, pg_parser_DDL_drop_database},
-    {PG_PARSER_DDL_VIEW_DROP, pg_parser_DDL_drop_view},
-    {PG_PARSER_DDL_TABLE_CREATE, pg_parser_DDL_create_table},
-    {PG_PARSER_DDL_TABLE_CREATE_PARTITION, pg_parser_DDL_create_table_partition},
-    {PG_PARSER_DDL_TABLE_CREATE_PARTITION_SUB,
-     pg_parser_DDL_create_table_partition_sub}, /* Contains pg_node_tree */
-    {PG_PARSER_DDL_TABLE_DROP, pg_parser_DDL_drop_table},
-    {PG_PARSER_DDL_TABLE_ALTER_TABLE_SET_LOG, pg_parser_DDL_alter_table_set_log},
-    {PG_PARSER_DDL_TABLE_ALTER_ADD_COLUMN, pg_parser_DDL_alter_table_add_column},
-    {PG_PARSER_DDL_TABLE_ALTER_ADD_CONSTRAINT, pg_parser_DDL_alter_table_add_constraint},
-    {PG_PARSER_DDL_TABLE_ALTER_ADD_CONSTRAINT_FOREIGN,
-     pg_parser_DDL_alter_table_add_constraint_foreign},
-    {PG_PARSER_DDL_TABLE_ALTER_DROP_CONSTRAINT, pg_parser_DDL_alter_table_drop_constraint},
-    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_TYPE, pg_parser_DDL_alter_table_column_alter_type},
+    {PG_PARSER_DDL_TABLE_TRUNCATE,                     pg_parser_DDL_truncate                           },
+    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_TYPE_SHORT,      pg_parser_DDL_alter_table_column_alter_type_short},
+    {PG_PARSER_DDL_REINDEX,                            pg_parser_DDL_reindex                            },
+    {PG_PARSER_DDL_TABLE_ALTER_TABLE_RENAME,           pg_parser_DDL_alter_table_renameTable            },
+    {PG_PARSER_DDL_TABLE_ALTER_NAMESPACE,              pg_parser_DDL_alter_table_namespace              },
+    {PG_PARSER_DDL_TABLE_ALTER_DROP_COLUMN,            pg_parser_DDL_alter_table_drop_column            },
+    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_RENAME,          pg_parser_DDL_alter_table_rename_column          },
+    {PG_PARSER_DDL_NAMESPACE_CREATE,                   pg_parser_DDL_create_schema                      },
+    {PG_PARSER_DDL_NAMESPACE_DROP,                     pg_parser_DDL_drop_schema                        },
+    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_NOTNULL,         pg_parser_DDL_alter_table_column_notnull         },
+    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_NULL,            pg_parser_DDL_alter_table_column_null            },
+    {PG_PARSER_DDL_DATABASE_CREATE,                    pg_parser_DDL_create_database                    },
+    {PG_PARSER_DDL_DATABASE_DROP,                      pg_parser_DDL_drop_database                      },
+    {PG_PARSER_DDL_VIEW_DROP,                          pg_parser_DDL_drop_view                          },
+    {PG_PARSER_DDL_TABLE_CREATE,                       pg_parser_DDL_create_table                       },
+    {PG_PARSER_DDL_TABLE_CREATE_PARTITION,             pg_parser_DDL_create_table_partition             },
+    {PG_PARSER_DDL_TABLE_CREATE_PARTITION_SUB,         pg_parser_DDL_create_table_partition_sub         }, /* Contains pg_node_tree */
+    {PG_PARSER_DDL_TABLE_DROP,                         pg_parser_DDL_drop_table                         },
+    {PG_PARSER_DDL_TABLE_ALTER_TABLE_SET_LOG,          pg_parser_DDL_alter_table_set_log                },
+    {PG_PARSER_DDL_TABLE_ALTER_ADD_COLUMN,             pg_parser_DDL_alter_table_add_column             },
+    {PG_PARSER_DDL_TABLE_ALTER_ADD_CONSTRAINT,         pg_parser_DDL_alter_table_add_constraint         },
+    {PG_PARSER_DDL_TABLE_ALTER_ADD_CONSTRAINT_FOREIGN, pg_parser_DDL_alter_table_add_constraint_foreign },
+    {PG_PARSER_DDL_TABLE_ALTER_DROP_CONSTRAINT,        pg_parser_DDL_alter_table_drop_constraint        },
+    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_TYPE,            pg_parser_DDL_alter_table_column_alter_type      },
     {PG_PARSER_DDL_TABLE_ALTER_COLUMN_DEFAULT,
-     pg_parser_DDL_alter_table_column_add_default}, /* Contains pg_node_tree */
-    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_DROP_DEFAULT, pg_parser_DDL_alter_table_column_drop_default},
-    {PG_PARSER_DDL_INDEX_CREATE, pg_parser_DDL_create_index},
-    {PG_PARSER_DDL_INDEX_DROP, pg_parser_DDL_drop_index},
-    {PG_PARSER_DDL_TOAST_INDEX_DROP_ESCAPE, pg_parser_DDL_toast_index_drop_escape},
-    {PG_PARSER_DDL_SEQUENCE_CREATE, pg_parser_DDL_create_sequence},
-    {PG_PARSER_DDL_SEQUENCE_DROP, pg_parser_DDL_drop_sequence},
-    {PG_PARSER_DDL_TOAST_ESCAPE, pg_parser_DDL_toast_escape},
-    {PG_PARSER_DDL_VIEW_CREATE, pg_parser_DDL_create_view}, /* Contains pg_node_tree */
-    {PG_PARSER_DDL_FUNCTION_CREATE, NULL},
-    {PG_PARSER_DDL_FUNCTION_DROP, NULL},
-    {PG_PARSER_DDL_TRIGGER_CREATE, NULL},
-    {PG_PARSER_DDL_TRIGGER_DROP, NULL},
-    {PG_PARSER_DDL_TYPE_CREATE, pg_parser_DDL_create_type},
-    {PG_PARSER_DDL_TYPE_DROP, pg_parser_DDL_drop_type}};
+     pg_parser_DDL_alter_table_column_add_default                                                       }, /* Contains pg_node_tree */
+    {PG_PARSER_DDL_TABLE_ALTER_COLUMN_DROP_DEFAULT,    pg_parser_DDL_alter_table_column_drop_default    },
+    {PG_PARSER_DDL_INDEX_CREATE,                       pg_parser_DDL_create_index                       },
+    {PG_PARSER_DDL_INDEX_DROP,                         pg_parser_DDL_drop_index                         },
+    {PG_PARSER_DDL_TOAST_INDEX_DROP_ESCAPE,            pg_parser_DDL_toast_index_drop_escape            },
+    {PG_PARSER_DDL_SEQUENCE_CREATE,                    pg_parser_DDL_create_sequence                    },
+    {PG_PARSER_DDL_SEQUENCE_DROP,                      pg_parser_DDL_drop_sequence                      },
+    {PG_PARSER_DDL_TOAST_ESCAPE,                       pg_parser_DDL_toast_escape                       },
+    {PG_PARSER_DDL_VIEW_CREATE,                        pg_parser_DDL_create_view                        }, /* Contains pg_node_tree */
+    {PG_PARSER_DDL_FUNCTION_CREATE,                    NULL                                             },
+    {PG_PARSER_DDL_FUNCTION_DROP,                      NULL                                             },
+    {PG_PARSER_DDL_TRIGGER_CREATE,                     NULL                                             },
+    {PG_PARSER_DDL_TRIGGER_DROP,                       NULL                                             },
+    {PG_PARSER_DDL_TYPE_CREATE,                        pg_parser_DDL_create_type                        },
+    {PG_PARSER_DDL_TYPE_DROP,                          pg_parser_DDL_drop_type                          }
+};
 
 bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
                                    pg_parser_translog_ddlstmt**  pg_parser_ddl_result,
@@ -79,7 +76,7 @@ bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
     pg_parser_ddlstate                      ddlstate = {'\0'};
     pg_parser_translog_convertinfo_with_zic zicinfo = {'\0'};
     pg_parser_translog_systb2dll_record*    current_record = pg_parser_ddl->m_record;
-    pg_parser_translog_ddlstmt *result = NULL, *current_result = NULL, *next_result = NULL;
+    pg_parser_translog_ddlstmt *            result = NULL, *current_result = NULL, *next_result = NULL;
     zicinfo.convertinfo = pg_parser_ddl->m_convert;
     zicinfo.dbtype = pg_parser_ddl->m_dbtype;
     zicinfo.dbversion = pg_parser_ddl->m_dbversion;
@@ -95,8 +92,7 @@ bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
     {
         if (!ddlstate.m_inddl)
         {
-            current_result = pg_parser_ddl_firstTransDDL(
-                pg_parser_ddl, current_record, &ddlstate, pg_parser_errno);
+            current_result = pg_parser_ddl_firstTransDDL(pg_parser_ddl, current_record, &ddlstate, pg_parser_errno);
         }
         else
         {
@@ -104,8 +100,8 @@ bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
             {
                 if (m_ddl_transfunc[i].m_ddlKind == ddlstate.m_ddlKind)
                 {
-                    current_result = m_ddl_transfunc[i].m_transfunc(
-                        pg_parser_ddl, current_record, &ddlstate, pg_parser_errno);
+                    current_result =
+                        m_ddl_transfunc[i].m_transfunc(pg_parser_ddl, current_record, &ddlstate, pg_parser_errno);
                     break;
                 }
             }
@@ -137,11 +133,10 @@ bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
     return true;
 }
 
-pg_parser_translog_ddlstmt* pg_parser_ddl_firstTransDDL(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_ddl_firstTransDDL(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                        pg_parser_translog_systb2dll_record* current_record,
+                                                        pg_parser_ddlstate*                  ddlstate,
+                                                        int32_t*                             pg_parser_errno)
 {
     int32_t                     i = 0;
     pg_parser_translog_ddlstmt* current_result = NULL;
@@ -168,8 +163,8 @@ pg_parser_translog_ddlstmt* pg_parser_ddl_firstTransDDL(
         {
             if (m_ddl_transfunc[i].m_ddlKind == ddlstate->m_ddlKind)
             {
-                current_result = m_ddl_transfunc[i].m_transfunc(
-                    pg_parser_ddl, current_record, ddlstate, pg_parser_errno);
+                current_result =
+                    m_ddl_transfunc[i].m_transfunc(pg_parser_ddl, current_record, ddlstate, pg_parser_errno);
             }
         }
     }
@@ -224,27 +219,24 @@ static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_index_drop_escape(
                                                             current_record->m_record->m_old_values,
                                                             current_record->m_record->m_valueCnt,
                                                             temp_objid);
-            temp_classid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
-                                                   current_record->m_record->m_old_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_objid);
-            if (!strcmp(ddlstate->m_reloid_char, temp_objid) &&
-                !strcmp(RelationRelationIdChar, temp_classid))
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                              current_record->m_record->m_old_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_objid);
+            if (!strcmp(ddlstate->m_reloid_char, temp_objid) && !strcmp(RelationRelationIdChar, temp_classid))
             {
-                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                     "DEBUG, DDL PARSER: skip stmt abot toast end \n");
+                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: skip stmt abot toast end \n");
                 pg_parser_ddl_init_ddlstate(ddlstate);
             }
         }
     }
     return result;
 }
-static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_escape(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+
+static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_escape(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                              pg_parser_translog_systb2dll_record* current_record,
+                                                              pg_parser_ddlstate*                  ddlstate,
+                                                              int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
 
@@ -264,16 +256,13 @@ static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_escape(
                                                             current_record->m_record->m_new_values,
                                                             current_record->m_record->m_valueCnt,
                                                             temp_objid);
-            temp_classid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
-                                                   current_record->m_record->m_new_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_classid);
-            if (!strcmp(ddlstate->m_reloid_char, temp_objid) &&
-                !strcmp(RelationRelationIdChar, temp_classid))
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                              current_record->m_record->m_new_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_classid);
+            if (!strcmp(ddlstate->m_reloid_char, temp_objid) && !strcmp(RelationRelationIdChar, temp_classid))
             {
-                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                     "DEBUG, DDL PARSER: skip stmt abot toast end \n");
+                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: skip stmt abot toast end \n");
                 pg_parser_ddl_init_ddlstate(ddlstate);
             }
         }
@@ -291,16 +280,13 @@ static pg_parser_translog_ddlstmt* pg_parser_DDL_toast_escape(
                                                             current_record->m_record->m_old_values,
                                                             current_record->m_record->m_valueCnt,
                                                             temp_objid);
-            temp_classid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
-                                                   current_record->m_record->m_old_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_objid);
-            if (!strcmp(ddlstate->m_reloid_char, temp_objid) &&
-                !strcmp(RelationRelationIdChar, temp_classid))
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                              current_record->m_record->m_old_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_objid);
+            if (!strcmp(ddlstate->m_reloid_char, temp_objid) && !strcmp(RelationRelationIdChar, temp_classid))
             {
-                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                     "DEBUG, DDL PARSER: skip stmt abot toast end \n");
+                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: skip stmt abot toast end \n");
                 pg_parser_ddl_init_ddlstate(ddlstate);
             }
         }
@@ -321,10 +307,8 @@ char* ddl_char_tolower(char* output)
     }
     return output;
 }
-bool pg_parser_check_table_name(char*       tablename,
-                                SysdictName sysdictnum,
-                                int16_t     dbtype,
-                                char*       dbversion)
+
+bool pg_parser_check_table_name(char* tablename, SysdictName sysdictnum, int16_t dbtype, char* dbversion)
 {
     PG_PARSER_UNUSED(dbtype);
     PG_PARSER_UNUSED(dbversion);

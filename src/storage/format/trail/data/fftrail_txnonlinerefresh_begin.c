@@ -58,8 +58,7 @@ bool fftrail_txnonlinerefresh_begin_serial(void* data, void* state)
     }
 
     /* Write refresh to trail file */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     ffstate->recptr = fbuffer->data + fbuffer->start;
 
     /* Calculate length */
@@ -117,14 +116,12 @@ bool fftrail_txnonlinerefresh_begin_serial(void* data, void* state)
         txndata->header.totallength += sizeof(Oid);
         /* Add content */
         /* table oid */
-        fftrail_data_data2buffer(
-            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&table->oid);
+        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&table->oid);
 
         len = strlen(table->schema);
         txndata->header.totallength += len;
         /* Refresh schema length */
-        fftrail_data_data2buffer(
-            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&len);
+        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&len);
 
         /* Refresh schema content */
         fftrail_data_data2buffer(&txndata->header,
@@ -137,8 +134,7 @@ bool fftrail_txnonlinerefresh_begin_serial(void* data, void* state)
         len = strlen(table->table);
         txndata->header.totallength += len;
         /* Refresh table length */
-        fftrail_data_data2buffer(
-            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&len);
+        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&len);
 
         /* Refresh string content */
         fftrail_data_data2buffer(&txndata->header,

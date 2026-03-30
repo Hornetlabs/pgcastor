@@ -16,11 +16,12 @@ typedef struct RPOC2STOP
 static bool cmd_stopproc(void);
 
 static proc2stop m_typ2stop[] = {
-    {PROC_TYPE_NOP, NULL, " proc nop ", "proc nop unsupport stop"},
-    {PROC_TYPE_CAPTURE, cmd_stopproc, "capture", "capture stop error"},
-    {PROC_TYPE_INTEGRATE, cmd_stopproc, "integrate", "integrate stop error"},
-    {PROC_TYPE_PGRECEIVEWAL, cmd_stopproc, "receivewal", "receivewal stop error"},
-    {PROC_TYPE_XMANAGER, cmd_stopproc, "xmanager", "xmanager stop error"}};
+    {PROC_TYPE_NOP,          NULL,         " proc nop ", "proc nop unsupport stop"},
+    {PROC_TYPE_CAPTURE,      cmd_stopproc, "capture",    "capture stop error"     },
+    {PROC_TYPE_INTEGRATE,    cmd_stopproc, "integrate",  "integrate stop error"   },
+    {PROC_TYPE_PGRECEIVEWAL, cmd_stopproc, "receivewal", "receivewal stop error"  },
+    {PROC_TYPE_XMANAGER,     cmd_stopproc, "xmanager",   "xmanager stop error"    }
+};
 
 static bool cmd_wait_stop()
 {
@@ -73,16 +74,11 @@ bool cmd_stopproc(void)
         return false;
     }
 
-    snprintf(szMsg,
-             128,
-             "found %s process:%d, will send sigterm\n",
-             m_typ2stop[g_proctype].desc,
-             (pid_t)ripplepid);
+    snprintf(szMsg, 128, "found %s process:%d, will send sigterm\n", m_typ2stop[g_proctype].desc, (pid_t)ripplepid);
     cmd_printmsg(szMsg);
     if (0 != kill((pid_t)ripplepid, SIGTERM))
     {
-        snprintf(
-            szMsg, 128, "could not send stop signal (PID:%ld) : %s\n", ripplepid, strerror(errno));
+        snprintf(szMsg, 128, "could not send stop signal (PID:%ld) : %s\n", ripplepid, strerror(errno));
         cmd_printmsg(szMsg);
         return false;
     }

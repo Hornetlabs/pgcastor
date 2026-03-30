@@ -53,11 +53,8 @@ static catalogdata* catalog_colvalued2catalog_pg12(void* in_colvalues);
 
 static catalogdata* catalog_colvalue_no_filter_conversion_pg12(void* in_colvalues);
 
-static catalogdata* catalog_colvalue_no_filter_conversion(int   dbtype,
-                                                          int   dbversion,
-                                                          void* in_colvalues);
-static catalogdata* catalog_colvalue_no_filter_conversion_postgres(int   dbversion,
-                                                                   void* in_colvalues);
+static catalogdata* catalog_colvalue_no_filter_conversion(int dbtype, int dbversion, void* in_colvalues);
+static catalogdata* catalog_colvalue_no_filter_conversion_postgres(int dbversion, void* in_colvalues);
 
 typedef catalogdata* (*colvalue2catalog_dbtype_func)(int dbversion, void* in_colvalues);
 
@@ -86,27 +83,29 @@ typedef struct COLVALUE2CATALOG_BYDBVERSION
 } colvalue2catalog_bydbversion;
 
 static catalog_copy_by_type m_catalog_copy_fmgr[] = {
-    {CATALOG_TYPE_NOP, NULL},
-    {CATALOG_TYPE_CLASS, catalog_copy_class},
-    {CATALOG_TYPE_ATTRIBUTE, catalog_copy_attribute},
-    {CATALOG_TYPE_TYPE, catalog_copy_type},
-    {CATALOG_TYPE_NAMESPACE, catalog_copy_namespace},
-    {CATALOG_TYPE_TABLESPACE, NULL},
-    {CATALOG_TYPE_ENUM, catalog_copy_enum},
-    {CATALOG_TYPE_RANGE, catalog_copy_range},
-    {CATALOG_TYPE_PROC, catalog_copy_proc},
+    {CATALOG_TYPE_NOP,        NULL                   },
+    {CATALOG_TYPE_CLASS,      catalog_copy_class     },
+    {CATALOG_TYPE_ATTRIBUTE,  catalog_copy_attribute },
+    {CATALOG_TYPE_TYPE,       catalog_copy_type      },
+    {CATALOG_TYPE_NAMESPACE,  catalog_copy_namespace },
+    {CATALOG_TYPE_TABLESPACE, NULL                   },
+    {CATALOG_TYPE_ENUM,       catalog_copy_enum      },
+    {CATALOG_TYPE_RANGE,      catalog_copy_range     },
+    {CATALOG_TYPE_PROC,       catalog_copy_proc      },
     {CATALOG_TYPE_CONSTRAINT, catalog_copy_constraint},
-    {CATALOG_TYPE_OPERATOR, NULL},
-    {CATALOG_TYPE_AUTHID, catalog_copy_authid},
-    {CATALOG_TYPE_DATABASE, catalog_copy_database},
-    {CATALOG_TYPE_INDEX, catalog_copy_index},
-    {CATALOG_TYPE_RELMAPFILE, catalog_copy_relmapfile}};
+    {CATALOG_TYPE_OPERATOR,   NULL                   },
+    {CATALOG_TYPE_AUTHID,     catalog_copy_authid    },
+    {CATALOG_TYPE_DATABASE,   catalog_copy_database  },
+    {CATALOG_TYPE_INDEX,      catalog_copy_index     },
+    {CATALOG_TYPE_RELMAPFILE, catalog_copy_relmapfile}
+};
 
 static int m_catalog_copy_fmgr_cnt = (sizeof(m_catalog_copy_fmgr)) / (sizeof(catalog_copy_by_type));
 
 static colvalue2catalog_bydbversion m_colvalue2catalog_pg_distribute[] = {
-    {PGDBVERSION_NOP, NULL, NULL},
-    {PGDBVERSION_12, catalog_colvalued2catalog_pg12, catalog_colvalue_no_filter_conversion_pg12}};
+    {PGDBVERSION_NOP, NULL,                           NULL                                      },
+    {PGDBVERSION_12,  catalog_colvalued2catalog_pg12, catalog_colvalue_no_filter_conversion_pg12}
+};
 
 static int m_colvalue2catalog_pg_cnt =
     (sizeof(m_colvalue2catalog_pg_distribute)) / (sizeof(colvalue2catalog_bydbversion));
@@ -114,8 +113,7 @@ static int m_colvalue2catalog_pg_cnt =
 /* colvalue to catalog postgres dispatch entry */
 static catalogdata* catalog_colvalued2catalog_postgres(int dbversion, void* in_colvalues)
 {
-    if ((m_colvalue2catalog_pg_cnt - 1) < dbversion ||
-        NULL == m_colvalue2catalog_pg_distribute[dbversion].func)
+    if ((m_colvalue2catalog_pg_cnt - 1) < dbversion || NULL == m_colvalue2catalog_pg_distribute[dbversion].func)
     {
         return NULL;
     }
@@ -123,10 +121,9 @@ static catalogdata* catalog_colvalued2catalog_postgres(int dbversion, void* in_c
 }
 
 static colvalue2catalog_bydbtype m_colvalue2catalog_dbtype_distribute[] = {
-    {DATABASE_TYPE_NOP, NULL, NULL},
-    {DATABASE_TYPE_POSTGRESQL,
-     catalog_colvalued2catalog_postgres,
-     catalog_colvalue_no_filter_conversion_postgres}};
+    {DATABASE_TYPE_NOP,        NULL,                               NULL                                          },
+    {DATABASE_TYPE_POSTGRESQL, catalog_colvalued2catalog_postgres, catalog_colvalue_no_filter_conversion_postgres}
+};
 
 static int m_colvalue2catalog_bydbtype_cnt =
     (sizeof(m_colvalue2catalog_dbtype_distribute)) / (sizeof(colvalue2catalog_bydbtype));
@@ -535,10 +532,7 @@ static catalogdata* catalog_copy_constraint(catalogdata* catalog_src)
             return NULL;
         }
         rmemset0(constraint_dst->conkey, 0, '\0', constraint_dst->conkeycnt * sizeof(int16_t));
-        rmemcpy0(constraint_dst->conkey,
-                 0,
-                 constraint_src->conkey,
-                 constraint_dst->conkeycnt * sizeof(int16_t));
+        rmemcpy0(constraint_dst->conkey, 0, constraint_src->conkey, constraint_dst->conkeycnt * sizeof(int16_t));
     }
 
     result->op = catalog_src->op;
@@ -760,8 +754,7 @@ catalogdata* catalog_copy(catalogdata* catalog_in)
 /* colvalue to catalog dispatch entry */
 catalogdata* catalog_colvalued2catalog(int dbtype, int dbversion, void* in_colvalues)
 {
-    if ((m_colvalue2catalog_bydbtype_cnt - 1) < dbtype ||
-        NULL == m_colvalue2catalog_dbtype_distribute[dbtype].func)
+    if ((m_colvalue2catalog_bydbtype_cnt - 1) < dbtype || NULL == m_colvalue2catalog_dbtype_distribute[dbtype].func)
     {
         return NULL;
     }
@@ -770,9 +763,7 @@ catalogdata* catalog_colvalued2catalog(int dbtype, int dbversion, void* in_colva
 
 /* No-filter system catalog colvalue to catalog structure dispatch function - start */
 /* no filter colvalue to catalog dispatch entry */
-static catalogdata* catalog_colvalue_no_filter_conversion(int   dbtype,
-                                                          int   dbversion,
-                                                          void* in_colvalues)
+static catalogdata* catalog_colvalue_no_filter_conversion(int dbtype, int dbversion, void* in_colvalues)
 {
     if ((m_colvalue2catalog_bydbtype_cnt - 1) < dbtype ||
         NULL == m_colvalue2catalog_dbtype_distribute[dbtype].no_filter_func)
@@ -783,8 +774,7 @@ static catalogdata* catalog_colvalue_no_filter_conversion(int   dbtype,
 }
 
 /* No filter colvalue to catalog postgres dispatch entry */
-static catalogdata* catalog_colvalue_no_filter_conversion_postgres(int   dbversion,
-                                                                   void* in_colvalues)
+static catalogdata* catalog_colvalue_no_filter_conversion_postgres(int dbversion, void* in_colvalues)
 {
     if ((m_colvalue2catalog_pg_cnt - 1) < dbversion ||
         NULL == m_colvalue2catalog_pg_distribute[dbversion].no_filter_func)
@@ -848,6 +838,7 @@ static catalogdata* catalog_colvalue_no_filter_conversion_pg12(void* in_colvalue
     }
     return catalog_data;
 }
+
 /* No-filter system catalog colvalue to catalog structure dispatch function - end */
 
 catalogdata* catalog_colvalued2catalog_pg12(void* in_colvalues)
@@ -922,9 +913,7 @@ catalogdata* catalog_colvalued2catalog_pg12(void* in_colvalues)
     return catalog_data;
 }
 
-static void* catalog_get_sysdict_from_sysdicthash(HTAB* sysdicthash,
-                                                  void* search_variable,
-                                                  int   dict_type)
+static void* catalog_get_sysdict_from_sysdicthash(HTAB* sysdicthash, void* search_variable, int dict_type)
 {
     switch (dict_type)
     {
@@ -954,8 +943,7 @@ static void* catalog_get_sysdict_from_sysdicthash(HTAB* sysdicthash,
                 temp_attribute_list = temp_attribute_value->attrs;
                 foreach (attcell, temp_attribute_list)
                 {
-                    pg_parser_sysdict_pgattributes* temp_attr =
-                        (pg_parser_sysdict_pgattributes*)lfirst(attcell);
+                    pg_parser_sysdict_pgattributes* temp_attr = (pg_parser_sysdict_pgattributes*)lfirst(attcell);
                     if (temp_attr->attnum == att_search->attnum)
                     {
                         return (void*)temp_attr;
@@ -1078,9 +1066,7 @@ static void* catalog_get_sysdict_from_sysdicthash(HTAB* sysdicthash,
  * Currently only index uses this, but written as a general function for extensibility
  * No need to consider delete case in hash
  */
-static List* catalog_get_sysdict_list_from_sysdicthash(HTAB* sysdicthash,
-                                                       void* search_variable,
-                                                       int   dict_type)
+static List* catalog_get_sysdict_list_from_sysdicthash(HTAB* sysdicthash, void* search_variable, int dict_type)
 {
     List* result = NULL;
 
@@ -1107,9 +1093,7 @@ static List* catalog_get_sysdict_list_from_sysdicthash(HTAB* sysdicthash,
     return result;
 }
 
-static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis,
-                                                 void* search_variable,
-                                                 int   dict_type)
+static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis, void* search_variable, int dict_type)
 {
     ListCell* hiscell = NULL;
     void*     sysdicthis_result = NULL;
@@ -1118,8 +1102,7 @@ static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis,
     foreach (hiscell, sysdicthis)
     {
         catalogdata* dict = (catalogdata*)lfirst(hiscell);
-        if (dict->type == dict_type &&
-            ((dict->op == CATALOG_OP_INSERT) || (dict->op == CATALOG_OP_UPDATE)))
+        if (dict->type == dict_type && ((dict->op == CATALOG_OP_INSERT) || (dict->op == CATALOG_OP_UPDATE)))
         {
             switch (dict_type)
             {
@@ -1134,12 +1117,10 @@ static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis,
                 }
                 case CATALOG_TYPE_ATTRIBUTE:
                 {
-                    catalog_attribute_value* temp_attribute_value =
-                        (catalog_attribute_value*)dict->catalog;
+                    catalog_attribute_value*  temp_attribute_value = (catalog_attribute_value*)dict->catalog;
 
                     /* The matching condition for att is that oid and attnum correspond */
-                    catalog_attribute_search* att_search =
-                        (catalog_attribute_search*)search_variable;
+                    catalog_attribute_search* att_search = (catalog_attribute_search*)search_variable;
 
                     if (temp_attribute_value->attrelid == att_search->attrelid)
                     {
@@ -1170,8 +1151,7 @@ static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis,
                 }
                 case CATALOG_TYPE_NAMESPACE:
                 {
-                    catalog_namespace_value* temp_namespace_value =
-                        (catalog_namespace_value*)dict->catalog;
+                    catalog_namespace_value* temp_namespace_value = (catalog_namespace_value*)dict->catalog;
                     if (temp_namespace_value->oid == *(Oid*)search_variable)
                     {
                         sysdicthis_result = (void*)temp_namespace_value->namespace;
@@ -1216,8 +1196,7 @@ static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis,
                 }
                 case CATALOG_TYPE_CONSTRAINT:
                 {
-                    catalog_constraint_value* temp_constraint_value =
-                        (catalog_constraint_value*)dict->catalog;
+                    catalog_constraint_value* temp_constraint_value = (catalog_constraint_value*)dict->catalog;
                     if (temp_constraint_value->conrelid == *(Oid*)search_variable)
                     {
                         sysdicthis_result = (void*)temp_constraint_value->constraint;
@@ -1226,8 +1205,7 @@ static void* catalog_get_sysdict_from_sysdicthis(List* sysdicthis,
                 }
                 case CATALOG_TYPE_DATABASE:
                 {
-                    catalog_database_value* temp_database_value =
-                        (catalog_database_value*)dict->catalog;
+                    catalog_database_value* temp_database_value = (catalog_database_value*)dict->catalog;
                     if (temp_database_value->oid == *(Oid*)search_variable)
                     {
                         sysdicthis_result = (void*)temp_database_value->database;
@@ -1312,8 +1290,7 @@ static List* catalog_get_sysdict_list_from_sysdicthis_opupdate(List*        resu
                     catalog_index_value* search_index_value = (catalog_index_value*)lfirst(cell);
 
                     /* After finding, just replace the target cell */
-                    if (search_index_value->index->indexrelid ==
-                        temp_index_value->index->indexrelid)
+                    if (search_index_value->index->indexrelid == temp_index_value->index->indexrelid)
                     {
                         lfirst(cell) = temp_index_value;
                         break;
@@ -1366,8 +1343,7 @@ static List* catalog_get_sysdict_list_from_sysdicthis_opdelete(List*        resu
                     catalog_index_value* search_index_value = (catalog_index_value*)lfirst(cell);
 
                     /* After finding, just replace the target cell */
-                    if (search_index_value->index->indexrelid ==
-                        temp_index_value->index->indexrelid)
+                    if (search_index_value->index->indexrelid == temp_index_value->index->indexrelid)
                     {
                         result = list_delete_cell(result, cell, cell_prev);
 
@@ -1412,18 +1388,24 @@ static List* catalog_get_sysdict_list_from_sysdicthis(List* result,
         {
             if (dict->op == CATALOG_OP_INSERT)
             {
-                sysdicthis_result = catalog_get_sysdict_list_from_sysdicthis_opinsert(
-                    sysdicthis_result, dict, search_variable, dict_type);
+                sysdicthis_result = catalog_get_sysdict_list_from_sysdicthis_opinsert(sysdicthis_result,
+                                                                                      dict,
+                                                                                      search_variable,
+                                                                                      dict_type);
             }
             else if (dict->op == CATALOG_OP_UPDATE)
             {
-                sysdicthis_result = catalog_get_sysdict_list_from_sysdicthis_opupdate(
-                    sysdicthis_result, dict, search_variable, dict_type);
+                sysdicthis_result = catalog_get_sysdict_list_from_sysdicthis_opupdate(sysdicthis_result,
+                                                                                      dict,
+                                                                                      search_variable,
+                                                                                      dict_type);
             }
             else if (dict->op == CATALOG_OP_DELETE)
             {
-                sysdicthis_result = catalog_get_sysdict_list_from_sysdicthis_opdelete(
-                    sysdicthis_result, dict, search_variable, dict_type);
+                sysdicthis_result = catalog_get_sysdict_list_from_sysdicthis_opdelete(sysdicthis_result,
+                                                                                      dict,
+                                                                                      search_variable,
+                                                                                      dict_type);
             }
             else
             {
@@ -1470,12 +1452,14 @@ static void* catalog_get_sysdict_from_colvalue(List* sysdict, void* search_varia
                         }
                         else
                         {
-                            Oid temp_oid = (Oid)atoi((char*)get_class_value_from_colvalue(
-                                col->m_new_values, CLASS_MAPNUM_OID, g_idbtype, g_idbversion));
+                            Oid temp_oid = (Oid)atoi((char*)get_class_value_from_colvalue(col->m_new_values,
+                                                                                          CLASS_MAPNUM_OID,
+                                                                                          g_idbtype,
+                                                                                          g_idbversion));
                             if (temp_oid == *(Oid*)search_variable)
                             {
-                                dict->convert_colvalues = catalog_colvalue_no_filter_conversion(
-                                    g_idbtype, g_idbversion, col);
+                                dict->convert_colvalues =
+                                    catalog_colvalue_no_filter_conversion(g_idbtype, g_idbversion, col);
                                 catalog_data = (catalogdata*)dict->convert_colvalues;
                                 pgclass_v = (catalog_class_value*)catalog_data->catalog;
                                 return (void*)pgclass_v->class;
@@ -1501,8 +1485,7 @@ static void* catalog_get_sysdict_from_colvalue(List* sysdict, void* search_varia
                     if (!strcmp(col->m_base.m_schemaname, CATALOG_SYSDICT_SCHEMA) &&
                         !strcmp(col->m_base.m_tbname, CATALOG_PG_ATTRIBUTE))
                     {
-                        catalog_attribute_search* temp_att_search =
-                            (catalog_attribute_search*)search_variable;
+                        catalog_attribute_search* temp_att_search = (catalog_attribute_search*)search_variable;
 
                         if (dict->convert_colvalues)
                         {
@@ -1522,22 +1505,20 @@ static void* catalog_get_sysdict_from_colvalue(List* sysdict, void* search_varia
                             Oid     temp_oid = INVALIDOID;
                             int16_t temp_attnum = 0;
 
-                            temp_oid = (Oid)atoi(
-                                (char*)get_attribute_value_from_colvalue(col->m_new_values,
-                                                                         ATTRIBUTE_MAPNUM_ATTRELID,
-                                                                         g_idbtype,
-                                                                         g_idbversion));
+                            temp_oid = (Oid)atoi((char*)get_attribute_value_from_colvalue(col->m_new_values,
+                                                                                          ATTRIBUTE_MAPNUM_ATTRELID,
+                                                                                          g_idbtype,
+                                                                                          g_idbversion));
 
-                            temp_attnum = (int16_t)atoi(
-                                (char*)get_attribute_value_from_colvalue(col->m_new_values,
-                                                                         ATTRIBUTE_MAPNUM_ATTNUM,
-                                                                         g_idbtype,
-                                                                         g_idbversion));
-                            if (temp_oid == temp_att_search->attrelid &&
-                                temp_attnum == temp_att_search->attnum)
+                            temp_attnum =
+                                (int16_t)atoi((char*)get_attribute_value_from_colvalue(col->m_new_values,
+                                                                                       ATTRIBUTE_MAPNUM_ATTNUM,
+                                                                                       g_idbtype,
+                                                                                       g_idbversion));
+                            if (temp_oid == temp_att_search->attrelid && temp_attnum == temp_att_search->attnum)
                             {
-                                dict->convert_colvalues = catalog_colvalue_no_filter_conversion(
-                                    g_idbtype, g_idbversion, col);
+                                dict->convert_colvalues =
+                                    catalog_colvalue_no_filter_conversion(g_idbtype, g_idbversion, col);
                                 catalog_data = (catalogdata*)dict->convert_colvalues;
                                 pgattribute_v = (catalog_attribute_value*)catalog_data->catalog;
                                 return linitial(pgattribute_v->attrs);
@@ -1578,12 +1559,14 @@ static void* catalog_get_sysdict_from_colvalue(List* sysdict, void* search_varia
                         else
                         {
                             Oid temp_oid = INVALIDOID;
-                            temp_oid = (Oid)atoi((char*)get_namespace_value_from_colvalue(
-                                col->m_new_values, NAMESPACE_MAPNUM_OID, g_idbtype, g_idbversion));
+                            temp_oid = (Oid)atoi((char*)get_namespace_value_from_colvalue(col->m_new_values,
+                                                                                          NAMESPACE_MAPNUM_OID,
+                                                                                          g_idbtype,
+                                                                                          g_idbversion));
                             if (temp_oid == *(Oid*)search_variable)
                             {
-                                dict->convert_colvalues = catalog_colvalue_no_filter_conversion(
-                                    g_idbtype, g_idbversion, col);
+                                dict->convert_colvalues =
+                                    catalog_colvalue_no_filter_conversion(g_idbtype, g_idbversion, col);
                                 catalog_data = (catalogdata*)dict->convert_colvalues;
                                 pgnamespace_v = (catalog_namespace_value*)catalog_data->catalog;
                                 return (void*)pgnamespace_v->namespace;
@@ -1622,12 +1605,14 @@ static void* catalog_get_sysdict_from_colvalue(List* sysdict, void* search_varia
                         }
                         else
                         {
-                            Oid temp_oid = (Oid)atoi((char*)get_type_value_from_colvalue(
-                                col->m_new_values, TYPE_MAPNUM_OID, g_idbtype, g_idbversion));
+                            Oid temp_oid = (Oid)atoi((char*)get_type_value_from_colvalue(col->m_new_values,
+                                                                                         TYPE_MAPNUM_OID,
+                                                                                         g_idbtype,
+                                                                                         g_idbversion));
                             if (temp_oid == *(Oid*)search_variable)
                             {
-                                dict->convert_colvalues = catalog_colvalue_no_filter_conversion(
-                                    g_idbtype, g_idbversion, col);
+                                dict->convert_colvalues =
+                                    catalog_colvalue_no_filter_conversion(g_idbtype, g_idbversion, col);
                                 catalog_data = (catalogdata*)dict->convert_colvalues;
                                 pgtype_v = (catalog_type_value*)catalog_data->catalog;
                                 return (void*)pgtype_v->type;
@@ -1651,8 +1636,11 @@ static void* catalog_get_sysdict_from_colvalue(List* sysdict, void* search_varia
     return NULL;
 }
 
-static void* catalog_get_sysdict(
-    HTAB* sysdict_hash, List* sysdict, List* sysdicthis, void* search_variable, int dict_type)
+static void* catalog_get_sysdict(HTAB* sysdict_hash,
+                                 List* sysdict,
+                                 List* sysdicthis,
+                                 void* search_variable,
+                                 int   dict_type)
 {
     void* result = NULL;
     /* First search sysdict, and based on whether sysdict exists, determine whether to search
@@ -1695,23 +1683,24 @@ static void* catalog_get_sysdict(
  *          sysdict_hash, sysdicthis, sysdict
  * Currently only index uses this, but written as a general function for extensibility
  */
-static void* catalog_get_sysdict_list(
-    HTAB* sysdict_hash, List* sysdict, List* sysdicthis, void* search_variable, int dict_type)
+static void* catalog_get_sysdict_list(HTAB* sysdict_hash,
+                                      List* sysdict,
+                                      List* sysdicthis,
+                                      void* search_variable,
+                                      int   dict_type)
 {
     List* result = NULL;
 
     /* First search sysdict_hash */
     if (sysdict_hash)
     {
-        result =
-            catalog_get_sysdict_list_from_sysdicthash(sysdict_hash, search_variable, dict_type);
+        result = catalog_get_sysdict_list_from_sysdicthash(sysdict_hash, search_variable, dict_type);
     }
 
     /* Then search sysdicthis */
     if (sysdicthis)
     {
-        result = catalog_get_sysdict_list_from_sysdicthis(
-            result, sysdicthis, search_variable, dict_type);
+        result = catalog_get_sysdict_list_from_sysdicthis(result, sysdicthis, search_variable, dict_type);
     }
 
     /* Finally search sysdict, this is not actually used in index stage, but kept */
@@ -1743,12 +1732,14 @@ static Oid catalog_get_oid_by_relfilenode_from_colvalues(uint32_t relfilenode, L
             !strcmp(col->m_base.m_tbname, CATALOG_PG_CLASS) && col->m_new_values)
         {
             uint32_t temp_relfilenode = 0;
-            temp_relfilenode = (uint32_t)atoi((char*)get_class_value_from_colvalue(
-                col->m_new_values, CLASS_MAPNUM_RELFILENODE, g_idbtype, g_idbversion));
+            temp_relfilenode = (uint32_t)atoi((char*)get_class_value_from_colvalue(col->m_new_values,
+                                                                                   CLASS_MAPNUM_RELFILENODE,
+                                                                                   g_idbtype,
+                                                                                   g_idbversion));
             if (temp_relfilenode == relfilenode)
             {
-                return (Oid)atoi((char*)get_class_value_from_colvalue(
-                    col->m_new_values, CLASS_MAPNUM_OID, g_idbtype, g_idbversion));
+                return (Oid)atoi(
+                    (char*)get_class_value_from_colvalue(col->m_new_values, CLASS_MAPNUM_OID, g_idbtype, g_idbversion));
             }
         }
     }
@@ -1814,9 +1805,7 @@ Oid catalog_get_oid_by_relfilenode(HTAB*    relfilenode_htab,
         }
         else
         {
-            elog(RLOG_DEBUG,
-                 "fpw capture, can't find oid by relfilenode: %u, ignore fpw tuples",
-                 rnode.relNode);
+            elog(RLOG_DEBUG, "fpw capture, can't find oid by relfilenode: %u, ignore fpw tuples", rnode.relNode);
         }
 
         return oid;
@@ -1839,16 +1828,14 @@ void* catalog_get_namespace_sysdict(HTAB* sysdict_hash, List* sysdict, List* sys
     return catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &oid, CATALOG_TYPE_NAMESPACE);
 }
 
-void* catalog_get_attribute_sysdict(
-    HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid attrelid, int16_t attnum)
+void* catalog_get_attribute_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid attrelid, int16_t attnum)
 {
     catalog_attribute_search temp_att_search = {'\0'};
 
     temp_att_search.attrelid = attrelid;
     temp_att_search.attnum = attnum;
 
-    return catalog_get_sysdict(
-        sysdict_hash, sysdict, sysdicthis, &temp_att_search, CATALOG_TYPE_ATTRIBUTE);
+    return catalog_get_sysdict(sysdict_hash, sysdict, sysdicthis, &temp_att_search, CATALOG_TYPE_ATTRIBUTE);
 }
 
 void* catalog_get_type_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid oid)
@@ -1964,8 +1951,7 @@ bool catalog_sysdict_setfullmode(HTAB* hclass)
             continue;
         }
 
-        if (PG_SYSDICT_RELKIND_RELATION != class->relkind &&
-            PG_SYSDICT_RELKIND_PARTITIONED_TABLE != class->relkind)
+        if (PG_SYSDICT_RELKIND_RELATION != class->relkind && PG_SYSDICT_RELKIND_PARTITIONED_TABLE != class->relkind)
         {
             /* Only enable FULL mode for regular tables and partitioned tables */
             continue;

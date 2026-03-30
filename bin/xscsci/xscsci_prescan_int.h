@@ -22,9 +22,6 @@ typedef struct XSCSCI_PRESCAN
 
 extern void xscsci_prescan_emit(xscsci_prescan* state, const char* txt, int len);
 
-extern YY_BUFFER_STATE xscsci_prescan_prebuffer(xscsci_prescan* state,
-                                                const char*     txt,
-                                                int             len,
-                                                char**          txtcopy);
+extern YY_BUFFER_STATE xscsci_prescan_prebuffer(xscsci_prescan* state, const char* txt, int len, char** txtcopy);
 
 #endif

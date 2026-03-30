@@ -81,8 +81,8 @@ HTAB* decodingcontext_stat_getsyncdataset(decodingcontext* decodingctx)
 /* Remove onlinerefresh */
 void parserwork_decodingctx_removeonlinerefresh(decodingcontext* ctx, onlinerefresh* onlinerefresh)
 {
-    ctx->onlinerefresh = dlist_deletebyvalue(
-        ctx->onlinerefresh, onlinerefresh, onlinerefresh_cmp, onlinerefresh_destroyvoid);
+    ctx->onlinerefresh =
+        dlist_deletebyvalue(ctx->onlinerefresh, onlinerefresh, onlinerefresh_cmp, onlinerefresh_destroyvoid);
 
     if (NULL != ctx->refreshtxn)
     {
@@ -92,9 +92,7 @@ void parserwork_decodingctx_removeonlinerefresh(decodingcontext* ctx, onlinerefr
     }
 }
 
-void parserwork_decodingctx_addonlinerefresh(decodingcontext* ctx,
-                                             onlinerefresh*   onlinerefresh,
-                                             txn*             txn)
+void parserwork_decodingctx_addonlinerefresh(decodingcontext* ctx, onlinerefresh* onlinerefresh, txn* txn)
 {
     ctx->onlinerefresh = dlist_put(ctx->onlinerefresh, onlinerefresh);
     ctx->refreshtxn = txn;
@@ -158,10 +156,8 @@ decodingcontext* parserwork_walinitphase1(void)
      *  2. Filter rules
      *  3. New table filter rules
      */
-    decodingctx->trans_cache->tableincludes =
-        filter_dataset_inittableinclude(decodingctx->trans_cache->tableincludes);
-    decodingctx->trans_cache->tableexcludes =
-        filter_dataset_inittableexclude(decodingctx->trans_cache->tableexcludes);
+    decodingctx->trans_cache->tableincludes = filter_dataset_inittableinclude(decodingctx->trans_cache->tableincludes);
+    decodingctx->trans_cache->tableexcludes = filter_dataset_inittableexclude(decodingctx->trans_cache->tableexcludes);
     decodingctx->trans_cache->addtablepattern =
         filter_dataset_initaddtablepattern(decodingctx->trans_cache->addtablepattern);
 
@@ -184,15 +180,13 @@ decodingcontext* parserwork_walinitphase1(void)
     decodingctx->trans_cache->transdlist->tail = NULL;
 
     /* Initialize capture_buffer and convert to bytes */
-    decodingctx->trans_cache->capture_buffer =
-        MB2BYTE(guc_getConfigOptionInt(CFG_KEY_CAPTURE_BUFFER));
+    decodingctx->trans_cache->capture_buffer = MB2BYTE(guc_getConfigOptionInt(CFG_KEY_CAPTURE_BUFFER));
 
     /* Initialize transaction HASH table */
     rmemset1(&hash_ctl, 0, 0, sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(FullTransactionId);
     hash_ctl.entrysize = sizeof(txn);
-    decodingctx->trans_cache->by_txns =
-        hash_create("transaction hash", 8192, &hash_ctl, HASH_ELEM | HASH_BLOBS);
+    decodingctx->trans_cache->by_txns = hash_create("transaction hash", 8192, &hash_ctl, HASH_ELEM | HASH_BLOBS);
     /* Initialize sysdicts */
     decodingctx->trans_cache->sysdicts = (cache_sysdicts*)rmalloc0(sizeof(cache_sysdicts));
     if (NULL == decodingctx->trans_cache->sysdicts)
@@ -236,9 +230,8 @@ void parserwork_walinitphase2(decodingcontext* decodingctx)
     dbid = misc_controldata_database_get(NULL);
     cache_sysdictsload((void**)&decodingctx->trans_cache->sysdicts);
 
-    decodingctx->trans_cache->hsyncdataset =
-        filter_dataset_load(decodingctx->trans_cache->sysdicts->by_namespace,
-                            decodingctx->trans_cache->sysdicts->by_class);
+    decodingctx->trans_cache->hsyncdataset = filter_dataset_load(decodingctx->trans_cache->sysdicts->by_namespace,
+                                                                 decodingctx->trans_cache->sysdicts->by_class);
 
     decodingctx->trans_cache->htxnfilterdataset =
         filter_dataset_txnfilterload(decodingctx->trans_cache->sysdicts->by_namespace,
@@ -250,8 +243,7 @@ void parserwork_walinitphase2(decodingcontext* decodingctx)
     decode_chkpt_init(decodingctx, decodingctx->base.redolsn);
 
     /* Initialize capture_buffer and convert to bytes */
-    decodingctx->trans_cache->capture_buffer =
-        MB2BYTE(guc_getConfigOptionInt(CFG_KEY_CAPTURE_BUFFER));
+    decodingctx->trans_cache->capture_buffer = MB2BYTE(guc_getConfigOptionInt(CFG_KEY_CAPTURE_BUFFER));
 
     elog(RLOG_INFO,
          "ripple parser from, redolsn %X/%X, restartlsn %X/%X, last commit lsn:%X/%X, fileid:%lu, "
@@ -426,8 +418,9 @@ static void parserwork_wal_rewind_ptr(decodingcontext* decodingctx, dlist* recor
             /* If in rewinding state, reset the split start point */
             if (decodingctx->rewind_ptr->stat == REWIND_REWINDING)
             {
-                decodingctx->callback.setloadlsn(
-                    decodingctx->privdata, decodingctx->rewind_ptr->redolsn, InvalidXLogRecPtr);
+                decodingctx->callback.setloadlsn(decodingctx->privdata,
+                                                 decodingctx->rewind_ptr->redolsn,
+                                                 InvalidXLogRecPtr);
                 break;
             }
         }
@@ -473,8 +466,7 @@ void* parserwork_wal_main(void* args)
     /* Check state */
     if (THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING,
-             "increment capture parser stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "increment capture parser stat exception, expected state is THRNODE_STAT_STARTING");
         thrnode_ptr->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -491,8 +483,7 @@ void* parserwork_wal_main(void* args)
             break;
         }
 
-        if (decodingctx->stat == DECODINGCONTEXT_REWIND &&
-            !rewind_check_stat_allow_get_entry(decodingctx->rewind_ptr))
+        if (decodingctx->stat == DECODINGCONTEXT_REWIND && !rewind_check_stat_allow_get_entry(decodingctx->rewind_ptr))
         {
             /* Sleep 10ms */
             usleep(10000);
@@ -573,9 +564,7 @@ void* parserwork_wal_main(void* args)
     return NULL;
 }
 
-void parserwork_wal_getparserinfo(decodingcontext* decodingctx,
-                                  XLogRecPtr*      prestartlsn,
-                                  XLogRecPtr*      pconfirmlsn)
+void parserwork_wal_getparserinfo(decodingcontext* decodingctx, XLogRecPtr* prestartlsn, XLogRecPtr* pconfirmlsn)
 {
     if (NULL == decodingctx)
     {
@@ -592,17 +581,14 @@ static void parserwork_wal_reload(decodingcontext* decodingctx)
     guc_loadcfg(g_profilepath, true);
 
     /* Load rules */
-    decodingctx->trans_cache->tableincludes =
-        filter_dataset_inittableinclude(decodingctx->trans_cache->tableincludes);
-    decodingctx->trans_cache->tableexcludes =
-        filter_dataset_inittableexclude(decodingctx->trans_cache->tableexcludes);
+    decodingctx->trans_cache->tableincludes = filter_dataset_inittableinclude(decodingctx->trans_cache->tableincludes);
+    decodingctx->trans_cache->tableexcludes = filter_dataset_inittableexclude(decodingctx->trans_cache->tableexcludes);
     decodingctx->trans_cache->addtablepattern =
         filter_dataset_initaddtablepattern(decodingctx->trans_cache->addtablepattern);
 
-    decodingctx->trans_cache->hsyncdataset =
-        filter_dataset_reload(decodingctx->trans_cache->sysdicts->by_namespace,
-                              decodingctx->trans_cache->sysdicts->by_class,
-                              decodingctx->trans_cache->hsyncdataset);
+    decodingctx->trans_cache->hsyncdataset = filter_dataset_reload(decodingctx->trans_cache->sysdicts->by_namespace,
+                                                                   decodingctx->trans_cache->sysdicts->by_class,
+                                                                   decodingctx->trans_cache->hsyncdataset);
     return;
 }
 

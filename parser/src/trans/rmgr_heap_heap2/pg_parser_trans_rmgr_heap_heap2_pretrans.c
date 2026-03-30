@@ -16,20 +16,18 @@
 
 typedef bool (*pg_parser_trans_transrec_rmgr_info_func_pre)(pg_parser_XLogReaderState*    state,
                                                             pg_parser_translog_pre_base** result,
-                                                            int32_t* pg_parser_errno);
+                                                            int32_t*                      pg_parser_errno);
 
 typedef struct PG_PARSER_TRANS_RMGR_HEAP
 {
-    pg_parser_trans_rmgr_heap_info m_infoid; /* info value */
-    pg_parser_trans_transrec_rmgr_info_func_pre
-        m_infofunc_pre; /* info-level handler for pre-parse interface */
+    pg_parser_trans_rmgr_heap_info              m_infoid;       /* info value */
+    pg_parser_trans_transrec_rmgr_info_func_pre m_infofunc_pre; /* info-level handler for pre-parse interface */
 } pg_parser_trans_rmgr_heap;
 
 typedef struct PG_PARSER_TRANS_RMGR_HEAP2
 {
-    pg_parser_trans_rmgr_heap2_info m_infoid; /* info value */
-    pg_parser_trans_transrec_rmgr_info_func_pre
-        m_infofunc_pre; /* info-level handler for pre-parse interface */
+    pg_parser_trans_rmgr_heap2_info             m_infoid;       /* info value */
+    pg_parser_trans_transrec_rmgr_info_func_pre m_infofunc_pre; /* info-level handler for pre-parse interface */
 } pg_parser_trans_rmgr_heap2;
 
 static bool pg_parser_trans_rmgr_heap_insert_pre(pg_parser_XLogReaderState*    state,
@@ -57,14 +55,16 @@ static bool pg_parser_trans_rmgr_heap_truncate(pg_parser_XLogReaderState*    sta
                                                int32_t*                      pg_parser_errno);
 
 static pg_parser_trans_rmgr_heap2 m_record_rmgr_heap2_info[] = {
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP2_MULTI_INSERT, pg_parser_trans_rmgr_heap2_minsert_pre}};
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP2_MULTI_INSERT, pg_parser_trans_rmgr_heap2_minsert_pre}
+};
 
 static pg_parser_trans_rmgr_heap m_record_rmgr_heap_info[] = {
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_INSERT, pg_parser_trans_rmgr_heap_insert_pre},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_DELETE, pg_parser_trans_rmgr_heap_delete_pre},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_UPDATE, pg_parser_trans_rmgr_heap_update_pre},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_TRUNCATE, pg_parser_trans_rmgr_heap_truncate},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_HOT_UPDATE, pg_parser_trans_rmgr_heap_hotupdate_pre}};
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_INSERT,     pg_parser_trans_rmgr_heap_insert_pre   },
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_DELETE,     pg_parser_trans_rmgr_heap_delete_pre   },
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_UPDATE,     pg_parser_trans_rmgr_heap_update_pre   },
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_TRUNCATE,   pg_parser_trans_rmgr_heap_truncate     },
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_HOT_UPDATE, pg_parser_trans_rmgr_heap_hotupdate_pre}
+};
 
 bool pg_parser_trans_rmgr_heap_pre(pg_parser_XLogReaderState*    state,
                                    pg_parser_translog_pre_base** result,
@@ -125,8 +125,7 @@ static bool pg_parser_trans_rmgr_heap_insert_pre(pg_parser_XLogReaderState*    s
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            PRE_RMGR_HEAP_MCXT, (void**)(&heap), sizeof(pg_parser_translog_pre_heap)))
+    if (!pg_parser_mcxt_malloc(PRE_RMGR_HEAP_MCXT, (void**)(&heap), sizeof(pg_parser_translog_pre_heap)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_01;
         return false;
@@ -181,8 +180,7 @@ static bool pg_parser_trans_rmgr_heap2_minsert_pre(pg_parser_XLogReaderState*   
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            PRE_RMGR_HEAP2_MCXT, (void**)(&heap), sizeof(pg_parser_translog_pre_heap)))
+    if (!pg_parser_mcxt_malloc(PRE_RMGR_HEAP2_MCXT, (void**)(&heap), sizeof(pg_parser_translog_pre_heap)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_05;
         return false;
@@ -237,8 +235,7 @@ static bool pg_parser_trans_rmgr_heap_delete_pre(pg_parser_XLogReaderState*    s
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            PRE_RMGR_HEAP_MCXT, (void**)(&heap), sizeof(pg_parser_translog_pre_heap)))
+    if (!pg_parser_mcxt_malloc(PRE_RMGR_HEAP_MCXT, (void**)(&heap), sizeof(pg_parser_translog_pre_heap)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_04;
         return false;
@@ -324,8 +321,7 @@ static bool pg_parser_trans_rmgr_heap_update_pre(pg_parser_XLogReaderState*    s
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            PRE_RMGR_HEAP_MCXT, (void**)(&heap), sizeof(pg_parser_translog_pre_heap)))
+    if (!pg_parser_mcxt_malloc(PRE_RMGR_HEAP_MCXT, (void**)(&heap), sizeof(pg_parser_translog_pre_heap)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_02;
         return false;
@@ -419,8 +415,7 @@ static bool pg_parser_trans_rmgr_heap_hotupdate_pre(pg_parser_XLogReaderState*  
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            PRE_RMGR_HEAP_MCXT, (void**)(&heap), sizeof(pg_parser_translog_pre_heap)))
+    if (!pg_parser_mcxt_malloc(PRE_RMGR_HEAP_MCXT, (void**)(&heap), sizeof(pg_parser_translog_pre_heap)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_03;
         return false;
@@ -517,8 +512,7 @@ static bool pg_parser_trans_rmgr_heap_truncate(pg_parser_XLogReaderState*    sta
     pg_parser_xl_heap_truncate*           xlrec = NULL;
     xlrec = (pg_parser_xl_heap_truncate*)pg_parser_XLogRecGetData(state);
 
-    if (!pg_parser_mcxt_malloc(
-            PRE_RMGR_HEAP_MCXT, (void**)(&trans), sizeof(pg_parser_translog_pre_heap_truncate)))
+    if (!pg_parser_mcxt_malloc(PRE_RMGR_HEAP_MCXT, (void**)(&trans), sizeof(pg_parser_translog_pre_heap_truncate)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_06;
         return false;
@@ -532,8 +526,7 @@ static bool pg_parser_trans_rmgr_heap_truncate(pg_parser_XLogReaderState*    sta
     trans->reseq = xlrec->flags & PG_PARSER_XLH_RESTART_SEQS;
     trans->nrelids = xlrec->nrelids;
 
-    pg_parser_mcxt_malloc(
-        PRE_RMGR_HEAP_MCXT, (void**)&trans->relids, sizeof(uint32_t) * trans->nrelids);
+    pg_parser_mcxt_malloc(PRE_RMGR_HEAP_MCXT, (void**)&trans->relids, sizeof(uint32_t) * trans->nrelids);
 
     rmemcpy0(trans->relids, 0, xlrec->relids, sizeof(uint32_t) * trans->nrelids);
 

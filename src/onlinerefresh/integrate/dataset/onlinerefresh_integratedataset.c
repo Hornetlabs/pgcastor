@@ -25,20 +25,19 @@ onlinerefresh_integratedatasetnode* onlinerefresh_integratedatasetnode_init(void
     return node;
 }
 
-void onlinerefresh_integratedatasetnode_no_set(
-    onlinerefresh_integratedatasetnode* onlinerefreshnode, void* no)
+void onlinerefresh_integratedatasetnode_no_set(onlinerefresh_integratedatasetnode* onlinerefreshnode, void* no)
 {
     rmemcpy1(onlinerefreshnode->onlinerefreshno.data, 0, no, UUID_LEN);
 }
 
-void onlinerefresh_integratedatasetnode_txid_set(
-    onlinerefresh_integratedatasetnode* onlinerefreshnode, FullTransactionId txid)
+void onlinerefresh_integratedatasetnode_txid_set(onlinerefresh_integratedatasetnode* onlinerefreshnode,
+                                                 FullTransactionId                   txid)
 {
     onlinerefreshnode->txid = txid;
 }
 
-void onlinerefresh_integratedatasetnode_refreshtables_set(
-    onlinerefresh_integratedatasetnode* onlinerefreshnode, refresh_tables* tables)
+void onlinerefresh_integratedatasetnode_refreshtables_set(onlinerefresh_integratedatasetnode* onlinerefreshnode,
+                                                          refresh_tables*                     tables)
 {
     onlinerefreshnode->refreshtables = refresh_tables_copy(tables);
 }
@@ -58,8 +57,7 @@ onlinerefresh_integratedataset* onlinerefresh_integratedataset_init(void)
     return integratedataset;
 }
 
-onlinerefresh_integratedataset* onlinerefresh_integratedataset_copy(
-    onlinerefresh_integratedataset* dataset)
+onlinerefresh_integratedataset* onlinerefresh_integratedataset_copy(onlinerefresh_integratedataset* dataset)
 {
     dlistnode*                          dlnode = NULL;
     onlinerefresh_integratedataset*     result = NULL;
@@ -87,8 +85,8 @@ onlinerefresh_integratedataset* onlinerefresh_integratedataset_copy(
     return result;
 }
 
-onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_number_get(
-    onlinerefresh_integratedataset* dataset, void* no)
+onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_number_get(onlinerefresh_integratedataset* dataset,
+                                                                              void*                           no)
 {
     dlistnode*                          dlnode = NULL;
     dlistnode*                          dlnodetmp = NULL;
@@ -110,8 +108,8 @@ onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_number_get(
     return node;
 }
 
-onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_txid_get(
-    onlinerefresh_integratedataset* dataset, FullTransactionId txid)
+onlinerefresh_integratedatasetnode* onlinerefresh_integratedataset_txid_get(onlinerefresh_integratedataset* dataset,
+                                                                            FullTransactionId               txid)
 {
     dlistnode*                          dlnode = NULL;
     dlistnode*                          dlnodetmp = NULL;

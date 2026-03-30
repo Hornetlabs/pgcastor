@@ -84,10 +84,9 @@ typedef enum XLOG_RMGR_ENUM
     XLOG_RMGR_LOGICALMSG_ID
 } XLOG_RMGR_ENUM;
 
-#define XLR_INFO_MASK 0x0F
-#define XLOG_SWITCH   0x40
-#define IsSwitchXlog(rmid, info) \
-    (rmid == XLOG_RMGR_XLOG_ID && ((info & ~XLR_INFO_MASK) == XLOG_SWITCH))
+#define XLR_INFO_MASK                                0x0F
+#define XLOG_SWITCH                                  0x40
+#define IsSwitchXlog(rmid, info)                     (rmid == XLOG_RMGR_XLOG_ID && ((info & ~XLR_INFO_MASK) == XLOG_SWITCH))
 
 #define XLogSegmentOffset(xlogptr, wal_segsz_bytes)  ((xlogptr) & ((wal_segsz_bytes) - 1))
 
@@ -111,17 +110,14 @@ typedef enum XLOG_RMGR_ENUM
 
 #define IsXLogSegmentBegin(xlrp, wal_segsz_bytes) ((xlrp % wal_segsz_bytes) == 0)
 
-#define GetXlogSegmentBegin(xlrp, wal_segsz_bytes)    \
-    (IsXLogSegmentBegin(xlrp, wal_segsz_bytes) ? xlrp \
-                                               : xlrp - XLogSegmentOffset(xlrp, wal_segsz_bytes))
+#define GetXlogSegmentBegin(xlrp, wal_segsz_bytes) \
+    (IsXLogSegmentBegin(xlrp, wal_segsz_bytes) ? xlrp : xlrp - XLogSegmentOffset(xlrp, wal_segsz_bytes))
 
-#define GetNextXLogSegmentBegin(xlrp, wal_segsz_bytes)                  \
-    (IsXLogSegmentBegin(xlrp, wal_segsz_bytes) ? xlrp + wal_segsz_bytes \
-                                               : xlrp + (xlrp % wal_segsz_bytes))
+#define GetNextXLogSegmentBegin(xlrp, wal_segsz_bytes) \
+    (IsXLogSegmentBegin(xlrp, wal_segsz_bytes) ? xlrp + wal_segsz_bytes : xlrp + (xlrp % wal_segsz_bytes))
 
-#define GetLastXlogSegmentBegin(xlrp, wal_segsz_bytes) \
-    (IsXLogSegmentBegin(xlrp, wal_segsz_bytes)         \
-         ? (xlrp - 2 * wal_segsz_bytes)                \
-         : (xlrp - XLogSegmentOffset(xlrp, wal_segsz_bytes) - wal_segsz_bytes))
+#define GetLastXlogSegmentBegin(xlrp, wal_segsz_bytes)                        \
+    (IsXLogSegmentBegin(xlrp, wal_segsz_bytes) ? (xlrp - 2 * wal_segsz_bytes) \
+                                               : (xlrp - XLogSegmentOffset(xlrp, wal_segsz_bytes) - wal_segsz_bytes))
 
 #endif /* WAL_DEFINE_H*/

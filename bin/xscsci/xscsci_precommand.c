@@ -349,8 +349,7 @@ static void xscsci_precommand_create(xsciscistat* xscisc, xsynch_cmd* cmd)
 
         if (false == xscsci_precommand_createconf_fromsample(samplepath, confpath))
         {
-            printf("Create xmanager:%s configuration file from template file error \n",
-                   createcmd->name);
+            printf("Create xmanager:%s configuration file from template file error \n", createcmd->name);
             return;
         }
 
@@ -519,13 +518,7 @@ static void xscsci_precommand_drop(xsciscistat* xscisc, xsynch_cmd* cmd)
     if (XSYNCH_JOBKIND_MANAGER == dropcmd->kind)
     {
         /* delete data directory */
-        snprintf(confpath,
-                 sizeof(confpath),
-                 "%s/%s/%s_%s.cfg",
-                 xscisc->xsynchhome,
-                 "config",
-                 "manager",
-                 dropcmd->name);
+        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config", "manager", dropcmd->name);
         xscsci_precommand_getdatafromcfgfile(confpath, "data", data);
 
         if (false == xscsci_precommand_removedir(data))
@@ -693,13 +686,7 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     if (XSYNCH_JOBKIND_MANAGER == editcmd->kind)
     {
-        snprintf(confpath,
-                 sizeof(confpath),
-                 "%s/%s/%s_%s.cfg",
-                 xscisc->xsynchhome,
-                 "config",
-                 "manager",
-                 editcmd->name);
+        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config", "manager", editcmd->name);
         sprintf(syscmd, "vim %s", confpath);
         system(syscmd);
         printf("Edit manager %s\n", editcmd->name);
@@ -766,8 +753,7 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    if (fwrite(rows->columns->value, 1, rows->columns->valuelen, fp) !=
-        (size_t)rows->columns->valuelen)
+    if (fwrite(rows->columns->value, 1, rows->columns->valuelen, fp) != (size_t)rows->columns->valuelen)
     {
         return;
     }
@@ -980,23 +966,24 @@ static void xscsci_precommand_stop(xsciscistat* xscisc, xsynch_cmd* cmd)
 }
 
 static xscsci_precommandops m_precommandops[] = {
-    {T_XSYNCH_NOP, "NOP", NULL},
-    {T_XSYNCH_IDENTITYCMD, "IDENTITY COMMAND", NULL},
-    {T_XSYNCH_CREATECMD, "CREATE COMMAND", xscsci_precommand_create},
-    {T_XSYNCH_ALTERCMD, "ALTER COMMAND", xscsci_precommand_alter},
-    {T_XSYNCH_REMOVECMD, "REMOVE COMMAND", xscsci_precommand_remove},
-    {T_XSYNCH_DROPCMD, "DROP COMMAND", xscsci_precommand_drop},
-    {T_XSYNCH_INITCMD, "INIT COMMAND", xscsci_precommand_init},
-    {T_XSYNCH_EDITCMD, "EDIT COMMAND", xscsci_precommand_edit},
-    {T_XSYNCH_STARTCMD, "START COMMAND", xscsci_precommand_start},
-    {T_XSYNCH_STOPCMD, "STOP COMMAND", xscsci_precommand_stop},
-    {T_XSYNCH_RELOADCMD, "RELOAD COMMAND", xscsci_precommand_reload},
-    {T_XSYNCH_INFOCMD, "INFO COMMAND", xscsci_precommand_info},
-    {T_XSYNCH_WATCHCMD, "WATCH COMMAND", xscsci_precommand_watch},
-    {T_XSYNCH_CFGfILECMD, "never trigger", NULL},
-    {T_XSYNCH_REFRESHCMD, "REFRESH COMMAND", xscsci_precommand_refresh},
-    {T_XSYNCH_LISTCMD, "LIST COMMAND", xscsci_precommand_list},
-    {T_XSYNCH_MAX, "MAX COMMAND", NULL}};
+    {T_XSYNCH_NOP,         "NOP",              NULL                     },
+    {T_XSYNCH_IDENTITYCMD, "IDENTITY COMMAND", NULL                     },
+    {T_XSYNCH_CREATECMD,   "CREATE COMMAND",   xscsci_precommand_create },
+    {T_XSYNCH_ALTERCMD,    "ALTER COMMAND",    xscsci_precommand_alter  },
+    {T_XSYNCH_REMOVECMD,   "REMOVE COMMAND",   xscsci_precommand_remove },
+    {T_XSYNCH_DROPCMD,     "DROP COMMAND",     xscsci_precommand_drop   },
+    {T_XSYNCH_INITCMD,     "INIT COMMAND",     xscsci_precommand_init   },
+    {T_XSYNCH_EDITCMD,     "EDIT COMMAND",     xscsci_precommand_edit   },
+    {T_XSYNCH_STARTCMD,    "START COMMAND",    xscsci_precommand_start  },
+    {T_XSYNCH_STOPCMD,     "STOP COMMAND",     xscsci_precommand_stop   },
+    {T_XSYNCH_RELOADCMD,   "RELOAD COMMAND",   xscsci_precommand_reload },
+    {T_XSYNCH_INFOCMD,     "INFO COMMAND",     xscsci_precommand_info   },
+    {T_XSYNCH_WATCHCMD,    "WATCH COMMAND",    xscsci_precommand_watch  },
+    {T_XSYNCH_CFGfILECMD,  "never trigger",    NULL                     },
+    {T_XSYNCH_REFRESHCMD,  "REFRESH COMMAND",  xscsci_precommand_refresh},
+    {T_XSYNCH_LISTCMD,     "LIST COMMAND",     xscsci_precommand_list   },
+    {T_XSYNCH_MAX,         "MAX COMMAND",      NULL                     }
+};
 
 void xscsci_precommand(xsciscistat* xscisc, xsynch_cmd* cmd)
 {

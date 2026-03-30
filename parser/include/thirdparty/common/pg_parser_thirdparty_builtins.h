@@ -16,7 +16,5 @@ extern double rint(double x);
 
 /* src/thirdparty/tupleparser/type_convert/pg_parser_thirdparty_tupleparser_float.c */
 extern char* float8out_internal(double num);
-extern int strtoint(const char* pg_parser__restrict str,
-                    char** pg_parser__restrict      endptr,
-                    int                             base);
+extern int strtoint(const char* pg_parser__restrict str, char** pg_parser__restrict endptr, int base);
 #endif

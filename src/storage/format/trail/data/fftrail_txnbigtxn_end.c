@@ -50,8 +50,7 @@ bool fftrail_txnbigtxn_end_serial(void* data, void* state)
     }
 
     /* Write bigtxn_end to trail file */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     ffstate->recptr = fbuffer->data + fbuffer->start;
 
     /* Calculate length xid 8 + commit 1 */

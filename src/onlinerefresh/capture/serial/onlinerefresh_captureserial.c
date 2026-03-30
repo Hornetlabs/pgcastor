@@ -89,8 +89,7 @@ static bool onlinerefresh_captureserial_buffer2waitflush(onlinerefresh_capturese
 
     serialstate = serial_task->serialstate;
 
-    foldbuffer =
-        file_buffer_getbybufid(serialstate->txn2filebuffer, serialstate->ffsmgrstate->bufid);
+    foldbuffer = file_buffer_getbybufid(serialstate->txn2filebuffer, serialstate->ffsmgrstate->bufid);
     if (0 == foldbuffer->start)
     {
         return true;
@@ -144,10 +143,8 @@ static bool onlinerefresh_captureserial_buffer2waitflush(onlinerefresh_capturese
 
     /* Set oldbuffer's information */
     foldbuffer->extra.rewind.fileaddr.trail.fileid = finfo->fileid;
-    foldbuffer->extra.rewind.fileaddr.trail.offset =
-        (((finfo->blknum - 1) * FILE_BUFFER_SIZE) + fbuffer->start);
-    if (false == serial_task->callback.parserstat_curtlid_get(serial_task->privdata,
-                                                              &foldbuffer->extra.rewind.curtlid))
+    foldbuffer->extra.rewind.fileaddr.trail.offset = (((finfo->blknum - 1) * FILE_BUFFER_SIZE) + fbuffer->start);
+    if (false == serial_task->callback.parserstat_curtlid_get(serial_task->privdata, &foldbuffer->extra.rewind.curtlid))
     {
         elog(RLOG_WARNING, "can not get timelineid");
         return false;
@@ -165,9 +162,8 @@ static bool onlinerefresh_captureserial_buffer2waitflush(onlinerefresh_capturese
 /* Write entry data to disk */
 static bool onlinerefresh_captureserial_txn2disk(serialstate* serialstate, txn* txn)
 {
-    bool first = true;
-    bool txnformetadata =
-        true; /* Used to indicate that current transaction only contains metadata */
+    bool       first = true;
+    bool       txnformetadata = true; /* Used to indicate that current transaction only contains metadata */
     ListCell*  lc = NULL;
     ff_txndata txndata = {{0}};
     bool       find_end = false;
@@ -226,8 +222,9 @@ static bool onlinerefresh_captureserial_txn2disk(serialstate* serialstate, txn* 
                 goto trfwork_serial_txn2disk_reset;
             }
         }
-        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(
-            FFTRAIL_CXT_TYPE_DATA, (void*)&txndata, serialstate->ffsmgrstate);
+        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_DATA,
+                                                        (void*)&txndata,
+                                                        serialstate->ffsmgrstate);
 
         if (rstmt->type == TXNSTMT_TYPE_ONLINEREFRESH_INCREMENT_END)
         {
@@ -244,8 +241,7 @@ static file_buffers* onlinerefresh_captureserial_getfilebuffer(void* serial)
 
     if (NULL == serial)
     {
-        elog(RLOG_ERROR,
-             "onlinerefresh captureserial getfilebuffer exception, serial point is NULL");
+        elog(RLOG_ERROR, "onlinerefresh captureserial getfilebuffer exception, serial point is NULL");
     }
 
     serialstate = (onlinerefresh_captureserial*)serial;
@@ -326,17 +322,13 @@ static void onlinerefresh_captureserial_setffsmgrcallback(onlinerefresh_captures
 {
     wstate->serialstate->ffsmgrstate->callback.getdboid = onlinerefresh_captureserial_getdboid;
     wstate->serialstate->ffsmgrstate->callback.getdbname = onlinerefresh_captureserial_getdbname;
-    wstate->serialstate->ffsmgrstate->callback.getfilebuffer =
-        onlinerefresh_captureserial_getfilebuffer;
+    wstate->serialstate->ffsmgrstate->callback.getfilebuffer = onlinerefresh_captureserial_getfilebuffer;
     wstate->serialstate->ffsmgrstate->callback.getclass = onlinerefresh_captureserial_getclass;
     wstate->serialstate->ffsmgrstate->callback.getindex = onlinerefresh_captureserial_getindex;
-    wstate->serialstate->ffsmgrstate->callback.getnamespace =
-        onlinerefresh_captureserial_getnamespace;
-    wstate->serialstate->ffsmgrstate->callback.getattributes =
-        onlinerefresh_captureserial_getattributes;
+    wstate->serialstate->ffsmgrstate->callback.getnamespace = onlinerefresh_captureserial_getnamespace;
+    wstate->serialstate->ffsmgrstate->callback.getattributes = onlinerefresh_captureserial_getattributes;
     wstate->serialstate->ffsmgrstate->callback.gettype = onlinerefresh_captureserial_gettype;
-    wstate->serialstate->ffsmgrstate->callback.catalog2transcache =
-        onlinerefresh_captureserial_transcatalog2transcache;
+    wstate->serialstate->ffsmgrstate->callback.catalog2transcache = onlinerefresh_captureserial_transcatalog2transcache;
     wstate->serialstate->ffsmgrstate->callback.setonlinerefreshdataset = NULL;
     wstate->serialstate->ffsmgrstate->callback.setredosysdicts = NULL;
     wstate->serialstate->ffsmgrstate->callback.setdboid = NULL;
@@ -369,9 +361,7 @@ void* onlinerefresh_captureserial_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(
-            RLOG_WARNING,
-            "onlinerefresh capture serial stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "onlinerefresh capture serial stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;

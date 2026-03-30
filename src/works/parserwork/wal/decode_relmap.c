@@ -52,8 +52,7 @@ void decode_relmap(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
 
     prerelmap = (pg_parser_translog_pre_relmap*)pbase;
 
-    if (ctx->decode_record->start.wal.lsn < ctx->base.restartlsn ||
-        ctx->database != prerelmap->m_dboid)
+    if (ctx->decode_record->start.wal.lsn < ctx->base.restartlsn || ctx->database != prerelmap->m_dboid)
     {
         return;
     }

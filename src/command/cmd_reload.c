@@ -16,8 +16,9 @@ typedef struct RPOC2RELOAD
 static void cmd_reloadcapture(void);
 
 static proc2reload m_typ2reload[] = {
-    {PROC_TYPE_NOP, NULL, "proc nop unsupport start"},
-    {PROC_TYPE_CAPTURE, cmd_reloadcapture, "capture reload error"}};
+    {PROC_TYPE_NOP,     NULL,              "proc nop unsupport start"},
+    {PROC_TYPE_CAPTURE, cmd_reloadcapture, "capture reload error"    }
+};
 
 /* Reload */
 static void cmd_reloadcapture(void)
@@ -39,11 +40,7 @@ static void cmd_reloadcapture(void)
 
     if (0 != kill((pid_t)ripplepid, SIGHUP))
     {
-        snprintf(szMsg,
-                 128,
-                 "could not send reload signal (PID:%ld) : %s\n",
-                 ripplepid,
-                 strerror(errno));
+        snprintf(szMsg, 128, "could not send reload signal (PID:%ld) : %s\n", ripplepid, strerror(errno));
         cmd_printmsg(szMsg);
     }
 

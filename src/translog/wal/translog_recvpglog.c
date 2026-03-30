@@ -108,9 +108,7 @@ static bool translog_recvpglog_parsenewpos(PGresult* res, TimeLineID* ptli, XLog
     *ptli = atoi(PQgetvalue(res, 0, 0));
     if (sscanf(PQgetvalue(res, 0, 1), "%X/%X", &xlogid, &xrecoff) != 2)
     {
-        elog(RLOG_WARNING,
-             "could not parse next timeline's starting point %s",
-             PQgetvalue(res, 0, 1));
+        elog(RLOG_WARNING, "could not parse next timeline's starting point %s", PQgetvalue(res, 0, 1));
         return false;
     }
     *pstartpos = ((uint64)xlogid << 32) | xrecoff;
@@ -220,10 +218,7 @@ static bool translog_recvpglog_datamsg(translog_recvlog* recvwal, char* buffer, 
 /*
  * heartbeat
  */
-static bool translog_recvpglog_keepalivemsg(translog_recvlog* recvwal,
-                                            PGconn*           conn,
-                                            char*             buffer,
-                                            int               blen)
+static bool translog_recvpglog_keepalivemsg(translog_recvlog* recvwal, PGconn* conn, char* buffer, int blen)
 {
     /*
      * source message format:

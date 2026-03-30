@@ -304,8 +304,8 @@ void mem_print(memprint_flag flag)
     osal_thread_lock(&m_nodes.listlock);
     while (cur)
     {
-        if ((flag == MEMPRINT_GLOBAL && cur->flag == 0) ||
-            (flag == MEMPRINT_LOCAL && cur->flag == 1) || (flag == MEMPRINT_ALL))
+        if ((flag == MEMPRINT_GLOBAL && cur->flag == 0) || (flag == MEMPRINT_LOCAL && cur->flag == 1) ||
+            (flag == MEMPRINT_ALL))
         {
             totalsize += cur->size;
             elog(RLOG_INFO,

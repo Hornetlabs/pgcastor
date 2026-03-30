@@ -242,8 +242,7 @@ void rlog(const char* filename, int line, int level, const char* format, ...)
                      pcnow->tm_sec);
 
             /* Date has changed, so switch log file */
-            if (m_year != (pcnow->tm_year + 1900) || m_month != (pcnow->tm_mon + 1) ||
-                m_day != pcnow->tm_mday)
+            if (m_year != (pcnow->tm_year + 1900) || m_month != (pcnow->tm_mon + 1) || m_day != pcnow->tm_mday)
             {
                 /* Switch */
                 newfd = osal_basic_open_file(logfilname, O_RDWR | O_CREAT | BINARY);
@@ -280,10 +279,7 @@ void rlog(const char* filename, int line, int level, const char* format, ...)
         }
 
         rmemset1(m_errorstack->estacks[m_errorstack->level].emsg, 0, '\0', MAX_LOGLINESIZE);
-        snprintf(m_errorstack->estacks[m_errorstack->level].emsg,
-                 MAX_LOGLINESIZE,
-                 "ERROR: %s",
-                 logInfo + pos);
+        snprintf(m_errorstack->estacks[m_errorstack->level].emsg, MAX_LOGLINESIZE, "ERROR: %s", logInfo + pos);
         m_errorstack->level++;
     }
 

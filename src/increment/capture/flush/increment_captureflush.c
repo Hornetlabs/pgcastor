@@ -155,12 +155,11 @@ void* increment_captureflush_main(void* args)
     cache_sysdictsload((void**)&cflush->txnsctx->sysdicts);
 
     /* Load addtablepattern */
-    cflush->txnsctx->addtablepattern =
-        filter_dataset_initaddtablepattern(cflush->txnsctx->addtablepattern);
+    cflush->txnsctx->addtablepattern = filter_dataset_initaddtablepattern(cflush->txnsctx->addtablepattern);
 
     /* Load sync dataset */
-    cflush->txnsctx->hsyncdataset = filter_dataset_load(cflush->txnsctx->sysdicts->by_namespace,
-                                                        cflush->txnsctx->sysdicts->by_class);
+    cflush->txnsctx->hsyncdataset =
+        filter_dataset_load(cflush->txnsctx->sysdicts->by_namespace, cflush->txnsctx->sysdicts->by_class);
 
     while (1)
     {
@@ -210,13 +209,9 @@ void* increment_captureflush_main(void* args)
             cflush->base.fileid = finfo->fileid;
             cflush->base.fileoffset = ((finfo->blknum - 1) * FILE_BUFFER_SIZE) + fbuffer->start;
 
-            elog(RLOG_DEBUG,
-                 "---------fileid:%lu:%lu",
-                 cflush->base.fileid,
-                 cflush->base.fileoffset);
+            elog(RLOG_DEBUG, "---------fileid:%lu:%lu", cflush->base.fileid, cflush->base.fileoffset);
             /* Set status thread, current parsed and persisted lsn */
-            cflush->callback.setmetricflushlsn(cflush->privdata,
-                                               fbuffer->extra.rewind.flushlsn.wal.lsn);
+            cflush->callback.setmetricflushlsn(cflush->privdata, fbuffer->extra.rewind.flushlsn.wal.lsn);
             cflush->callback.setmetrictrailno(cflush->privdata, cflush->base.fileid);
             cflush->callback.setmetrictrailstart(cflush->privdata, cflush->base.fileoffset);
             cflush->callback.setmetricflushtimestamp(cflush->privdata, fbuffer->extra.timestamp);
@@ -237,10 +232,7 @@ void* increment_captureflush_main(void* args)
             }
             cflush->base.curtlid = fbuffer->extra.rewind.curtlid;
 
-            elog(RLOG_DEBUG,
-                 "************fileid:%lu:%lu",
-                 cflush->base.fileid,
-                 cflush->base.fileoffset);
+            elog(RLOG_DEBUG, "************fileid:%lu:%lu", cflush->base.fileid, cflush->base.fileoffset);
             /* Flush data to disk, no lock needed */
             misc_stat_decodewrite(&cflush->base, &cflush->basefd);
         }
@@ -251,8 +243,7 @@ void* increment_captureflush_main(void* args)
             /* Apply system catalog */
             if (NULL != fbuffer->extra.chkpoint.sysdicts)
             {
-                cache_sysdicts_txnsysdicthis2cache(cflush->txnsctx->sysdicts,
-                                                   fbuffer->extra.chkpoint.sysdicts);
+                cache_sysdicts_txnsysdicthis2cache(cflush->txnsctx->sysdicts, fbuffer->extra.chkpoint.sysdicts);
 
                 /* Update sync dataset */
                 if (filter_dataset_updatedatasets(cflush->txnsctx->addtablepattern,
@@ -272,8 +263,7 @@ void* increment_captureflush_main(void* args)
         }
 
         /* Exists dataset flag, force flush after update */
-        if (FILE_BUFFER_FLAG_ONLINREFRESH_DATASET ==
-            (FILE_BUFFER_FLAG_ONLINREFRESH_DATASET & fbuffer->flag))
+        if (FILE_BUFFER_FLAG_ONLINREFRESH_DATASET == (FILE_BUFFER_FLAG_ONLINREFRESH_DATASET & fbuffer->flag))
         {
             if (fbuffer->extra.dataset.dataset)
             {

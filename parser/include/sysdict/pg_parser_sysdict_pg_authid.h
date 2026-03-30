@@ -16,6 +16,7 @@ typedef struct PG_PARSER_SYSDICT_PGAUTHID
     bool               rolbypassrls;
     int32_t            rolconnlimit;
 } pg_parser_sysdict_pgauthid;
+
 typedef pg_parser_sysdict_pgauthid* pg_sysdict_Form_pg_authid;
 
 #endif

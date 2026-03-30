@@ -119,9 +119,7 @@ static void decode_xact_appendsubtxn(List** ptxnstmts, List** psysdicthis, txn* 
     subtxn_ptr->sysdictHis = NULL;
 }
 
-static void check_online_refresh_node_need_clean(onlinerefresh*   olnode,
-                                                 dlistnode*       dlnode,
-                                                 decodingcontext* ctx)
+static void check_online_refresh_node_need_clean(onlinerefresh* olnode, dlistnode* dlnode, decodingcontext* ctx)
 {
     if (olnode->state == ONLINEREFRESH_STATE_FULLSNAPSHOT && onlinerefresh_xids_isnull(olnode))
     {
@@ -187,8 +185,7 @@ static void check_online_refresh_xids(decodingcontext* ctx, TransactionId xid)
                 txn* dataset_txn_ptr = NULL;
 
                 /* Build onlinerefresh end transaction */
-                end_txn_ptr =
-                    parserwork_build_onlinerefresh_end_txn(olnode->no->data, ctx->parselsn);
+                end_txn_ptr = parserwork_build_onlinerefresh_end_txn(olnode->no->data, ctx->parselsn);
 
                 /* Add transaction to cache */
                 cache_txn_add(ctx->parser2txns, end_txn_ptr);
@@ -196,8 +193,7 @@ static void check_online_refresh_xids(decodingcontext* ctx, TransactionId xid)
                 if (olnode->newtables)
                 {
                     /* Build onlinerefresh dataset transaction */
-                    dataset_txn_ptr =
-                        (txn*)parserwork_build_onlinerefresh_dataset_txn(olnode->newtables);
+                    dataset_txn_ptr = (txn*)parserwork_build_onlinerefresh_dataset_txn(olnode->newtables);
 
                     /* Add transaction to cache */
                     cache_txn_add(ctx->parser2txns, dataset_txn_ptr);
@@ -630,8 +626,10 @@ void decode_xact_commit_emit(decodingcontext* ctx, pg_parser_translog_pre_base* 
         ctx->stat = DECODINGCONTEXT_RUNNING;
         if (ctx->callback.setparserlsn)
         {
-            ctx->callback.setparserlsn(
-                ctx->privdata, ctx->base.confirmedlsn, ctx->base.restartlsn, ctx->base.restartlsn);
+            ctx->callback.setparserlsn(ctx->privdata,
+                                       ctx->base.confirmedlsn,
+                                       ctx->base.restartlsn,
+                                       ctx->base.restartlsn);
         }
         else
         {
@@ -929,8 +927,10 @@ void decode_xact_abort_emit(decodingcontext* ctx, pg_parser_translog_pre_base* p
         ctx->stat = DECODINGCONTEXT_RUNNING;
         if (ctx->callback.setparserlsn)
         {
-            ctx->callback.setparserlsn(
-                ctx->privdata, ctx->base.confirmedlsn, ctx->base.restartlsn, ctx->base.restartlsn);
+            ctx->callback.setparserlsn(ctx->privdata,
+                                       ctx->base.confirmedlsn,
+                                       ctx->base.restartlsn,
+                                       ctx->base.restartlsn);
         }
         else
         {
@@ -970,15 +970,14 @@ void decode_xact_abort_emit(decodingcontext* ctx, pg_parser_translog_pre_base* p
                 elog(RLOG_WARNING, "be carefull! setparserlsn is null");
             }
 
-            elog(
-                RLOG_INFO,
-                "abort emit rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
-                (uint32)(ctx->base.redolsn >> 32),
-                (uint32)ctx->base.redolsn,
-                (uint32)(ctx->base.restartlsn >> 32),
-                (uint32)ctx->base.restartlsn,
-                (uint32)(ctx->base.confirmedlsn >> 32),
-                (uint32)ctx->base.confirmedlsn);
+            elog(RLOG_INFO,
+                 "abort emit rewind_ptr end, redolsn: %X/%X, restartlsn: %X/%X, confirmedlsn: %X/%X",
+                 (uint32)(ctx->base.redolsn >> 32),
+                 (uint32)ctx->base.redolsn,
+                 (uint32)(ctx->base.restartlsn >> 32),
+                 (uint32)ctx->base.restartlsn,
+                 (uint32)(ctx->base.confirmedlsn >> 32),
+                 (uint32)ctx->base.confirmedlsn);
             rewind_stat_setemited(ctx->rewind_ptr);
         }
     }

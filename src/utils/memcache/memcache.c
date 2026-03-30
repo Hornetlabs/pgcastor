@@ -169,8 +169,7 @@ memcache* memcache_init(char* name, int csize, int blksize)
     mcache->pages->swapcnt = MEMCACHE_SWAPBATCHCNT;
     mcache->pages->freepages = NULL;
     mcache->pages->pages = NULL;
-    mcache->pages->pageaddr =
-        (memcache_pagenode*)rmalloc0(mcache->pages->pagecnt * sizeof(memcache_pagenode));
+    mcache->pages->pageaddr = (memcache_pagenode*)rmalloc0(mcache->pages->pagecnt * sizeof(memcache_pagenode));
     if (NULL == mcache->pages->pageaddr)
     {
         elog(RLOG_WARNING, "memcache init pageaddr error");
@@ -195,11 +194,7 @@ memcache* memcache_init(char* name, int csize, int blksize)
     }
     /*--------------Page related initialization   end----------------------------*/
 
-    elog(RLOG_INFO,
-         "init memcache:%s, size:%lu, blkcnt:%lu",
-         name,
-         mcache->maxsize,
-         mcache->pages->pagecnt);
+    elog(RLOG_INFO, "init memcache:%s, size:%lu, blkcnt:%lu", name, mcache->maxsize, mcache->pages->pagecnt);
 
     /* Create directory */
     snprintf(mdir, MEMCACHE_DIRLEN, "%s/%s", MEMCACHE_DIR, name);
@@ -255,9 +250,7 @@ static bool memcache_getvn2pnodebyvnumber(memcache_virtualnode*    vnode,
 }
 
 /* Swap virtual page to disk and mark page as not in memory */
-static bool memcache_vnumber2pnodeswap(memcache*               mcache,
-                                       memcache_vnumber2pnode* vn2pnode,
-                                       uint8*                  blk)
+static bool memcache_vnumber2pnodeswap(memcache* mcache, memcache_vnumber2pnode* vn2pnode, uint8* blk)
 {
     char vfile[MEMCACHE_DIRLEN] = {0};
 
@@ -295,9 +288,7 @@ static bool memcache_vnumber2pnodeswap(memcache*               mcache,
 }
 
 /* Load virtual page into memory */
-static bool memcache_vnumber2pnodeload(memcache*               mcache,
-                                       memcache_vnumber2pnode* vn2pnode,
-                                       uint8*                  blk)
+static bool memcache_vnumber2pnodeload(memcache* mcache, memcache_vnumber2pnode* vn2pnode, uint8* blk)
 {
     char vfile[MEMCACHE_DIRLEN] = {0};
     if (-1 == vn2pnode->fd)
@@ -368,8 +359,7 @@ static bool memcache_pageswap(memcache* mcache)
          * Get virtual node by virtual number, write page to specified file
          */
         /* Get virtual node */
-        vnodeindex =
-            MEMCACHE_VNUMBER2INDEX((pnode->vno - 1), MEMCACHE_VNODEMAPMASK(mcache->vnodemapcnt));
+        vnodeindex = MEMCACHE_VNUMBER2INDEX((pnode->vno - 1), MEMCACHE_VNODEMAPMASK(mcache->vnodemapcnt));
         vnode = mcache->vnodemap + vnodeindex;
         if (false == memcache_getvn2pnodebyvnumber(vnode, pnode->vno, &vn2pnode))
         {
@@ -469,8 +459,7 @@ bool memcache_getvnode(memcache* mcache, uint64* vno)
     }
 
     /* Get index of new virtual node */
-    index =
-        MEMCACHE_VNUMBER2INDEX((mcache->vnumber - 1), MEMCACHE_VNODEMAPMASK(mcache->vnodemapcnt));
+    index = MEMCACHE_VNUMBER2INDEX((mcache->vnumber - 1), MEMCACHE_VNODEMAPMASK(mcache->vnodemapcnt));
     vnode = mcache->vnodemap + index;
 
     vn2pnode = memcache_vnumber2pnode_init();
@@ -611,8 +600,7 @@ bool memcache_getpage(memcache* mcache, uint64* vno, uint8_t** pdata)
     }
 
     /* Get index of new virtual node */
-    index =
-        MEMCACHE_VNUMBER2INDEX((mcache->vnumber - 1), MEMCACHE_VNODEMAPMASK(mcache->vnodemapcnt));
+    index = MEMCACHE_VNUMBER2INDEX((mcache->vnumber - 1), MEMCACHE_VNODEMAPMASK(mcache->vnodemapcnt));
     vnode = mcache->vnodemap + index;
 
     vn2pnode = memcache_vnumber2pnode_init();
@@ -699,8 +687,10 @@ memcache_putvnode_done:
     }
 
     /* Clean up vnode node */
-    vnode->nodes = dlist_deletebyvaluefirstmatch(
-        vnode->nodes, vn2pnode, memcache_vn2pnode_cmp, memcache_vnumber2pnode_freefordlist);
+    vnode->nodes = dlist_deletebyvaluefirstmatch(vnode->nodes,
+                                                 vn2pnode,
+                                                 memcache_vn2pnode_cmp,
+                                                 memcache_vnumber2pnode_freefordlist);
     return;
 }
 

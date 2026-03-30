@@ -67,8 +67,7 @@ bool refresh_table_syncstats_unlock(refresh_table_syncstats* tablesyncstats)
     return true;
 }
 
-void refresh_table_syncstats_tablesyncing_set(refresh_tables*          refreshtables,
-                                              refresh_table_syncstats* tablesyncstats)
+void refresh_table_syncstats_tablesyncing_set(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats)
 {
     refresh_table* cur_table = NULL;
 
@@ -115,8 +114,7 @@ void refresh_table_syncstats_tablesyncing_set(refresh_tables*          refreshta
     return;
 }
 
-void refresh_table_syncstats_tablesyncall_set(refresh_tables*          refreshtables,
-                                              refresh_table_syncstats* tablesyncstats)
+void refresh_table_syncstats_tablesyncall_set(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats)
 {
     refresh_table* cur_table = NULL;
 
@@ -234,8 +232,7 @@ bool refreshtablesyncstats_markstatdone(refresh_table_sharding*  tablesharding,
             if (0 != tablesharding->shardings)
             {
                 current_table->completecnt += 1;
-                current_table->stat[tablesharding->sharding_no - 1] =
-                    REFRESH_TABLE_SYNCS_SHARD_STAT_DONE;
+                current_table->stat[tablesharding->sharding_no - 1] = REFRESH_TABLE_SYNCS_SHARD_STAT_DONE;
             }
 
             elog(RLOG_DEBUG,
@@ -315,8 +312,7 @@ bool refresh_table_check_in_syncing(refresh_table_syncstats* tablesyncstats,
     /* search in syncing/synced linked list */
     for (; table != NULL; table = table->next)
     {
-        if (!strcmp(table->schema, table_shard->schema) &&
-            !strcmp(table->table, table_shard->table))
+        if (!strcmp(table->schema, table_shard->schema) && !strcmp(table->table, table_shard->table))
         {
             if (table_stat)
             {
@@ -353,8 +349,7 @@ bool refresh_table_check_in_syncing(refresh_table_syncstats* tablesyncstats,
     return true;
 }
 
-bool refresh_table_syncstats_compare(refresh_table_syncstats* tablesA,
-                                     refresh_table_syncstats* tablesB)
+bool refresh_table_syncstats_compare(refresh_table_syncstats* tablesA, refresh_table_syncstats* tablesB)
 {
     refresh_table_syncstat* table = NULL;
     refresh_table_syncstat* currenttable = NULL;
@@ -362,11 +357,9 @@ bool refresh_table_syncstats_compare(refresh_table_syncstats* tablesA,
     /* search in pending-sync/syncing linked list */
     for (table = tablesA->tablesyncall; table != NULL; table = table->next)
     {
-        for (currenttable = tablesB->tablesyncall; currenttable != NULL;
-             currenttable = currenttable->next)
+        for (currenttable = tablesB->tablesyncall; currenttable != NULL; currenttable = currenttable->next)
         {
-            if (strcmp(table->schema, currenttable->schema) == 0 &&
-                strcmp(table->table, currenttable->table) == 0)
+            if (strcmp(table->schema, currenttable->schema) == 0 && strcmp(table->table, currenttable->table) == 0)
             {
                 return true;
             }
@@ -377,8 +370,7 @@ bool refresh_table_syncstats_compare(refresh_table_syncstats* tablesA,
 }
 
 /* cleanup existing tables based on tablesyncstats before applying existing data */
-bool refresh_table_syncstats_truncatetable_fromsyncstats(refresh_table_syncstats* tablesyncstats,
-                                                         void*                    in_conn)
+bool refresh_table_syncstats_truncatetable_fromsyncstats(refresh_table_syncstats* tablesyncstats, void* in_conn)
 {
     PGconn*                 conn = NULL;
     PGresult*               res = NULL;
@@ -443,10 +435,7 @@ bool refresh_table_syncstats_write(refresh_table_syncstat* stats, char* refresh_
 
     if (fd < 0)
     {
-        elog(RLOG_WARNING,
-             "can't openfile: %s, error: %s, please check!",
-             path.data,
-             strerror(errno));
+        elog(RLOG_WARNING, "can't openfile: %s, error: %s, please check!", path.data, strerror(errno));
         result = false;
         goto refresh_table_syncstats_write_error;
     }
@@ -524,17 +513,13 @@ bool refresh_table_syncstats_read(refresh_table_syncstat* stats, char* refresh_p
 
     initStringInfo(&path);
 
-    appendStringInfo(
-        &path, "%s/%s_%s/%s", refresh_path, stats->schema, stats->table, REFRESH_STATS);
+    appendStringInfo(&path, "%s/%s_%s/%s", refresh_path, stats->schema, stats->table, REFRESH_STATS);
 
     fd = osal_basic_open_file(path.data, O_RDONLY | BINARY);
 
     if (fd < 0)
     {
-        elog(RLOG_WARNING,
-             "can't openfile: %s, error: %s, please check!",
-             path.data,
-             strerror(errno));
+        elog(RLOG_WARNING, "can't openfile: %s, error: %s, please check!", path.data, strerror(errno));
         result = false;
         goto refresh_table_syncstats_read_error;
     }

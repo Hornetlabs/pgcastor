@@ -84,8 +84,7 @@ typedef struct NumericVar
 #define NUMERIC_HEADER_SIZE(n) \
     (PG_PARSER_VARHDRSZ + sizeof(uint16_t) + (NUMERIC_HEADER_IS_SHORT(n) ? 0 : sizeof(int16_t)))
 
-#define NUMERIC_NDIGITS(num) \
-    ((PG_PARSER_VARSIZE(num) - NUMERIC_HEADER_SIZE(num)) / sizeof(NumericDigit))
+#define NUMERIC_NDIGITS(num)           ((PG_PARSER_VARSIZE(num) - NUMERIC_HEADER_SIZE(num)) / sizeof(NumericDigit))
 
 #define NUMERIC_DSCALE_MASK            0x3FFF
 #define NUMERIC_SHORT_DSCALE_MASK      0x1F80
@@ -94,26 +93,22 @@ typedef struct NumericVar
 #define NUMERIC_SHORT_WEIGHT_SIGN_MASK 0x0040
 #define NUMERIC_SHORT_WEIGHT_MASK      0x003F
 
-#define NUMERIC_SIGN(n)                                                                           \
-    (NUMERIC_IS_SHORT(n)                                                                          \
-         ? (((n)->choice.n_short.n_header & NUMERIC_SHORT_SIGN_MASK) ? NUMERIC_NEG : NUMERIC_POS) \
-         : NUMERIC_FLAGBITS(n))
+#define NUMERIC_SIGN(n)                                                                                           \
+    (NUMERIC_IS_SHORT(n) ? (((n)->choice.n_short.n_header & NUMERIC_SHORT_SIGN_MASK) ? NUMERIC_NEG : NUMERIC_POS) \
+                         : NUMERIC_FLAGBITS(n))
 
-#define NUMERIC_DSCALE(n)                                                                         \
-    (NUMERIC_HEADER_IS_SHORT((n)) ? ((n)->choice.n_short.n_header & NUMERIC_SHORT_DSCALE_MASK) >> \
-                                        NUMERIC_SHORT_DSCALE_SHIFT                                \
-                                  : ((n)->choice.n_long.n_sign_dscale & NUMERIC_DSCALE_MASK))
+#define NUMERIC_DSCALE(n)                                                                           \
+    (NUMERIC_HEADER_IS_SHORT((n))                                                                   \
+         ? ((n)->choice.n_short.n_header & NUMERIC_SHORT_DSCALE_MASK) >> NUMERIC_SHORT_DSCALE_SHIFT \
+         : ((n)->choice.n_long.n_sign_dscale & NUMERIC_DSCALE_MASK))
 
-#define NUMERIC_WEIGHT(n)                                                  \
-    (NUMERIC_HEADER_IS_SHORT((n))                                          \
-         ? (((n)->choice.n_short.n_header & NUMERIC_SHORT_WEIGHT_SIGN_MASK \
-                 ? ~NUMERIC_SHORT_WEIGHT_MASK                              \
-                 : 0) |                                                    \
-            ((n)->choice.n_short.n_header & NUMERIC_SHORT_WEIGHT_MASK))    \
+#define NUMERIC_WEIGHT(n)                                                                                      \
+    (NUMERIC_HEADER_IS_SHORT((n))                                                                              \
+         ? (((n)->choice.n_short.n_header & NUMERIC_SHORT_WEIGHT_SIGN_MASK ? ~NUMERIC_SHORT_WEIGHT_MASK : 0) | \
+            ((n)->choice.n_short.n_header & NUMERIC_SHORT_WEIGHT_MASK))                                        \
          : ((n)->choice.n_long.n_weight))
 
-#define NUMERIC_DIGITS(num) \
-    (NUMERIC_HEADER_IS_SHORT(num) ? (num)->choice.n_short.n_data : (num)->choice.n_long.n_data)
+#define NUMERIC_DIGITS(num) (NUMERIC_HEADER_IS_SHORT(num) ? (num)->choice.n_short.n_data : (num)->choice.n_long.n_data)
 
 /* static function statement */
 static void init_var_from_num(Numeric num, NumericVar* dest);
@@ -473,6 +468,7 @@ struct JsonbValue
     {
         Numeric numeric;
         bool    boolean;
+
         struct
         {
             int32_t len;
@@ -646,8 +642,11 @@ static uint32_t getJsonbLength(const JsonbContainer* jc, int32_t index)
  * A nested array or object will be returned as jbvBinary, ie. it won't be
  * expanded.
  */
-static void fillJsonbValue(
-    JsonbContainer* container, int32_t index, char* base_addr, uint32_t offset, JsonbValue* result)
+static void fillJsonbValue(JsonbContainer* container,
+                           int32_t         index,
+                           char*           base_addr,
+                           uint32_t        offset,
+                           JsonbValue*     result)
 {
     JEntry entry = container->children[index];
 
@@ -681,8 +680,7 @@ static void fillJsonbValue(
         result->type = jbvBinary;
         /* Remove alignment padding from data pointer and length */
         result->val.binary.data = (JsonbContainer*)(base_addr + PG_PARSER_INTALIGN(offset));
-        result->val.binary.len =
-            getJsonbLength(container, index) - (PG_PARSER_INTALIGN(offset) - offset);
+        result->val.binary.len = getJsonbLength(container, index) - (PG_PARSER_INTALIGN(offset) - offset);
     }
 }
 
@@ -762,8 +760,7 @@ recurse:
                 return WJB_END_ARRAY;
             }
 
-            fillJsonbValue(
-                (*it)->container, (*it)->curIndex, (*it)->dataProper, (*it)->curDataOffset, val);
+            fillJsonbValue((*it)->container, (*it)->curIndex, (*it)->dataProper, (*it)->curDataOffset, val);
 
             JBE_ADVANCE_OFFSET((*it)->curDataOffset, (*it)->children[(*it)->curIndex]);
             (*it)->curIndex++;
@@ -814,11 +811,7 @@ recurse:
             else
             {
                 /* Return key of a key/value pair.  */
-                fillJsonbValue((*it)->container,
-                               (*it)->curIndex,
-                               (*it)->dataProper,
-                               (*it)->curDataOffset,
-                               val);
+                fillJsonbValue((*it)->container, (*it)->curIndex, (*it)->dataProper, (*it)->curDataOffset, val);
                 if (val->type != jbvString)
                 {
                     /* todo error handling */
@@ -840,8 +833,7 @@ recurse:
                            val);
 
             JBE_ADVANCE_OFFSET((*it)->curDataOffset, (*it)->children[(*it)->curIndex]);
-            JBE_ADVANCE_OFFSET((*it)->curValueOffset,
-                               (*it)->children[(*it)->curIndex + (*it)->nElems]);
+            JBE_ADVANCE_OFFSET((*it)->curValueOffset, (*it)->children[(*it)->curIndex + (*it)->nElems]);
             (*it)->curIndex++;
 
             /*
@@ -925,9 +917,7 @@ static void escape_json(pg_parser_StringInfo buf, const char* str)
     pg_parser_appendStringInfoCharMacro(buf, '"');
 }
 
-static void jsonb_put_escaped_value(pg_parser_StringInfo       out,
-                                    JsonbValue*                scalarVal,
-                                    pg_parser_extraTypoutInfo* info)
+static void jsonb_put_escaped_value(pg_parser_StringInfo out, JsonbValue* scalarVal, pg_parser_extraTypoutInfo* info)
 {
     bool  is_toast = false;
     char* temp_str = NULL;
@@ -945,8 +935,7 @@ static void jsonb_put_escaped_value(pg_parser_StringInfo       out,
             temp_str = (char*)numeric_out((pg_parser_Datum)(scalarVal->val.numeric), info);
             if (is_toast)
             {
-                pg_parser_log_errlog(info->zicinfo->debuglevel,
-                                     "WARNING: unsupport toast numeric!\n");
+                pg_parser_log_errlog(info->zicinfo->debuglevel, "WARNING: unsupport toast numeric!\n");
                 pg_parser_appendStringInfoString(out, "UNSUPPORT TOAST NUMERIC");
             }
             else
@@ -1097,8 +1086,7 @@ static char* JsonbToCStringWorker(JsonbContainer*            in,
                 first = false;
                 break;
             default:
-                pg_parser_log_errlog(info->zicinfo->debuglevel,
-                                     "ERROR: unknown jsonb iterator token type\n");
+                pg_parser_log_errlog(info->zicinfo->debuglevel, "ERROR: unknown jsonb iterator token type\n");
         }
         use_indent = indent;
         last_was_key = redo_switch;
@@ -1118,9 +1106,7 @@ static char* JsonbToCStringWorker(JsonbContainer*            in,
     return result;
 }
 
-static char* JsonbToCString(JsonbContainer*            in,
-                            int32_t                    estimated_len,
-                            pg_parser_extraTypoutInfo* info)
+static char* JsonbToCString(JsonbContainer* in, int32_t estimated_len, pg_parser_extraTypoutInfo* info)
 {
     return JsonbToCStringWorker(in, estimated_len, false, info);
 }

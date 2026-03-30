@@ -35,8 +35,7 @@ void relmapfile_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
     for (index = 0; index < relmapfile->num; index++)
     {
         /* Get class data from by_class by oid, then change relfilenode in class */
-        classInHash = hash_search(
-            sysdicts->by_class, &(relmapfile->mapping + index)->mapoid, HASH_FIND, NULL);
+        classInHash = hash_search(sysdicts->by_class, &(relmapfile->mapping + index)->mapoid, HASH_FIND, NULL);
         if (NULL == classInHash)
         {
             continue;
@@ -61,8 +60,7 @@ void relmapfile_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
 
             /* Add new */
             relfilenode.relNode = classInHash->class->relfilenode;
-            prelfilenode2oid =
-                hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, NULL);
+            prelfilenode2oid = hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, NULL);
             if (NULL == prelfilenode2oid)
             {
                 elog(RLOG_ERROR,

@@ -255,52 +255,70 @@ struct timerange
     int32_t   leapbase, leapcount;
 };
 
-static struct lookup const lasts[] = {{"last-Sunday", TIME_TM_SUNDAY},
-                                      {"last-Monday", TIME_TM_MONDAY},
-                                      {"last-Tuesday", TIME_TM_TUESDAY},
-                                      {"last-Wednesday", TIME_TM_WEDNESDAY},
-                                      {"last-Thursday", TIME_TM_THURSDAY},
-                                      {"last-Friday", TIME_TM_FRIDAY},
-                                      {"last-Saturday", TIME_TM_SATURDAY},
-                                      {NULL, 0}};
+static struct lookup const lasts[] = {
+    {"last-Sunday",    TIME_TM_SUNDAY   },
+    {"last-Monday",    TIME_TM_MONDAY   },
+    {"last-Tuesday",   TIME_TM_TUESDAY  },
+    {"last-Wednesday", TIME_TM_WEDNESDAY},
+    {"last-Thursday",  TIME_TM_THURSDAY },
+    {"last-Friday",    TIME_TM_FRIDAY   },
+    {"last-Saturday",  TIME_TM_SATURDAY },
+    {NULL,             0                }
+};
 
-static struct lookup const wday_names[] = {{"Sunday", TIME_TM_SUNDAY},
-                                           {"Monday", TIME_TM_MONDAY},
-                                           {"Tuesday", TIME_TM_TUESDAY},
-                                           {"Wednesday", TIME_TM_WEDNESDAY},
-                                           {"Thursday", TIME_TM_THURSDAY},
-                                           {"Friday", TIME_TM_FRIDAY},
-                                           {"Saturday", TIME_TM_SATURDAY},
-                                           {NULL, 0}};
+static struct lookup const wday_names[] = {
+    {"Sunday",    TIME_TM_SUNDAY   },
+    {"Monday",    TIME_TM_MONDAY   },
+    {"Tuesday",   TIME_TM_TUESDAY  },
+    {"Wednesday", TIME_TM_WEDNESDAY},
+    {"Thursday",  TIME_TM_THURSDAY },
+    {"Friday",    TIME_TM_FRIDAY   },
+    {"Saturday",  TIME_TM_SATURDAY },
+    {NULL,        0                }
+};
 
-static struct lookup const mon_names[] = {{"January", TIME_TM_JANUARY},
-                                          {"February", TIME_TM_FEBRUARY},
-                                          {"March", TIME_TM_MARCH},
-                                          {"April", TIME_TM_APRIL},
-                                          {"May", TIME_TM_MAY},
-                                          {"June", TIME_TM_JUNE},
-                                          {"July", TIME_TM_JULY},
-                                          {"August", TIME_TM_AUGUST},
-                                          {"September", TIME_TM_SEPTEMBER},
-                                          {"October", TIME_TM_OCTOBER},
-                                          {"November", TIME_TM_NOVEMBER},
-                                          {"December", TIME_TM_DECEMBER},
-                                          {NULL, 0}};
+static struct lookup const mon_names[] = {
+    {"January",   TIME_TM_JANUARY  },
+    {"February",  TIME_TM_FEBRUARY },
+    {"March",     TIME_TM_MARCH    },
+    {"April",     TIME_TM_APRIL    },
+    {"May",       TIME_TM_MAY      },
+    {"June",      TIME_TM_JUNE     },
+    {"July",      TIME_TM_JULY     },
+    {"August",    TIME_TM_AUGUST   },
+    {"September", TIME_TM_SEPTEMBER},
+    {"October",   TIME_TM_OCTOBER  },
+    {"November",  TIME_TM_NOVEMBER },
+    {"December",  TIME_TM_DECEMBER },
+    {NULL,        0                }
+};
 
 static struct lookup const begin_years[] = {
-    {"minimum", YR_MINIMUM}, {"maximum", YR_MAXIMUM}, {NULL, 0}};
+    {"minimum", YR_MINIMUM},
+    {"maximum", YR_MAXIMUM},
+    {NULL,      0         }
+};
 
 static struct lookup const end_years[] = {
-    {"minimum", YR_MINIMUM}, {"maximum", YR_MAXIMUM}, {"only", YR_ONLY}, {NULL, 0}};
+    {"minimum", YR_MINIMUM},
+    {"maximum", YR_MAXIMUM},
+    {"only",    YR_ONLY   },
+    {NULL,      0         }
+};
 
 static const int32_t len_months[2][TIME_MONSPERYEAR] = {
     {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
+    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
+};
 
 static const int32_t       len_years[2] = {TIME_DAYSPERNYEAR, TIME_DAYSPERLYEAR};
 
 static struct lookup const zi_line_codes[] = {
-    {"Rule", LC_RULE}, {"Zone", LC_ZONE}, {"Link", LC_LINK}, {NULL, 0}};
+    {"Rule", LC_RULE},
+    {"Zone", LC_ZONE},
+    {"Link", LC_LINK},
+    {NULL,   0      }
+};
 
 /* If true, work around a bug in Qt 5.6.1 and earlier, which mishandles
    TZif files whose POSIX-TZ-style strings contain '<'; see
@@ -351,11 +369,7 @@ static void inlink(char** fields, int32_t nfields, struct zicinfo* local_zicinfo
 static void associate(struct zicinfo* local_zicinfo);
 static int32_t rcomp(const void* cp1, const void* cp2);
 static void eat(char const* name, lineno_t num, struct zicinfo* local_zicinfo);
-static void eats(char const*     name,
-                 lineno_t        num,
-                 char const*     rname,
-                 lineno_t        rnum,
-                 struct zicinfo* local_zicinfo);
+static void eats(char const* name, lineno_t num, char const* rname, lineno_t rnum, struct zicinfo* local_zicinfo);
 static void outzone(const struct zone*   zpfirst,
                     ptrdiff_t            zonecount,
                     pg_parser_StringInfo local_tzdata,
@@ -363,8 +377,7 @@ static void outzone(const struct zone*   zpfirst,
 static void* emalloc(size_t size);
 static void updateminmax(const zic_t x, struct zicinfo* local_zicinfo);
 static bool want_bloat(struct zicinfo* local_zicinfo);
-static size_t doabbr(
-    char* abbr, struct zone const* zp, char const* letters, bool isdst, zic_t save, bool doquotes);
+static size_t doabbr(char* abbr, struct zone const* zp, char const* letters, bool isdst, zic_t save, bool doquotes);
 static char const* abbroffset(char* buf, zic_t offset);
 static bool is_alpha(char a);
 static int32_t addtype(zic_t, char const*, bool, bool, bool, struct zicinfo*);
@@ -393,6 +406,7 @@ static int32_t rule_cmp(struct rule const* a, struct rule const* b);
 static int32_t stringoffset(char* result, zic_t offset);
 static int32_t stringrule(char* result, struct rule* const rp, zic_t save, zic_t stdoff);
 static void local_qsort(void* a, size_t n, size_t es, int (*cmp)(const void*, const void*));
+
 /* static functions */
 
 static int32_t stringrule(char* result, struct rule* const rp, zic_t save, zic_t stdoff)
@@ -1068,8 +1082,7 @@ static char const* abbroffset(char* buf, zic_t offset)
     }
 }
 
-static size_t doabbr(
-    char* abbr, struct zone const* zp, char const* letters, bool isdst, zic_t save, bool doquotes)
+static size_t doabbr(char* abbr, struct zone const* zp, char const* letters, bool isdst, zic_t save, bool doquotes)
 {
     char*       cp = NULL;
     char*       slashp = NULL;
@@ -1150,8 +1163,7 @@ static void* emalloc(size_t size)
 /*
  * Error handling.
  */
-static void eats(
-    char const* name, lineno_t num, char const* rname, lineno_t rnum, struct zicinfo* local_zicinfo)
+static void eats(char const* name, lineno_t num, char const* rname, lineno_t rnum, struct zicinfo* local_zicinfo)
 {
     local_zicinfo->filename = name;
     local_zicinfo->linenum = num;
@@ -1960,17 +1972,8 @@ static zic_t gethms(char const* string, char const* errstring)
     {
         sign = 1;
     }
-    switch (sscanf(string,
-                   "%d%c%d%c%d%c%1d%*[0]%c%*[0123456789]%c",
-                   &hh,
-                   &hhx,
-                   &mm,
-                   &mmx,
-                   &ss,
-                   &ssx,
-                   &tenths,
-                   &xr,
-                   &xs))
+    switch (
+        sscanf(string, "%d%c%d%c%d%c%1d%*[0]%c%*[0123456789]%c", &hh, &hhx, &mm, &mmx, &ss, &ssx, &tenths, &xr, &xs))
     {
         default:
             ok = false;
@@ -2036,6 +2039,7 @@ static bool componentcheck(char const* name, char const* component, char const* 
     {
         component_len_max = 14
     };
+
     ptrdiff_t component_len = component_end - component;
 
     if (component_len == 0)
@@ -2169,14 +2173,12 @@ static bool inzsub(char** fields, int32_t nfields, bool iscont, struct zicinfo* 
                 (nfields > i_untilday) ? fields[i_untilday] : "1",
                 (nfields > i_untiltime) ? fields[i_untiltime] : "0");
         z.z_untiltime = rpytime(&z.z_untilrule, z.z_untilrule.r_loyear);
-        if (iscont && local_zicinfo->nzones > 0 && z.z_untiltime > min_time &&
-            z.z_untiltime < max_time &&
+        if (iscont && local_zicinfo->nzones > 0 && z.z_untiltime > min_time && z.z_untiltime < max_time &&
             local_zicinfo->zones[local_zicinfo->nzones - 1].z_untiltime > min_time &&
             local_zicinfo->zones[local_zicinfo->nzones - 1].z_untiltime < max_time &&
             local_zicinfo->zones[local_zicinfo->nzones - 1].z_untiltime >= z.z_untiltime)
         {
-            fprintf(stderr,
-                    "Zone continuation line end time is not after end time of previous line");
+            fprintf(stderr, "Zone continuation line end time is not after end time of previous line");
             return false;
         }
     }
@@ -2427,8 +2429,7 @@ static void outzone(const struct zone*   zpfirst,
     if (local_zicinfo->leapseen)
     {
         updateminmax(local_zicinfo->leapminyear, local_zicinfo);
-        updateminmax(local_zicinfo->leapmaxyear + (local_zicinfo->leapmaxyear < ZIC_MAX),
-                     local_zicinfo);
+        updateminmax(local_zicinfo->leapmaxyear + (local_zicinfo->leapmaxyear < ZIC_MAX), local_zicinfo);
     }
     for (i = 0; i < zonecount; ++i)
     {
@@ -2548,12 +2549,7 @@ static void outzone(const struct zone*   zpfirst,
         {
             save = zp->z_save;
             doabbr(startbuf, zp, NULL, zp->z_isdst, save, false);
-            type = addtype(oadd(zp->z_stdoff, save),
-                           startbuf,
-                           zp->z_isdst,
-                           startttisstd,
-                           startttisut,
-                           local_zicinfo);
+            type = addtype(oadd(zp->z_stdoff, save), startbuf, zp->z_isdst, startttisstd, startttisut, local_zicinfo);
             if (usestart)
             {
                 addtt(starttime, type, local_zicinfo);
@@ -2581,11 +2577,7 @@ static void outzone(const struct zone*   zpfirst,
                 for (j = 0; j < zp->z_nrules; ++j)
                 {
                     rp = &zp->z_rules[j];
-                    eats(zp->z_filename,
-                         zp->z_linenum,
-                         rp->r_filename,
-                         rp->r_linenum,
-                         local_zicinfo);
+                    eats(zp->z_filename, zp->z_linenum, rp->r_filename, rp->r_linenum, local_zicinfo);
                     rp->r_todo = year >= rp->r_loyear && year <= rp->r_hiyear;
                     if (rp->r_todo)
                     {
@@ -2629,11 +2621,7 @@ static void outzone(const struct zone*   zpfirst,
                         {
                             continue;
                         }
-                        eats(zp->z_filename,
-                             zp->z_linenum,
-                             rp->r_filename,
-                             rp->r_linenum,
-                             local_zicinfo);
+                        eats(zp->z_filename, zp->z_linenum, rp->r_filename, rp->r_linenum, local_zicinfo);
                         offset = rp->r_todisut ? 0 : stdoff;
                         if (!rp->r_todisstd)
                         {
@@ -2654,18 +2642,10 @@ static void outzone(const struct zone*   zpfirst,
                         {
                             char const* dup_rules_msg = "two rules for same instant";
 
-                            eats(zp->z_filename,
-                                 zp->z_linenum,
-                                 rp->r_filename,
-                                 rp->r_linenum,
-                                 local_zicinfo);
+                            eats(zp->z_filename, zp->z_linenum, rp->r_filename, rp->r_linenum, local_zicinfo);
                             fprintf(stderr, "%s", dup_rules_msg);
                             rp = &zp->z_rules[k];
-                            eats(zp->z_filename,
-                                 zp->z_linenum,
-                                 rp->r_filename,
-                                 rp->r_linenum,
-                                 local_zicinfo);
+                            eats(zp->z_filename, zp->z_linenum, rp->r_filename, rp->r_linenum, local_zicinfo);
                             fprintf(stderr, "%s", dup_rules_msg);
                         }
                     }
@@ -2697,26 +2677,20 @@ static void outzone(const struct zone*   zpfirst,
                             doabbr(startbuf, zp, rp->r_abbrvar, rp->r_isdst, rp->r_save, false);
                         }
                     }
-                    eats(zp->z_filename,
-                         zp->z_linenum,
-                         rp->r_filename,
-                         rp->r_linenum,
-                         local_zicinfo);
+                    eats(zp->z_filename, zp->z_linenum, rp->r_filename, rp->r_linenum, local_zicinfo);
                     doabbr(ab, zp, rp->r_abbrvar, rp->r_isdst, rp->r_save, false);
                     offset = oadd(zp->z_stdoff, rp->r_save);
-                    if (!want_bloat(local_zicinfo) && !useuntil && !do_extend && prevrp &&
-                        rp->r_hiyear == ZIC_MAX && prevrp->r_hiyear == ZIC_MAX)
+                    if (!want_bloat(local_zicinfo) && !useuntil && !do_extend && prevrp && rp->r_hiyear == ZIC_MAX &&
+                        prevrp->r_hiyear == ZIC_MAX)
                     {
                         break;
                     }
-                    type = addtype(
-                        offset, ab, rp->r_isdst, rp->r_todisstd, rp->r_todisut, local_zicinfo);
+                    type = addtype(offset, ab, rp->r_isdst, rp->r_todisstd, rp->r_todisut, local_zicinfo);
                     if (defaulttype < 0 && !rp->r_isdst)
                     {
                         defaulttype = type;
                     }
-                    if (rp->r_hiyear == ZIC_MAX &&
-                        !(0 <= lastatmax && ktime < local_zicinfo->attypes[lastatmax].at))
+                    if (rp->r_hiyear == ZIC_MAX && !(0 <= lastatmax && ktime < local_zicinfo->attypes[lastatmax].at))
                     {
                         lastatmax = local_zicinfo->timecnt;
                     }
@@ -2735,8 +2709,7 @@ static void outzone(const struct zone*   zpfirst,
             eat(zp->z_filename, zp->z_linenum, local_zicinfo);
             if (*startbuf == '\0')
             {
-                fprintf(stderr,
-                        "cannot determine time zone abbreviation to use just after until time");
+                fprintf(stderr, "cannot determine time zone abbreviation to use just after until time");
             }
             else
             {
@@ -2804,9 +2777,7 @@ static void outzone(const struct zone*   zpfirst,
         }
         if (!lastat || lastat->at < rpytime(&xr, local_zicinfo->max_year - 1))
         {
-            addtt(rpytime(&xr, local_zicinfo->max_year + 1),
-                  lastat ? lastat->type : defaulttype,
-                  local_zicinfo);
+            addtt(rpytime(&xr, local_zicinfo->max_year + 1), lastat ? lastat->type : defaulttype, local_zicinfo);
             local_zicinfo->attypes[local_zicinfo->timecnt - 1].dontmerge = true;
         }
     }
@@ -2833,19 +2804,18 @@ static void writezone(const char* const    string,
      * Allocate the ATS and TYPES arrays via a single malloc, as this is a bit
      * faster.
      */
-    zic_t*           ats = (zic_t*)emalloc(PG_PARSER_MAXALIGN(size_product(nats, sizeof *ats + 1)));
+    zic_t*             ats = (zic_t*)emalloc(PG_PARSER_MAXALIGN(size_product(nats, sizeof *ats + 1)));
 
-    void*            typesptr = ats + nats;
-    unsigned char*   types = (unsigned char*)typesptr;
-    struct timerange rangeall, range32, range64;
+    void*              typesptr = ats + nats;
+    unsigned char*     types = (unsigned char*)typesptr;
+    struct timerange   rangeall, range32, range64;
 
     /*
      * Sort.
      */
     if (local_zicinfo->timecnt > 1)
     {
-        local_qsort(
-            local_zicinfo->attypes, local_zicinfo->timecnt, sizeof *local_zicinfo->attypes, atcomp);
+        local_qsort(local_zicinfo->attypes, local_zicinfo->timecnt, sizeof *local_zicinfo->attypes, atcomp);
     }
 
     /*
@@ -2859,8 +2829,7 @@ static void writezone(const char* const    string,
         for (; fromi < local_zicinfo->timecnt; ++fromi)
         {
             if (toi != 0 &&
-                ((local_zicinfo->attypes[fromi].at +
-                  local_zicinfo->utoffs[local_zicinfo->attypes[toi - 1].type]) <=
+                ((local_zicinfo->attypes[fromi].at + local_zicinfo->utoffs[local_zicinfo->attypes[toi - 1].type]) <=
                  (local_zicinfo->attypes[toi - 1].at +
                   local_zicinfo->utoffs[toi == 1 ? 0 : local_zicinfo->attypes[toi - 2].type])))
             {
@@ -2959,8 +2928,7 @@ static void writezone(const char* const    string,
              * value, unless -r specifies a low cutoff that excludes some
              * 32-bit timestamps.
              */
-            thisdefaulttype =
-                (lo_time <= TIME_INT32_MIN ? range64.defaulttype : range32.defaulttype);
+            thisdefaulttype = (lo_time <= TIME_INT32_MIN ? range64.defaulttype : range32.defaulttype);
 
             thistimei = range32.base;
             thistimecnt = range32.count;
@@ -3102,9 +3070,7 @@ static void writezone(const char* const    string,
         {
             if (!omittype[i])
             {
-                typemap[i == old0              ? thisdefaulttype
-                        : i == thisdefaulttype ? old0
-                                               : i] = thistypecnt++;
+                typemap[i == old0 ? thisdefaulttype : i == thisdefaulttype ? old0 : i] = thistypecnt++;
             }
         }
 
@@ -3330,10 +3296,8 @@ static void swapfunc(char* a, char* b, size_t n, int swaptype)
     else                                         \
         swapfunc(a, b, es, swaptype)
 
-#define SWAPINIT(a, es)                                                          \
-    swaptype = ((char*)(a) - (char*)0) % sizeof(long) || (es) % sizeof(long) ? 2 \
-               : (es) == sizeof(long)                                        ? 0 \
-                                                                             : 1
+#define SWAPINIT(a, es) \
+    swaptype = ((char*)(a) - (char*)0) % sizeof(long) || (es) % sizeof(long) ? 2 : (es) == sizeof(long) ? 0 : 1
 
 static char* med3(char* a, char* b, char* c, int (*cmp)(const void*, const void*))
 {

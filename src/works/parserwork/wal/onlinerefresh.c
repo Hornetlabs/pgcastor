@@ -181,10 +181,7 @@ List* onlinerefresh_get_newtable(HTAB* dataset, refresh_tables* tables)
 }
 
 /* Populate refreshtables from system catalogs */
-bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables,
-                                        HTAB*           hnamespace,
-                                        HTAB*           hclass,
-                                        bool*           bmatch)
+bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables, HTAB* hnamespace, HTAB* hclass, bool* bmatch)
 {
     /*
      * 1. Build filters from rtables
@@ -292,8 +289,7 @@ refresh_tables* onlinerefresh_data_load(HTAB* namespace, HTAB* class)
     hashCtl_d2o.keysize = sizeof(filter_dataset);
     hashCtl_d2o.entrysize = sizeof(filter_dataset2oidnode);
 
-    dataset2oid_htab =
-        hash_create("onlinerefresh_d2o_htab", 256, &hashCtl_d2o, HASH_ELEM | HASH_BLOBS);
+    dataset2oid_htab = hash_create("onlinerefresh_d2o_htab", 256, &hashCtl_d2o, HASH_ELEM | HASH_BLOBS);
 
     while (fgets(fline, ONLINEREFRESH_MAXLINE, fp))
     {
@@ -384,8 +380,7 @@ refresh_tables* onlinerefresh_data_load(HTAB* namespace, HTAB* class)
         strcpy(temp_dataset_key.schema, temp_nsp->nspname.data);
         strcpy(temp_dataset_key.table, temp_class->relname.data);
 
-        temp_d2o_entry =
-            hash_search(dataset2oid_htab, &temp_dataset_key, HASH_FIND, &temp_d2o_find);
+        temp_d2o_entry = hash_search(dataset2oid_htab, &temp_dataset_key, HASH_FIND, &temp_d2o_find);
         if (temp_d2o_find)
         {
             temp_d2o_entry->oid = temp_class->oid;
@@ -408,10 +403,7 @@ refresh_tables* onlinerefresh_data_load(HTAB* namespace, HTAB* class)
                  "when load online refresh dat, get oid invalid, table: %s.%s",
                  scan_d2o_entry->dataset.schema,
                  scan_d2o_entry->dataset.table);
-            sprintf(temp_table_name,
-                    "%s.%s",
-                    scan_d2o_entry->dataset.schema,
-                    scan_d2o_entry->dataset.table);
+            sprintf(temp_table_name, "%s.%s", scan_d2o_entry->dataset.schema, scan_d2o_entry->dataset.table);
             error_table = lappend(error_table, rstrdup(temp_table_name));
             continue;
         }

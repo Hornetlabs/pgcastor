@@ -127,8 +127,7 @@ bool netclient_conn(netclient* netclient)
 
     if (NETCLIENT_PROTOCOLTYPE_IPTCP == netclient->protocoltype)
     {
-        bret = osal_host2sockaddr(
-            &addrin, netclient->svrhost, netclient->svrport, domain, SOCK_STREAM, IPPROTO_TCP, 1);
+        bret = osal_host2sockaddr(&addrin, netclient->svrhost, netclient->svrport, domain, SOCK_STREAM, IPPROTO_TCP, 1);
         if (false == bret)
         {
             elog(RLOG_WARNING, "can not get addr info, %s", strerror(errno));
@@ -140,12 +139,7 @@ bool netclient_conn(netclient* netclient)
     else if (NETCLIENT_PROTOCOLTYPE_UNIXDOMAIN == netclient->protocoltype)
     {
         domain = AF_LOCAL;
-        snprintf(unixdoamin,
-                 512,
-                 "%s/%s%s",
-                 RMANAGER_UNIXDOMAINDIR,
-                 RMANAGER_UNIXDOMAINPREFIX,
-                 netclient->svrport);
+        snprintf(unixdoamin, 512, "%s/%s%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX, netclient->svrport);
         if (sizeof(addrun.sun_path) <= strlen(unixdoamin))
         {
             elog(RLOG_WARNING, "unix domain dir too long, %s", strerror(errno));
@@ -173,18 +167,15 @@ bool netclient_conn(netclient* netclient)
 
     if (keep_alive)
     {
-        osal_setsockopt(
-            netclient->fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&keep_alive, sizeof(keep_alive));
+        osal_setsockopt(netclient->fd, SOL_SOCKET, SO_KEEPALIVE, (char*)&keep_alive, sizeof(keep_alive));
 
         osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&idle, sizeof(idle));
 
-        osal_setsockopt(
-            netclient->fd, IPPROTO_TCP, TCP_KEEPINTVL, (char*)&interval, sizeof(interval));
+        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPINTVL, (char*)&interval, sizeof(interval));
 
         osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_KEEPCNT, (char*)&count, sizeof(count));
 
-        osal_setsockopt(
-            netclient->fd, IPPROTO_TCP, TCP_USER_TIMEOUT, (char*)&timeout, sizeof(timeout));
+        osal_setsockopt(netclient->fd, IPPROTO_TCP, TCP_USER_TIMEOUT, (char*)&timeout, sizeof(timeout));
     }
 
     /* Connect to target */
@@ -441,8 +432,7 @@ static bool netclient_send(netclient* netclient)
 }
 
 /* Create connection and send data */
-bool netclient_senddata(
-    netclient_protocoltype ptype, char* host, char* port, uint8* data, int datalen)
+bool netclient_senddata(netclient_protocoltype ptype, char* host, char* port, uint8* data, int datalen)
 {
     bool       bret = true;
     int        intervaltimeout = 0;

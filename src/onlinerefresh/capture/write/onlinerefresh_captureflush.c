@@ -11,8 +11,7 @@
 #include "onlinerefresh/capture/flush/onlinerefresh_captureflush.h"
 
 /* Initialize file */
-static void onlinerefresh_captureflush_initfile(onlinerefresh_captureflush* cflush,
-                                                ff_fileinfo*                finfo)
+static void onlinerefresh_captureflush_initfile(onlinerefresh_captureflush* cflush, ff_fileinfo* finfo)
 {
     int         fd = -1;
     int         index = 0;
@@ -125,8 +124,7 @@ void* onlinerefresh_captureflush_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "onlinerefresh capture flush stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "onlinerefresh capture flush stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;

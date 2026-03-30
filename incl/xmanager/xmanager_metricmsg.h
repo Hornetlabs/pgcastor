@@ -6,8 +6,11 @@ extern bool xmanager_metricmsg_assemblecmdresult(xmanager_metric* xmetric,
                                                  xmanager_msg     msgtype);
 
 /* Assemble error message */
-extern bool xmanager_metricmsg_assembleerrormsg(
-    xmanager_metric* xmetric, queue* queue, int type, int errorcode, char* errormsg);
+extern bool xmanager_metricmsg_assembleerrormsg(xmanager_metric* xmetric,
+                                                queue*           queue,
+                                                int              type,
+                                                int              errorcode,
+                                                char*            errormsg);
 
 extern char* xmanager_metricmsg_getdesc(xmanager_msg msgtype);
 
@@ -23,8 +26,6 @@ extern bool xmanager_metricmsg_assembleresponse(xmanager_metric* xmetric,
 /*
  * Parse data packet
  */
-extern bool xmanager_metricmsg_parsenetpacket(xmanager_metric* xmetric,
-                                              netpoolentry*    npoolentry,
-                                              netpacket*       npacket);
+extern bool xmanager_metricmsg_parsenetpacket(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket);
 
 #endif

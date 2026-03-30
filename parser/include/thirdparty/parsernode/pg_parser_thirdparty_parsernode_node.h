@@ -505,6 +505,7 @@ typedef enum pg_parser_NodeTag
 #define PG_PARSER_PARTITION_STRATEGY_HASH  'h'
 #define PG_PARSER_PARTITION_STRATEGY_LIST  'l'
 #define PG_PARSER_PARTITION_STRATEGY_RANGE 'r'
+
 /*
  * The first field of a node of any type is guaranteed to be the pg_parser_NodeTag.
  * Hence the type of any node can be gotten by casting it to pg_parser_Node. Declaring

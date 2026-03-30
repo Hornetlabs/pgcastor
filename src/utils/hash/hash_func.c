@@ -222,29 +222,28 @@ static inline uint32 calc_bucket(HASHHDR* hctl, uint32 hash_val)
  *	memset() functions.  More research needs to be done, perhaps with
  *	MEMSET_LOOP_LIMIT tests in configure.
  */
-#define MemSet(start, val, len)                                                               \
-    do                                                                                        \
-    {                                                                                         \
-        /* must be void* because we don't know if it is integer aligned yet */                \
-        void* _vstart = (void*)(start);                                                       \
-        int   _val = (val);                                                                   \
-        Size  _len = (len);                                                                   \
-                                                                                              \
-        if ((((uintptr_t)_vstart) & LONG_ALIGN_MASK) == 0 && (_len & LONG_ALIGN_MASK) == 0 && \
-            _val == 0 &&                                                                      \
-            _len <= MEMSET_LOOP_LIMIT && /*                                                   \
-                                          *	If MEMSET_LOOP_LIMIT == 0, optimizer should find  \
-                                          *	the whole "if" false at compile time.             \
-                                          */                                                  \
-            MEMSET_LOOP_LIMIT != 0)                                                           \
-        {                                                                                     \
-            long* _start = (long*)_vstart;                                                    \
-            long* _stop = (long*)((char*)_start + _len);                                      \
-            while (_start < _stop)                                                            \
-                *_start++ = 0;                                                                \
-        }                                                                                     \
-        else                                                                                  \
-            rmemset1(_vstart, 0, _val, _len);                                                 \
+#define MemSet(start, val, len)                                                                            \
+    do                                                                                                     \
+    {                                                                                                      \
+        /* must be void* because we don't know if it is integer aligned yet */                             \
+        void* _vstart = (void*)(start);                                                                    \
+        int   _val = (val);                                                                                \
+        Size  _len = (len);                                                                                \
+                                                                                                           \
+        if ((((uintptr_t)_vstart) & LONG_ALIGN_MASK) == 0 && (_len & LONG_ALIGN_MASK) == 0 && _val == 0 && \
+            _len <= MEMSET_LOOP_LIMIT && /*                                                                \
+                                          *	If MEMSET_LOOP_LIMIT == 0, optimizer should find               \
+                                          *	the whole "if" false at compile time.                          \
+                                          */                                                               \
+            MEMSET_LOOP_LIMIT != 0)                                                                        \
+        {                                                                                                  \
+            long* _start = (long*)_vstart;                                                                 \
+            long* _stop = (long*)((char*)_start + _len);                                                   \
+            while (_start < _stop)                                                                         \
+                *_start++ = 0;                                                                             \
+        }                                                                                                  \
+        else                                                                                               \
+            rmemset1(_vstart, 0, _val, _len);                                                              \
     } while (0)
 
 /*
@@ -596,12 +595,10 @@ uint32 get_hash_value(HTAB* hashp, const void* keyPtr)
  */
 void* hash_search(HTAB* hashp, const void* keyPtr, HASHACTION action, bool* foundPtr)
 {
-    return hash_search_with_hash_value(
-        hashp, keyPtr, hashp->hash(keyPtr, hashp->keysize), action, foundPtr);
+    return hash_search_with_hash_value(hashp, keyPtr, hashp->hash(keyPtr, hashp->keysize), action, foundPtr);
 }
 
-void* hash_search_with_hash_value(
-    HTAB* hashp, const void* keyPtr, uint32 hashvalue, HASHACTION action, bool* foundPtr)
+void* hash_search_with_hash_value(HTAB* hashp, const void* keyPtr, uint32 hashvalue, HASHACTION action, bool* foundPtr)
 {
     HASHHDR*        hctl = hashp->hctl;
     int             freelist_idx = FREELIST_IDX(hctl, hashvalue);
@@ -667,8 +664,7 @@ void* hash_search_with_hash_value(
 
     while (currBucket != NULL)
     {
-        if (currBucket->hashvalue == hashvalue &&
-            match(ELEMENTKEY(currBucket), keyPtr, keysize) == 0)
+        if (currBucket->hashvalue == hashvalue && match(ELEMENTKEY(currBucket), keyPtr, keysize) == 0)
         {
             break;
         }
@@ -864,8 +860,7 @@ bool hash_update_hash_key(HTAB* hashp, void* existingEntry, const void* newKeyPt
 
     if (currBucket == NULL)
     {
-        elog(
-            RLOG_ERROR, "hash_update_hash_key argument is not in hashtable \"%s\"", hashp->tabname);
+        elog(RLOG_ERROR, "hash_update_hash_key argument is not in hashtable \"%s\"", hashp->tabname);
     }
 
     oldPrevPtr = prevBucketPtr;
@@ -899,8 +894,7 @@ bool hash_update_hash_key(HTAB* hashp, void* existingEntry, const void* newKeyPt
 
     while (currBucket != NULL)
     {
-        if (currBucket->hashvalue == newhashvalue &&
-            match(ELEMENTKEY(currBucket), newKeyPtr, keysize) == 0)
+        if (currBucket->hashvalue == newhashvalue && match(ELEMENTKEY(currBucket), newKeyPtr, keysize) == 0)
         {
             break;
         }

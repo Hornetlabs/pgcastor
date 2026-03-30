@@ -46,8 +46,7 @@ bool fftrail_txnbegin_serial(void* data, void* state)
     }
 
     /* Write to trail file */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     ffstate->recptr = fbuffer->data + fbuffer->start;
 
     /* Calculate length */
@@ -68,8 +67,7 @@ bool fftrail_txnbegin_serial(void* data, void* state)
     fbuffer->start += hdrlen;
 
     /* Add content */
-    fftrail_data_data2buffer(
-        &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_TINYINT, 1, (uint8*)&nop);
+    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_TINYINT, 1, (uint8*)&nop);
 
     /* Fill header info */
     if (FFSMGR_STATUS_SHIFTFILE == ffstate->status)

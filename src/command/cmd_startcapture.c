@@ -186,8 +186,11 @@ static void cmd_startcapture_removeonlinerefresh(void* pinccapture, void* polref
 }
 
 /* Build onlinerefresh response packet to xmanager */
-static void cmd_startcaputre_assembleolrefreshpacket(
-    increment_capture* inccapture, refresh_tables* rtables, bool result, int errcode, char* msg)
+static void cmd_startcaputre_assembleolrefreshpacket(increment_capture* inccapture,
+                                                     refresh_tables*    rtables,
+                                                     bool               result,
+                                                     int                errcode,
+                                                     char*              msg)
 {
     /*
      * 1. Build network packet
@@ -386,8 +389,7 @@ static bool cmd_startcapture_startonlinerefresh(increment_capture* inccapture)
             /* Build onlinerefresh failure message */
             osal_thread_unlock(&inccapture->olrefreshlock);
             snprintf(errmsg, 1024, "ERROR: can not rebuild refresh tables.");
-            cmd_startcaputre_assembleolrefreshpacket(
-                inccapture, rtables, false, ERROR_NOENT, errmsg);
+            cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_NOENT, errmsg);
             refresh_freetables(rtables);
             return true;
         }
@@ -425,8 +427,7 @@ static bool cmd_startcapture_startonlinerefresh(increment_capture* inccapture)
             elog(RLOG_WARNING, "%s, repeat table when do online refresh", errmsg);
             osal_thread_unlock(&inccapture->olrefreshlock);
             parserwork_stat_setresume(inccapture->decodingctx);
-            cmd_startcaputre_assembleolrefreshpacket(
-                inccapture, rtables, false, ERROR_MSGEXIST, errmsg);
+            cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_MSGEXIST, errmsg);
             refresh_freetables(rtables);
             return true;
         }
@@ -516,8 +517,7 @@ static bool cmd_startcapture_startonlinerefresh(increment_capture* inccapture)
 
     transcache_make_xids_from_txn(inccapture->decodingctx, olinerefresh);
     /* Build begin txn */
-    olbegin_txn =
-        parserwork_build_onlinerefresh_begin_txn(olrtxnstmt, inccapture->decodingctx->parselsn);
+    olbegin_txn = parserwork_build_onlinerefresh_begin_txn(olrtxnstmt, inccapture->decodingctx->parselsn);
 
     /* Add onlinerefresh transaction and node to increment parser */
     parserwork_decodingctx_addonlinerefresh(inccapture->decodingctx, olinerefresh, olbegin_txn);
@@ -573,8 +573,7 @@ static bool cmd_startcapture_startonlinerefresh(increment_capture* inccapture)
     {
         snprintf(errmsg, 1024, "ERROR: start onlinerefresh work threads error.");
         elog(RLOG_WARNING, errmsg);
-        cmd_startcaputre_assembleolrefreshpacket(
-            inccapture, rtables, false, ERROR_STARTTHREAD, errmsg);
+        cmd_startcaputre_assembleolrefreshpacket(inccapture, rtables, false, ERROR_STARTTHREAD, errmsg);
 
         /*
          * 1. Remove onlinerefresh from increment capture
@@ -714,8 +713,7 @@ bool cmd_startcapture(void)
         conn_settxnisolationlevel(decodingctx->rewind_ptr->conn, TXNISOLVL_REPEATABLE_READ);
 
         /* Load dictionary tables and initialize sync dataset*/
-        catalog_sysdict_getfromdb(decodingctx->rewind_ptr->conn,
-                                  decodingctx->trans_cache->sysdicts);
+        catalog_sysdict_getfromdb(decodingctx->rewind_ptr->conn, decodingctx->trans_cache->sysdicts);
 
         /*Open new connection and set full, close after use*/
         if (false == catalog_sysdict_setfullmode(decodingctx->trans_cache->sysdicts->by_class))
@@ -734,27 +732,23 @@ bool cmd_startcapture(void)
                             decodingctx->trans_cache->sysdicts->by_namespace,
                             decodingctx->trans_cache->sysdicts->by_class);
 
-        decodingctx->trans_cache->hsyncdataset =
-            filter_dataset_load(decodingctx->trans_cache->sysdicts->by_namespace,
-                                decodingctx->trans_cache->sysdicts->by_class);
+        decodingctx->trans_cache->hsyncdataset = filter_dataset_load(decodingctx->trans_cache->sysdicts->by_namespace,
+                                                                     decodingctx->trans_cache->sysdicts->by_class);
 
         decodingctx->trans_cache->htxnfilterdataset =
             filter_dataset_txnfilterload(decodingctx->trans_cache->sysdicts->by_namespace,
                                          decodingctx->trans_cache->sysdicts->by_class);
 
-        decodingctx->trans_cache->sysdicts->by_relfilenode = cache_sysdicts_buildrelfilenode2oid(
-            decodingctx->database, (void*)decodingctx->trans_cache->sysdicts);
+        decodingctx->trans_cache->sysdicts->by_relfilenode =
+            cache_sysdicts_buildrelfilenode2oid(decodingctx->database, (void*)decodingctx->trans_cache->sysdicts);
         snapshot = snapshot_buildfromdb(decodingctx->rewind_ptr->conn);
 
-        decodingctx->rewind_ptr->currentlsn =
-            databaserecv_currentlsn_get(decodingctx->rewind_ptr->conn);
-        decodingctx->rewind_ptr->currentxid =
-            databaserecv_transactionid_get(decodingctx->rewind_ptr->conn);
+        decodingctx->rewind_ptr->currentlsn = databaserecv_currentlsn_get(decodingctx->rewind_ptr->conn);
+        decodingctx->rewind_ptr->currentxid = databaserecv_transactionid_get(decodingctx->rewind_ptr->conn);
 
         if (refreshstragety)
         {
-            refreshtables =
-                filter_dataset_buildrefreshtables(decodingctx->trans_cache->hsyncdataset);
+            refreshtables = filter_dataset_buildrefreshtables(decodingctx->trans_cache->hsyncdataset);
             mgr_tables = refresh_tables_copy(refreshtables);
             parserwork_buildrefreshtransaction(decodingctx, refreshtables);
 
@@ -823,8 +817,7 @@ bool cmd_startcapture(void)
     /*
      * Add main resident thread
      */
-    if (false ==
-        threads_addpersist(inccapture->threads, &inccapture->persistno, "CAPTURE INCREMENT"))
+    if (false == threads_addpersist(inccapture->threads, &inccapture->persistno, "CAPTURE INCREMENT"))
     {
         bret = false;
         elog(RLOG_WARNING, "add capture increment persist to threads error");

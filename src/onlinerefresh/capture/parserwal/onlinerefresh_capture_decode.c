@@ -31,8 +31,7 @@
 #include "onlinerefresh/capture/parserwal/onlinerefresh_capture_decode_xact.h"
 #include "onlinerefresh/capture/parserwal/onlinerefresh_capture_decode_heap.h"
 
-typedef void (*decode_prefunc_onlinerefresh)(decodingcontext*             decodingctx,
-                                             pg_parser_translog_pre_base* pbase);
+typedef void (*decode_prefunc_onlinerefresh)(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase);
 
 typedef struct DECODE_PREMGR_ONLINEREFRESH
 {
@@ -42,30 +41,30 @@ typedef struct DECODE_PREMGR_ONLINEREFRESH
 } decode_premgr_onlinerefresh;
 
 static decode_premgr_onlinerefresh m_decodepremgr_onlinerefresh[] = {
-    {PG_PARSER_TRANSLOG_INVALID, "INVALID", NULL},
-    {PG_PARSER_TRANSLOG_HEAP_INSERT, "INSERT", onlinerefresh_decode_heap},
-    {PG_PARSER_TRANSLOG_HEAP_UPDATE, "UPDATE", onlinerefresh_decode_heap},
-    {PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE, "HOT UPDATE", onlinerefresh_decode_heap},
-    {PG_PARSER_TRANSLOG_HEAP_DELETE, "DELETE", onlinerefresh_decode_heap},
-    {PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT, "MULTI INSERT", onlinerefresh_decode_heap},
-    {PG_PARSER_TRANSLOG_XACT_COMMIT, "COMMIT", onlinerefresh_decode_xact_commit},
-    {PG_PARSER_TRANSLOG_XACT_ABORT, "ABORT", onlinerefresh_decode_xact_abort},
-    {PG_PARSER_TRANSLOG_XLOG_SWITCH, "SWITCH", NULL},
-    {PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE, "ONLINE", decode_chkpt},
-    {PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN, "SHUTDOWN", decode_chkpt},
-    {PG_PARSER_TRANSLOG_FPW_TUPLE, "FPW_TUPLE", heap_fpw_tuples},
-    {PG_PARSER_TRANSLOG_RELMAP, "RELMAP", decode_relmap},
-    {PG_PARSER_TRANSLOG_RUNNING_XACTS, "RUNNING_XACTS", NULL},
-    {PG_PARSER_TRANSLOG_XLOG_RECOVERY, "RECOVERY", NULL},
-    {PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE, "COMMIT_PREPARE", NULL},
-    {PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE, "ABORT_PREPARE", NULL},
-    {PG_PARSER_TRANSLOG_XACT_ASSIGNMENT, "ASSIGNMENT", NULL},
-    {PG_PARSER_TRANSLOG_XACT_PREPARE, "PREPARE", NULL},
-    {PG_PARSER_TRANSLOG_HEAP_TRUNCATE, "TRUNCATE", NULL},
-    {PG_PARSER_TRANSLOG_SEQ, "SEQUENCE", NULL}};
+    {PG_PARSER_TRANSLOG_INVALID,             "INVALID",        NULL                            },
+    {PG_PARSER_TRANSLOG_HEAP_INSERT,         "INSERT",         onlinerefresh_decode_heap       },
+    {PG_PARSER_TRANSLOG_HEAP_UPDATE,         "UPDATE",         onlinerefresh_decode_heap       },
+    {PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,     "HOT UPDATE",     onlinerefresh_decode_heap       },
+    {PG_PARSER_TRANSLOG_HEAP_DELETE,         "DELETE",         onlinerefresh_decode_heap       },
+    {PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,  "MULTI INSERT",   onlinerefresh_decode_heap       },
+    {PG_PARSER_TRANSLOG_XACT_COMMIT,         "COMMIT",         onlinerefresh_decode_xact_commit},
+    {PG_PARSER_TRANSLOG_XACT_ABORT,          "ABORT",          onlinerefresh_decode_xact_abort },
+    {PG_PARSER_TRANSLOG_XLOG_SWITCH,         "SWITCH",         NULL                            },
+    {PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,     "ONLINE",         decode_chkpt                    },
+    {PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,   "SHUTDOWN",       decode_chkpt                    },
+    {PG_PARSER_TRANSLOG_FPW_TUPLE,           "FPW_TUPLE",      heap_fpw_tuples                 },
+    {PG_PARSER_TRANSLOG_RELMAP,              "RELMAP",         decode_relmap                   },
+    {PG_PARSER_TRANSLOG_RUNNING_XACTS,       "RUNNING_XACTS",  NULL                            },
+    {PG_PARSER_TRANSLOG_XLOG_RECOVERY,       "RECOVERY",       NULL                            },
+    {PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE, "COMMIT_PREPARE", NULL                            },
+    {PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE,  "ABORT_PREPARE",  NULL                            },
+    {PG_PARSER_TRANSLOG_XACT_ASSIGNMENT,     "ASSIGNMENT",     NULL                            },
+    {PG_PARSER_TRANSLOG_XACT_PREPARE,        "PREPARE",        NULL                            },
+    {PG_PARSER_TRANSLOG_HEAP_TRUNCATE,       "TRUNCATE",       NULL                            },
+    {PG_PARSER_TRANSLOG_SEQ,                 "SEQUENCE",       NULL                            }
+};
 
-static int m_precnt_onlinerefresh =
-    (sizeof(m_decodepremgr_onlinerefresh)) / (sizeof(decode_premgr_onlinerefresh));
+static int m_precnt_onlinerefresh = (sizeof(m_decodepremgr_onlinerefresh)) / (sizeof(decode_premgr_onlinerefresh));
 static XLogRecPtr m_parserlsn = 0;
 
 void parserwork_waldecode_onlinerefresh(decodingcontext* decodingctx)

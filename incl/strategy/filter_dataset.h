@@ -56,10 +56,7 @@ extern void filter_dataset_listpairsfree(List* rulelist);
 
 extern refresh_tables* filter_dataset_buildrefreshtables(HTAB* hfilters);
 
-extern bool filter_dataset_updatedatasets(List* addtablepattern,
-                                          HTAB* namespace,
-                                          List* sysdicthis,
-                                          HTAB* syncdatasets);
+extern bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List* sysdicthis, HTAB* syncdatasets);
 
 extern void filter_dataset_updatedatasets_onlinerefresh(HTAB* dataset, List* tables_list);
 

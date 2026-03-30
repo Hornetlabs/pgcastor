@@ -97,8 +97,7 @@ void* xmanager_listen_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING,
-             "xmanager listen stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "xmanager listen stat exception, expected state is THRNODE_STAT_STARTING");
         thrnode_ptr->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }

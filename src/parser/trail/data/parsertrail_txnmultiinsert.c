@@ -90,10 +90,7 @@ static void parsertrail_txnmultiinsert2hash(parsertrail* parsertrail, ff_txndata
                          : (char*)(colnvalues->m_rows[i].m_new_values[index].m_value));
             }
         }
-        elog(RLOG_DEBUG,
-             "multiinsert %s.%s end",
-             colnvalues->m_base.m_schemaname,
-             colnvalues->m_base.m_tbname);
+        elog(RLOG_DEBUG, "multiinsert %s.%s end", colnvalues->m_base.m_schemaname, colnvalues->m_base.m_tbname);
     }
 
     return;

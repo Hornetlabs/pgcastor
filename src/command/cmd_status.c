@@ -25,9 +25,10 @@ static bool cmd_statuscapture(void);
 static bool cmd_statusintegrate(void);
 
 static proc2status m_typ2status[] = {
-    {PROC_TYPE_NOP, NULL, NULL, "proc nop unsupport status"},
-    {PROC_TYPE_CAPTURE, cmd_statuscapture, NULL, "capture status error"},
-    {PROC_TYPE_INTEGRATE, cmd_statusintegrate, NULL, "tegrate status error"}};
+    {PROC_TYPE_NOP,       NULL,                NULL, "proc nop unsupport status"},
+    {PROC_TYPE_CAPTURE,   cmd_statuscapture,   NULL, "capture status error"     },
+    {PROC_TYPE_INTEGRATE, cmd_statusintegrate, NULL, "tegrate status error"     }
+};
 
 /* Get status information */
 bool cmd_statuscapture(void)
@@ -58,24 +59,12 @@ bool cmd_statuscapture(void)
     /* Output content */
     printf("\n---------------RIPPLE PARSER INFO----------------\n");
 
-    printf("capture redolsn         :%X/%X\n",
-           (uint32)(mcapture.redolsn >> 32),
-           (uint32)(mcapture.redolsn));
-    printf("capture restartlsn      :%X/%X\n",
-           (uint32)(mcapture.restartlsn >> 32),
-           (uint32)(mcapture.restartlsn));
-    printf("capture confirmlsn      :%X/%X\n",
-           (uint32)(mcapture.confirmlsn >> 32),
-           (uint32)(mcapture.confirmlsn));
-    printf("capture loadlsn         :%X/%X\n",
-           (uint32)(mcapture.loadlsn >> 32),
-           (uint32)(mcapture.loadlsn));
-    printf("capture parselsn        :%X/%X\n",
-           (uint32)(mcapture.parselsn >> 32),
-           (uint32)(mcapture.parselsn));
-    printf("capture flushlsn        :%X/%X\n",
-           (uint32)(mcapture.flushlsn >> 32),
-           (uint32)(mcapture.flushlsn));
+    printf("capture redolsn         :%X/%X\n", (uint32)(mcapture.redolsn >> 32), (uint32)(mcapture.redolsn));
+    printf("capture restartlsn      :%X/%X\n", (uint32)(mcapture.restartlsn >> 32), (uint32)(mcapture.restartlsn));
+    printf("capture confirmlsn      :%X/%X\n", (uint32)(mcapture.confirmlsn >> 32), (uint32)(mcapture.confirmlsn));
+    printf("capture loadlsn         :%X/%X\n", (uint32)(mcapture.loadlsn >> 32), (uint32)(mcapture.loadlsn));
+    printf("capture parselsn        :%X/%X\n", (uint32)(mcapture.parselsn >> 32), (uint32)(mcapture.parselsn));
+    printf("capture flushlsn        :%X/%X\n", (uint32)(mcapture.flushlsn >> 32), (uint32)(mcapture.flushlsn));
     printf("capture trail           :%lX/%lX\n", mcapture.trailno, mcapture.trailstart);
     printf("capture parsetimestamp  :%lu\n", mcapture.parsetimestamp);
     printf("capture flushtimestamp  :%lu\n", mcapture.flushtimestamp);
@@ -113,15 +102,10 @@ bool cmd_statusintegrate(void)
     /* Output content */
     printf("\n---------------RIPPLE PARSER INFO----------------\n");
 
-    printf("integrate loadlsn:           %X/%X",
-           (uint32)(mintegrate.loadlsn >> 32),
-           (uint32)(mintegrate.loadlsn));
-    printf("integrate synclsn:           %X/%X",
-           (uint32)(mintegrate.synclsn >> 32),
-           (uint32)(mintegrate.synclsn));
+    printf("integrate loadlsn:           %X/%X", (uint32)(mintegrate.loadlsn >> 32), (uint32)(mintegrate.loadlsn));
+    printf("integrate synclsn:           %X/%X", (uint32)(mintegrate.synclsn >> 32), (uint32)(mintegrate.synclsn));
     printf("integrate loadtrail:         %lX/%lX", mintegrate.loadtrailno, mintegrate.loadtrailno);
-    printf(
-        "integrate synctrail:         %lX/%lX", mintegrate.synctrailno, mintegrate.synctrailstart);
+    printf("integrate synctrail:         %lX/%lX", mintegrate.synctrailno, mintegrate.synctrailstart);
     printf("integrate loadTimestamp:     %lu", mintegrate.loadtimestamp);
     printf("integrate syncTimestamp:     %lu", mintegrate.synctimestamp);
 

@@ -11,22 +11,21 @@ typedef struct SUBDIRS
 } subdirs;
 
 /* capture subdirectory */
-static char* m_subdirscapture[] = {
-    "catalog", "chk", "trail", "stat", "log", "filter", "refresh", "onlinerefresh"};
+static char*   m_subdirscapture[] = {"catalog", "chk", "trail", "stat", "log", "filter", "refresh", "onlinerefresh"};
 
 /* integrate subdirectory */
-static char* m_subdirsintegrate[] = {
-    "chk", "trail", "stat", "log", "filter", "refresh", "onlinerefresh"};
+static char*   m_subdirsintegrate[] = {"chk", "trail", "stat", "log", "filter", "refresh", "onlinerefresh"};
 
 /* xmanager jobname subdirectory */
 static char*   m_subdirsxmanager[] = {"log", "metric"};
 
 static subdirs m_subdirs[] = {
-    {PROC_TYPE_NOP, 0, NULL},
-    {PROC_TYPE_CAPTURE, lengthof(m_subdirscapture), m_subdirscapture},
-    {PROC_TYPE_INTEGRATE, lengthof(m_subdirsintegrate), m_subdirsintegrate},
-    {PROC_TYPE_PGRECEIVEWAL, 0, NULL},
-    {PROC_TYPE_XMANAGER, lengthof(m_subdirsxmanager), m_subdirsxmanager}};
+    {PROC_TYPE_NOP,          0,                            NULL              },
+    {PROC_TYPE_CAPTURE,      lengthof(m_subdirscapture),   m_subdirscapture  },
+    {PROC_TYPE_INTEGRATE,    lengthof(m_subdirsintegrate), m_subdirsintegrate},
+    {PROC_TYPE_PGRECEIVEWAL, 0,                            NULL              },
+    {PROC_TYPE_XMANAGER,     lengthof(m_subdirsxmanager),  m_subdirsxmanager }
+};
 
 /* Create data directory */
 bool datainit_init(char* in_wdata)
@@ -67,9 +66,7 @@ bool datainit_init(char* in_wdata)
             }
             else
             {
-                elog(RLOG_WARNING,
-                     "directory %s exists but is not empty",
-                     guc_getConfigOption(CFG_KEY_DATA));
+                elog(RLOG_WARNING, "directory %s exists but is not empty", guc_getConfigOption(CFG_KEY_DATA));
                 return false;
             }
         }
@@ -80,11 +77,7 @@ bool datainit_init(char* in_wdata)
     for (index = 0; index < m_subdirs[g_proctype].subcnt; index++)
     {
         rmemset1(path, 0, '\0', MAXPATH);
-        snprintf(path,
-                 MAXPATH,
-                 "%s/%s",
-                 guc_getConfigOption(CFG_KEY_DATA),
-                 m_subdirs[g_proctype].subdirs[index]);
+        snprintf(path, MAXPATH, "%s/%s", guc_getConfigOption(CFG_KEY_DATA), m_subdirs[g_proctype].subdirs[index]);
 
         if (0 != osal_make_dir(path))
         {

@@ -60,21 +60,19 @@ typedef struct
 } pg_conv_map;
 
 static const pg_conv_map maps[] = {
-    {LATIN2, &iso8859_2_to_unicode_tree, &iso8859_2_from_unicode_tree},   /* ISO-8859-2 Latin 2 */
-    {LATIN3, &iso8859_3_to_unicode_tree, &iso8859_3_from_unicode_tree},   /* ISO-8859-3 Latin 3 */
-    {LATIN4, &iso8859_4_to_unicode_tree, &iso8859_4_from_unicode_tree},   /* ISO-8859-4 Latin 4 */
-    {LATIN5, &iso8859_9_to_unicode_tree, &iso8859_9_from_unicode_tree},   /* ISO-8859-9 Latin 5 */
-    {LATIN6, &iso8859_10_to_unicode_tree, &iso8859_10_from_unicode_tree}, /* ISO-8859-10 Latin 6 */
-    {LATIN7, &iso8859_13_to_unicode_tree, &iso8859_13_from_unicode_tree}, /* ISO-8859-13 Latin 7 */
-    {LATIN8, &iso8859_14_to_unicode_tree, &iso8859_14_from_unicode_tree}, /* ISO-8859-14 Latin 8 */
-    {LATIN9, &iso8859_15_to_unicode_tree, &iso8859_15_from_unicode_tree}, /* ISO-8859-15 Latin 9 */
-    {LATIN10,
-     &iso8859_16_to_unicode_tree,
-     &iso8859_16_from_unicode_tree}, /* ISO-8859-16 Latin 10 */
-    {ISO_8859_5, &iso8859_5_to_unicode_tree, &iso8859_5_from_unicode_tree}, /* ISO-8859-5 */
-    {ISO_8859_6, &iso8859_6_to_unicode_tree, &iso8859_6_from_unicode_tree}, /* ISO-8859-6 */
-    {ISO_8859_7, &iso8859_7_to_unicode_tree, &iso8859_7_from_unicode_tree}, /* ISO-8859-7 */
-    {ISO_8859_8, &iso8859_8_to_unicode_tree, &iso8859_8_from_unicode_tree}, /* ISO-8859-8 */
+    {LATIN2,     &iso8859_2_to_unicode_tree,  &iso8859_2_from_unicode_tree }, /* ISO-8859-2 Latin 2 */
+    {LATIN3,     &iso8859_3_to_unicode_tree,  &iso8859_3_from_unicode_tree }, /* ISO-8859-3 Latin 3 */
+    {LATIN4,     &iso8859_4_to_unicode_tree,  &iso8859_4_from_unicode_tree }, /* ISO-8859-4 Latin 4 */
+    {LATIN5,     &iso8859_9_to_unicode_tree,  &iso8859_9_from_unicode_tree }, /* ISO-8859-9 Latin 5 */
+    {LATIN6,     &iso8859_10_to_unicode_tree, &iso8859_10_from_unicode_tree}, /* ISO-8859-10 Latin 6 */
+    {LATIN7,     &iso8859_13_to_unicode_tree, &iso8859_13_from_unicode_tree}, /* ISO-8859-13 Latin 7 */
+    {LATIN8,     &iso8859_14_to_unicode_tree, &iso8859_14_from_unicode_tree}, /* ISO-8859-14 Latin 8 */
+    {LATIN9,     &iso8859_15_to_unicode_tree, &iso8859_15_from_unicode_tree}, /* ISO-8859-15 Latin 9 */
+    {LATIN10,    &iso8859_16_to_unicode_tree, &iso8859_16_from_unicode_tree}, /* ISO-8859-16 Latin 10 */
+    {ISO_8859_5, &iso8859_5_to_unicode_tree,  &iso8859_5_from_unicode_tree }, /* ISO-8859-5 */
+    {ISO_8859_6, &iso8859_6_to_unicode_tree,  &iso8859_6_from_unicode_tree }, /* ISO-8859-6 */
+    {ISO_8859_7, &iso8859_7_to_unicode_tree,  &iso8859_7_from_unicode_tree }, /* ISO-8859-7 */
+    {ISO_8859_8, &iso8859_8_to_unicode_tree,  &iso8859_8_from_unicode_tree }, /* ISO-8859-8 */
 };
 
 void iso8859_to_utf8(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)

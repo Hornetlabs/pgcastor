@@ -13,16 +13,14 @@
 #define TYPE_SAVE_RECORD   (uint8_t)2
 #define TYPE_SAVE_COMPLETE (uint8_t)10
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_type(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno);
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_type(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                    pg_parser_ddlstate*           ddlstate,
+                                                                    int32_t*                      pg_parser_errno);
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                    pg_parser_translog_systb2dll_record* current_record,
+                                                    pg_parser_ddlstate*                  ddlstate,
+                                                    int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
 
@@ -44,8 +42,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
 
             if (!(strcmp(PG_TOAST_NAMESPACE_CHAR, ddlstate->m_nspname_oid_char)))
             {
-                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                     "DEBUG, DDL PARSER: in rtop type, skip toast \n");
+                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: in rtop type, skip toast \n");
                 pg_parser_ddl_init_ddlstate(ddlstate);
                 return NULL;
             }
@@ -63,11 +60,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
                                                             current_record->m_record->m_old_values,
                                                             current_record->m_record->m_valueCnt,
                                                             temp_objid);
-            temp_classid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
-                                                   current_record->m_record->m_old_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_classid);
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                              current_record->m_record->m_old_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_classid);
             if (!(strcmp(temp_oid, temp_objid)) && !(strcmp(TypeRelationIdChar, temp_classid)) &&
                 ddlstate->m_type_savepoint == TYPE_SAVE_COMPLETE)
             {
@@ -81,11 +77,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
         {
             char* temp_typtype = NULL;
             char* temp_oid = NULL;
-            temp_typtype =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("typtype",
-                                                   current_record->m_record->m_old_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_typtype);
+            temp_typtype = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("typtype",
+                                                              current_record->m_record->m_old_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_typtype);
 
             temp_oid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("typrelid",
                                                           current_record->m_record->m_old_values,
@@ -127,17 +122,15 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
                                             pg_parser_ddl->m_dbtype,
                                             pg_parser_ddl->m_dbversion))
         {
-            char* temp_relkind =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("relkind",
-                                                   current_record->m_record->m_old_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_relkind);
+            char* temp_relkind = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("relkind",
+                                                                    current_record->m_record->m_old_values,
+                                                                    current_record->m_record->m_valueCnt,
+                                                                    temp_relkind);
             if (PG_SYSDICT_RELKIND_SEQUENCE == temp_relkind[0])
             {
                 pg_parser_ddl_init_ddlstate(ddlstate);
-                pg_parser_log_errlog(
-                    pg_parser_ddl->m_debugLevel,
-                    "DEBUG, DDL PARSER: in drop type, stmt type changet to drop sequence \n");
+                pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                     "DEBUG, DDL PARSER: in drop type, stmt type changet to drop sequence \n");
                 ddlstate->m_ddlKind = PG_PARSER_DDL_SEQUENCE_DROP;
                 if (!pg_parser_ddl_get_pg_class_info(ddlstate, current_record->m_record, false))
                 {
@@ -161,12 +154,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
                     if (PG_SYSDICT_RELKIND_RELATION == temp_relkind[0] ||
                         PG_SYSDICT_RELKIND_PARTITIONED_TABLE == temp_relkind[0])
                     {
-                        pg_parser_log_errlog(
-                            pg_parser_ddl->m_debugLevel,
-                            "DEBUG, DDL PARSER: in drop type, change stmt type to drop table \n");
+                        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                             "DEBUG, DDL PARSER: in drop type, change stmt type to drop table \n");
                         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_DROP;
-                        if (!pg_parser_ddl_get_pg_class_info(
-                                ddlstate, current_record->m_record, false))
+                        if (!pg_parser_ddl_get_pg_class_info(ddlstate, current_record->m_record, false))
                         {
                             *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_CLASSINFO;
                             return NULL;
@@ -176,12 +167,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
                     /* The logic reaching here is when dropping an index with out-of-line storage */
                     else if (PG_SYSDICT_RELKIND_INDEX == temp_relkind[0])
                     {
-                        pg_parser_log_errlog(
-                            pg_parser_ddl->m_debugLevel,
-                            "DEBUG, DDL PARSER: in drop type, change stmt type to drop index \n");
+                        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                             "DEBUG, DDL PARSER: in drop type, change stmt type to drop index \n");
                         ddlstate->m_ddlKind = PG_PARSER_DDL_TOAST_INDEX_DROP_ESCAPE;
-                        if (!pg_parser_ddl_get_pg_class_info(
-                                ddlstate, current_record->m_record, false))
+                        if (!pg_parser_ddl_get_pg_class_info(ddlstate, current_record->m_record, false))
                         {
                             *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_CLASSINFO;
                             return NULL;
@@ -190,12 +179,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
                     }
                     else if (PG_SYSDICT_RELKIND_FOREIGN_TABLE == temp_relkind[0])
                     {
-                        pg_parser_log_errlog(
-                            pg_parser_ddl->m_debugLevel,
-                            "DEBUG, DDL PARSER: in drop type, ignore drop foreign table \n");
+                        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                             "DEBUG, DDL PARSER: in drop type, ignore drop foreign table \n");
                         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_DROP;
-                        if (!pg_parser_ddl_get_pg_class_info(
-                                ddlstate, current_record->m_record, false))
+                        if (!pg_parser_ddl_get_pg_class_info(ddlstate, current_record->m_record, false))
                         {
                             *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_CLASSINFO;
                             return NULL;
@@ -207,8 +194,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
                     /* If reached here, it proves the logic is not fully covered */
                     else
                     {
-                        pg_parser_log_errlog(
-                            pg_parser_ddl->m_debugLevel, "DEBUG, relkind: %s \n", temp_relkind);
+                        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, relkind: %s \n", temp_relkind);
                         *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_DROP_TABLE_RELKIND_CHECK;
                         pg_parser_ddl_init_ddlstate(ddlstate);
                         return NULL;
@@ -217,8 +203,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
                 /* If reached here, it proves the logic is not fully covered */
                 else
                 {
-                    pg_parser_log_errlog(
-                        pg_parser_ddl->m_debugLevel, "DEBUG, relkind: %s \n", temp_relkind);
+                    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, relkind: %s \n", temp_relkind);
                     *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_DROP_TABLE_RELKIND_CHECK;
                     pg_parser_ddl_init_ddlstate(ddlstate);
                     return NULL;
@@ -229,10 +214,9 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_type(
     return result;
 }
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_type(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno)
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_type(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                    pg_parser_ddlstate*           ddlstate,
+                                                                    int32_t*                      pg_parser_errno)
 {
     pg_parser_translog_ddlstmt*           result = NULL;
     pg_parser_translog_ddlstmt_drop_base* type_return = NULL;
@@ -240,14 +224,12 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_type(
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_DROP_TYPE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_DROP_TYPE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_47;
         return NULL;
     }
-    if (!pg_parser_mcxt_malloc(
-            DDL_DROP_TYPE_MCXT, (void**)&type_return, sizeof(pg_parser_translog_ddlstmt_drop_base)))
+    if (!pg_parser_mcxt_malloc(DDL_DROP_TYPE_MCXT, (void**)&type_return, sizeof(pg_parser_translog_ddlstmt_drop_base)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_48;
         return NULL;

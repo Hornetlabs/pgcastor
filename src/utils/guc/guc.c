@@ -6,572 +6,1061 @@
 #include "utils/list/list_func.h"
 
 /* Listen port */
-int                      g_walcachemaxsize = 64;
-int                      g_transmaxnum = 128;
-int                      g_blocksize = 8192; /* transaction log block size */
-int                      g_walsegsize = 16;  /* transaction log file size */
-int                      g_idbtype = DATABASE_TYPE_POSTGRESQL;
-int                      g_idbversion = 0;
-int                      g_parserddl = 1;
-int                      g_loglevel = RLOG_INFO;
-int                      g_refreshstragety = 1;
-int                      g_max_work_per_refresh = 10;
-int                      g_max_page_per_refreshsharding = 1000;
+int          g_walcachemaxsize = 64;
+int          g_transmaxnum = 128;
+int          g_blocksize = 8192; /* transaction log block size */
+int          g_walsegsize = 16;  /* transaction log file size */
+int          g_idbtype = DATABASE_TYPE_POSTGRESQL;
+int          g_idbversion = 0;
+int          g_parserddl = 1;
+int          g_loglevel = RLOG_INFO;
+int          g_refreshstragety = 1;
+int          g_max_work_per_refresh = 10;
+int          g_max_page_per_refreshsharding = 1000;
 
 /* Listen IP address */
 /*---------------------capture config begin------------------------*/
-static capture_cfg       g_capturecfg = {0};
+/* clang-format off */
+static capture_cfg g_capturecfg = {0};
 
 static struct config_int ConfigureNamesIntCapture[] = {
-    {{
-         CFG_KEY_TRAIL_MAX_SIZE,
-         PGC_INTERNAL,
-         gettext_noop("trail file max size, unit MB"),
-         NULL,
-     },
-     &(g_capturecfg.trailmaxsize),
-     128,
-     0,
-     4096,
-     NULL,
-     NULL},
-    {{
-         CFG_KEY_CAPTURE_BUFFER,
-         PGC_INTERNAL,
-         gettext_noop("trail file max size, unit MB"),
-         NULL,
-     },
-     &(g_capturecfg.maxbuffersize),
-     128,
-     1,
-     32768,
-     NULL,
-     NULL},
-    {{
-         CFG_KEY_COMPATIBILITY,
-         PGC_INTERNAL,
-         gettext_noop("compatibility version"),
-         NULL,
-     },
-     &(g_capturecfg.compatibility),
-     10,
-     10,
-     99,
-     NULL,
-     NULL},
-    {{CFG_KEY_PORT, PGC_INTERNAL, gettext_noop("target host listen port"), NULL},
-     &(g_capturecfg.port),
-     7529,
-     22,
-     999999,
-     NULL,
-     NULL},
-    {{CFG_KEY_XMANAGER_PORT, PGC_INTERNAL, gettext_noop("xmanager listen port"), NULL},
-     &(g_capturecfg.xport),
-     6543,
-     22,
-     999999,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVE,
-      PGC_INTERNAL,
-      gettext_noop("tcp keepalive, enable 1, disable 0"),
-      NULL},
-     &(g_capturecfg.tcp_keepalive),
-     1,
-     0,
-     1,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_USER_TIMEOUT, PGC_INTERNAL, gettext_noop("tcp user timeout"), NULL},
-     &(g_capturecfg.tcp_user_timeout),
-     60000,
-     0,
-     300000,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVES_IDLE, PGC_INTERNAL, gettext_noop("tcp keepalives idle"), NULL},
-     &(g_capturecfg.tcp_keepalives_idle),
-     30,
-     0,
-     300,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVES_INTERVAL, PGC_INTERNAL, gettext_noop("tcp keepalives interval"), NULL},
-     &(g_capturecfg.tcp_keepalives_interval),
-     5,
-     0,
-     300,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVES_COUNT, PGC_INTERNAL, gettext_noop("tcp keepalives count"), NULL},
-     &(g_capturecfg.tcp_keepalives_count),
-     10,
-     0,
-     100,
-     NULL,
-     NULL},
-    {{CFG_KEY_GCTIME, PGC_INTERNAL, gettext_noop("memory reclamation time"), NULL},
-     &(g_capturecfg.gctime),
-     0,
-     0,
-     300,
-     NULL,
-     NULL},
-    {{CFG_KEY_MAX_WORK_PER_REFRESH, PGC_INTERNAL, gettext_noop("max refresh work num"), NULL},
-     &(g_max_work_per_refresh),
-     1,
-     1,
-     100,
-     NULL,
-     NULL},
-    {{CFG_KEY_MAX_PAGE_PER_REFRESHSHARDING, PGC_INTERNAL, gettext_noop("shard threshold"), NULL},
-     &(g_max_page_per_refreshsharding),
-     1000,
-     100,
-     10000000,
-     NULL,
-     NULL},
-    {{CFG_KEY_REFRESHSTRAGETY, PGC_INTERNAL, gettext_noop("Stock data sync strategy"), NULL},
-     &(g_refreshstragety),
-     1,
-     0,
-     1,
-     NULL,
-     NULL},
-    {{CFG_KEY_ENABLE_REPLICA_IDENTITY, PGC_INTERNAL, gettext_noop("enable replica identity"), NULL},
-     &(g_capturecfg.ddl_identity),
-     1,
-     0,
-     1,
-     NULL,
-     NULL},
-    {{CFG_KEY_CAPTURE_WAL_DECRYPT, PGC_INTERNAL, gettext_noop("wal need decrypt"), NULL},
-     &(g_capturecfg.wal_decrypt),
-     0,
-     0,
-     1,
-     NULL,
-     NULL},
+    {
+        {
+            CFG_KEY_TRAIL_MAX_SIZE,
+            PGC_INTERNAL,
+            gettext_noop("trail file max size, unit MB"),
+            NULL,
+        },
+        &(g_capturecfg.trailmaxsize),
+        128,
+        0,
+        4096,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_CAPTURE_BUFFER,
+            PGC_INTERNAL,
+            gettext_noop("trail file max size, unit MB"),
+            NULL,
+        },
+        &(g_capturecfg.maxbuffersize),
+        128,
+        1,
+        32768,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_COMPATIBILITY,
+            PGC_INTERNAL,
+            gettext_noop("compatibility version"),
+            NULL,
+        },
+        &(g_capturecfg.compatibility),
+        10,
+        10,
+        99,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_PORT,
+            PGC_INTERNAL,
+            gettext_noop("target host listen port"),
+            NULL,
+        },
+        &(g_capturecfg.port),
+        7529,
+        22,
+        999999,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_XMANAGER_PORT,
+            PGC_INTERNAL,
+            gettext_noop("xmanager listen port"),
+            NULL,
+        },
+        &(g_capturecfg.xport),
+        6543,
+        22,
+        999999,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVE,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalive, enable 1, disable 0"),
+            NULL,
+        },
+        &(g_capturecfg.tcp_keepalive),
+        1,
+        0,
+        1,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_USER_TIMEOUT,
+            PGC_INTERNAL,
+            gettext_noop("tcp user timeout"),
+            NULL,
+        },
+        &(g_capturecfg.tcp_user_timeout),
+        60000,
+        0,
+        300000,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVES_IDLE,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalives idle"),
+            NULL,
+        },
+        &(g_capturecfg.tcp_keepalives_idle),
+        30,
+        0,
+        300,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVES_INTERVAL,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalives interval"),
+            NULL,
+        },
+        &(g_capturecfg.tcp_keepalives_interval),
+        5,
+        0,
+        300,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVES_COUNT,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalives count"),
+            NULL,
+        },
+        &(g_capturecfg.tcp_keepalives_count),
+        10,
+        0,
+        100,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_GCTIME,
+            PGC_INTERNAL,
+            gettext_noop("memory reclamation time"),
+            NULL,
+        },
+        &(g_capturecfg.gctime),
+        0,
+        0,
+        300,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_MAX_WORK_PER_REFRESH,
+            PGC_INTERNAL,
+            gettext_noop("max refresh work num"),
+            NULL,
+        },
+        &(g_max_work_per_refresh),
+        1,
+        1,
+        100,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_MAX_PAGE_PER_REFRESHSHARDING,
+            PGC_INTERNAL,
+            gettext_noop("shard threshold"),
+            NULL,
+        },
+        &(g_max_page_per_refreshsharding),
+        1000,
+        100,
+        10000000,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_REFRESHSTRAGETY,
+            PGC_INTERNAL,
+            gettext_noop("Stock data sync strategy"),
+            NULL,
+        },
+        &(g_refreshstragety),
+        1,
+        0,
+        1,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_ENABLE_REPLICA_IDENTITY,
+            PGC_INTERNAL,
+            gettext_noop("enable replica identity"),
+            NULL,
+        },
+        &(g_capturecfg.ddl_identity),
+        1,
+        0,
+        1,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_CAPTURE_WAL_DECRYPT,
+            PGC_INTERNAL,
+            gettext_noop("wal need decrypt"),
+            NULL,
+        },
+        &(g_capturecfg.wal_decrypt),
+        0,
+        0,
+        1,
+        NULL,
+        NULL},
     /* End-of-list marker */
-    {{NULL, 0, NULL, NULL}, NULL, 0, 0, 0, NULL, NULL}};
+    {
+        {
+            NULL,
+            0,
+            NULL,
+            NULL,
+        },
+        NULL,
+        0,
+        0,
+        0,
+        NULL,
+        NULL},
+    };
 
 static struct config_string ConfigureNamesStringCapture[] = {
-    {{CFG_KEY_LOG_LEVEL, PGC_INTERNAL, gettext_noop("log level, DEBUG INFO WARNING ERROR"), NULL},
-     &(g_capturecfg.szloglevel),
-     "INFO",
-     NULL,
-     NULL},
-    {{CFG_KEY_DATA, PGC_INTERNAL, gettext_noop("work dir"), NULL},
-     &(g_capturecfg.data),
-     "/opt/xsynch/data",
-     NULL,
-     NULL},
-    {{CFG_KEY_URL, PGC_INTERNAL, gettext_noop("database connect string"), NULL},
-     &(g_capturecfg.url),
-     "INFO",
-     NULL,
-     NULL},
-    {{CFG_KEY_DDL, PGC_INTERNAL, gettext_noop("log level, on parser /off unparser"), NULL},
-     &(g_capturecfg.szddl),
-     "on",
-     NULL,
-     NULL},
-    {{CFG_KEY_WAL_DIR, PGC_INTERNAL, gettext_noop("wal log directory"), NULL},
-     &(g_capturecfg.waldir),
-     "/opt/pgsql/dat/pg_wal",
-     NULL,
-     NULL},
-    {{CFG_KEY_DBTYPE, PGC_INTERNAL, gettext_noop("Type of parsing database(postgres)"), NULL},
-     &(g_capturecfg.dbtype),
-     "postgres",
-     NULL,
-     NULL},
-    {{CFG_KEY_DBVERION, PGC_INTERNAL, gettext_noop("Type of parsing database version(127)"), NULL},
-     &(g_capturecfg.dbversion),
-     "127",
-     NULL,
-     NULL},
-    {{CFG_KEY_CATALOGSCHEMA,
-      PGC_INTERNAL,
-      gettext_noop("The schema where the sync_status table is located"),
-      NULL},
-     &(g_capturecfg.xsynchschema),
-     "xsynch",
-     NULL,
-     NULL},
-    {{CFG_KEY_HOST, PGC_INTERNAL, gettext_noop("target host"), NULL},
-     &(g_capturecfg.host),
-     "127.0.0.1",
-     NULL,
-     NULL},
-    {{CFG_KEY_COMPRESS_ALGORITHM, PGC_INTERNAL, gettext_noop("compress algorithm"), NULL},
-     &(g_capturecfg.compress_algorithm),
-     NULL,
-     NULL,
-     NULL},
-    {{CFG_KEY_COMPRESS_LEVEL, PGC_INTERNAL, gettext_noop("compress level"), NULL},
-     &(g_capturecfg.compress_level),
-     "9",
-     NULL,
-     NULL},
-    {{CFG_KEY_LOG_DIR, PGC_INTERNAL, gettext_noop("log dir"), NULL},
-     &(g_capturecfg.logdir),
-     "log",
-     NULL,
-     NULL},
-    {{CFG_KEY_JOBNAME, PGC_INTERNAL, gettext_noop("jobname"), NULL},
-     &(g_capturecfg.jobname),
-     "ripple",
-     NULL,
-     NULL},
+    {
+        {
+            CFG_KEY_LOG_LEVEL,
+            PGC_INTERNAL,
+            gettext_noop("log level, DEBUG INFO WARNING ERROR"),
+            NULL,
+        },
+        &(g_capturecfg.szloglevel),
+        "INFO",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_DATA,
+            PGC_INTERNAL,
+            gettext_noop("work dir"),
+            NULL,
+        },
+        &(g_capturecfg.data),
+        "/opt/xsynch/data",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_URL,
+            PGC_INTERNAL,
+            gettext_noop("database connect string"),
+            NULL,
+        },
+        &(g_capturecfg.url),
+        "INFO",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_DDL,
+            PGC_INTERNAL,
+            gettext_noop("log level, on parser /off unparser"),
+            NULL,
+        },
+        &(g_capturecfg.szddl),
+        "on",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_WAL_DIR,
+            PGC_INTERNAL,
+            gettext_noop("wal log directory"),
+            NULL,
+        },
+        &(g_capturecfg.waldir),
+        "/opt/pgsql/dat/pg_wal",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_DBTYPE,
+            PGC_INTERNAL,
+            gettext_noop("Type of parsing database(postgres)"),
+            NULL,
+        },
+        &(g_capturecfg.dbtype),
+        "postgres",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_DBVERION,
+            PGC_INTERNAL,
+            gettext_noop("Type of parsing database version(127)"),
+            NULL,
+        },
+        &(g_capturecfg.dbversion),
+        "127",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_CATALOGSCHEMA,
+            PGC_INTERNAL,
+            gettext_noop("The schema where the sync_status table is located"),
+            NULL,
+        },
+        &(g_capturecfg.xsynchschema),
+        "xsynch",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_HOST,
+            PGC_INTERNAL,
+            gettext_noop("target host"),
+            NULL,
+        },
+        &(g_capturecfg.host),
+        "127.0.0.1",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_COMPRESS_ALGORITHM,
+            PGC_INTERNAL,
+            gettext_noop("compress algorithm"),
+            NULL,
+        },
+        &(g_capturecfg.compress_algorithm),
+        NULL,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_COMPRESS_LEVEL,
+            PGC_INTERNAL,
+            gettext_noop("compress level"),
+            NULL,
+        },
+        &(g_capturecfg.compress_level),
+        "9",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_LOG_DIR,
+            PGC_INTERNAL,
+            gettext_noop("log dir"),
+            NULL,
+        },
+        &(g_capturecfg.logdir),
+        "log",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_JOBNAME,
+            PGC_INTERNAL,
+            gettext_noop("jobname"),
+            NULL,
+        },
+        &(g_capturecfg.jobname),
+        "ripple",
+        NULL,
+        NULL},
     /* End-of-list marker */
-    {{NULL, 0, NULL, NULL}, NULL, NULL, NULL, NULL, NULL}};
-
+    {
+        {
+            NULL,
+            0,
+            NULL,
+            NULL,
+        },
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL},
+    };
+/* clang-format on */
 /*---------------------capture config   end------------------------*/
 
 /*---------------------integrate config begin---------------------------*/
-static integrate_cfg     g_integratecfg = {0};
+/* clang-format off */
+static integrate_cfg g_integratecfg = {0};
 
 static struct config_int ConfigureNamesIntIntegrate[] = {
-    {{
-         CFG_KEY_TRAIL_MAX_SIZE,
-         PGC_INTERNAL,
-         gettext_noop("trail file max size, unit MB"),
-         NULL,
-     },
-     &(g_integratecfg.trailmaxsize),
-     128,
-     1,
-     4096,
-     NULL,
-     NULL},
-    {{
-         CFG_KEY_COMPATIBILITY,
-         PGC_INTERNAL,
-         gettext_noop("compatibility version"),
-         NULL,
-     },
-     &(g_integratecfg.compatibility),
-     10,
-     10,
-     99,
-     NULL,
-     NULL},
-    {{CFG_KEY_MAX_WORK_PER_REFRESH, PGC_INTERNAL, gettext_noop("max refresh work num"), NULL},
-     &(g_max_work_per_refresh),
-     1,
-     1,
-     100,
-     NULL,
-     NULL},
-    {{CFG_KEY_XMANAGER_PORT, PGC_INTERNAL, gettext_noop("xmanager listen port"), NULL},
-     &(g_integratecfg.xport),
-     6543,
-     22,
-     999999,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVE,
-      PGC_INTERNAL,
-      gettext_noop("tcp keepalive, enable 1, disable 0"),
-      NULL},
-     &(g_integratecfg.tcp_keepalive),
-     1,
-     0,
-     1,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_USER_TIMEOUT, PGC_INTERNAL, gettext_noop("tcp user timeout"), NULL},
-     &(g_integratecfg.tcp_user_timeout),
-     60000,
-     0,
-     300000,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVES_IDLE, PGC_INTERNAL, gettext_noop("tcp keepalives idle"), NULL},
-     &(g_integratecfg.tcp_keepalives_idle),
-     30,
-     0,
-     300,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVES_INTERVAL, PGC_INTERNAL, gettext_noop("tcp keepalives interval"), NULL},
-     &(g_integratecfg.tcp_keepalives_interval),
-     5,
-     0,
-     300,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVES_COUNT, PGC_INTERNAL, gettext_noop("tcp keepalives count"), NULL},
-     &(g_integratecfg.tcp_keepalives_count),
-     10,
-     0,
-     100,
-     NULL,
-     NULL},
-    {{CFG_KEY_TRUNCATETABLE, PGC_INTERNAL, gettext_noop("truncate table"), NULL},
-     &(g_integratecfg.truncatetable),
-     0,
-     0,
-     1,
-     NULL,
-     NULL},
-    {{CFG_KEY_GCTIME, PGC_INTERNAL, gettext_noop("memory reclamation time"), NULL},
-     &(g_integratecfg.gctime),
-     0,
-     0,
-     300,
-     NULL,
-     NULL},
-    {{CFG_KEY_TXBUNDLESIZE, PGC_INTERNAL, gettext_noop("txbundle size"), NULL},
-     &(g_integratecfg.txbundlesize),
-     0,
-     0,
-     10000000,
-     NULL,
-     NULL},
-    {{CFG_KEY_MERGETXN, PGC_INTERNAL, gettext_noop("merge txn"), NULL},
-     &(g_integratecfg.mergetxn),
-     0,
-     0,
-     1,
-     NULL,
-     NULL},
-    {{
-         CFG_KEY_INTEGRATE_BUFFER,
-         PGC_INTERNAL,
-         gettext_noop("txn max size, unit MB"),
-         NULL,
-     },
-     &(g_integratecfg.maxbuffersize),
-     128,
-     1,
-     32768,
-     NULL,
-     NULL},
+    {
+        {
+            CFG_KEY_TRAIL_MAX_SIZE,
+            PGC_INTERNAL,
+            gettext_noop("trail file max size, unit MB"),
+            NULL,
+        },
+        &(g_integratecfg.trailmaxsize),
+        128,
+        1,
+        4096,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_COMPATIBILITY,
+            PGC_INTERNAL,
+            gettext_noop("compatibility version"),
+            NULL,
+        },
+        &(g_integratecfg.compatibility),
+        10,
+        10,
+        99,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_MAX_WORK_PER_REFRESH,
+            PGC_INTERNAL,
+            gettext_noop("max refresh work num"),
+            NULL,
+        },
+        &(g_max_work_per_refresh),
+        1,
+        1,
+        100,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_XMANAGER_PORT,
+            PGC_INTERNAL,
+            gettext_noop("xmanager listen port"),
+            NULL,
+        },
+        &(g_integratecfg.xport),
+        6543,
+        22,
+        999999,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVE,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalive, enable 1, disable 0"),
+            NULL,
+        },
+        &(g_integratecfg.tcp_keepalive),
+        1,
+        0,
+        1,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_USER_TIMEOUT,
+            PGC_INTERNAL,
+            gettext_noop("tcp user timeout"),
+            NULL,
+        },
+        &(g_integratecfg.tcp_user_timeout),
+        60000,
+        0,
+        300000,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVES_IDLE,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalives idle"),
+            NULL,
+        },
+        &(g_integratecfg.tcp_keepalives_idle),
+        30,
+        0,
+        300,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVES_INTERVAL,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalives interval"),
+            NULL,
+        },
+        &(g_integratecfg.tcp_keepalives_interval),
+        5,
+        0,
+        300,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVES_COUNT,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalives count"),
+            NULL,
+        },
+        &(g_integratecfg.tcp_keepalives_count),
+        10,
+        0,
+        100,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TRUNCATETABLE,
+            PGC_INTERNAL,
+            gettext_noop("truncate table"),
+            NULL,
+        },
+        &(g_integratecfg.truncatetable),
+        0,
+        0,
+        1,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_GCTIME,
+            PGC_INTERNAL,
+            gettext_noop("memory reclamation time"),
+            NULL,
+        },
+        &(g_integratecfg.gctime),
+        0,
+        0,
+        300,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TXBUNDLESIZE,
+            PGC_INTERNAL,
+            gettext_noop("txbundle size"),
+            NULL,
+        },
+        &(g_integratecfg.txbundlesize),
+        0,
+        0,
+        10000000,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_MERGETXN,
+            PGC_INTERNAL,
+            gettext_noop("merge txn"),
+            NULL,
+        },
+        &(g_integratecfg.mergetxn),
+        0,
+        0,
+        1,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_INTEGRATE_BUFFER,
+            PGC_INTERNAL,
+            gettext_noop("txn max size, unit MB"),
+            NULL,
+        },
+        &(g_integratecfg.maxbuffersize),
+        128,
+        1,
+        32768,
+        NULL,
+        NULL},
     /* End-of-list marker */
-    {{NULL, 0, NULL, NULL}, NULL, 0, 0, 0, NULL, NULL}};
+    {
+        {
+            NULL,
+            0,
+            NULL,
+            NULL,
+        },
+        NULL,
+        0,
+        0,
+        0,
+        NULL,
+        NULL},
+    };
 
 static struct config_string ConfigureNamesStringIntegrate[] = {
-    {{CFG_KEY_LOG_LEVEL, PGC_INTERNAL, gettext_noop("log level, DEBUG INFO WARNING ERROR"), NULL},
-     &(g_integratecfg.szloglevel),
-     "INFO",
-     NULL,
-     NULL},
-    {{CFG_KEY_DATA, PGC_INTERNAL, gettext_noop("work dir"), NULL},
-     &(g_integratecfg.data),
-     "/opt/xsynch/data",
-     NULL,
-     NULL},
-    {{CFG_KEY_URL, PGC_INTERNAL, gettext_noop("database connect string"), NULL},
-     &(g_integratecfg.url),
-     "",
-     NULL,
-     NULL},
-    {{CFG_KEY_TRAIL_DIR, PGC_INTERNAL, gettext_noop("trail directory"), NULL},
-     &(g_integratecfg.traildir),
-     "/opt/ripple/capture/trail",
-     NULL,
-     NULL},
-    {{CFG_KEY_CATALOGSCHEMA,
-      PGC_INTERNAL,
-      gettext_noop("The schema where the sync_status table is located"),
-      NULL},
-     &(g_integratecfg.xsynchschema),
-     "xsynch",
-     NULL,
-     NULL},
-    {{CFG_KEY_COMPRESS_ALGORITHM, PGC_INTERNAL, gettext_noop("compress algorithm"), NULL},
-     &(g_integratecfg.compress_algorithm),
-     NULL,
-     NULL,
-     NULL},
-    {{CFG_KEY_COMPRESS_LEVEL, PGC_INTERNAL, gettext_noop("compress level"), NULL},
-     &(g_integratecfg.compress_level),
-     "9",
-     NULL,
-     NULL},
-    {{CFG_KEY_LOG_DIR, PGC_INTERNAL, gettext_noop("log dir"), NULL},
-     &(g_integratecfg.logdir),
-     "log",
-     NULL,
-     NULL},
-    {{CFG_KEY_JOBNAME, PGC_INTERNAL, gettext_noop("jobname"), NULL},
-     &(g_integratecfg.jobname),
-     "ripple",
-     NULL,
-     NULL},
-    {{CFG_KEY_INTEGRATE_METHOD, PGC_INTERNAL, gettext_noop("method"), NULL},
-     &(g_integratecfg.method),
-     NULL,
-     NULL,
-     NULL},
+    {
+        {
+            CFG_KEY_LOG_LEVEL,
+            PGC_INTERNAL,
+            gettext_noop("log level, DEBUG INFO WARNING ERROR"),
+            NULL,
+        },
+        &(g_integratecfg.szloglevel),
+        "INFO",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_DATA,
+            PGC_INTERNAL,
+            gettext_noop("work dir"),
+            NULL,
+        },
+        &(g_integratecfg.data),
+        "/opt/xsynch/data",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_URL,
+            PGC_INTERNAL,
+            gettext_noop("database connect string"),
+            NULL,
+        },
+        &(g_integratecfg.url),
+        "",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TRAIL_DIR,
+            PGC_INTERNAL,
+            gettext_noop("trail directory"),
+            NULL,
+        },
+        &(g_integratecfg.traildir),
+        "/opt/ripple/capture/trail",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_CATALOGSCHEMA,
+            PGC_INTERNAL,
+            gettext_noop("The schema where the sync_status table is located"),
+            NULL,
+        },
+        &(g_integratecfg.xsynchschema),
+        "xsynch",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_COMPRESS_ALGORITHM,
+            PGC_INTERNAL,
+            gettext_noop("compress algorithm"),
+            NULL,
+        },
+        &(g_integratecfg.compress_algorithm),
+        NULL,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_COMPRESS_LEVEL,
+            PGC_INTERNAL,
+            gettext_noop("compress level"),
+            NULL,
+        },
+        &(g_integratecfg.compress_level),
+        "9",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_LOG_DIR,
+            PGC_INTERNAL,
+            gettext_noop("log dir"),
+            NULL,
+        },
+        &(g_integratecfg.logdir),
+        "log",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_JOBNAME,
+            PGC_INTERNAL,
+            gettext_noop("jobname"),
+            NULL,
+        },
+        &(g_integratecfg.jobname),
+        "ripple",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_INTEGRATE_METHOD,
+            PGC_INTERNAL,
+            gettext_noop("method"),
+            NULL,
+        },
+        &(g_integratecfg.method),
+        NULL,
+        NULL,
+        NULL},
     /* End-of-list marker */
-    {{NULL, 0, NULL, NULL}, NULL, NULL, NULL, NULL, NULL}};
-
+    {
+        {
+            NULL,
+            0,
+            NULL,
+            NULL,
+        },
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL},
+    };
+/* clang-format on */
 /*---------------------integrate config   end---------------------------*/
 
 /*---------------------receivelog config begin--------------------------*/
-
-static receivewal_cfg    m_receivewalcfg = {0};
+/* clang-format off */
+static receivewal_cfg m_receivewalcfg = {0};
 
 static struct config_int ConfigureNamesIntReceivewal[] = {
-    {{CFG_KEY_TIMELINE, PGC_INTERNAL, gettext_noop("start specified timeline"), NULL},
-     &(m_receivewalcfg.tli),
-     0,
-     0,
-     400000000,
-     NULL,
-     NULL},
+    {
+        {
+            CFG_KEY_TIMELINE,
+            PGC_INTERNAL,
+            gettext_noop("start specified timeline"),
+            NULL,
+        },
+        &(m_receivewalcfg.tli),
+        0,
+        0,
+        400000000,
+        NULL,
+        NULL},
     /* End-of-list marker */
-    {{NULL, 0, NULL, NULL}, NULL, 0, 0, 0, NULL, NULL}};
+    {
+        {
+            NULL,
+            0,
+            NULL,
+            NULL,
+        },
+        NULL,
+        0,
+        0,
+        0,
+        NULL,
+        NULL},
+    };
 
 static struct config_string ConfigureNamesStringReceivewal[] = {
-    {{CFG_KEY_LOG_LEVEL, PGC_INTERNAL, gettext_noop("log level, DEBUG INFO WARNING ERROR"), NULL},
-     &(m_receivewalcfg.loglevel),
-     "INFO",
-     NULL,
-     NULL},
-    {{CFG_KEY_DATA, PGC_INTERNAL, gettext_noop("work dir"), NULL},
-     &(m_receivewalcfg.data),
-     "/opt/receivewal/data",
-     NULL,
-     NULL},
-    {{CFG_KEY_JOBNAME, PGC_INTERNAL, gettext_noop("jobname"), NULL},
-     &(m_receivewalcfg.jobname),
-     "ripple",
-     NULL,
-     NULL},
-    {{CFG_KEY_LOG_DIR, PGC_INTERNAL, gettext_noop("log dir"), NULL},
-     &(m_receivewalcfg.logdir),
-     "log",
-     NULL,
-     NULL},
-    {{CFG_KEY_PRIMARY_CONN_INFO,
-      PGC_INTERNAL,
-      gettext_noop("database server connect string"),
-      NULL},
-     &(m_receivewalcfg.primaryconninfo),
-     "",
-     NULL,
-     NULL},
-    {{CFG_KEY_SLOT_NAME,
-      PGC_INTERNAL,
-      gettext_noop("physical replication use specified slot"),
-      NULL},
-     &(m_receivewalcfg.primaryslotname),
-     "",
-     NULL,
-     NULL},
-    {{CFG_KEY_STARTPOS,
-      PGC_INTERNAL,
-      gettext_noop("start replication replication lsn, XX/XXX"),
-      NULL},
-     &(m_receivewalcfg.startpos),
-     "",
-     NULL,
-     NULL},
-    {{CFG_KEY_RESTORE_COMMAND,
-      PGC_INTERNAL,
-      gettext_noop("After archiving at the source, use a command to retrieve it from the archive"),
-      NULL},
-     &(m_receivewalcfg.restorecommand),
-     "",
-     NULL,
-     NULL},
+    {
+        {
+            CFG_KEY_LOG_LEVEL,
+            PGC_INTERNAL,
+            gettext_noop("log level, DEBUG INFO WARNING ERROR"),
+            NULL,
+        },
+        &(m_receivewalcfg.loglevel),
+        "INFO",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_DATA,
+            PGC_INTERNAL,
+            gettext_noop("work dir"),
+            NULL,
+        },
+        &(m_receivewalcfg.data),
+        "/opt/receivewal/data",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_JOBNAME,
+            PGC_INTERNAL,
+            gettext_noop("jobname"),
+            NULL,
+        },
+        &(m_receivewalcfg.jobname),
+        "ripple",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_LOG_DIR,
+            PGC_INTERNAL,
+            gettext_noop("log dir"),
+            NULL,
+        },
+        &(m_receivewalcfg.logdir),
+        "log",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_PRIMARY_CONN_INFO,
+            PGC_INTERNAL,
+            gettext_noop("database server connect string"),
+            NULL,
+        },
+        &(m_receivewalcfg.primaryconninfo),
+        "",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_SLOT_NAME,
+            PGC_INTERNAL,
+            gettext_noop("physical replication use specified slot"),
+            NULL,
+        },
+        &(m_receivewalcfg.primaryslotname),
+        "",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_STARTPOS,
+            PGC_INTERNAL,
+            gettext_noop("start replication replication lsn, XX/XXX"),
+            NULL,
+        },
+        &(m_receivewalcfg.startpos),
+        "",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_RESTORE_COMMAND,
+            PGC_INTERNAL,
+            gettext_noop("After archiving at the source, use a command to retrieve it from the archive"),
+            NULL,
+        },
+        &(m_receivewalcfg.restorecommand),
+        "",
+        NULL,
+        NULL},
     /* End-of-list marker */
-    {{NULL, 0, NULL, NULL}, NULL, NULL, NULL, NULL, NULL}};
-
+    {
+        {
+            NULL,
+            0,
+            NULL,
+            NULL,
+        },
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL},
+    };
+/* clang-format on */
 /*---------------------receivelog config   end--------------------------*/
 
 /*---------------------xmanager config begin----------------------------*/
-
-static xmanager_cfg      m_xmanagercfg = {0};
+/* clang-format off */
+static xmanager_cfg m_xmanagercfg = {0};
 
 static struct config_int ConfigureNamesIntXmanager[] = {
-    {{CFG_KEY_PORT, PGC_INTERNAL, gettext_noop("target host listen port"), NULL},
-     &(m_xmanagercfg.port),
-     6543,
-     22,
-     999999,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVE,
-      PGC_INTERNAL,
-      gettext_noop("tcp keepalive, enable 1, disable 0"),
-      NULL},
-     &(m_xmanagercfg.tcp_keepalive),
-     1,
-     0,
-     1,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_USER_TIMEOUT, PGC_INTERNAL, gettext_noop("tcp user timeout"), NULL},
-     &(m_xmanagercfg.tcp_user_timeout),
-     60000,
-     0,
-     300000,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVES_IDLE, PGC_INTERNAL, gettext_noop("tcp keepalives idle"), NULL},
-     &(m_xmanagercfg.tcp_keepalives_idle),
-     30,
-     0,
-     300,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVES_INTERVAL, PGC_INTERNAL, gettext_noop("tcp keepalives interval"), NULL},
-     &(m_xmanagercfg.tcp_keepalives_interval),
-     5,
-     0,
-     300,
-     NULL,
-     NULL},
-    {{CFG_KEY_TCP_KEEPALIVES_COUNT, PGC_INTERNAL, gettext_noop("tcp keepalives count"), NULL},
-     &(m_xmanagercfg.tcp_keepalives_count),
-     10,
-     0,
-     100,
-     NULL,
-     NULL},
+    {
+        {
+            CFG_KEY_PORT,
+            PGC_INTERNAL,
+            gettext_noop("target host listen port"),
+            NULL,
+        },
+        &(m_xmanagercfg.port),
+        6543,
+        22,
+        999999,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVE,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalive, enable 1, disable 0"),
+            NULL,
+        },
+        &(m_xmanagercfg.tcp_keepalive),
+        1,
+        0,
+        1,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_USER_TIMEOUT,
+            PGC_INTERNAL,
+            gettext_noop("tcp user timeout"),
+            NULL,
+        },
+        &(m_xmanagercfg.tcp_user_timeout),
+        60000,
+        0,
+        300000,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVES_IDLE,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalives idle"),
+            NULL,
+        },
+        &(m_xmanagercfg.tcp_keepalives_idle),
+        30,
+        0,
+        300,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVES_INTERVAL,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalives interval"),
+            NULL,
+        },
+        &(m_xmanagercfg.tcp_keepalives_interval),
+        5,
+        0,
+        300,
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_TCP_KEEPALIVES_COUNT,
+            PGC_INTERNAL,
+            gettext_noop("tcp keepalives count"),
+            NULL,
+        },
+        &(m_xmanagercfg.tcp_keepalives_count),
+        10,
+        0,
+        100,
+        NULL,
+        NULL},
     /* End-of-list marker */
-    {{NULL, 0, NULL, NULL}, NULL, 0, 0, 0, NULL, NULL}};
+    {
+        {
+            NULL,
+            0,
+            NULL,
+            NULL,
+        },
+        NULL,
+        0,
+        0,
+        0,
+        NULL,
+        NULL},
+    };
 
 static struct config_string ConfigureNamesStringXmanager[] = {
-    {{CFG_KEY_LOG_LEVEL, PGC_INTERNAL, gettext_noop("log level, DEBUG INFO WARNING ERROR"), NULL},
-     &(m_xmanagercfg.szloglevel),
-     "INFO",
-     NULL,
-     NULL},
-    {{CFG_KEY_LOG_DIR, PGC_INTERNAL, gettext_noop("log dir"), NULL},
-     &(m_xmanagercfg.logdir),
-     "log",
-     NULL,
-     NULL},
-    {{CFG_KEY_DATA, PGC_INTERNAL, gettext_noop("work dir"), NULL},
-     &(m_xmanagercfg.data),
-     "/opt/xsynch/xmanagerdata",
-     NULL,
-     NULL},
-    {{CFG_KEY_HOST, PGC_INTERNAL, gettext_noop("listen host"), NULL},
-     &(m_xmanagercfg.host),
-     "127.0.0.1",
-     NULL,
-     NULL},
-    {{CFG_KEY_JOBNAME, PGC_INTERNAL, gettext_noop("jobname"), NULL},
-     &(m_xmanagercfg.jobname),
-     "xmanager",
-     NULL,
-     NULL},
-    {{CFG_KEY_UNIXDOMAINDIR, PGC_INTERNAL, gettext_noop("unix domain dir"), NULL},
-     &(m_xmanagercfg.unixdomaindir),
-     "/tmp",
-     NULL,
-     NULL},
+    {
+        {
+            CFG_KEY_LOG_LEVEL,
+            PGC_INTERNAL,
+            gettext_noop("log level, DEBUG INFO WARNING ERROR"),
+            NULL,
+        },
+        &(m_xmanagercfg.szloglevel),
+        "INFO",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_LOG_DIR,
+            PGC_INTERNAL,
+            gettext_noop("log dir"),
+            NULL,
+        },
+        &(m_xmanagercfg.logdir),
+        "log",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_DATA,
+            PGC_INTERNAL,
+            gettext_noop("work dir"),
+            NULL,
+        },
+        &(m_xmanagercfg.data),
+        "/opt/xsynch/xmanagerdata",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_HOST,
+            PGC_INTERNAL,
+            gettext_noop("listen host"),
+            NULL,
+        },
+        &(m_xmanagercfg.host),
+        "127.0.0.1",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_JOBNAME,
+            PGC_INTERNAL,
+            gettext_noop("jobname"),
+            NULL,
+        },
+        &(m_xmanagercfg.jobname),
+        "xmanager",
+        NULL,
+        NULL},
+    {
+        {
+            CFG_KEY_UNIXDOMAINDIR,
+            PGC_INTERNAL,
+            gettext_noop("unix domain dir"),
+            NULL,
+        },
+        &(m_xmanagercfg.unixdomaindir),
+        "/tmp",
+        NULL,
+        NULL},
     /* End-of-list marker */
-    {{NULL, 0, NULL, NULL}, NULL, NULL, NULL, NULL, NULL}};
-
+    {
+        {
+            NULL,
+            0,
+            NULL,
+            NULL,
+        },
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL},
+    };
+/* clang-format on */
 /*---------------------xmanager config   end----------------------------*/
 
 /*---------------------guc begin----------------------------------*/
@@ -606,16 +1095,13 @@ static void guc_capturedebug(void)
     List*     ls = NULL;
     printf("---------capture config begin--------------\n");
     printf("ddl:            %s\n", g_capturecfg.ddl == 0 ? "off" : "on");
-    printf("szloglevel:     %s\n",
-           g_capturecfg.szloglevel == NULL ? "NULL" : g_capturecfg.szloglevel);
+    printf("szloglevel:     %s\n", g_capturecfg.szloglevel == NULL ? "NULL" : g_capturecfg.szloglevel);
     printf("data:           %s\n", g_capturecfg.data == NULL ? "NULL" : g_capturecfg.data);
     printf("url:            %s\n", g_capturecfg.url == NULL ? "NULL" : g_capturecfg.url);
     printf("waldir:         %s\n", g_capturecfg.waldir == NULL ? "NULL" : g_capturecfg.waldir);
     printf("dbtype:         %s\n", g_capturecfg.dbtype == NULL ? "NULL" : g_capturecfg.dbtype);
-    printf("dbversion:      %s\n",
-           g_capturecfg.dbversion == NULL ? "NULL" : g_capturecfg.dbversion);
-    printf("xsynchschema:   %s\n",
-           g_capturecfg.xsynchschema == NULL ? "NULL" : g_capturecfg.xsynchschema);
+    printf("dbversion:      %s\n", g_capturecfg.dbversion == NULL ? "NULL" : g_capturecfg.dbversion);
+    printf("xsynchschema:   %s\n", g_capturecfg.xsynchschema == NULL ? "NULL" : g_capturecfg.xsynchschema);
     printf("logdir:   %s\n", g_capturecfg.logdir == NULL ? "NULL" : g_capturecfg.logdir);
 
     if (NULL != g_table)
@@ -652,11 +1138,9 @@ static void guc_integratedebug(void)
     ListCell* lc = NULL;
     List*     ls = NULL;
     printf("---------integrate config begin--------------\n");
-    printf("szloglevel:     %s\n",
-           g_integratecfg.szloglevel == NULL ? "NULL" : g_integratecfg.szloglevel);
+    printf("szloglevel:     %s\n", g_integratecfg.szloglevel == NULL ? "NULL" : g_integratecfg.szloglevel);
     printf("data:           %s\n", g_integratecfg.data == NULL ? "NULL" : g_integratecfg.data);
-    printf("traildir:       %s\n",
-           g_integratecfg.traildir == NULL ? "NULL" : g_integratecfg.traildir);
+    printf("traildir:       %s\n", g_integratecfg.traildir == NULL ? "NULL" : g_integratecfg.traildir);
     printf("url:            %s\n", g_integratecfg.url == NULL ? "NULL" : g_integratecfg.url);
 
     if (NULL != g_table)
@@ -695,8 +1179,7 @@ static void guc_receivewaldebug(void)
 
     printf("timeline:     %d\n", m_receivewalcfg.tli);
 
-    printf("startpos:     %s\n",
-           m_receivewalcfg.startpos == NULL ? "NULL" : m_receivewalcfg.startpos);
+    printf("startpos:     %s\n", m_receivewalcfg.startpos == NULL ? "NULL" : m_receivewalcfg.startpos);
 
     printf("primaryconninfo:            %s\n",
            m_receivewalcfg.primaryconninfo == NULL ? "NULL" : m_receivewalcfg.primaryconninfo);
@@ -719,14 +1202,12 @@ static void guc_xmanagerdebug(void)
 
     printf("logdir:     %s\n", m_xmanagercfg.logdir == NULL ? "NULL" : m_xmanagercfg.logdir);
 
-    printf("loglevel:   %s\n",
-           m_xmanagercfg.szloglevel == NULL ? "NULL" : m_xmanagercfg.szloglevel);
+    printf("loglevel:   %s\n", m_xmanagercfg.szloglevel == NULL ? "NULL" : m_xmanagercfg.szloglevel);
 
     printf("host:               %s\n", m_xmanagercfg.host == NULL ? "NULL" : m_xmanagercfg.host);
 
-    printf(
-        "unixdomaindir:      %s\n",
-        m_xmanagercfg.unixdomaindir == NULL ? RMANAGER_UNIXDOMAINDIR : m_xmanagercfg.unixdomaindir);
+    printf("unixdomaindir:      %s\n",
+           m_xmanagercfg.unixdomaindir == NULL ? RMANAGER_UNIXDOMAINDIR : m_xmanagercfg.unixdomaindir);
 
     printf("port:       %d\n", m_xmanagercfg.port);
 
@@ -740,20 +1221,12 @@ static void guc_xmanagerdebug(void)
 }
 
 static guc_cfg m_guccfg[] = {
-    {PROC_TYPE_NOP, NULL, NULL, NULL},
-    {PROC_TYPE_CAPTURE, ConfigureNamesIntCapture, ConfigureNamesStringCapture, guc_capturedebug},
-    {PROC_TYPE_INTEGRATE,
-     ConfigureNamesIntIntegrate,
-     ConfigureNamesStringIntegrate,
-     guc_integratedebug},
-    {PROC_TYPE_PGRECEIVEWAL,
-     ConfigureNamesIntReceivewal,
-     ConfigureNamesStringReceivewal,
-     guc_receivewaldebug},
-    {PROC_TYPE_XMANAGER,
-     ConfigureNamesIntXmanager,
-     ConfigureNamesStringXmanager,
-     guc_xmanagerdebug}};
+    {PROC_TYPE_NOP,          NULL,                        NULL,                           NULL               },
+    {PROC_TYPE_CAPTURE,      ConfigureNamesIntCapture,    ConfigureNamesStringCapture,    guc_capturedebug   },
+    {PROC_TYPE_INTEGRATE,    ConfigureNamesIntIntegrate,  ConfigureNamesStringIntegrate,  guc_integratedebug },
+    {PROC_TYPE_PGRECEIVEWAL, ConfigureNamesIntReceivewal, ConfigureNamesStringReceivewal, guc_receivewaldebug},
+    {PROC_TYPE_XMANAGER,     ConfigureNamesIntXmanager,   ConfigureNamesStringXmanager,   guc_xmanagerdebug  }
+};
 
 /* Print information */
 void guc_debug(void)
@@ -869,8 +1342,7 @@ static void guc_loadbuildin(proc_type type)
      * Create table with 20% slack
      */
     size_vars = num_vars + num_vars / 4;
-    guc_vars =
-        (struct config_generic**)guc_malloc(RLOG_ERROR, size_vars * sizeof(struct config_generic*));
+    guc_vars = (struct config_generic**)guc_malloc(RLOG_ERROR, size_vars * sizeof(struct config_generic*));
 
     num_vars = 0;
 
@@ -907,11 +1379,8 @@ static struct config_generic* find_option(const char* name)
      * By equating const char ** with struct config_generic *, we are assuming
      * the name field is first in config_generic.
      */
-    res = (struct config_generic**)bsearch((void*)&key,
-                                           (void*)guc_variables,
-                                           num_guc_variables,
-                                           sizeof(struct config_generic*),
-                                           guc_var_compare);
+    res = (struct config_generic**)
+        bsearch((void*)&key, (void*)guc_variables, num_guc_variables, sizeof(struct config_generic*), guc_var_compare);
     if (res)
     {
         return *res;
@@ -921,9 +1390,7 @@ static struct config_generic* find_option(const char* name)
     return NULL;
 }
 
-static void guc_parseConfigFile(const char*      config_file,
-                                ConfigVariable** head_p,
-                                ConfigVariable** tail_p)
+static void guc_parseConfigFile(const char* config_file, ConfigVariable** head_p, ConfigVariable** tail_p)
 {
     FILE* fp = NULL;
     char  fline[1024];
@@ -1066,9 +1533,7 @@ static void guc_parseConfigFile(const char*      config_file,
 
             if (true == quota)
             {
-                elog(RLOG_ERROR,
-                     "configuration item:%s is incorrect, missing double quotation marks",
-                     key);
+                elog(RLOG_ERROR, "configuration item:%s is incorrect, missing double quotation marks", key);
             }
         }
         else

@@ -167,18 +167,15 @@ bool translog_recvlog_setrestorecmd(translog_recvlog* recvwal, char* restorecmd)
         index++;
         if (index >= dlen)
         {
-            elog(RLOG_WARNING,
-                 "config item restore_command:%s is incorrectly configured.",
-                 restorecmd);
+            elog(RLOG_WARNING, "config item restore_command:%s is incorrectly configured.", restorecmd);
             return false;
         }
 
         if ('f' != recvwal->restorecmd[index] && 'p' != recvwal->restorecmd[index])
         {
-            elog(
-                RLOG_WARNING,
-                "config item restore_command:%s is incorrectly configured, only support \%f or \%p",
-                restorecmd);
+            elog(RLOG_WARNING,
+                 "config item restore_command:%s is incorrectly configured, only support \%f or \%p",
+                 restorecmd);
             return false;
         }
 
@@ -225,9 +222,7 @@ bool translog_recvlog_setsysidentifier(translog_recvlog* recvwal, char* sysident
 /*
  * execute SHOW wal_segment_size to get transaction log size
  */
-static bool translog_recvlog_showwalsegsize(translog_recvlog*    recvwal,
-                                            PGconn*              conn,
-                                            translog_walcontrol* walctrl)
+static bool translog_recvlog_showwalsegsize(translog_recvlog* recvwal, PGconn* conn, translog_walcontrol* walctrl)
 {
     uint32 segsize = 0;
 
@@ -248,9 +243,7 @@ static bool translog_recvlog_showwalsegsize(translog_recvlog*    recvwal,
  *  2. set control file status to work
  *  3. flush control file to disk
  */
-static bool translog_recvlog_identifysystem(translog_recvlog*    recvwal,
-                                            PGconn*              conn,
-                                            translog_walcontrol* walctrl)
+static bool translog_recvlog_identifysystem(translog_recvlog* recvwal, PGconn* conn, translog_walcontrol* walctrl)
 {
     TimeLineID dbtli = InvalidTimeLineID;
     XLogRecPtr dblsn = InvalidXLogRecPtr;
@@ -275,10 +268,7 @@ static bool translog_recvlog_identifysystem(translog_recvlog*    recvwal,
 
     if (recvwal->dbtli > dbtli)
     {
-        elog(RLOG_WARNING,
-             "recvwal's database timeline %u large than database timeline %u",
-             recvwal->dbtli,
-             dbtli);
+        elog(RLOG_WARNING, "recvwal's database timeline %u large than database timeline %u", recvwal->dbtli, dbtli);
         return false;
     }
     translog_recvlog_setdbtli(recvwal, dbtli);
@@ -348,8 +338,7 @@ static bool translog_recvlog_timelinehistory(translog_recvlog* recvwal, PGconn* 
  */
 static bool translog_recvlog_startreplication(translog_recvlog* recvwal, PGconn* conn)
 {
-    if (false ==
-        databaserecv_startreplication(conn, recvwal->tli, recvwal->startpos, recvwal->slotname))
+    if (false == databaserecv_startreplication(conn, recvwal->tli, recvwal->startpos, recvwal->slotname))
     {
         elog(RLOG_WARNING, "start replication error");
         return false;
@@ -557,8 +546,7 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
             }
 
             /* check if FDE encryption is enabled */
-            if (false ==
-                translog_recvlog_getconfigurefde(recvwal->dbtype, conninfo, &recvwal->enablefde))
+            if (false == translog_recvlog_getconfigurefde(recvwal->dbtype, conninfo, &recvwal->enablefde))
             {
                 elog(RLOG_WARNING, "get configure enable-fde error");
                 goto translog_recvwallog_done;
@@ -731,8 +719,7 @@ bool translog_recvlog_main(translog_recvlog* recvwal)
                             goto translog_recvwallog_done;
                         }
 
-                        recvwal->startpos -=
-                            PGWALSEGMENTOFFSET(recvwal->startpos, recvwal->segsize);
+                        recvwal->startpos -= PGWALSEGMENTOFFSET(recvwal->startpos, recvwal->segsize);
                         recvwal->startpos += recvwal->segsize;
                         walctrl.startpos = recvwal->startpos;
                         dberror = 0;

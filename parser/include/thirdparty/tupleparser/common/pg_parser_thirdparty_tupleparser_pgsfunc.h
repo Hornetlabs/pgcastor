@@ -13,8 +13,7 @@ typedef struct pg_parser_extraTypoutInfo
 /*
  * Define function pointers, provide function prototypes for special types
  */
-typedef pg_parser_Datum (*pg_parser_Local_PGFunctionSpecial)(pg_parser_Datum            attr,
-                                                             pg_parser_extraTypoutInfo* info);
+typedef pg_parser_Datum (*pg_parser_Local_PGFunctionSpecial)(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info);
 
 typedef struct
 {

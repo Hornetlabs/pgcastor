@@ -35,8 +35,7 @@
 #define TIME_TWOS_COMPLEMENT(t) ((t) ~(t)0 < 0)
 #define TIME_MAXVAL(t, b) \
     ((t)(((t)1 << ((b) - 1 - TIME_TYPE_SIGNED(t))) - 1 + ((t)1 << ((b) - 1 - TIME_TYPE_SIGNED(t)))))
-#define TIME_MINVAL(t, b) \
-    ((t)(TIME_TYPE_SIGNED(t) ? -TIME_TWOS_COMPLEMENT(t) - TIME_MAXVAL(t, b) : 0))
+#define TIME_MINVAL(t, b) ((t)(TIME_TYPE_SIGNED(t) ? -TIME_TWOS_COMPLEMENT(t) - TIME_MAXVAL(t, b) : 0))
 
 /* The extreme time values, assuming no padding.  */
 #define TIME_TIME_T_MIN         TIME_MINVAL(pg_parser_time_t, TIME_TYPE_BIT(pg_parser_time_t))

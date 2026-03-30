@@ -30,9 +30,9 @@ typedef struct NETSERVER
 {
     netserver_type    type; /* Specific type                             */
     int               fdcnt;
-    int               fdmax;         /* Number of descriptors                         */
-    int               keepalive;     /* Whether to enable keepalive                   */
-    int               keepaliveidle; /* Time before sending keepalive for inactive connection    */
+    int               fdmax;             /* Number of descriptors                         */
+    int               keepalive;         /* Whether to enable keepalive                   */
+    int               keepaliveidle;     /* Time before sending keepalive for inactive connection    */
     int               keepaliveinterval; /* Keepalive sending interval                 */
     int               keepalivecount;    /* Keepalive sending count                  */
     int               usertimeout;       /* Wait time after sending                     */
@@ -40,9 +40,9 @@ typedef struct NETSERVER
     dlist*            hosts;             /* Listen                                 */
     int*              pos;               /* Position index in model                   */
     rsocket*          fd;                /* Network descriptor                           */
-    netiompbase*      base;     /* IO multiplexing base information                       */
-    netiompops*       ops;      /* IO multiplexing model                          */
-    netserver_handler callback; /* Callback function                             */
+    netiompbase*      base;              /* IO multiplexing base information                       */
+    netiompops*       ops;               /* IO multiplexing model                          */
+    netserver_handler callback;          /* Callback function                             */
 } netserver;
 
 /* Initial settings */

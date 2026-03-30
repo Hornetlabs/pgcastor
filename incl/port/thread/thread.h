@@ -17,9 +17,7 @@ int osal_thread_unlock(pthread_mutex_t* mutex);
 
 int osal_thread_cond_signal(pthread_cond_t* cond);
 
-int osal_thread_cond_timewait(pthread_cond_t*        cond,
-                              pthread_mutex_t*       mutex,
-                              const struct timespec* abstime);
+int osal_thread_cond_timewait(pthread_cond_t* cond, pthread_mutex_t* mutex, const struct timespec* abstime);
 
 int osal_thread_create(pthread_t* thread, const pthread_attr_t* attr, thrworkfunc func, void* arg);
 

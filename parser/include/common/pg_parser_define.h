@@ -44,27 +44,27 @@ typedef unsigned long int uint64;
 #define pg_parser__restrict      __restrict
 
 /* Byte alignment related begin */
-#define PG_PARSER_MAXIMUM_ALIGNOF 8
-#define PG_PARSER_ALIGNOF_INT     4
-#define PG_PARSER_ALIGNOF_SHORT   2
-#define PG_PARSER_ALIGNOF_DOUBLE  8
+#define PG_PARSER_MAXIMUM_ALIGNOF          8
+#define PG_PARSER_ALIGNOF_INT              4
+#define PG_PARSER_ALIGNOF_SHORT            2
+#define PG_PARSER_ALIGNOF_DOUBLE           8
 
-#define PG_PARSER_TYPEALIGN(ALIGNVAL, LEN) \
-    (((uintptr_t)(LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t)((ALIGNVAL) - 1)))
+#define PG_PARSER_TYPEALIGN(ALIGNVAL, LEN) (((uintptr_t)(LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t)((ALIGNVAL) - 1)))
 
-#define PG_PARSER_DOUBLEALIGN(LEN) PG_PARSER_TYPEALIGN(PG_PARSER_ALIGNOF_DOUBLE, (LEN))
-#define PG_PARSER_INTALIGN(LEN)    PG_PARSER_TYPEALIGN(PG_PARSER_ALIGNOF_INT, (LEN))
-#define PG_PARSER_SHORTALIGN(LEN)  PG_PARSER_TYPEALIGN(PG_PARSER_ALIGNOF_SHORT, (LEN))
-#define PG_PARSER_MAXALIGN(LEN)    PG_PARSER_TYPEALIGN(PG_PARSER_MAXIMUM_ALIGNOF, (LEN))
+#define PG_PARSER_DOUBLEALIGN(LEN)         PG_PARSER_TYPEALIGN(PG_PARSER_ALIGNOF_DOUBLE, (LEN))
+#define PG_PARSER_INTALIGN(LEN)            PG_PARSER_TYPEALIGN(PG_PARSER_ALIGNOF_INT, (LEN))
+#define PG_PARSER_SHORTALIGN(LEN)          PG_PARSER_TYPEALIGN(PG_PARSER_ALIGNOF_SHORT, (LEN))
+#define PG_PARSER_MAXALIGN(LEN)            PG_PARSER_TYPEALIGN(PG_PARSER_MAXIMUM_ALIGNOF, (LEN))
 
-#define PG_PARSER_Max(x, y)        ((x) > (y) ? (x) : (y))
+#define PG_PARSER_Max(x, y)                ((x) > (y) ? (x) : (y))
 
-#define PG_PARSER_INT64CONST(x)    (x##L)
-#define PG_PARSER_UINT64CONST(x)   (x##UL)
+#define PG_PARSER_INT64CONST(x)            (x##L)
+#define PG_PARSER_UINT64CONST(x)           (x##UL)
 
-#define PG_PARSER_INT32_MIN        (-0x7FFFFFFF - 1)
-#define PG_PARSER_INT64_MIN        (-PG_PARSER_INT64CONST(0x7FFFFFFFFFFFFFFF) - 1)
-#define PG_PARSER_INT64_MAX        PG_PARSER_INT64CONST(0x7FFFFFFFFFFFFFFF)
+#define PG_PARSER_INT32_MIN                (-0x7FFFFFFF - 1)
+#define PG_PARSER_INT64_MIN                (-PG_PARSER_INT64CONST(0x7FFFFFFFFFFFFFFF) - 1)
+#define PG_PARSER_INT64_MAX                PG_PARSER_INT64CONST(0x7FFFFFFFFFFFFFFF)
+
 /* Byte alignment related end */
 
 /* Variable-length byte related begin */
@@ -94,6 +94,7 @@ typedef union
         uint32_t va_header;
         char     va_data[FLEXIBLE_ARRAY_MEMBER];
     } va_4byte;
+
     struct /* Compressed-in-line format */
     {
         uint32_t va_header;
@@ -109,6 +110,7 @@ typedef union
         uint32_t va_header;
         char     va_data[FLEXIBLE_ARRAY_MEMBER];
     } va_4byte;
+
     struct /* Compressed-in-line format */
     {
         uint32_t va_header;
@@ -156,16 +158,15 @@ typedef struct pg_parser_varatt_expanded
      : (tag) == PG_PARSER_VARTAG_ONDISK  ? sizeof(pg_parser_varatt_external) \
                                          : TrapMacro(true, "unrecognized TOAST vartag"))
 
-#define PG_PARSER_VARDATA_1B_E(PTR)   (((pg_parser_varattrib_1b_e*)(PTR))->va_data)
-#define PG_PARSER_VARTAG_1B_E(PTR)    (((pg_parser_varattrib_1b_e*)(PTR))->va_tag)
+#define PG_PARSER_VARDATA_1B_E(PTR)     (((pg_parser_varattrib_1b_e*)(PTR))->va_data)
+#define PG_PARSER_VARTAG_1B_E(PTR)      (((pg_parser_varattrib_1b_e*)(PTR))->va_tag)
 
-#define PG_PARSER_VARATT_IS_1B_E(PTR) ((((pg_parser_varattrib_1b*)(PTR))->va_header) == 0x01)
-#define PG_PARSER_VARATT_IS_1B(PTR)   ((((pg_parser_varattrib_1b*)(PTR))->va_header & 0x01) == 0x01)
-#define PG_PARSER_VARATT_IS_4B_U(PTR) ((((pg_parser_varattrib_1b*)(PTR))->va_header & 0x03) == 0x00)
+#define PG_PARSER_VARATT_IS_1B_E(PTR)   ((((pg_parser_varattrib_1b*)(PTR))->va_header) == 0x01)
+#define PG_PARSER_VARATT_IS_1B(PTR)     ((((pg_parser_varattrib_1b*)(PTR))->va_header & 0x01) == 0x01)
+#define PG_PARSER_VARATT_IS_4B_U(PTR)   ((((pg_parser_varattrib_1b*)(PTR))->va_header & 0x03) == 0x00)
 
-#define PG_PARSER_VARSIZE_1B(PTR)     ((((pg_parser_varattrib_1b*)(PTR))->va_header >> 1) & 0x7F)
-#define PG_PARSER_VARSIZE_4B(PTR) \
-    ((((pg_parser_varattrib_4b*)(PTR))->va_4byte.va_header >> 2) & 0x3FFFFFFF)
+#define PG_PARSER_VARSIZE_1B(PTR)       ((((pg_parser_varattrib_1b*)(PTR))->va_header >> 1) & 0x7F)
+#define PG_PARSER_VARSIZE_4B(PTR)       ((((pg_parser_varattrib_4b*)(PTR))->va_4byte.va_header >> 2) & 0x3FFFFFFF)
 
 #define PG_PARSER_VARATT_IS_4B_C(PTR)   ((((pg_parser_varattrib_1b*)(PTR))->va_header & 0x03) == 0x02)
 
@@ -192,11 +193,10 @@ typedef struct pg_parser_varatt_expanded
          : (PG_PARSER_VARATT_IS_1B(PTR) ? PG_PARSER_VARSIZE_1B(PTR) - PG_PARSER_VARHDRSZ_SHORT \
                                         : PG_PARSER_VARSIZE_4B(PTR) - PG_PARSER_VARHDRSZ))
 
-#define PG_PARSER_VARDATA_1B(PTR) (((pg_parser_varattrib_1b*)(PTR))->va_data)
-#define PG_PARSER_VARDATA_4B(PTR) (((pg_parser_varattrib_4b*)(PTR))->va_4byte.va_data)
+#define PG_PARSER_VARDATA_1B(PTR)           (((pg_parser_varattrib_1b*)(PTR))->va_data)
+#define PG_PARSER_VARDATA_4B(PTR)           (((pg_parser_varattrib_4b*)(PTR))->va_4byte.va_data)
 
-#define PG_PARSER_VARDATA_ANY(PTR) \
-    (PG_PARSER_VARATT_IS_1B(PTR) ? PG_PARSER_VARDATA_1B(PTR) : PG_PARSER_VARDATA_4B(PTR))
+#define PG_PARSER_VARDATA_ANY(PTR)          (PG_PARSER_VARATT_IS_1B(PTR) ? PG_PARSER_VARDATA_1B(PTR) : PG_PARSER_VARDATA_4B(PTR))
 
 #define PG_PARSER_VARATT_IS_EXTERNAL(PTR)   PG_PARSER_VARATT_IS_1B_E(PTR)
 #define PG_PARSER_VARATT_IS_EXTENDED(PTR)   (!PG_PARSER_VARATT_IS_4B_U(PTR))
@@ -206,20 +206,16 @@ typedef struct pg_parser_varatt_expanded
     (PG_PARSER_VARATT_IS_EXTERNAL(PTR) && PG_PARSER_VARTAG_EXTERNAL(PTR) == PG_PARSER_VARTAG_ONDISK)
 
 #define PG_PARSER_VARATT_IS_EXTERNAL_INDIRECT(PTR) \
-    (PG_PARSER_VARATT_IS_EXTERNAL(PTR) &&          \
-     PG_PARSER_VARTAG_EXTERNAL(PTR) == PG_PARSER_VARTAG_INDIRECT)
+    (PG_PARSER_VARATT_IS_EXTERNAL(PTR) && PG_PARSER_VARTAG_EXTERNAL(PTR) == PG_PARSER_VARTAG_INDIRECT)
 
 #define PG_PARSER_VARATT_IS_EXTERNAL_EXPANDED_RO(PTR) \
-    (PG_PARSER_VARATT_IS_EXTERNAL(PTR) &&             \
-     PG_PARSER_VARTAG_EXTERNAL(PTR) == PG_PARSER_VARTAG_EXPANDED_RO)
+    (PG_PARSER_VARATT_IS_EXTERNAL(PTR) && PG_PARSER_VARTAG_EXTERNAL(PTR) == PG_PARSER_VARTAG_EXPANDED_RO)
 
 #define PG_PARSER_VARATT_IS_EXTERNAL_EXPANDED_RW(PTR) \
-    (PG_PARSER_VARATT_IS_EXTERNAL(PTR) &&             \
-     PG_PARSER_VARTAG_EXTERNAL(PTR) == PG_PARSER_VARTAG_EXPANDED_RW)
+    (PG_PARSER_VARATT_IS_EXTERNAL(PTR) && PG_PARSER_VARTAG_EXTERNAL(PTR) == PG_PARSER_VARTAG_EXPANDED_RW)
 
 #define PG_PARSER_VARATT_IS_EXTERNAL_EXPANDED(PTR) \
-    (PG_PARSER_VARATT_IS_EXTERNAL(PTR) &&          \
-     PG_PARSER_VARTAG_IS_EXPANDED(PG_PARSER_VARTAG_EXTERNAL(PTR)))
+    (PG_PARSER_VARATT_IS_EXTERNAL(PTR) && PG_PARSER_VARTAG_IS_EXPANDED(PG_PARSER_VARTAG_EXTERNAL(PTR)))
 
 #define PG_PARSER_SET_VARSIZE_4B(PTR, len) \
     (((pg_parser_varattrib_4b*)(PTR))->va_4byte.va_header = (((uint32_t)(len)) << 2))
@@ -249,10 +245,9 @@ typedef struct pg_parser_toast_compress_header
 #define PG_PARSER_VARATT_EXTERNAL_IS_COMPRESSED(toast_pointer) \
     ((toast_pointer)->m_extsize < (toast_pointer)->m_rawsize - PG_PARSER_VARHDRSZ)
 
-#define PG_PARSER_VARATT_EXTERNAL_CHECK_COMPRESSED(extsize, rawsize) \
-    (extsize < (rawsize - PG_PARSER_VARHDRSZ))
+#define PG_PARSER_VARATT_EXTERNAL_CHECK_COMPRESSED(extsize, rawsize) (extsize < (rawsize - PG_PARSER_VARHDRSZ))
 
-#define PG_PARSER_SET_VARSIZE_COMPRESSED(PTR, len) PG_PARSER_SET_VARSIZE_4B_C(PTR, len)
+#define PG_PARSER_SET_VARSIZE_COMPRESSED(PTR, len)                   PG_PARSER_SET_VARSIZE_4B_C(PTR, len)
 
 /* PG14 compression related */
 typedef enum pg_parser_ToastCompressionId
@@ -261,22 +256,21 @@ typedef enum pg_parser_ToastCompressionId
     PG_PARSER_PG14_TOAST_LZ4_COMPRESSION_ID = 1,
     PG_PARSER_PG14_TOAST_INVALID_COMPRESSION_ID = 2
 } pg_parser_ToastCompressionId;
+
 typedef struct pg_parser_pg14_toast_compress_header
 {
     int32_t  vl_len_; /* varlena header (do not touch directly!) */
     uint32_t tcinfo;  /* 2 bits for compression method and 30 bits
                        * external size; see va_extinfo */
 } pg_parser_pg14_toast_compress_header;
-#define PG_PARSER_PG14_VARHDRSZ_COMPRESSED \
-    offsetof(pg_parser_pg14_varattrib_4b, va_compressed.va_data)
+
+#define PG_PARSER_PG14_VARHDRSZ_COMPRESSED  offsetof(pg_parser_pg14_varattrib_4b, va_compressed.va_data)
 #define PG_PARSER_PG14_VARLENA_EXTSIZE_BITS 30
 #define PG_PARSER_PG14_VARLENA_EXTSIZE_MASK ((1U << PG_PARSER_PG14_VARLENA_EXTSIZE_BITS) - 1)
-#define PG_PARSER_PG14_VARDATA_COMPRESSED_GET_EXTSIZE(PTR)            \
-    (((pg_parser_pg14_varattrib_4b*)(PTR))->va_compressed.va_tcinfo & \
-     PG_PARSER_PG14_VARLENA_EXTSIZE_MASK)
-#define PG_PARSER_PG14_VARDATA_COMPRESSED_GET_COMPRESS_METHOD(PTR)     \
-    (((pg_parser_pg14_varattrib_4b*)(PTR))->va_compressed.va_tcinfo >> \
-     PG_PARSER_PG14_VARLENA_EXTSIZE_BITS)
+#define PG_PARSER_PG14_VARDATA_COMPRESSED_GET_EXTSIZE(PTR) \
+    (((pg_parser_pg14_varattrib_4b*)(PTR))->va_compressed.va_tcinfo & PG_PARSER_PG14_VARLENA_EXTSIZE_MASK)
+#define PG_PARSER_PG14_VARDATA_COMPRESSED_GET_COMPRESS_METHOD(PTR) \
+    (((pg_parser_pg14_varattrib_4b*)(PTR))->va_compressed.va_tcinfo >> PG_PARSER_PG14_VARLENA_EXTSIZE_BITS)
 #define PG_PARSER_PG14_TOAST_COMPRESS_EXTSIZE(ptr) \
     (((pg_parser_pg14_toast_compress_header*)(ptr))->tcinfo & PG_PARSER_PG14_VARLENA_EXTSIZE_MASK)
 #define PG_PARSER_PG14_TOAST_COMPRESS_METHOD(ptr) \
@@ -318,6 +312,7 @@ typedef struct pg_parser_nameData
 {
     char data[PG_PARSER_NAMEDATALEN];
 } pg_parser_NameData;
+
 typedef pg_parser_NameData*      pg_parser_Name;
 
 typedef struct pg_parser_varlena pg_parser_bytea;

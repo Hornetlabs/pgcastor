@@ -144,11 +144,7 @@ static void cmd_onlinerefresh_get_onlinerefresh_status(void)
 
     if (0 != kill((pid_t)ripplepid, SIGUSR1))
     {
-        snprintf(szMsg,
-                 128,
-                 "could not send status signal (PID:%ld) : %s\n",
-                 ripplepid,
-                 strerror(errno));
+        snprintf(szMsg, 128, "could not send status signal (PID:%ld) : %s\n", ripplepid, strerror(errno));
         printf("%s\n", szMsg);
     }
 

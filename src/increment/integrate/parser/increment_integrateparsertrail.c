@@ -87,8 +87,7 @@ increment_integrateparsertrail* increment_integrateparsertrail_init(void)
     HASHCTL                         hctl;
     increment_integrateparsertrail* integrateparsertrail = NULL;
     /* Information needed for initialization process */
-    integrateparsertrail =
-        (increment_integrateparsertrail*)rmalloc1(sizeof(increment_integrateparsertrail));
+    integrateparsertrail = (increment_integrateparsertrail*)rmalloc1(sizeof(increment_integrateparsertrail));
     if (NULL == integrateparsertrail)
     {
         elog(RLOG_WARNING, "out of memory");
@@ -106,8 +105,7 @@ increment_integrateparsertrail* increment_integrateparsertrail_init(void)
     rmemset0(integrateparsertrail->parsertrail.ffsmgrstate, 0, '\0', sizeof(ffsmgr_state));
     integrateparsertrail->parsertrail.ffsmgrstate->status = FFSMGR_STATUS_NOP;
     integrateparsertrail->parsertrail.ffsmgrstate->bufid = 0;
-    integrateparsertrail->parsertrail.ffsmgrstate->compatibility =
-        guc_getConfigOptionInt(CFG_KEY_COMPATIBILITY);
+    integrateparsertrail->parsertrail.ffsmgrstate->compatibility = guc_getConfigOptionInt(CFG_KEY_COMPATIBILITY);
     integrateparsertrail->parsertrail.ffsmgrstate->privdata = (void*)integrateparsertrail;
     integrateparsertrail->parsertrail.ffsmgrstate->callback.getrecords = NULL;
     integrateparsertrail->parsertrail.ffsmgrstate->fdata =
@@ -122,8 +120,8 @@ increment_integrateparsertrail* increment_integrateparsertrail_init(void)
 
     /* Call initialization interface */
     ffsmgr_init(FFSMG_IF_TYPE_TRAIL, integrateparsertrail->parsertrail.ffsmgrstate);
-    integrateparsertrail->parsertrail.ffsmgrstate->ffsmgr->ffsmgr_init(
-        FFSMGR_IF_OPTYPE_DESERIAL, integrateparsertrail->parsertrail.ffsmgrstate);
+    integrateparsertrail->parsertrail.ffsmgrstate->ffsmgr->ffsmgr_init(FFSMGR_IF_OPTYPE_DESERIAL,
+                                                                       integrateparsertrail->parsertrail.ffsmgrstate);
 
     /* Initialize txncache */
     integrateparsertrail->parsertrail.transcache = rmalloc1(sizeof(transcache));
@@ -146,8 +144,7 @@ increment_integrateparsertrail* increment_integrateparsertrail_init(void)
     {
         elog(RLOG_ERROR, "out of memory");
     }
-    rmemset0(
-        integrateparsertrail->parsertrail.transcache->sysdicts, 0, '\0', sizeof(cache_sysdicts));
+    rmemset0(integrateparsertrail->parsertrail.transcache->sysdicts, 0, '\0', sizeof(cache_sysdicts));
     integrateparsertrail->state = INTEGRATE_STATUS_PARSER_INIT;
 
     return integrateparsertrail;
@@ -155,8 +152,7 @@ increment_integrateparsertrail* increment_integrateparsertrail_init(void)
 
 /*-------------------------refresh transaction processing begin------------------*/
 
-static bool increment_integrateparsertrail_refresh(increment_integrateparsertrail* parser,
-                                                   txn*                            txn_obj)
+static bool increment_integrateparsertrail_refresh(increment_integrateparsertrail* parser, txn* txn_obj)
 {
     struct stat              st;
     char                     file[MAXPATH] = {'\0'};
@@ -214,8 +210,7 @@ static bool increment_integrateparsertrail_txns2queue(increment_integrateparsert
     txn*       txn_obj = NULL;
     dlistnode* dlnode = NULL;
 
-    for (dlnode = parser->parsertrail.dtxns->head; NULL != dlnode;
-         dlnode = parser->parsertrail.dtxns->head)
+    for (dlnode = parser->parsertrail.dtxns->head; NULL != dlnode; dlnode = parser->parsertrail.dtxns->head)
     {
         parser->parsertrail.dtxns->head = dlnode->next;
         txn_obj = (txn*)dlnode->value;
@@ -228,8 +223,7 @@ static bool increment_integrateparsertrail_txns2queue(increment_integrateparsert
             /* Normal transaction */
             ;
         }
-        else if (TXN_TYPE_ONLINEREFRESH_BEGIN == txn_obj->type ||
-                 TXN_TYPE_ONLINEREFRESH_END == txn_obj->type ||
+        else if (TXN_TYPE_ONLINEREFRESH_BEGIN == txn_obj->type || TXN_TYPE_ONLINEREFRESH_END == txn_obj->type ||
                  TXN_TYPE_ONLINEREFRESH_DATASET == txn_obj->type)
         {
             /* onlinerefresh transaction */
@@ -244,8 +238,7 @@ static bool increment_integrateparsertrail_txns2queue(increment_integrateparsert
                 break;
             }
         }
-        else if (TXN_TYPE_BIGTXN_BEGIN == txn_obj->type ||
-                 TXN_TYPE_BIGTXN_END_COMMIT == txn_obj->type ||
+        else if (TXN_TYPE_BIGTXN_BEGIN == txn_obj->type || TXN_TYPE_BIGTXN_END_COMMIT == txn_obj->type ||
                  TXN_TYPE_BIGTXN_END_ABORT == txn_obj->type)
         {
             /* Large transaction */
@@ -260,8 +253,7 @@ static bool increment_integrateparsertrail_txns2queue(increment_integrateparsert
             while ((entry = hash_seq_search(&status)) != NULL)
             {
                 txn_free(entry);
-                hash_search(
-                    parser->parsertrail.transcache->by_txns, &entry->xid, HASH_REMOVE, NULL);
+                hash_search(parser->parsertrail.transcache->by_txns, &entry->xid, HASH_REMOVE, NULL);
             }
         }
         else if (TXN_TYPE_ONLINEREFRESH_ABANDON == txn_obj->type)
@@ -286,8 +278,7 @@ static bool increment_integrateparsertrail_txns2queue(increment_integrateparsert
         if (NULL != txn_obj)
         {
             parser->callback.setmetricloadlsn(parser->privdata, txn_obj->confirm.wal.lsn);
-            parser->callback.setmetricloadtimestamp(parser->privdata,
-                                                    (TimestampTz)txn_obj->endtimestamp);
+            parser->callback.setmetricloadtimestamp(parser->privdata, (TimestampTz)txn_obj->endtimestamp);
         }
 
         cache_txn_add(parser->parsertrail.parser2txn, txn_obj);
@@ -311,8 +302,7 @@ void* increment_integrateparsertrail_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "increment integrate parser trail exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "increment integrate parser trail exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }

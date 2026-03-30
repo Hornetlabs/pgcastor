@@ -235,25 +235,26 @@ static bool xsynch_feparsemsg_rowsmsgparser(xsynch_exbuffer msg, xsynch_conn* co
 }
 
 static xsynch_feparsemsg_parser m_msg2rows[] = {
-    {T_XSYNCH_NOP, "unknown command", NULL},
-    {T_XSYNCH_IDENTITYCMD, "identity command", NULL},
-    {T_XSYNCH_CREATECMD, "create command", NULL},
-    {T_XSYNCH_ALTERCMD, "alter command", NULL},
-    {T_XSYNCH_REMOVECMD, "remove command", NULL},
-    {T_XSYNCH_DROPCMD, "drop command", NULL},
-    {T_XSYNCH_INITCMD, "init command", NULL},
-    {T_XSYNCH_EDITCMD, "edit command", xsynch_feparsemsg_editmsgparser},
-    {T_XSYNCH_STARTCMD, "start command", xsynch_feparsemsg_rowsmsgparser},
-    {T_XSYNCH_STOPCMD, "stop command", xsynch_feparsemsg_rowsmsgparser},
-    {T_XSYNCH_RELOADCMD, "reload command", NULL},
-    {T_XSYNCH_INFOCMD, "info command", xsynch_feparsemsg_rowsmsgparser},
-    {T_XSYNCH_WATCHCMD, "watch command", xsynch_feparsemsg_rowsmsgparser},
-    {T_XSYNCH_CFGfILECMD, "config file command", NULL},
-    {T_XSYNCH_REFRESHCMD, "refresh command", NULL},
-    {T_XSYNCH_LISTCMD, "list command", xsynch_feparsemsg_rowsmsgparser},
+    {T_XSYNCH_NOP,         "unknown command",     NULL                           },
+    {T_XSYNCH_IDENTITYCMD, "identity command",    NULL                           },
+    {T_XSYNCH_CREATECMD,   "create command",      NULL                           },
+    {T_XSYNCH_ALTERCMD,    "alter command",       NULL                           },
+    {T_XSYNCH_REMOVECMD,   "remove command",      NULL                           },
+    {T_XSYNCH_DROPCMD,     "drop command",        NULL                           },
+    {T_XSYNCH_INITCMD,     "init command",        NULL                           },
+    {T_XSYNCH_EDITCMD,     "edit command",        xsynch_feparsemsg_editmsgparser},
+    {T_XSYNCH_STARTCMD,    "start command",       xsynch_feparsemsg_rowsmsgparser},
+    {T_XSYNCH_STOPCMD,     "stop command",        xsynch_feparsemsg_rowsmsgparser},
+    {T_XSYNCH_RELOADCMD,   "reload command",      NULL                           },
+    {T_XSYNCH_INFOCMD,     "info command",        xsynch_feparsemsg_rowsmsgparser},
+    {T_XSYNCH_WATCHCMD,    "watch command",       xsynch_feparsemsg_rowsmsgparser},
+    {T_XSYNCH_CFGfILECMD,  "config file command", NULL                           },
+    {T_XSYNCH_REFRESHCMD,  "refresh command",     NULL                           },
+    {T_XSYNCH_LISTCMD,     "list command",        xsynch_feparsemsg_rowsmsgparser},
 
     /* add before this */
-    {T_XSYNCH_MAX, "max command", NULL}};
+    {T_XSYNCH_MAX,         "max command",         NULL                           }
+};
 
 /*
  * convert received descriptor to parse result

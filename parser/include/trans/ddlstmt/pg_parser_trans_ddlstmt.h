@@ -30,24 +30,24 @@ typedef struct pg_parser_sysdict_with_name
 } pg_parser_sysdict_with_name;
 
 static const pg_parser_sysdict_with_name pg_parser_postgresql_v127[] = {
-    {SYS_CLASS, "pg_class"},
-    {SYS_INDEX, "pg_index"},
-    {SYS_NAMESPACE, "pg_namespace"},
-    {SYS_ATTRDEF, "pg_attrdef"},
-    {SYS_DATABASE, "pg_database"},
-    {SYS_PROC, "pg_proc"},
-    {SYS_TRIGGER, "pg_trigger"},
-    {SYS_TYPE, "pg_type"},
-    {SYS_CONSTRAINT, "pg_constraint"},
-    {SYS_ATTRIBUTE, "pg_attribute"},
-    {SYS_ENUM, "pg_enum"},
-    {SYS_RANGE, "pg_range"},
-    {SYS_DEPEND, "pg_depend"},
-    {SYS_REWRITE, "pg_rewrite"},
-    {SYS_PARTITIONED, "pg_partitioned_table"},
-    {SYS_INHERITS, "pg_inherits"},
-    {SYS_SEQUENCE, "pg_sequence"},
-    {TEMPTABLE_PREFIX, "pg_temp"},
+    {SYS_CLASS,        "pg_class"            },
+    {SYS_INDEX,        "pg_index"            },
+    {SYS_NAMESPACE,    "pg_namespace"        },
+    {SYS_ATTRDEF,      "pg_attrdef"          },
+    {SYS_DATABASE,     "pg_database"         },
+    {SYS_PROC,         "pg_proc"             },
+    {SYS_TRIGGER,      "pg_trigger"          },
+    {SYS_TYPE,         "pg_type"             },
+    {SYS_CONSTRAINT,   "pg_constraint"       },
+    {SYS_ATTRIBUTE,    "pg_attribute"        },
+    {SYS_ENUM,         "pg_enum"             },
+    {SYS_RANGE,        "pg_range"            },
+    {SYS_DEPEND,       "pg_depend"           },
+    {SYS_REWRITE,      "pg_rewrite"          },
+    {SYS_PARTITIONED,  "pg_partitioned_table"},
+    {SYS_INHERITS,     "pg_inherits"         },
+    {SYS_SEQUENCE,     "pg_sequence"         },
+    {TEMPTABLE_PREFIX, "pg_temp"             },
 };
 
 #define PG_SYSDICT_PG_TEMPTABLE_NAME "pg_temp"
@@ -219,11 +219,10 @@ typedef struct pg_parser_ddlstate
     char                                     m_relkind;
 } pg_parser_ddlstate;
 
-typedef pg_parser_translog_ddlstmt* (*pg_parser_DDL_transDDLFunc)(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno);
+typedef pg_parser_translog_ddlstmt* (*pg_parser_DDL_transDDLFunc)(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                                  pg_parser_translog_systb2dll_record* current_record,
+                                                                  pg_parser_ddlstate*                  ddlstate,
+                                                                  int32_t*                             pg_parser_errno);
 
 extern bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parser_ddl,
                                           pg_parser_translog_ddlstmt**  pg_parser_ddl_result,
@@ -231,8 +230,5 @@ extern bool pg_parser_DDL_transRecord2DDL(pg_parser_translog_systb2ddl* pg_parse
 
 extern char* ddl_char_tolower(char* output);
 
-extern bool pg_parser_check_table_name(char*       tablename,
-                                       SysdictName sysdictnum,
-                                       int16_t     dbtype,
-                                       char*       dbversion);
+extern bool pg_parser_check_table_name(char* tablename, SysdictName sysdictnum, int16_t dbtype, char* dbversion);
 #endif

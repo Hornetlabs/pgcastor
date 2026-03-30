@@ -49,10 +49,7 @@ extern dlist* onlinerefresh_refreshdlist_delete(dlist* refresh_dlist, dlistnode*
 extern void transcache_make_xids_from_txn(void* in_ctx, onlinerefresh* olnode);
 
 /* Fill refreshtables based on system table */
-extern bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables,
-                                               HTAB*           hnamespace,
-                                               HTAB*           hclass,
-                                               bool*           bmatch);
+extern bool onlinerefresh_rebuildrefreshtables(refresh_tables* rtables, HTAB* hnamespace, HTAB* hclass, bool* bmatch);
 
 extern void onlinerefresh_destroy(onlinerefresh* olrefresh);
 

@@ -24,13 +24,10 @@ onlinerefresh_integrateparsertrail* onlinerefresh_integrateparsertrail_init(void
 {
     onlinerefresh_integrateparsertrail* traildecodecxt = NULL;
 
-    traildecodecxt =
-        (onlinerefresh_integrateparsertrail*)rmalloc0(sizeof(onlinerefresh_integrateparsertrail));
+    traildecodecxt = (onlinerefresh_integrateparsertrail*)rmalloc0(sizeof(onlinerefresh_integrateparsertrail));
     if (NULL == traildecodecxt)
     {
-        elog(RLOG_WARNING,
-             "onlinerefresh integrateparsertrail malloc out of memory, %s",
-             strerror(errno));
+        elog(RLOG_WARNING, "onlinerefresh integrateparsertrail malloc out of memory, %s", strerror(errno));
         return NULL;
     }
     rmemset0(traildecodecxt, 0, 0, sizeof(onlinerefresh_integrateparsertrail));
@@ -47,14 +44,12 @@ onlinerefresh_integrateparsertrail* onlinerefresh_integrateparsertrail_init(void
  * bexit    true: can exit
  *          false: cannot exit yet
  */
-static bool onlinerefresh_integrateparsertrail_txns2queue(increment_integrateparsertrail* parser,
-                                                          bool*                           bexit)
+static bool onlinerefresh_integrateparsertrail_txns2queue(increment_integrateparsertrail* parser, bool* bexit)
 {
     txn*       txn_ptr = NULL;
     dlistnode* dlnode = NULL;
 
-    for (dlnode = parser->parsertrail.dtxns->head; NULL != dlnode;
-         dlnode = parser->parsertrail.dtxns->head)
+    for (dlnode = parser->parsertrail.dtxns->head; NULL != dlnode; dlnode = parser->parsertrail.dtxns->head)
     {
         parser->parsertrail.dtxns->head = dlnode->next;
         txn_ptr = (txn*)dlnode->value;
@@ -87,17 +82,13 @@ static bool onlinerefresh_integrateparsertrail_txns2queue(increment_integratepar
             }
             else
             {
-                elog(RLOG_WARNING,
-                     "in integrate onlinerefresh increment unknown txn flag:%u",
-                     txn_ptr->flag);
+                elog(RLOG_WARNING, "in integrate onlinerefresh increment unknown txn flag:%u", txn_ptr->flag);
                 return false;
             }
         }
         else
         {
-            elog(RLOG_WARNING,
-                 "in integrate onlinerefresh increment unknown txn flag:%u",
-                 txn_ptr->flag);
+            elog(RLOG_WARNING, "in integrate onlinerefresh increment unknown txn flag:%u", txn_ptr->flag);
             return false;
         }
     }

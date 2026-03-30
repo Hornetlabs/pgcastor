@@ -8,16 +8,14 @@
 
 #define DDL_CREATE_SEQUENCE_MCXT NULL
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_sequence(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno);
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_sequence(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                          pg_parser_ddlstate*           ddlstate,
+                                                                          int32_t* pg_parser_errno);
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_create_sequence(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_create_sequence(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                          pg_parser_translog_systb2dll_record* current_record,
+                                                          pg_parser_ddlstate*                  ddlstate,
+                                                          int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
     if (IS_INSERT(current_record->m_record))
@@ -28,17 +26,15 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_sequence(
                                        pg_parser_ddl->m_dbversion))
         {
             ddlstate->m_sequence = current_record->m_record;
-            result =
-                pg_parser_ddl_assemble_create_sequence(pg_parser_ddl, ddlstate, pg_parser_errno);
+            result = pg_parser_ddl_assemble_create_sequence(pg_parser_ddl, ddlstate, pg_parser_errno);
         }
     }
     return result;
 }
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_sequence(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno)
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_sequence(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                          pg_parser_ddlstate*           ddlstate,
+                                                                          int32_t*                      pg_parser_errno)
 {
     pg_parser_translog_ddlstmt*          result = NULL;
     pg_parser_translog_ddlstmt_sequence* seq_return = NULL;
@@ -47,8 +43,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_sequence(
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_CREATE_SEQUENCE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_CREATE_SEQUENCE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_28;
         return NULL;
@@ -95,12 +90,16 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_sequence(
                                                     temp_value);
     seq_return->m_seqstart = strtoull(temp_value, NULL, 10);
 
-    temp_value = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-        "seqmin", ddlstate->m_sequence->m_new_values, ddlstate->m_sequence->m_valueCnt, temp_value);
+    temp_value = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("seqmin",
+                                                    ddlstate->m_sequence->m_new_values,
+                                                    ddlstate->m_sequence->m_valueCnt,
+                                                    temp_value);
     seq_return->m_seqmin = strtoull(temp_value, NULL, 10);
 
-    temp_value = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-        "seqmax", ddlstate->m_sequence->m_new_values, ddlstate->m_sequence->m_valueCnt, temp_value);
+    temp_value = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("seqmax",
+                                                    ddlstate->m_sequence->m_new_values,
+                                                    ddlstate->m_sequence->m_valueCnt,
+                                                    temp_value);
     seq_return->m_seqmax = strtoull(temp_value, NULL, 10);
 
     temp_value = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("seqcache",
@@ -119,8 +118,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_sequence(
     result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_CREATE_SEQUENCE;
     result->m_ddlstmt = (void*)seq_return;
     result->m_next = NULL;
-    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                         "DEBUG, DDL PARSER: create index sequence end \n");
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: create index sequence end \n");
     pg_parser_ddl_init_ddlstate(ddlstate);
     return result;
 }

@@ -24,8 +24,7 @@ static int32_t time2tm(TimeADT time, struct pg_parser_tm* tm, fsec_t* fsec);
 static char* AppendSeconds(char* cp, int32_t sec, fsec_t fsec, int32_t precision, bool fillzeros);
 static char* EncodeTimezone(char* str, int32_t tz, int32_t style);
 
-static void EncodeTimeOnly(
-    struct pg_parser_tm* tm, fsec_t fsec, bool print_tz, int32_t tz, int32_t style, char* str);
+static void EncodeTimeOnly(struct pg_parser_tm* tm, fsec_t fsec, bool print_tz, int32_t tz, int32_t style, char* str);
 
 pg_parser_Datum time_out(pg_parser_Datum attr)
 {
@@ -74,8 +73,7 @@ static int32_t time2tm(TimeADT time, struct pg_parser_tm* tm, fsec_t* fsec)
  * numeric time zone offset, style is the date style, str is where to write the
  * output.
  */
-static void EncodeTimeOnly(
-    struct pg_parser_tm* tm, fsec_t fsec, bool print_tz, int32_t tz, int32_t style, char* str)
+static void EncodeTimeOnly(struct pg_parser_tm* tm, fsec_t fsec, bool print_tz, int32_t tz, int32_t style, char* str)
 {
     str = numutils_ltostr_zeropad(str, tm->tm_hour, 2);
     *str++ = ':';

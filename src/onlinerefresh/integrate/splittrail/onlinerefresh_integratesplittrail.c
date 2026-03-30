@@ -27,9 +27,7 @@ onlinerefresh_integratesplittrail* onlinerefresh_integratesplittrail_init(void)
     stctx = (onlinerefresh_integratesplittrail*)rmalloc0(sizeof(onlinerefresh_integratesplittrail));
     if (NULL == stctx)
     {
-        elog(RLOG_WARNING,
-             "onlinerefresh integratesplittrail malloc out of memory, %s",
-             strerror(errno));
+        elog(RLOG_WARNING, "onlinerefresh integratesplittrail malloc out of memory, %s", strerror(errno));
         return NULL;
     }
     rmemset0(stctx, 0, 0, sizeof(onlinerefresh_integratesplittrail));
@@ -40,8 +38,8 @@ onlinerefresh_integratesplittrail* onlinerefresh_integratesplittrail_init(void)
 }
 
 /* Add records to queue */
-static bool onlinerefresh_integratesplittrail_addrecords2queue(
-    increment_integratesplittrail* splittrail, thrnode* thrnode)
+static bool onlinerefresh_integratesplittrail_addrecords2queue(increment_integratesplittrail* splittrail,
+                                                               thrnode*                       thrnode)
 {
     /* Add to queue */
     while (THRNODE_STAT_WORK == thrnode->stat)
@@ -138,8 +136,7 @@ void* onlinerefresh_integratesplittrail_main(void* args)
             continue;
         }
 
-        if (false == loadtrailrecords_filterremainmetadata(
-                         splittrail->loadrecords, fileid, splittrail->emitoffset))
+        if (false == loadtrailrecords_filterremainmetadata(splittrail->loadrecords, fileid, splittrail->emitoffset))
         {
             /* Filtering complete */
             splittrail->filter = false;

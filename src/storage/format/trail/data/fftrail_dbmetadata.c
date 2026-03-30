@@ -33,8 +33,7 @@ bool fftrail_dbmetadata_serial(void* data, void* state)
     ffstate = (ffsmgr_state*)state;
 
     /* Get buffer */
-    rfbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    rfbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
 
     /* Set data to buffer */
     ffstate->recptr = uptr = rfbuffer->data + rfbuffer->start;
@@ -103,8 +102,7 @@ bool fftrail_dbmetadata_serial(void* data, void* state)
     rfbuffer->start += reclen;
 
     /* Increase GROUP info */
-    FTRAIL_GROUP2BUFFER(
-        put, FFTRAIL_GROUPTYPE_DATA, FFTRAIL_INFOTYPE_GROUP, reclen, ffstate->recptr)
+    FTRAIL_GROUP2BUFFER(put, FFTRAIL_GROUPTYPE_DATA, FFTRAIL_INFOTYPE_GROUP, reclen, ffstate->recptr)
 
     /* Increase header info */
     fftrail_data_hdrserail(&ffdbmd->header, ffstate);

@@ -19,21 +19,18 @@ static char* get_local_typoutput_by_oid(uint32_t oid);
 static char* get_local_funcname_by_oid(uint32_t oid, uint16_t* argnum);
 
 static pg_parser_node_var* pg_parser_make_nodetree_var(pg_parser_Var* var);
-static pg_parser_node_const* pg_parser_make_nodetree_const(pg_parser_Const* const,
-                                                           pg_parser_deparse_context* context);
-static pg_parser_node_func* pg_parser_make_nodetree_func(pg_parser_FuncExpr*        func,
-                                                         pg_parser_deparse_context* context);
+static pg_parser_node_const* pg_parser_make_nodetree_const(pg_parser_Const* const, pg_parser_deparse_context* context);
+static pg_parser_node_func* pg_parser_make_nodetree_func(pg_parser_FuncExpr* func, pg_parser_deparse_context* context);
 
 static bool get_variable(pg_parser_Var* var, pg_parser_deparse_context* context);
 static bool get_const_expr(pg_parser_Const* constval, pg_parser_deparse_context* context);
-static bool get_func_expr(pg_parser_FuncExpr*        funcval,
-                          pg_parser_deparse_context* context,
-                          bool                       showimplicit);
+static bool get_func_expr(pg_parser_FuncExpr* funcval, pg_parser_deparse_context* context, bool showimplicit);
 
 static bool get_rule_expr_paren(pg_parser_Node*            node,
                                 pg_parser_deparse_context* context,
                                 bool                       showimplicit,
                                 pg_parser_Node*            parentNode);
+
 static char* get_local_opname_by_oid(uint32_t oid)
 {
     switch (oid)
@@ -436,6 +433,7 @@ static char* get_local_opname_by_oid(uint32_t oid)
             return NULL;
     }
 }
+
 static char* get_local_typoutput_by_oid(uint32_t oid)
 {
     char* result = NULL;
@@ -783,8 +781,10 @@ static pg_parser_node_const* pg_parser_make_nodetree_const(pg_parser_Const*     
         return NULL;
     }
 
-    constnode->m_char_value = pg_parser_convert_attr_to_str_by_typid_typoptput(
-        const_value->constvalue, const_value->consttype, typoutput, context->zicinfo);
+    constnode->m_char_value = pg_parser_convert_attr_to_str_by_typid_typoptput(const_value->constvalue,
+                                                                               const_value->consttype,
+                                                                               typoutput,
+                                                                               context->zicinfo);
     pg_parser_mcxt_free(NODE_MCXT, typoutput);
     if (!constnode->m_char_value)
     {
@@ -794,8 +794,7 @@ static pg_parser_node_const* pg_parser_make_nodetree_const(pg_parser_Const*     
     return constnode;
 }
 
-static pg_parser_node_op* pg_parser_make_nodetree_op(pg_parser_OpExpr*          op_value,
-                                                     pg_parser_deparse_context* context)
+static pg_parser_node_op* pg_parser_make_nodetree_op(pg_parser_OpExpr* op_value, pg_parser_deparse_context* context)
 {
     pg_parser_node_op* opnode = NULL;
 
@@ -860,8 +859,7 @@ static pg_parser_nodetree* pg_parser_append_nodetree_with_type(pg_parser_nodetre
 static bool get_variable(pg_parser_Var* var, pg_parser_deparse_context* context)
 {
     pg_parser_node_var* node_var = pg_parser_make_nodetree_var(var);
-    context->nodetree = pg_parser_append_nodetree_with_type(
-        context->nodetree, (void*)node_var, PG_PARSER_NODETYPE_VAR);
+    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree, (void*)node_var, PG_PARSER_NODETYPE_VAR);
     if (var)
     {
         pg_parser_mcxt_free(NODE_MCXT, var);
@@ -869,8 +867,7 @@ static bool get_variable(pg_parser_Var* var, pg_parser_deparse_context* context)
     return true;
 }
 
-static pg_parser_node_func* pg_parser_make_nodetree_func(pg_parser_FuncExpr*        func,
-                                                         pg_parser_deparse_context* context)
+static pg_parser_node_func* pg_parser_make_nodetree_func(pg_parser_FuncExpr* func, pg_parser_deparse_context* context)
 {
     pg_parser_node_func* funcnode = NULL;
     PG_PARSER_UNUSED(context);
@@ -888,8 +885,8 @@ static bool get_const_expr(pg_parser_Const* constval, pg_parser_deparse_context*
     {
         return false;
     }
-    context->nodetree = pg_parser_append_nodetree_with_type(
-        context->nodetree, (void*)node_cons, PG_PARSER_NODETYPE_CONST);
+    context->nodetree =
+        pg_parser_append_nodetree_with_type(context->nodetree, (void*)node_cons, PG_PARSER_NODETYPE_CONST);
     if (constval)
     {
         if (constval->constneedfree)
@@ -1000,8 +997,7 @@ static bool isSimpleNode(pg_parser_Node* node, pg_parser_Node* parentNode, int32
                  * Operators are same priority --- can skip parens only if
                  * we have (a - b) - c, not a - (b - c).
                  */
-                if (node ==
-                    (pg_parser_Node*)pg_parser_linitial(((pg_parser_OpExpr*)parentNode)->args))
+                if (node == (pg_parser_Node*)pg_parser_linitial(((pg_parser_OpExpr*)parentNode)->args))
                 {
                     return true;
                 }
@@ -1074,8 +1070,8 @@ static bool get_rule_expr_paren(pg_parser_Node*            node,
 
     if (need_paren)
     {
-        context->nodetree = pg_parser_append_nodetree_with_type(
-            context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
+        context->nodetree =
+            pg_parser_append_nodetree_with_type(context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
     }
 
     if (!get_rule_expr(node, context, showimplicit))
@@ -1085,8 +1081,8 @@ static bool get_rule_expr_paren(pg_parser_Node*            node,
 
     if (need_paren)
     {
-        context->nodetree = pg_parser_append_nodetree_with_type(
-            context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
+        context->nodetree =
+            pg_parser_append_nodetree_with_type(context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
     }
     return true;
 }
@@ -1128,8 +1124,7 @@ static bool exprIsLengthCoercion(const pg_parser_Node* expr, int32_t* coercedTyp
         }
 
         second_arg = (pg_parser_Const*)pg_parser_lsecond(func->args);
-        if (!IsA(second_arg, pg_parser_Const) || second_arg->consttype != INT4OID ||
-            second_arg->constisnull)
+        if (!IsA(second_arg, pg_parser_Const) || second_arg->consttype != INT4OID || second_arg->constisnull)
         {
             return false;
         }
@@ -1193,8 +1188,8 @@ static bool get_coercion_expr(pg_parser_Node*            arg,
      */
     if (!PRETTY_PAREN(context))
     {
-        context->nodetree = pg_parser_append_nodetree_with_type(
-            context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
+        context->nodetree =
+            pg_parser_append_nodetree_with_type(context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
     }
     if (!get_rule_expr_paren(arg, context, false, parentNode))
     {
@@ -1204,19 +1199,17 @@ static bool get_coercion_expr(pg_parser_Node*            arg,
     if (!PRETTY_PAREN(context))
     {
         pg_parser_node_type* node_type = NULL;
-        context->nodetree = pg_parser_append_nodetree_with_type(
-            context->nodetree, (void*)(")::"), PG_PARSER_NODETYPE_CHAR);
+        context->nodetree =
+            pg_parser_append_nodetree_with_type(context->nodetree, (void*)(")::"), PG_PARSER_NODETYPE_CHAR);
         pg_parser_mcxt_malloc(NODE_MCXT, (void**)&node_type, sizeof(pg_parser_node_type));
         node_type->m_typeid = resulttype;
-        context->nodetree = pg_parser_append_nodetree_with_type(
-            context->nodetree, (void*)(node_type), PG_PARSER_NODETYPE_TYPE);
+        context->nodetree =
+            pg_parser_append_nodetree_with_type(context->nodetree, (void*)(node_type), PG_PARSER_NODETYPE_TYPE);
     }
     return true;
 }
 
-static bool get_func_expr(pg_parser_FuncExpr*        funcval,
-                          pg_parser_deparse_context* context,
-                          bool                       showimplicit)
+static bool get_func_expr(pg_parser_FuncExpr* funcval, pg_parser_deparse_context* context, bool showimplicit)
 {
     pg_parser_node_func* node_func = NULL;
     int                  nargs;
@@ -1277,12 +1270,12 @@ static bool get_func_expr(pg_parser_FuncExpr*        funcval,
         return false;
     }
 
-    context->nodetree = pg_parser_append_nodetree_with_type(
-        context->nodetree, (void*)node_func, PG_PARSER_NODETYPE_FUNC);
+    context->nodetree =
+        pg_parser_append_nodetree_with_type(context->nodetree, (void*)node_func, PG_PARSER_NODETYPE_FUNC);
     if (!skip_brackets)
     {
-        context->nodetree = pg_parser_append_nodetree_with_type(
-            context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
+        context->nodetree =
+            pg_parser_append_nodetree_with_type(context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
     }
 
     nargs = 0;
@@ -1290,8 +1283,8 @@ static bool get_func_expr(pg_parser_FuncExpr*        funcval,
     {
         if (nargs++ > 0)
         {
-            context->nodetree = pg_parser_append_nodetree_with_type(
-                context->nodetree, (void*)(", "), PG_PARSER_NODETYPE_CHAR);
+            context->nodetree =
+                pg_parser_append_nodetree_with_type(context->nodetree, (void*)(", "), PG_PARSER_NODETYPE_CHAR);
         }
         if (!get_rule_expr((pg_parser_Node*)pg_parser_lfirst(l), context, true))
         {
@@ -1301,8 +1294,8 @@ static bool get_func_expr(pg_parser_FuncExpr*        funcval,
     /* v902 change */
     if (!skip_brackets)
     {
-        context->nodetree = pg_parser_append_nodetree_with_type(
-            context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
+        context->nodetree =
+            pg_parser_append_nodetree_with_type(context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
     }
 
     if (funcval)
@@ -1324,8 +1317,8 @@ static bool get_oper_expr(pg_parser_OpExpr* expr, pg_parser_deparse_context* con
 
     if (!PRETTY_PAREN(context))
     {
-        context->nodetree = pg_parser_append_nodetree_with_type(
-            context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
+        context->nodetree =
+            pg_parser_append_nodetree_with_type(context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
     }
     if (pg_parser_list_length(args) == 2)
     {
@@ -1338,8 +1331,8 @@ static bool get_oper_expr(pg_parser_OpExpr* expr, pg_parser_deparse_context* con
             return false;
         }
         opnode = pg_parser_make_nodetree_op(expr, context);
-        context->nodetree = pg_parser_append_nodetree_with_type(
-            context->nodetree, (void*)opnode, PG_PARSER_NODETYPE_OP);
+        context->nodetree =
+            pg_parser_append_nodetree_with_type(context->nodetree, (void*)opnode, PG_PARSER_NODETYPE_OP);
         if (!get_rule_expr_paren(arg2, context, true, (pg_parser_Node*)expr))
         {
             return false;
@@ -1348,8 +1341,8 @@ static bool get_oper_expr(pg_parser_OpExpr* expr, pg_parser_deparse_context* con
     /* Other cases not supported */
     if (!PRETTY_PAREN(context))
     {
-        context->nodetree = pg_parser_append_nodetree_with_type(
-            context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
+        context->nodetree =
+            pg_parser_append_nodetree_with_type(context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
     }
     if (expr)
     {
@@ -1362,32 +1355,30 @@ static bool get_oper_expr(pg_parser_OpExpr* expr, pg_parser_deparse_context* con
     return true;
 }
 
-static bool get_range_partbound_string(pg_parser_List*            bound_datums,
-                                       pg_parser_deparse_context* context)
+static bool get_range_partbound_string(pg_parser_List* bound_datums, pg_parser_deparse_context* context)
 {
     pg_parser_ListCell* cell;
     bool                sep = false;
 
-    context->nodetree = pg_parser_append_nodetree_with_type(
-        context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
+    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
     pg_parser_foreach(cell, bound_datums)
     {
         pg_parser_PartitionRangeDatum* datum =
             pg_parser_castNode(pg_parser_PartitionRangeDatum, pg_parser_lfirst(cell));
         if (sep)
         {
-            context->nodetree = pg_parser_append_nodetree_with_type(
-                context->nodetree, (void*)(", "), PG_PARSER_NODETYPE_CHAR);
+            context->nodetree =
+                pg_parser_append_nodetree_with_type(context->nodetree, (void*)(", "), PG_PARSER_NODETYPE_CHAR);
         }
         if (datum->kind == PARTITION_RANGE_DATUM_MINVALUE)
         {
-            context->nodetree = pg_parser_append_nodetree_with_type(
-                context->nodetree, (void*)("MINVALUE"), PG_PARSER_NODETYPE_CHAR);
+            context->nodetree =
+                pg_parser_append_nodetree_with_type(context->nodetree, (void*)("MINVALUE"), PG_PARSER_NODETYPE_CHAR);
         }
         else if (datum->kind == PARTITION_RANGE_DATUM_MAXVALUE)
         {
-            context->nodetree = pg_parser_append_nodetree_with_type(
-                context->nodetree, (void*)("MAXVALUE"), PG_PARSER_NODETYPE_CHAR);
+            context->nodetree =
+                pg_parser_append_nodetree_with_type(context->nodetree, (void*)("MAXVALUE"), PG_PARSER_NODETYPE_CHAR);
         }
         else
         {
@@ -1404,8 +1395,7 @@ static bool get_range_partbound_string(pg_parser_List*            bound_datums,
         }
         sep = true;
     }
-    context->nodetree = pg_parser_append_nodetree_with_type(
-        context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
+    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
     return true;
 }
 
@@ -1456,8 +1446,9 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
                 case AND_EXPR:
                     if (!PRETTY_PAREN(context))
                     {
-                        context->nodetree = pg_parser_append_nodetree_with_type(
-                            context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                                (void*)("("),
+                                                                                PG_PARSER_NODETYPE_CHAR);
                     }
                     if (!get_rule_expr_paren(first_arg, context, false, node))
                     {
@@ -1465,10 +1456,10 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
                     }
                     while (arg)
                     {
-                        context->nodetree = pg_parser_append_nodetree_with_type(
-                            context->nodetree, (void*)("AND"), PG_PARSER_NODETYPE_CHAR);
-                        if (!get_rule_expr_paren(
-                                (pg_parser_Node*)pg_parser_lfirst(arg), context, false, node))
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                                (void*)("AND"),
+                                                                                PG_PARSER_NODETYPE_CHAR);
+                        if (!get_rule_expr_paren((pg_parser_Node*)pg_parser_lfirst(arg), context, false, node))
                         {
                             return false;
                         }
@@ -1476,16 +1467,18 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
                     }
                     if (!PRETTY_PAREN(context))
                     {
-                        context->nodetree = pg_parser_append_nodetree_with_type(
-                            context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                                (void*)(")"),
+                                                                                PG_PARSER_NODETYPE_CHAR);
                     }
                     break;
 
                 case OR_EXPR:
                     if (!PRETTY_PAREN(context))
                     {
-                        context->nodetree = pg_parser_append_nodetree_with_type(
-                            context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                                (void*)("("),
+                                                                                PG_PARSER_NODETYPE_CHAR);
                     }
                     if (!get_rule_expr_paren(first_arg, context, false, node))
                     {
@@ -1493,10 +1486,10 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
                     }
                     while (arg)
                     {
-                        context->nodetree = pg_parser_append_nodetree_with_type(
-                            context->nodetree, (void*)("OR"), PG_PARSER_NODETYPE_CHAR);
-                        if (!get_rule_expr_paren(
-                                (pg_parser_Node*)pg_parser_lfirst(arg), context, false, node))
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                                (void*)("OR"),
+                                                                                PG_PARSER_NODETYPE_CHAR);
+                        if (!get_rule_expr_paren((pg_parser_Node*)pg_parser_lfirst(arg), context, false, node))
                         {
                             return false;
                         }
@@ -1504,27 +1497,30 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
                     }
                     if (!PRETTY_PAREN(context))
                     {
-                        context->nodetree = pg_parser_append_nodetree_with_type(
-                            context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                                (void*)(")"),
+                                                                                PG_PARSER_NODETYPE_CHAR);
                     }
                     break;
 
                 case NOT_EXPR:
                     if (!PRETTY_PAREN(context))
                     {
-                        context->nodetree = pg_parser_append_nodetree_with_type(
-                            context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                                (void*)("("),
+                                                                                PG_PARSER_NODETYPE_CHAR);
                     }
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("NOT"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree =
+                        pg_parser_append_nodetree_with_type(context->nodetree, (void*)("NOT"), PG_PARSER_NODETYPE_CHAR);
                     if (!get_rule_expr_paren(first_arg, context, false, node))
                     {
                         return false;
                     }
                     if (!PRETTY_PAREN(context))
                     {
-                        context->nodetree = pg_parser_append_nodetree_with_type(
-                            context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
+                        context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                                (void*)(")"),
+                                                                                PG_PARSER_NODETYPE_CHAR);
                     }
                     break;
 
@@ -1547,8 +1543,9 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
             {
                 if (sep)
                 {
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)NULL, PG_PARSER_NODETYPE_SEPARATOR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)NULL,
+                                                                            PG_PARSER_NODETYPE_SEPARATOR);
                 }
                 get_rule_expr((pg_parser_Node*)pg_parser_lfirst(l), context, showimplicit);
                 sep = true;
@@ -1567,8 +1564,8 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
 
             if (spec->is_default)
             {
-                context->nodetree = pg_parser_append_nodetree_with_type(
-                    context->nodetree, (void*)("DEFAULT"), PG_PARSER_NODETYPE_CHAR);
+                context->nodetree =
+                    pg_parser_append_nodetree_with_type(context->nodetree, (void*)("DEFAULT"), PG_PARSER_NODETYPE_CHAR);
                 if (spec)
                 {
                     if (spec->listdatums)
@@ -1593,48 +1590,50 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
                 case PG_PARSER_PARTITION_STRATEGY_HASH:
                 {
                     char temp_char[1024] = {'\0'};
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("FOR VALUES"), PG_PARSER_NODETYPE_CHAR);
-                    sprintf(temp_char,
-                            " WITH (modulus %d, remainder %d)",
-                            spec->modulus,
-                            spec->remainder);
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)temp_char, PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("FOR VALUES"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
+                    sprintf(temp_char, " WITH (modulus %d, remainder %d)", spec->modulus, spec->remainder);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)temp_char,
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 }
 
                 case PG_PARSER_PARTITION_STRATEGY_LIST:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("FOR VALUES IN ("), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("FOR VALUES IN ("),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     pg_parser_foreach(cell, spec->listdatums)
                     {
-                        pg_parser_Const* val =
-                            pg_parser_castNode(pg_parser_Const, pg_parser_lfirst(cell));
+                        pg_parser_Const* val = pg_parser_castNode(pg_parser_Const, pg_parser_lfirst(cell));
 
                         if (sep)
                         {
-                            context->nodetree = pg_parser_append_nodetree_with_type(
-                                context->nodetree, (void*)(", "), PG_PARSER_NODETYPE_CHAR);
+                            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                                    (void*)(", "),
+                                                                                    PG_PARSER_NODETYPE_CHAR);
                         }
                         get_const_expr(val, context);
                         sep = true;
                     }
 
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree =
+                        pg_parser_append_nodetree_with_type(context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
                     break;
 
                 case PG_PARSER_PARTITION_STRATEGY_RANGE:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("FOR VALUES FROM "), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("FOR VALUES FROM "),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     if (!get_range_partbound_string(spec->lowerdatums, context))
                     {
                         return false;
                     }
 
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)(" TO  "), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)(" TO  "),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     if (!get_range_partbound_string(spec->upperdatums, context))
                     {
                         return false;
@@ -1691,80 +1690,95 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
             switch (svf->op)
             {
                 case SVFOP_CURRENT_DATE:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("CURRENT_DATE"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("CURRENT_DATE"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 case SVFOP_CURRENT_TIME:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("CURRENT_TIME"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("CURRENT_TIME"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 case SVFOP_CURRENT_TIME_N:
                 {
                     char temp_str[128] = {'\0'};
                     sprintf(temp_str, "CURRENT_TIME(%d)", svf->typmod);
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)(temp_str), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)(temp_str),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 }
                 case SVFOP_CURRENT_TIMESTAMP:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("CURRENT_TIMESTAMP"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("CURRENT_TIMESTAMP"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 case SVFOP_CURRENT_TIMESTAMP_N:
                 {
                     char temp_str[128] = {'\0'};
                     sprintf(temp_str, "CURRENT_TIMESTAMP(%d)", svf->typmod);
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)(temp_str), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)(temp_str),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 }
                 case SVFOP_LOCALTIME:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("LOCALTIME"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("LOCALTIME"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 case SVFOP_LOCALTIME_N:
                 {
                     char temp_str[128] = {'\0'};
                     sprintf(temp_str, "LOCALTIME(%d)", svf->typmod);
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)(temp_str), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)(temp_str),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 }
                 case SVFOP_LOCALTIMESTAMP:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("LOCALTIMESTAMP"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("LOCALTIMESTAMP"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 case SVFOP_LOCALTIMESTAMP_N:
                 {
                     char temp_str[128] = {'\0'};
                     sprintf(temp_str, "LOCALTIMESTAMP(%d)", svf->typmod);
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)(temp_str), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)(temp_str),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 }
                 case SVFOP_CURRENT_ROLE:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("CURRENT_ROLE"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("CURRENT_ROLE"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 case SVFOP_CURRENT_USER:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("CURRENT_USER"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("CURRENT_USER"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 case SVFOP_USER:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("USER"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("USER"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 case SVFOP_SESSION_USER:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("SESSION_USER"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("SESSION_USER"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 case SVFOP_CURRENT_CATALOG:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("CURRENT_CATALOG"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("CURRENT_CATALOG"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 case SVFOP_CURRENT_SCHEMA:
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)("CURRENT_SCHEMA"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)("CURRENT_SCHEMA"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
             }
         }
@@ -1774,8 +1788,8 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
             pg_parser_NullTest* ntest = (pg_parser_NullTest*)node;
             if (!PRETTY_PAREN(context))
             {
-                context->nodetree = pg_parser_append_nodetree_with_type(
-                    context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
+                context->nodetree =
+                    pg_parser_append_nodetree_with_type(context->nodetree, (void*)("("), PG_PARSER_NODETYPE_CHAR);
             }
             get_rule_expr_paren((pg_parser_Node*)ntest->arg, context, true, node);
             /*
@@ -1788,28 +1802,31 @@ bool get_rule_expr(pg_parser_Node* node, pg_parser_deparse_context* context, boo
             {
                 case IS_NULL:
                 {
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)(" IS NULL"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)(" IS NULL"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 }
                 case IS_NOT_NULL:
                 {
-                    context->nodetree = pg_parser_append_nodetree_with_type(
-                        context->nodetree, (void*)(" IS NOT NULL"), PG_PARSER_NODETYPE_CHAR);
+                    context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                            (void*)(" IS NOT NULL"),
+                                                                            PG_PARSER_NODETYPE_CHAR);
                     break;
                 }
             }
             if (!PRETTY_PAREN(context))
             {
-                context->nodetree = pg_parser_append_nodetree_with_type(
-                    context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
+                context->nodetree =
+                    pg_parser_append_nodetree_with_type(context->nodetree, (void*)(")"), PG_PARSER_NODETYPE_CHAR);
             }
         }
         break;
         default:
             /* todo error handling */
-            context->nodetree = pg_parser_append_nodetree_with_type(
-                context->nodetree, (void*)("[UNSUPPORT NODE]"), PG_PARSER_NODETYPE_CHAR);
+            context->nodetree = pg_parser_append_nodetree_with_type(context->nodetree,
+                                                                    (void*)("[UNSUPPORT NODE]"),
+                                                                    PG_PARSER_NODETYPE_CHAR);
             pg_parser_mcxt_free(NODE_MCXT, node);
             return true;
             break;

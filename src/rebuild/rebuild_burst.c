@@ -147,8 +147,7 @@ rebuild_burst* rebuild_burst_init(void)
 }
 
 /* MD5sum and missingmap */
-static bool rebuild_burst_setmd5andmissing(rebuild_burstrow*               row,
-                                           pg_parser_translog_tbcol_value* value)
+static bool rebuild_burst_setmd5andmissing(rebuild_burstrow* row, pg_parser_translog_tbcol_value* value)
 {
     MD5_CTX                          md5;
     int                              colindex = 0;
@@ -486,10 +485,7 @@ static void rebuild_burst_ischangeconskey(rebuild_burstnode* burstnode, rebuild_
 }
 
 /* Build burstnode table primary key or unique constraint information */
-static bool rebuild_composekey(HTAB*              hclass,
-                               HTAB*              hattrs,
-                               HTAB*              hindex,
-                               rebuild_burstnode* pburstnode)
+static bool rebuild_composekey(HTAB* hclass, HTAB* hattrs, HTAB* hindex, rebuild_burstnode* pburstnode)
 {
     bool                         find = false;
     uint32                       indkey = 0;
@@ -508,8 +504,7 @@ static bool rebuild_composekey(HTAB*              hclass,
 
     if (NULL == class)
     {
-        elog(
-            RLOG_WARNING, "ripple rebuild composekey not find class by %lu", pburstnode->table.oid);
+        elog(RLOG_WARNING, "ripple rebuild composekey not find class by %lu", pburstnode->table.oid);
         return false;
     }
 
@@ -564,9 +559,7 @@ static bool rebuild_composekey(HTAB*              hclass,
 
     if (NULL == lattrs || NULL == lattrs->head)
     {
-        elog(RLOG_WARNING,
-             "ripple rebuild composekey not find attribute by %lu",
-             pburstnode->table.oid);
+        elog(RLOG_WARNING, "ripple rebuild composekey not find attribute by %lu", pburstnode->table.oid);
         return false;
     }
 
@@ -671,8 +664,7 @@ static bool rebuild_burst_tbcolvaluecopy(pg_parser_translog_tbcol_value*  value1
                 return false;
             }
             rmemset0(value[colindex].m_value, 0, 0, value[colindex].m_valueLen + 1);
-            rmemcpy0(
-                value[colindex].m_value, 0, value1[colindex].m_value, value1[colindex].m_valueLen);
+            rmemcpy0(value[colindex].m_value, 0, value1[colindex].m_value, value1[colindex].m_valueLen);
         }
     }
 
@@ -715,8 +707,7 @@ bool rebuild_burst_getnode(HTAB*               hclass,
     rebuild_bursttable* dltable = NULL;
     rebuild_burstnode*  tmpburstnode = NULL;
 
-    dltable = (rebuild_bursttable*)rebuild_burst_gettable(
-        burst->dlbursttable, bursttable, rebuild_bursttable_cmp);
+    dltable = (rebuild_bursttable*)rebuild_burst_gettable(burst->dlbursttable, bursttable, rebuild_bursttable_cmp);
     if (NULL == dltable)
     {
         dltable = rebuild_bursttable_init();
@@ -740,8 +731,7 @@ bool rebuild_burst_getnode(HTAB*               hclass,
     }
     else
     {
-        tmpburstnode =
-            (rebuild_burstnode*)dlist_get(burst->dlburstnodes, dltable, rebuild_burstnode_tablecmp);
+        tmpburstnode = (rebuild_burstnode*)dlist_get(burst->dlburstnodes, dltable, rebuild_burstnode_tablecmp);
         if (NULL != tmpburstnode)
         {
             *pburstnode = tmpburstnode;
@@ -794,8 +784,7 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
     update = (pg_parser_translog_tbcol_values*)rows;
 
     /* Update old and new value missing values complement each other */
-    if (false == pg_parser_trans_matchmissing(
-                     update->m_new_values, update->m_old_values, update->m_valueCnt))
+    if (false == pg_parser_trans_matchmissing(update->m_new_values, update->m_old_values, update->m_valueCnt))
     {
         elog(RLOG_WARNING, "rebuild burst decomposeupdate match missing failed");
         return false;
@@ -830,8 +819,7 @@ bool rebuild_burst_decomposeupdate(rebuild_burstnode* burstnode,
     delete->m_tuple = NULL;
 
     /* Copy before column content */
-    if (false == rebuild_burst_tbcolvaluecopy(
-                     update->m_old_values, &delete->m_old_values, update->m_valueCnt))
+    if (false == rebuild_burst_tbcolvaluecopy(update->m_old_values, &delete->m_old_values, update->m_valueCnt))
     {
         elog(RLOG_WARNING, "rebuild burst decomposeupdate copy before failed");
         heap_free_trans_result((pg_parser_translog_tbcolbase*)delete);
@@ -964,8 +952,7 @@ bool rebuild_burst_mergeinsert(rebuild_burstnode* pburstnode, rebuild_burstrow* 
                 }
             }
             rebuild_burstrow_free(insertrow);
-            pburstnode->dldeleterows =
-                dlist_delete(pburstnode->dldeleterows, dlnode, rebuild_burstrow_free);
+            pburstnode->dldeleterows = dlist_delete(pburstnode->dldeleterows, dlnode, rebuild_burstrow_free);
             return true;
         }
     }
@@ -1003,8 +990,7 @@ bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode, rebuild_burstrow* 
             /* Found same insert, delete from list, free delete, return true */
             if (0 == memcmp(insertrow->md5, delrow->md5, 16))
             {
-                pburstnode->dlinsertrows =
-                    dlist_delete(pburstnode->dlinsertrows, dlnode, rebuild_burstrow_free);
+                pburstnode->dlinsertrows = dlist_delete(pburstnode->dlinsertrows, dlnode, rebuild_burstrow_free);
                 rebuild_burstrow_free(delrow);
                 return true;
             }
@@ -1021,8 +1007,7 @@ bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode, rebuild_burstrow* 
             for (keyindex = 0; keyindex < keycnt; keyindex++)
             {
                 key = keys[keyindex].colno;
-                if (0 != strcmp(del->m_old_values[key - 1].m_value,
-                                insert->m_new_values[key - 1].m_value))
+                if (0 != strcmp(del->m_old_values[key - 1].m_value, insert->m_new_values[key - 1].m_value))
                 {
                     same = false;
                     break;
@@ -1032,8 +1017,7 @@ bool rebuild_burst_mergedelete(rebuild_burstnode* pburstnode, rebuild_burstrow* 
             if (true == same)
             {
                 /* Merge succeeded, remove insert, free delrow */
-                pburstnode->dlinsertrows =
-                    dlist_delete(pburstnode->dlinsertrows, dlnode, rebuild_burstrow_free);
+                pburstnode->dlinsertrows = dlist_delete(pburstnode->dlinsertrows, dlnode, rebuild_burstrow_free);
                 rebuild_burstrow_free(delrow);
                 return true;
             }
@@ -1105,8 +1089,7 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
             for (keyindex = 0; keyindex < keycnt; keyindex++)
             {
                 key = keys[keyindex].colno;
-                if (0 != strcmp(del->m_old_values[key - 1].m_value,
-                                insert->m_new_values[key - 1].m_value))
+                if (0 != strcmp(del->m_old_values[key - 1].m_value, insert->m_new_values[key - 1].m_value))
                 {
                     same = false;
                     break;
@@ -1134,8 +1117,7 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
     }
 
     /* Replace insert values with UPDATE after values */
-    if (REBUILD_BURSTROWTYPE_INSERT == insertrow->op ||
-        REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
+    if (REBUILD_BURSTROWTYPE_INSERT == insertrow->op || REBUILD_BURSTROWTYPE_UPDATE == insertrow->op)
     {
         insert = (pg_parser_translog_tbcol_values*)insertrow->row;
         insertvalue = insert->m_new_values;
@@ -1152,9 +1134,7 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
     }
     else
     {
-        elog(RLOG_WARNING,
-             "rebuild burst updatemergedelete Invalid operation type:%d",
-             insertrow->op);
+        elog(RLOG_WARNING, "rebuild burst updatemergedelete Invalid operation type:%d", insertrow->op);
         *error = true;
         return false;
     }
@@ -1179,9 +1159,7 @@ bool rebuild_burst_updatemergedelete(rebuild_burstnode* burstnode,
 }
 
 /* Reorganize txn INSERT content into burst */
-static bool rebuild_burst_txn2bursts_insert(rebuild_burst*  burst,
-                                            cache_sysdicts* sysdicts,
-                                            void*           row)
+static bool rebuild_burst_txn2bursts_insert(rebuild_burst* burst, cache_sysdicts* sysdicts, void* row)
 {
     rebuild_bursttable               table = {0};
     rebuild_burstrow*                insertrow = NULL;
@@ -1230,9 +1208,7 @@ static bool rebuild_burst_txn2bursts_insert(rebuild_burst*  burst,
 }
 
 /* Reorganize txn DELETE content into burst */
-static bool rebuild_burst_txn2bursts_delete(rebuild_burst*  burst,
-                                            cache_sysdicts* sysdicts,
-                                            void*           row)
+static bool rebuild_burst_txn2bursts_delete(rebuild_burst* burst, cache_sysdicts* sysdicts, void* row)
 {
     rebuild_bursttable               table = {0};
     rebuild_burstrow*                delrow = NULL;
@@ -1282,9 +1258,7 @@ static bool rebuild_burst_txn2bursts_delete(rebuild_burst*  burst,
 }
 
 /* Reorganize txn MULTIINSERT content into burst */
-static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst*  burst,
-                                                 cache_sysdicts* sysdicts,
-                                                 void*           row)
+static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst* burst, cache_sysdicts* sysdicts, void* row)
 {
     int                               rowindx = 0;
     rebuild_bursttable                table = {0};
@@ -1315,8 +1289,7 @@ static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst*  burst,
     {
         value = multiinsert->m_rows[rowindx].m_new_values;
         /* Split into multiple inserts */
-        insert =
-            (pg_parser_translog_tbcol_values*)rmalloc0(sizeof(pg_parser_translog_tbcol_values));
+        insert = (pg_parser_translog_tbcol_values*)rmalloc0(sizeof(pg_parser_translog_tbcol_values));
         if (NULL == insert)
         {
             elog(RLOG_WARNING, "out of memory, %s", strerror(errno));
@@ -1359,9 +1332,7 @@ static bool rebuild_burst_txn2bursts_multiinsert(rebuild_burst*  burst,
 }
 
 /* Reorganize txn UPDATE content into burst */
-static bool rebuild_burst_txn2bursts_update(rebuild_burst*  burst,
-                                            cache_sysdicts* sysdicts,
-                                            void*           row)
+static bool rebuild_burst_txn2bursts_update(rebuild_burst* burst, cache_sysdicts* sysdicts, void* row)
 {
     bool                             error = false;
     bool                             mergeresult = false;
@@ -1500,16 +1471,14 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                     class = (catalog_class_value*)catalog_data->catalog;
                     if (NULL == class)
                     {
-                        elog(RLOG_WARNING,
-                             "rebuild burst txn2bursts catalog_data->catalog is null");
+                        elog(RLOG_WARNING, "rebuild burst txn2bursts catalog_data->catalog is null");
                         return false;
                     }
                     dltable.oid = class->class->oid;
                     dltable.schema = class->class->nspname.data;
                     dltable.table = class->class->relname.data;
 
-                    table = rebuild_burst_gettable(
-                        burst->dlbursttable, &dltable, rebuild_bursttable_cmp);
+                    table = rebuild_burst_gettable(burst->dlbursttable, &dltable, rebuild_bursttable_cmp);
                     if (NULL == table)
                     {
                         table = rebuild_bursttable_init();
@@ -1536,10 +1505,8 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                     burstnode->table.oid = class->class->oid;
                     burstnode->table.schema = rstrdup(class->class->nspname.data);
                     burstnode->table.table = rstrdup(class->class->relname.data);
-                    if (false == rebuild_composekey(sysdicts->by_class,
-                                                    sysdicts->by_attribute,
-                                                    sysdicts->by_index,
-                                                    burstnode))
+                    if (false ==
+                        rebuild_composekey(sysdicts->by_class, sysdicts->by_attribute, sysdicts->by_index, burstnode))
                     {
                         elog(RLOG_WARNING, "rebuild burst txn2bursts composekey failed");
                         return false;
@@ -1556,8 +1523,7 @@ bool rebuild_burst_txn2bursts(rebuild_burst* burst, cache_sysdicts* sysdicts, tx
                     database = (catalog_database_value*)catalog_data->catalog;
                     if (NULL == database)
                     {
-                        elog(RLOG_WARNING,
-                             "rebuild burst txn2bursts catalog_data->catalog is null");
+                        elog(RLOG_WARNING, "rebuild burst txn2bursts catalog_data->catalog is null");
                         return false;
                     }
 
@@ -1736,17 +1702,11 @@ static bool rebuild_burst_assemblepbedelete(rebuild_burstnode* burstnode, txn* t
     }
 
     /* Sort by MD5 grouping */
-    qsort(sortrow,
-          burstnode->dldeleterows->length,
-          sizeof(rebuild_burstrow*),
-          rebuild_burst_comparemd5);
+    qsort(sortrow, burstnode->dldeleterows->length, sizeof(rebuild_burstrow*), rebuild_burst_comparemd5);
 
     str = makeStringInfo();
 
-    appendStringInfo(str,
-                     "DELETE FROM \"%s\".\"%s\" WHERE CTID IN (",
-                     burstnode->table.schema,
-                     burstnode->table.table);
+    appendStringInfo(str, "DELETE FROM \"%s\".\"%s\" WHERE CTID IN (", burstnode->table.schema, burstnode->table.table);
 
     md5 = sortrow[0]->md5;
     for (sortindex = 0; sortindex < burstnode->dldeleterows->length; sortindex++)
@@ -1874,8 +1834,7 @@ static bool rebuild_burst_assemblepbeinsert(rebuild_burstnode* burstnode, txn* t
     insertstr = makeStringInfo();
     valuestr = makeStringInfo();
 
-    appendStringInfo(
-        insertstr, "INSERT INTO \"%s\".\"%s\" (", burstnode->table.schema, burstnode->table.table);
+    appendStringInfo(insertstr, "INSERT INTO \"%s\".\"%s\" (", burstnode->table.schema, burstnode->table.table);
 
     need_colname = true;
     for (dlnode = burstnode->dlinsertrows->head; dlnode != NULL; dlnode = dlnode->next)
@@ -2001,8 +1960,7 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
 
     str = makeStringInfo();
 
-    appendStringInfo(
-        str, "DELETE FROM \"%s\".\"%s\" WHERE (", burstnode->table.schema, burstnode->table.table);
+    appendStringInfo(str, "DELETE FROM \"%s\".\"%s\" WHERE (", burstnode->table.schema, burstnode->table.table);
 
     /* Assemble constraint information */
     for (colindex = 0; colindex < burstnode->table.keycnt; colindex++)
@@ -2113,9 +2071,7 @@ static bool rebuild_burst_assembledelete(rebuild_burstnode* burstnode, txn* txn)
 }
 
 /* Assemble burst INSERT statement - temp table, all columns, ON CONFLICT */
-static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
-                                         rebuild_burstnode* burstnode,
-                                         txn*               txn)
+static bool rebuild_burst_assembleinsert(cache_sysdicts* sysdicts, rebuild_burstnode* burstnode, txn* txn)
 {
     bool                             first = true;
     bool                             need_comma = false;
@@ -2171,9 +2127,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
 
     if (NULL == lattrs || NULL == lattrs->head)
     {
-        elog(RLOG_WARNING,
-             "ripple burst assembleinsert not find attribute by %lu",
-             burstnode->table.oid);
+        elog(RLOG_WARNING, "ripple burst assembleinsert not find attribute by %lu", burstnode->table.oid);
         rfree(sortrow);
         return false;
     }
@@ -2209,8 +2163,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
                 appendStringInfo(conskeystr,
                                  "CREATE TEMP TABLE IF NOT EXISTS \"%s_burst\" (op text ",
                                  burstnode->table.table);
-                appendStringInfo(
-                    insestrstr, "INSERT INTO \"%s_burst\" (op", burstnode->table.table);
+                appendStringInfo(insestrstr, "INSERT INTO \"%s_burst\" (op", burstnode->table.table);
                 appendStringInfo(valuestr, "VALUES ('update' ");
                 appendStringInfo(updatestr,
                                  "UPDATE \"%s\".\"%s\" SET ",
@@ -2221,8 +2174,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
                 for (keyindex = 0; keyindex < table->keycnt; keyindex++)
                 {
                     key = &table->keys[keyindex];
-                    type = rebuild_burst_gettypename(
-                        lattrs, sysdicts->by_type, key->coltype, key->colname);
+                    type = rebuild_burst_gettypename(lattrs, sysdicts->by_type, key->coltype, key->colname);
                     if (NULL == type)
                     {
                         deleteStringInfo(conskeystr);
@@ -2240,8 +2192,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
                     appendStringInfo(insestrstr, "\"%s_before\"", key->colname);
 
                     appendStringInfo(valuestr, ", ");
-                    appendStringInfo(
-                        valuestr, "'%s'", (char*)insert->m_old_values[key->colno - 1].m_value);
+                    appendStringInfo(valuestr, "'%s'", (char*)insert->m_old_values[key->colno - 1].m_value);
                     rfree(type);
                     type = NULL;
                 }
@@ -2251,13 +2202,11 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
                 for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
                 {
                     values = &insert->m_new_values[colindex];
-                    if (INFO_COL_IS_DROPED == values->m_info ||
-                        INFO_COL_IS_CUSTOM == values->m_info)
+                    if (INFO_COL_IS_DROPED == values->m_info || INFO_COL_IS_CUSTOM == values->m_info)
                     {
                         continue;
                     }
-                    type = rebuild_burst_gettypename(
-                        lattrs, sysdicts->by_type, values->m_coltype, values->m_colName);
+                    type = rebuild_burst_gettypename(lattrs, sysdicts->by_type, values->m_coltype, values->m_colName);
                     if (NULL == type)
                     {
                         deleteStringInfo(conskeystr);
@@ -2306,8 +2255,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
                     /* Assemble temp table update statement */
                     if (true == rebuild_burst_colisconskey(table, values->m_colName))
                     {
-                        appendStringInfo(
-                            updatestr, "\"%s\" = b.\"%s\"", values->m_colName, values->m_colName);
+                        appendStringInfo(updatestr, "\"%s\" = b.\"%s\"", values->m_colName, values->m_colName);
                     }
                     else
                     {
@@ -2324,8 +2272,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
                     }
                     need_comma = true;
                 }
-                appendStringInfo(
-                    conskeystr, ");\nTRUNCATE TABLE \"%s_burst\";\n", burstnode->table.table);
+                appendStringInfo(conskeystr, ");\nTRUNCATE TABLE \"%s_burst\";\n", burstnode->table.table);
                 appendStringInfo(insestrstr, ")");
                 appendStringInfo(valuestr, ")");
 
@@ -2362,16 +2309,14 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
                 {
                     key = &table->keys[keyindex];
                     appendStringInfo(conskeystr, ", ");
-                    appendStringInfo(
-                        conskeystr, "'%s'", (char*)insert->m_old_values[key->colno - 1].m_value);
+                    appendStringInfo(conskeystr, "'%s'", (char*)insert->m_old_values[key->colno - 1].m_value);
                     need_comma = true;
                 }
 
                 for (colindex = 0; colindex < insert->m_valueCnt; colindex++)
                 {
                     values = &insert->m_new_values[colindex];
-                    if (INFO_COL_IS_DROPED == values->m_info ||
-                        INFO_COL_IS_CUSTOM == values->m_info)
+                    if (INFO_COL_IS_DROPED == values->m_info || INFO_COL_IS_CUSTOM == values->m_info)
                     {
                         continue;
                     }
@@ -2415,10 +2360,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
         }
         stmt->stmt = NULL;
         stmt->type = TXNSTMT_TYPE_BURST;
-        appendStringInfo(conskeystr,
-                         ";\n %s \n DROP TABLE \"%s_burst\" ",
-                         updatestr->data,
-                         burstnode->table.table);
+        appendStringInfo(conskeystr, ";\n %s \n DROP TABLE \"%s_burst\" ", updatestr->data, burstnode->table.table);
 
         conskeyburst->batchcmd = (uint8*)conskeystr->data;
         conskeystr->data = NULL;
@@ -2486,8 +2428,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
                 {
                     values = &insert->m_new_values[colindex];
                     /* Types not processed */
-                    if (INFO_COL_MAY_NULL == values->m_info ||
-                        INFO_COL_IS_DROPED == values->m_info ||
+                    if (INFO_COL_MAY_NULL == values->m_info || INFO_COL_IS_DROPED == values->m_info ||
                         INFO_COL_IS_CUSTOM == values->m_info)
                     {
                         continue;
@@ -2592,8 +2533,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
         }
 
         /* INSERT from UPDATE inserted via ON CONFLICT */
-        if (missingcnt != insertrow->missingcnt ||
-            memcmp(missingmap, insertrow->missingmap, missingmapsize))
+        if (missingcnt != insertrow->missingcnt || memcmp(missingmap, insertrow->missingmap, missingmapsize))
         {
             /* Missingmap changed, regenerate statement */
             missing_comma = false;
@@ -2680,10 +2620,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts*    sysdicts,
                         appendStringInfo(valuestr, ", ");
                     }
 
-                    appendStringInfo(valuestr,
-                                     "\"%s\" = EXCLUDED.\"%s\" ",
-                                     values->m_colName,
-                                     values->m_colName);
+                    appendStringInfo(valuestr, "\"%s\" = EXCLUDED.\"%s\" ", values->m_colName, values->m_colName);
                     conskey_comma = true;
                 }
                 need_comma = true;

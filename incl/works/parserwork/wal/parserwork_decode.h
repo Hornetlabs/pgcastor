@@ -25,10 +25,7 @@ typedef struct DECODINGCONTEXT_PRIVDATACALLBACK
     void (*setparserlsn)(void* privdata, XLogRecPtr confirm, XLogRecPtr restart, XLogRecPtr redo);
 
     /* capturestate set redo, restart, confirm lsn */
-    void (*setmetricsynclsn)(void*      privdata,
-                             XLogRecPtr redolsn,
-                             XLogRecPtr restartlsn,
-                             XLogRecPtr confirmlsn);
+    void (*setmetricsynclsn)(void* privdata, XLogRecPtr redolsn, XLogRecPtr restartlsn, XLogRecPtr confirmlsn);
 
     /* Set capturestate timestamp */
     void (*setmetricparsetimestamp)(void* privdata, TimestampTz parsetimestamp);

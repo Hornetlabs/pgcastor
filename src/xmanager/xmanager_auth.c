@@ -266,10 +266,7 @@ static xmanager_metricregnode* xmanager_auth_identitycapture(xmanager_auth* xaut
                 return NULL;
             }
             rmemset0(xmetricregnode->msg, 0, '\0', 128);
-            snprintf(xmetricregnode->msg,
-                     128,
-                     "%s error",
-                     xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
+            snprintf(xmetricregnode->msg, 128, "%s error", xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
         }
         else
         {
@@ -423,10 +420,7 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
                 return NULL;
             }
             rmemset0(xmetricregnode->msg, 0, '\0', 128);
-            snprintf(xmetricregnode->msg,
-                     128,
-                     "%s error",
-                     xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
+            snprintf(xmetricregnode->msg, 128, "%s error", xmanager_metricmsg_getdesc(xmetricregnode->msgtype));
         }
         else
         {
@@ -521,9 +515,7 @@ static xmanager_metricregnode* xmanager_auth_identityintegrate(xmanager_auth* xa
 }
 
 /* Identity info */
-static bool xmanager_auth_identity(xmanager_auth* xauth,
-                                   netpoolentry*  npoolentry,
-                                   netpacket*     npacket)
+static bool xmanager_auth_identity(xmanager_auth* xauth, netpoolentry* npoolentry, netpacket* npacket)
 {
     int                     msglen = 0;
     int                     crc32 = 0;

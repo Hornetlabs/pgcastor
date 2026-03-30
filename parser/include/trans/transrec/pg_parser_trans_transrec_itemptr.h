@@ -46,8 +46,7 @@ typedef pg_parser_ItemIdData* pg_parser_ItemId;
     (pg_parser_AssertMacro(pg_parser_BlockIdIsValid(blockId)), \
      (pg_parser_BlockNumber)(((blockId)->bi_hi << 16) | ((uint16_t)(blockId)->bi_lo)))
 
-#define pg_parser_ItemPointerGetBlockNumberNoCheck(pointer) \
-    (pg_parser_BlockIdGetBlockNumber(&(pointer)->ip_blkid))
+#define pg_parser_ItemPointerGetBlockNumberNoCheck(pointer)  (pg_parser_BlockIdGetBlockNumber(&(pointer)->ip_blkid))
 
 #define pg_parser_ItemPointerGetOffsetNumberNoCheck(pointer) ((pointer)->ip_posid)
 

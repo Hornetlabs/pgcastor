@@ -20,9 +20,7 @@
  *4. Delete data and conf files
  *5. Return success message
  */
-bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric,
-                                    netpoolentry*    npoolentry,
-                                    netpacket*       npacket)
+bool xmanager_metricmsg_parseremove(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket)
 {
     int                  len = 0;
     int                  jobtype = 0;
@@ -133,6 +131,9 @@ xmanager_metricmsg_parseremove_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(
-        xmetric, npoolentry->wpackets, XMANAGER_MSG_REMOVECMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric,
+                                               npoolentry->wpackets,
+                                               XMANAGER_MSG_REMOVECMD,
+                                               errcode,
+                                               errormsg);
 }

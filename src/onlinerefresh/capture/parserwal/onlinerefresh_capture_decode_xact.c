@@ -126,9 +126,7 @@ static void decode_xact_appendsubtxn_obj(List** ptxnstmts, List** psysdicthis, t
 /*
  * On Commit, append the contents of sub-transactions to the main transaction
  */
-static void decode_xact_buildcommittxn(decodingcontext*              ctx,
-                                       pg_parser_translog_pre_trans* pretrans,
-                                       txn*                          in_txn)
+static void decode_xact_buildcommittxn(decodingcontext* ctx, pg_parser_translog_pre_trans* pretrans, txn* in_txn)
 {
     int                    index = 0;
     List*                  txnstmts = NULL;

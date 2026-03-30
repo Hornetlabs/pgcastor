@@ -43,10 +43,7 @@ static void serial_readdatafromfile(file_buffer* fbuffer)
     /* verify file exists, then open */
     if (0 != stat(path, &st))
     {
-        elog(RLOG_ERROR,
-             "file not exist, please recheck %s, fbuffer->start:%lu",
-             path,
-             fbuffer->start);
+        elog(RLOG_ERROR, "file not exist, please recheck %s, fbuffer->start:%lu", path, fbuffer->start);
     }
 
     /* open file */
@@ -105,10 +102,7 @@ file_buffers* serialstate_getfilebuffer(void* privdata)
     return serial_state->txn2filebuffer;
 }
 
-void serialstate_fbuffer_set(serialstate*      serial_state,
-                             uint64            fileid,
-                             uint64            fileoffset,
-                             FullTransactionId xid)
+void serialstate_fbuffer_set(serialstate* serial_state, uint64 fileid, uint64 fileoffset, FullTransactionId xid)
 {
     int          bufid = 0;
     int          timeout = 0;
@@ -154,11 +148,7 @@ void serialstate_fbuffer_set(serialstate*      serial_state,
     finfo->xid = xid;
     fbuffer->start = (fileoffset % FILE_BUFFER_SIZE);
 
-    elog(RLOG_DEBUG,
-         "ffsmgr_set fileid:%lu, fileoffset:%lu, %lu",
-         fileid,
-         fileoffset,
-         fbuffer->start);
+    elog(RLOG_DEBUG, "ffsmgr_set fileid:%lu, fileoffset:%lu, %lu", fileid, fileoffset, fbuffer->start);
 
     /* when reading, use fbuffer->start as reference */
     if (0 != fbuffer->start)
@@ -186,8 +176,7 @@ void serialstate_ffsmgr_set(serialstate* serial_state, int serialtype)
     ffsmgr_init(serialtype, serial_state->ffsmgrstate);
 
     /* call initialization interface */
-    serial_state->ffsmgrstate->ffsmgr->ffsmgr_init(FFSMGR_IF_OPTYPE_SERIAL,
-                                                   serial_state->ffsmgrstate);
+    serial_state->ffsmgrstate->ffsmgr->ffsmgr_init(FFSMGR_IF_OPTYPE_SERIAL, serial_state->ffsmgrstate);
 }
 
 /* resource cleanup */
@@ -203,8 +192,7 @@ void serialstate_destroy(serialstate* serial_state)
     {
         if (serial_state->ffsmgrstate->ffsmgr)
         {
-            serial_state->ffsmgrstate->ffsmgr->ffsmgr_free(FFSMGR_IF_OPTYPE_SERIAL,
-                                                           serial_state->ffsmgrstate);
+            serial_state->ffsmgrstate->ffsmgr->ffsmgr_free(FFSMGR_IF_OPTYPE_SERIAL, serial_state->ffsmgrstate);
         }
         rfree(serial_state->ffsmgrstate);
     }

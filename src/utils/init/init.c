@@ -87,11 +87,13 @@ static bool init_xmanager(void)
     return true;
 }
 
-static proc2init m_typ2init[] = {{PROC_TYPE_NOP, NULL, "proc nop unsupport init"},
-                                 {PROC_TYPE_CAPTURE, init_capture, "capture init error"},
-                                 {PROC_TYPE_INTEGRATE, init_integrate, "integrate init error"},
-                                 {PROC_TYPE_PGRECEIVEWAL, NULL, "pg receive log init error"},
-                                 {PROC_TYPE_XMANAGER, init_xmanager, "xmanager init error"}};
+static proc2init m_typ2init[] = {
+    {PROC_TYPE_NOP,          NULL,           "proc nop unsupport init"  },
+    {PROC_TYPE_CAPTURE,      init_capture,   "capture init error"       },
+    {PROC_TYPE_INTEGRATE,    init_integrate, "integrate init error"     },
+    {PROC_TYPE_PGRECEIVEWAL, NULL,           "pg receive log init error"},
+    {PROC_TYPE_XMANAGER,     init_xmanager,  "xmanager init error"      }
+};
 
 bool init(void)
 {

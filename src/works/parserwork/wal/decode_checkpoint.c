@@ -93,18 +93,13 @@ void decode_chkpt(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
         ctx->trans_cache->chkpts->tail->next = chkptnode;
         ctx->trans_cache->chkpts->tail = chkptnode;
     }
-    elog(RLOG_DEBUG,
-         "add checkpoint:%X/%X",
-         (uint32)(chkptnode->redolsn >> 32),
-         (uint32)(chkptnode->redolsn));
+    elog(RLOG_DEBUG, "add checkpoint:%X/%X", (uint32)(chkptnode->redolsn >> 32), (uint32)(chkptnode->redolsn));
 
     /* Check if timeline has changed */
     if (prechkpt->m_this_timeline != prechkpt->m_prev_timeline)
     {
         /* Timeline changed, create a transaction with xid = 0 */
-        txn = txn_init(InvalidTransactionId,
-                       ctx->decode_record->start.wal.lsn,
-                       ctx->decode_record->end.wal.lsn);
+        txn = txn_init(InvalidTransactionId, ctx->decode_record->start.wal.lsn, ctx->decode_record->end.wal.lsn);
 
         /* Set timeline */
         txn->type = TXN_TYPE_TIMELINE;
@@ -115,12 +110,9 @@ void decode_chkpt(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
         cache_txn_add(ctx->parser2txns, txn);
     }
 
-    if (InvalidTransactionId == chkptnode->xid &&
-        ctx->decode_record->start.wal.lsn > ctx->base.confirmedlsn)
+    if (InvalidTransactionId == chkptnode->xid && ctx->decode_record->start.wal.lsn > ctx->base.confirmedlsn)
     {
-        txn = txn_init(InvalidTransactionId,
-                       ctx->decode_record->start.wal.lsn,
-                       ctx->decode_record->end.wal.lsn);
+        txn = txn_init(InvalidTransactionId, ctx->decode_record->start.wal.lsn, ctx->decode_record->end.wal.lsn);
 
         /* Update redo/restart/confirm lsn based on transaction startlsn/endlsn */
         transcache_refreshlsn((void*)ctx, txn);
@@ -138,9 +130,7 @@ void decode_recovery(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
     if (recovery->m_this_timeline != recovery->m_prev_timeline)
     {
         /* Timeline changed, create a transaction with xid = 0 */
-        txn = txn_init(InvalidTransactionId,
-                       ctx->decode_record->start.wal.lsn,
-                       ctx->decode_record->end.wal.lsn);
+        txn = txn_init(InvalidTransactionId, ctx->decode_record->start.wal.lsn, ctx->decode_record->end.wal.lsn);
 
         /* Set timeline */
         txn->type = TXN_TYPE_TIMELINE;

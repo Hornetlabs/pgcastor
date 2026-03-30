@@ -100,8 +100,7 @@ static void EncodeDateOnly(struct pg_parser_tm* tm, int32_t style, char* str, in
         case USE_ISO_DATES:
         case USE_XSD_DATES:
             /* compatible with ISO date formats */
-            str = numutils_ltostr_zeropad(
-                str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
+            str = numutils_ltostr_zeropad(str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             *str++ = '-';
             str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             *str++ = '-';
@@ -123,8 +122,7 @@ static void EncodeDateOnly(struct pg_parser_tm* tm, int32_t style, char* str, in
                 str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             }
             *str++ = '/';
-            str = numutils_ltostr_zeropad(
-                str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
+            str = numutils_ltostr_zeropad(str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             break;
 
         case USE_GERMAN_DATES:
@@ -133,8 +131,7 @@ static void EncodeDateOnly(struct pg_parser_tm* tm, int32_t style, char* str, in
             *str++ = '.';
             str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             *str++ = '.';
-            str = numutils_ltostr_zeropad(
-                str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
+            str = numutils_ltostr_zeropad(str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             break;
 
         case USE_POSTGRES_DATES:
@@ -153,8 +150,7 @@ static void EncodeDateOnly(struct pg_parser_tm* tm, int32_t style, char* str, in
                 str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             }
             *str++ = '-';
-            str = numutils_ltostr_zeropad(
-                str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
+            str = numutils_ltostr_zeropad(str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             break;
     }
 

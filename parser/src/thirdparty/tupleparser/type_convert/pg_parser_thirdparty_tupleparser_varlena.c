@@ -13,14 +13,13 @@ pg_parser_Datum byteaout(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
     bool             is_toast = false;
     bool             need_free = false;
-    pg_parser_bytea* vlena =
-        (pg_parser_bytea*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
-                                                  &is_toast,
-                                                  &need_free,
-                                                  info->zicinfo->dbtype,
-                                                  info->zicinfo->dbversion);
-    char* result;
-    char* rp;
+    pg_parser_bytea* vlena = (pg_parser_bytea*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+                                                                       &is_toast,
+                                                                       &need_free,
+                                                                       info->zicinfo->dbtype,
+                                                                       info->zicinfo->dbversion);
+    char*            result;
+    char*            rp;
 
     if (is_toast)
     {

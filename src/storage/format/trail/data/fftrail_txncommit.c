@@ -53,8 +53,7 @@ bool fftrail_txncommit_serial(void* data, void* state)
     }
 
     /* Write to trail file */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     ffstate->recptr = fbuffer->data + fbuffer->start;
 
     commit = (commit_stmt*)rstmt->stmt;
@@ -79,8 +78,7 @@ bool fftrail_txncommit_serial(void* data, void* state)
     fbuffer->start += hdrlen;
 
     /* Add content */
-    fftrail_data_data2buffer(
-        &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)&timestamp);
+    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)&timestamp);
 
     /* Fill header info */
     if (FFSMGR_STATUS_SHIFTFILE == ffstate->status)

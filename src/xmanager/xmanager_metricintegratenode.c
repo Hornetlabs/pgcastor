@@ -18,10 +18,10 @@
  * namelen 4 + loadtimestamp
  * namelen 4 + synctimestamp
  */
-#define REFRESH_METRICINTEGRATE_KEY_LEN                                                        \
-    (4 + 4 + strlen("loadlsn") + 4 + strlen("synclsn") + 4 + strlen("loadtrailno") + 4 +       \
-     strlen("loadtrailstart") + 4 + strlen("synctrailno") + 4 + strlen("synctrailstart") + 4 + \
-     strlen("loadtimestamp") + 4 + strlen("synctimestamp"))
+#define REFRESH_METRICINTEGRATE_KEY_LEN                                                                             \
+    (4 + 4 + strlen("loadlsn") + 4 + strlen("synclsn") + 4 + strlen("loadtrailno") + 4 + strlen("loadtrailstart") + \
+     4 + strlen("synctrailno") + 4 + strlen("synctrailstart") + 4 + strlen("loadtimestamp") + 4 +                   \
+     strlen("synctimestamp"))
 
 /* Initialize */
 xmanager_metricnode* xmanager_metricintegratenode_init(void)
@@ -48,10 +48,7 @@ void xmanager_metricintegratenode_destroy(xmanager_metricnode* metricnode)
 }
 
 /* Serialize integrate node */
-bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode,
-                                         uint8**              blk,
-                                         int*                 blksize,
-                                         int*                 blkstart)
+bool xmanager_metricintegratenode_serial(xmanager_metricnode* metricnode, uint8** blk, int* blksize, int* blkstart)
 {
     bool                          bnew = false;
     int                           len = 0;
@@ -303,8 +300,7 @@ void* xmanager_metricmsg_assembleintegrate(xmanager_metricnode* pxmetricnode)
     }
     else
     {
-        elog(RLOG_WARNING,
-             "xmanager metric assemble info capture msg data, invalid metricnode stat");
+        elog(RLOG_WARNING, "xmanager metric assemble info capture msg data, invalid metricnode stat");
         return NULL;
     }
 

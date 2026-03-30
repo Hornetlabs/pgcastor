@@ -13,15 +13,12 @@ HTAB* onlinerefresh_integratefilterdataset_init(void)
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(Oid);
     hctl.entrysize = sizeof(onlinerefresh_integratefilterdataset);
-    integratefilterdataset =
-        hash_create("integratefilterdataset", 128, &hctl, HASH_ELEM | HASH_BLOBS);
+    integratefilterdataset = hash_create("integratefilterdataset", 128, &hctl, HASH_ELEM | HASH_BLOBS);
 
     return integratefilterdataset;
 }
 
-bool onlinerefresh_integratefilterdataset_add(HTAB*             filterdataset,
-                                              void*             in_tables,
-                                              FullTransactionId txid)
+bool onlinerefresh_integratefilterdataset_add(HTAB* filterdataset, void* in_tables, FullTransactionId txid)
 {
     bool                                  find = false;
     refresh_tables*                       tables = NULL;
@@ -82,9 +79,7 @@ HTAB* onlinerefresh_integratefilterdataset_copy(HTAB* filterdataset)
     return result;
 }
 
-bool onlinerefresh_integratefilterdataset_delete(HTAB*             filterdataset,
-                                                 void*             in_tables,
-                                                 FullTransactionId txid)
+bool onlinerefresh_integratefilterdataset_delete(HTAB* filterdataset, void* in_tables, FullTransactionId txid)
 {
     bool                                  find = false;
     refresh_tables*                       tables = NULL;

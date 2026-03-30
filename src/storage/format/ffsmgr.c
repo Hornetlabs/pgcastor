@@ -34,7 +34,9 @@ static ffsmgr_if   m_ffsmgrtrail = {.ffsmgr_init = fftrail_init,
                                     .ffsmgr_setrecordlength = fftrail_setrecordlength,
                                     .ffsmgr_isrecordtransstart = fftrail_isrecordtransstart};
 
-static fformatsmgr m_ffsmgrsw[] = {{FFSMG_IF_TYPE_TRAIL, &m_ffsmgrtrail}};
+static fformatsmgr m_ffsmgrsw[] = {
+    {FFSMG_IF_TYPE_TRAIL, &m_ffsmgrtrail}
+};
 
 /* Initialize, set the format interface to use */
 void ffsmgr_init(ffsmgr_if_type fftype, ffsmgr_state* ffsmgrstate)

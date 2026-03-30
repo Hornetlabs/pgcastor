@@ -171,10 +171,7 @@ static TimeLineID splitwork_wal_get_timelineid_from_file(char* buffer, size_t le
     return result;
 }
 
-static bool splitwork_wal_history_file_read(char**   buffer,
-                                            size_t*  len,
-                                            char*    dpath,
-                                            uint32_t timeline)
+static bool splitwork_wal_history_file_read(char** buffer, size_t* len, char* dpath, uint32_t timeline)
 {
     int  fd = -1;
     char fpath[MAXPGPATH];
@@ -283,8 +280,7 @@ void* splitwork_wal_main(void* args)
     /* Check state */
     if (THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING,
-             "increment capture split stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "increment capture split stat exception, expected state is THRNODE_STAT_STARTING");
         thrnode_ptr->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -320,16 +316,16 @@ void* splitwork_wal_main(void* args)
                  * position it to the beginning of the one before that. */
                 if (walctx->rewind_start)
                 {
-                    loadrecords->startptr = GetLastXlogSegmentBegin(
-                        (walctx->rewind_start + loadrecords->loadpage->filesize),
-                        loadrecords->loadpage->filesize);
+                    loadrecords->startptr =
+                        GetLastXlogSegmentBegin((walctx->rewind_start + loadrecords->loadpage->filesize),
+                                                loadrecords->loadpage->filesize);
                     loadrecords->endptr = loadrecords->startptr + loadrecords->loadpage->filesize;
                     walctx->rewind_start = InvalidXLogRecPtr;
                 }
                 else
                 {
-                    loadrecords->startptr = GetLastXlogSegmentBegin(
-                        loadrecords->startptr, loadrecords->loadpage->filesize);
+                    loadrecords->startptr =
+                        GetLastXlogSegmentBegin(loadrecords->startptr, loadrecords->loadpage->filesize);
                     loadrecords->endptr = loadrecords->startptr + loadrecords->loadpage->filesize;
                 }
                 loadrecords->prev = InvalidXLogRecPtr;
@@ -367,8 +363,7 @@ void* splitwork_wal_main(void* args)
         }
 
         /* When splitting reaches endlsn */
-        if (SPLITWORK_WAL_STATUS_REWIND == walctx->status &&
-            loadrecords->startptr >= loadrecords->endptr)
+        if (SPLITWORK_WAL_STATUS_REWIND == walctx->status && loadrecords->startptr >= loadrecords->endptr)
         {
             /* The first incomplete record at the beginning of the next file exists */
             if (loadrecords->seg_first_incomplete_next)
@@ -523,8 +518,7 @@ void* onlinerefresh_captureloadrecord_main(void* args)
         if (loadrecords->records)
         {
             /* When splitting reaches endlsn */
-            if (walctx->status == SPLITWORK_WAL_STATUS_REWIND &&
-                loadrecords->startptr >= loadrecords->endptr)
+            if (walctx->status == SPLITWORK_WAL_STATUS_REWIND && loadrecords->startptr >= loadrecords->endptr)
             {
                 /* The first incomplete record at the beginning of the next file exists */
                 if (loadrecords->seg_first_incomplete_next)
@@ -533,8 +527,7 @@ void* onlinerefresh_captureloadrecord_main(void* args)
                     loadwalrecords_merge_seg_last_record(loadrecords);
                 }
                 /* After merge, there should be no incomplete records at all */
-                if (loadrecords->seg_first_incomplete_next &&
-                    loadrecords->page_last_record_incomplete)
+                if (loadrecords->seg_first_incomplete_next && loadrecords->page_last_record_incomplete)
                 {
                     elog(RLOG_WARNING, "have incomplete record when split rewinding");
                     thrnode_ptr->stat = THRNODE_STAT_ABORT;

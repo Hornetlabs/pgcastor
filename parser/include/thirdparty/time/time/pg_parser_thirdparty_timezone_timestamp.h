@@ -135,9 +135,8 @@ typedef struct
 /* == (TIMESTAMP_END_JULIAN - POSTGRES_EPOCH_JDATE) * USECS_PER_DAY */
 
 /* Range-check a date (given in Postgres, not Julian, numbering) */
-#define IS_VALID_DATE(d)                                    \
-    ((DATETIME_MIN_JULIAN - POSTGRES_EPOCH_JDATE) <= (d) && \
-     (d) < (DATE_END_JULIAN - POSTGRES_EPOCH_JDATE))
+#define IS_VALID_DATE(d) \
+    ((DATETIME_MIN_JULIAN - POSTGRES_EPOCH_JDATE) <= (d) && (d) < (DATE_END_JULIAN - POSTGRES_EPOCH_JDATE))
 
 /* Range-check a timestamp */
 #define IS_VALID_TIMESTAMP(t) (MIN_TIMESTAMP <= (t) && (t) < END_TIMESTAMP)

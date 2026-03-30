@@ -15,8 +15,7 @@ extern onlinerefresh_captureparser* onlinerefresh_captureparser_init(void);
  */
 extern void onlinerefresh_captureparser_loadmetadata(onlinerefresh_captureparser* olcparser);
 
-extern bool onlinerefresh_captureparser_datasetinit(decodingcontext*       ctx,
-                                                    onlinerefresh_capture* onlinerefresh);
+extern bool onlinerefresh_captureparser_datasetinit(decodingcontext* ctx, onlinerefresh_capture* onlinerefresh);
 extern void* onlinerefresh_captureparser_main(void* args);
 extern void onlinerefresh_captureparser_free(void* args);
 

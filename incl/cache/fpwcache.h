@@ -26,12 +26,8 @@ typedef struct ReorderBufferFPWNode
 } ReorderBufferFPWNode;
 
 extern HTAB* fpwcache_init(transcache* transcache);
-extern void fpwcache_add(transcache*            transcache,
-                         ReorderBufferFPWKey*   key,
-                         ReorderBufferFPWEntry* entry);
+extern void fpwcache_add(transcache* transcache, ReorderBufferFPWKey* key, ReorderBufferFPWEntry* entry);
 
-extern void fpwcache_calcredolsnbyrestartlsn(transcache* transcache,
-                                             XLogRecPtr  restartlsn,
-                                             XLogRecPtr* redolsn);
+extern void fpwcache_calcredolsnbyrestartlsn(transcache* transcache, XLogRecPtr restartlsn, XLogRecPtr* redolsn);
 
 #endif

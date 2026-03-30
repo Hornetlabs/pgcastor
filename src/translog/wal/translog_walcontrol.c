@@ -257,11 +257,8 @@ bool translog_walcontrol_flush(translog_walcontrol* walctrl, char* data)
     }
 
     /* start position */
-    len = snprintf(content,
-                   LINESIZE,
-                   "STARTPOS:%X/%08X\n",
-                   (uint32)(walctrl->startpos >> 32),
-                   (uint32)walctrl->startpos);
+    len =
+        snprintf(content, LINESIZE, "STARTPOS:%X/%08X\n", (uint32)(walctrl->startpos >> 32), (uint32)walctrl->startpos);
     if (1 != osal_file_fwrite(fp, len, 1, content))
     {
         elog(RLOG_WARNING, "write file error, %s", strerror(errno));

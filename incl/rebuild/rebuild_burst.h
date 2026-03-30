@@ -1,9 +1,8 @@
 #ifndef _REBUILD_BURST_H
 #define _REBUILD_BURST_H
 
-#define REBUILD_BURSTNODEFLAG_NO 0x01 /* No primary key/unique index */
-#define REBUILD_BURSTNODEFLAG_INDEX \
-    0x02 /* Has primary key/unique index, do burst elimination at index */
+#define REBUILD_BURSTNODEFLAG_NO      0x01 /* No primary key/unique index */
+#define REBUILD_BURSTNODEFLAG_INDEX   0x02 /* Has primary key/unique index, do burst elimination at index */
 #define REBUILD_BURSTNODEFLAG_NOINDEX 0x04 /* Use PBE mode */
 
 typedef enum REBUILD_BURSTNODETYPE

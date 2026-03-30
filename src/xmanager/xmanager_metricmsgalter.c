@@ -21,9 +21,7 @@
  *  3、add/remove job
  *4. Assemble return message
  */
-bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric,
-                                   netpoolentry*    npoolentry,
-                                   netpacket*       npacket)
+bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket)
 {
     uint8_t                      action = 0;
     int                          len = 0;
@@ -124,10 +122,9 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric,
         if (XMANAGER_METRICNODETYPE_INTEGRATE < jobtype)
         {
             errcode = ERROR_MSGUNSPPORT;
-            snprintf(
-                errormsg,
-                2048,
-                "ERROR: xmanager recv alter progress command, need jobtype less then HGRECEIVELOG");
+            snprintf(errormsg,
+                     2048,
+                     "ERROR: xmanager recv alter progress command, need jobtype less then HGRECEIVELOG");
             goto xmanager_metricmsg_parsealter_error;
         }
 
@@ -164,13 +161,10 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric,
         }
 
         /* Check if exists in progressjop */
-        pxmetricnode =
-            dlist_get(xmetricprogressnode->progressjop, &xmetricnode, xmanager_metricnode_cmp);
+        pxmetricnode = dlist_get(xmetricprogressnode->progressjop, &xmetricnode, xmanager_metricnode_cmp);
         if (NULL != pxmetricnode)
         {
-            elog(RLOG_WARNING,
-                 "xmanager recv alter progress command, %s already in progressjob ",
-                 xmetricnode.name);
+            elog(RLOG_WARNING, "xmanager recv alter progress command, %s already in progressjob ", xmetricnode.name);
             continue;
         }
 
@@ -179,8 +173,7 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric,
         {
             if (false == dlist_isnull(xmetricprogressnode->progressjop))
             {
-                for (dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode;
-                     dlnode = dlnode->next)
+                for (dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode; dlnode = dlnode->next)
                 {
                     tmpxmetricnode = (xmanager_metricnode*)dlnode->value;
                     if (jobtype == tmpxmetricnode->type)
@@ -202,10 +195,7 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric,
         if (NULL == pxmetricnode)
         {
             errcode = ERROR_NOENT;
-            snprintf(errormsg,
-                     2048,
-                     "ERROR: xmanager recv alter progress command, not find %s",
-                     jobname);
+            snprintf(errormsg, 2048, "ERROR: xmanager recv alter progress command, not find %s", jobname);
             goto xmanager_metricmsg_parsealter_error;
         }
 
@@ -223,8 +213,7 @@ bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric,
         pxmetricnode = NULL;
 
         /* Add to progress */
-        xmetricprogressnode->progressjop =
-            dlist_put(xmetricprogressnode->progressjop, jobxmetricnode);
+        xmetricprogressnode->progressjop = dlist_put(xmetricprogressnode->progressjop, jobxmetricnode);
         jobxmetricnode = NULL;
     }
 
@@ -244,6 +233,5 @@ xmanager_metricmsg_parsealter_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(
-        xmetric, npoolentry->wpackets, XMANAGER_MSG_ALTERCMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_ALTERCMD, errcode, errormsg);
 }

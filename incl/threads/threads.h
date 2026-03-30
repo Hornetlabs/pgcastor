@@ -337,10 +337,7 @@ bool threads_countsubmgrjobthredsabovework(threads* thrs, List* jobthreads, int*
  *  return true:  no logic errors encountered during execution
  *  return false: logic error encountered during execution
  */
-bool threads_setsubmgrjobthredstermandcountexit(threads* thrs,
-                                                List*    jobthreads,
-                                                int      skipcnt,
-                                                int*     scnt);
+bool threads_setsubmgrjobthredstermandcountexit(threads* thrs, List* jobthreads, int skipcnt, int* scnt);
 
 /* add a persistent thread node */
 bool threads_addpersist(threads* thrs, uint64* pno, char* name);

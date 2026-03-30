@@ -13,10 +13,9 @@
 #define PG_PARSER_TRANS_TRANSREC_BKPBLOCK_HAS_IMAGE \
     0x10 /* block data is an XLogRecordBlockImage   \
           */
-#define PG_PARSER_TRANS_TRANSREC_BKPBLOCK_HAS_DATA  0x20
-#define PG_PARSER_TRANS_TRANSREC_BKPBLOCK_WILL_INIT 0x40 /* redo will re-init the page */
-#define PG_PARSER_TRANS_TRANSREC_BKPBLOCK_SAME_REL \
-    0x80 /* pg_parser_RelFileNode omitted, same as previous */
+#define PG_PARSER_TRANS_TRANSREC_BKPBLOCK_HAS_DATA      0x20
+#define PG_PARSER_TRANS_TRANSREC_BKPBLOCK_WILL_INIT     0x40 /* redo will re-init the page */
+#define PG_PARSER_TRANS_TRANSREC_BKPBLOCK_SAME_REL      0x80 /* pg_parser_RelFileNode omitted, same as previous */
 
 #define PG_PARSER_TRANS_TRANSREC_BKPIMAGE_HAS_HOLE      0x01 /* page image has "hole" */
 #define PG_PARSER_TRANS_TRANSREC_BKPIMAGE_IS_COMPRESSED 0x02 /* page image is compressed */
@@ -130,8 +129,7 @@ typedef struct pg_parser_XLogReaderState pg_parser_XLogReaderState;
 /* function declaration begin*/
 extern pg_parser_XLogReaderState* pg_parser_trans_transrec_decode_XLogReader_Allocate(void);
 
-extern void pg_parser_trans_transrec_decode_XLogReader_XLogReaderFree(
-    pg_parser_XLogReaderState* state);
+extern void pg_parser_trans_transrec_decode_XLogReader_XLogReaderFree(pg_parser_XLogReaderState* state);
 
 extern bool pg_parser_trans_transrec_decodeXlogRecord(pg_parser_XLogReaderState* state,
                                                       pg_parser_XLogRecord*      record,
@@ -141,9 +139,7 @@ extern bool pg_parser_trans_transrec_decodeXlogRecord(pg_parser_XLogReaderState*
                                                       int16_t                    dbtype,
                                                       char*                      dbversion);
 
-extern char* pg_parser_XLogRecGetBlockData(pg_parser_XLogReaderState* record,
-                                           uint8_t                    block_id,
-                                           size_t*                    len);
+extern char* pg_parser_XLogRecGetBlockData(pg_parser_XLogReaderState* record, uint8_t block_id, size_t* len);
 /* function declaration end */
 
 #endif

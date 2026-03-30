@@ -125,8 +125,7 @@ bool pg_parser_trans_transrec_decodeXlogRecord(pg_parser_XLogReaderState* state,
                 COPY_HEADER_FIELD(&blk->hole_offset, sizeof(uint16_t));
                 COPY_HEADER_FIELD(&blk->bimg_info, sizeof(uint8_t));
 
-                blk->apply_image =
-                    ((blk->bimg_info & PG_PARSER_TRANS_TRANSREC_BKPIMAGE_APPLY) != 0);
+                blk->apply_image = ((blk->bimg_info & PG_PARSER_TRANS_TRANSREC_BKPIMAGE_APPLY) != 0);
 
                 if (blk->bimg_info & PG_PARSER_TRANS_TRANSREC_BKPIMAGE_IS_COMPRESSED)
                 {
@@ -171,8 +170,7 @@ bool pg_parser_trans_transrec_decodeXlogRecord(pg_parser_XLogReaderState* state,
                  * cross-check that bimg_len < BLCKSZ if the IS_COMPRESSED
                  * flag is set.
                  */
-                if ((blk->bimg_info & PG_PARSER_TRANS_TRANSREC_BKPIMAGE_IS_COMPRESSED) &&
-                    blk->bimg_len == BLCKSZ)
+                if ((blk->bimg_info & PG_PARSER_TRANS_TRANSREC_BKPIMAGE_IS_COMPRESSED) && blk->bimg_len == BLCKSZ)
                 {
                     *pg_parser_errno = ERRNO_PG_PARSER_DECODE_RECORD_HASCOMPRESSED;
                     goto pg_parser_trans_transrec_decodeXlogRecord_err;
@@ -183,8 +181,7 @@ bool pg_parser_trans_transrec_decodeXlogRecord(pg_parser_XLogReaderState* state,
                  * IS_COMPRESSED flag is set.
                  */
                 if (!(blk->bimg_info & PG_PARSER_TRANS_TRANSREC_BKPIMAGE_HAS_HOLE) &&
-                    !(blk->bimg_info & PG_PARSER_TRANS_TRANSREC_BKPIMAGE_IS_COMPRESSED) &&
-                    blk->bimg_len != BLCKSZ)
+                    !(blk->bimg_info & PG_PARSER_TRANS_TRANSREC_BKPIMAGE_IS_COMPRESSED) && blk->bimg_len != BLCKSZ)
                 {
                     *pg_parser_errno = ERRNO_PG_PARSER_DECODE_RECORD_COMPRESSED_LENGTH;
                     goto pg_parser_trans_transrec_decodeXlogRecord_err;
@@ -287,10 +284,8 @@ bool pg_parser_trans_transrec_decodeXlogRecord(pg_parser_XLogReaderState* state,
              * so that we don't waste time with lots of trips through this
              * stanza.  BLCKSZ / 2 seems like a good compromise choice.
              */
-            state->main_data_bufsz =
-                PG_PARSER_MAXALIGN(PG_PARSER_Max(state->main_data_len, BLCKSZ / 2));
-            if (!pg_parser_mcxt_malloc(
-                    DECODE_MCXT, (void**)(&(state->main_data)), state->main_data_bufsz))
+            state->main_data_bufsz = PG_PARSER_MAXALIGN(PG_PARSER_Max(state->main_data_len, BLCKSZ / 2));
+            if (!pg_parser_mcxt_malloc(DECODE_MCXT, (void**)(&(state->main_data)), state->main_data_bufsz))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_MAINDATA;
                 return false;
@@ -362,9 +357,7 @@ static void ResetDecoder(pg_parser_XLogReaderState* state)
     state->max_block_id = -1;
 }
 
-char* pg_parser_XLogRecGetBlockData(pg_parser_XLogReaderState* record,
-                                    uint8_t                    block_id,
-                                    size_t*                    len)
+char* pg_parser_XLogRecGetBlockData(pg_parser_XLogReaderState* record, uint8_t block_id, size_t* len)
 {
     pg_parser_DecodedBkpBlock* bkpb;
     if (!record->blocks[block_id].in_use)

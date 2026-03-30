@@ -72,8 +72,7 @@ void* bigtxn_integraterebuild_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "integrate bigtxn rebuild stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "integrate bigtxn rebuild stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -141,8 +140,8 @@ void* bigtxn_integraterebuild_main(void* args)
                         relid = values->m_relid;
                     }
 
-                    filterdatasetentry = hash_search(
-                        rebuild_obj->honlinerefreshfilterdataset, &relid, HASH_FIND, &find);
+                    filterdatasetentry =
+                        hash_search(rebuild_obj->honlinerefreshfilterdataset, &relid, HASH_FIND, &find);
                     if (false == find)
                     {
                         tmpstmt = lappend(tmpstmt, stmtnode);

@@ -9,8 +9,6 @@
  *  4. Delete data and conf files
  *  5. Return success message
  */
-extern bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
-                                         netpoolentry*    npoolentry,
-                                         netpacket*       npacket);
+extern bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket);
 
 #endif

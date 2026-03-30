@@ -49,8 +49,7 @@ bool fftrail_txnonlinerefreshabandon_serial(void* data, void* state)
     }
 
     /* Write refresh to trail file */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     ffstate->recptr = fbuffer->data + fbuffer->start;
 
     /* Calculate length */
@@ -76,8 +75,7 @@ bool fftrail_txnonlinerefreshabandon_serial(void* data, void* state)
         uuid = (uuid_t*)lfirst(lc);
 
         /* online refresh uuid */
-        fftrail_data_data2buffer(
-            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR, 16, (uint8*)uuid->data);
+        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_STR, 16, (uint8*)uuid->data);
     }
 
     /* Fill header info */

@@ -44,8 +44,7 @@ void type_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(Oid);
     hash_ctl.entrysize = sizeof(catalog_type_value);
-    sysdicts->by_type =
-        hash_create("catalog_sysdicts_type", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_type = hash_create("catalog_sysdicts_type", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     res = conn_exec(conn, query);
     if (NULL == res)
@@ -442,6 +441,7 @@ void type_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         elog(RLOG_ERROR, "unknown op:%d", catalogdata->op);
     }
 }
+
 void typecache_write(HTAB* typecache, uint64* offset, sysdict_header_array* array)
 {
     int                     fd;

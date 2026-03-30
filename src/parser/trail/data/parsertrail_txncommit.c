@@ -26,8 +26,7 @@ static txn* parsertrail_txncommit_copytxn(parsertrail* parsertrail)
         return NULL;
     }
 
-    if (parsertrail->lasttxn->type > TXN_TYPE_NORMAL &&
-        TXN_TYPE_BIGTXN_BEGIN != parsertrail->lasttxn->type)
+    if (parsertrail->lasttxn->type > TXN_TYPE_NORMAL && TXN_TYPE_BIGTXN_BEGIN != parsertrail->lasttxn->type)
     {
         copy_txn = parsertrail->lasttxn;
     }
@@ -86,9 +85,7 @@ bool parsertrail_txncommitapply(parsertrail* parsertrail, void* data)
                 stmt->extra0.wal.lsn = txndata->header.orgpos;
             }
         }
-        elog(RLOG_DEBUG,
-             "decodingctx->currenttxn->end.wal.lsn %lu",
-             parsertrail->lasttxn->end.wal.lsn);
+        elog(RLOG_DEBUG, "decodingctx->currenttxn->end.wal.lsn %lu", parsertrail->lasttxn->end.wal.lsn);
     }
 
     /* Set transaction end position */

@@ -79,10 +79,8 @@ static decodingcontext* onlinerefresh_captureparser_decodingctxinit(void)
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
     }
     rmemset0(decodingctx->trans_cache, 0, '\0', sizeof(transcache));
-    decodingctx->trans_cache->tableincludes =
-        filter_dataset_inittableinclude(decodingctx->trans_cache->tableincludes);
-    decodingctx->trans_cache->tableexcludes =
-        filter_dataset_inittableexclude(decodingctx->trans_cache->tableexcludes);
+    decodingctx->trans_cache->tableincludes = filter_dataset_inittableinclude(decodingctx->trans_cache->tableincludes);
+    decodingctx->trans_cache->tableexcludes = filter_dataset_inittableexclude(decodingctx->trans_cache->tableexcludes);
     decodingctx->trans_cache->addtablepattern =
         filter_dataset_initaddtablepattern(decodingctx->trans_cache->addtablepattern);
 
@@ -105,15 +103,13 @@ static decodingcontext* onlinerefresh_captureparser_decodingctxinit(void)
     decodingctx->trans_cache->transdlist->tail = NULL;
 
     /* Initialize capture_buffer and convert to byte size */
-    decodingctx->trans_cache->capture_buffer =
-        MB2BYTE(guc_getConfigOptionInt(CFG_KEY_CAPTURE_BUFFER));
+    decodingctx->trans_cache->capture_buffer = MB2BYTE(guc_getConfigOptionInt(CFG_KEY_CAPTURE_BUFFER));
 
     /* Initialize transaction HASH table */
     rmemset1(&hash_ctl, 0, 0, sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(FullTransactionId);
     hash_ctl.entrysize = sizeof(txn);
-    decodingctx->trans_cache->by_txns =
-        hash_create("transaction hash", 8192, &hash_ctl, HASH_ELEM | HASH_BLOBS);
+    decodingctx->trans_cache->by_txns = hash_create("transaction hash", 8192, &hash_ctl, HASH_ELEM | HASH_BLOBS);
     /* Initialize sysdicts */
     decodingctx->trans_cache->sysdicts = (cache_sysdicts*)rmalloc0(sizeof(cache_sysdicts));
     if (NULL == decodingctx->trans_cache->sysdicts)
@@ -137,8 +133,7 @@ static decodingcontext* onlinerefresh_captureparser_decodingctxinit(void)
 }
 
 /* Generate filter set, only includes tables waiting for incremental work */
-bool onlinerefresh_captureparser_datasetinit(decodingcontext*       ctx,
-                                             onlinerefresh_capture* onlinerefresh)
+bool onlinerefresh_captureparser_datasetinit(decodingcontext* ctx, onlinerefresh_capture* onlinerefresh)
 {
     refresh_tables*         tables = onlinerefresh->tables;
     refresh_table*          table_node = NULL;
@@ -156,8 +151,7 @@ bool onlinerefresh_captureparser_datasetinit(decodingcontext*       ctx,
 
     while (table_node)
     {
-        temp_o2d_entry =
-            hash_search(ctx->trans_cache->hsyncdataset, &table_node->oid, HASH_ENTER, NULL);
+        temp_o2d_entry = hash_search(ctx->trans_cache->hsyncdataset, &table_node->oid, HASH_ENTER, NULL);
         if (!temp_o2d_entry)
         {
             elog(RLOG_WARNING, "can't insert hsyncdataset hash");
@@ -283,9 +277,7 @@ void* onlinerefresh_captureparser_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(
-            RLOG_WARNING,
-            "onlinerefresh capture parser stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "onlinerefresh capture parser stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;

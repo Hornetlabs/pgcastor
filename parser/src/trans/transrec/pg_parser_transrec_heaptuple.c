@@ -21,19 +21,16 @@
 
 #define Min(x, y)                                    ((x) < (y) ? (x) : (y))
 
-pg_parser_ReorderBufferTupleBuf* pg_parser_heaptuple_get_tuple_space(size_t  tuple_len,
-                                                                     int16_t dbtype,
-                                                                     char*   dbversion)
+pg_parser_ReorderBufferTupleBuf* pg_parser_heaptuple_get_tuple_space(size_t tuple_len, int16_t dbtype, char* dbversion)
 {
     pg_parser_ReorderBufferTupleBuf* tuple;
     size_t                           alloc_len;
 
     alloc_len = tuple_len + pg_parser_SizeofHeapTupleHeader;
 
-    if (!pg_parser_mcxt_malloc(
-            HEAP_TUPLE_MCXT,
-            (void**)&tuple,
-            sizeof(pg_parser_ReorderBufferTupleBuf) + PG_PARSER_MAXIMUM_ALIGNOF + alloc_len))
+    if (!pg_parser_mcxt_malloc(HEAP_TUPLE_MCXT,
+                               (void**)&tuple,
+                               sizeof(pg_parser_ReorderBufferTupleBuf) + PG_PARSER_MAXIMUM_ALIGNOF + alloc_len))
     {
         return NULL;
     }
@@ -42,8 +39,11 @@ pg_parser_ReorderBufferTupleBuf* pg_parser_heaptuple_get_tuple_space(size_t  tup
     return tuple;
 }
 
-void pg_parser_reassemble_tuple_from_heap_tuple_header(
-    void* hth, size_t len, pg_parser_ReorderBufferTupleBuf* tuple, int16_t dbtype, char* dbversion)
+void pg_parser_reassemble_tuple_from_heap_tuple_header(void*                            hth,
+                                                       size_t                           len,
+                                                       pg_parser_ReorderBufferTupleBuf* tuple,
+                                                       int16_t                          dbtype,
+                                                       char*                            dbversion)
 {
     pg_parser_HeapTupleHeader header = NULL;
 
@@ -116,10 +116,10 @@ static pg_parser_TupleDesc CreateTemplateTupleDesc(int32_t natts)
      * could be less due to trailing padding, although with the current
      * definition of pg_attribute there probably isn't any padding.
      */
-    if (!pg_parser_mcxt_malloc(HEAP_TUPLE_MCXT,
-                               (void**)&desc,
-                               offsetof(struct pg_parser_TupleDescData, attrs) +
-                                   natts * sizeof(pg_parser_sysdict_pgattributes)))
+    if (!pg_parser_mcxt_malloc(
+            HEAP_TUPLE_MCXT,
+            (void**)&desc,
+            offsetof(struct pg_parser_TupleDescData, attrs) + natts * sizeof(pg_parser_sysdict_pgattributes)))
     {
         return NULL;
     }
@@ -154,10 +154,7 @@ pg_parser_TupleDesc pg_parser_get_desc(pg_parser_sysdict_tableInfo* tbinfo)
     return tupdesc;
 }
 
-pg_parser_Datum pg_parser_getmissingattr(pg_parser_TupleDesc tupleDesc,
-                                         int32_t             attnum,
-                                         bool*               isnull,
-                                         bool*               ismissing)
+pg_parser_Datum pg_parser_getmissingattr(pg_parser_TupleDesc tupleDesc, int32_t attnum, bool* isnull, bool* ismissing)
 {
     pg_sysdict_Form_pg_attribute att;
 
@@ -290,8 +287,8 @@ pg_parser_Datum pg_parser_nocachegetattr(pg_parser_HeapTuple tuple,
             j++;
         }
 
-        off = pg_parser_TupleDescAttr(tupleDesc, j - 1)->attcacheoff +
-              pg_parser_TupleDescAttr(tupleDesc, j - 1)->attlen;
+        off =
+            pg_parser_TupleDescAttr(tupleDesc, j - 1)->attcacheoff + pg_parser_TupleDescAttr(tupleDesc, j - 1)->attlen;
 
         for (; j < natts; j++)
         {
@@ -410,12 +407,10 @@ pg_parser_Datum pg_parser_heap_getsysattr(pg_parser_HeapTuple tuple,
             result = pg_parser_PointerGetDatum(&(tup->t_self));
             break;
         case pg_parser_MinTransactionIdAttributeNumber:
-            result =
-                pg_parser_TransactionIdGetDatum(pg_parser_HeapTupleHeaderGetRawXmin(tup->t_data));
+            result = pg_parser_TransactionIdGetDatum(pg_parser_HeapTupleHeaderGetRawXmin(tup->t_data));
             break;
         case pg_parser_MaxTransactionIdAttributeNumber:
-            result =
-                pg_parser_TransactionIdGetDatum(pg_parser_HeapTupleHeaderGetRawXmax(tup->t_data));
+            result = pg_parser_TransactionIdGetDatum(pg_parser_HeapTupleHeaderGetRawXmax(tup->t_data));
             break;
         case pg_parser_MinCommandIdAttributeNumber:
         case pg_parser_MaxCommandIdAttributeNumber:
@@ -426,8 +421,7 @@ pg_parser_Datum pg_parser_heap_getsysattr(pg_parser_HeapTuple tuple,
              * return the "real" cmin or cmax if possible, that is if we are
              * inside the originating transaction?
              */
-            result =
-                pg_parser_CommandIdGetDatum(pg_parser_HeapTupleHeaderGetRawCommandId(tup->t_data));
+            result = pg_parser_CommandIdGetDatum(pg_parser_HeapTupleHeaderGetRawCommandId(tup->t_data));
             break;
         case pg_parser_TableOidAttributeNumber:
             result = pg_parser_ObjectIdGetDatum(tup->t_tableOid);
@@ -440,8 +434,11 @@ pg_parser_Datum pg_parser_heap_getsysattr(pg_parser_HeapTuple tuple,
     return result;
 }
 
-void pg_parser_DecodeXLogTuple(
-    char* data, size_t len, pg_parser_ReorderBufferTupleBuf* tup, int16_t dbtype, char* dbversion)
+void pg_parser_DecodeXLogTuple(char*                            data,
+                               size_t                           len,
+                               pg_parser_ReorderBufferTupleBuf* tup,
+                               int16_t                          dbtype,
+                               char*                            dbversion)
 {
     pg_parser_xl_heap_header         xlhdr;
     int32_t                          datalen = len - pg_parser_SizeOfHeapHeader;
@@ -600,13 +597,19 @@ static pg_parser_ReorderBufferTupleBuf* pg_parser_assemble_tuple_pg(char* page, 
     {
         return NULL;
     }
-    pg_parser_reassemble_tuple_from_heap_tuple_header(
-        tuphdr, tuplelen, tuple, DATABASE_TYPE_POSTGRESQL, DATABASE_PG127);
+    pg_parser_reassemble_tuple_from_heap_tuple_header(tuphdr,
+                                                      tuplelen,
+                                                      tuple,
+                                                      DATABASE_TYPE_POSTGRESQL,
+                                                      DATABASE_PG127);
     return tuple;
 }
 
-pg_parser_ReorderBufferTupleBuf* pg_parser_assemble_tuple(
-    int32_t dbtype, char* dbversion, uint32_t pagesize, char* page, uint16_t offnum)
+pg_parser_ReorderBufferTupleBuf* pg_parser_assemble_tuple(int32_t  dbtype,
+                                                          char*    dbversion,
+                                                          uint32_t pagesize,
+                                                          char*    page,
+                                                          uint16_t offnum)
 {
     PG_PARSER_UNUSED(pagesize);
 

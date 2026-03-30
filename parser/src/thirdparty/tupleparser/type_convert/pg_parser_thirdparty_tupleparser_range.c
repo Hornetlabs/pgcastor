@@ -170,8 +170,8 @@ static char* range_bound_escape(const char* value)
     {
         char ch = *ptr;
 
-        if (ch == '"' || ch == '\\' || ch == '(' || ch == ')' || ch == '[' || ch == ']' ||
-            ch == ',' || isspace((unsigned char)ch))
+        if (ch == '"' || ch == '\\' || ch == '(' || ch == ')' || ch == '[' || ch == ']' || ch == ',' ||
+            isspace((unsigned char)ch))
         {
             nq = true;
             break;
@@ -249,20 +249,20 @@ static char* range_deparse(char flags, const char* lbound_str, const char* uboun
 
 pg_parser_Datum range_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
-    bool       is_toast = false;
-    bool       need_free = false;
-    RangeType* range = (RangeType*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+    bool                      is_toast = false;
+    bool                      need_free = false;
+    RangeType*                range = (RangeType*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
                                                            &is_toast,
                                                            &need_free,
                                                            info->zicinfo->dbtype,
                                                            info->zicinfo->dbversion);
-    char*      output_str;
-    char       flags;
-    char*      lbound_str = NULL;
-    char*      ubound_str = NULL;
-    RangeBound lower;
-    RangeBound upper;
-    bool       empty;
+    char*                     output_str;
+    char                      flags;
+    char*                     lbound_str = NULL;
+    char*                     ubound_str = NULL;
+    RangeBound                lower;
+    RangeBound                upper;
+    bool                      empty;
     pg_parser_sysdict_pgtype* type = NULL;
 
     if (is_toast)
@@ -285,8 +285,7 @@ pg_parser_Datum range_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
     /* call element type's output function */
     if (RANGE_HAS_LBOUND(flags))
     {
-        lbound_str = pg_parser_convert_attr_to_str_char(
-            lower.val, info->sysdicts, type->oid, &is_toast, info->zicinfo);
+        lbound_str = pg_parser_convert_attr_to_str_char(lower.val, info->sysdicts, type->oid, &is_toast, info->zicinfo);
         if (!lbound_str)
         {
             return (pg_parser_Datum)0;
@@ -300,8 +299,7 @@ pg_parser_Datum range_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
     }
     if (RANGE_HAS_UBOUND(flags))
     {
-        ubound_str = pg_parser_convert_attr_to_str_char(
-            upper.val, info->sysdicts, type->oid, &is_toast, info->zicinfo);
+        ubound_str = pg_parser_convert_attr_to_str_char(upper.val, info->sysdicts, type->oid, &is_toast, info->zicinfo);
         if (!ubound_str)
         {
             return (pg_parser_Datum)0;

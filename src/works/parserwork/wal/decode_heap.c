@@ -48,10 +48,9 @@
 #define CHECK_NEED_DDL_TRANS(iscatalog, txn, name) \
     (!(iscatalog) && txn->sysdict && strncmp(name, PGTEMP_NAME, PGTEMP_NAME_LEN))
 
-#define CHECK_CATALOG_BY_OID(oid) ((oid < 16384) ? (true) : (false))
+#define CHECK_CATALOG_BY_OID(oid)               ((oid < 16384) ? (true) : (false))
 
-#define HEAP_STORAGE_CATALOG(txn, trans_return) \
-    txn->sysdict = lappend(txn->sysdict, (void*)trans_return)
+#define HEAP_STORAGE_CATALOG(txn, trans_return) txn->sysdict = lappend(txn->sysdict, (void*)trans_return)
 
 static bool heap_check_catalog(txn* txn, Oid oid)
 {
@@ -70,8 +69,7 @@ static bool heap_check_special_table(Oid oid, decodingcontext* decodingctx, txn*
 {
     HTAB*                    class_htab = decodingctx->trans_cache->sysdicts->by_class;
     pg_sysdict_Form_pg_class class = NULL;
-    class = (pg_sysdict_Form_pg_class)catalog_get_class_sysdict(
-        class_htab, txn->sysdict, txn->sysdictHis, oid);
+    class = (pg_sysdict_Form_pg_class)catalog_get_class_sysdict(class_htab, txn->sysdict, txn->sysdictHis, oid);
     if (!strncmp(class->relname.data, PGTEMP_NAME, PGTEMP_NAME_LEN) || CHECK_EXTERNAL(class))
     {
         return true;
@@ -79,8 +77,7 @@ static bool heap_check_special_table(Oid oid, decodingcontext* decodingctx, txn*
     return false;
 }
 
-static pg_parser_translog_tuplecache* get_tuple_from_cache(HTAB*                        tuple_cache,
-                                                           pg_parser_translog_pre_heap* heap_pre)
+static pg_parser_translog_tuplecache* get_tuple_from_cache(HTAB* tuple_cache, pg_parser_translog_pre_heap* heap_pre)
 {
     pg_parser_translog_tuplecache* result = NULL;
     ReorderBufferFPWKey            key = {'\0'};
@@ -101,11 +98,7 @@ static pg_parser_translog_tuplecache* get_tuple_from_cache(HTAB*                
              key.blcknum,
              key.itemoffset);
     }
-    elog(RLOG_DEBUG,
-         "get tuple, rel: %u, blk: %u, off:%hu",
-         key.relfilenode,
-         key.blcknum,
-         key.itemoffset);
+    elog(RLOG_DEBUG, "get tuple, rel: %u, blk: %u, off:%hu", key.relfilenode, key.blcknum, key.itemoffset);
     result = rmalloc0(sizeof(pg_parser_translog_tuplecache));
     result->m_itemoffnum = key.itemoffset;
     result->m_pageno = key.blcknum;
@@ -117,9 +110,7 @@ static pg_parser_translog_tuplecache* get_tuple_from_cache(HTAB*                
     return result;
 }
 
-static void storage_tuple(transcache*                   storage,
-                          XLogRecPtr                    lsn,
-                          pg_parser_translog_tbcolbase* trans_return)
+static void storage_tuple(transcache* storage, XLogRecPtr lsn, pg_parser_translog_tbcolbase* trans_return)
 {
     ReorderBufferFPWKey   key = {'\0'};
     ReorderBufferFPWEntry entry = {'\0'};
@@ -170,11 +161,7 @@ static void storage_tuple(transcache*                   storage,
 
             entry.data = values->m_tuple[index_tuple_cnt].m_tupledata;
             entry.len = values->m_tuple[index_tuple_cnt].m_tuplelen;
-            elog(RLOG_DEBUG,
-                 "storage tuple, rel: %u, blk: %u, off:%hu",
-                 key.relfilenode,
-                 key.blcknum,
-                 key.itemoffset);
+            elog(RLOG_DEBUG, "storage tuple, rel: %u, blk: %u, off:%hu", key.relfilenode, key.blcknum, key.itemoffset);
 
             fpwcache_add(storage, &key, &entry);
         }
@@ -352,8 +339,7 @@ static void init_heap_trans_data(pg_parser_translog_translog2col* trans_data,
     if (heap_pre->m_needtuple && trans_data->m_iscatalog)
     {
         trans_data->m_tuplecnt = 1;
-        trans_data->m_tuples =
-            get_tuple_from_cache(decodingctx->trans_cache->by_fpwtuples, heap_pre);
+        trans_data->m_tuples = get_tuple_from_cache(decodingctx->trans_cache->by_fpwtuples, heap_pre);
     }
     else
     {
@@ -463,8 +449,8 @@ void decode_heap(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbas
         }
     }
 
-    temp_class = (pg_parser_sysdict_pgclass*)catalog_get_class_sysdict(
-        decodingctx->trans_cache->sysdicts->by_class, txn->sysdict, txn->sysdictHis, oid);
+    temp_class = (pg_parser_sysdict_pgclass*)
+        catalog_get_class_sysdict(decodingctx->trans_cache->sysdicts->by_class, txn->sysdict, txn->sysdictHis, oid);
     table_name = temp_class->relname.data;
 
     /*
@@ -561,16 +547,12 @@ void decode_heap(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbas
     /* Call parser interface */
     if (!pg_parser_trans_TransRecord(trans_data, &trans_return, &err_num))
     {
-        elog(RLOG_ERROR,
-             "error in trans heap errcode: %x, msg: %s",
-             err_num,
-             pg_parser_errno_getErrInfo(err_num));
+        elog(RLOG_ERROR, "error in trans heap errcode: %x, msg: %s", err_num, pg_parser_errno_getErrInfo(err_num));
     }
 
     if (trans_data->m_iscatalog)
     {
-        storage_tuple(
-            decodingctx->trans_cache, decodingctx->decode_record->start.wal.lsn, trans_return);
+        storage_tuple(decodingctx->trans_cache, decodingctx->decode_record->start.wal.lsn, trans_return);
     }
 
     /*
@@ -578,16 +560,14 @@ void decode_heap(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbas
      *  For example: vacuum full table
      *        truncate table
      */
-    if (0 == strcmp(trans_return->m_schemaname, "pg_catalog") &&
-        0 == strcmp(trans_return->m_tbname, "pg_class") &&
+    if (0 == strcmp(trans_return->m_schemaname, "pg_catalog") && 0 == strcmp(trans_return->m_tbname, "pg_class") &&
         PG_PARSER_TRANSLOG_DMLTYPE_INSERT == trans_return->m_dmltype)
     {
         char*                            temp_relname = NULL;
         pg_parser_translog_tbcol_values* col = NULL;
 
         col = (pg_parser_translog_tbcol_values*)trans_return;
-        temp_relname = get_class_value_from_colvalue(
-            col->m_new_values, CLASS_MAPNUM_RELNAME, g_idbtype, g_idbversion);
+        temp_relname = get_class_value_from_colvalue(col->m_new_values, CLASS_MAPNUM_RELNAME, g_idbtype, g_idbversion);
 
         /*
          * Steps for vacuum full table in pg series database are as follows:
@@ -605,8 +585,8 @@ void decode_heap(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbas
         {
             uint32_t real_oid = 0;
             char*    temp_str = temp_relname;
-            char*    temp_nspname = get_class_value_from_colvalue(
-                col->m_new_values, CLASS_MAPNUM_RELNSPOID, g_idbtype, g_idbversion);
+            char*    temp_nspname =
+                get_class_value_from_colvalue(col->m_new_values, CLASS_MAPNUM_RELNSPOID, g_idbtype, g_idbversion);
             temp_str = temp_str + 8;
             real_oid = (uint32_t)atoi(temp_str);
 
@@ -618,12 +598,11 @@ void decode_heap(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbas
                 rfree(col->m_new_values[7].m_value);
                 col->m_new_values[7].m_value = rstrdup((char*)col->m_new_values[0].m_value);
 
-                temp_oid_char = get_class_value_from_colvalue(
-                    col->m_new_values, CLASS_MAPNUM_OID, g_idbtype, g_idbversion);
+                temp_oid_char =
+                    get_class_value_from_colvalue(col->m_new_values, CLASS_MAPNUM_OID, g_idbtype, g_idbversion);
                 temp_oid = (Oid)atoi(temp_oid_char);
 
-                free_class_value_from_colvalue(
-                    col->m_new_values, CLASS_MAPNUM_RELFILENODE, g_idbtype, g_idbversion);
+                free_class_value_from_colvalue(col->m_new_values, CLASS_MAPNUM_RELFILENODE, g_idbtype, g_idbversion);
                 set_class_value_from_colvalue(col->m_new_values,
                                               temp_oid_char,
                                               CLASS_MAPNUM_RELFILENODE,
@@ -664,8 +643,7 @@ void decode_heap(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbas
         {
             /* For pg14 and above, DDL statements for system tables have been optimized to multi
              * insert */
-            txn->sysdict =
-                decode_heap_multi_insert_save_sysdict_as_insert(txn->sysdict, trans_return);
+            txn->sysdict = decode_heap_multi_insert_save_sysdict_as_insert(txn->sysdict, trans_return);
 
             TXN_SET_TRANS_DDL(txn->flag);
         }
@@ -741,8 +719,8 @@ void decode_heap_emit(decodingcontext* decodingctx, pg_parser_translog_pre_base*
 
     is_catalog = heap_check_catalog(txn, oid);
 
-    temp_class = (pg_parser_sysdict_pgclass*)catalog_get_class_sysdict(
-        decodingctx->trans_cache->sysdicts->by_class, txn->sysdict, txn->sysdictHis, oid);
+    temp_class = (pg_parser_sysdict_pgclass*)
+        catalog_get_class_sysdict(decodingctx->trans_cache->sysdicts->by_class, txn->sysdict, txn->sysdictHis, oid);
     table_name = temp_class->relname.data;
     /* Before parsing data, check if need to parse ddl */
     if (CHECK_NEED_DDL_TRANS(is_catalog, txn, table_name))
@@ -799,34 +777,29 @@ void decode_heap_emit(decodingcontext* decodingctx, pg_parser_translog_pre_base*
     /* Call parser interface */
     if (!pg_parser_trans_TransRecord(trans_data, &trans_return, &err_num))
     {
-        elog(RLOG_ERROR,
-             "error in trans heap errcode: %x, msg: %s",
-             err_num,
-             pg_parser_errno_getErrInfo(err_num));
+        elog(RLOG_ERROR, "error in trans heap errcode: %x, msg: %s", err_num, pg_parser_errno_getErrInfo(err_num));
     }
 
     if (trans_data->m_iscatalog)
     {
-        storage_tuple(
-            decodingctx->trans_cache, decodingctx->decode_record->start.wal.lsn, trans_return);
+        storage_tuple(decodingctx->trans_cache, decodingctx->decode_record->start.wal.lsn, trans_return);
     }
 
     /* If operating on pg_temp table of pg_class, first use our saved mapping */
-    if (!strcmp(trans_return->m_schemaname, "pg_catalog") &&
-        !strcmp(trans_return->m_tbname, "pg_class") &&
+    if (!strcmp(trans_return->m_schemaname, "pg_catalog") && !strcmp(trans_return->m_tbname, "pg_class") &&
         trans_return->m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_INSERT)
     {
         pg_parser_translog_tbcol_values* col = (pg_parser_translog_tbcol_values*)trans_return;
 
-        char*                            temp_relname = get_class_value_from_colvalue(
-            col->m_new_values, CLASS_MAPNUM_RELNAME, g_idbtype, g_idbversion);
+        char*                            temp_relname =
+            get_class_value_from_colvalue(col->m_new_values, CLASS_MAPNUM_RELNAME, g_idbtype, g_idbversion);
 
         if (temp_relname && !strncmp(temp_relname, "pg_temp_", 8))
         {
             uint32_t real_oid = 0;
             char*    temp_str = temp_relname;
-            char*    temp_nspname = get_class_value_from_colvalue(
-                col->m_new_values, CLASS_MAPNUM_RELNSPOID, g_idbtype, g_idbversion);
+            char*    temp_nspname =
+                get_class_value_from_colvalue(col->m_new_values, CLASS_MAPNUM_RELNSPOID, g_idbtype, g_idbversion);
             temp_str = temp_str + 8;
             real_oid = (uint32_t)atoi(temp_str);
 
@@ -838,12 +811,11 @@ void decode_heap_emit(decodingcontext* decodingctx, pg_parser_translog_pre_base*
                 rfree(col->m_new_values[7].m_value);
                 col->m_new_values[7].m_value = rstrdup((char*)col->m_new_values[0].m_value);
 
-                temp_oid_char = get_class_value_from_colvalue(
-                    col->m_new_values, CLASS_MAPNUM_OID, g_idbtype, g_idbversion);
+                temp_oid_char =
+                    get_class_value_from_colvalue(col->m_new_values, CLASS_MAPNUM_OID, g_idbtype, g_idbversion);
                 temp_oid = (Oid)atoi(temp_oid_char);
 
-                free_class_value_from_colvalue(
-                    col->m_new_values, CLASS_MAPNUM_RELFILENODE, g_idbtype, g_idbversion);
+                free_class_value_from_colvalue(col->m_new_values, CLASS_MAPNUM_RELFILENODE, g_idbtype, g_idbversion);
                 set_class_value_from_colvalue(col->m_new_values,
                                               temp_oid_char,
                                               CLASS_MAPNUM_RELFILENODE,
@@ -883,8 +855,7 @@ void decode_heap_emit(decodingcontext* decodingctx, pg_parser_translog_pre_base*
         if (trans_return->m_dmltype == PG_PARSER_TRANSLOG_DMLTYPE_MULTIINSERT)
         {
             /* pg14 and above, ddl statement for system catalog insert optimized to multi insert */
-            txn->sysdict =
-                decode_heap_multi_insert_save_sysdict_as_insert(txn->sysdict, trans_return);
+            txn->sysdict = decode_heap_multi_insert_save_sysdict_as_insert(txn->sysdict, trans_return);
 
             TXN_SET_TRANS_DDL(txn->flag);
         }
@@ -1005,11 +976,7 @@ void heap_fpw_tuples(decodingcontext* decodingctx, pg_parser_translog_pre_base* 
         entry.data = tup->m_tuples[index_tuple_cnt].m_tupledata;
         entry.len = tup->m_tuples[index_tuple_cnt].m_tuplelen;
         entry.lsn = decodingctx->decode_record->start.wal.lsn;
-        elog(RLOG_DEBUG,
-             "get tuple, rel: %u, blk: %u, off:%hu",
-             key.relfilenode,
-             key.blcknum,
-             key.itemoffset);
+        elog(RLOG_DEBUG, "get tuple, rel: %u, blk: %u, off:%hu", key.relfilenode, key.blcknum, key.itemoffset);
         fpwcache_add(decodingctx->trans_cache, &key, &entry);
     }
 }

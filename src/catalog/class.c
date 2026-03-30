@@ -42,14 +42,12 @@ void class_attribute_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
     rmemset1(&class_hash_ctl, 0, '\0', sizeof(class_hash_ctl));
     class_hash_ctl.keysize = sizeof(Oid);
     class_hash_ctl.entrysize = sizeof(catalog_class_value);
-    sysdicts->by_class =
-        hash_create("catalog_sysdict_class", 2048, &class_hash_ctl, HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_class = hash_create("catalog_sysdict_class", 2048, &class_hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     rmemset1(&attr_hash_ctl, 0, '\0', sizeof(attr_hash_ctl));
     attr_hash_ctl.keysize = sizeof(Oid);
     attr_hash_ctl.entrysize = sizeof(catalog_attribute_value);
-    sysdicts->by_attribute =
-        hash_create("catalog_sysdict_attribute", 2048, &attr_hash_ctl, HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_attribute = hash_create("catalog_sysdict_attribute", 2048, &attr_hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     sprintf(sql_exec,
             "SELECT rel.oid, \n"
@@ -166,8 +164,7 @@ void class_attribute_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
 
         for (i = 0; i < PQntuples(res); i++)
         {
-            attribute =
-                (pg_sysdict_Form_pg_attribute)rmalloc0(sizeof(pg_parser_sysdict_pgattributes));
+            attribute = (pg_sysdict_Form_pg_attribute)rmalloc0(sizeof(pg_parser_sysdict_pgattributes));
             if (NULL == attribute)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
@@ -197,8 +194,8 @@ void class_attribute_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
             sscanf(PQgetvalue(res, i, j++), "%d", &attribute->attinhcount);
             sscanf(PQgetvalue(res, i, j++), "%u", &attribute->attcollation);
 
-            attr_entry = (catalog_attribute_value*)hash_search(
-                sysdicts->by_attribute, &attribute->attrelid, HASH_ENTER, &found);
+            attr_entry =
+                (catalog_attribute_value*)hash_search(sysdicts->by_attribute, &attribute->attrelid, HASH_ENTER, &found);
             if (!found)
             {
                 attr_entry->attrs = NIL;
@@ -395,8 +392,7 @@ catalogdata* class_colvalue2class(void* in_colvalue)
     /* relkind 16 */
     pgclass->relkind = ((char*)((colvalue + 16)->m_value))[0];
 
-    if (PG_SYSDICT_RELKIND_VIEW == pgclass->relkind ||
-        PG_SYSDICT_RELKIND_PARTITIONED_INDEX == pgclass->relkind)
+    if (PG_SYSDICT_RELKIND_VIEW == pgclass->relkind || PG_SYSDICT_RELKIND_PARTITIONED_INDEX == pgclass->relkind)
     {
         /* Memory release, no logging */
         rfree(pgclass);
@@ -406,8 +402,7 @@ catalogdata* class_colvalue2class(void* in_colvalue)
     }
 
     /* relname 1*/
-    rmemcpy1(
-        pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
+    rmemcpy1(pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* relnamespace 2*/
     sscanf((char*)((colvalue + 2)->m_value), "%u", &pgclass->relnamespace);
@@ -496,8 +491,7 @@ catalogdata* class_colvalue2class_nofilter(void* in_colvalue)
     pgclass->relkind = ((char*)((colvalue + 16)->m_value))[0];
 
     /* relname 1*/
-    rmemcpy1(
-        pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
+    rmemcpy1(pgclass->relname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* relnamespace 2*/
     sscanf((char*)((colvalue + 2)->m_value), "%u", &pgclass->relnamespace);
@@ -603,8 +597,7 @@ void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
 
             /* Add relfilenode to hash table */
             /* Insert new */
-            prelfilenode2oid =
-                hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, &found);
+            prelfilenode2oid = hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, &found);
             if (NULL == prelfilenode2oid)
             {
                 elog(RLOG_ERROR,
@@ -660,8 +653,7 @@ void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
              * modified */
             if (NULL != sysdicts->by_relfilenode)
             {
-                prelfilenode2oidOld =
-                    hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_FIND, NULL);
+                prelfilenode2oidOld = hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_FIND, NULL);
                 if (prelfilenode2oidOld->oid == classInHash->class->oid)
                 {
                     /* Replace relfilenode data */
@@ -669,12 +661,10 @@ void class_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
 
                     /* Insert new */
                     relfilenode.relNode = newClass->class->relfilenode;
-                    prelfilenode2oid =
-                        hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, &found);
+                    prelfilenode2oid = hash_search(sysdicts->by_relfilenode, &relfilenode, HASH_ENTER, &found);
                     if (!found)
                     {
-                        rmemcpy1(
-                            &prelfilenode2oid->relfilenode, 0, &relfilenode, sizeof(RelFileNode));
+                        rmemcpy1(&prelfilenode2oid->relfilenode, 0, &relfilenode, sizeof(RelFileNode));
                     }
 
                     /* Then directly replace */

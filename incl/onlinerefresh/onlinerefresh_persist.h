@@ -34,8 +34,7 @@ extern onlinerefresh_persistnode* onlinerefresh_persistnode_init(void);
 extern void onlinerefresh_persistnode_statset(onlinerefresh_persistnode* persistnode, int stat);
 
 /* Set persistnode txid */
-extern void onlinerefresh_persistnode_txidset(onlinerefresh_persistnode* persistnode,
-                                              FullTransactionId          txid);
+extern void onlinerefresh_persistnode_txidset(onlinerefresh_persistnode* persistnode, FullTransactionId txid);
 
 /* Set persistnode uuid  */
 extern void onlinerefresh_persistnode_uuidset(onlinerefresh_persistnode* persistnode, uuid_t* uuid);
@@ -47,8 +46,7 @@ extern void onlinerefresh_persistnode_beginset(onlinerefresh_persistnode* persis
 extern void onlinerefresh_persistnode_endset(onlinerefresh_persistnode* persistnode, recpos pos);
 
 /* Set persistnode incremental flag */
-extern void onlinerefresh_persistnode_incrementset(onlinerefresh_persistnode* persistnode,
-                                                   bool                       incrment);
+extern void onlinerefresh_persistnode_incrementset(onlinerefresh_persistnode* persistnode, bool incrment);
 
 /* Initialize onlinerefresh persist */
 extern onlinerefresh_persist* onlinerefresh_persist_init(void);
@@ -57,13 +55,10 @@ extern onlinerefresh_persist* onlinerefresh_persist_init(void);
 extern int onlinerefresh_persist_delectbyuuidcmp(void* vala, void* valb);
 
 /* Set node status by uuid */
-extern void onlinerefresh_persist_statesetbyuuid(onlinerefresh_persist* persist,
-                                                 uuid_t*                uuid,
-                                                 int                    state);
+extern void onlinerefresh_persist_statesetbyuuid(onlinerefresh_persist* persist, uuid_t* uuid, int state);
 
 /* Delete stock table in node by uuid */
-extern void onlinerefresh_persist_removerefreshtbsbyuuid(onlinerefresh_persist* persist,
-                                                         uuid_t*                uuid);
+extern void onlinerefresh_persist_removerefreshtbsbyuuid(onlinerefresh_persist* persist, uuid_t* uuid);
 
 /* Write persist to disk */
 extern bool onlinerefresh_persist_write(onlinerefresh_persist* persist);
@@ -75,8 +70,7 @@ extern onlinerefresh_persist* onlinerefresh_persist_read(void);
 extern void onlinerefresh_persist_removebyuuid(onlinerefresh_persist* persist, uuid_t* uuid);
 
 /* Calculate persist rewind point */
-extern void onlinerefresh_persist_electionrewindbyuuid(onlinerefresh_persist* persist,
-                                                       uuid_t*                uuid);
+extern void onlinerefresh_persist_electionrewindbyuuid(onlinerefresh_persist* persist, uuid_t* uuid);
 
 /* Clean up persistnode memory */
 extern void onlinerefresh_persistnode_free(void* privdata);

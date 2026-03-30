@@ -8,17 +8,15 @@
 
 #define DDL_DROP_TABLE_MCXT NULL
 
-pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_table(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno);
+pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_table(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                              pg_parser_translog_systb2dll_record* current_record,
+                                                              pg_parser_ddlstate*                  ddlstate,
+                                                              int32_t*                             pg_parser_errno);
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_drop_table(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_drop_table(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                     pg_parser_translog_systb2dll_record* current_record,
+                                                     pg_parser_ddlstate*                  ddlstate,
+                                                     int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
     if (IS_DELETE(current_record->m_record))
@@ -34,13 +32,11 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_table(
                                                             current_record->m_record->m_old_values,
                                                             current_record->m_record->m_valueCnt,
                                                             temp_objid);
-            temp_classid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
-                                                   current_record->m_record->m_old_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_classid);
-            if (!(strcmp(ddlstate->m_reloid_char, temp_objid)) &&
-                !(strcmp(RelationRelationIdChar, temp_classid)))
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                              current_record->m_record->m_old_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_classid);
+            if (!(strcmp(ddlstate->m_reloid_char, temp_objid)) && !(strcmp(RelationRelationIdChar, temp_classid)))
             {
                 /* Filter external tables */
                 if (ddlstate->m_relkind == 'f')
@@ -50,8 +46,8 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_table(
                 }
                 else
                 {
-                    result = pg_parser_ddl_assemble_drop_table(
-                        pg_parser_ddl, current_record, ddlstate, pg_parser_errno);
+                    result =
+                        pg_parser_ddl_assemble_drop_table(pg_parser_ddl, current_record, ddlstate, pg_parser_errno);
                 }
             }
         }
@@ -59,11 +55,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_table(
     return result;
 }
 
-pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_table(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_table(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                              pg_parser_translog_systb2dll_record* current_record,
+                                                              pg_parser_ddlstate*                  ddlstate,
+                                                              int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt*           result = NULL;
     pg_parser_translog_ddlstmt_drop_base* drop;
@@ -72,14 +67,12 @@ pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_table(
     PG_PARSER_UNUSED(current_record);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_DROP_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_DROP_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_45;
         return NULL;
     }
-    if (!pg_parser_mcxt_malloc(
-            DDL_DROP_TABLE_MCXT, (void**)&drop, sizeof(pg_parser_translog_ddlstmt_drop_base)))
+    if (!pg_parser_mcxt_malloc(DDL_DROP_TABLE_MCXT, (void**)&drop, sizeof(pg_parser_translog_ddlstmt_drop_base)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_46;
         return NULL;

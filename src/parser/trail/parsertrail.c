@@ -31,14 +31,12 @@ typedef struct PARSERWORK_GROUPMGR
 } parserwork_groupmgr;
 
 static parserwork_groupmgr m_groupmgr[] = {
-    {FFTRAIL_CXT_TYPE_NOP, "NOP", NULL, NULL},
-    {FFTRAIL_CXT_TYPE_FHEADER,
-     "FileHeader",
-     parsertrail_trailheadapply,
-     parsertrail_trailheadclean},
-    {FFTRAIL_CXT_TYPE_DATA, "FileData", parsertrail_traildataapply, parsertrail_traildataclean},
-    {FFTRAIL_CXT_TYPE_RESET, "FileReset", parsertrail_trailresetapply, parsertrail_trailresetclean},
-    {FFTRAIL_CXT_TYPE_FTAIL, "FileTail", parsertrail_trailtailapply, parsertrail_trailtailclean}};
+    {FFTRAIL_CXT_TYPE_NOP,     "NOP",        NULL,                        NULL                       },
+    {FFTRAIL_CXT_TYPE_FHEADER, "FileHeader", parsertrail_trailheadapply,  parsertrail_trailheadclean },
+    {FFTRAIL_CXT_TYPE_DATA,    "FileData",   parsertrail_traildataapply,  parsertrail_traildataclean },
+    {FFTRAIL_CXT_TYPE_RESET,   "FileReset",  parsertrail_trailresetapply, parsertrail_trailresetclean},
+    {FFTRAIL_CXT_TYPE_FTAIL,   "FileTail",   parsertrail_trailtailapply,  parsertrail_trailtailclean }
+};
 
 /* Parse records into transactions */
 bool parsertrail_traildecode(parsertrail* parsertrail)
@@ -57,8 +55,7 @@ bool parsertrail_traildecode(parsertrail* parsertrail)
     FTRAIL_BUFFER2TOKEN(get, uptr, tokenid, tokeninfo, tokenlen, tokendata)
 
     /* Call deserialization interface */
-    bret = parsertrail->ffsmgrstate->ffsmgr->ffsmgr_deserial(
-        tokenid, &result, parsertrail->ffsmgrstate);
+    bret = parsertrail->ffsmgrstate->ffsmgr->ffsmgr_deserial(tokenid, &result, parsertrail->ffsmgrstate);
     if (false == bret)
     {
         /* Received exit signal */
@@ -72,9 +69,7 @@ bool parsertrail_traildecode(parsertrail* parsertrail)
         /* make gcc happy */
         tokenid = tokeninfo;
         uptr = tokendata;
-        elog(RLOG_WARNING,
-             "%s need apply, Specify the corresponding processing logic",
-             m_groupmgr[tokenid].desc);
+        elog(RLOG_WARNING, "%s need apply, Specify the corresponding processing logic", m_groupmgr[tokenid].desc);
         return false;
     }
 
@@ -104,17 +99,15 @@ void parsertrail_reset(parsertrail* parsertrail)
         parsertrail->lasttxn = NULL;
     }
 
-    parsertrail->ffsmgrstate->ffsmgr->ffsmgr_free(FFSMGR_IF_OPTYPE_DESERIAL,
-                                                  parsertrail->ffsmgrstate);
+    parsertrail->ffsmgrstate->ffsmgr->ffsmgr_free(FFSMGR_IF_OPTYPE_DESERIAL, parsertrail->ffsmgrstate);
 
     rmemset0(parsertrail->ffsmgrstate, 0, '\0', sizeof(ffsmgr_state));
     parsertrail->ffsmgrstate->status = FFSMGR_STATUS_NOP;
     parsertrail->ffsmgrstate->bufid = 0;
     parsertrail->ffsmgrstate->compatibility = guc_getConfigOptionInt(CFG_KEY_COMPATIBILITY);
     parsertrail->ffsmgrstate->privdata = (void*)parsertrail;
-    parsertrail->ffsmgrstate->fdata =
-        NULL; /* fdata->extradata ListCell, currently processing cell */
-              /* fdata->ffdata trail file corresponding library/table structure */
+    parsertrail->ffsmgrstate->fdata = NULL; /* fdata->extradata ListCell, currently processing cell */
+                                            /* fdata->ffdata trail file corresponding library/table structure */
 
     /* Calculate file size */
     mbytes = guc_getConfigOptionInt(CFG_KEY_TRAIL_MAX_SIZE);
@@ -126,8 +119,7 @@ void parsertrail_reset(parsertrail* parsertrail)
 
     /* Call initialization interface */
     ffsmgr_init(FFSMG_IF_TYPE_TRAIL, parsertrail->ffsmgrstate);
-    parsertrail->ffsmgrstate->ffsmgr->ffsmgr_init(FFSMGR_IF_OPTYPE_DESERIAL,
-                                                  parsertrail->ffsmgrstate);
+    parsertrail->ffsmgrstate->ffsmgr->ffsmgr_init(FFSMGR_IF_OPTYPE_DESERIAL, parsertrail->ffsmgrstate);
 }
 
 /* Parse records into transactions */
@@ -194,8 +186,7 @@ void parsertrail_free(parsertrail* parsertrail)
     {
         if (parsertrail->ffsmgrstate->ffsmgr)
         {
-            parsertrail->ffsmgrstate->ffsmgr->ffsmgr_free(FFSMGR_IF_OPTYPE_DESERIAL,
-                                                          parsertrail->ffsmgrstate);
+            parsertrail->ffsmgrstate->ffsmgr->ffsmgr_free(FFSMGR_IF_OPTYPE_DESERIAL, parsertrail->ffsmgrstate);
         }
         rfree(parsertrail->ffsmgrstate);
     }

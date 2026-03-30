@@ -66,10 +66,7 @@ extern dlist* dlist_delete(dlist* dl, dlistnode* dlnode, dlistvaluefree valuefre
  *  valuecmp    value comparison function
  *  valuefree   value free function, may be NULL; if NULL, dlistnode->value is not freed
  */
-extern dlist* dlist_deletebyvalue(dlist*         dl,
-                                  void*          value,
-                                  dlistvaluecmp  valuecmp,
-                                  dlistvaluefree valuefree);
+extern dlist* dlist_deletebyvalue(dlist* dl, void* value, dlistvaluecmp valuecmp, dlistvaluefree valuefree);
 
 /*
  * find and delete first matching dlist node by value
@@ -79,10 +76,7 @@ extern dlist* dlist_deletebyvalue(dlist*         dl,
  *  valuecmp    value comparison function
  *  valuefree   value free function, may be NULL; if NULL, dlistnode->value is not freed
  */
-extern dlist* dlist_deletebyvaluefirstmatch(dlist*         dl,
-                                            void*          value,
-                                            dlistvaluecmp  valuecmp,
-                                            dlistvaluefree valuefree);
+extern dlist* dlist_deletebyvaluefirstmatch(dlist* dl, void* value, dlistvaluecmp valuecmp, dlistvaluefree valuefree);
 
 /*
  * check if value already exists in dlist

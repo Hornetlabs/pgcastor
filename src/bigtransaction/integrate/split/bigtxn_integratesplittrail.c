@@ -19,8 +19,7 @@
 #include "bigtransaction/integrate/split/bigtxn_integratesplittrail.h"
 
 /* Add records to queue */
-static bool bigtxn_integratesplittrail_addrecords2queue(increment_integratesplittrail* splittrail,
-                                                        thrnode*                       thrnode)
+static bool bigtxn_integratesplittrail_addrecords2queue(increment_integratesplittrail* splittrail, thrnode* thrnode)
 {
     /* Add to queue */
     while (THRNODE_STAT_WORK == thrnode->stat)
@@ -77,8 +76,7 @@ void* bigtxn_integratesplittrail_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "integrate bigtxn splittrail stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "integrate bigtxn splittrail stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -143,8 +141,7 @@ void* bigtxn_integratesplittrail_main(void* args)
             continue;
         }
 
-        if (false ==
-            loadtrailrecords_filterremainmetadata(stctx->loadrecords, fileid, stctx->emitoffset))
+        if (false == loadtrailrecords_filterremainmetadata(stctx->loadrecords, fileid, stctx->emitoffset))
         {
             stctx->filter = false;
         }

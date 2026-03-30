@@ -23,8 +23,7 @@
  * cnt + completecnt + tablestat + oid + schema + table + stat
  *  4  +      4      +     4     +  4  +   64   +  64   + cnt * 1
  */
-#define REFRESH_FILE_TABLE_LEN \
-    (sizeof(int) + sizeof(int) + sizeof(int) + sizeof(Oid) + NAMEDATALEN + NAMEDATALEN)
+#define REFRESH_FILE_TABLE_LEN (sizeof(int) + sizeof(int) + sizeof(int) + sizeof(Oid) + NAMEDATALEN + NAMEDATALEN)
 
 typedef enum REFRESH_INTEGRATEJOB_STAT
 {
@@ -106,20 +105,19 @@ refresh_integrate_setsynctableretry:
     for (index = 0; index < rintegrate->parallelcnt; index++)
     {
         resetStringInfo(sql);
-        appendStringInfo(
-            sql,
-            "INSERT INTO \"%s\".\"%s\" \n"
-            "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) "
-            "\n"
-            "VALUES (\'%s%d\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
-            "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
-            "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
-            "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
-            catalog_schema,
-            SYNC_STATUSTABLE_NAME,
-            REFRESH_REFRESH,
-            index,
-            1);
+        appendStringInfo(sql,
+                         "INSERT INTO \"%s\".\"%s\" \n"
+                         "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) "
+                         "\n"
+                         "VALUES (\'%s%d\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
+                         "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
+                         "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
+                         "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
+                         catalog_schema,
+                         SYNC_STATUSTABLE_NAME,
+                         REFRESH_REFRESH,
+                         index,
+                         1);
         res = conn_exec(conn, sql->data);
         if (NULL == res)
         {
@@ -134,8 +132,7 @@ refresh_integrate_setsynctableretry:
     if (1 == guc_getConfigOptionInt(CFG_KEY_TRUNCATETABLE))
     {
         /* if truncate fails, reconnect to database and retry */
-        if (false == refresh_table_syncstats_truncatetable_fromsyncstats(rintegrate->sync_stats,
-                                                                         (void*)conn))
+        if (false == refresh_table_syncstats_truncatetable_fromsyncstats(rintegrate->sync_stats, (void*)conn))
         {
             res = conn_exec(conn, "ROLLBACK");
             if (NULL == res)
@@ -224,8 +221,7 @@ void* refresh_integrate_main(void* args)
     /* check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "refresh integrate stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "refresh integrate stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;
@@ -337,9 +333,10 @@ void* refresh_integrate_main(void* args)
 
             /* set idle threads to exit and count exited threads */
             jobcnt = rintegrate->thrsmgr->childthrrefs->length;
-            if (false ==
-                threads_setsubmgrjobthredstermandcountexit(
-                    rintegrate->thrsmgr->parents, rintegrate->thrsmgr->childthrrefs, 0, &jobcnt))
+            if (false == threads_setsubmgrjobthredstermandcountexit(rintegrate->thrsmgr->parents,
+                                                                    rintegrate->thrsmgr->childthrrefs,
+                                                                    0,
+                                                                    &jobcnt))
             {
                 elog(RLOG_WARNING, "integrate refresh set job threads term in idle error");
                 thr_node->stat = THRNODE_STAT_ABORT;
@@ -535,13 +532,9 @@ bool refresh_integrate_read(refresh_integrate** refresh)
 
         rmemcpy1(&new_syncstat->cnt, 0, buffer + bufferoffset, sizeof(new_syncstat->cnt));
         bufferoffset += sizeof(new_syncstat->cnt);
-        rmemcpy1(&new_syncstat->completecnt,
-                 0,
-                 buffer + bufferoffset,
-                 sizeof(new_syncstat->completecnt));
+        rmemcpy1(&new_syncstat->completecnt, 0, buffer + bufferoffset, sizeof(new_syncstat->completecnt));
         bufferoffset += sizeof(new_syncstat->completecnt);
-        rmemcpy1(
-            &new_syncstat->tablestat, 0, buffer + bufferoffset, sizeof(new_syncstat->tablestat));
+        rmemcpy1(&new_syncstat->tablestat, 0, buffer + bufferoffset, sizeof(new_syncstat->tablestat));
         bufferoffset += sizeof(new_syncstat->tablestat);
         rmemcpy1(&new_syncstat->oid, 0, buffer + bufferoffset, sizeof(new_syncstat->oid));
         bufferoffset += sizeof(new_syncstat->oid);
@@ -567,14 +560,10 @@ bool refresh_integrate_read(refresh_integrate** refresh)
             }
             rmemset0(new_syncstat->stat, 0, '\0', new_syncstat->cnt * sizeof(int8_t));
 
-            read_size = osal_file_pread(
-                fd, (char*)new_syncstat->stat, (new_syncstat->cnt * sizeof(int8_t)), offset);
+            read_size = osal_file_pread(fd, (char*)new_syncstat->stat, (new_syncstat->cnt * sizeof(int8_t)), offset);
             if (read_size <= 0)
             {
-                elog(RLOG_WARNING,
-                     "try read file %s tablestat, read 0, error %s",
-                     path,
-                     strerror(errno));
+                elog(RLOG_WARNING, "try read file %s tablestat, read 0, error %s", path, strerror(errno));
                 refresh_table_syncstat_free(new_syncstat);
                 osal_file_close(fd);
                 return false;

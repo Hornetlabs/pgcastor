@@ -7,8 +7,6 @@
  *  2. Verify if job already exists
  *  3. Add job to xmetric->metricnodes
  */
-extern bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric,
-                                           netpoolentry*    npoolentry,
-                                           netpacket*       npacket);
+extern bool xmanager_metricmsg_parsecreate(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket);
 
 #endif

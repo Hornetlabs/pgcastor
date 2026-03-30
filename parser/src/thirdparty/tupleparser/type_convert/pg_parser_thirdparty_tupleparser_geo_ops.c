@@ -96,6 +96,7 @@ enum path_delim
 static char* path_encode(enum path_delim path_delim, int32_t npts, Point* pt);
 static void pair_encode(double x, double y, pg_parser_StringInfo str);
 static void single_encode(double x, pg_parser_StringInfo str);
+
 /***********************************************************************
  **
  **        Routines for 2D points.

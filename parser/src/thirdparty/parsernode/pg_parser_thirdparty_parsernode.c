@@ -20,12 +20,12 @@
 #define LEFT_BRACE        (1000000 + 3)
 #define OTHER_TOKEN       (1000000 + 4)
 /* Function declaration */
-static pg_parser_nodetree* pg_parser_get_expr_worker(
-    char* expr, int32_t prettyFlags, pg_parser_translog_convertinfo_with_zic* zicinfo);
+static pg_parser_nodetree* pg_parser_get_expr_worker(char*                                    expr,
+                                                     int32_t                                  prettyFlags,
+                                                     pg_parser_translog_convertinfo_with_zic* zicinfo);
 static void* stringToNode(const char* str, int16_t dbtype, char* dbversion);
 static void* stringToNodeInternal(const char* str, int16_t dbtype, char* dbversion);
-static void* nodeRead(
-    const char* token, int32_t tok_len, char** strtok_ptr, int16_t dbtype, char* dbversion);
+static void* nodeRead(const char* token, int32_t tok_len, char** strtok_ptr, int16_t dbtype, char* dbversion);
 static const char* pg_parser_strtok(int32_t* length, char** strtok_ptr);
 static pg_parser_NodeTag nodeTokenType(const char* token, int32_t length);
 static pg_parser_Value* makeInteger(int32_t i);
@@ -38,10 +38,7 @@ static pg_parser_AttrNumber* readAttrNumberCols(int32_t numCols, char** strtok_p
 static uint32_t* readOidCols(int32_t numCols, char** strtok_ptr);
 static int32_t* readIntCols(int32_t numCols, char** strtok_ptr);
 static bool* readBoolCols(int32_t numCols, char** strtok_ptr);
-static void ReadCommonScan(pg_parser_Scan* local_node,
-                           char**          strtok_ptr,
-                           int16_t         dbtype,
-                           char*           dbversion);
+static void ReadCommonScan(pg_parser_Scan* local_node, char** strtok_ptr, int16_t dbtype, char* dbversion);
 
 pg_parser_nodetree* pg_parser_get_expr(char* expr, pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
@@ -55,14 +52,14 @@ pg_parser_nodetree* pg_parser_get_expr(char* expr, pg_parser_translog_convertinf
 }
 
 #define WRAP_COLUMN_DEFAULT 0
-static pg_parser_nodetree* deparse_expression_pretty(
-    pg_parser_Node*                          expr,
-    pg_parser_List*                          dpcontext,
-    bool                                     forceprefix,
-    bool                                     showimplicit,
-    int32_t                                  prettyFlags,
-    int32_t                                  startIndent,
-    pg_parser_translog_convertinfo_with_zic* zicinfo)
+
+static pg_parser_nodetree* deparse_expression_pretty(pg_parser_Node*                          expr,
+                                                     pg_parser_List*                          dpcontext,
+                                                     bool                                     forceprefix,
+                                                     bool                                     showimplicit,
+                                                     int32_t                                  prettyFlags,
+                                                     int32_t                                  startIndent,
+                                                     pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
     pg_parser_deparse_context context;
 
@@ -95,8 +92,7 @@ static pg_parser_nodetree* deparse_expression_pretty(
                         {
                             case PG_PARSER_NODETYPE_CONST:
                             {
-                                pg_parser_node_const* node_const =
-                                    (pg_parser_node_const*)nodetree_now->m_node;
+                                pg_parser_node_const* node_const = (pg_parser_node_const*)nodetree_now->m_node;
                                 if (node_const->m_char_value)
                                 {
                                     pg_parser_mcxt_free(NODE_MCXT, node_const->m_char_value);
@@ -106,8 +102,7 @@ static pg_parser_nodetree* deparse_expression_pretty(
                             }
                             case PG_PARSER_NODETYPE_FUNC:
                             {
-                                pg_parser_node_func* node_func =
-                                    (pg_parser_node_func*)nodetree_now->m_node;
+                                pg_parser_node_func* node_func = (pg_parser_node_func*)nodetree_now->m_node;
                                 if (node_func->m_funcname)
                                 {
                                     pg_parser_mcxt_free(NODE_MCXT, node_func->m_funcname);
@@ -117,8 +112,7 @@ static pg_parser_nodetree* deparse_expression_pretty(
                             }
                             case PG_PARSER_NODETYPE_OP:
                             {
-                                pg_parser_node_op* node_op =
-                                    (pg_parser_node_op*)nodetree_now->m_node;
+                                pg_parser_node_op* node_op = (pg_parser_node_op*)nodetree_now->m_node;
                                 if (node_op->m_opname)
                                 {
                                     pg_parser_mcxt_free(NODE_MCXT, node_op->m_opname);
@@ -141,8 +135,9 @@ static pg_parser_nodetree* deparse_expression_pretty(
     return context.nodetree;
 }
 
-static pg_parser_nodetree* pg_parser_get_expr_worker(
-    char* expr, int32_t prettyFlags, pg_parser_translog_convertinfo_with_zic* zicinfo)
+static pg_parser_nodetree* pg_parser_get_expr_worker(char*                                    expr,
+                                                     int32_t                                  prettyFlags,
+                                                     pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
     pg_parser_Node*     node;
     pg_parser_nodetree* result = NULL;
@@ -262,8 +257,7 @@ static pg_parser_Value* makeBitString(char* str)
     return v;
 }
 
-static void* nodeRead(
-    const char* token, int32_t tok_len, char** strtok_ptr, int16_t dbtype, char* dbversion)
+static void* nodeRead(const char* token, int32_t tok_len, char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     pg_parser_Node*   result;
     pg_parser_NodeTag type;
@@ -366,8 +360,7 @@ static void* nodeRead(
                     {
                         break;
                     }
-                    l = pg_parser_list_lappend(
-                        l, nodeRead(token, tok_len, strtok_ptr, dbtype, dbversion));
+                    l = pg_parser_list_lappend(l, nodeRead(token, tok_len, strtok_ptr, dbtype, dbversion));
                     token = pg_parser_strtok(&tok_len, strtok_ptr);
                     if (token == NULL)
                     {
@@ -478,9 +471,8 @@ static const char* pg_parser_strtok(int32_t* length, char** strtok_ptr)
     else
     {
         /* Normal token, possibly containing backslashes */
-        while (*local_str != '\0' && *local_str != ' ' && *local_str != '\n' &&
-               *local_str != '\t' && *local_str != '(' && *local_str != ')' && *local_str != '{' &&
-               *local_str != '}')
+        while (*local_str != '\0' && *local_str != ' ' && *local_str != '\n' && *local_str != '\t' &&
+               *local_str != '(' && *local_str != ')' && *local_str != '{' && *local_str != '}')
         {
             if (*local_str == '\\' && local_str[1] != '\0')
             {
@@ -563,8 +555,7 @@ static char* debackslash(const char* token, int32_t length)
 #define nullable_string(token, length) ((length) == 0 ? NULL : debackslash(token, length))
 
 /* A few guys need only local_node */
-#define READ_LOCALS_NO_FIELDS(nodeTypeName) \
-    nodeTypeName* local_node = pg_parser_makeNode(nodeTypeName)
+#define READ_LOCALS_NO_FIELDS(nodeTypeName) nodeTypeName* local_node = pg_parser_makeNode(nodeTypeName)
 
 /* And a few guys need only the pg_parser_strtok support fields */
 #define READ_TEMP_LOCALS() \
@@ -835,7 +826,9 @@ static pg_parser_Bitmapset* _readBitmapset(char** strtok_ptr, int16_t dbtype, ch
 
     return result;
 }
+
 #define PG_PARSER_UINT64CONST(x) (x##UL)
+
 /*
  * _readQuery
  */
@@ -902,9 +895,7 @@ static pg_parser_NotifyStmt* _readNotifyStmt(char** strtok_ptr, int16_t dbtype, 
 /*
  * _readDeclareCursorStmt
  */
-static pg_parser_DeclareCursorStmt* _readDeclareCursorStmt(char**  strtok_ptr,
-                                                           int16_t dbtype,
-                                                           char*   dbversion)
+static pg_parser_DeclareCursorStmt* _readDeclareCursorStmt(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_DeclareCursorStmt);
 
@@ -918,9 +909,7 @@ static pg_parser_DeclareCursorStmt* _readDeclareCursorStmt(char**  strtok_ptr,
 /*
  * _readWithCheckOption
  */
-static pg_parser_WithCheckOption* _readWithCheckOption(char**  strtok_ptr,
-                                                       int16_t dbtype,
-                                                       char*   dbversion)
+static pg_parser_WithCheckOption* _readWithCheckOption(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_WithCheckOption);
 
@@ -936,9 +925,7 @@ static pg_parser_WithCheckOption* _readWithCheckOption(char**  strtok_ptr,
 /*
  * _readSortGroupClause
  */
-static pg_parser_SortGroupClause* _readSortGroupClause(char**  strtok_ptr,
-                                                       int16_t dbtype,
-                                                       char*   dbversion)
+static pg_parser_SortGroupClause* _readSortGroupClause(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_SortGroupClause);
 
@@ -996,9 +983,7 @@ static pg_parser_WindowClause* _readWindowClause(char** strtok_ptr, int16_t dbty
 /*
  * _readRowMarkClause
  */
-static pg_parser_RowMarkClause* _readRowMarkClause(char**  strtok_ptr,
-                                                   int16_t dbtype,
-                                                   char*   dbversion)
+static pg_parser_RowMarkClause* _readRowMarkClause(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_RowMarkClause);
 
@@ -1016,9 +1001,7 @@ static pg_parser_RowMarkClause* _readRowMarkClause(char**  strtok_ptr,
 /*
  * _readCommonTableExpr
  */
-static pg_parser_CommonTableExpr* _readCommonTableExpr(char**  strtok_ptr,
-                                                       int16_t dbtype,
-                                                       char*   dbversion)
+static pg_parser_CommonTableExpr* _readCommonTableExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CommonTableExpr);
 
@@ -1040,9 +1023,7 @@ static pg_parser_CommonTableExpr* _readCommonTableExpr(char**  strtok_ptr,
 /*
  * _readSetOperationStmt
  */
-static pg_parser_SetOperationStmt* _readSetOperationStmt(char**  strtok_ptr,
-                                                         int16_t dbtype,
-                                                         char*   dbversion)
+static pg_parser_SetOperationStmt* _readSetOperationStmt(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_SetOperationStmt);
 
@@ -1176,8 +1157,7 @@ static pg_parser_Const* _readConst(char** strtok_ptr, int16_t dbtype, char* dbve
     }
     else
     {
-        local_node->constvalue =
-            readDatum(local_node->constbyval, strtok_ptr, &local_node->constneedfree);
+        local_node->constvalue = readDatum(local_node->constbyval, strtok_ptr, &local_node->constneedfree);
     }
 
     READ_DONE();
@@ -1271,9 +1251,7 @@ static pg_parser_WindowFunc* _readWindowFunc(char** strtok_ptr, int16_t dbtype, 
 /*
  * _readSubscriptingRef
  */
-static pg_parser_SubscriptingRef* _readSubscriptingRef(char**  strtok_ptr,
-                                                       int16_t dbtype,
-                                                       char*   dbversion)
+static pg_parser_SubscriptingRef* _readSubscriptingRef(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_SubscriptingRef);
 
@@ -1384,9 +1362,7 @@ static pg_parser_NullIfExpr* _readNullIfExpr(char** strtok_ptr, int16_t dbtype, 
 /*
  * _readScalarArrayOpExpr
  */
-static pg_parser_ScalarArrayOpExpr* _readScalarArrayOpExpr(char**  strtok_ptr,
-                                                           int16_t dbtype,
-                                                           char*   dbversion)
+static pg_parser_ScalarArrayOpExpr* _readScalarArrayOpExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_ScalarArrayOpExpr);
 
@@ -1521,9 +1497,7 @@ static pg_parser_CoerceViaIO* _readCoerceViaIO(char** strtok_ptr, int16_t dbtype
 /*
  * _readArrayCoerceExpr
  */
-static pg_parser_ArrayCoerceExpr* _readArrayCoerceExpr(char**  strtok_ptr,
-                                                       int16_t dbtype,
-                                                       char*   dbversion)
+static pg_parser_ArrayCoerceExpr* _readArrayCoerceExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_ArrayCoerceExpr);
 
@@ -1541,9 +1515,7 @@ static pg_parser_ArrayCoerceExpr* _readArrayCoerceExpr(char**  strtok_ptr,
 /*
  * _readConvertRowtypeExpr
  */
-static pg_parser_ConvertRowtypeExpr* _readConvertRowtypeExpr(char**  strtok_ptr,
-                                                             int16_t dbtype,
-                                                             char*   dbversion)
+static pg_parser_ConvertRowtypeExpr* _readConvertRowtypeExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_ConvertRowtypeExpr);
 
@@ -1653,9 +1625,7 @@ static pg_parser_RowExpr* _readRowExpr(char** strtok_ptr, int16_t dbtype, char* 
 /*
  * _readRowCompareExpr
  */
-static pg_parser_RowCompareExpr* _readRowCompareExpr(char**  strtok_ptr,
-                                                     int16_t dbtype,
-                                                     char*   dbversion)
+static pg_parser_RowCompareExpr* _readRowCompareExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_RowCompareExpr);
 
@@ -1704,9 +1674,7 @@ static pg_parser_MinMaxExpr* _readMinMaxExpr(char** strtok_ptr, int16_t dbtype, 
 /*
  * _readSQLValueFunction
  */
-static pg_parser_SQLValueFunction* _readSQLValueFunction(char**  strtok_ptr,
-                                                         int16_t dbtype,
-                                                         char*   dbversion)
+static pg_parser_SQLValueFunction* _readSQLValueFunction(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_SQLValueFunction);
 
@@ -1773,9 +1741,7 @@ static pg_parser_BooleanTest* _readBooleanTest(char** strtok_ptr, int16_t dbtype
 /*
  * _readCoerceToDomain
  */
-static pg_parser_CoerceToDomain* _readCoerceToDomain(char**  strtok_ptr,
-                                                     int16_t dbtype,
-                                                     char*   dbversion)
+static pg_parser_CoerceToDomain* _readCoerceToDomain(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CoerceToDomain);
 
@@ -1792,9 +1758,7 @@ static pg_parser_CoerceToDomain* _readCoerceToDomain(char**  strtok_ptr,
 /*
  * _readCoerceToDomainValue
  */
-static pg_parser_CoerceToDomainValue* _readCoerceToDomainValue(char**  strtok_ptr,
-                                                               int16_t dbtype,
-                                                               char*   dbversion)
+static pg_parser_CoerceToDomainValue* _readCoerceToDomainValue(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CoerceToDomainValue);
 
@@ -1830,9 +1794,7 @@ static pg_parser_SetToDefault* _readSetToDefault(char** strtok_ptr, int16_t dbty
 /*
  * _readCurrentOfExpr
  */
-static pg_parser_CurrentOfExpr* _readCurrentOfExpr(char**  strtok_ptr,
-                                                   int16_t dbtype,
-                                                   char*   dbversion)
+static pg_parser_CurrentOfExpr* _readCurrentOfExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_CurrentOfExpr);
 
@@ -1849,9 +1811,7 @@ static pg_parser_CurrentOfExpr* _readCurrentOfExpr(char**  strtok_ptr,
 /*
  * _readNextValueExpr
  */
-static pg_parser_NextValueExpr* _readNextValueExpr(char**  strtok_ptr,
-                                                   int16_t dbtype,
-                                                   char*   dbversion)
+static pg_parser_NextValueExpr* _readNextValueExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_NextValueExpr);
 
@@ -1867,9 +1827,7 @@ static pg_parser_NextValueExpr* _readNextValueExpr(char**  strtok_ptr,
 /*
  * _readInferenceElem
  */
-static pg_parser_InferenceElem* _readInferenceElem(char**  strtok_ptr,
-                                                   int16_t dbtype,
-                                                   char*   dbversion)
+static pg_parser_InferenceElem* _readInferenceElem(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_InferenceElem);
 
@@ -1948,9 +1906,7 @@ static pg_parser_FromExpr* _readFromExpr(char** strtok_ptr, int16_t dbtype, char
 /*
  * _readOnConflictExpr
  */
-static pg_parser_OnConflictExpr* _readOnConflictExpr(char**  strtok_ptr,
-                                                     int16_t dbtype,
-                                                     char*   dbversion)
+static pg_parser_OnConflictExpr* _readOnConflictExpr(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_OnConflictExpr);
 
@@ -1973,9 +1929,7 @@ static pg_parser_OnConflictExpr* _readOnConflictExpr(char**  strtok_ptr,
 /*
  * _readRangeTblEntry
  */
-static pg_parser_RangeTblEntry* _readRangeTblEntry(char**  strtok_ptr,
-                                                   int16_t dbtype,
-                                                   char*   dbversion)
+static pg_parser_RangeTblEntry* _readRangeTblEntry(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_RangeTblEntry);
 
@@ -2063,9 +2017,7 @@ static pg_parser_RangeTblEntry* _readRangeTblEntry(char**  strtok_ptr,
 /*
  * _readRangeTblFunction
  */
-static pg_parser_RangeTblFunction* _readRangeTblFunction(char**  strtok_ptr,
-                                                         int16_t dbtype,
-                                                         char*   dbversion)
+static pg_parser_RangeTblFunction* _readRangeTblFunction(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_RangeTblFunction);
 
@@ -2083,9 +2035,7 @@ static pg_parser_RangeTblFunction* _readRangeTblFunction(char**  strtok_ptr,
 /*
  * _readTableSampleClause
  */
-static pg_parser_TableSampleClause* _readTableSampleClause(char**  strtok_ptr,
-                                                           int16_t dbtype,
-                                                           char*   dbversion)
+static pg_parser_TableSampleClause* _readTableSampleClause(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_TableSampleClause);
 
@@ -2153,10 +2103,7 @@ static pg_parser_PlannedStmt* _readPlannedStmt(char** strtok_ptr, int16_t dbtype
  * ReadCommonPlan
  *    Assign the basic stuff of all nodes that inherit from Plan
  */
-static void ReadCommonPlan(pg_parser_Plan* local_node,
-                           char**          strtok_ptr,
-                           int16_t         dbtype,
-                           char*           dbversion)
+static void ReadCommonPlan(pg_parser_Plan* local_node, char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_TEMP_LOCALS();
 
@@ -2287,9 +2234,7 @@ static pg_parser_MergeAppend* _readMergeAppend(char** strtok_ptr, int16_t dbtype
 /*
  * _readRecursiveUnion
  */
-static pg_parser_RecursiveUnion* _readRecursiveUnion(char**  strtok_ptr,
-                                                     int16_t dbtype,
-                                                     char*   dbversion)
+static pg_parser_RecursiveUnion* _readRecursiveUnion(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_RecursiveUnion);
 
@@ -2338,10 +2283,7 @@ static pg_parser_BitmapOr* _readBitmapOr(char** strtok_ptr, int16_t dbtype, char
  * ReadCommonScan
  *    Assign the basic stuff of all nodes that inherit from Scan
  */
-static void ReadCommonScan(pg_parser_Scan* local_node,
-                           char**          strtok_ptr,
-                           int16_t         dbtype,
-                           char*           dbversion)
+static void ReadCommonScan(pg_parser_Scan* local_node, char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_TEMP_LOCALS();
 
@@ -2411,9 +2353,7 @@ static pg_parser_IndexScan* _readIndexScan(char** strtok_ptr, int16_t dbtype, ch
 /*
  * _readIndexOnlyScan
  */
-static pg_parser_IndexOnlyScan* _readIndexOnlyScan(char**  strtok_ptr,
-                                                   int16_t dbtype,
-                                                   char*   dbversion)
+static pg_parser_IndexOnlyScan* _readIndexOnlyScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_IndexOnlyScan);
 
@@ -2431,9 +2371,7 @@ static pg_parser_IndexOnlyScan* _readIndexOnlyScan(char**  strtok_ptr,
 /*
  * _readBitmapIndexScan
  */
-static pg_parser_BitmapIndexScan* _readBitmapIndexScan(char**  strtok_ptr,
-                                                       int16_t dbtype,
-                                                       char*   dbversion)
+static pg_parser_BitmapIndexScan* _readBitmapIndexScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_BitmapIndexScan);
 
@@ -2450,9 +2388,7 @@ static pg_parser_BitmapIndexScan* _readBitmapIndexScan(char**  strtok_ptr,
 /*
  * _readBitmapHeapScan
  */
-static pg_parser_BitmapHeapScan* _readBitmapHeapScan(char**  strtok_ptr,
-                                                     int16_t dbtype,
-                                                     char*   dbversion)
+static pg_parser_BitmapHeapScan* _readBitmapHeapScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_BitmapHeapScan);
 
@@ -2523,9 +2459,7 @@ static pg_parser_ValuesScan* _readValuesScan(char** strtok_ptr, int16_t dbtype, 
 /*
  * _readTableFuncScan
  */
-static pg_parser_TableFuncScan* _readTableFuncScan(char**  strtok_ptr,
-                                                   int16_t dbtype,
-                                                   char*   dbversion)
+static pg_parser_TableFuncScan* _readTableFuncScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_TableFuncScan);
 
@@ -2554,9 +2488,7 @@ static pg_parser_CteScan* _readCteScan(char** strtok_ptr, int16_t dbtype, char* 
 /*
  * _readNamedTuplestoreScan
  */
-static pg_parser_NamedTuplestoreScan* _readNamedTuplestoreScan(char**  strtok_ptr,
-                                                               int16_t dbtype,
-                                                               char*   dbversion)
+static pg_parser_NamedTuplestoreScan* _readNamedTuplestoreScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_NamedTuplestoreScan);
 
@@ -2570,9 +2502,7 @@ static pg_parser_NamedTuplestoreScan* _readNamedTuplestoreScan(char**  strtok_pt
 /*
  * _readWorkTableScan
  */
-static pg_parser_WorkTableScan* _readWorkTableScan(char**  strtok_ptr,
-                                                   int16_t dbtype,
-                                                   char*   dbversion)
+static pg_parser_WorkTableScan* _readWorkTableScan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_WorkTableScan);
 
@@ -2608,10 +2538,7 @@ static pg_parser_ForeignScan* _readForeignScan(char** strtok_ptr, int16_t dbtype
  * ReadCommonJoin
  *    Assign the basic stuff of all nodes that inherit from Join
  */
-static void ReadCommonJoin(pg_parser_Join* local_node,
-                           char**          strtok_ptr,
-                           int16_t         dbtype,
-                           char*           dbversion)
+static void ReadCommonJoin(pg_parser_Join* local_node, char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_TEMP_LOCALS();
 
@@ -2918,9 +2845,7 @@ static pg_parser_Limit* _readLimit(char** strtok_ptr, int16_t dbtype, char* dbve
 /*
  * _readNestLoopParam
  */
-static pg_parser_NestLoopParam* _readNestLoopParam(char**  strtok_ptr,
-                                                   int16_t dbtype,
-                                                   char*   dbversion)
+static pg_parser_NestLoopParam* _readNestLoopParam(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_NestLoopParam);
 
@@ -2952,9 +2877,7 @@ static pg_parser_PlanRowMark* _readPlanRowMark(char** strtok_ptr, int16_t dbtype
     READ_DONE();
 }
 
-static pg_parser_PartitionPruneInfo* _readPartitionPruneInfo(char**  strtok_ptr,
-                                                             int16_t dbtype,
-                                                             char*   dbversion)
+static pg_parser_PartitionPruneInfo* _readPartitionPruneInfo(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_PartitionPruneInfo);
 
@@ -2983,9 +2906,7 @@ static pg_parser_PartitionedRelPruneInfo* _readPartitionedRelPruneInfo(char**  s
     READ_DONE();
 }
 
-static pg_parser_PartitionPruneStepOp* _readPartitionPruneStepOp(char**  strtok_ptr,
-                                                                 int16_t dbtype,
-                                                                 char*   dbversion)
+static pg_parser_PartitionPruneStepOp* _readPartitionPruneStepOp(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_PartitionPruneStepOp);
 
@@ -3014,9 +2935,7 @@ static pg_parser_PartitionPruneStepCombine* _readPartitionPruneStepCombine(char*
 /*
  * _readPlanInvalItem
  */
-static pg_parser_PlanInvalItem* _readPlanInvalItem(char**  strtok_ptr,
-                                                   int16_t dbtype,
-                                                   char*   dbversion)
+static pg_parser_PlanInvalItem* _readPlanInvalItem(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_PlanInvalItem);
 
@@ -3059,9 +2978,7 @@ static pg_parser_SubPlan* _readSubPlan(char** strtok_ptr, int16_t dbtype, char* 
 /*
  * _readAlternativeSubPlan
  */
-static pg_parser_AlternativeSubPlan* _readAlternativeSubPlan(char**  strtok_ptr,
-                                                             int16_t dbtype,
-                                                             char*   dbversion)
+static pg_parser_AlternativeSubPlan* _readAlternativeSubPlan(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_AlternativeSubPlan);
 
@@ -3073,9 +2990,7 @@ static pg_parser_AlternativeSubPlan* _readAlternativeSubPlan(char**  strtok_ptr,
 /*
  * _readPartitionBoundSpec
  */
-static pg_parser_PartitionBoundSpec* _readPartitionBoundSpec(char**  strtok_ptr,
-                                                             int16_t dbtype,
-                                                             char*   dbversion)
+static pg_parser_PartitionBoundSpec* _readPartitionBoundSpec(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_PartitionBoundSpec);
 
@@ -3094,9 +3009,7 @@ static pg_parser_PartitionBoundSpec* _readPartitionBoundSpec(char**  strtok_ptr,
 /*
  * _readPartitionRangeDatum
  */
-static pg_parser_PartitionRangeDatum* _readPartitionRangeDatum(char**  strtok_ptr,
-                                                               int16_t dbtype,
-                                                               char*   dbversion)
+static pg_parser_PartitionRangeDatum* _readPartitionRangeDatum(char** strtok_ptr, int16_t dbtype, char* dbversion)
 {
     READ_LOCALS(pg_parser_PartitionRangeDatum);
 

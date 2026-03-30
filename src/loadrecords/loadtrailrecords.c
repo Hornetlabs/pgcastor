@@ -73,8 +73,7 @@ bool loadtrailrecords_setloadpageroutine(loadtrailrecords* loadrecords, loadpage
     loadrecords->loadpage->filesize = loadrecords->loadrecords.filesize;
 
     /* Set loadpagefromfile type */
-    loadrecords->loadpageroutine->loadpagesettype(loadrecords->loadpage,
-                                                  LOADPAGEFROMFILE_TYPE_TRAIL);
+    loadrecords->loadpageroutine->loadpagesettype(loadrecords->loadpage, LOADPAGEFROMFILE_TYPE_TRAIL);
 
     return true;
 }
@@ -186,8 +185,7 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
             record_obj = (record*)dlnode->value;
 
             /* May appear at the file header */
-            if (RECORD_TYPE_TRAIL_HEADER == record_obj->type ||
-                RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
+            if (RECORD_TYPE_TRAIL_HEADER == record_obj->type || RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
             {
                 loadrecords->remainrecords = dlist_put(loadrecords->remainrecords, record_obj);
 
@@ -220,8 +218,7 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
                 loadrecords->recordcross.totallen = 0;
 
                 /* Linked list merging */
-                loadrecords->records =
-                    dlist_concat(loadrecords->remainrecords, loadrecords->records);
+                loadrecords->records = dlist_concat(loadrecords->remainrecords, loadrecords->records);
                 loadrecords->remainrecords = NULL;
                 break;
             }
@@ -246,8 +243,7 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
             {
                 /* Increase tail length */
                 reclen = loadrecords->recordcross.totallen + loadrecords->recordcross.rectaillen;
-                loadrecords->recordcross.record->data =
-                    rrealloc0(loadrecords->recordcross.record->data, reclen);
+                loadrecords->recordcross.record->data = rrealloc0(loadrecords->recordcross.record->data, reclen);
                 if (NULL == loadrecords->recordcross.record->data)
                 {
                     elog(RLOG_WARNING, "realloc cross record error");
@@ -301,8 +297,7 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
             loadrecords->records = dlist_concat(loadrecords->remainrecords, loadrecords->records);
             loadrecords->remainrecords = NULL;
             loadrecords->recordcross.record->type = RECORD_TYPE_TRAIL_NORMAL;
-            loadrecords->records =
-                dlist_puthead(loadrecords->records, loadrecords->recordcross.record);
+            loadrecords->records = dlist_puthead(loadrecords->records, loadrecords->recordcross.record);
             loadrecords->recordcross.record = NULL;
             loadrecords->recordcross.rectaillen = 0;
             loadrecords->recordcross.remainlen = 0;
@@ -322,8 +317,7 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
     {
         record_obj = (record*)dlnode->value;
         /* May appear at the file header */
-        if (RECORD_TYPE_TRAIL_HEADER == record_obj->type ||
-            RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
+        if (RECORD_TYPE_TRAIL_HEADER == record_obj->type || RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
         {
             continue;
         }
@@ -375,8 +369,7 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
 
         /* Calculate length */
         /* Remaining actual data length needed */
-        loadrecords->recordcross.remainlen =
-            (record_obj->totallength - (uint64)record_obj->reallength);
+        loadrecords->recordcross.remainlen = (record_obj->totallength - (uint64)record_obj->reallength);
 
         /* Total data length */
         loadrecords->recordcross.totallen = record_obj->totallength;
@@ -390,8 +383,7 @@ bool loadtrailrecords_load(loadtrailrecords* loadrecords)
          */
         /* Calculate the start position of record tail */
         record_obj->dataoffset += record_obj->reallength;
-        loadrecords->recordcross.rectaillen =
-            (uint16)(record_obj->len - (uint64)record_obj->dataoffset);
+        loadrecords->recordcross.rectaillen = (uint16)(record_obj->len - (uint64)record_obj->dataoffset);
 
         /* Trim the tail data length from the original length */
         record_obj->len -= (uint64)(loadrecords->recordcross.rectaillen);
@@ -506,13 +498,11 @@ bool loadtrailrecords_filterfortransbegin(loadtrailrecords* loadrecords)
         dlnodenext = dlnode->next;
         record_obj = (record*)dlnode->value;
         /* At file beginning or page switch, TRAIL_CONT records should be deleted directly */
-        if (RECORD_TYPE_TRAIL_HEADER == record_obj->type ||
-            RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
+        if (RECORD_TYPE_TRAIL_HEADER == record_obj->type || RECORD_TYPE_TRAIL_DBMETA == record_obj->type)
         {
             continue;
         }
-        else if (RECORD_TYPE_TRAIL_RESET == record_obj->type ||
-                 RECORD_TYPE_TRAIL_TAIL == record_obj->type)
+        else if (RECORD_TYPE_TRAIL_RESET == record_obj->type || RECORD_TYPE_TRAIL_TAIL == record_obj->type)
         {
             return false;
         }
@@ -575,9 +565,7 @@ void loadtrailrecords_filter(loadtrailrecords* loadrecords, uint64 fileid, uint6
  *   true           Need to continue filtering
  *   false          No need to continue filtering
  */
-bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords,
-                                           uint64            fileid,
-                                           uint64            foffset)
+bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset)
 {
     /*
      * Filter description:
@@ -609,8 +597,7 @@ bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords,
         }
 
         /* reset/tail indicates file switch, so no further filtering needed */
-        if (RECORD_TYPE_TRAIL_RESET == record_obj->type ||
-            RECORD_TYPE_TRAIL_TAIL == record_obj->type)
+        if (RECORD_TYPE_TRAIL_RESET == record_obj->type || RECORD_TYPE_TRAIL_TAIL == record_obj->type)
         {
             return false;
         }

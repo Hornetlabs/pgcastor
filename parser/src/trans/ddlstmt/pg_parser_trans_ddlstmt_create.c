@@ -37,8 +37,10 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
          *        RELKIND_VIEW        'v'        view
          *        RELKIND_MATVIEW     'm'        materialized view
          */
-        char* relkind = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "relkind", record_trans->m_new_values, record_trans->m_valueCnt, relkind);
+        char* relkind = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("relkind",
+                                                                     record_trans->m_new_values,
+                                                                     record_trans->m_valueCnt,
+                                                                     relkind);
 
         if (PG_SYSDICT_RELKIND_TOASTVALUE == relkind[0])
         {
@@ -48,8 +50,7 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
              *    2. Create index named pg_toast.pg_toast_oid_index;
              * These two do not need to be obtained and synchronized.
              */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                 "DEBUG, DDL PARSER: capture toast, ignore begin \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture toast, ignore begin \n");
             ddlstate->m_ddlKind = PG_PARSER_DDL_TOAST_ESCAPE;
             if (!pg_parser_ddl_get_pg_class_info(ddlstate, record_trans, true))
             {
@@ -83,8 +84,7 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
              * nextval('tableName_columnName_seq')； Therefore, when parsing DDL statements with
              * serial type, this statement needs to be split into two.
              */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                 "DEBUG, DDL PARSER: capture create sequence begin \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture create sequence begin \n");
             ddlstate->m_ddlKind = PG_PARSER_DDL_SEQUENCE_CREATE;
             if (!pg_parser_ddl_get_pg_class_info(ddlstate, record_trans, true))
             {
@@ -93,8 +93,7 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
             }
             ddlstate->m_inddl = true;
         }
-        else if (PG_SYSDICT_RELKIND_INDEX == relkind[0] ||
-                 PG_SYSDICT_RELKIND_PARTITIONED_INDEX == relkind[0])
+        else if (PG_SYSDICT_RELKIND_INDEX == relkind[0] || PG_SYSDICT_RELKIND_PARTITIONED_INDEX == relkind[0])
         {
             /*
              * If a field is specified as primary key when creating table, then PG will store in WAL
@@ -104,8 +103,7 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
              * Therefore, when parsing DDL statements with PRIMARY KEY (column_name), it needs to be
              * split into two.
              */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                 "DEBUG, DDL PARSER: capture create index begin \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture create index begin \n");
             ddlstate->m_ddlKind = PG_PARSER_DDL_INDEX_CREATE;
             if (!pg_parser_ddl_get_pg_class_info(ddlstate, record_trans, true))
             {
@@ -121,8 +119,7 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
              * 1. Insert view information into pg_class;
              * 2. Record all fields referenced by the view.
              */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                 "DEBUG, DDL PARSER: capture create view begin \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture create view begin \n");
             ddlstate->m_ddlKind = PG_PARSER_DDL_VIEW_CREATE;
             if (!pg_parser_ddl_get_pg_class_info(ddlstate, record_trans, true))
             {
@@ -136,8 +133,7 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
             /*
              * Failed to capture entry.
              */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                 "DEBUG, DDL PARSER: no ddl stmt capture \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: no ddl stmt capture \n");
             ddlstate->m_inddl = false;
         }
     }
@@ -154,8 +150,7 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
          *     2. Create pg_toast.pg_toast_OID table;
          * These two records do not need parsing, skip.
          */
-        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                             "DEBUG, DDL PARSER: capture alter table add column begin \n");
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture alter table add column begin \n");
         if (!pg_parser_ddl_get_attribute_info(ddlstate, record_trans, true))
         {
             *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_ATTRIBUTE_LIST;
@@ -180,11 +175,10 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
         uint32_t m_reloid;
         pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
                              "DEBUG, DDL PARSER: capture alter table add default begin \n");
-        ddlstate->m_reloid_char =
-            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("adrelid",
-                                                         record_trans->m_new_values,
-                                                         record_trans->m_valueCnt,
-                                                         ddlstate->m_reloid_char);
+        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("adrelid",
+                                                                               record_trans->m_new_values,
+                                                                               record_trans->m_valueCnt,
+                                                                               ddlstate->m_reloid_char);
         m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_ALTER_COLUMN_DEFAULT;
         ddlstate->m_reloid = m_reloid;
@@ -203,13 +197,16 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
          *  2. Commit; (No operation to insert pg_depend.)
          */
         char* temp_str = NULL;
-        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                             "DEBUG, DDL PARSER: capture create schema begin \n");
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture create schema begin \n");
         ddlstate->m_ddlKind = PG_PARSER_DDL_NAMESPACE_CREATE;
-        ddlstate->m_nspname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "nspname", record_trans->m_new_values, record_trans->m_valueCnt, ddlstate->m_nspname);
-        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "nspowner", record_trans->m_new_values, record_trans->m_valueCnt, temp_str);
+        ddlstate->m_nspname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("nspname",
+                                                                           record_trans->m_new_values,
+                                                                           record_trans->m_valueCnt,
+                                                                           ddlstate->m_nspname);
+        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("nspowner",
+                                                                record_trans->m_new_values,
+                                                                record_trans->m_valueCnt,
+                                                                temp_str);
         ddlstate->m_owner = (uint32_t)strtoul(temp_str, NULL, 10);
         ddlstate->m_inddl = true;
     }
@@ -223,8 +220,10 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
          */
         pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
                              "DEBUG, DDL PARSER: capture alter table add foreign key begin \n");
-        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "oid", record_trans->m_new_values, record_trans->m_valueCnt, ddlstate->m_reloid_char);
+        ddlstate->m_reloid_char = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("oid",
+                                                                               record_trans->m_new_values,
+                                                                               record_trans->m_valueCnt,
+                                                                               ddlstate->m_reloid_char);
         ddlstate->m_reloid = (uint32_t)strtoul(ddlstate->m_reloid_char, NULL, 10);
         ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_ALTER_ADD_CONSTRAINT_FOREIGN;
         ddlstate->m_constraint = record_trans;
@@ -239,8 +238,7 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
          * Insert a record into pg_database table, regarded as creating a new database, no parsing
          * needed, skip
          */
-        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                             "DEBUG, DDL PARSER: capture create database begin \n");
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture create database begin \n");
         ddlstate->m_ddlKind = PG_PARSER_DDL_DATABASE_CREATE;
         ddlstate->m_inddl = true;
     }
@@ -255,12 +253,15 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
          */
         char* temp_oid = NULL;
         char* temp_nspoid = NULL;
-        temp_oid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "oid", record_trans->m_new_values, record_trans->m_valueCnt, temp_oid);
-        temp_nspoid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN(
-            "typnamespace", record_trans->m_new_values, record_trans->m_valueCnt, temp_nspoid);
-        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                             "DEBUG, DDL PARSER: capture create type begin \n");
+        temp_oid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("oid",
+                                                                record_trans->m_new_values,
+                                                                record_trans->m_valueCnt,
+                                                                temp_oid);
+        temp_nspoid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("typnamespace",
+                                                                   record_trans->m_new_values,
+                                                                   record_trans->m_valueCnt,
+                                                                   temp_nspoid);
+        pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture create type begin \n");
         ddlstate->m_ddlKind = PG_PARSER_DDL_TYPE_CREATE;
 
         ddlstate->m_reloid_char = temp_oid;
@@ -268,11 +269,10 @@ void pg_parser_ddl_insertRecordTrans(pg_parser_translog_systb2ddl*        pg_par
 
         ddlstate->m_nspname_oid_char = temp_nspoid;
 
-        ddlstate->m_type_domain =
-            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("typbasetype",
-                                                         record_trans->m_new_values,
-                                                         record_trans->m_valueCnt,
-                                                         ddlstate->m_type_domain);
+        ddlstate->m_type_domain = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME_NO_RETURN("typbasetype",
+                                                                               record_trans->m_new_values,
+                                                                               record_trans->m_valueCnt,
+                                                                               ddlstate->m_type_domain);
         ddlstate->m_type_item = record_trans;
         ddlstate->m_inddl = true;
     }

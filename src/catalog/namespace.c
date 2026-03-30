@@ -28,8 +28,7 @@ void namespace_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(uint32_t);
     hash_ctl.entrysize = sizeof(catalog_namespace_value);
-    sysdicts->by_namespace =
-        hash_create("catalog_sysdicts_namespace", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_namespace = hash_create("catalog_sysdicts_namespace", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     res = conn_exec(conn, query);
     if (NULL == res)
@@ -53,9 +52,7 @@ void namespace_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         entry = hash_search(sysdicts->by_namespace, &namespace->oid, HASH_ENTER, &found);
         if (found)
         {
-            elog(RLOG_ERROR,
-                 "namespace_oid:%u already exist in by_namespace",
-                 entry->namespace->oid);
+            elog(RLOG_ERROR, "namespace_oid:%u already exist in by_namespace", entry->namespace->oid);
         }
         entry->oid = namespace->oid;
         entry->namespace = namespace;
@@ -168,8 +165,7 @@ HTAB* namespacecache_load(sysdict_header_array* array)
 
         while (offset + sizeof(pg_parser_sysdict_pgnamespace) < FILE_BLK_SIZE)
         {
-            namespace =
-                (pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(pg_parser_sysdict_pgnamespace));
+            namespace = (pg_sysdict_Form_pg_namespace)rmalloc1(sizeof(pg_parser_sysdict_pgnamespace));
             if (NULL == namespace)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
@@ -179,9 +175,7 @@ HTAB* namespacecache_load(sysdict_header_array* array)
             entry = hash_search(namespacehtab, &namespace->oid, HASH_ENTER, &found);
             if (found)
             {
-                elog(RLOG_ERROR,
-                     "namespace_oid:%u already exist in by_namespace",
-                     entry->namespace->oid);
+                elog(RLOG_ERROR, "namespace_oid:%u already exist in by_namespace", entry->namespace->oid);
             }
             entry->oid = namespace->oid;
             entry->namespace = namespace;
@@ -242,8 +236,7 @@ catalogdata* namespace_colvalue2namespace(void* in_colvalue)
     namespacevalue->namespace = pgnamespace;
 
     /* nspname 1 */
-    rmemcpy1(
-        pgnamespace->nspname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
+    rmemcpy1(pgnamespace->nspname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* oid 0 */
     sscanf((char*)((colvalue + 0)->m_value), "%u", &pgnamespace->oid);

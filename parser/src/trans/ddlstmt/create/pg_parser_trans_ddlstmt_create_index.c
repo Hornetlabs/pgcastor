@@ -9,16 +9,14 @@
 
 #define DDL_CREATE_INDEX_MCXT NULL
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_index(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno);
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_index(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                       pg_parser_ddlstate*           ddlstate,
+                                                                       int32_t*                      pg_parser_errno);
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_create_index(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_create_index(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                       pg_parser_translog_systb2dll_record* current_record,
+                                                       pg_parser_ddlstate*                  ddlstate,
+                                                       int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
 
@@ -35,8 +33,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_index(
                 *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_ATTRIBUTE_LIST;
                 return NULL;
             }
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                 "DEBUG, DDL PARSER: create index, get attribute info \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: create index, get attribute info \n");
         }
         else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
                                             SYS_INDEX,
@@ -44,8 +41,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_index(
                                             pg_parser_ddl->m_dbversion))
         {
             /* Store pg_index record */
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                 "DEBUG, DDL PARSER: create index, get index info \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: create index, get index info \n");
             ddlstate->m_index = current_record->m_record;
         }
         else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
@@ -71,26 +67,22 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_index(
                                                             current_record->m_record->m_new_values,
                                                             current_record->m_record->m_valueCnt,
                                                             temp_objid);
-            temp_classid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
-                                                   current_record->m_record->m_new_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_classid);
-            if (!strcmp(ddlstate->m_reloid_char, temp_objid) &&
-                !strcmp(RelationRelationIdChar, temp_classid))
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                              current_record->m_record->m_new_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_classid);
+            if (!strcmp(ddlstate->m_reloid_char, temp_objid) && !strcmp(RelationRelationIdChar, temp_classid))
             {
-                result =
-                    pg_parser_ddl_assemble_create_index(pg_parser_ddl, ddlstate, pg_parser_errno);
+                result = pg_parser_ddl_assemble_create_index(pg_parser_ddl, ddlstate, pg_parser_errno);
             }
         }
     }
     return result;
 }
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_index(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno)
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_index(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                       pg_parser_ddlstate*           ddlstate,
+                                                                       int32_t*                      pg_parser_errno)
 {
     int32_t                           i = 0;
     char*                             temp_isunique = NULL;
@@ -109,14 +101,12 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_index(
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_CREATE_INDEX_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_CREATE_INDEX_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_23;
         return NULL;
     }
-    if (!pg_parser_mcxt_malloc(
-            DDL_CREATE_INDEX_MCXT, (void**)&index_return, sizeof(pg_parser_translog_ddlstmt_index)))
+    if (!pg_parser_mcxt_malloc(DDL_CREATE_INDEX_MCXT, (void**)&index_return, sizeof(pg_parser_translog_ddlstmt_index)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_24;
         return NULL;
@@ -149,8 +139,10 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_index(
         return NULL;
     }
 
-    temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-        "indrelid", ddlstate->m_index->m_new_values, ddlstate->m_index->m_valueCnt, temp_str);
+    temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("indrelid",
+                                                  ddlstate->m_index->m_new_values,
+                                                  ddlstate->m_index->m_valueCnt,
+                                                  temp_str);
     index_return->m_relid = strtoul(temp_str, NULL, 10);
     temp_isunique = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("indisunique",
                                                        ddlstate->m_index->m_new_values,
@@ -172,26 +164,29 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_index(
     pg_parser_foreach(cell, ddlstate->m_attList)
     {
         indatt = (pg_parser_translog_tbcol_values*)pg_parser_lfirst(cell);
-        column[i].m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-            "attname", indatt->m_new_values, indatt->m_valueCnt, column[i].m_colname);
+        column[i].m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname",
+                                                                 indatt->m_new_values,
+                                                                 indatt->m_valueCnt,
+                                                                 column[i].m_colname);
 
-        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-            "atttypid", indatt->m_new_values, indatt->m_valueCnt, temp_str);
+        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid", indatt->m_new_values, indatt->m_valueCnt, temp_str);
         column[i].m_coltypid = strtoul(temp_str, NULL, 10);
         i++;
     }
     index_return->m_includecols = column;
 
     /* indexprs may be empty */
-    Node = pg_parser_ddl_getColumnValueByName(
-        "indexprs", ddlstate->m_index->m_new_values, ddlstate->m_index->m_valueCnt);
+    Node =
+        pg_parser_ddl_getColumnValueByName("indexprs", ddlstate->m_index->m_new_values, ddlstate->m_index->m_valueCnt);
     if (Node)
     {
         index_return->m_colnode = pg_parser_get_expr(Node, ddlstate->m_zicinfo);
     }
 
-    temp_part = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-        "indkey", ddlstate->m_index->m_new_values, ddlstate->m_index->m_valueCnt, temp_part);
+    temp_part = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("indkey",
+                                                   ddlstate->m_index->m_new_values,
+                                                   ddlstate->m_index->m_valueCnt,
+                                                   temp_part);
     indkey_cursor = temp_part;
     i = 0;
     while (*temp_part)

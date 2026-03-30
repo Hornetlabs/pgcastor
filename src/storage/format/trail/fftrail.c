@@ -36,11 +36,12 @@ typedef struct TRAIL_GROUP
 } trail_group;
 
 static trail_group m_trailgroups[] = {
-    {FFTRAIL_GROUPTYPE_NOP, "trail nop", NULL, NULL},
-    {FFTRAIL_GROUPTYPE_FHEADER, "trail file header", fftrail_head_serail, fftrail_head_deserail},
-    {FFTRAIL_GROUPTYPE_DATA, "trail file data", fftrail_data_serail, fftrail_data_deserail},
-    {FFTRAIL_GROUPTYPE_RESET, "trail file reset", fftrail_reset_serail, fftrail_reset_deserail},
-    {FFTRAIL_GROUPTYPE_FTAIL, "trail file tail", fftrail_tail_serail, fftrail_tail_deserail}};
+    {FFTRAIL_GROUPTYPE_NOP,     "trail nop",         NULL,                 NULL                  },
+    {FFTRAIL_GROUPTYPE_FHEADER, "trail file header", fftrail_head_serail,  fftrail_head_deserail },
+    {FFTRAIL_GROUPTYPE_DATA,    "trail file data",   fftrail_data_serail,  fftrail_data_deserail },
+    {FFTRAIL_GROUPTYPE_RESET,   "trail file reset",  fftrail_reset_serail, fftrail_reset_deserail},
+    {FFTRAIL_GROUPTYPE_FTAIL,   "trail file tail",   fftrail_tail_serail,  fftrail_tail_deserail }
+};
 
 /* Validate data integrity */
 /* Validate header integrity */
@@ -147,10 +148,7 @@ static bool fftrail_validdata(int compatibility, uint8* data)
 
     if (!EQ_CRC32C(crc32rec, crc32))
     {
-        elog(RLOG_WARNING,
-             "trail record crc error, crc in record %08X, calc crc:%08X",
-             crc32rec,
-             crc32);
+        elog(RLOG_WARNING, "trail record crc error, crc in record %08X, calc crc:%08X", crc32rec, crc32);
         return false;
     }
 
@@ -241,8 +239,7 @@ static bool fftrail_validftail(int compatibility, uint64 fileid, uint8* tail)
     return true;
 }
 
-bool fftrail_validrecord(
-    ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record)
+bool fftrail_validrecord(ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record)
 {
     bool          result = false;
     ffsmgr_state* ffstate = NULL;
@@ -510,10 +507,7 @@ bool fftrail_serialshiffile(void* state)
 }
 
 /* Add specific data to buffer */
-uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype,
-                           uint16               tdatalen,
-                           uint8*               tdata,
-                           uint8*               buffer)
+uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype, uint16 tdatalen, uint8* tdata, uint8* buffer)
 {
     uint8* _uptr_ = NULL;
 
@@ -545,10 +539,7 @@ uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype,
 }
 
 /* Write specific data from buffer to data */
-uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype,
-                           uint64               tdatalen,
-                           uint8*               tdata,
-                           uint8*               buffer)
+uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype, uint64 tdatalen, uint8* tdata, uint8* buffer)
 {
     uint8* _uptr_ = NULL;
 
@@ -674,8 +665,7 @@ void fftrail_fileinit(void* state)
     /* Get initialization info */
     ffstate = (ffsmgr_state*)state;
     ffprivdata = (fftrail_privdata*)ffstate->fdata->ffdata;
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     finfo = (ff_fileinfo*)fbuffer->privdata;
 
     ffstate->recptr = fbuffer->data + fbuffer->start;
@@ -887,8 +877,7 @@ bool fftrail_init(int optype, void* state)
         hashCtl.keysize = sizeof(fftrail_table_deserialkey);
         hashCtl.entrysize = sizeof(fftrail_table_deserialentry);
     }
-    privdata->tables =
-        hash_create("fftrail_privdata_tables", 128, &hashCtl, HASH_ELEM | HASH_BLOBS);
+    privdata->tables = hash_create("fftrail_privdata_tables", 128, &hashCtl, HASH_ELEM | HASH_BLOBS);
 
     /* Database info */
     if (optype == FFSMGR_IF_OPTYPE_SERIAL)
@@ -901,8 +890,7 @@ bool fftrail_init(int optype, void* state)
         hashCtl.keysize = sizeof(uint32);
         hashCtl.entrysize = sizeof(fftrail_database_deserialentry);
     }
-    privdata->databases =
-        hash_create("fftrail_privdata_databases", 128, &hashCtl, HASH_ELEM | HASH_BLOBS);
+    privdata->databases = hash_create("fftrail_privdata_databases", 128, &hashCtl, HASH_ELEM | HASH_BLOBS);
 
     return true;
 }

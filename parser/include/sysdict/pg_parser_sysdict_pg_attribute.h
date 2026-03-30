@@ -4,6 +4,7 @@
 #define AttributeRelationId          1249
 #define AttributeRelation_Rowtype_Id 75
 #define pg_parser_InvalidAttrNumber  0
+
 typedef struct PG_PARSER_SYSDICT_PGATTRIBUTES
 {
     uint32_t           attrelid; /* OID of relation containing this attribute */

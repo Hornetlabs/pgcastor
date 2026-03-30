@@ -6,9 +6,7 @@
 #include "trans/ddlstmt/pg_parser_trans_ddlstmt_getcolumninfo.h"
 #include "sysdict/pg_parser_sysdict_getinfo.h"
 
-char* pg_parser_ddl_getColumnValueByName(char*                           column_name,
-                                         pg_parser_translog_tbcol_value* record_value,
-                                         uint16_t                        cnt)
+char* pg_parser_ddl_getColumnValueByName(char* column_name, pg_parser_translog_tbcol_value* record_value, uint16_t cnt)
 {
     int32_t i = 0;
     for (i = 0; i < cnt; i++)
@@ -18,11 +16,9 @@ char* pg_parser_ddl_getColumnValueByName(char*                           column_
             return NULL;
         }
 
-        if (record_value[i].m_colName &&
-            !strcmp(ddl_char_tolower((char*)record_value[i].m_colName), column_name))
+        if (record_value[i].m_colName && !strcmp(ddl_char_tolower((char*)record_value[i].m_colName), column_name))
         {
-            if (INFO_COL_IS_NULL == record_value[i].m_info ||
-                INFO_COL_MAY_NULL == record_value[i].m_info)
+            if (INFO_COL_IS_NULL == record_value[i].m_info || INFO_COL_MAY_NULL == record_value[i].m_info)
             {
                 return NULL;
             }
@@ -35,9 +31,7 @@ char* pg_parser_ddl_getColumnValueByName(char*                           column_
     return NULL;
 }
 
-bool pg_parser_ddl_get_pg_class_info(pg_parser_ddlstate*              ddlstate,
-                                     pg_parser_translog_tbcol_values* record,
-                                     bool                             isnew)
+bool pg_parser_ddl_get_pg_class_info(pg_parser_ddlstate* ddlstate, pg_parser_translog_tbcol_values* record, bool isnew)
 {
     char*                           temp_str = NULL;
     pg_parser_translog_tbcol_value* values = NULL;
@@ -69,8 +63,7 @@ bool pg_parser_ddl_get_pg_class_info(pg_parser_ddlstate*              ddlstate,
     }
     ddlstate->m_reloid_char = temp_str;
     ddlstate->m_reloid = (uint32_t)strtoul(temp_str, NULL, 10);
-    ddlstate->m_amoid_char =
-        pg_parser_ddl_getColumnValueByName("relam", values, record->m_valueCnt);
+    ddlstate->m_amoid_char = pg_parser_ddl_getColumnValueByName("relam", values, record->m_valueCnt);
     if (!ddlstate->m_amoid_char)
     {
         return false;
@@ -80,8 +73,7 @@ bool pg_parser_ddl_get_pg_class_info(pg_parser_ddlstate*              ddlstate,
     {
         return false;
     }
-    ddlstate->m_nspname_oid_char =
-        pg_parser_ddl_getColumnValueByName("relnamespace", values, record->m_valueCnt);
+    ddlstate->m_nspname_oid_char = pg_parser_ddl_getColumnValueByName("relnamespace", values, record->m_valueCnt);
     if (!ddlstate->m_nspname_oid_char)
     {
         return false;
@@ -96,9 +88,7 @@ bool pg_parser_ddl_get_pg_class_info(pg_parser_ddlstate*              ddlstate,
     return true;
 }
 
-bool pg_parser_ddl_get_attribute_info(pg_parser_ddlstate*              ddlstate,
-                                      pg_parser_translog_tbcol_values* record,
-                                      bool                             isnew)
+bool pg_parser_ddl_get_attribute_info(pg_parser_ddlstate* ddlstate, pg_parser_translog_tbcol_values* record, bool isnew)
 {
     char*                           temp_str = NULL;
     int16_t                         attnum = 0;

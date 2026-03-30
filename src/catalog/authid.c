@@ -31,8 +31,7 @@ void authid_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(Oid);
     hash_ctl.entrysize = sizeof(catalog_authid_value);
-    sysdicts->by_authid =
-        hash_create("catalog_sysdict_authid", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_authid = hash_create("catalog_sysdict_authid", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     res = conn_exec(conn, query);
     if (NULL == res)
@@ -328,8 +327,7 @@ catalogdata* authid_colvalue2authid(void* in_colvalue)
     pgauthid->rolinherit = ((char*)((colvalue + 4)->m_value))[0] == 't' ? true : false;
 
     /* rolname 1 */
-    rmemcpy1(
-        pgauthid->rolname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
+    rmemcpy1(pgauthid->rolname.data, 0, (char*)((colvalue + 1)->m_value), (colvalue + 1)->m_valueLen);
 
     /* rolreplication 7 */
     pgauthid->rolreplication = ((char*)((colvalue + 7)->m_value))[0] == 't' ? true : false;
@@ -369,8 +367,7 @@ void authid_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalo
             }
         }
         catalogInHash->oid = newcatalog->oid;
-        catalogInHash->authid =
-            (pg_sysdict_Form_pg_authid)rmalloc1(sizeof(pg_parser_sysdict_pgauthid));
+        catalogInHash->authid = (pg_sysdict_Form_pg_authid)rmalloc1(sizeof(pg_parser_sysdict_pgauthid));
         if (NULL == catalogInHash->authid)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
@@ -401,8 +398,7 @@ void authid_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalo
         }
         rfree(catalogInHash->authid);
 
-        catalogInHash->authid =
-            (pg_sysdict_Form_pg_authid)rmalloc1(sizeof(pg_parser_sysdict_pgauthid));
+        catalogInHash->authid = (pg_sysdict_Form_pg_authid)rmalloc1(sizeof(pg_parser_sysdict_pgauthid));
         if (NULL == catalogInHash->authid)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));

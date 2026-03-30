@@ -41,13 +41,11 @@ static inline uint64_t get64bit(uint8_t** ptr)
     uint64_t t64 = 0;
     t64 = ((uint32_t)(*ptr)[3] +
            (uint32_t)256 *
-               ((uint32_t)(*ptr)[2] +
-                (uint32_t)256 * ((uint32_t)(*ptr)[1] + (uint32_t)256 * (uint32_t)(*ptr)[0])));
+               ((uint32_t)(*ptr)[2] + (uint32_t)256 * ((uint32_t)(*ptr)[1] + (uint32_t)256 * (uint32_t)(*ptr)[0])));
     t64 <<= 32;
     t64 |= (((uint32_t)(*ptr)[7] +
              (uint32_t)256 *
-                 ((uint32_t)(*ptr)[6] +
-                  (uint32_t)256 * ((uint32_t)(*ptr)[5] + (uint32_t)256 * (uint32_t)(*ptr)[4])))) &
+                 ((uint32_t)(*ptr)[6] + (uint32_t)256 * ((uint32_t)(*ptr)[5] + (uint32_t)256 * (uint32_t)(*ptr)[4])))) &
            0xffffffffU;
     (*ptr) += 8;
     return t64;
@@ -58,8 +56,7 @@ static inline uint32_t get32bit(uint8_t** ptr)
     uint32_t t32;
     t32 = ((uint32_t)(*ptr)[3] +
            (uint32_t)256 *
-               ((uint32_t)(*ptr)[2] +
-                (uint32_t)256 * ((uint32_t)(*ptr)[1] + (uint32_t)256 * (uint32_t)(*ptr)[0])));
+               ((uint32_t)(*ptr)[2] + (uint32_t)256 * ((uint32_t)(*ptr)[1] + (uint32_t)256 * (uint32_t)(*ptr)[0])));
     (*ptr) += 4;
     return t32;
 }

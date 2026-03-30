@@ -42,12 +42,12 @@ typedef enum INCREMENT_INTEGRATEREBUILD_STAT
 
 typedef struct INCREMENT_INTEGRATEREBUILD
 {
-    rebuild                         rebuild;
-    bool                            mergetxn;
-    bool                            burst; /* Burst mode */
-    increment_integraterebuild_stat stat;
-    int                             txbundlesize; /* Threshold for merging transactions */
-    XLogRecPtr filterlsn; /* Less than or equal to this lsn does not need processing */
+    rebuild                             rebuild;
+    bool                                mergetxn;
+    bool                                burst; /* Burst mode */
+    increment_integraterebuild_stat     stat;
+    int                                 txbundlesize; /* Threshold for merging transactions */
+    XLogRecPtr                          filterlsn;    /* Less than or equal to this lsn does not need processing */
     onlinerefresh_integratedataset*     onlinerefreshdataset;
     HTAB*                               honlinerefreshfilterdataset;
     char                                padding[CACHELINE_SIZE];

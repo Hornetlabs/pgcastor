@@ -31,8 +31,7 @@
 #include "works/parserwork/wal/decode_checkpoint.h"
 #include "works/parserwork/wal/decode_seq.h"
 
-typedef void (*rewind_ptr_prefunc)(decodingcontext*             decodingctx,
-                                   pg_parser_translog_pre_base* pbase);
+typedef void (*rewind_ptr_prefunc)(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase);
 
 typedef struct REWIND_PREMGR
 {
@@ -41,62 +40,62 @@ typedef struct REWIND_PREMGR
     rewind_ptr_prefunc func;
 } rewind_ptr_premgr;
 
-static void rewind_ptr_find_checkpoint(decodingcontext*             decodingctx,
-                                       pg_parser_translog_pre_base* pbase);
+static void rewind_ptr_find_checkpoint(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase);
 
 static rewind_ptr_premgr m_rewind_ptrpremgr[] = {
-    {PG_PARSER_TRANSLOG_INVALID, "INVALID", NULL},
-    {PG_PARSER_TRANSLOG_HEAP_INSERT, "INSERT", NULL},
-    {PG_PARSER_TRANSLOG_HEAP_UPDATE, "UPDATE", NULL},
-    {PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE, "HOT UPDATE", NULL},
-    {PG_PARSER_TRANSLOG_HEAP_DELETE, "DELETE", NULL},
-    {PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT, "MULTI INSERT", NULL},
-    {PG_PARSER_TRANSLOG_XACT_COMMIT, "COMMIT", NULL},
-    {PG_PARSER_TRANSLOG_XACT_ABORT, "ABORT", NULL},
-    {PG_PARSER_TRANSLOG_XLOG_SWITCH, "SWITCH", NULL},
-    {PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE, "ONLINE", rewind_ptr_find_checkpoint},
-    {PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN, "SHUTDOWN", rewind_ptr_find_checkpoint},
-    {PG_PARSER_TRANSLOG_FPW_TUPLE, "FPW_TUPLE", NULL},
-    {PG_PARSER_TRANSLOG_RELMAP, "RELMAP", NULL},
-    {PG_PARSER_TRANSLOG_RUNNING_XACTS, "RUNNING_XACTS", NULL},
-    {PG_PARSER_TRANSLOG_XLOG_RECOVERY, "RECOVERY", NULL},
-    {PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE, "COMMIT_PREPARE", NULL},
-    {PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE, "ABORT_PREPARE", NULL},
-    {PG_PARSER_TRANSLOG_XACT_ASSIGNMENT, "ASSIGNMENT", NULL},
-    {PG_PARSER_TRANSLOG_XACT_PREPARE, "PREPARE", NULL},
-    {PG_PARSER_TRANSLOG_HEAP_TRUNCATE, "TRUNCATE", NULL},
-    {PG_PARSER_TRANSLOG_SEQ, "SEQUENCE", NULL}};
+    {PG_PARSER_TRANSLOG_INVALID,             "INVALID",        NULL                      },
+    {PG_PARSER_TRANSLOG_HEAP_INSERT,         "INSERT",         NULL                      },
+    {PG_PARSER_TRANSLOG_HEAP_UPDATE,         "UPDATE",         NULL                      },
+    {PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,     "HOT UPDATE",     NULL                      },
+    {PG_PARSER_TRANSLOG_HEAP_DELETE,         "DELETE",         NULL                      },
+    {PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,  "MULTI INSERT",   NULL                      },
+    {PG_PARSER_TRANSLOG_XACT_COMMIT,         "COMMIT",         NULL                      },
+    {PG_PARSER_TRANSLOG_XACT_ABORT,          "ABORT",          NULL                      },
+    {PG_PARSER_TRANSLOG_XLOG_SWITCH,         "SWITCH",         NULL                      },
+    {PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,     "ONLINE",         rewind_ptr_find_checkpoint},
+    {PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,   "SHUTDOWN",       rewind_ptr_find_checkpoint},
+    {PG_PARSER_TRANSLOG_FPW_TUPLE,           "FPW_TUPLE",      NULL                      },
+    {PG_PARSER_TRANSLOG_RELMAP,              "RELMAP",         NULL                      },
+    {PG_PARSER_TRANSLOG_RUNNING_XACTS,       "RUNNING_XACTS",  NULL                      },
+    {PG_PARSER_TRANSLOG_XLOG_RECOVERY,       "RECOVERY",       NULL                      },
+    {PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE, "COMMIT_PREPARE", NULL                      },
+    {PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE,  "ABORT_PREPARE",  NULL                      },
+    {PG_PARSER_TRANSLOG_XACT_ASSIGNMENT,     "ASSIGNMENT",     NULL                      },
+    {PG_PARSER_TRANSLOG_XACT_PREPARE,        "PREPARE",        NULL                      },
+    {PG_PARSER_TRANSLOG_HEAP_TRUNCATE,       "TRUNCATE",       NULL                      },
+    {PG_PARSER_TRANSLOG_SEQ,                 "SEQUENCE",       NULL                      }
+};
 
 static rewind_ptr_premgr m_emitpremgr[] = {
-    {PG_PARSER_TRANSLOG_INVALID, "INVALID", NULL},
-    {PG_PARSER_TRANSLOG_HEAP_INSERT, "INSERT", decode_heap_emit},
-    {PG_PARSER_TRANSLOG_HEAP_UPDATE, "UPDATE", decode_heap_emit},
-    {PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE, "HOT UPDATE", decode_heap_emit},
-    {PG_PARSER_TRANSLOG_HEAP_DELETE, "DELETE", decode_heap_emit},
-    {PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT, "MULTI INSERT", decode_heap_emit},
-    {PG_PARSER_TRANSLOG_XACT_COMMIT, "COMMIT", decode_xact_commit_emit},
-    {PG_PARSER_TRANSLOG_XACT_ABORT, "ABORT", decode_xact_abort_emit},
-    {PG_PARSER_TRANSLOG_XLOG_SWITCH, "SWITCH", NULL},
-    {PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE, "ONLINE", decode_chkpt},
-    {PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN, "SHUTDOWN", decode_chkpt},
-    {PG_PARSER_TRANSLOG_FPW_TUPLE, "FPW_TUPLE", heap_fpw_tuples},
-    {PG_PARSER_TRANSLOG_RELMAP, "RELMAP", decode_relmap},
-    {PG_PARSER_TRANSLOG_RUNNING_XACTS, "RUNNING_XACTS", NULL},
-    {PG_PARSER_TRANSLOG_XLOG_RECOVERY, "RECOVERY", NULL},
-    {PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE, "COMMIT_PREPARE", NULL},
-    {PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE, "ABORT_PREPARE", NULL},
-    {PG_PARSER_TRANSLOG_XACT_ASSIGNMENT, "ASSIGNMENT", NULL},
-    {PG_PARSER_TRANSLOG_XACT_PREPARE, "PREPARE", NULL},
-    {PG_PARSER_TRANSLOG_HEAP_TRUNCATE, "TRUNCATE", NULL},
-    {PG_PARSER_TRANSLOG_SEQ, "SEQUENCE", NULL}};
+    {PG_PARSER_TRANSLOG_INVALID,             "INVALID",        NULL                   },
+    {PG_PARSER_TRANSLOG_HEAP_INSERT,         "INSERT",         decode_heap_emit       },
+    {PG_PARSER_TRANSLOG_HEAP_UPDATE,         "UPDATE",         decode_heap_emit       },
+    {PG_PARSER_TRANSLOG_HEAP_HOT_UPDATE,     "HOT UPDATE",     decode_heap_emit       },
+    {PG_PARSER_TRANSLOG_HEAP_DELETE,         "DELETE",         decode_heap_emit       },
+    {PG_PARSER_TRANSLOG_HEAP2_MULTI_INSERT,  "MULTI INSERT",   decode_heap_emit       },
+    {PG_PARSER_TRANSLOG_XACT_COMMIT,         "COMMIT",         decode_xact_commit_emit},
+    {PG_PARSER_TRANSLOG_XACT_ABORT,          "ABORT",          decode_xact_abort_emit },
+    {PG_PARSER_TRANSLOG_XLOG_SWITCH,         "SWITCH",         NULL                   },
+    {PG_PARSER_TRANSLOG_XLOG_CKP_ONLINE,     "ONLINE",         decode_chkpt           },
+    {PG_PARSER_TRANSLOG_XLOG_CKP_SHUTDOWN,   "SHUTDOWN",       decode_chkpt           },
+    {PG_PARSER_TRANSLOG_FPW_TUPLE,           "FPW_TUPLE",      heap_fpw_tuples        },
+    {PG_PARSER_TRANSLOG_RELMAP,              "RELMAP",         decode_relmap          },
+    {PG_PARSER_TRANSLOG_RUNNING_XACTS,       "RUNNING_XACTS",  NULL                   },
+    {PG_PARSER_TRANSLOG_XLOG_RECOVERY,       "RECOVERY",       NULL                   },
+    {PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE, "COMMIT_PREPARE", NULL                   },
+    {PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE,  "ABORT_PREPARE",  NULL                   },
+    {PG_PARSER_TRANSLOG_XACT_ASSIGNMENT,     "ASSIGNMENT",     NULL                   },
+    {PG_PARSER_TRANSLOG_XACT_PREPARE,        "PREPARE",        NULL                   },
+    {PG_PARSER_TRANSLOG_HEAP_TRUNCATE,       "TRUNCATE",       NULL                   },
+    {PG_PARSER_TRANSLOG_SEQ,                 "SEQUENCE",       NULL                   }
+};
 
 static int m_precnt = (sizeof(m_rewind_ptrpremgr)) / (sizeof(rewind_ptr_premgr));
 
 #define EpochFromFullTransactionId(x) ((uint32)((x) >> 32))
 #define XidFromFullTransactionId(x)   ((uint32)(x))
 
-static void rewind_ptr_find_checkpoint(decodingcontext*             decodingctx,
-                                       pg_parser_translog_pre_base* pbase)
+static void rewind_ptr_find_checkpoint(decodingcontext* decodingctx, pg_parser_translog_pre_base* pbase)
 {
     pg_parser_translog_pre_transchkp* ckp = (pg_parser_translog_pre_transchkp*)pbase;
     if (XidFromFullTransactionId(ckp->m_nextid) <= decodingctx->rewind_ptr->strategy.xmin)

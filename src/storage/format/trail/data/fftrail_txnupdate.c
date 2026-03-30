@@ -61,8 +61,7 @@ fftrail_txnupdate_serial_retry:
                                   &dbmdno,
                                   &tbmdno,
                                   state);
-    } while (FFSMGR_STATUS_SHIFTFILE ==
-             ffstate->status); /* Content switched, need to write again */
+    } while (FFSMGR_STATUS_SHIFTFILE == ffstate->status); /* Content switched, need to write again */
 
     /* Set state */
     ffstate->status = FFSMGR_STATUS_USED;
@@ -77,8 +76,7 @@ fftrail_txnupdate_serial_retry:
     }
 
     /* Get buffer info and set write position */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     tmpuptr = ffstate->recptr = fbuffer->data + fbuffer->start;
 
     /* Calculate length, compute total length of this record */
@@ -130,12 +128,10 @@ fftrail_txnupdate_serial_retry:
         }
 
         /* colid(2) */
-        fftrail_data_data2buffer(
-            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&colid);
+        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&colid);
 
         /* flag(2) */
-        fftrail_data_data2buffer(
-            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&flag);
+        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&flag);
 
         /* (length 4) */
         fftrail_data_data2buffer(&txndata->header,
@@ -184,12 +180,10 @@ fftrail_txnupdate_serial_retry:
         }
 
         /* colid(2) */
-        fftrail_data_data2buffer(
-            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&colid);
+        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&colid);
 
         /* flag(2) */
-        fftrail_data_data2buffer(
-            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&flag);
+        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&flag);
 
         /* (length 4) */
         fftrail_data_data2buffer(&txndata->header,
@@ -253,24 +247,23 @@ fftrail_txnupdate_serial_retry:
 /* Deserialize update info */
 bool fftrail_txnupdate_deserial(void** data, void* state)
 {
-    bool   found = false;
-    uint8  tokenid = 0;   /* token id */
-    uint8  tokeninfo = 0; /* token details */
-    uint32 recoffset = 0;
-    uint32 dataoffset =
-        0; /* Offset based on data, used to calculate remaining space in current record data */
-    uint16                           subtype = FF_DATA_TYPE_NOP;
-    uint16                           colid;
-    uint16                           flag = 0;
-    uint32                           mlen = 0;
-    uint32                           tokenlen = 0; /* token length */
-    uint64                           totallen = 0;
+    bool          found = false;
+    uint8         tokenid = 0;   /* token id */
+    uint8         tokeninfo = 0; /* token details */
+    uint32        recoffset = 0;
+    uint32        dataoffset = 0; /* Offset based on data, used to calculate remaining space in current record data */
+    uint16        subtype = FF_DATA_TYPE_NOP;
+    uint16        colid;
+    uint16        flag = 0;
+    uint32        mlen = 0;
+    uint32        tokenlen = 0; /* token length */
+    uint64        totallen = 0;
 
-    uint8*                           uptr = NULL;
-    uint8*                           tokendata = NULL; /* token data area */
-    ff_txndata*                      txndata = NULL;
-    ffsmgr_state*                    ffstate = NULL;
-    txnstmt*                         rstmt = NULL;
+    uint8*        uptr = NULL;
+    uint8*        tokendata = NULL; /* token data area */
+    ff_txndata*   txndata = NULL;
+    ffsmgr_state* ffstate = NULL;
+    txnstmt*      rstmt = NULL;
     fftrail_privdata*                privdata = NULL;
     fftrail_table_deserialentry*     tbdeserialentry = NULL;
     fftrail_database_deserialentry*  dbdeserialentry = NULL;

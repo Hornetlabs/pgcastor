@@ -117,8 +117,8 @@ static bool xmanager_metric_parsepacket(xmanager_metric* xmetric, int index)
                 rmemcpy1(&msgtype, 0, uptr, 4);
                 msgtype = r_ntoh32(msgtype);
                 snprintf(errormsg, 512, "unknown error happend");
-                if (false == xmanager_metricmsg_assembleerrormsg(
-                                 xmetric, npoolentry->wpackets, msgtype, ERROR_OOM, errormsg))
+                if (false ==
+                    xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, msgtype, ERROR_OOM, errormsg))
                 {
                     elog(RLOG_WARNING, "metric parse packet error");
                     return false;
@@ -153,8 +153,7 @@ static bool xmanager_metric_parsepacket(xmanager_metric* xmetric, int index)
  *  4、Delete matched msg from asyncmsgs->msg
  *  5、Check if asyncmsg is empty, if empty reorganize packets
  */
-static bool xmanager_metric_newnodepre(xmanager_metric*        xmetric,
-                                       xmanager_metricregnode* xmetricregnode)
+static bool xmanager_metric_newnodepre(xmanager_metric* xmetric, xmanager_metricregnode* xmetricregnode)
 {
     bool                       found = false;
     dlistnode*                 dlnodemsg = NULL;
@@ -195,8 +194,7 @@ static bool xmanager_metric_newnodepre(xmanager_metric*        xmetric,
      *    XMANAGER_MSG_STOPCMD
      *    onlinerefresh
      */
-    if (XMANAGER_MSG_INITCMD != xmetricregnode->msgtype &&
-        XMANAGER_MSG_STARTCMD != xmetricregnode->msgtype &&
+    if (XMANAGER_MSG_INITCMD != xmetricregnode->msgtype && XMANAGER_MSG_STARTCMD != xmetricregnode->msgtype &&
         XMANAGER_MSG_STOPCMD != xmetricregnode->msgtype)
     {
         return true;
@@ -211,8 +209,7 @@ static bool xmanager_metric_newnodepre(xmanager_metric*        xmetric,
         }
 
         xmetricxscscinode = (xmanager_metricxscscinode*)xmetricfd2node->metricnode;
-        if (NULL == xmetricxscscinode->asyncmsgs ||
-            true == dlist_isnull(xmetricxscscinode->asyncmsgs->msgs))
+        if (NULL == xmetricxscscinode->asyncmsgs || true == dlist_isnull(xmetricxscscinode->asyncmsgs->msgs))
         {
             continue;
         }
@@ -260,12 +257,10 @@ static bool xmanager_metric_newnodepre(xmanager_metric*        xmetric,
             }
 
             /* Delete dlnodemsg from messages */
-            xmetricxscscinode->asyncmsgs->msgs =
-                dlist_delete(xmetricxscscinode->asyncmsgs->msgs, dlnodemsg, NULL);
+            xmetricxscscinode->asyncmsgs->msgs = dlist_delete(xmetricxscscinode->asyncmsgs->msgs, dlnodemsg, NULL);
 
             /* Add asyncmsg to results */
-            xmetricxscscinode->asyncmsgs->results =
-                dlist_put(xmetricxscscinode->asyncmsgs->results, asyncmsg);
+            xmetricxscscinode->asyncmsgs->results = dlist_put(xmetricxscscinode->asyncmsgs->results, asyncmsg);
             break;
         }
     }
@@ -304,9 +299,10 @@ static bool xmanager_metric_newnodepre(xmanager_metric*        xmetric,
     }
 
     /* Message reorganization, init/start error/stop messages need to reorganize return content */
-    if (false ==
-        xmanager_metricmsg_assembleresponse(
-            xmetric, npoolentry, xmetricregnode->msgtype, xmetricxscscinode->asyncmsgs->results))
+    if (false == xmanager_metricmsg_assembleresponse(xmetric,
+                                                     npoolentry,
+                                                     xmetricregnode->msgtype,
+                                                     xmetricxscscinode->asyncmsgs->results))
     {
         elog(RLOG_WARNING, "assemble response to xscsci error, close xscsci connect");
 
@@ -320,8 +316,7 @@ static bool xmanager_metric_newnodepre(xmanager_metric*        xmetric,
                                                              xmanager_metricnode_destroyvoid);
 
         /* Remove data from fd mapping list */
-        xmetric->fd2metricnodes =
-            dlist_delete(xmetric->fd2metricnodes, dlnode, xmanager_metricfd2node_destroyvoid);
+        xmetric->fd2metricnodes = dlist_delete(xmetric->fd2metricnodes, dlnode, xmanager_metricfd2node_destroyvoid);
         return true;
     }
 
@@ -337,8 +332,7 @@ static bool xmanager_metric_newnodepre(xmanager_metric*        xmetric,
  *  xscsci
  *  xmanager
  */
-static void xmanager_metric_removenode(xmanager_metric*        xmetric,
-                                       xmanager_metricfd2node* xmetricfd2node)
+static void xmanager_metric_removenode(xmanager_metric* xmetric, xmanager_metricfd2node* xmetricfd2node)
 {
     xmanager_metricnode* xmetricnode = NULL;
 
@@ -350,8 +344,7 @@ static void xmanager_metric_removenode(xmanager_metric*        xmetric,
                                                   xmanager_metricfd2node_destroyvoid);
 
     /* xscsci and xmanager both need to be removed from xmanager */
-    if (XMANAGER_METRICNODETYPE_XSCSCI != xmetricnode->type &&
-        XMANAGER_METRICNODETYPE_MANAGER != xmetricnode->type)
+    if (XMANAGER_METRICNODETYPE_XSCSCI != xmetricnode->type && XMANAGER_METRICNODETYPE_MANAGER != xmetricnode->type)
     {
         return;
     }
@@ -429,8 +422,10 @@ static void xmanager_metric_asyncmsgtimeout(xmanager_metric* xmetric)
         xmetricxscscinode->asyncmsgs->msgs = NULL;
 
         /* Assemble info */
-        xmanager_metricmsg_assembleresponse(
-            xmetric, npoolentry, xmetricasyncmsg->msgtype, xmetricxscscinode->asyncmsgs->results);
+        xmanager_metricmsg_assembleresponse(xmetric,
+                                            npoolentry,
+                                            xmetricasyncmsg->msgtype,
+                                            xmetricxscscinode->asyncmsgs->results);
 
         /* Clean up results */
         dlist_free(xmetricxscscinode->asyncmsgs->results, xmanager_metricasyncmsg_destroyvoid);
@@ -463,8 +458,7 @@ void* xmanager_metric_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thrnode_ptr->stat)
     {
-        elog(RLOG_WARNING,
-             "xmanager metric stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "xmanager metric stat exception, expected state is THRNODE_STAT_STARTING");
         thrnode_ptr->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -515,8 +509,7 @@ void* xmanager_metric_main(void* args)
             xmanager_metricregnode_destroy(xmetricregnode);
 
             /* Check if exists in metricnodes */
-            metricnode =
-                dlist_isexist(xmetric->metricnodes, fd2node->metricnode, xmanager_metricnode_cmp);
+            metricnode = dlist_isexist(xmetric->metricnodes, fd2node->metricnode, xmanager_metricnode_cmp);
             if (NULL != metricnode)
             {
                 if (NULL == metricnode->data)
@@ -583,8 +576,7 @@ void* xmanager_metric_main(void* args)
             /*-----------------------add entry to pool end-----------------------------*/
 
             /* Add identity verification send packet */
-            if (false ==
-                xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_IDENTITYCMD))
+            if (false == xmanager_metricmsg_assemblecmdresult(xmetric, npoolentry, XMANAGER_MSG_IDENTITYCMD))
             {
                 elog(RLOG_WARNING, "xmanager metric add entry to net pool error");
                 xmanager_metric_removenode(xmetric, fd2node);
@@ -615,9 +607,8 @@ void* xmanager_metric_main(void* args)
              * 1. Get and set offset
              * 2. Remove from active list
              */
-            fd2node = dlist_get(xmetric->fd2metricnodes,
-                                (void*)((uintptr_t)errorfds[index]),
-                                xmanager_metricfd2node_cmp);
+            fd2node =
+                dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)errorfds[index]), xmanager_metricfd2node_cmp);
             xmanager_metric_removenode(xmetric, fd2node);
 
             /* Delete the fd */
@@ -636,9 +627,8 @@ void* xmanager_metric_main(void* args)
             npoolentry = xmetric->npool->fds[index];
             if (NETPOOLENTRY_STAT_CLOSEUTILWPACKETNULL == npoolentry->stat)
             {
-                fd2node = dlist_get(xmetric->fd2metricnodes,
-                                    (void*)((uintptr_t)npoolentry->fd),
-                                    xmanager_metricfd2node_cmp);
+                fd2node =
+                    dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
                 xmanager_metric_removenode(xmetric, fd2node);
 
                 /* Delete the fd */
@@ -656,9 +646,8 @@ void* xmanager_metric_main(void* args)
             {
                 /* Error processing read packet, close connection and release resources */
                 elog(RLOG_WARNING, "xmanager metric parse packet error");
-                fd2node = dlist_get(xmetric->fd2metricnodes,
-                                    (void*)((uintptr_t)npoolentry->fd),
-                                    xmanager_metricfd2node_cmp);
+                fd2node =
+                    dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
                 xmanager_metric_removenode(xmetric, fd2node);
 
                 /* Delete the fd */

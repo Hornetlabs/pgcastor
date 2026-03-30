@@ -42,38 +42,29 @@ typedef struct FFTRAIL_DATATYPEMGR
 } fftrail_datatypemgr;
 
 static fftrail_datatypemgr m_datatypemgr[] = {
-    {FF_DATA_TYPE_NOP, "NOP", NULL, NULL},
-    {FF_DATA_TYPE_DBMETADATA, "DBMETADATA", fftrail_dbmetadata_serial, fftrail_dbmetadata_deserial},
-    {FF_DATA_TYPE_TBMETADATA, "TBLEMETADATA", NULL, fftrail_tbmetadata_deserial},
-    {FF_DATA_TYPE_TXN, "TXNDATA", fftrail_txn_serial, NULL},
-    {FF_DATA_TYPE_DML_INSERT, "TXN INSERT", NULL, fftrail_txninsert_deserial},
-    {FF_DATA_TYPE_DML_UPDATE, "TXN UPDATE", NULL, fftrail_txnupdate_deserial},
-    {FF_DATA_TYPE_DML_DELETE, "TXN DELETE", NULL, fftrail_txndelete_deserial},
-    {FF_DATA_TYPE_DDL_STMT, "TXN DDL STMT", NULL, fftrail_txnddl_deserial},
-    {FF_DATA_TYPE_DDL_STRUCT, "TXN DDL STRUCT", NULL, NULL},
-    {FF_DATA_TYPE_REC_CONTRECORD, "TXN CONTRECORD", NULL, NULL},
-    {FF_DATA_TYPE_DML_MULTIINSERT, "TXN MULTIINSERT", NULL, fftrail_txnmultiinsert_deserial},
-    {FF_DATA_TYPE_TXNCOMMIT, "TXN COMMIT", NULL, fftrail_txncommit_deserial},
-    {FF_DATA_TYPE_REFRESH, "TXN REFRESH", NULL, fftrail_txnrefresh_deserial},
-    {FF_DATA_TYPE_TXNBEGIN, "TXN BEGIN", NULL, NULL},
-    {FF_DATA_TYPE_ONLINE_REFRESH_BEGIN,
-     "TXN ONLINE REFRESH BEGIN",
-     NULL,
-     fftrail_txnonlinerefresh_begin_deserial},
-    {FF_DATA_TYPE_ONLINE_REFRESH_END,
-     "TXN ONLINE REFRESH END",
-     NULL,
-     fftrail_txnonlinerefresh_end_deserial},
+    {FF_DATA_TYPE_NOP,                          "NOP",                       NULL,                      NULL                                    },
+    {FF_DATA_TYPE_DBMETADATA,                   "DBMETADATA",                fftrail_dbmetadata_serial, fftrail_dbmetadata_deserial             },
+    {FF_DATA_TYPE_TBMETADATA,                   "TBLEMETADATA",              NULL,                      fftrail_tbmetadata_deserial             },
+    {FF_DATA_TYPE_TXN,                          "TXNDATA",                   fftrail_txn_serial,        NULL                                    },
+    {FF_DATA_TYPE_DML_INSERT,                   "TXN INSERT",                NULL,                      fftrail_txninsert_deserial              },
+    {FF_DATA_TYPE_DML_UPDATE,                   "TXN UPDATE",                NULL,                      fftrail_txnupdate_deserial              },
+    {FF_DATA_TYPE_DML_DELETE,                   "TXN DELETE",                NULL,                      fftrail_txndelete_deserial              },
+    {FF_DATA_TYPE_DDL_STMT,                     "TXN DDL STMT",              NULL,                      fftrail_txnddl_deserial                 },
+    {FF_DATA_TYPE_DDL_STRUCT,                   "TXN DDL STRUCT",            NULL,                      NULL                                    },
+    {FF_DATA_TYPE_REC_CONTRECORD,               "TXN CONTRECORD",            NULL,                      NULL                                    },
+    {FF_DATA_TYPE_DML_MULTIINSERT,              "TXN MULTIINSERT",           NULL,                      fftrail_txnmultiinsert_deserial         },
+    {FF_DATA_TYPE_TXNCOMMIT,                    "TXN COMMIT",                NULL,                      fftrail_txncommit_deserial              },
+    {FF_DATA_TYPE_REFRESH,                      "TXN REFRESH",               NULL,                      fftrail_txnrefresh_deserial             },
+    {FF_DATA_TYPE_TXNBEGIN,                     "TXN BEGIN",                 NULL,                      NULL                                    },
+    {FF_DATA_TYPE_ONLINE_REFRESH_BEGIN,         "TXN ONLINE REFRESH BEGIN",  NULL,                      fftrail_txnonlinerefresh_begin_deserial },
+    {FF_DATA_TYPE_ONLINE_REFRESH_END,           "TXN ONLINE REFRESH END",    NULL,                      fftrail_txnonlinerefresh_end_deserial   },
     {FF_DATA_TYPE_ONLINE_REFRESH_INCREMENT_END,
-     "TXN ONLINE REFRESH END",
-     NULL,
-     fftrail_txnonlinerefresh_increment_end_deserial},
-    {FF_DATA_TYPE_BIGTXN_BEGIN, "TXN BIGTRANSACTION BEGIN", NULL, fftrail_txnbigtxn_begin_deserial},
-    {FF_DATA_TYPE_BIGTXN_END, "TXN BIGTRANSACTION END", NULL, fftrail_txnbigtxn_end_deserial},
-    {FF_DATA_TYPE_ONLINEREFRESH_ABANDON,
-     "TXN ONLINEREFRESH ABANDON",
-     NULL,
-     fftrail_txnonlinerefreshabandon_deserial}};
+     "TXN ONLINE REFRESH END",                                               NULL,
+     fftrail_txnonlinerefresh_increment_end_deserial                                                                                            },
+    {FF_DATA_TYPE_BIGTXN_BEGIN,                 "TXN BIGTRANSACTION BEGIN",  NULL,                      fftrail_txnbigtxn_begin_deserial        },
+    {FF_DATA_TYPE_BIGTXN_END,                   "TXN BIGTRANSACTION END",    NULL,                      fftrail_txnbigtxn_end_deserial          },
+    {FF_DATA_TYPE_ONLINEREFRESH_ABANDON,        "TXN ONLINEREFRESH ABANDON", NULL,                      fftrail_txnonlinerefreshabandon_deserial}
+};
 
 static int m_datatypmgrcnt = (sizeof(m_datatypemgr) / sizeof(fftrail_datatypemgr));
 
@@ -737,10 +728,7 @@ bool fftrail_data_hdrdeserail(ff_data* ffdatahdr, ffsmgr_state* ffstate)
     {
         /* make gcc happy */
         uptr = tokendata;
-        elog(RLOG_ERROR,
-             "need type %u, bu current type:%u",
-             TRAIL_TOKENDATAHDR_ID_DBMDNO,
-             FFTRAIL_INFOTYPE_TOKEN);
+        elog(RLOG_ERROR, "need type %u, bu current type:%u", TRAIL_TOKENDATAHDR_ID_DBMDNO, FFTRAIL_INFOTYPE_TOKEN);
     }
     ffdatahdr->dbmdno = CONCAT(get, 16bit)(&tokendata);
 

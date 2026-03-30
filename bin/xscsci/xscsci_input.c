@@ -21,18 +21,17 @@
 static int  m_historylinesadded = 0;
 static char m_rlhistory[MAXPGPATH] = {0};
 
-#define BEGIN_ITERATE_HISTORY(VARNAME)                                  \
-    do                                                                  \
-    {                                                                   \
-        HIST_ENTRY* VARNAME;                                            \
-        bool        use_prev_;                                          \
-                                                                        \
-        history_set_pos(0);                                             \
-        use_prev_ = (previous_history() != NULL);                       \
-        history_set_pos(0);                                             \
-        for (VARNAME = current_history(); VARNAME != NULL;              \
-             VARNAME = use_prev_ ? previous_history() : next_history()) \
-        {                                                               \
+#define BEGIN_ITERATE_HISTORY(VARNAME)                                                                                \
+    do                                                                                                                \
+    {                                                                                                                 \
+        HIST_ENTRY* VARNAME;                                                                                          \
+        bool        use_prev_;                                                                                        \
+                                                                                                                      \
+        history_set_pos(0);                                                                                           \
+        use_prev_ = (previous_history() != NULL);                                                                     \
+        history_set_pos(0);                                                                                           \
+        for (VARNAME = current_history(); VARNAME != NULL; VARNAME = use_prev_ ? previous_history() : next_history()) \
+        {                                                                                                             \
             (void)0
 
 #define END_ITERATE_HISTORY() \

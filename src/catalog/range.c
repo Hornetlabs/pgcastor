@@ -28,8 +28,7 @@ void range_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(Oid);
     hash_ctl.entrysize = sizeof(catalog_range_value);
-    sysdicts->by_range =
-        hash_create("catalog_sysdicts_range", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_range = hash_create("catalog_sysdicts_range", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     res = conn_exec(conn, query);
     if (NULL == res)
@@ -273,8 +272,7 @@ void range_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
             }
         }
         catalogInHash->rngtypid = newcatalog->rngtypid;
-        catalogInHash->range =
-            (pg_sysdict_Form_pg_range)rmalloc1(sizeof(pg_parser_sysdict_pgrange));
+        catalogInHash->range = (pg_sysdict_Form_pg_range)rmalloc1(sizeof(pg_parser_sysdict_pgrange));
         if (NULL == catalogInHash->range)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
@@ -305,8 +303,7 @@ void range_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
         }
         rfree(catalogInHash->range);
 
-        catalogInHash->range =
-            (pg_sysdict_Form_pg_range)rmalloc1(sizeof(pg_parser_sysdict_pgrange));
+        catalogInHash->range = (pg_sysdict_Form_pg_range)rmalloc1(sizeof(pg_parser_sysdict_pgrange));
         if (NULL == catalogInHash->range)
         {
             elog(RLOG_ERROR, "out of memory, %s", strerror(errno));

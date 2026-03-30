@@ -159,8 +159,7 @@ static void increment_integrate_loadtrailstart_set(void* privdata, uint64 loadtr
 
     if (NULL == incintegrate->integratestate)
     {
-        elog(RLOG_ERROR,
-             "integrate metric loadtrailstart set exception, incintegrate point is NULL");
+        elog(RLOG_ERROR, "integrate metric loadtrailstart set exception, incintegrate point is NULL");
     }
 
     incintegrate->integratestate->loadtrailstart = loadtrailstart;
@@ -181,8 +180,7 @@ static void increment_integrate_loadtimestamp_set(void* privdata, TimestampTz lo
 
     if (NULL == incintegrate->integratestate)
     {
-        elog(RLOG_ERROR,
-             "integrate metric loadtimestamp set exception, incintegrate point is NULL");
+        elog(RLOG_ERROR, "integrate metric loadtimestamp set exception, incintegrate point is NULL");
     }
 
     if (0 != loadtimestamp)
@@ -248,8 +246,7 @@ static void increment_integrate_synctrailstart_set(void* privdata, uint64 synctr
 
     if (NULL == incintegrate->integratestate)
     {
-        elog(RLOG_ERROR,
-             "integrate metric synctrailstart set exception, incintegrate point is NULL");
+        elog(RLOG_ERROR, "integrate metric synctrailstart set exception, incintegrate point is NULL");
     }
 
     incintegrate->integratestate->synctrailstart = synctrailstart;
@@ -270,8 +267,7 @@ static void increment_integrate_synctimestamp_set(void* privdata, TimestampTz sy
 
     if (NULL == incintegrate->integratestate)
     {
-        elog(RLOG_ERROR,
-             "integrate metric synctrailstart set exception, incintegrate point is NULL");
+        elog(RLOG_ERROR, "integrate metric synctrailstart set exception, incintegrate point is NULL");
     }
 
     if (0 != synctimestamp)
@@ -388,9 +384,7 @@ static bool increment_integrate_isbigtxnsigterm(void* privdata, FullTransactionI
 }
 
 /* syncwork sets splittrail fileid and working state */
-static void increment_integrate_splittrail_fileid_emitoffset_set(void*  privdata,
-                                                                 uint64 fileid,
-                                                                 uint64 emitoffset)
+static void increment_integrate_splittrail_fileid_emitoffset_set(void* privdata, uint64 fileid, uint64 emitoffset)
 {
     increment_integrate* incintegrate = NULL;
     if (NULL == privdata)
@@ -413,8 +407,7 @@ static void increment_integrate_splittrail_fileid_emitoffset_set(void*  privdata
     /* Reset read start point and apply start point */
     increment_integratesplittrail_emit_set(incintegrate->splittrailctx, fileid, emitoffset);
     incintegrate->splittrailctx->filter = true;
-    increment_integratesplittrail_state_set(incintegrate->splittrailctx,
-                                            INTEGRATE_STATUS_SPLIT_WORKING);
+    increment_integratesplittrail_state_set(incintegrate->splittrailctx, INTEGRATE_STATUS_SPLIT_WORKING);
     elog(RLOG_INFO, "splittrail_fileid_set, trailno:%lu, emitoffset:%lu", fileid, emitoffset);
     return;
 }
@@ -447,8 +440,7 @@ static bool increment_integrate_isonlinerefreshdone(void* privdata, void* no)
     onlinerefresh_integrate* onlinerefresh = NULL;
     if (NULL == privdata)
     {
-        elog(RLOG_ERROR,
-             "integrate sync isonlinerefreshdone fileid exception, privdata point is NULL");
+        elog(RLOG_ERROR, "integrate sync isonlinerefreshdone fileid exception, privdata point is NULL");
     }
 
     incintegrate = (increment_integrate*)privdata;
@@ -512,8 +504,7 @@ static bool increment_integrate_isonlinerefresh_refreshdone(void* privdata, void
     onlinerefresh_integrate* onlinerefresh = NULL;
     if (NULL == privdata)
     {
-        elog(RLOG_ERROR,
-             "integrate sync isonlinerefreshdone fileid exception, privdata point is NULL");
+        elog(RLOG_ERROR, "integrate sync isonlinerefreshdone fileid exception, privdata point is NULL");
     }
 
     incintegrate = (increment_integrate*)privdata;
@@ -608,10 +599,8 @@ increment_integrate* increment_integrate_init(void)
     /*------------------loadrecords initialization begin-----------------------*/
     incintegrate->splittrailctx->privdata = (void*)incintegrate;
     incintegrate->splittrailctx->recordscache = incintegrate->recordscache;
-    incintegrate->splittrailctx->callback.setmetricloadtrailno =
-        increment_integrate_loadtrailno_set;
-    incintegrate->splittrailctx->callback.setmetricloadtrailstart =
-        increment_integrate_loadtrailstart_set;
+    incintegrate->splittrailctx->callback.setmetricloadtrailno = increment_integrate_loadtrailno_set;
+    incintegrate->splittrailctx->callback.setmetricloadtrailstart = increment_integrate_loadtrailstart_set;
 
     /*------------------loadrecords initialization   end-----------------------*/
 
@@ -620,11 +609,9 @@ increment_integrate* increment_integrate_init(void)
     incintegrate->decodingctx->recordscache = incintegrate->recordscache;
     incintegrate->decodingctx->parsertrail.parser2txn = incintegrate->parser2rebuild;
     incintegrate->decodingctx->callback.integratestate_addrefresh = increment_integrate_addrefresh;
-    incintegrate->decodingctx->callback.integratestate_isrefreshdown =
-        increment_integrate_isrefreshdown;
+    incintegrate->decodingctx->callback.integratestate_isrefreshdown = increment_integrate_isrefreshdown;
     incintegrate->decodingctx->callback.setmetricloadlsn = increment_integrate_loadlsn_set;
-    incintegrate->decodingctx->callback.setmetricloadtimestamp =
-        increment_integrate_loadtimestamp_set;
+    incintegrate->decodingctx->callback.setmetricloadtimestamp = increment_integrate_loadtimestamp_set;
 
     /*------------------parser initialization   end----------------------------*/
 
@@ -633,8 +620,7 @@ increment_integrate* increment_integrate_init(void)
     incintegrate->rebuild->parser2rebuild = incintegrate->parser2rebuild;
     incintegrate->rebuild->rebuild2sync = incintegrate->rebuild2sync;
     incintegrate->rebuild->callback.isonlinerefreshdone = increment_integrate_isonlinerefreshdone;
-    incintegrate->rebuild->callback.isolrrefreshdone =
-        increment_integrate_isonlinerefresh_refreshdone;
+    incintegrate->rebuild->callback.isolrrefreshdone = increment_integrate_isonlinerefresh_refreshdone;
     incintegrate->rebuild->callback.setonlinerefreshfree = increment_integrate_setonlinerefreshfree;
     incintegrate->rebuild->callback.isrefreshdown = increment_integrate_isrefreshdown;
     incintegrate->rebuild->callback.isbigtxndown = increment_integrate_isbigtxndone;
@@ -651,16 +637,11 @@ increment_integrate* increment_integrate_init(void)
     incintegrate->syncworkstate->callback.splittrail_fileid_emitoffse_set =
         increment_integrate_splittrail_fileid_emitoffset_set;
     incintegrate->syncworkstate->callback.setmetricsynclsn = increment_integrate_synclsn_set;
-    incintegrate->syncworkstate->callback.setmetricsynctrailno =
-        increment_integrate_synctrailno_set;
-    incintegrate->syncworkstate->callback.setmetricsynctrailstart =
-        increment_integrate_synctrailstart_set;
-    incintegrate->syncworkstate->callback.setmetricsynctimestamp =
-        increment_integrate_synctimestamp_set;
-    incintegrate->syncworkstate->callback.integratestate_isrefreshdown =
-        increment_integrate_isrefreshdown;
-    incintegrate->syncworkstate->callback.integratestate_rebuildfilter_set =
-        integrate_rebuildfilter_set;
+    incintegrate->syncworkstate->callback.setmetricsynctrailno = increment_integrate_synctrailno_set;
+    incintegrate->syncworkstate->callback.setmetricsynctrailstart = increment_integrate_synctrailstart_set;
+    incintegrate->syncworkstate->callback.setmetricsynctimestamp = increment_integrate_synctimestamp_set;
+    incintegrate->syncworkstate->callback.integratestate_isrefreshdown = increment_integrate_isrefreshdown;
+    incintegrate->syncworkstate->callback.integratestate_rebuildfilter_set = integrate_rebuildfilter_set;
 
     /*------------------sync initialization   end------------------------------*/
     return incintegrate;
@@ -877,8 +858,7 @@ bool increment_integrate_tryjoinononlinerefresh(increment_integrate* incintegrat
         {
             continue;
         }
-        incintegrate->onlinerefresh =
-            dlist_delete(incintegrate->onlinerefresh, dlnode, onlinerefresh_integrate_free);
+        incintegrate->onlinerefresh = dlist_delete(incintegrate->onlinerefresh, dlnode, onlinerefresh_integrate_free);
     }
 
     osal_thread_unlock(&incintegrate->onlinerefreshlock);
@@ -904,8 +884,8 @@ bool increment_integrate_onlinerefreshload(increment_integrate* incintegrate)
 
     osal_thread_lock(&incintegrate->onlinerefreshlock);
     /* Build onlinerefresh management thread node based on persists */
-    if (false == onlinerefresh_integrate_persist2onlinerefreshmgr(
-                     incintegrate->rebuild->olpersist, (void**)&incintegrate->onlinerefresh))
+    if (false == onlinerefresh_integrate_persist2onlinerefreshmgr(incintegrate->rebuild->olpersist,
+                                                                  (void**)&incintegrate->onlinerefresh))
     {
         osal_thread_unlock(&incintegrate->onlinerefreshlock);
         return false;
@@ -925,14 +905,14 @@ bool increment_integrate_onlinerefreshload(increment_integrate* incintegrate)
         refreshtbs = refresh_table_syncstats_tablesyncing2tables(olrintegrate->tablesyncstats);
 
         /* Create onlinerefresh filter dataset */
-        onlinerefresh_integratefilterdataset_add(
-            incintegrate->rebuild->honlinerefreshfilterdataset, refreshtbs, olrintegrate->txid);
+        onlinerefresh_integratefilterdataset_add(incintegrate->rebuild->honlinerefreshfilterdataset,
+                                                 refreshtbs,
+                                                 olrintegrate->txid);
         datasetnode = onlinerefresh_integratedatasetnode_init();
         onlinerefresh_integratedatasetnode_no_set(datasetnode, olrintegrate->no.data);
         onlinerefresh_integratedatasetnode_txid_set(datasetnode, olrintegrate->txid);
         onlinerefresh_integratedatasetnode_refreshtables_set(datasetnode, refreshtbs);
-        onlinerefresh_integratedataset_add(incintegrate->rebuild->onlinerefreshdataset,
-                                           datasetnode);
+        onlinerefresh_integratedataset_add(incintegrate->rebuild->onlinerefreshdataset, datasetnode);
     }
 
     osal_thread_unlock(&incintegrate->onlinerefreshlock);
@@ -1022,8 +1002,7 @@ bool increment_integrate_tryjoinonbigtxn(increment_integrate* incintegrate)
                  bigtxnintegrate->xid);
         osal_remove_dir(path);
 
-        incintegrate->bigtxnmgr =
-            dlist_delete(incintegrate->bigtxnmgr, dlnode, bigtxn_integratemanager_free);
+        incintegrate->bigtxnmgr = dlist_delete(incintegrate->bigtxnmgr, dlnode, bigtxn_integratemanager_free);
     }
 
     osal_thread_unlock(&incintegrate->bigtxnlock);

@@ -21,6 +21,7 @@
 #include "xmanager/xmanager_metricintegratenode.h"
 #include "xmanager/xmanager_metric.h"
 #include "xmanager/xmanager_metricprogressnode.h"
+
 /* Initialize node */
 xmanager_metricnode* xmanager_metricprogressnode_init(void)
 {
@@ -57,10 +58,7 @@ void xmanager_metricprogressnode_destroy(xmanager_metricnode* metricnode)
 }
 
 /* Serialize progress node */
-bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
-                                        uint8**              blk,
-                                        int*                 blksize,
-                                        int*                 blkstart)
+bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode, uint8** blk, int* blksize, int* blkstart)
 {
     bool                         bnew = false;
     int                          len = 0;
@@ -306,8 +304,7 @@ xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkst
         *blkstart += 4;
         if (0 == ivalue)
         {
-            xmetricprogressnode->progressjop =
-                dlist_put(xmetricprogressnode->progressjop, metricnode);
+            xmetricprogressnode->progressjop = dlist_put(xmetricprogressnode->progressjop, metricnode);
             metricnode = NULL;
             continue;
         }
@@ -332,9 +329,7 @@ xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkst
 }
 
 /* Get key-value pairs from configuration file */
-static bool xmanager_metricprogressnode_getdatafromcfgfile(const char* config_file,
-                                                           char*       key,
-                                                           char*       data)
+static bool xmanager_metricprogressnode_getdatafromcfgfile(const char* config_file, char* key, char* data)
 {
     FILE* fp = NULL;
     char  fline[1024];
@@ -458,8 +453,7 @@ static bool xmanager_metricprogressnode_getdatafromcfgfile(const char* config_fi
 
             if (true == quota)
             {
-                elog(RLOG_WARNING,
-                     "configuration data is incorrect, missing double quotation marks");
+                elog(RLOG_WARNING, "configuration data is incorrect, missing double quotation marks");
                 return false;
             }
         }
@@ -750,8 +744,7 @@ static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric*     xme
 }
 
 /* Assemble progress info */
-void* xmanager_metricmsg_assembleprogress(xmanager_metric*     xmetric,
-                                          xmanager_metricnode* pxmetricnode)
+void* xmanager_metricmsg_assembleprogress(xmanager_metric* xmetric, xmanager_metricnode* pxmetricnode)
 {
     dlistnode*                   dlnode = NULL;
     xmanager_metricnode*         pmetricnode = NULL;
@@ -778,9 +771,7 @@ void* xmanager_metricmsg_assembleprogress(xmanager_metric*     xmetric,
 
     if (NULL == pmetricnode)
     {
-        elog(RLOG_WARNING,
-             "not find valid information in progress %s ",
-             xmetricprogressnode->base.name);
+        elog(RLOG_WARNING, "not find valid information in progress %s ", xmetricprogressnode->base.name);
         return NULL;
     }
 
@@ -804,14 +795,11 @@ void* xmanager_metricmsg_assembleprogress(xmanager_metric*     xmetric,
 
     if (XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
     {
-        return xmanager_metricmsg_assembleprogresscapture(
-            xmetric, pmetricnode, xmetricprogressnode->progressjop);
+        return xmanager_metricmsg_assembleprogresscapture(xmetric, pmetricnode, xmetricprogressnode->progressjop);
     }
     else
     {
-        elog(RLOG_WARNING,
-             "find invalid information in progress %s ",
-             xmetricprogressnode->base.name);
+        elog(RLOG_WARNING, "find invalid information in progress %s ", xmetricprogressnode->base.name);
         return NULL;
     }
 }

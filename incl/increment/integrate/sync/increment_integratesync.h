@@ -9,8 +9,8 @@ typedef enum INCREMENT_INTEGRATESYNC_STATE
                                            when starting (to ensure previous transactions are
                                            completed)
                                          */
-    INCREMENT_INTEGRATESYNC_STATE_WORK /* sync gets transaction, working status, working status does
-                                          not start onlinerefresh */
+    INCREMENT_INTEGRATESYNC_STATE_WORK  /* sync gets transaction, working status, working status does
+                                           not start onlinerefresh */
 } increment_integratesync_state;
 
 typedef struct INCREMENT_INTEGRATESYNCSTATE_PRIVDATACALLBACK

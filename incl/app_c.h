@@ -242,18 +242,17 @@ typedef union RECPOS
  * lengthof
  *		Number of elements in an array.
  */
-#define lengthof(array) (sizeof(array) / sizeof((array)[0]))
+#define lengthof(array)          (sizeof(array) / sizeof((array)[0]))
 
-#define MAXIMUM_ALIGNOF 8
+#define MAXIMUM_ALIGNOF          8
 
-#define TYPEALIGN(ALIGNVAL, LEN) \
-    (((uintptr_t)(LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t)((ALIGNVAL) - 1)))
+#define TYPEALIGN(ALIGNVAL, LEN) (((uintptr_t)(LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t)((ALIGNVAL) - 1)))
 
-#define SHORTALIGN(LEN)  TYPEALIGN(ALIGNOF_SHORT, (LEN))
-#define INTALIGN(LEN)    TYPEALIGN(ALIGNOF_INT, (LEN))
-#define LONGALIGN(LEN)   TYPEALIGN(ALIGNOF_LONG, (LEN))
-#define DOUBLEALIGN(LEN) TYPEALIGN(ALIGNOF_DOUBLE, (LEN))
-#define MAXALIGN(LEN)    TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
+#define SHORTALIGN(LEN)          TYPEALIGN(ALIGNOF_SHORT, (LEN))
+#define INTALIGN(LEN)            TYPEALIGN(ALIGNOF_INT, (LEN))
+#define LONGALIGN(LEN)           TYPEALIGN(ALIGNOF_LONG, (LEN))
+#define DOUBLEALIGN(LEN)         TYPEALIGN(ALIGNOF_DOUBLE, (LEN))
+#define MAXALIGN(LEN)            TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
 /* MAXALIGN covers only built-in types, not buffers */
 #define BUFFERALIGN(LEN)              TYPEALIGN(ALIGNOF_BUFFER, (LEN))
 #define CACHELINEALIGN(LEN)           TYPEALIGN(PG_CACHE_LINE_SIZE, (LEN))
@@ -273,8 +272,7 @@ typedef union RECPOS
  * pointer or a length is aligned, but for the odd case that you need to
  * align something (potentially) wider, use TYPEALIGN64.
  */
-#define TYPEALIGN64(ALIGNVAL, LEN) \
-    (((uint64)(LEN) + ((ALIGNVAL) - 1)) & ~((uint64)((ALIGNVAL) - 1)))
+#define TYPEALIGN64(ALIGNVAL, LEN) (((uint64)(LEN) + ((ALIGNVAL) - 1)) & ~((uint64)((ALIGNVAL) - 1)))
 
 /* we don't currently need wider versions of the other ALIGN macros */
 #define MAXALIGN64(LEN) TYPEALIGN64(MAXIMUM_ALIGNOF, (LEN))
@@ -323,8 +321,7 @@ typedef union RECPOS
  *	Isn't CPP fun?
  */
 #define TrapMacro(condition, errorType) \
-    ((bool)(!(condition) ||             \
-            (ExceptionalCondition(CppAsString(condition), (errorType), __FILE__, __LINE__), 0)))
+    ((bool)(!(condition) || (ExceptionalCondition(CppAsString(condition), (errorType), __FILE__, __LINE__), 0)))
 
 #define Assert(condition)      Trap(!(condition), "FailedAssertion")
 
@@ -388,10 +385,9 @@ typedef union RECPOS
 #define CONCAT(x, y)              x##y
 
 /*-------------------align begin--------------------------------*/
-#define MAXIMUM_ALIGNOF 8
+#define MAXIMUM_ALIGNOF          8
 
-#define TYPEALIGN(ALIGNVAL, LEN) \
-    (((uintptr_t)(LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t)((ALIGNVAL) - 1)))
+#define TYPEALIGN(ALIGNVAL, LEN) (((uintptr_t)(LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t)((ALIGNVAL) - 1)))
 
 /* charsectionto */
 #define MAXALIGN(LEN) TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))

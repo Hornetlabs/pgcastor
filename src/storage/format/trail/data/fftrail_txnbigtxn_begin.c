@@ -47,8 +47,7 @@ bool fftrail_txnbigtxn_begin_serial(void* data, void* state)
     }
 
     /* Write bigtxn_begin to trail file */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     ffstate->recptr = fbuffer->data + fbuffer->start;
 
     /* Calculate length bigtxn xid 8 */
@@ -70,8 +69,7 @@ bool fftrail_txnbigtxn_begin_serial(void* data, void* state)
     fbuffer->start += hdrlen;
 
     /* bigtxn begin txid */
-    fftrail_data_data2buffer(
-        &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)xid);
+    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_BIGINT, 8, (uint8*)xid);
 
     /* Fill header info */
     if (FFSMGR_STATUS_SHIFTFILE == ffstate->status)

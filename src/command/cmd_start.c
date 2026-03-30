@@ -15,11 +15,12 @@ typedef struct RPOC2START
 
 /* capture startup processing */
 static proc2start m_typ2start[] = {
-    {PROC_TYPE_NOP, NULL, "proc nop unsupport start"},
-    {PROC_TYPE_CAPTURE, cmd_startcapture, "capture start error"},
-    {PROC_TYPE_INTEGRATE, cmd_startintegrate, "integrate start error"},
-    {PROC_TYPE_PGRECEIVEWAL, NULL, "pg receivelog start error"},
-    {PROC_TYPE_XMANAGER, cmd_startxmanager, "xmanager start error"}};
+    {PROC_TYPE_NOP,          NULL,               "proc nop unsupport start" },
+    {PROC_TYPE_CAPTURE,      cmd_startcapture,   "capture start error"      },
+    {PROC_TYPE_INTEGRATE,    cmd_startintegrate, "integrate start error"    },
+    {PROC_TYPE_PGRECEIVEWAL, NULL,               "pg receivelog start error"},
+    {PROC_TYPE_XMANAGER,     cmd_startxmanager,  "xmanager start error"     }
+};
 
 /* Start command */
 bool cmd_start(void* extra_config)

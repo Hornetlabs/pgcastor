@@ -60,46 +60,46 @@ typedef enum TXN_TYPE
 
 typedef struct TXN
 {
-    FullTransactionId xid;     /* transaction ID                   */
-                               /*
-                                * if no xid, the transaction has no content
-                                * currently used for:
-                                *  checkpoint parsed in parser thread that has no xid
-                                *
-                                */
-    bool              filter;  /*
-                                * flag to indicate whether this transaction should be filtered
-                                * true = filter, false = do not filter
-                                */
-    bool              commit;  /* transaction end indicator in big transactions */
-    uint32            curtlid; /* current timeline id */
-    uint16      flag; /* flags for transaction special handling (toast/ddl/bigtxn/onlinerefresh) */
-    txn_type    type; /* transaction type             */
-    int64       endtimestamp; /* transaction end timestamp */
-    uint64      segno;        /* file number for read/write */
-    uint64      stmtsize;
-    uint64      debugno;
-    recpos      start;
-    recpos      end;
-    recpos      redo;
-    recpos      restart;
-    recpos      confirm;
-    HTAB*       toast_hash; /* toast data cache                                   */
-    List*       sysdict;    /* system dictionary (struct: txn_sysdict)                     */
-    List*       sysdictHis; /* historical system dictionary (struct: catalogdata)  */
-    List*       stmts; /* statements written to relay thread cache on commit (struct: txnstmt) */
-    HTAB*       hsyncdataset; /*
-                               * handles the following scenario:
-                               *  1. begin;                           ---start a transaction
-                               *  2. create table sample(...)         ---matches addtablepattern
-                               *  3. insert into sample values(...)   ---table does not exist in global
-                               * hsyncdataset    so we need txn->hsyncdataset to handle this scenario
-                               *  4. commit
-                               */
-    HTAB*       oidmap;
-    struct TXN* prev;
-    struct TXN* next;
-    struct TXN* cachenext;
+    FullTransactionId xid;          /* transaction ID                   */
+                                    /*
+                                     * if no xid, the transaction has no content
+                                     * currently used for:
+                                     *  checkpoint parsed in parser thread that has no xid
+                                     *
+                                     */
+    bool              filter;       /*
+                                     * flag to indicate whether this transaction should be filtered
+                                     * true = filter, false = do not filter
+                                     */
+    bool              commit;       /* transaction end indicator in big transactions */
+    uint32            curtlid;      /* current timeline id */
+    uint16            flag;         /* flags for transaction special handling (toast/ddl/bigtxn/onlinerefresh) */
+    txn_type          type;         /* transaction type             */
+    int64             endtimestamp; /* transaction end timestamp */
+    uint64            segno;        /* file number for read/write */
+    uint64            stmtsize;
+    uint64            debugno;
+    recpos            start;
+    recpos            end;
+    recpos            redo;
+    recpos            restart;
+    recpos            confirm;
+    HTAB*             toast_hash;   /* toast data cache                                   */
+    List*             sysdict;      /* system dictionary (struct: txn_sysdict)                     */
+    List*             sysdictHis;   /* historical system dictionary (struct: catalogdata)  */
+    List*             stmts;        /* statements written to relay thread cache on commit (struct: txnstmt) */
+    HTAB*             hsyncdataset; /*
+                                     * handles the following scenario:
+                                     *  1. begin;                           ---start a transaction
+                                     *  2. create table sample(...)         ---matches addtablepattern
+                                     *  3. insert into sample values(...)   ---table does not exist in global
+                                     * hsyncdataset    so we need txn->hsyncdataset to handle this scenario
+                                     *  4. commit
+                                     */
+    HTAB*             oidmap;
+    struct TXN*       prev;
+    struct TXN*       next;
+    struct TXN*       cachenext;
 } txn;
 
 typedef struct TXN_DLIST

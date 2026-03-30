@@ -27,8 +27,7 @@ bool pg_parser_trans_rmgr_relmap_pre(pg_parser_XLogReaderState*    state,
             return false;
         }
 
-        pg_parser_mcxt_malloc(
-            RMGR_RELMAP_MCXT, (void**)&relmap_result, sizeof(pg_parser_translog_pre_relmap));
+        pg_parser_mcxt_malloc(RMGR_RELMAP_MCXT, (void**)&relmap_result, sizeof(pg_parser_translog_pre_relmap));
         if (newmap->num_mappings > 0)
         {
             pg_parser_mcxt_malloc(RMGR_RELMAP_MCXT,

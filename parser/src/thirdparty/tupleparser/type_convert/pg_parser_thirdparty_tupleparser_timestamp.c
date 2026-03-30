@@ -42,10 +42,9 @@
 #define INTERVAL_RANGE_MASK     (0x7FFF)
 #define INTERVAL_FULL_PRECISION (0xFFFF)
 #define INTERVAL_PRECISION_MASK (0xFFFF)
-#define INTERVAL_TYPMOD(p, r) \
-    ((((r) & INTERVAL_RANGE_MASK) << 16) | ((p) & INTERVAL_PRECISION_MASK))
-#define INTERVAL_PRECISION(t) ((t) & INTERVAL_PRECISION_MASK)
-#define INTERVAL_RANGE(t)     (((t) >> 16) & INTERVAL_RANGE_MASK)
+#define INTERVAL_TYPMOD(p, r)   ((((r) & INTERVAL_RANGE_MASK) << 16) | ((p) & INTERVAL_PRECISION_MASK))
+#define INTERVAL_PRECISION(t)   ((t) & INTERVAL_PRECISION_MASK)
+#define INTERVAL_RANGE(t)       (((t) >> 16) & INTERVAL_RANGE_MASK)
 
 /* TMODULO()
  * Like FMODULO(), but work on the timestamp datatype (now always int64_t).
@@ -73,8 +72,7 @@ union input_buffer
     struct time_tzhead tzhead;
 
     /* The entire buffer.  */
-    char buf[2 * sizeof(struct time_tzhead) + 2 * sizeof(struct pg_parser_time_state) +
-             4 * TIME_TZ_MAX_TIMES];
+    char buf[2 * sizeof(struct time_tzhead) + 2 * sizeof(struct pg_parser_time_state) + 4 * TIME_TZ_MAX_TIMES];
 };
 
 /* Local storage needed for 'tzloadbody'.  */
@@ -113,13 +111,12 @@ static const int32_t year_lengths[2] = {TIME_DAYSPERNYEAR, TIME_DAYSPERLYEAR};
 
 static const int32_t mon_lengths[2][TIME_MONSPERYEAR] = {
     {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
-    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
+    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
+};
 
-const char* const months[] = {
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", NULL};
+const char* const months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", NULL};
 
-const char* const days[] = {
-    "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", NULL};
+const char* const days[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", NULL};
 
 #define WILDABBR "   "
 static const char wildabbr[] = WILDABBR;
@@ -151,15 +148,9 @@ static bool typesequiv(const struct pg_parser_time_state* sp, int32_t a, int32_t
 
 static bool differ_by_repeat(const pg_parser_time_t t1, const pg_parser_time_t t0);
 
-bool tzparse(const char*                  name,
-             struct pg_parser_time_state* sp,
-             bool                         lastditch,
-             pg_parser_extraTypoutInfo*   info);
+bool tzparse(const char* name, struct pg_parser_time_state* sp, bool lastditch, pg_parser_extraTypoutInfo* info);
 
-static const char* getnum(const char*    strp,
-                          int32_t* const nump,
-                          const int32_t  min,
-                          const int32_t  max);
+static const char* getnum(const char* strp, int32_t* const nump, const int32_t min, const int32_t max);
 static const char* getsecs(const char* strp, int32_t* const secsp);
 static const char* getoffset(const char* strp, int32_t* const offsetp);
 static const char* getqzname(const char* strp, const int32_t delim);
@@ -174,9 +165,7 @@ void dt2time(Timestamp jd, int32_t* hour, int32_t* min, int32_t* sec, fsec_t* fs
 static struct pg_parser_tm* localsub(struct pg_parser_time_state const* sp,
                                      pg_parser_time_t const*            timep,
                                      struct pg_parser_tm* const         tmp);
-static struct pg_parser_tm* gmtsub(pg_parser_time_t const* timep,
-                                   int32_t                 offset,
-                                   struct pg_parser_tm*    tmp);
+static struct pg_parser_tm* gmtsub(pg_parser_time_t const* timep, int32_t offset, struct pg_parser_tm* tmp);
 static bool increment_overflow(int32_t* ip, int32_t j);
 static int32_t leaps_thru_end_of(const int32_t y);
 static int32_t leaps_thru_end_of_nonneg(int32_t y);
@@ -195,20 +184,17 @@ static int32_t interval2tm(Interval span, struct pg_parser_tm* tm, fsec_t* fsec)
 static int32_t dsinterval2tm(Interval span, struct pg_parser_tm* tm, fsec_t* fsec);
 static void EncodeInterval(struct pg_parser_tm* tm, fsec_t fsec, int32_t style, char* str);
 static char* AddISO8601IntPart(char* cp, int32_t value, char units);
-static char* AddPostgresIntPart(
-    char* cp, int32_t value, const char* units, bool* is_zero, bool* is_before);
+static char* AddPostgresIntPart(char* cp, int32_t value, const char* units, bool* is_zero, bool* is_before);
 static int32_t timetz2tm(TimeTzADT* time, struct pg_parser_tm* tm, fsec_t* fsec, int32_t* tzp);
 
-static char* AddVerboseIntPart(
-    char* cp, int32_t value, const char* units, bool* is_zero, bool* is_before);
+static char* AddVerboseIntPart(char* cp, int32_t value, const char* units, bool* is_zero, bool* is_before);
 
 static int64_t detzcode64(const char* const codep);
 
 static int64_t leapcorr(struct pg_parser_time_state const* sp, pg_parser_time_t t);
 static char* AppendTimestampSeconds(char* cp, struct pg_parser_tm* tm, fsec_t fsec);
 
-static void EncodeTimeOnly(
-    struct pg_parser_tm* tm, fsec_t fsec, bool print_tz, int32_t tz, int32_t style, char* str);
+static void EncodeTimeOnly(struct pg_parser_tm* tm, fsec_t fsec, bool print_tz, int32_t tz, int32_t style, char* str);
 
 /* timestamptz_out()
  * Convert a timestamp to external form.
@@ -419,8 +405,7 @@ static int32_t timetz2tm(TimeTzADT* time, struct pg_parser_tm* tm, fsec_t* fsec,
  * numeric time zone offset, style is the date style, str is where to write the
  * output.
  */
-static void EncodeTimeOnly(
-    struct pg_parser_tm* tm, fsec_t fsec, bool print_tz, int32_t tz, int32_t style, char* str)
+static void EncodeTimeOnly(struct pg_parser_tm* tm, fsec_t fsec, bool print_tz, int32_t tz, int32_t style, char* str)
 {
     str = numutils_ltostr_zeropad(str, tm->tm_hour, 2);
     *str++ = ':';
@@ -476,15 +461,12 @@ static void EncodeInterval(struct pg_parser_tm* tm, fsec_t fsec, int32_t style, 
             /* SQL Standard interval format */
         case INTSTYLE_SQL_STANDARD:
         {
-            bool has_negative =
-                year < 0 || mon < 0 || mday < 0 || hour < 0 || min < 0 || sec < 0 || fsec < 0;
-            bool has_positive =
-                year > 0 || mon > 0 || mday > 0 || hour > 0 || min > 0 || sec > 0 || fsec > 0;
+            bool has_negative = year < 0 || mon < 0 || mday < 0 || hour < 0 || min < 0 || sec < 0 || fsec < 0;
+            bool has_positive = year > 0 || mon > 0 || mday > 0 || hour > 0 || min > 0 || sec > 0 || fsec > 0;
             bool has_year_month = year != 0 || mon != 0;
             bool has_day_time = mday != 0 || hour != 0 || min != 0 || sec != 0 || fsec != 0;
             bool has_day = mday != 0;
-            bool sql_standard_value =
-                !(has_negative && has_positive) && !(has_year_month && has_day_time);
+            bool sql_standard_value = !(has_negative && has_positive) && !(has_year_month && has_day_time);
 
             /*
              * SQL Standard wants only 1 "<sign>" preceding the whole
@@ -555,8 +537,7 @@ static void EncodeInterval(struct pg_parser_tm* tm, fsec_t fsec, int32_t style, 
             /* ISO 8601 "time-intervals by duration only" */
         case INTSTYLE_ISO_8601:
             /* special-case zero to avoid printing nothing */
-            if (year == 0 && mon == 0 && mday == 0 && hour == 0 && min == 0 && sec == 0 &&
-                fsec == 0)
+            if (year == 0 && mon == 0 && mday == 0 && hour == 0 && min == 0 && sec == 0 && fsec == 0)
             {
                 sprintf(cp, "PT0S");
                 break;
@@ -656,8 +637,7 @@ static void EncodeInterval(struct pg_parser_tm* tm, fsec_t fsec, int32_t style, 
 }
 
 /* Append a verbose-style interval field, but only if value isn't zero */
-static char* AddVerboseIntPart(
-    char* cp, int32_t value, const char* units, bool* is_zero, bool* is_before)
+static char* AddVerboseIntPart(char* cp, int32_t value, const char* units, bool* is_zero, bool* is_before)
 {
     if (value == 0)
     {
@@ -679,8 +659,7 @@ static char* AddVerboseIntPart(
 }
 
 /* Append a postgres-style interval field, but only if value isn't zero */
-static char* AddPostgresIntPart(
-    char* cp, int32_t value, const char* units, bool* is_zero, bool* is_before)
+static char* AddPostgresIntPart(char* cp, int32_t value, const char* units, bool* is_zero, bool* is_before)
 {
     if (value == 0)
     {
@@ -981,10 +960,9 @@ static struct pg_parser_tm* timesub(const pg_parser_time_t*            timep,
     /*
      * The "extra" mods below avoid overflow problems.
      */
-    tmp->tm_wday =
-        TIME_EPOCH_WDAY +
-        ((y - TIME_EPOCH_YEAR) % TIME_DAYSPERWEEK) * (TIME_DAYSPERNYEAR % TIME_DAYSPERWEEK) +
-        leaps_thru_end_of(y - 1) - leaps_thru_end_of(TIME_EPOCH_YEAR - 1) + idays;
+    tmp->tm_wday = TIME_EPOCH_WDAY +
+                   ((y - TIME_EPOCH_YEAR) % TIME_DAYSPERWEEK) * (TIME_DAYSPERNYEAR % TIME_DAYSPERWEEK) +
+                   leaps_thru_end_of(y - 1) - leaps_thru_end_of(TIME_EPOCH_YEAR - 1) + idays;
     tmp->tm_wday %= TIME_DAYSPERWEEK;
     if (tmp->tm_wday < 0)
     {
@@ -1020,9 +998,7 @@ timestamp_out_of_range:
  * Except we have a private "struct state" for GMT, so no sp is passed in.
  */
 
-static struct pg_parser_tm* gmtsub(pg_parser_time_t const* timep,
-                                   int32_t                 offset,
-                                   struct pg_parser_tm*    tmp)
+static struct pg_parser_tm* gmtsub(pg_parser_time_t const* timep, int32_t offset, struct pg_parser_tm* tmp)
 {
     struct pg_parser_tm*                result;
 
@@ -1032,8 +1008,7 @@ static struct pg_parser_tm* gmtsub(pg_parser_time_t const* timep,
     if (gmtptr == NULL)
     {
         /* Allocate on first use */
-        if (!pg_parser_mcxt_malloc(
-                PGFUNC_TIMESTAMP_MCXT, (void**)&gmtptr, sizeof(struct pg_parser_time_state)))
+        if (!pg_parser_mcxt_malloc(PGFUNC_TIMESTAMP_MCXT, (void**)&gmtptr, sizeof(struct pg_parser_time_state)))
         {
             return NULL; /* errno should be set by malloc */
         }
@@ -1456,11 +1431,9 @@ static int32_t tzloadbody(char const*                  name,
          * support future formats that may allow zero typecnt in files that
          * have a TZ string and no transitions.
          */
-        if (!(0 <= leapcnt && leapcnt < TIME_TZ_MAX_LEAPS && 0 <= typecnt &&
-              typecnt < TIME_TZ_MAX_TYPES && 0 <= timecnt && timecnt < TIME_TZ_MAX_TIMES &&
-              0 <= charcnt && charcnt < TIME_TZ_MAX_CHARS &&
-              (ttisstdcnt == typecnt || ttisstdcnt == 0) &&
-              (ttisutcnt == typecnt || ttisutcnt == 0)))
+        if (!(0 <= leapcnt && leapcnt < TIME_TZ_MAX_LEAPS && 0 <= typecnt && typecnt < TIME_TZ_MAX_TYPES &&
+              0 <= timecnt && timecnt < TIME_TZ_MAX_TIMES && 0 <= charcnt && charcnt < TIME_TZ_MAX_CHARS &&
+              (ttisstdcnt == typecnt || ttisstdcnt == 0) && (ttisutcnt == typecnt || ttisutcnt == 0)))
         {
             return EINVAL;
         }
@@ -1494,9 +1467,7 @@ static int32_t tzloadbody(char const*                  name,
             if (sp->types[i])
             {
                 pg_parser_time_t attime =
-                    ((TIME_TYPE_SIGNED(pg_parser_time_t) ? at < TIME_TIME_T_MIN : at < 0)
-                         ? TIME_TIME_T_MIN
-                         : at);
+                    ((TIME_TYPE_SIGNED(pg_parser_time_t) ? at < TIME_TIME_T_MIN : at < 0) ? TIME_TIME_T_MIN : at);
 
                 if (timecnt && attime <= sp->ats[timecnt - 1])
                 {
@@ -1575,8 +1546,7 @@ static int32_t tzloadbody(char const*                  name,
                  * negative leap second).  Each leap second's correction must
                  * differ from the previous one's by 1 second.
                  */
-                if (tr - prevtr < 28 * TIME_SECSPERDAY - 1 ||
-                    (corr != prevcorr - 1 && corr != prevcorr + 1))
+                if (tr - prevtr < 28 * TIME_SECSPERDAY - 1 || (corr != prevcorr - 1 && corr != prevcorr + 1))
                 {
                     return EINVAL;
                 }
@@ -1689,16 +1659,14 @@ static int32_t tzloadbody(char const*                  name,
                  * they don't help here and can run afoul of bugs in zic 2016j
                  * or earlier.
                  */
-                while (1 < sp->timecnt &&
-                       (sp->types[sp->timecnt - 1] == sp->types[sp->timecnt - 2]))
+                while (1 < sp->timecnt && (sp->types[sp->timecnt - 1] == sp->types[sp->timecnt - 2]))
                 {
                     sp->timecnt--;
                 }
 
                 for (i = 0; i < ts->timecnt; i++)
                 {
-                    if (sp->timecnt == 0 ||
-                        (sp->ats[sp->timecnt - 1] < ts->ats[i] + leapcorr(sp, ts->ats[i])))
+                    if (sp->timecnt == 0 || (sp->ats[sp->timecnt - 1] < ts->ats[i] + leapcorr(sp, ts->ats[i])))
                     {
                         break;
                     }
@@ -1725,8 +1693,7 @@ static int32_t tzloadbody(char const*                  name,
     {
         for (i = 1; i < sp->timecnt; ++i)
         {
-            if (typesequiv(sp, sp->types[i], sp->types[0]) &&
-                differ_by_repeat(sp->ats[i], sp->ats[0]))
+            if (typesequiv(sp, sp->types[i], sp->types[0]) && differ_by_repeat(sp->ats[i], sp->ats[0]))
             {
                 sp->goback = true;
                 break;
@@ -1830,27 +1797,23 @@ static bool typesequiv(const struct pg_parser_time_state* sp, int32_t a, int32_t
         const struct time_ttinfo* ap = &sp->ttis[a];
         const struct time_ttinfo* bp = &sp->ttis[b];
 
-        result = (ap->tt_utoff == bp->tt_utoff && ap->tt_isdst == bp->tt_isdst &&
-                  ap->tt_ttisstd == bp->tt_ttisstd && ap->tt_ttisut == bp->tt_ttisut &&
-                  (strcmp(&sp->chars[ap->tt_desigidx], &sp->chars[bp->tt_desigidx]) == 0));
+        result =
+            (ap->tt_utoff == bp->tt_utoff && ap->tt_isdst == bp->tt_isdst && ap->tt_ttisstd == bp->tt_ttisstd &&
+             ap->tt_ttisut == bp->tt_ttisut && (strcmp(&sp->chars[ap->tt_desigidx], &sp->chars[bp->tt_desigidx]) == 0));
     }
     return result;
 }
 
 static bool differ_by_repeat(const pg_parser_time_t t1, const pg_parser_time_t t0)
 {
-    if ((TIME_TYPE_BIT(pg_parser_time_t) - TIME_TYPE_SIGNED(pg_parser_time_t)) <
-        TIME_SECSPERREPEAT_BITS)
+    if ((TIME_TYPE_BIT(pg_parser_time_t) - TIME_TYPE_SIGNED(pg_parser_time_t)) < TIME_SECSPERREPEAT_BITS)
     {
         return 0;
     }
     return t1 - t0 == TIME_SECSPERREPEAT;
 }
 
-bool tzparse(const char*                  name,
-             struct pg_parser_time_state* sp,
-             bool                         lastditch,
-             pg_parser_extraTypoutInfo*   info)
+bool tzparse(const char* name, struct pg_parser_time_state* sp, bool lastditch, pg_parser_extraTypoutInfo* info)
 {
     const char*                         stdname;
     const char*                         dstname = NULL;
@@ -2031,8 +1994,7 @@ bool tzparse(const char*                  name,
             yearlim = yearbeg + TIME_YEARSPERREPEAT + 1;
             for (year = yearbeg; year < yearlim; year++)
             {
-                int32_t starttime = transtime(year, &start, stdoffset),
-                        endtime = transtime(year, &end, dstoffset);
+                int32_t starttime = transtime(year, &start, stdoffset), endtime = transtime(year, &end, dstoffset);
                 int32_t yearsecs = (year_lengths[time_isleap(year)] * TIME_SECSPERDAY);
                 bool    reversed = endtime < starttime;
 
@@ -2043,8 +2005,7 @@ bool tzparse(const char*                  name,
                     starttime = endtime;
                     endtime = swap;
                 }
-                if (reversed || (starttime < endtime &&
-                                 (endtime - starttime < (yearsecs + (stdoffset - dstoffset)))))
+                if (reversed || (starttime < endtime && (endtime - starttime < (yearsecs + (stdoffset - dstoffset)))))
                 {
                     if (TIME_TZ_MAX_TIMES - 2 < timecnt)
                     {
@@ -2322,10 +2283,7 @@ static const char* getsecs(const char* strp, int32_t* const secsp)
  * Otherwise, return a pointer to the first character not part of the number.
  */
 
-static const char* getnum(const char*    strp,
-                          int32_t* const nump,
-                          const int32_t  min,
-                          const int32_t  max)
+static const char* getnum(const char* strp, int32_t* const nump, const int32_t min, const int32_t max)
 {
     char    c;
     int32_t num;
@@ -2604,8 +2562,7 @@ void EncodeDateTime(struct pg_parser_tm* tm,
         case USE_ISO_DATES:
         case USE_XSD_DATES:
             /* Compatible with ISO-8601 date formats */
-            str = numutils_ltostr_zeropad(
-                str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
+            str = numutils_ltostr_zeropad(str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             *str++ = '-';
             str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             *str++ = '-';
@@ -2637,8 +2594,7 @@ void EncodeDateTime(struct pg_parser_tm* tm,
                 str = numutils_ltostr_zeropad(str, tm->tm_mday, 2);
             }
             *str++ = '/';
-            str = numutils_ltostr_zeropad(
-                str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
+            str = numutils_ltostr_zeropad(str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             *str++ = ' ';
             str = numutils_ltostr_zeropad(str, tm->tm_hour, 2);
             *str++ = ':';
@@ -2671,8 +2627,7 @@ void EncodeDateTime(struct pg_parser_tm* tm,
             *str++ = '.';
             str = numutils_ltostr_zeropad(str, tm->tm_mon, 2);
             *str++ = '.';
-            str = numutils_ltostr_zeropad(
-                str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
+            str = numutils_ltostr_zeropad(str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
             *str++ = ' ';
             str = numutils_ltostr_zeropad(str, tm->tm_hour, 2);
             *str++ = ':';
@@ -2723,8 +2678,7 @@ void EncodeDateTime(struct pg_parser_tm* tm,
             *str++ = ':';
             str = AppendTimestampSeconds(str, tm, fsec);
             *str++ = ' ';
-            str = numutils_ltostr_zeropad(
-                str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
+            str = numutils_ltostr_zeropad(str, (tm->tm_year > 0) ? tm->tm_year : -(tm->tm_year - 1), 4);
 
             if (print_tz)
             {

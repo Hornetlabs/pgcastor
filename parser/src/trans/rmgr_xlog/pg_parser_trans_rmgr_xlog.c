@@ -53,7 +53,7 @@ typedef struct xl_end_of_recovery
 
 typedef bool (*pg_parser_trans_transrec_rmgr_info_func_pre)(pg_parser_XLogReaderState*    state,
                                                             pg_parser_translog_pre_base** result,
-                                                            int32_t* pg_parser_errno);
+                                                            int32_t*                      pg_parser_errno);
 
 static bool pg_parser_trans_rmgr_xlog_ckps(pg_parser_XLogReaderState*    state,
                                            pg_parser_translog_pre_base** result,
@@ -73,16 +73,16 @@ static bool pg_parser_trans_rmgr_xlog_recovery(pg_parser_XLogReaderState*    sta
 
 typedef struct PG_PARSER_TRANS_RMGR_XLOG
 {
-    pg_parser_trans_rmgr_xlog_info m_infoid; /* info value */
-    pg_parser_trans_transrec_rmgr_info_func_pre
-        m_infofunc; /* info-level handler for pre-parse interface */
+    pg_parser_trans_rmgr_xlog_info              m_infoid;   /* info value */
+    pg_parser_trans_transrec_rmgr_info_func_pre m_infofunc; /* info-level handler for pre-parse interface */
 } pg_parser_trans_rmgr_xlog;
 
 static pg_parser_trans_rmgr_xlog m_record_rmgr_xlog_info[] = {
-    {PG_PARSER_TRANS_TRANSREC_RMGR_XLOG_CHECKPOINT_SHUTDOWN, pg_parser_trans_rmgr_xlog_ckps},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_XLOG_CHECKPOINT_ONLINE, pg_parser_trans_rmgr_xlog_ckpo},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_XLOG_SWITCH, pg_parser_trans_rmgr_xlog_switch},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_XLOG_END_OF_RECOVERY, pg_parser_trans_rmgr_xlog_recovery}};
+    {PG_PARSER_TRANS_TRANSREC_RMGR_XLOG_CHECKPOINT_SHUTDOWN, pg_parser_trans_rmgr_xlog_ckps    },
+    {PG_PARSER_TRANS_TRANSREC_RMGR_XLOG_CHECKPOINT_ONLINE,   pg_parser_trans_rmgr_xlog_ckpo    },
+    {PG_PARSER_TRANS_TRANSREC_RMGR_XLOG_SWITCH,              pg_parser_trans_rmgr_xlog_switch  },
+    {PG_PARSER_TRANS_TRANSREC_RMGR_XLOG_END_OF_RECOVERY,     pg_parser_trans_rmgr_xlog_recovery}
+};
 
 bool pg_parser_trans_rmgr_xlog_pre(pg_parser_XLogReaderState*    state,
                                    pg_parser_translog_pre_base** result,
@@ -121,8 +121,7 @@ static bool pg_parser_trans_rmgr_xlog_ckps(pg_parser_XLogReaderState*    state,
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            RMGR_XLOG_MCXT, (void**)(&transchp), sizeof(pg_parser_translog_pre_transchkp)))
+    if (!pg_parser_mcxt_malloc(RMGR_XLOG_MCXT, (void**)(&transchp), sizeof(pg_parser_translog_pre_transchkp)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_09;
         return false;
@@ -155,8 +154,7 @@ static bool pg_parser_trans_rmgr_xlog_ckpo(pg_parser_XLogReaderState*    state,
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            RMGR_XLOG_MCXT, (void**)(&transchp), sizeof(pg_parser_translog_pre_transchkp)))
+    if (!pg_parser_mcxt_malloc(RMGR_XLOG_MCXT, (void**)(&transchp), sizeof(pg_parser_translog_pre_transchkp)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_0A;
         return false;
@@ -183,13 +181,11 @@ static bool pg_parser_trans_rmgr_xlog_switch(pg_parser_XLogReaderState*    state
     if (!result || !state || !pg_parser_errno)
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_FUNCERR_XLOG_SWITCH_CHECK;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: pre record is [xlog switch], invalid param\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: pre record is [xlog switch], invalid param\n");
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            RMGR_XLOG_MCXT, (void**)(&xlog_switch), sizeof(pg_parser_translog_pre_base)))
+    if (!pg_parser_mcxt_malloc(RMGR_XLOG_MCXT, (void**)(&xlog_switch), sizeof(pg_parser_translog_pre_base)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_08;
         return false;
@@ -220,13 +216,11 @@ static bool pg_parser_trans_rmgr_xlog_recovery(pg_parser_XLogReaderState*    sta
     if (!result || !state || !pg_parser_errno)
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_FUNCERR_XLOG_RECOVERY_CHECK;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: pre record is [xlog recovery], invalid param\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: pre record is [xlog recovery], invalid param\n");
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            RMGR_XLOG_MCXT, (void**)(&xlog_recovery), sizeof(pg_parser_translog_pre_endrecovery)))
+    if (!pg_parser_mcxt_malloc(RMGR_XLOG_MCXT, (void**)(&xlog_recovery), sizeof(pg_parser_translog_pre_endrecovery)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_XLOG_RECOVERY_MEMALLOC_ERROR1;
         return false;

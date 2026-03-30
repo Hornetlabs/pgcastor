@@ -26,10 +26,10 @@ typedef struct XMANAGER_METRICNODEOP
     char*                   name;
     char*                   desc;
     xmanager_metricnode*    (*init)(void);
-    bool (*serial)(xmanager_metricnode* metricnode, uint8** blk, int* blksize, int* blkstart);
-    xmanager_metricnode* (*deserial)(uint8* blk, int* blkstart);
-    int                  (*cmp)(void* s1, void* s2);
-    void                 (*destroy)(xmanager_metricnode* xmetricnode);
+    bool                    (*serial)(xmanager_metricnode* metricnode, uint8** blk, int* blksize, int* blkstart);
+    xmanager_metricnode*    (*deserial)(uint8* blk, int* blkstart);
+    int                     (*cmp)(void* s1, void* s2);
+    void                    (*destroy)(xmanager_metricnode* xmetricnode);
 } xmanager_metricnodeop;
 
 /*----------------------------metricnode begin----------------------------*/
@@ -329,57 +329,36 @@ bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode, uint8* blk, i
 }
 
 static xmanager_metricnodeop m_xmetricnodeops[] = {
-    {XMANAGER_METRICNODETYPE_NOP, "nop", "XManager Metric Node NOP", NULL, NULL, NULL, NULL, NULL},
+    {XMANAGER_METRICNODETYPE_NOP,          "nop",     "XManager Metric Node NOP",          NULL, NULL,                                NULL, NULL,                          NULL},
     {XMANAGER_METRICNODETYPE_CAPTURE,
-     "capture",
-     "XManager Metric Capture Node",
-     xmanager_metriccapturenode_init,
-     xmanager_metriccapturenode_serial,
-     xmanager_metriccapturenode_deserial,
-     NULL,
-     xmanager_metriccapturenode_destroy},
+     "capture",                                       "XManager Metric Capture Node",
+     xmanager_metriccapturenode_init,                                                            xmanager_metriccapturenode_serial,
+     xmanager_metriccapturenode_deserial,                                                                                                   NULL,
+     xmanager_metriccapturenode_destroy                                                                                                                                        },
     {XMANAGER_METRICNODETYPE_INTEGRATE,
-     "integrate",
-     "XManager Metric Integrate Node",
-     xmanager_metricintegratenode_init,
-     xmanager_metricintegratenode_serial,
-     xmanager_metricintegratenode_deserial,
-     NULL,
-     xmanager_metricintegratenode_destroy},
+     "integrate",                                     "XManager Metric Integrate Node",
+     xmanager_metricintegratenode_init,                                                          xmanager_metricintegratenode_serial,
+     xmanager_metricintegratenode_deserial,                                                                                                 NULL,
+     xmanager_metricintegratenode_destroy                                                                                                                                      },
     {XMANAGER_METRICNODETYPE_PGRECEIVELOG,
-     "pgreceivelog",
-     "XManager Metric PGReceivelog Node",
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL},
+     "pgreceivelog",                                  "XManager Metric PGReceivelog Node",
+     NULL,                                                                                       NULL,
+     NULL,                                                                                                                                  NULL,
+     NULL                                                                                                                                                                      },
     {XMANAGER_METRICNODETYPE_PROCESS,
-     "process",
-     "XManager Metric Process Node",
-     xmanager_metricprogressnode_init,
-     xmanager_metricprogressnode_serial,
-     xmanager_metricprogressnode_deserial,
-     NULL,
-     xmanager_metricprogressnode_destroy},
-    {XMANAGER_METRICNODETYPE_ALL, "all", "XManager Metric ALL Node", NULL, NULL, NULL, NULL, NULL},
-    {XMANAGER_METRICNODETYPE_MANAGER,
-     "manager",
-     "XManager Metric Xmanager Node",
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL},
+     "process",                                       "XManager Metric Process Node",
+     xmanager_metricprogressnode_init,                                                           xmanager_metricprogressnode_serial,
+     xmanager_metricprogressnode_deserial,                                                                                                  NULL,
+     xmanager_metricprogressnode_destroy                                                                                                                                       },
+    {XMANAGER_METRICNODETYPE_ALL,          "all",     "XManager Metric ALL Node",          NULL, NULL,                                NULL, NULL,                          NULL},
+    {XMANAGER_METRICNODETYPE_MANAGER,      "manager", "XManager Metric Xmanager Node",     NULL, NULL,                                NULL, NULL,                          NULL},
     {XMANAGER_METRICNODETYPE_XSCSCI,
-     "xscsci",
-     "XManager Metric XScsci Node",
-     xmanager_metricxscscinode_init,
-     NULL,
-     NULL,
-     xmanager_metricxscscinode_cmp,
-     xmanager_metricxscscinode_destroy},
-    {XMANAGER_METRICNODETYPE_MAX, "max", "XManager Metric Node Max", NULL, NULL, NULL, NULL, NULL}};
+     "xscsci",                                        "XManager Metric XScsci Node",
+     xmanager_metricxscscinode_init,                                                             NULL,
+     NULL,                                                                                                                                  xmanager_metricxscscinode_cmp,
+     xmanager_metricxscscinode_destroy                                                                                                                                         },
+    {XMANAGER_METRICNODETYPE_MAX,          "max",     "XManager Metric Node Max",          NULL, NULL,                                NULL, NULL,                          NULL}
+};
 
 xmanager_metricnode* xmanager_metricnode_init(xmanager_metricnodetype nodetype)
 {
@@ -528,8 +507,7 @@ void xmanager_metricnode_flush(dlist* dlmetricnodes)
         }
 
         /* Perform serialization */
-        if (false ==
-            m_xmetricnodeops[xmetricnode->type].serial(xmetricnode, &blk, &blksize, &blkstart))
+        if (false == m_xmetricnodeops[xmetricnode->type].serial(xmetricnode, &blk, &blksize, &blkstart))
         {
             bfailed = true;
             elog(RLOG_WARNING, "%s serial error", m_xmetricnodeops[xmetricnode->type].desc);

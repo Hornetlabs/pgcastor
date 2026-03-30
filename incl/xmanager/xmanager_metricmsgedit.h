@@ -8,8 +8,6 @@
  *  3. Get config file content
  *  4. Assemble return message
  */
-extern bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric,
-                                         netpoolentry*    npoolentry,
-                                         netpacket*       npacket);
+extern bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket);
 
 #endif

@@ -18,8 +18,7 @@ bool pg_parser_trans_rmgr_standby_pre(pg_parser_XLogReaderState*    state,
     info &= ~PG_PARSER_TRANS_TRANSREC_XLR_INFO_MASK;
     if (info == PG_PARSER_XLOG_RUNNING_XACTS)
     {
-        pg_parser_xl_running_xacts* running =
-            (pg_parser_xl_running_xacts*)pg_parser_XLogRecGetData(state);
+        pg_parser_xl_running_xacts* running = (pg_parser_xl_running_xacts*)pg_parser_XLogRecGetData(state);
         if (!pg_parser_mcxt_malloc(RMGR_STANDBY_MCXT,
                                    (void**)&standby_result,
                                    sizeof(pg_parser_translog_pre_running_xact)))
@@ -27,10 +26,9 @@ bool pg_parser_trans_rmgr_standby_pre(pg_parser_XLogReaderState*    state,
             *pg_parser_errno = ERRNO_PG_PARSER_PRE_STANDBY_MEMALLOC_ERROR1;
             return false;
         }
-        if (!pg_parser_mcxt_malloc(
-                RMGR_STANDBY_MCXT,
-                (void**)&standby_result->m_standby,
-                sizeof(pg_parser_xl_running_xacts) + sizeof(uint32_t) * running->xcnt))
+        if (!pg_parser_mcxt_malloc(RMGR_STANDBY_MCXT,
+                                   (void**)&standby_result->m_standby,
+                                   sizeof(pg_parser_xl_running_xacts) + sizeof(uint32_t) * running->xcnt))
         {
             *pg_parser_errno = ERRNO_PG_PARSER_PRE_STANDBY_MEMALLOC_ERROR2;
             return false;

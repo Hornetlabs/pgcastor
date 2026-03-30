@@ -167,8 +167,7 @@ static bool xsynch_host2sockaddr(struct sockaddr_in* addr,
 
     for (res = reshead; res; res = res->ai_next)
     {
-        if (family == res->ai_family && socktype == res->ai_socktype &&
-            sizeof(struct sockaddr_in) == res->ai_addrlen)
+        if (family == res->ai_family && socktype == res->ai_socktype && sizeof(struct sockaddr_in) == res->ai_addrlen)
         {
             *addr = *((struct sockaddr_in*)(res->ai_addr));
             freeaddrinfo(reshead);
@@ -220,8 +219,7 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
     if (XSYNCH_SOCKTYPE_TCP == conn->socktype)
     {
         domain = AF_INET;
-        if (false == xsynch_host2sockaddr(
-                         &addrin, conn->host, conn->port, domain, SOCK_STREAM, IPPROTO_TCP, 1))
+        if (false == xsynch_host2sockaddr(&addrin, conn->host, conn->port, domain, SOCK_STREAM, IPPROTO_TCP, 1))
         {
             conn->errcode = 1;
             xsynch_exbufferdata_reset(conn->errmsg);
@@ -235,12 +233,7 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
     else if (XSYNCH_SOCKTYPE_UNIXDOMAIN == conn->socktype)
     {
         domain = AF_LOCAL;
-        snprintf(unixdoamin,
-                 512,
-                 "%s/%s%s",
-                 RMANAGER_UNIXDOMAINDIR,
-                 RMANAGER_UNIXDOMAINPREFIX,
-                 conn->port);
+        snprintf(unixdoamin, 512, "%s/%s%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX, conn->port);
         if (sizeof(addrun.sun_path) <= strlen(unixdoamin))
         {
             conn->errcode = 1;
@@ -272,17 +265,9 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
 
         if (1 == conn->keepalive)
         {
-            setsockopt(conn->sock,
-                       SOL_SOCKET,
-                       SO_KEEPALIVE,
-                       (char*)&conn->keepalive,
-                       sizeof(conn->keepalive));
+            setsockopt(conn->sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&conn->keepalive, sizeof(conn->keepalive));
 
-            setsockopt(conn->sock,
-                       IPPROTO_TCP,
-                       TCP_KEEPIDLE,
-                       (char*)&conn->keepaliveidle,
-                       sizeof(conn->keepaliveidle));
+            setsockopt(conn->sock, IPPROTO_TCP, TCP_KEEPIDLE, (char*)&conn->keepaliveidle, sizeof(conn->keepaliveidle));
 
             setsockopt(conn->sock,
                        IPPROTO_TCP,
@@ -296,11 +281,7 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
                        (char*)&conn->keepalivecount,
                        sizeof(conn->keepalivecount));
 
-            setsockopt(conn->sock,
-                       IPPROTO_TCP,
-                       TCP_USER_TIMEOUT,
-                       (char*)&conn->usertimeout,
-                       sizeof(conn->usertimeout));
+            setsockopt(conn->sock, IPPROTO_TCP, TCP_USER_TIMEOUT, (char*)&conn->usertimeout, sizeof(conn->usertimeout));
         }
     }
 

@@ -71,29 +71,21 @@ static void parsertrail_txnupdate2hash(parsertrail* parsertrail, ff_txndata* txn
     /* Output content */
     if (RLOG_DEBUG == g_loglevel)
     {
-        elog(RLOG_DEBUG,
-             "update %s.%s begin",
-             colvalues->m_base.m_schemaname,
-             colvalues->m_base.m_tbname);
+        elog(RLOG_DEBUG, "update %s.%s begin", colvalues->m_base.m_schemaname, colvalues->m_base.m_tbname);
         for (index = 0; index < colvalues->m_valueCnt; index++)
         {
             elog(RLOG_DEBUG,
                  "column:%s, value:%s",
                  colvalues->m_new_values[index].m_colName,
-                 colvalues->m_new_values[index].m_value == NULL
-                     ? "NULL"
-                     : (char*)(colvalues->m_new_values[index].m_value));
+                 colvalues->m_new_values[index].m_value == NULL ? "NULL"
+                                                                : (char*)(colvalues->m_new_values[index].m_value));
             elog(RLOG_DEBUG,
                  "column:%s, value:%s",
                  colvalues->m_old_values[index].m_colName,
-                 colvalues->m_old_values[index].m_value == NULL
-                     ? "NULL"
-                     : (char*)(colvalues->m_old_values[index].m_value));
+                 colvalues->m_old_values[index].m_value == NULL ? "NULL"
+                                                                : (char*)(colvalues->m_old_values[index].m_value));
         }
-        elog(RLOG_DEBUG,
-             "update %s.%s end",
-             colvalues->m_base.m_schemaname,
-             colvalues->m_base.m_tbname);
+        elog(RLOG_DEBUG, "update %s.%s end", colvalues->m_base.m_schemaname, colvalues->m_base.m_tbname);
     }
 
     return;

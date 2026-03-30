@@ -85,8 +85,7 @@ static bool increment_integraterebuild_canwork(increment_integraterebuild* rebui
     return false;
 }
 
-static txn* increment_integraterebuild_updatesynctabletxn_set(
-    increment_integraterebuild* rebuild_obj, txn* txn_obj)
+static txn* increment_integraterebuild_updatesynctabletxn_set(increment_integraterebuild* rebuild_obj, txn* txn_obj)
 {
     txn*                     cur_txn = NULL;
     txnstmt*                 stmtnode = NULL;
@@ -129,8 +128,7 @@ static txn* increment_integraterebuild_updatesynctabletxn_set(
     return cur_txn;
 }
 
-static bool increment_integraterebuild_updaterewindstmt_set(increment_integraterebuild* rebuild_obj,
-                                                            txn*                        txn_obj)
+static bool increment_integraterebuild_updaterewindstmt_set(increment_integraterebuild* rebuild_obj, txn* txn_obj)
 {
     recpos                pos = {{'\0'}};
     txnstmt*              stmtnode = NULL;
@@ -166,8 +164,9 @@ static bool increment_integraterebuild_updaterewindstmt_set(increment_integrater
 }
 
 /* Clean up filter sets corresponding to abandoned onlinerefresh */
-static void increment_integraterebuild_delonlinerefresdataset(
-    increment_integraterebuild* rebuild_obj, thrnode* thr_node, void* abandon)
+static void increment_integraterebuild_delonlinerefresdataset(increment_integraterebuild* rebuild_obj,
+                                                              thrnode*                    thr_node,
+                                                              void*                       abandon)
 {
     List*                               luuid = NULL;
     ListCell*                           lc = NULL;
@@ -185,8 +184,7 @@ static void increment_integraterebuild_delonlinerefresdataset(
     {
         uuid = (uuid_t*)lfirst(lc);
 
-        endnode = onlinerefresh_integratedataset_number_get(rebuild_obj->onlinerefreshdataset,
-                                                            uuid->data);
+        endnode = onlinerefresh_integratedataset_number_get(rebuild_obj->onlinerefreshdataset, uuid->data);
         while (true)
         {
             if (THRNODE_STAT_TERM == thr_node->stat)
@@ -201,16 +199,12 @@ static void increment_integraterebuild_delonlinerefresdataset(
                                                      &endnode->onlinerefreshno,
                                                      ONLINEREFRESH_PERSISTNODE_STAT_DONE);
                 /* Clean up persist existing tables after onlinerefresh ends */
-                onlinerefresh_persist_removerefreshtbsbyuuid(rebuild_obj->olpersist,
-                                                             &endnode->onlinerefreshno);
-                onlinerefresh_persist_electionrewindbyuuid(rebuild_obj->olpersist,
-                                                           &endnode->onlinerefreshno);
-                onlinerefresh_integratefilterdataset_delete(
-                    rebuild_obj->honlinerefreshfilterdataset,
-                    endnode->refreshtables,
-                    endnode->txid);
-                onlinerefresh_integratedataset_delete(rebuild_obj->onlinerefreshdataset,
-                                                      uuid->data);
+                onlinerefresh_persist_removerefreshtbsbyuuid(rebuild_obj->olpersist, &endnode->onlinerefreshno);
+                onlinerefresh_persist_electionrewindbyuuid(rebuild_obj->olpersist, &endnode->onlinerefreshno);
+                onlinerefresh_integratefilterdataset_delete(rebuild_obj->honlinerefreshfilterdataset,
+                                                            endnode->refreshtables,
+                                                            endnode->txid);
+                onlinerefresh_integratedataset_delete(rebuild_obj->onlinerefreshdataset, uuid->data);
                 break;
             }
             usleep(50000);
@@ -218,9 +212,9 @@ static void increment_integraterebuild_delonlinerefresdataset(
     }
     return;
 }
+
 /* Add big transaction */
-static void increment_integraterebuild_addbigtxnpersist(increment_integraterebuild* rebuild_obj,
-                                                        txn*                        txn_obj)
+static void increment_integraterebuild_addbigtxnpersist(increment_integraterebuild* rebuild_obj, txn* txn_obj)
 {
     bool                exist = false;
     recpos              pos = {{'\0'}};
@@ -269,8 +263,8 @@ static void increment_integraterebuild_addbigtxnpersist(increment_integraterebui
 }
 
 /* Add onlinerefresh persist */
-static void increment_integraterebuild_addonlinerefreshpersist(
-    increment_integraterebuild* rebuild_obj, onlinerefresh_integrate* olrintegrate)
+static void increment_integraterebuild_addonlinerefreshpersist(increment_integraterebuild* rebuild_obj,
+                                                               onlinerefresh_integrate*    olrintegrate)
 {
     bool                       exist = false;
     dlistnode*                 dnode = NULL;
@@ -345,8 +339,7 @@ static bool increment_integraterebuild_isspecialtxn(txn* txn_obj)
  *
  * Return value: true success, false failure
  */
-static bool increment_integraterebuild_rebuildtxn(increment_integraterebuild* rebuild_obj,
-                                                  txn*                        txn_obj)
+static bool increment_integraterebuild_rebuildtxn(increment_integraterebuild* rebuild_obj, txn* txn_obj)
 {
     if (true == rebuild_obj->burst)
     {
@@ -373,8 +366,7 @@ static bool increment_integraterebuild_rebuildtxn(increment_integraterebuild* re
 /*
  * integate rebuild applies system catalog, cleans up index and attribute before applying
  */
-static void increment_integraterebuild_transcatalog2transcache(
-    increment_integraterebuild* rebuild_obj, txn* txn_obj)
+static void increment_integraterebuild_transcatalog2transcache(increment_integraterebuild* rebuild_obj, txn* txn_obj)
 {
     bool              equal = false;
     ListCell*         stmtlc = NULL;
@@ -401,8 +393,7 @@ static void increment_integraterebuild_transcatalog2transcache(
             while (1)
             {
                 /* Apply to system catalog */
-                cache_sysdicts_txnsysdicthisitem2cache(rebuild_obj->rebuild.sysdicts,
-                                                       (void*)catraloglc);
+                cache_sysdicts_txnsysdicthisitem2cache(rebuild_obj->rebuild.sysdicts, (void*)catraloglc);
 
                 /* Only one */
                 if (catraloglc == metadatastmt->end || true == equal)
@@ -547,8 +538,7 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
                 return false;
             }
             /* Wait for existing onlinerefresh stock to finish */
-            if (true == rebuild_obj->callback.isolrrefreshdone(rebuild_obj->privdata,
-                                                               onlinerefresh->no->data))
+            if (true == rebuild_obj->callback.isolrrefreshdone(rebuild_obj->privdata, onlinerefresh->no->data))
             {
                 break;
             }
@@ -562,8 +552,7 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
         datasetnode = onlinerefresh_integratedatasetnode_init();
         onlinerefresh_integratedatasetnode_no_set(datasetnode, onlinerefresh->no->data);
         onlinerefresh_integratedatasetnode_txid_set(datasetnode, onlinerefresh->txid);
-        onlinerefresh_integratedatasetnode_refreshtables_set(datasetnode,
-                                                             onlinerefresh->refreshtables);
+        onlinerefresh_integratedatasetnode_refreshtables_set(datasetnode, onlinerefresh->refreshtables);
         onlinerefresh_integratedataset_add(rebuild_obj->onlinerefreshdataset, datasetnode);
     }
     else if (TXNSTMT_TYPE_ONLINEREFRESH_END == stmtnode->type)
@@ -581,8 +570,7 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
         }
         elog(RLOG_DEBUG, "get TXNSTMT_TYPE_ONLINEREFRESH_END");
         /* Get onlinerefresh number */
-        endnode = onlinerefresh_integratedataset_number_get(rebuild_obj->onlinerefreshdataset,
-                                                            stmtnode->stmt);
+        endnode = onlinerefresh_integratedataset_number_get(rebuild_obj->onlinerefreshdataset, stmtnode->stmt);
 
         while (true)
         {
@@ -591,23 +579,18 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
                 return false;
             }
             /* Wait for onlinerefresh to finish */
-            if (rebuild_obj->callback.isonlinerefreshdone(rebuild_obj->privdata,
-                                                          endnode->onlinerefreshno.data))
+            if (rebuild_obj->callback.isonlinerefreshdone(rebuild_obj->privdata, endnode->onlinerefreshno.data))
             {
                 onlinerefresh_persist_statesetbyuuid(rebuild_obj->olpersist,
                                                      &endnode->onlinerefreshno,
                                                      ONLINEREFRESH_PERSISTNODE_STAT_DONE);
                 /* Clean up persist existing tables after onlinerefresh ends */
-                onlinerefresh_persist_removerefreshtbsbyuuid(rebuild_obj->olpersist,
-                                                             &endnode->onlinerefreshno);
-                onlinerefresh_persist_electionrewindbyuuid(rebuild_obj->olpersist,
-                                                           &endnode->onlinerefreshno);
-                onlinerefresh_integratefilterdataset_delete(
-                    rebuild_obj->honlinerefreshfilterdataset,
-                    endnode->refreshtables,
-                    endnode->txid);
-                onlinerefresh_integratedataset_delete(rebuild_obj->onlinerefreshdataset,
-                                                      stmtnode->stmt);
+                onlinerefresh_persist_removerefreshtbsbyuuid(rebuild_obj->olpersist, &endnode->onlinerefreshno);
+                onlinerefresh_persist_electionrewindbyuuid(rebuild_obj->olpersist, &endnode->onlinerefreshno);
+                onlinerefresh_integratefilterdataset_delete(rebuild_obj->honlinerefreshfilterdataset,
+                                                            endnode->refreshtables,
+                                                            endnode->txid);
+                onlinerefresh_integratedataset_delete(rebuild_obj->onlinerefreshdataset, stmtnode->stmt);
                 rebuild_obj->callback.setonlinerefreshfree(rebuild_obj->privdata, stmtnode->stmt);
                 break;
             }
@@ -693,8 +676,8 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
                     bigtxn = bigtxn_integratemanager_init();
                     bigtxn->xid = end_stmt->xid;
                     /* Copy onlinerefresh filter set for big transaction internal filtering */
-                    bigtxn->honlinerefreshfilterdataset = onlinerefresh_integratefilterdataset_copy(
-                        rebuild_obj->honlinerefreshfilterdataset);
+                    bigtxn->honlinerefreshfilterdataset =
+                        onlinerefresh_integratefilterdataset_copy(rebuild_obj->honlinerefreshfilterdataset);
                     if (false == dlist_isnull(rebuild_obj->onlinerefreshdataset->onlinerefresh))
                     {
                         bigtxn->onlinerefreshdataset =
@@ -717,14 +700,12 @@ static bool increment_integraterebuild_specialtxn(increment_integraterebuild* re
                     return false;
                 }
 
-                if (true ==
-                    rebuild_obj->callback.isbigtxnsigterm(rebuild_obj->privdata, end_stmt->xid))
+                if (true == rebuild_obj->callback.isbigtxnsigterm(rebuild_obj->privdata, end_stmt->xid))
                 {
                     return false;
                 }
 
-                if (true ==
-                    rebuild_obj->callback.isbigtxndown(rebuild_obj->privdata, end_stmt->xid))
+                if (true == rebuild_obj->callback.isbigtxndown(rebuild_obj->privdata, end_stmt->xid))
                 {
                     break;
                 }
@@ -780,8 +761,7 @@ void* increment_integraterebuild_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "increment integrate rebuild exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "increment integrate rebuild exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -845,8 +825,8 @@ void* increment_integraterebuild_main(void* args)
             /* Used to handle specified transactions: refresh/onlinerefreshbegin/onlinerefreshend */
             if (true == increment_integraterebuild_isspecialtxn(txnnode))
             {
-                if (false == increment_integraterebuild_specialtxn(
-                                 rebuild_obj, thr_node, txnnode, &ntxn, &txbundlesize))
+                if (false ==
+                    increment_integraterebuild_specialtxn(rebuild_obj, thr_node, txnnode, &ntxn, &txbundlesize))
                 {
                     /* term exit or other independent thread exit, return to upper while loop
                      * waiting for term */
@@ -891,8 +871,8 @@ void* increment_integraterebuild_main(void* args)
                         relid = values->m_relid;
                     }
 
-                    filterdatasetentry = hash_search(
-                        rebuild_obj->honlinerefreshfilterdataset, &relid, HASH_FIND, &find);
+                    filterdatasetentry =
+                        hash_search(rebuild_obj->honlinerefreshfilterdataset, &relid, HASH_FIND, &find);
                     if (false == find)
                     {
                         tmpstmt = lappend(tmpstmt, stmtnode);
@@ -905,10 +885,10 @@ void* increment_integraterebuild_main(void* args)
                         continue;
                     }
 
-                    node = onlinerefresh_integratedataset_txid_get(
-                        rebuild_obj->onlinerefreshdataset, filterdatasetentry->txid);
-                    while (false == rebuild_obj->callback.isonlinerefreshdone(
-                                        rebuild_obj->privdata, node->onlinerefreshno.data))
+                    node = onlinerefresh_integratedataset_txid_get(rebuild_obj->onlinerefreshdataset,
+                                                                   filterdatasetentry->txid);
+                    while (false ==
+                           rebuild_obj->callback.isonlinerefreshdone(rebuild_obj->privdata, node->onlinerefreshno.data))
                     {
                         if (THRNODE_STAT_TERM == thr_node->stat)
                         {
@@ -931,8 +911,7 @@ void* increment_integraterebuild_main(void* args)
                 if (NULL == txnnode->stmts)
                 {
                     txn* cur_txn = NULL;
-                    cur_txn =
-                        increment_integraterebuild_updatesynctabletxn_set(rebuild_obj, txnnode);
+                    cur_txn = increment_integraterebuild_updatesynctabletxn_set(rebuild_obj, txnnode);
                     if (cur_txn)
                     {
                         /* Rewind info is not stored in transaction, calculated rewind is passed to
@@ -944,8 +923,7 @@ void* increment_integraterebuild_main(void* args)
                     }
                     else
                     {
-                        elog(RLOG_WARNING,
-                             "increment_integraterebuild_updatesynctabletxn_set error");
+                        elog(RLOG_WARNING, "increment_integraterebuild_updatesynctabletxn_set error");
                         thr_node->stat = THRNODE_STAT_ABORT;
                         break;
                     }
@@ -1021,9 +999,7 @@ void* increment_integraterebuild_main(void* args)
                 ntxn = (txn*)rmalloc0(sizeof(txn));
                 if (NULL == ntxn)
                 {
-                    elog(RLOG_WARNING,
-                         "integrate rebuild txn init out of memory, %s",
-                         strerror(errno));
+                    elog(RLOG_WARNING, "integrate rebuild txn init out of memory, %s", strerror(errno));
                     thr_node->stat = THRNODE_STAT_ABORT;
                     break;
                 }
@@ -1110,8 +1086,7 @@ void increment_integraterebuild_free(increment_integraterebuild* rebuild_obj)
 
     if (rebuild_obj->onlinerefreshdataset)
     {
-        dlist_free(rebuild_obj->onlinerefreshdataset->onlinerefresh,
-                   onlinerefresh_integratedataset_free);
+        dlist_free(rebuild_obj->onlinerefreshdataset->onlinerefresh, onlinerefresh_integratedataset_free);
         rfree(rebuild_obj->onlinerefreshdataset);
     }
 

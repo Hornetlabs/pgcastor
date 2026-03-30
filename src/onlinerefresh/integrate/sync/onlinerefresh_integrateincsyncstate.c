@@ -20,8 +20,7 @@ onlinerefresh_integrateincsync* onlinerefresh_integrateincsync_init(void)
 {
     onlinerefresh_integrateincsync* syncworkstate = NULL;
 
-    syncworkstate =
-        (onlinerefresh_integrateincsync*)rmalloc0(sizeof(onlinerefresh_integrateincsync));
+    syncworkstate = (onlinerefresh_integrateincsync*)rmalloc0(sizeof(onlinerefresh_integrateincsync));
     if (NULL == syncworkstate)
     {
         elog(RLOG_WARNING, "onlinerefresh integrateincsync malloc out of memory");
@@ -49,9 +48,7 @@ static bool onlinerefresh_integrateincsync_delinc(onlinerefresh_integrateincsync
     res = PQexec(syncwork->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING,
-             "Failed to update status table in: %s",
-             PQerrorMessage(syncwork->base.conn));
+        elog(RLOG_WARNING, "Failed to update status table in: %s", PQerrorMessage(syncwork->base.conn));
         PQclear(res);
         return false;
     }

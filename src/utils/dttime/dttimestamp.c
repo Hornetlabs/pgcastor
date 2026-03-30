@@ -9,8 +9,7 @@ TimestampTz dt_gettimestamp(void)
 
     gettimeofday(&tp, NULL);
 
-    result = (TimestampTz)tp.tv_sec -
-             ((DTTIME_EPOCH_JDATE - DTTIME_UNIX_EPOCH_JDATE) * DTTIME_SECS_PER_DAY);
+    result = (TimestampTz)tp.tv_sec - ((DTTIME_EPOCH_JDATE - DTTIME_UNIX_EPOCH_JDATE) * DTTIME_SECS_PER_DAY);
     result = (result * DTTIME_USECS_PER_SEC) + tp.tv_usec;
     return result;
 }
@@ -22,8 +21,7 @@ void dt_timestamptz_to_string(TimestampTz t, char* buf)
     int64_t   usec;
 
     /* Microsecond split */
-    unix_sec = t / DTTIME_USECS_PER_SEC +
-               (DTTIME_EPOCH_JDATE - DTTIME_UNIX_EPOCH_JDATE) * DTTIME_SECS_PER_DAY;
+    unix_sec = t / DTTIME_USECS_PER_SEC + (DTTIME_EPOCH_JDATE - DTTIME_UNIX_EPOCH_JDATE) * DTTIME_SECS_PER_DAY;
     usec = t % DTTIME_USECS_PER_SEC;
 
     /* Convert to local time (or gmtime) */

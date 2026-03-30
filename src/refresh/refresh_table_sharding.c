@@ -62,8 +62,7 @@ void refresh_table_sharding_set_shardno(refresh_table_sharding* shard, int num)
     shard->sharding_no = num;
 }
 
-void refresh_table_sharding_set_condition(refresh_table_sharding*  shard,
-                                          refresh_table_condition* cond)
+void refresh_table_sharding_set_condition(refresh_table_sharding* shard, refresh_table_condition* cond)
 {
     if (!shard)
     {
@@ -83,8 +82,7 @@ refresh_table_condition* refresh_table_sharding_condition_init(void)
     return cond;
 }
 
-void refresh_table_sharding_get_info_from_filename(char*                   filename,
-                                                   refresh_table_sharding* table_shard)
+void refresh_table_sharding_get_info_from_filename(char* filename, refresh_table_sharding* table_shard)
 {
     char* ptr_left = filename;
     char* ptr_right = NULL;

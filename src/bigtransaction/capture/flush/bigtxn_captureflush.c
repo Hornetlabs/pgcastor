@@ -61,8 +61,7 @@ static void bigtxn_captureflush_reloadstate(increment_captureflush* wstate, int 
 }
 
 /* Initialize file */
-static bool bigtxn_captureflush_initfile(increment_captureflush*   cflush,
-                                         bigtxn_captureflush_file* cflushfile)
+static bool bigtxn_captureflush_initfile(increment_captureflush* cflush, bigtxn_captureflush_file* cflushfile)
 {
     struct stat st;
     uint8       block[FILE_BUFFER_SIZE] = {0};
@@ -84,12 +83,7 @@ static bool bigtxn_captureflush_initfile(increment_captureflush*   cflush,
      *  If not exists, create new file
      */
     rmemset1(cflush->path, 0, '\0', MAXPATH);
-    snprintf(cflush->path,
-             MAXPATH,
-             "%s/%lu/%016lX",
-             STORAGE_BIG_TRANSACTION_DIR,
-             cflushfile->xid,
-             cflushfile->fileid);
+    snprintf(cflush->path, MAXPATH, "%s/%lu/%016lX", STORAGE_BIG_TRANSACTION_DIR, cflushfile->xid, cflushfile->fileid);
     if (0 == stat(cflush->path, &st))
     {
         /* Open file */
@@ -144,8 +138,7 @@ void* bigtxn_captureflush_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "capture bigtxn flush stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "capture bigtxn flush stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         osal_thread_exit(NULL);
     }
@@ -160,12 +153,11 @@ void* bigtxn_captureflush_main(void* args)
     cache_sysdictsload((void**)&cflush->txnsctx->sysdicts);
 
     /* Load addtablepattern */
-    cflush->txnsctx->addtablepattern =
-        filter_dataset_initaddtablepattern(cflush->txnsctx->addtablepattern);
+    cflush->txnsctx->addtablepattern = filter_dataset_initaddtablepattern(cflush->txnsctx->addtablepattern);
 
     /* Load synchronization dataset */
-    cflush->txnsctx->hsyncdataset = filter_dataset_load(cflush->txnsctx->sysdicts->by_namespace,
-                                                        cflush->txnsctx->sysdicts->by_class);
+    cflush->txnsctx->hsyncdataset =
+        filter_dataset_load(cflush->txnsctx->sysdicts->by_namespace, cflush->txnsctx->sysdicts->by_class);
 
     /* Initialize big transaction hash */
     rmemset1(&hctl, 0, 0, sizeof(hctl));

@@ -21,9 +21,7 @@
  *4. Delete data and conf files
  *5. Return success message
  */
-bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
-                                  netpoolentry*    npoolentry,
-                                  netpacket*       npacket)
+bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket)
 {
     int                          len = 0;
     int                          jobtype = 0;
@@ -94,8 +92,7 @@ bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
         if (XMANAGER_METRICNODESTAT_ONLINE == pxmetricnode->stat)
         {
             errcode = ERROR_MSGCOMMAND;
-            snprintf(
-                errormsg, 2048, "ERROR: %s is running, Please execute the stop command.", jobname);
+            snprintf(errormsg, 2048, "ERROR: %s is running, Please execute the stop command.", jobname);
             goto xmanager_metricmsg_parsedrop_error;
         }
 
@@ -108,9 +105,7 @@ bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
                 xmetricprogressnode = (xmanager_metricprogressnode*)tmpxmetricnode;
                 if (false == dlist_isnull(xmetricprogressnode->progressjop))
                 {
-                    if (NULL != dlist_isexist(xmetricprogressnode->progressjop,
-                                              pxmetricnode,
-                                              xmanager_metricnode_cmp))
+                    if (NULL != dlist_isexist(xmetricprogressnode->progressjop, pxmetricnode, xmanager_metricnode_cmp))
                     {
                         errcode = ERROR_MSGEXIST;
                         snprintf(errormsg,
@@ -126,8 +121,7 @@ bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
         /* Delete file */
         if (NULL != pxmetricnode->data && NULL != pxmetricnode->conf)
         {
-            snprintf(
-                execcmd, 1024, "rm -rf %s/* ; rm -rf %s ;", pxmetricnode->data, pxmetricnode->conf);
+            snprintf(execcmd, 1024, "rm -rf %s/* ; rm -rf %s ;", pxmetricnode->data, pxmetricnode->conf);
         }
         else if (NULL == pxmetricnode->data && NULL != pxmetricnode->conf)
         {
@@ -140,8 +134,7 @@ bool xmanager_metricmsg_parsedrop(xmanager_metric* xmetric,
         else
         {
             errcode = ERROR_NOENT;
-            snprintf(
-                errormsg, 2048, "%s", "ERROR: xmanager recv drop command, data and conf is null");
+            snprintf(errormsg, 2048, "%s", "ERROR: xmanager recv drop command, data and conf is null");
             goto xmanager_metricmsg_parsedrop_error;
         }
 
@@ -177,6 +170,5 @@ xmanager_metricmsg_parsedrop_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(
-        xmetric, npoolentry->wpackets, XMANAGER_MSG_DROPCMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_DROPCMD, errcode, errormsg);
 }

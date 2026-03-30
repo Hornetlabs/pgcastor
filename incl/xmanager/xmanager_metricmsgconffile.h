@@ -7,8 +7,6 @@
  *  2. Verify if job already exists
  *  3、Overwrite conf file
  */
-bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric,
-                                      netpoolentry*    npoolentry,
-                                      netpacket*       npacket);
+bool xmanager_metricmsg_parseconffile(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket);
 
 #endif

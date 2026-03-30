@@ -17,17 +17,17 @@ typedef struct INCREMENT_CAPTURESERIAL_CALLBACK
 
 typedef struct INCREMENT_CAPTURESERIALSTATE
 {
-    serialstate base;
-    int         state;
-    TimeLineID  curtlid;
-    XLogRecPtr  redolsn;
-    XLogRecPtr  restartlsn;
-    XLogRecPtr  confirmlsn;
-    cache_txn*  parser2serialtxns;
-    transcache* dictcache;
-    void*       privdata;
-    List*       redosysdicts; /* System table changes between two checkpoints */
-    List*       onlinerefreshdataset;
+    serialstate                      base;
+    int                              state;
+    TimeLineID                       curtlid;
+    XLogRecPtr                       redolsn;
+    XLogRecPtr                       restartlsn;
+    XLogRecPtr                       confirmlsn;
+    cache_txn*                       parser2serialtxns;
+    transcache*                      dictcache;
+    void*                            privdata;
+    List*                            redosysdicts; /* System table changes between two checkpoints */
+    List*                            onlinerefreshdataset;
     increment_captureserial_callback callback;
 } increment_captureserialstate;
 

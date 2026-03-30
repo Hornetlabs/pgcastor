@@ -5,9 +5,9 @@ typedef struct TRANSLOG_RECVLOG_AMROUTINE
 {
     translog_recvlog_dbversion version;
     char*                      desc;
-    bool (*msgop)(translog_recvlog* recvwal, PGconn* conn, char* buffer, int blen);
+    bool                       (*msgop)(translog_recvlog* recvwal, PGconn* conn, char* buffer, int blen);
 
-    bool (*endreplication)(translog_recvlog*    recvwal,
+    bool                       (*endreplication)(translog_recvlog*    recvwal,
                            translog_walcontrol* walctrl,
                            PGconn*              conn,
                            bool*                endcommand,
@@ -33,9 +33,7 @@ typedef struct TRANSLOG_RECVLOG_DBTYPEROUTINE
 bool translog_recvlog_getconfigurefde(translog_recvlog_dbtype type, char* conninfo, bool* fde);
 
 /* according todatalibrarytypegetdatalibraryversion */
-bool translog_recvlog_getdbversion(translog_recvlog_dbtype     type,
-                                   PGconn*                     conn,
-                                   translog_recvlog_dbversion* dbversion);
+bool translog_recvlog_getdbversion(translog_recvlog_dbtype type, PGconn* conn, translog_recvlog_dbversion* dbversion);
 
 translog_recvlog_amroutine* translog_recvlog_getroutine(translog_recvlog_dbversion dbversion);
 

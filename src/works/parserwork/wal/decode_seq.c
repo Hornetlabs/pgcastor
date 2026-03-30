@@ -70,19 +70,18 @@ void decode_seq(decodingcontext* ctx, pg_parser_translog_pre_base* pbase)
                                              true);
 
     /* Find system catalog record from cache */
-    class = (pg_sysdict_Form_pg_class)catalog_get_class_sysdict(
-        ctx->trans_cache->sysdicts->by_class, txn->sysdict, txn->sysdictHis, seq_oid);
+    class = (pg_sysdict_Form_pg_class)
+        catalog_get_class_sysdict(ctx->trans_cache->sysdicts->by_class, txn->sysdict, txn->sysdictHis, seq_oid);
     if (!class)
     {
         elog(RLOG_ERROR, "can't find sequence by oid: %u", seq_oid);
     }
 
     /* Find system catalog record from cache */
-    nsp = (pg_parser_sysdict_pgnamespace*)catalog_get_namespace_sysdict(
-        ctx->trans_cache->sysdicts->by_namespace,
-        txn->sysdict,
-        txn->sysdictHis,
-        class->relnamespace);
+    nsp = (pg_parser_sysdict_pgnamespace*)catalog_get_namespace_sysdict(ctx->trans_cache->sysdicts->by_namespace,
+                                                                        txn->sysdict,
+                                                                        txn->sysdictHis,
+                                                                        class->relnamespace);
 
     if (!nsp)
     {

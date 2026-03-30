@@ -9,10 +9,9 @@
 
 #define DDL_CREATE_TABLE_MCXT NULL
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno);
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                       pg_parser_ddlstate*           ddlstate,
+                                                                       int32_t*                      pg_parser_errno);
 static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition(
     pg_parser_translog_systb2ddl* pg_parser_ddl,
     pg_parser_ddlstate*           ddlstate,
@@ -22,11 +21,10 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
     pg_parser_ddlstate*           ddlstate,
     int32_t*                      pg_parser_errno);
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_create_table(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_create_table(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                       pg_parser_translog_systb2dll_record* current_record,
+                                                       pg_parser_ddlstate*                  ddlstate,
+                                                       int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
     PG_PARSER_UNUSED(pg_parser_ddl);
@@ -37,8 +35,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table(
                                        pg_parser_ddl->m_dbtype,
                                        pg_parser_ddl->m_dbversion))
         {
-            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                                 "DEBUG, DDL PARSER: create table, get attribute info \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: create table, get attribute info \n");
             if (!pg_parser_ddl_get_attribute_info(ddlstate, current_record->m_record, true))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_DDLSTMT_GET_ATTRIBUTE_LIST;
@@ -57,18 +54,15 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table(
                                                             current_record->m_record->m_new_values,
                                                             current_record->m_record->m_valueCnt,
                                                             temp_objid);
-            temp_classid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
-                                                   current_record->m_record->m_new_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_classid);
-            temp_refclassid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("refclassid",
-                                                   current_record->m_record->m_new_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_refclassid);
-            if (!strcmp(temp_objid, ddlstate->m_reloid_char) &&
-                !strcmp(RelationRelationIdChar, temp_classid) &&
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                              current_record->m_record->m_new_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_classid);
+            temp_refclassid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("refclassid",
+                                                                 current_record->m_record->m_new_values,
+                                                                 current_record->m_record->m_valueCnt,
+                                                                 temp_refclassid);
+            if (!strcmp(temp_objid, ddlstate->m_reloid_char) && !strcmp(RelationRelationIdChar, temp_classid) &&
                 !strcmp(NamespaceRelationIdChar, temp_refclassid))
             {
                 pg_parser_translog_systb2dll_record* next_record = current_record->m_next;
@@ -105,8 +99,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table(
                                                             pg_parser_errno);
 
                         if ((temp_check_relpersistence_change) &&
-                            (ddlstate->m_log_step ==
-                             PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_BEGIN) &&
+                            (ddlstate->m_log_step == PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_BEGIN) &&
                             (pg_parser_check_table_name(ddlstate->m_relname,
                                                         TEMPTABLE_PREFIX,
                                                         pg_parser_ddl->m_dbtype,
@@ -115,34 +108,28 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table(
                             pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
                                                  "DEBUG, DDL PARSER: in create table catch change "
                                                  "relpersistence \n");
-                            ddlstate->m_log_step =
-                                PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP;
+                            ddlstate->m_log_step = PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP;
                             ddlstate->m_reloid_temp = ddlstate->m_reloid;
                         }
                         else if (temp_check_relfilenode_change)
                         {
                             char* temp_str = NULL;
-                            pg_parser_log_errlog(
-                                pg_parser_ddl->m_debugLevel,
-                                "DEBUG, DDL PARSER: in create table catch change relfilenode \n");
-                            temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                                "oid",
-                                next_record->m_record->m_new_values,
-                                next_record->m_record->m_valueCnt,
-                                ddlstate->m_reloid);
-                            if (PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP ==
-                                ddlstate->m_log_step)
+                            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                                 "DEBUG, DDL PARSER: in create table catch change relfilenode \n");
+                            temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
+                                                                          next_record->m_record->m_new_values,
+                                                                          next_record->m_record->m_valueCnt,
+                                                                          ddlstate->m_reloid);
+                            if (PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_RELPERSISTENCE_STEP == ddlstate->m_log_step)
                             {
                                 if (ddlstate->m_reloid_temp == strtoul(temp_str, NULL, 10))
                                 {
-                                    pg_parser_log_errlog(
-                                        pg_parser_ddl->m_debugLevel,
-                                        "DEBUG, DDL PARSER: in create table, stmt change to alter "
-                                        "table logged/unlogged \n");
+                                    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                                         "DEBUG, DDL PARSER: in create table, stmt change to alter "
+                                                         "table logged/unlogged \n");
                                     pg_parser_ddl_init_ddlstate(ddlstate);
                                     ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_ALTER_TABLE_SET_LOG;
-                                    ddlstate->m_log_step =
-                                        PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_BEGIN;
+                                    ddlstate->m_log_step = PG_PARSER_DDL_ALTER_LOG_GET_CLASS_UPDATE_BEGIN;
                                     ddlstate->m_inddl = true;
                                     return result;
                                 }
@@ -200,13 +187,11 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table(
                                 pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
                                                      "DEBUG, DDL PARSER: in create table change "
                                                      "ddl type to create partition of \n");
-                                Node = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                                    "relpartbound",
-                                    next_record->m_record->m_new_values,
-                                    next_record->m_record->m_valueCnt,
-                                    Node);
-                                ddlstate->m_partitionsub_node =
-                                    pg_parser_get_expr(Node, ddlstate->m_zicinfo);
+                                Node = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("relpartbound",
+                                                                          next_record->m_record->m_new_values,
+                                                                          next_record->m_record->m_valueCnt,
+                                                                          Node);
+                                ddlstate->m_partitionsub_node = pg_parser_get_expr(Node, ddlstate->m_zicinfo);
                                 ddlstate->m_ddlKind = PG_PARSER_DDL_TABLE_CREATE_PARTITION_SUB;
                                 break;
                             }
@@ -229,30 +214,26 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table(
                             char*    temp_str = NULL;
                             uint32_t temp_uint32 = 0;
                             ddlstate->m_inherits_cnt += 1;
-                            if (!pg_parser_mcxt_realloc(
-                                    DDL_CREATE_TABLE_MCXT,
-                                    (void**)&(ddlstate->m_inherits_oid),
-                                    ddlstate->m_inherits_cnt * sizeof(uint32_t)))
+                            if (!pg_parser_mcxt_realloc(DDL_CREATE_TABLE_MCXT,
+                                                        (void**)&(ddlstate->m_inherits_oid),
+                                                        ddlstate->m_inherits_cnt * sizeof(uint32_t)))
                             {
                                 *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_52;
                                 return NULL;
                             }
-                            temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                                "inhrelid",
-                                next_record->m_record->m_new_values,
-                                next_record->m_record->m_valueCnt,
-                                temp_str);
+                            temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("inhrelid",
+                                                                          next_record->m_record->m_new_values,
+                                                                          next_record->m_record->m_valueCnt,
+                                                                          temp_str);
                             temp_uint32 = strtoul(temp_str, NULL, 10);
                             if (ddlstate->m_reloid == temp_uint32)
                             {
-                                temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                                    "inhparent",
-                                    next_record->m_record->m_new_values,
-                                    next_record->m_record->m_valueCnt,
-                                    temp_str);
+                                temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("inhparent",
+                                                                              next_record->m_record->m_new_values,
+                                                                              next_record->m_record->m_valueCnt,
+                                                                              temp_str);
                                 temp_uint32 = strtoul(temp_str, NULL, 10);
-                                ddlstate->m_inherits_oid[ddlstate->m_inherits_cnt - 1] =
-                                    temp_uint32;
+                                ddlstate->m_inherits_oid[ddlstate->m_inherits_cnt - 1] = temp_uint32;
                             }
                             break;
                         }
@@ -300,8 +281,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table(
                 }
                 if (PG_PARSER_DDL_TABLE_CREATE == ddlstate->m_ddlKind)
                 {
-                    result = pg_parser_ddl_assemble_create_table(
-                        pg_parser_ddl, ddlstate, pg_parser_errno);
+                    result = pg_parser_ddl_assemble_create_table(pg_parser_ddl, ddlstate, pg_parser_errno);
                 }
             }
         }
@@ -309,11 +289,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table(
     return result;
 }
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_create_table_partition(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_create_table_partition(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                                 pg_parser_translog_systb2dll_record* current_record,
+                                                                 pg_parser_ddlstate*                  ddlstate,
+                                                                 int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
     PG_PARSER_UNUSED(pg_parser_ddl);
@@ -339,9 +318,8 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table_partition(
         {
             ddlstate->m_get_partition = true;
             ddlstate->m_partition = current_record->m_record;
-            pg_parser_log_errlog(
-                pg_parser_ddl->m_debugLevel,
-                "DEBUG, DDL PARSER: create table partition by, get partition define \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                 "DEBUG, DDL PARSER: create table partition by, get partition define \n");
         }
         else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
                                             SYS_INHERITS,
@@ -358,8 +336,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table_partition(
                                             pg_parser_ddl->m_dbtype,
                                             pg_parser_ddl->m_dbversion))
         {
-            ddlstate->m_attrdef_list =
-                pg_parser_list_lappend(ddlstate->m_attrdef_list, current_record->m_record);
+            ddlstate->m_attrdef_list = pg_parser_list_lappend(ddlstate->m_attrdef_list, current_record->m_record);
         }
 
         else if (pg_parser_check_table_name(current_record->m_record->m_base.m_tbname,
@@ -374,22 +351,18 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table_partition(
                                                             current_record->m_record->m_new_values,
                                                             current_record->m_record->m_valueCnt,
                                                             temp_objid);
-            temp_classid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
-                                                   current_record->m_record->m_new_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_classid);
-            temp_refclassid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("refclassid",
-                                                   current_record->m_record->m_new_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_refclassid);
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                              current_record->m_record->m_new_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_classid);
+            temp_refclassid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("refclassid",
+                                                                 current_record->m_record->m_new_values,
+                                                                 current_record->m_record->m_valueCnt,
+                                                                 temp_refclassid);
             if (ddlstate->m_get_partition && !strcmp(temp_objid, ddlstate->m_reloid_char) &&
-                !strcmp(RelationRelationIdChar, temp_classid) &&
-                !strcmp(RelationRelationIdChar, temp_refclassid))
+                !strcmp(RelationRelationIdChar, temp_classid) && !strcmp(RelationRelationIdChar, temp_refclassid))
             {
-                result = pg_parser_ddl_assemble_create_table_partition(
-                    pg_parser_ddl, ddlstate, pg_parser_errno);
+                result = pg_parser_ddl_assemble_create_table_partition(pg_parser_ddl, ddlstate, pg_parser_errno);
             }
         }
     }
@@ -401,12 +374,11 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table_partition(
                                        pg_parser_ddl->m_dbversion))
         {
             char* Node = NULL;
-            bool  temp_check_partition_change =
-                pg_parser_ddl_checkChangeColumn("relispartition",
-                                                current_record->m_record->m_new_values,
-                                                current_record->m_record->m_old_values,
-                                                current_record->m_record->m_valueCnt,
-                                                pg_parser_errno);
+            bool  temp_check_partition_change = pg_parser_ddl_checkChangeColumn("relispartition",
+                                                                               current_record->m_record->m_new_values,
+                                                                               current_record->m_record->m_old_values,
+                                                                               current_record->m_record->m_valueCnt,
+                                                                               pg_parser_errno);
             if (temp_check_partition_change)
             {
                 Node = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("relpartbound",
@@ -463,32 +435,27 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_create_table_partition_sub(
                                                             current_record->m_record->m_new_values,
                                                             current_record->m_record->m_valueCnt,
                                                             temp_objid);
-            temp_classid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
-                                                   current_record->m_record->m_new_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_classid);
-            temp_refclassid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("refclassid",
-                                                   current_record->m_record->m_new_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_refclassid);
-            if (!strcmp(temp_objid, ddlstate->m_reloid_char) &&
-                !strcmp(RelationRelationIdChar, temp_classid) &&
+            temp_classid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("classid",
+                                                              current_record->m_record->m_new_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_classid);
+            temp_refclassid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("refclassid",
+                                                                 current_record->m_record->m_new_values,
+                                                                 current_record->m_record->m_valueCnt,
+                                                                 temp_refclassid);
+            if (!strcmp(temp_objid, ddlstate->m_reloid_char) && !strcmp(RelationRelationIdChar, temp_classid) &&
                 !strcmp(RelationRelationIdChar, temp_refclassid))
             {
-                result = pg_parser_ddl_assemble_create_table_partition_sub(
-                    pg_parser_ddl, ddlstate, pg_parser_errno);
+                result = pg_parser_ddl_assemble_create_table_partition_sub(pg_parser_ddl, ddlstate, pg_parser_errno);
             }
         }
     }
     return result;
 }
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno)
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                       pg_parser_ddlstate*           ddlstate,
+                                                                       int32_t*                      pg_parser_errno)
 {
     int32_t                                 i = 0;
     pg_parser_translog_ddlstmt*             result = NULL;
@@ -502,8 +469,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table(
 
     PG_PARSER_UNUSED(pg_parser_ddl);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_CREATE_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_CREATE_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_2A;
         *pg_parser_errno = 1;
@@ -560,16 +526,16 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table(
         {
             char* temp_notnull = NULL;
             tbatt = (pg_parser_translog_tbcol_values*)pg_parser_lfirst(cell);
-            temp_notnull = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "attnotnull", tbatt->m_new_values, tbatt->m_valueCnt, temp_notnull);
-            column[i].m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "attname", tbatt->m_new_values, tbatt->m_valueCnt, column[i].m_colname);
-            tempstr = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "atttypid", tbatt->m_new_values, tbatt->m_valueCnt, tempstr);
+            temp_notnull =
+                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attnotnull", tbatt->m_new_values, tbatt->m_valueCnt, temp_notnull);
+            column[i].m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname",
+                                                                     tbatt->m_new_values,
+                                                                     tbatt->m_valueCnt,
+                                                                     column[i].m_colname);
+            tempstr = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid", tbatt->m_new_values, tbatt->m_valueCnt, tempstr);
             column[i].m_coltypid = strtoul(tempstr, NULL, 10);
             typid = column[i].m_coltypid;
-            tempstr = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-                "atttypmod", tbatt->m_new_values, tbatt->m_valueCnt, tempstr);
+            tempstr = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypmod", tbatt->m_new_values, tbatt->m_valueCnt, tempstr);
             typmod = atoi(tempstr);
             if (0 <= typmod)
             {
@@ -668,8 +634,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
 
     PG_PARSER_UNUSED(pg_parser_ddl);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_CREATE_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_CREATE_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_2D;
         *pg_parser_errno = 1;
@@ -727,12 +692,11 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
     {
         char* temp_notnull = NULL;
         tbatt = (pg_parser_translog_tbcol_values*)pg_parser_lfirst(cell);
-        temp_notnull = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-            "attnotnull", tbatt->m_new_values, tbatt->m_valueCnt, temp_notnull);
-        column[i].m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-            "attname", tbatt->m_new_values, tbatt->m_valueCnt, column[i].m_colname);
-        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-            "atttypid", tbatt->m_new_values, tbatt->m_valueCnt, temp_str);
+        temp_notnull =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attnotnull", tbatt->m_new_values, tbatt->m_valueCnt, temp_notnull);
+        column[i].m_colname =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname", tbatt->m_new_values, tbatt->m_valueCnt, column[i].m_colname);
+        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid", tbatt->m_new_values, tbatt->m_valueCnt, temp_str);
         column[i].m_coltypid = strtoul(temp_str, NULL, 10);
         if ('t' == temp_notnull[0])
         {
@@ -746,13 +710,10 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
         char* temp_num = NULL;
         char* Node = NULL;
         tbattdef = (pg_parser_translog_tbcol_values*)pg_parser_lfirst(cell);
-        temp_num = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-            "adnum", tbattdef->m_new_values, tbattdef->m_valueCnt, temp_num);
-        Node = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-            "adbin", tbattdef->m_new_values, tbattdef->m_valueCnt, Node);
+        temp_num = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("adnum", tbattdef->m_new_values, tbattdef->m_valueCnt, temp_num);
+        Node = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("adbin", tbattdef->m_new_values, tbattdef->m_valueCnt, Node);
 
-        table_return->m_cols[atoi(temp_num) - 1].m_default =
-            pg_parser_get_expr(Node, ddlstate->m_zicinfo);
+        table_return->m_cols[atoi(temp_num) - 1].m_default = pg_parser_get_expr(Node, ddlstate->m_zicinfo);
     }
 
     if (!ddlstate->m_partition)
@@ -873,8 +834,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
     result->m_base.m_ddltype = PG_PARSER_DDLINFO_CREATE_TABLE;
     result->m_ddlstmt = (void*)table_return;
     result->m_next = NULL;
-    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                         "DEBUG, DDL PARSER: create table partition by end \n");
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: create table partition by end \n");
     pg_parser_ddl_init_ddlstate(ddlstate);
     return result;
 }
@@ -895,8 +855,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
 
     PG_PARSER_UNUSED(pg_parser_ddl);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_CREATE_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_CREATE_TABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_33;
         *pg_parser_errno = 1;
@@ -954,12 +913,11 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
     {
         char* temp_notnull = NULL;
         tbatt = (pg_parser_translog_tbcol_values*)pg_parser_lfirst(cell);
-        temp_notnull = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-            "attnotnull", tbatt->m_new_values, tbatt->m_valueCnt, temp_notnull);
-        column[i].m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-            "attname", tbatt->m_new_values, tbatt->m_valueCnt, column[i].m_colname);
-        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-            "atttypid", tbatt->m_new_values, tbatt->m_valueCnt, temp_str);
+        temp_notnull =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attnotnull", tbatt->m_new_values, tbatt->m_valueCnt, temp_notnull);
+        column[i].m_colname =
+            PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname", tbatt->m_new_values, tbatt->m_valueCnt, column[i].m_colname);
+        temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid", tbatt->m_new_values, tbatt->m_valueCnt, temp_str);
         column[i].m_coltypid = strtoul(temp_str, NULL, 10);
         if ('t' == temp_notnull[0])
         {
@@ -988,8 +946,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_create_table_partition
     result->m_base.m_ddltype = PG_PARSER_DDLINFO_CREATE_TABLE;
     result->m_ddlstmt = (void*)table_return;
     result->m_next = NULL;
-    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                         "DEBUG, DDL PARSER: create table partition of end \n");
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: create table partition of end \n");
     pg_parser_ddl_init_ddlstate(ddlstate);
     return result;
 }

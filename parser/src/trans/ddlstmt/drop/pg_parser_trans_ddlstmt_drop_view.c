@@ -11,11 +11,10 @@
 /*
  * This version only performs a filter operation on drop view, does not return actual parsed content
  */
-pg_parser_translog_ddlstmt* pg_parser_DDL_drop_view(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_drop_view(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                    pg_parser_translog_systb2dll_record* current_record,
+                                                    pg_parser_ddlstate*                  ddlstate,
+                                                    int32_t*                             pg_parser_errno)
 {
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
@@ -26,11 +25,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_view(
                                        pg_parser_ddl->m_dbtype,
                                        pg_parser_ddl->m_dbversion))
         {
-            char* temprelid =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
-                                                   current_record->m_record->m_old_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temprelid);
+            char* temprelid = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("oid",
+                                                                 current_record->m_record->m_old_values,
+                                                                 current_record->m_record->m_valueCnt,
+                                                                 temprelid);
             if (!strcmp(temprelid, ddlstate->m_reloid_char))
             {
                 pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,

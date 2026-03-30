@@ -63,9 +63,7 @@ static bool xmanager_metricmsg_assembleinforesult(xmanager_metric*     xmetric,
  *2. Verify job already exists
  *3. Get info and return
  */
-bool xmanager_metricmsg_parseinfo(xmanager_metric* xmetric,
-                                  netpoolentry*    npoolentry,
-                                  netpacket*       npacket)
+bool xmanager_metricmsg_parseinfo(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket)
 {
     /* Error code */
     int                  errcode = 0;
@@ -150,6 +148,5 @@ xmanager_metricmsg_parseinfo_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(
-        xmetric, npoolentry->wpackets, XMANAGER_MSG_INFOCMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_INFOCMD, errcode, errormsg);
 }

@@ -8,11 +8,10 @@
 
 #define DDL_TRUNCATE_MCXT NULL
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_reindex(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_reindex(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                  pg_parser_translog_systb2dll_record* current_record,
+                                                  pg_parser_ddlstate*                  ddlstate,
+                                                  int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt*           result = NULL;
     pg_parser_translog_ddlstmt_drop_base* reindex = NULL;
@@ -21,14 +20,12 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_reindex(
     PG_PARSER_UNUSED(current_record);
     PG_PARSER_UNUSED(pg_parser_errno);
     pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture reindex end \n");
-    if (!pg_parser_mcxt_malloc(
-            DDL_TRUNCATE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_TRUNCATE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_21;
         return NULL;
     }
-    if (!pg_parser_mcxt_malloc(
-            DDL_TRUNCATE_MCXT, (void**)&reindex, sizeof(pg_parser_translog_ddlstmt_drop_base)))
+    if (!pg_parser_mcxt_malloc(DDL_TRUNCATE_MCXT, (void**)&reindex, sizeof(pg_parser_translog_ddlstmt_drop_base)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_22;
         return NULL;

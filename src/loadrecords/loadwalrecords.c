@@ -50,8 +50,7 @@ static bool splitwork_wal_crccheck(uint8* bytes)
 
 static bool check_magic(uint16 magic)
 {
-    return (magic == XLOG_PAGE_MAGIC_PG127 || magic == XLOG_PAGE_MAGIC_PG149 ||
-            magic == XLOG_PAGE_MAGIC_PG95);
+    return (magic == XLOG_PAGE_MAGIC_PG127 || magic == XLOG_PAGE_MAGIC_PG149 || magic == XLOG_PAGE_MAGIC_PG95);
 }
 
 static bool check_is_same_segno(XLogRecPtr ptr1, XLogRecPtr ptr2, loadwalrecords* rctl)
@@ -148,8 +147,7 @@ static bool loadwalrecords_initloadpage(loadwalrecords* loadrecords, loadpage_ty
 
     /* set directory path */
     dirpath = guc_getConfigOption(CFG_KEY_WAL_DIR);
-    if (false ==
-        loadrecords->loadpageroutine->loadpagesetfilesource(loadrecords->loadpage, dirpath))
+    if (false == loadrecords->loadpageroutine->loadpagesetfilesource(loadrecords->loadpage, dirpath))
     {
         elog(RLOG_WARNING, "load trail record set load source error");
         return false;
@@ -272,8 +270,7 @@ static bool loadtwalrecords_loadpage(loadwalrecords* loadrecords)
     result = loadrecords->loadpageroutine->loadpage(loadrecords->loadpage, buff);
 
     /* check if next read is from next wal file */
-    if (0 == ((loadrecords->block_startptr + loadrecords->loadpage->blksize) %
-              loadrecords->loadpage->filesize))
+    if (0 == ((loadrecords->block_startptr + loadrecords->loadpage->blksize) % loadrecords->loadpage->filesize))
     {
         /* close file descriptor */
         loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
@@ -348,10 +345,9 @@ static bool splitStartWithBlockBegin(char*           currentBuf,
                  "again");
 
             /* when not in same wal file */
-            if (!check_is_same_segno(
-                    loadrecords->startptr,
-                    loadrecords->page_last_record_incomplete->record->start.wal.lsn,
-                    loadrecords))
+            if (!check_is_same_segno(loadrecords->startptr,
+                                     loadrecords->page_last_record_incomplete->record->start.wal.lsn,
+                                     loadrecords))
             {
                 /* close file descriptor, reopen previous file on read */
                 loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
@@ -369,8 +365,7 @@ static bool splitStartWithBlockBegin(char*           currentBuf,
     if (phdr->xlp_rem_len > 0)
     {
         /* whether incomplete record exists */
-        if (loadrecords->page_last_record_incomplete &&
-            !check_seg_first_incomplete_record_incompleted(loadrecords))
+        if (loadrecords->page_last_record_incomplete && !check_seg_first_incomplete_record_incompleted(loadrecords))
         {
             recordcross* record_cross = loadrecords->page_last_record_incomplete;
             uint32       temp_offset = 0;
@@ -386,12 +381,10 @@ static bool splitStartWithBlockBegin(char*           currentBuf,
                 /* on verification failure, wait 200ms */
                 wal_usleep(20 * 1000);
 
-                elog(RLOG_INFO,
-                     "record split, page hdr remain len > incomplete record len, waitting");
+                elog(RLOG_INFO, "record split, page hdr remain len > incomplete record len, waitting");
 
                 /* when not in same wal file */
-                if (!check_is_same_segno(
-                        loadrecords->startptr, record_cross->record->start.wal.lsn, loadrecords))
+                if (!check_is_same_segno(loadrecords->startptr, record_cross->record->start.wal.lsn, loadrecords))
                 {
                     /* close file descriptor, reopen previous file on read */
                     loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
@@ -431,8 +424,7 @@ static bool splitStartWithBlockBegin(char*           currentBuf,
                     !check_prev_lsn((XLogRecord*)complete_record->data, loadrecords->prev))
                 {
                     /* when not in same wal file */
-                    if (!check_is_same_segno(
-                            loadrecords->startptr, complete_record->start.wal.lsn, loadrecords))
+                    if (!check_is_same_segno(loadrecords->startptr, complete_record->start.wal.lsn, loadrecords))
                     {
                         /* close file descriptor, reopen previous file on read */
                         loadrecords->loadpageroutine->loadpageclose(loadrecords->loadpage);
@@ -488,10 +480,7 @@ static bool splitStartWithBlockBegin(char*           currentBuf,
                 realSize = (realSize <= freeSpace) ? realSize : freeSpace;
 
                 /* copy */
-                rmemcpy0(record_cross->record->data,
-                         record_cross->remainlen,
-                         buff->data + *offset,
-                         realSize);
+                rmemcpy0(record_cross->record->data, record_cross->remainlen, buff->data + *offset, realSize);
 
                 record_cross->remainlen += realSize;
 
@@ -604,8 +593,7 @@ static bool splitStartWithRecordBegin(char*           currentBuf,
             if (IsSwitchXlog(record->xl_rmid, record->xl_info))
             {
                 loadrecords->startptr += loadrecords->loadpage->filesize;
-                loadrecords->startptr -=
-                    XLogSegmentOffset(loadrecords->startptr, loadrecords->loadpage->filesize);
+                loadrecords->startptr -= XLogSegmentOffset(loadrecords->startptr, loadrecords->loadpage->filesize);
                 elog(RLOG_DEBUG, "get switch log, start ptr reset to %lu", loadrecords->startptr);
 
                 /* close file descriptor */
@@ -858,8 +846,7 @@ bool loadwalrecords_merge_seg_last_record(loadwalrecords* rctl)
     f_record->record = NULL;
 
     /* crc and prev verification */
-    if (!splitwork_wal_crccheck((uint8*)record->data) ||
-        !check_prev_lsn((XLogRecord*)record->data, rctl->prev))
+    if (!splitwork_wal_crccheck((uint8*)record->data) || !check_prev_lsn((XLogRecord*)record->data, rctl->prev))
     {
         /* verification should not fail, there is a problem here */
         elog(RLOG_ERROR,

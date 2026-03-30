@@ -27,9 +27,7 @@
  *3. Create async message and mount to xscsci node
  *4. Execute init command
  */
-bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric,
-                                  netpoolentry*    npoolentry,
-                                  netpacket*       npacket)
+bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket)
 {
     int                        errcode = 0;
     int                        len = 0;
@@ -115,8 +113,7 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric,
      *  1、Get xscsci node
      *  2、Create async wait message
      */
-    fd2node = dlist_get(
-        xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
+    fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
 
     xmetricxscscinode = (xmanager_metricxscscinode*)fd2node->metricnode;
     asyncmsg = xmanager_metricasyncmsg_init();
@@ -137,11 +134,7 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric,
     /* Execute init command execcmd */
     if (XMANAGER_METRICNODETYPE_PGRECEIVELOG == jobtype)
     {
-        snprintf(execcmd,
-                 1024,
-                 "%s/bin/pgreceivelog/receivelog -f %s init",
-                 xmetric->xsynchpath,
-                 pxmetricnode->conf);
+        snprintf(execcmd, 1024, "%s/bin/pgreceivelog/receivelog -f %s init", xmetric->xsynchpath, pxmetricnode->conf);
     }
     else
     {
@@ -176,16 +169,13 @@ xmanager_metricmsg_parseinit_error:
         xmanager_metricasyncmsg_destroy(asyncmsg);
     }
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(
-        xmetric, npoolentry->wpackets, XMANAGER_MSG_INITCMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_INITCMD, errcode, errormsg);
 }
 
 /*
  * Assemble init response message
  */
-bool xmanager_metricmsg_assembleinit(xmanager_metric* xmetric,
-                                     netpoolentry*    npoolentry,
-                                     dlist*           dlmsgs)
+bool xmanager_metricmsg_assembleinit(xmanager_metric* xmetric, netpoolentry* npoolentry, dlist* dlmsgs)
 {
     int                      ivalue = 0;
     int                      msglen = 0;
@@ -200,8 +190,11 @@ bool xmanager_metricmsg_assembleinit(xmanager_metric* xmetric,
         /* Assemble error message */
         elog(RLOG_WARNING, "metric msg assemble init too many async msgs.");
         snprintf(errormsg, 2048, "metric msg assemble init too many async msgs.");
-        return xmanager_metricmsg_assembleerrormsg(
-            xmetric, npoolentry->wpackets, XMANAGER_MSG_INITCMD, ERROR_MSGCOMMAND, errormsg);
+        return xmanager_metricmsg_assembleerrormsg(xmetric,
+                                                   npoolentry->wpackets,
+                                                   XMANAGER_MSG_INITCMD,
+                                                   ERROR_MSGCOMMAND,
+                                                   errormsg);
     }
 
     xmetricasyncmsg = (xmanager_metricasyncmsg*)dlmsgs->head->value;

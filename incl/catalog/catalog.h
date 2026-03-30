@@ -175,8 +175,7 @@ void* catalog_get_class_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdict
 
 void* catalog_get_database_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid oid);
 
-void* catalog_get_attribute_sysdict(
-    HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid attrelid, int16_t attnum);
+void* catalog_get_attribute_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid attrelid, int16_t attnum);
 
 void* catalog_get_namespace_sysdict(HTAB* sysdict_hash, List* sysdict, List* sysdicthis, Oid oid);
 

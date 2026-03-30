@@ -69,8 +69,7 @@ bool netclient_isconnect(netclient* netclient);
 bool netclient_tryconn(netclient* netclient);
 
 /* Create connection and send data */
-bool netclient_senddata(
-    netclient_protocoltype ptype, char* host, char* port, uint8* data, int datalen);
+bool netclient_senddata(netclient_protocoltype ptype, char* host, char* port, uint8* data, int datalen);
 
 /* Create listen event and wait for event trigger, process triggered event */
 bool netclient_desc(netclient* netclient);

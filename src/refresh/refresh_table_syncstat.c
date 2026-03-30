@@ -89,9 +89,7 @@ void refreshtablesyncstat_cnt_set(int cnt, refresh_table_syncstat* syncstat)
 }
 
 /* traverse refresh directory based on tablesyncstats, generate queue */
-bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats,
-                                     void*                    queue_ptr,
-                                     char*                    refreshdir)
+bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, void* queue_ptr, char* refreshdir)
 {
     DIR*                    compdir = NULL;
     struct dirent*          entry = NULL;
@@ -151,8 +149,7 @@ bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats,
                 refreshtablesyncstat_cnt_set(table_shard->shardings, temp_table_state);
             }
 
-            if (0 == table_shard->shardings &&
-                REFRESH_TABLE_STAT_WAIT != temp_table_state->tablestat)
+            if (0 == table_shard->shardings && REFRESH_TABLE_STAT_WAIT != temp_table_state->tablestat)
             {
                 /* free */
                 refresh_table_sharding_free(table_shard);
@@ -163,11 +160,9 @@ bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats,
 
             if (temp_table_state->stat)
             {
-                if (temp_table_state->stat[table_shard->sharding_no - 1] ==
-                    REFRESH_TABLE_SYNCS_SHARD_STAT_INIT)
+                if (temp_table_state->stat[table_shard->sharding_no - 1] == REFRESH_TABLE_SYNCS_SHARD_STAT_INIT)
                 {
-                    temp_table_state->stat[table_shard->sharding_no - 1] =
-                        REFRESH_TABLE_SYNCS_SHARD_STAT_SYNCING;
+                    temp_table_state->stat[table_shard->sharding_no - 1] = REFRESH_TABLE_SYNCS_SHARD_STAT_SYNCING;
                 }
             }
 
@@ -209,8 +204,7 @@ bool refresh_table_syncstat_cleardirbyall(refresh_table_syncstats* tablesyncstat
     for (tables = tablesyncstats->tablesyncall; tables != NULL; tables = tables->next)
     {
         resetStringInfo(path);
-        appendStringInfo(
-            path, "%s/%s/%s_%s", refreshdir, REFRESH_REFRESH, tables->schema, tables->table);
+        appendStringInfo(path, "%s/%s/%s_%s", refreshdir, REFRESH_REFRESH, tables->schema, tables->table);
         osal_remove_dir(path->data);
     }
     /* cleanup */

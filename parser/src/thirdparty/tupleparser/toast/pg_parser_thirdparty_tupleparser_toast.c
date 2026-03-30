@@ -21,13 +21,14 @@
         rmemcpy1(&(toast_pointer), 0, PG_PARSER_VARDATA_EXTERNAL(attre), sizeof(toast_pointer)); \
     } while (0)
 
-static struct pg_parser_varlena* toast_decompress_datum(struct pg_parser_varlena* attr,
-                                                        bool*                     need_free);
-static struct pg_parser_varlena* toast_decompress_datum_pg14(struct pg_parser_varlena* attr,
-                                                             bool*                     need_free);
+static struct pg_parser_varlena* toast_decompress_datum(struct pg_parser_varlena* attr, bool* need_free);
+static struct pg_parser_varlena* toast_decompress_datum_pg14(struct pg_parser_varlena* attr, bool* need_free);
 
-struct pg_parser_varlena* pg_parser_detoast_datum(
-    struct pg_parser_varlena* datum, bool* is_toast, bool* need_free, int dbtype, char* dbversion)
+struct pg_parser_varlena* pg_parser_detoast_datum(struct pg_parser_varlena* datum,
+                                                  bool*                     is_toast,
+                                                  bool*                     need_free,
+                                                  int                       dbtype,
+                                                  char*                     dbversion)
 {
     if (PG_PARSER_VARATT_IS_EXTENDED(datum))
     {
@@ -39,8 +40,7 @@ struct pg_parser_varlena* pg_parser_detoast_datum(
     }
 }
 
-struct pg_parser_varlena* pg_parser_heap_tuple_fetch_attr(struct pg_parser_varlena* attr,
-                                                          bool*                     is_toast)
+struct pg_parser_varlena* pg_parser_heap_tuple_fetch_attr(struct pg_parser_varlena* attr, bool* is_toast)
 {
     struct pg_parser_varlena* result;
 
@@ -48,8 +48,7 @@ struct pg_parser_varlena* pg_parser_heap_tuple_fetch_attr(struct pg_parser_varle
     {
         /* Get structure for toast storage */
         struct pg_parser_varatt_external* toast_pointer;
-        if (!pg_parser_mcxt_malloc(
-                TOAST_MCXT, (void**)(&toast_pointer), sizeof(struct pg_parser_varatt_external)))
+        if (!pg_parser_mcxt_malloc(TOAST_MCXT, (void**)(&toast_pointer), sizeof(struct pg_parser_varatt_external)))
         {
             return NULL;
         }
@@ -77,8 +76,7 @@ struct pg_parser_varlena* pg_parser_heap_tuple_fetch_attr(struct pg_parser_varle
          * Copy into the caller's memory context, in case caller tries to
          * pfree the result.
          */
-        if (!pg_parser_mcxt_malloc(
-                TOAST_MCXT, (void**)(&result), (int32_t)PG_PARSER_VARSIZE_ANY(attr)))
+        if (!pg_parser_mcxt_malloc(TOAST_MCXT, (void**)(&result), (int32_t)PG_PARSER_VARSIZE_ANY(attr)))
         {
             return NULL;
         }
@@ -112,15 +110,17 @@ struct pg_parser_varlena* pg_parser_heap_tuple_fetch_attr(struct pg_parser_varle
  * datum, the result will be a pfree'able chunk.
  * ----------
  */
-struct pg_parser_varlena* pg_parser_heap_tuple_untoast_attr(
-    struct pg_parser_varlena* attr, bool* is_toast, bool* need_free, int dbtype, char* dbversion)
+struct pg_parser_varlena* pg_parser_heap_tuple_untoast_attr(struct pg_parser_varlena* attr,
+                                                            bool*                     is_toast,
+                                                            bool*                     need_free,
+                                                            int                       dbtype,
+                                                            char*                     dbversion)
 {
     if (PG_PARSER_VARATT_IS_EXTERNAL_ONDISK(attr))
     {
         /* Get structure for toast storage */
         struct pg_parser_varatt_external* toast_pointer;
-        if (!pg_parser_mcxt_malloc(
-                TOAST_MCXT, (void**)(&toast_pointer), sizeof(struct pg_parser_varatt_external)))
+        if (!pg_parser_mcxt_malloc(TOAST_MCXT, (void**)(&toast_pointer), sizeof(struct pg_parser_varatt_external)))
         {
             return NULL;
         }
@@ -192,8 +192,8 @@ struct pg_parser_varlena* pg_parser_heap_tuple_untoast_attr(
         /*
          * This is a short-header varlena --- convert to 4-byte header format
          */
-        size_t data_size = PG_PARSER_VARSIZE_SHORT(attr) - PG_PARSER_VARHDRSZ_SHORT;
-        size_t new_size = data_size + PG_PARSER_VARHDRSZ;
+        size_t                    data_size = PG_PARSER_VARSIZE_SHORT(attr) - PG_PARSER_VARHDRSZ_SHORT;
+        size_t                    new_size = data_size + PG_PARSER_VARHDRSZ;
         struct pg_parser_varlena* new_attr;
         if (!pg_parser_mcxt_malloc(TOAST_MCXT, (void**)(&new_attr), new_size))
         {
@@ -209,8 +209,11 @@ struct pg_parser_varlena* pg_parser_heap_tuple_untoast_attr(
     return (void*)attr;
 }
 
-struct pg_parser_varlena* pg_parser_detoast_datum_packed(
-    struct pg_parser_varlena* datum, bool* is_toast, bool* need_free, int dbtype, char* dbversion)
+struct pg_parser_varlena* pg_parser_detoast_datum_packed(struct pg_parser_varlena* datum,
+                                                         bool*                     is_toast,
+                                                         bool*                     need_free,
+                                                         int                       dbtype,
+                                                         char*                     dbversion)
 {
     if (PG_PARSER_VARATT_IS_COMPRESSED(datum) || PG_PARSER_VARATT_IS_EXTERNAL(datum))
     {
@@ -222,8 +225,7 @@ struct pg_parser_varlena* pg_parser_detoast_datum_packed(
     }
 }
 
-static struct pg_parser_varlena* toast_decompress_datum(struct pg_parser_varlena* attr,
-                                                        bool*                     need_free)
+static struct pg_parser_varlena* toast_decompress_datum(struct pg_parser_varlena* attr, bool* need_free)
 {
     struct pg_parser_varlena* result;
 
@@ -248,27 +250,24 @@ static struct pg_parser_varlena* toast_decompress_datum(struct pg_parser_varlena
     return result;
 }
 
-static struct pg_parser_varlena* pg_parser_pg14_pglz_decompress_datum(
-    const struct pg_parser_varlena* value)
+static struct pg_parser_varlena* pg_parser_pg14_pglz_decompress_datum(const struct pg_parser_varlena* value)
 {
     struct pg_parser_varlena* result;
     int32_t                   rawsize;
     /* allocate memory for the uncompressed data */
-    if (!pg_parser_mcxt_malloc(
-            TOAST_MCXT,
-            (void**)(&result),
-            PG_PARSER_PG14_VARDATA_COMPRESSED_GET_EXTSIZE(value) + PG_PARSER_VARHDRSZ))
+    if (!pg_parser_mcxt_malloc(TOAST_MCXT,
+                               (void**)(&result),
+                               PG_PARSER_PG14_VARDATA_COMPRESSED_GET_EXTSIZE(value) + PG_PARSER_VARHDRSZ))
     {
         return NULL;
     }
 
     /* decompress the data */
-    rawsize = pg_parser_pg14_pglz_decompress(
-        (char*)value + PG_PARSER_PG14_VARHDRSZ_COMPRESSED,
-        PG_PARSER_VARSIZE(value) - PG_PARSER_PG14_VARHDRSZ_COMPRESSED,
-        PG_PARSER_VARDATA(result),
-        PG_PARSER_PG14_VARDATA_COMPRESSED_GET_EXTSIZE(value),
-        true);
+    rawsize = pg_parser_pg14_pglz_decompress((char*)value + PG_PARSER_PG14_VARHDRSZ_COMPRESSED,
+                                             PG_PARSER_VARSIZE(value) - PG_PARSER_PG14_VARHDRSZ_COMPRESSED,
+                                             PG_PARSER_VARDATA(result),
+                                             PG_PARSER_PG14_VARDATA_COMPRESSED_GET_EXTSIZE(value),
+                                             true);
     if (rawsize < 0)
     {
         return NULL;
@@ -281,17 +280,15 @@ static struct pg_parser_varlena* pg_parser_pg14_pglz_decompress_datum(
 /*
  * Decompress a varlena that was compressed using LZ4.
  */
-static struct pg_parser_varlena* pg_parser_pg14_lz4_decompress_datum(
-    const struct pg_parser_varlena* value)
+static struct pg_parser_varlena* pg_parser_pg14_lz4_decompress_datum(const struct pg_parser_varlena* value)
 {
     int32_t                   rawsize;
     struct pg_parser_varlena* result;
 
     /* allocate memory for the uncompressed data */
-    if (!pg_parser_mcxt_malloc(
-            TOAST_MCXT,
-            (void**)(&result),
-            PG_PARSER_PG14_VARDATA_COMPRESSED_GET_EXTSIZE(value) + PG_PARSER_VARHDRSZ))
+    if (!pg_parser_mcxt_malloc(TOAST_MCXT,
+                               (void**)(&result),
+                               PG_PARSER_PG14_VARDATA_COMPRESSED_GET_EXTSIZE(value) + PG_PARSER_VARHDRSZ))
     {
         return NULL;
     }
@@ -311,8 +308,7 @@ static struct pg_parser_varlena* pg_parser_pg14_lz4_decompress_datum(
     return result;
 }
 
-static struct pg_parser_varlena* toast_decompress_datum_pg14(struct pg_parser_varlena* attr,
-                                                             bool*                     need_free)
+static struct pg_parser_varlena* toast_decompress_datum_pg14(struct pg_parser_varlena* attr, bool* need_free)
 {
     struct pg_parser_varlena*    result;
     pg_parser_ToastCompressionId cmid;

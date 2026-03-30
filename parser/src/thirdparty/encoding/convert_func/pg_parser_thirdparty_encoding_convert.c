@@ -105,8 +105,7 @@ void latin2mic(const unsigned char* l, unsigned char* p, int32_t len, int32_t lc
  * lc is the mule character set id for the local encoding
  * encoding is the PG identifier for the local encoding
  */
-void mic2latin(
-    const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc, int32_t encoding)
+void mic2latin(const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc, int32_t encoding)
 {
     int32_t c1;
 
@@ -376,9 +375,8 @@ static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree* rt,
         /* 4-byte code */
 
         /* check code validity */
-        if (b1 < rt->b4_1_lower || b1 > rt->b4_1_upper || b2 < rt->b4_2_lower ||
-            b2 > rt->b4_2_upper || b3 < rt->b4_3_lower || b3 > rt->b4_3_upper ||
-            b4 < rt->b4_4_lower || b4 > rt->b4_4_upper)
+        if (b1 < rt->b4_1_lower || b1 > rt->b4_1_upper || b2 < rt->b4_2_lower || b2 > rt->b4_2_upper ||
+            b3 < rt->b4_3_lower || b3 > rt->b4_3_upper || b4 < rt->b4_4_lower || b4 > rt->b4_4_upper)
         {
             return 0;
         }
@@ -408,8 +406,8 @@ static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree* rt,
         /* 3-byte code */
 
         /* check code validity */
-        if (b2 < rt->b3_1_lower || b2 > rt->b3_1_upper || b3 < rt->b3_2_lower ||
-            b3 > rt->b3_2_upper || b4 < rt->b3_3_lower || b4 > rt->b3_3_upper)
+        if (b2 < rt->b3_1_lower || b2 > rt->b3_1_upper || b3 < rt->b3_2_lower || b3 > rt->b3_2_upper ||
+            b4 < rt->b3_3_lower || b4 > rt->b3_3_upper)
         {
             return 0;
         }
@@ -437,8 +435,7 @@ static inline uint32_t conv_mb_radix_conv(const character_mb_radix_tree* rt,
         /* 2-byte code */
 
         /* check code validity - first byte */
-        if (b3 < rt->b2_1_lower || b3 > rt->b2_1_upper || b4 < rt->b2_2_lower ||
-            b4 > rt->b2_2_upper)
+        if (b3 < rt->b2_1_lower || b3 > rt->b2_1_upper || b4 < rt->b2_2_lower || b4 > rt->b2_2_upper)
         {
             return 0;
         }
@@ -633,8 +630,7 @@ void UtfToLocal(const unsigned char*                   utf,
 
                 cutf[0] = iutf;
                 cutf[1] = iutf2;
-                cp = bsearch(
-                    cutf, cmap, cmapsize, sizeof(character_utf_to_local_combined), compare3);
+                cp = bsearch(cutf, cmap, cmapsize, sizeof(character_utf_to_local_combined), compare3);
 
                 if (cp)
                 {
@@ -799,8 +795,7 @@ void LocalToUtf(const unsigned char*                   iso,
             /* If there's a combined character map, try that */
             if (cmap)
             {
-                cp = bsearch(
-                    &iiso, cmap, cmapsize, sizeof(character_local_to_utf_combined), compare4);
+                cp = bsearch(&iiso, cmap, cmapsize, sizeof(character_local_to_utf_combined), compare4);
 
                 if (cp)
                 {

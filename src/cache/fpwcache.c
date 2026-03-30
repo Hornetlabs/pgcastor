@@ -115,10 +115,7 @@ static void fpwcache_removebyredolsn(transcache* transcache, XLogRecPtr redolsn)
     ReorderBufferFPWNode*  tuplenode = NULL;
     ReorderBufferFPWEntry* fpwentry = NULL;
 
-    elog(RLOG_DEBUG,
-         "fpwcache_removebyredolsn, redolsn:%X/%X",
-         (uint32)(redolsn >> 32),
-         (uint32)redolsn);
+    elog(RLOG_DEBUG, "fpwcache_removebyredolsn, redolsn:%X/%X", (uint32)(redolsn >> 32), (uint32)redolsn);
 
     foreach (lc, transcache->fpwtupleslist)
     {
@@ -176,17 +173,14 @@ static void fpwcache_removebyredolsn(transcache* transcache, XLogRecPtr redolsn)
 }
 
 /* Traverse transcache->chkpts to check less than restartlsn, clean up fpw and update redo */
-void fpwcache_calcredolsnbyrestartlsn(transcache* transcache,
-                                      XLogRecPtr  restartlsn,
-                                      XLogRecPtr* redolsn)
+void fpwcache_calcredolsnbyrestartlsn(transcache* transcache, XLogRecPtr restartlsn, XLogRecPtr* redolsn)
 {
     XLogRecPtr      curredolsn = InvalidXLogRecPtr;
     checkpointnode* chkptnode = NULL;     /* Data greater than restartlsn */
     checkpointnode* chkptnodeprev = NULL; /* Data less than restartlsn */
 
     curredolsn = *redolsn;
-    for (chkptnode = chkptnodeprev = transcache->chkpts->head; NULL != chkptnode;
-         chkptnode = chkptnode->next)
+    for (chkptnode = chkptnodeprev = transcache->chkpts->head; NULL != chkptnode; chkptnode = chkptnode->next)
     {
         if (restartlsn > chkptnode->redolsn)
         {

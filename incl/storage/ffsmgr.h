@@ -23,26 +23,25 @@ typedef enum FFSMGR_IF_OPTYPE
 typedef struct FFSMGR_IF
 {
     /* Initialize */
-    bool (*ffsmgr_init)(int optype, void* state);
+    bool   (*ffsmgr_init)(int optype, void* state);
 
     /* Serialize header */
-    bool (*ffsmgr_serial)(ff_cxt_type type, void* data, void* state);
+    bool   (*ffsmgr_serial)(ff_cxt_type type, void* data, void* state);
 
     /* Deserialize header */
-    bool (*ffsmgr_deserial)(ff_cxt_type type, void** data, void* state);
+    bool   (*ffsmgr_deserial)(ff_cxt_type type, void** data, void* state);
 
     /* Content release */
-    void (*ffsmgr_free)(int type, void* state);
+    void   (*ffsmgr_free)(int type, void* state);
 
     /* Get minimum value */
-    int  (*ffsmg_gettokenminsize)(int compatibility);
+    int    (*ffsmg_gettokenminsize)(int compatibility);
 
     /* Get tail value */
-    int  (*ffsmg_gettailsize)(int compatibility);
+    int    (*ffsmg_gettailsize)(int compatibility);
 
     /* Used to verify correctness of record */
-    bool (*ffsmgr_validrecord)(
-        ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record);
+    bool   (*ffsmgr_validrecord)(ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record);
 
     /* Get grouptype recorded in record */
     void   (*ffsmgr_getrecordgrouptype)(void* state, uint8* record, uint8* grouptype);
@@ -154,16 +153,16 @@ typedef struct FFSMGR_STATE_CALLBACK
 
 typedef struct FFSMGR_STATE
 {
-    int           compatibility;
-    int           bufid; /* Cache identifier in corresponding file_buffer  */
-    int           maxbufid;
-    void*         privdata; /* External structure, deserialization is parserwork_traildecodecontext
-                             *            Serialization is serialstate
-                             */
-    uint8*        recptr;   /* Starting position of record being assembled/parsed        */
-    ffsmgr_status status;
-    ffsmgr_fdata* fdata;
-    ffsmgr_if*    ffsmgr;
+    int                   compatibility;
+    int                   bufid; /* Cache identifier in corresponding file_buffer  */
+    int                   maxbufid;
+    void*                 privdata; /* External structure, deserialization is parserwork_traildecodecontext
+                                     *            Serialization is serialstate
+                                     */
+    uint8*                recptr;   /* Starting position of record being assembled/parsed        */
+    ffsmgr_status         status;
+    ffsmgr_fdata*         fdata;
+    ffsmgr_if*            ffsmgr;
     ffsmgr_state_callback callback;
 } ffsmgr_state;
 

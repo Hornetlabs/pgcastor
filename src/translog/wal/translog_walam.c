@@ -16,73 +16,62 @@
 /*----------------------------------version router PG begin---------------------*/
 
 /* PG12 version handler */
-static translog_recvlog_amroutine m_pg12routine = {
-    .version = TRANSLOG_RECVLOG_PGVERSION_12,
-    .desc = "PG12",
-    .msgop = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication};
+static translog_recvlog_amroutine     m_pg12routine = {.version = TRANSLOG_RECVLOG_PGVERSION_12,
+                                                       .desc = "PG12",
+                                                       .msgop = translog_recvpglog_msgop,
+                                                       .endreplication = translog_recvpglog_endreplication};
 
 /* PG13 version handler */
-static translog_recvlog_amroutine m_pg13routine = {
-    .version = TRANSLOG_RECVLOG_PGVERSION_13,
-    .desc = "PG13",
-    .msgop = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication};
+static translog_recvlog_amroutine     m_pg13routine = {.version = TRANSLOG_RECVLOG_PGVERSION_13,
+                                                       .desc = "PG13",
+                                                       .msgop = translog_recvpglog_msgop,
+                                                       .endreplication = translog_recvpglog_endreplication};
 
 /* PG14 version handler */
-static translog_recvlog_amroutine m_pg14routine = {
-    .version = TRANSLOG_RECVLOG_PGVERSION_14,
-    .desc = "PG14",
-    .msgop = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication};
+static translog_recvlog_amroutine     m_pg14routine = {.version = TRANSLOG_RECVLOG_PGVERSION_14,
+                                                       .desc = "PG14",
+                                                       .msgop = translog_recvpglog_msgop,
+                                                       .endreplication = translog_recvpglog_endreplication};
 
 /* PG15 version handler */
-static translog_recvlog_amroutine m_pg15routine = {
-    .version = TRANSLOG_RECVLOG_PGVERSION_15,
-    .desc = "PG15",
-    .msgop = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication};
+static translog_recvlog_amroutine     m_pg15routine = {.version = TRANSLOG_RECVLOG_PGVERSION_15,
+                                                       .desc = "PG15",
+                                                       .msgop = translog_recvpglog_msgop,
+                                                       .endreplication = translog_recvpglog_endreplication};
 
 /* PG16 version handler */
-static translog_recvlog_amroutine m_pg16routine = {
-    .version = TRANSLOG_RECVLOG_PGVERSION_16,
-    .desc = "PG16",
-    .msgop = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication};
+static translog_recvlog_amroutine     m_pg16routine = {.version = TRANSLOG_RECVLOG_PGVERSION_16,
+                                                       .desc = "PG16",
+                                                       .msgop = translog_recvpglog_msgop,
+                                                       .endreplication = translog_recvpglog_endreplication};
 
 /* PG17 version handler */
-static translog_recvlog_amroutine m_pg17routine = {
-    .version = TRANSLOG_RECVLOG_PGVERSION_17,
-    .desc = "PG17",
-    .msgop = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication};
+static translog_recvlog_amroutine     m_pg17routine = {.version = TRANSLOG_RECVLOG_PGVERSION_17,
+                                                       .desc = "PG17",
+                                                       .msgop = translog_recvpglog_msgop,
+                                                       .endreplication = translog_recvpglog_endreplication};
 
 /* PG18 version handler */
-static translog_recvlog_amroutine m_pg18routine = {
-    .version = TRANSLOG_RECVLOG_PGVERSION_18,
-    .desc = "PG18",
-    .msgop = translog_recvpglog_msgop,
-    .endreplication = translog_recvpglog_endreplication};
+static translog_recvlog_amroutine     m_pg18routine = {.version = TRANSLOG_RECVLOG_PGVERSION_18,
+                                                       .desc = "PG18",
+                                                       .msgop = translog_recvpglog_msgop,
+                                                       .endreplication = translog_recvpglog_endreplication};
 
 /*----------------------------------version router PG   end---------------------*/
 
 /*----------------------------------database version begin-----------------------*/
 static translog_recvlog_dbtyperoutine m_pgtyperoutine[] = {
-    {.type = TRANSLOG_RECVLOG_DBTYPE_NOP,
-     .desc = "NOP",
-     .getdbversion = NULL,
-     .getconfigurefde = NULL},
+    {.type = TRANSLOG_RECVLOG_DBTYPE_NOP, .desc = "NOP", .getdbversion = NULL, .getconfigurefde = NULL},
     {.type = TRANSLOG_RECVLOG_DBTYPE_PG,
      .desc = "Postgres",
      .getdbversion = translog_recvpglog_getpgversion,
-     .getconfigurefde = NULL}};
+     .getconfigurefde = NULL                                                                          }
+};
 
 /*----------------------------------database version   end-----------------------*/
 
 /* get database version by database type */
-bool translog_recvlog_getdbversion(translog_recvlog_dbtype     type,
-                                   PGconn*                     conn,
-                                   translog_recvlog_dbversion* dbversion)
+bool translog_recvlog_getdbversion(translog_recvlog_dbtype type, PGconn* conn, translog_recvlog_dbversion* dbversion)
 {
     if (TRANSLOG_RECVLOG_DBTYPE_MAX <= type)
     {
@@ -92,8 +81,7 @@ bool translog_recvlog_getdbversion(translog_recvlog_dbtype     type,
 
     if (NULL == m_pgtyperoutine[type].getdbversion)
     {
-        elog(
-            RLOG_WARNING, "%s database unsupport get database version", m_pgtyperoutine[type].desc);
+        elog(RLOG_WARNING, "%s database unsupport get database version", m_pgtyperoutine[type].desc);
         return false;
     }
 

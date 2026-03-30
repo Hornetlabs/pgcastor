@@ -203,6 +203,7 @@ typedef uint32_t character_wchar;
     0xfb                /* Indian charset for 2-column width \
                          * glyphs (not supported) */
 #define LC_TIBETAN 0xfc /* Tibetan (not supported) */
+
 /* #define FREE              0xfd    free (unused) */
 /* #define FREE              0xfe    free (unused) */
 /* #define FREE              0xff    free (unused) */
@@ -338,21 +339,17 @@ extern const character_enc2gettext character_enc2gettext_tbl[];
 /*
  * character_wchar stuff
  */
-typedef int32_t                    (*mb2wchar_with_len_converter)(const unsigned char* from,
-                                               character_wchar*     to,
-                                               int32_t              len);
+typedef int32_t (*mb2wchar_with_len_converter)(const unsigned char* from, character_wchar* to, int32_t len);
 
-typedef int32_t                    (*wchar2mb_with_len_converter)(const character_wchar* from,
-                                               unsigned char*         to,
-                                               int32_t                len);
+typedef int32_t (*wchar2mb_with_len_converter)(const character_wchar* from, unsigned char* to, int32_t len);
 
-typedef int32_t                    (*mblen_converter)(const unsigned char* mbstr);
+typedef int32_t (*mblen_converter)(const unsigned char* mbstr);
 
-typedef int32_t                    (*mbdisplaylen_converter)(const unsigned char* mbstr);
+typedef int32_t (*mbdisplaylen_converter)(const unsigned char* mbstr);
 
-typedef bool                       (*mbcharacter_incrementer)(unsigned char* mbstr, int32_t len);
+typedef bool    (*mbcharacter_incrementer)(unsigned char* mbstr, int32_t len);
 
-typedef int32_t                    (*mbverifier)(const unsigned char* mbstr, int32_t len);
+typedef int32_t (*mbverifier)(const unsigned char* mbstr, int32_t len);
 
 typedef struct
 {
@@ -498,8 +495,7 @@ extern unsigned char* character_unicode_to_utf8(character_wchar c, unsigned char
 
 extern bool character_utf8_islegal(const unsigned char* source, int32_t length);
 
-extern void check_encoding_conversion_args(int32_t expected_src_encoding,
-                                           int32_t expected_dest_encoding);
+extern void check_encoding_conversion_args(int32_t expected_src_encoding, int32_t expected_dest_encoding);
 
 extern int32_t character_encoding_max_length(int32_t encoding);
 
@@ -516,10 +512,8 @@ extern void local2local(const unsigned char* l,
                         const unsigned char* tab);
 extern void conv_ascii2mic(const unsigned char* l, unsigned char* p, int32_t len);
 extern void conv_mic2ascii(const unsigned char* mic, unsigned char* p, int32_t len);
-extern void latin2mic(
-    const unsigned char* l, unsigned char* p, int32_t len, int32_t lc, int32_t encoding);
-extern void mic2latin(
-    const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc, int32_t encoding);
+extern void latin2mic(const unsigned char* l, unsigned char* p, int32_t len, int32_t lc, int32_t encoding);
+extern void mic2latin(const unsigned char* mic, unsigned char* p, int32_t len, int32_t lc, int32_t encoding);
 extern void latin2mic_with_table(const unsigned char* l,
                                  unsigned char*       p,
                                  int32_t              len,

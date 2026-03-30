@@ -50,8 +50,7 @@ typedef pg_parser_sysdict_pgtype* pg_sysdict_Form_pg_type;
 /* Is a type OID a polymorphic pseudotype?    (Beware of multiple evaluation) */
 #define IsPolymorphicType(typid)                                                 \
     ((typid) == PG_SYSDICT_ANYELEMENTOID || (typid) == PG_SYSDICT_ANYARRAYOID || \
-     (typid) == PG_SYSDICT_ANYNONARRAYOID || (typid) == PG_SYSDICT_ANYENUMOID || \
-     (typid) == PG_SYSDICT_ANYRANGEOID)
+     (typid) == PG_SYSDICT_ANYNONARRAYOID || (typid) == PG_SYSDICT_ANYENUMOID || (typid) == PG_SYSDICT_ANYRANGEOID)
 
 #define PG_SYSDICT_BOOLOID               16
 #define PG_SYSDICT_BYTEAOID              17

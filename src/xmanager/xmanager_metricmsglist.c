@@ -22,11 +22,11 @@ typedef struct XMANAGER_METRICNODESTAT_NAME
 } xmanager_metricnodestat_name;
 
 static xmanager_metricnodestat_name metricnodestat_name[] = {
-    {XMANAGER_METRICNODESTAT_NOP, "NOP"},
-    {XMANAGER_METRICNODESTAT_INIT, "INIT"},
-    {XMANAGER_METRICNODESTAT_ONLINE, "ONLINE"},
+    {XMANAGER_METRICNODESTAT_NOP,     "NOP"   },
+    {XMANAGER_METRICNODESTAT_INIT,    "INIT"  },
+    {XMANAGER_METRICNODESTAT_ONLINE,  "ONLINE"},
     {XMANAGER_METRICNODESTAT_OFFLINE, "OFFLIN"},
-    {XMANAGER_METRICNODESTAT_MAX, "MAX"},
+    {XMANAGER_METRICNODESTAT_MAX,     "MAX"   },
 };
 
 typedef struct XMANAGER_METRICNODETYPE_NAME
@@ -36,11 +36,12 @@ typedef struct XMANAGER_METRICNODETYPE_NAME
 } xmanager_metricnodetype_name;
 
 static xmanager_metricnodestat_name metricnodetype_name[] = {
-    {XMANAGER_METRICNODETYPE_NOP, "NOP"},
-    {XMANAGER_METRICNODETYPE_CAPTURE, "CAPTURE"},
-    {XMANAGER_METRICNODETYPE_INTEGRATE, "INTEGRATE"},
+    {XMANAGER_METRICNODETYPE_NOP,          "NOP"         },
+    {XMANAGER_METRICNODETYPE_CAPTURE,      "CAPTURE"     },
+    {XMANAGER_METRICNODETYPE_INTEGRATE,    "INTEGRATE"   },
     {XMANAGER_METRICNODETYPE_PGRECEIVELOG, "PGRECEIVELOG"},
-    {XMANAGER_METRICNODETYPE_PROCESS, "PROGRESS"}};
+    {XMANAGER_METRICNODETYPE_PROCESS,      "PROGRESS"    }
+};
 
 /* Handle list command */
 static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric, netpoolentry* npoolentry)
@@ -66,8 +67,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric, netpoolent
     msglen = (4 + 4 + 4 + 1 + 4);
 
     /* First row name + state + type + option */
-    msglen +=
-        (4 + strlen("state") + 4 + strlen("name") + 4 + strlen("state") + 4 + strlen("option"));
+    msglen += (4 + strlen("state") + 4 + strlen("name") + 4 + strlen("state") + 4 + strlen("option"));
 
     /* Calculate option length and node count */
     for (dlnode = xmetric->metricnodes->head; NULL != dlnode; dlnode = dlnode->next)
@@ -350,8 +350,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric, netpoolent
 
             xmetricprogressnode = (xmanager_metricprogressnode*)pxmetricnode;
 
-            opdlnode =
-                xmetricprogressnode->progressjop ? xmetricprogressnode->progressjop->head : NULL;
+            opdlnode = xmetricprogressnode->progressjop ? xmetricprogressnode->progressjop->head : NULL;
             while (opdlnode != NULL)
             {
                 metricnode = (xmanager_metricnode*)opdlnode->value;
@@ -451,9 +450,7 @@ static bool xmanager_metricmsg_assemblelist(xmanager_metric* xmetric, netpoolent
  * Handle list command
  *1. Return metricnode info
  */
-bool xmanager_metricmsg_parselist(xmanager_metric* xmetric,
-                                  netpoolentry*    npoolentry,
-                                  netpacket*       npacket)
+bool xmanager_metricmsg_parselist(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket)
 {
     /* Error code */
     int    errcode = 0;
@@ -492,6 +489,5 @@ bool xmanager_metricmsg_parselist(xmanager_metric* xmetric,
 xmanager_metricmsg_parselist_error:
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(
-        xmetric, npoolentry->wpackets, XMANAGER_MSG_LISTCMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_LISTCMD, errcode, errormsg);
 }

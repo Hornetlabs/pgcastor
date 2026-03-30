@@ -200,11 +200,7 @@ long misc_lockfiles_getpid(void)
         }
         else
         {
-            elog(RLOG_ERROR,
-                 "could not access file:%s/%s, error:%s",
-                 wdata,
-                 LOCK_FILE,
-                 strerror(errno));
+            elog(RLOG_ERROR, "could not access file:%s/%s, error:%s", wdata, LOCK_FILE, strerror(errno));
         }
     }
 

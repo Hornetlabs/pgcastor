@@ -28,9 +28,7 @@ static void shift_jis_20042euc_jis_2004(const unsigned char* sjis, unsigned char
  * ----------
  */
 
-void euc_jis_2004_to_shift_jis_2004(unsigned char* src_str,
-                                    unsigned char* dest_str,
-                                    int32_t        str_len)
+void euc_jis_2004_to_shift_jis_2004(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
     unsigned char* src = src_str;
     unsigned char* dest = dest_str;
@@ -41,9 +39,7 @@ void euc_jis_2004_to_shift_jis_2004(unsigned char* src_str,
     euc_jis_20042shift_jis_2004(src, dest, len);
 }
 
-void shift_jis_2004_to_euc_jis_2004(unsigned char* src_str,
-                                    unsigned char* dest_str,
-                                    int32_t        str_len)
+void shift_jis_2004_to_euc_jis_2004(unsigned char* src_str, unsigned char* dest_str, int32_t str_len)
 {
     unsigned char* src = src_str;
     unsigned char* dest = dest_str;

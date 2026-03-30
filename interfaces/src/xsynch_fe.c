@@ -37,8 +37,7 @@ static bool XSynchParseoptions(xsynchconn* conn, char* connstr)
 
     while (index < connstrlen)
     {
-        while (' ' == connstr[index] || '\t' == connstr[index] || '\r' == connstr[index] ||
-               '\n' == connstr[index])
+        while (' ' == connstr[index] || '\t' == connstr[index] || '\r' == connstr[index] || '\n' == connstr[index])
         {
             index++;
             continue;
@@ -78,8 +77,7 @@ static bool XSynchParseoptions(xsynchconn* conn, char* connstr)
         /* get value */
         while (index < connstrlen)
         {
-            while (' ' == connstr[index] || '\t' == connstr[index] || '\r' == connstr[index] ||
-                   '\n' == connstr[index])
+            while (' ' == connstr[index] || '\t' == connstr[index] || '\r' == connstr[index] || '\n' == connstr[index])
             {
                 index++;
                 continue;
@@ -308,12 +306,7 @@ xsynchconn* XSynchSetParam(char* connstr)
 
     if (NULL == connstr)
     {
-        snprintf(xconn->host,
-                 512,
-                 "%s/%s.%s",
-                 RMANAGER_UNIXDOMAINDIR,
-                 RMANAGER_UNIXDOMAINPREFIX,
-                 RMANAGER_PORT);
+        snprintf(xconn->host, 512, "%s/%s.%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX, RMANAGER_PORT);
         snprintf(xconn->port, 128, "%s", RMANAGER_PORT);
         xconn->keepalive = 0;
         xconn->socktype = XSYNCH_SOCKTYPE_UNIXDOMAIN;
@@ -1011,23 +1004,24 @@ static void xsynch_command_listfree(xsynch_cmd* cmd)
 }
 
 static xsynch_commandops m_commandfree[] = {
-    {T_XSYNCH_NOP, "NOP", NULL},
+    {T_XSYNCH_NOP,         "NOP",              NULL                       },
     {T_XSYNCH_IDENTITYCMD, "IDENTITY COMMAND", xsynch_command_identityfree},
-    {T_XSYNCH_CREATECMD, "CREATE COMMAND", xsynch_command_createfree},
-    {T_XSYNCH_ALTERCMD, "ALTER COMMAND", xsynch_command_alterfree},
-    {T_XSYNCH_REMOVECMD, "REMOVE COMMAND", xsynch_command_removefree},
-    {T_XSYNCH_DROPCMD, "DROP COMMAND", xsynch_command_dropfree},
-    {T_XSYNCH_INITCMD, "INIT COMMAND", xsynch_command_initfree},
-    {T_XSYNCH_EDITCMD, "EDIT COMMAND", xsynch_command_editfree},
-    {T_XSYNCH_STARTCMD, "START COMMAND", xsynch_command_startfree},
-    {T_XSYNCH_STOPCMD, "STOP COMMAND", xsynch_command_stopfree},
-    {T_XSYNCH_RELOADCMD, "RELOAD COMMAND", xsynch_command_reloadfree},
-    {T_XSYNCH_INFOCMD, "INFO COMMAND", xsynch_command_infofree},
-    {T_XSYNCH_WATCHCMD, "WATCH COMMAND", xsynch_command_watchfree},
-    {T_XSYNCH_CFGfILECMD, "never trigger", xsynch_command_cfgfilefree},
-    {T_XSYNCH_REFRESHCMD, "REFRESH COMMAND", xsynch_command_refreshfree},
-    {T_XSYNCH_LISTCMD, "LIST COMMAND", xsynch_command_listfree},
-    {T_XSYNCH_MAX, "MAX COMMAND", NULL}};
+    {T_XSYNCH_CREATECMD,   "CREATE COMMAND",   xsynch_command_createfree  },
+    {T_XSYNCH_ALTERCMD,    "ALTER COMMAND",    xsynch_command_alterfree   },
+    {T_XSYNCH_REMOVECMD,   "REMOVE COMMAND",   xsynch_command_removefree  },
+    {T_XSYNCH_DROPCMD,     "DROP COMMAND",     xsynch_command_dropfree    },
+    {T_XSYNCH_INITCMD,     "INIT COMMAND",     xsynch_command_initfree    },
+    {T_XSYNCH_EDITCMD,     "EDIT COMMAND",     xsynch_command_editfree    },
+    {T_XSYNCH_STARTCMD,    "START COMMAND",    xsynch_command_startfree   },
+    {T_XSYNCH_STOPCMD,     "STOP COMMAND",     xsynch_command_stopfree    },
+    {T_XSYNCH_RELOADCMD,   "RELOAD COMMAND",   xsynch_command_reloadfree  },
+    {T_XSYNCH_INFOCMD,     "INFO COMMAND",     xsynch_command_infofree    },
+    {T_XSYNCH_WATCHCMD,    "WATCH COMMAND",    xsynch_command_watchfree   },
+    {T_XSYNCH_CFGfILECMD,  "never trigger",    xsynch_command_cfgfilefree },
+    {T_XSYNCH_REFRESHCMD,  "REFRESH COMMAND",  xsynch_command_refreshfree },
+    {T_XSYNCH_LISTCMD,     "LIST COMMAND",     xsynch_command_listfree    },
+    {T_XSYNCH_MAX,         "MAX COMMAND",      NULL                       }
+};
 
 void xsynch_command_free(xsynch_cmd* cmd)
 {

@@ -274,8 +274,7 @@ TimestampTz databaserecv_timestamp_get(PGconn* conn)
 
     /* get database identifier */
     rmemset1(stmtsql, 0, 0, 1024);
-    sprintf(stmtsql,
-            "SELECT backend_start FROM pg_stat_activity ORDER BY backend_start ASC LIMIT 1;");
+    sprintf(stmtsql, "SELECT backend_start FROM pg_stat_activity ORDER BY backend_start ASC LIMIT 1;");
     res = conn_exec(conn, stmtsql);
     if (PQnfields(res) != 1 && PQntuples(res) != 1)
     {
@@ -288,6 +287,7 @@ TimestampTz databaserecv_timestamp_get(PGconn* conn)
 
     return (TimestampTz)timestamp;
 }
+
 /*
  * Execute checkpoint
  */
@@ -351,9 +351,7 @@ bool databaserecv_trigger_set(PGconn* conn)
 
     /* 2. Create trigger */
     /* Check if trigger exists, create if not */
-    snprintf(stmt,
-             MAX_EXEC_SQL_LEN,
-             "SELECT oid FROM pg_event_trigger WHERE evtname = 'xsc_set_supplement_trigger'");
+    snprintf(stmt, MAX_EXEC_SQL_LEN, "SELECT oid FROM pg_event_trigger WHERE evtname = 'xsc_set_supplement_trigger'");
     res = conn_exec(conn, stmt);
     if (NULL == res)
     {
@@ -407,8 +405,7 @@ bool databaserecv_synctable_set(PGconn* conn)
     {
         PQclear(res);
         /* Create schema */
-        snprintf(
-            stmt, MAX_EXEC_SQL_LEN, "CREATE SCHEMA %s", guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
+        snprintf(stmt, MAX_EXEC_SQL_LEN, "CREATE SCHEMA %s", guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
         res = conn_exec(conn, stmt);
         if (NULL == res)
         {
@@ -418,10 +415,7 @@ bool databaserecv_synctable_set(PGconn* conn)
     PQclear(res);
 
     /* Grant permission on schema */
-    snprintf(stmt,
-             MAX_EXEC_SQL_LEN,
-             "GRANT ALL ON SCHEMA %s TO PUBLIC ;",
-             guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
+    snprintf(stmt, MAX_EXEC_SQL_LEN, "GRANT ALL ON SCHEMA %s TO PUBLIC ;", guc_getConfigOption(CFG_KEY_CATALOGSCHEMA));
     res = conn_exec(conn, stmt);
     if (NULL == res)
     {
@@ -757,10 +751,7 @@ bool databaserecv_timelinehistory(PGconn* conn, TimeLineID tli, char** pfilename
 }
 
 /* Execute start replication */
-bool databaserecv_startreplication(PGconn*    conn,
-                                   TimeLineID tli,
-                                   XLogRecPtr startpos,
-                                   char*      slotname)
+bool databaserecv_startreplication(PGconn* conn, TimeLineID tli, XLogRecPtr startpos, char* slotname)
 {
     PGresult* res = NULL;
     char      sqlslot[128] = {0};

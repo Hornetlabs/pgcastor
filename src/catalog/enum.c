@@ -49,8 +49,7 @@ void enum_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         sscanf(PQgetvalue(res, i, j++), "%u", &enum_obj->enumtypid);
         strcpy(enum_obj->enumlabel.data, PQgetvalue(res, i, j++));
 
-        entry = (catalog_enum_value*)hash_search(
-            sysdicts->by_enum, &enum_obj->enumtypid, HASH_ENTER, &found);
+        entry = (catalog_enum_value*)hash_search(sysdicts->by_enum, &enum_obj->enumtypid, HASH_ENTER, &found);
         if (!found)
         {
             entry->enums = NIL;
@@ -173,8 +172,7 @@ HTAB* enumcache_load(sysdict_header_array* array)
             }
             rmemset0(rippleenum, 0, '\0', sizeof(pg_parser_sysdict_pgenum));
             rmemcpy0(rippleenum, 0, buffer + offset, sizeof(pg_parser_sysdict_pgenum));
-            entry = (catalog_enum_value*)hash_search(
-                enumhtab, &rippleenum->enumtypid, HASH_ENTER, &found);
+            entry = (catalog_enum_value*)hash_search(enumhtab, &rippleenum->enumtypid, HASH_ENTER, &found);
             if (!found)
             {
                 entry->enums = NIL;
@@ -233,8 +231,7 @@ catalogdata* enum_colvalue2enum(void* in_colvalue)
     rmemset0(pgenum, 0, '\0', sizeof(pg_parser_sysdict_pgenum));
     enumvalue->enums = lappend(enumvalue->enums, pgenum);
     /* enumlabel 3 */
-    rmemcpy1(
-        pgenum->enumlabel.data, 0, (char*)((colvalue + 3)->m_value), (colvalue + 3)->m_valueLen);
+    rmemcpy1(pgenum->enumlabel.data, 0, (char*)((colvalue + 3)->m_value), (colvalue + 3)->m_valueLen);
 
     /* enumtypid 1 */
     sscanf((char*)((colvalue + 1)->m_value), "%u", &pgenum->enumtypid);
@@ -293,10 +290,7 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         catalogInHash = hash_search(sysdicts->by_enum, &pgenum->enumtypid, HASH_FIND, &found);
         if (NULL == catalogInHash)
         {
-            elog(RLOG_WARNING,
-                 "pgenum %u, %s can not fond in enum hash",
-                 pgenum->enumtypid,
-                 pgenum->enumlabel.data);
+            elog(RLOG_WARNING, "pgenum %u, %s can not fond in enum hash", pgenum->enumtypid, pgenum->enumlabel.data);
             return;
         }
 
@@ -316,10 +310,7 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         }
 
         /* No match found, which indicates an issue, directly append and log WARNING */
-        elog(RLOG_WARNING,
-             "enum %u, %s can not fond in enum hash",
-             pgenum->enumtypid,
-             pgenum->enumlabel.data);
+        elog(RLOG_WARNING, "enum %u, %s can not fond in enum hash", pgenum->enumtypid, pgenum->enumlabel.data);
 
         duppgenum = (pg_sysdict_Form_pg_enum)rmalloc1(sizeof(pg_parser_sysdict_pgenum));
         if (NULL == duppgenum)
@@ -336,10 +327,7 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         catalogInHash = hash_search(sysdicts->by_enum, &pgenum->enumtypid, HASH_FIND, &found);
         if (NULL == catalogInHash)
         {
-            elog(RLOG_WARNING,
-                 "enum %u, %s can not fond in enum hash",
-                 pgenum->enumtypid,
-                 pgenum->enumlabel.data);
+            elog(RLOG_WARNING, "enum %u, %s can not fond in enum hash", pgenum->enumtypid, pgenum->enumlabel.data);
             return;
         }
 
@@ -369,6 +357,7 @@ void enum_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         elog(RLOG_ERROR, "unknown op:%d", catalogdata->op);
     }
 }
+
 void enumcache_write(HTAB* enumscache, uint64* offset, sysdict_header_array* array)
 {
     int                     fd;

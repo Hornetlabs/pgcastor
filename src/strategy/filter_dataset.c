@@ -24,6 +24,7 @@ extern List* g_addtablepattern;
 
 /* ----- static function declaration begin ----- */
 static bool filter_dataset_byoid(HTAB* oid2datasets, Oid oid);
+
 /* ----- static function declaration end ----- */
 
 static void filter_dataset_str2table(char* line, char* nspname, char* relname)
@@ -330,8 +331,7 @@ static bool filter_dataset_match_addtablepattern(List* addtablepattern, char* sc
     {
         filter_pair_obj = (filter_pair*)lfirst(lc);
 
-        if (cmp_regexbase(filter_pair_obj->sch, schema) &&
-            cmp_regexbase(filter_pair_obj->table, table))
+        if (cmp_regexbase(filter_pair_obj->sch, schema) && cmp_regexbase(filter_pair_obj->table, table))
         {
             result = true;
             break;
@@ -661,8 +661,7 @@ HTAB* filter_dataset_load(HTAB* namespace, HTAB* class)
         strcpy(temp_dataset_key.schema, temp_nsp->nspname.data);
         strcpy(temp_dataset_key.table, temp_class->relname.data);
 
-        temp_d2o_entry =
-            hash_search(dataset2oid_htab, &temp_dataset_key, HASH_FIND, &temp_d2o_find);
+        temp_d2o_entry = hash_search(dataset2oid_htab, &temp_dataset_key, HASH_FIND, &temp_d2o_find);
         if (temp_d2o_find)
         {
             temp_d2o_entry->oid = temp_class->oid;
@@ -761,8 +760,7 @@ HTAB* filter_dataset_txnfilterload(HTAB* namespace, HTAB* class)
     while (NULL != (class_entry = hash_seq_search(&status_class)))
     {
         temp_class = class_entry->class;
-        if (0 == strcmp(temp_class->relname.data, SYNC_STATUSTABLE_NAME) &&
-            temp_nsp->oid == temp_class->relnamespace)
+        if (0 == strcmp(temp_class->relname.data, SYNC_STATUSTABLE_NAME) && temp_nsp->oid == temp_class->relnamespace)
         {
             o2d_entry = hash_search(oid2dataset_htab, &temp_class->oid, HASH_ENTER, NULL);
             if (!o2d_entry)
@@ -852,11 +850,7 @@ bool filter_dataset_add(HTAB* oid2datasets, Oid oid, char* schema, char* table)
     o2d_entry = hash_search(oid2datasets, &oid, HASH_ENTER, NULL);
     if (!o2d_entry)
     {
-        elog(RLOG_WARNING,
-             "can't find entry to oid2datasets hash, oid: %u, %s.%s",
-             oid,
-             schema,
-             table);
+        elog(RLOG_WARNING, "can't find entry to oid2datasets hash, oid: %u, %s.%s", oid, schema, table);
     }
 
     o2d_entry->oid = oid;
@@ -875,11 +869,7 @@ bool filter_dataset_modify(HTAB* oid2datasets, Oid oid, char* schema, char* tabl
     o2d_entry = hash_search(oid2datasets, &oid, HASH_FIND, NULL);
     if (!o2d_entry)
     {
-        elog(RLOG_DEBUG,
-             "can't find entry from oid2datasets hash, oid: %u, %s.%s",
-             oid,
-             schema,
-             table);
+        elog(RLOG_DEBUG, "can't find entry from oid2datasets hash, oid: %u, %s.%s", oid, schema, table);
         return false;
     }
 
@@ -999,10 +989,7 @@ refresh_tables* filter_dataset_buildrefreshtables(HTAB* hfilters)
     return refreshtables;
 }
 
-bool filter_dataset_updatedatasets(List* addtablepattern,
-                                   HTAB* namespace,
-                                   List* sysdicthis,
-                                   HTAB* syncdatasets)
+bool filter_dataset_updatedatasets(List* addtablepattern, HTAB* namespace, List* sysdicthis, HTAB* syncdatasets)
 {
     bool                     found = false;
     bool                     haschange = false;
@@ -1042,8 +1029,7 @@ bool filter_dataset_updatedatasets(List* addtablepattern,
             }
 
             table = classvalue->class->relname.data;
-            nspvalue =
-                hash_search(namespace, &(classvalue->class->relnamespace), HASH_FIND, &found);
+            nspvalue = hash_search(namespace, &(classvalue->class->relnamespace), HASH_FIND, &found);
             if (found)
             {
                 schema = nspvalue->namespace->nspname.data;

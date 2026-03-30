@@ -51,8 +51,7 @@ fftrail_txnmultiinsert_serial_retry:
                                   &dbmdno,
                                   &tbmdno,
                                   state);
-    } while (FFSMGR_STATUS_SHIFTFILE ==
-             ffstate->status); /* Content switched, need to write again */
+    } while (FFSMGR_STATUS_SHIFTFILE == ffstate->status); /* Content switched, need to write again */
 
     /* Set state */
     ffstate->status = FFSMGR_STATUS_USED;
@@ -67,8 +66,7 @@ fftrail_txnmultiinsert_serial_retry:
     }
 
     /* Get buffer info and set write position */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     tmpuptr = ffstate->recptr = fbuffer->data + fbuffer->start;
 
     /* Calculate length, compute total length of this record */
@@ -245,8 +243,7 @@ bool fftrail_txnmultiinsert_deserial(void** data, void* state)
 
     *data = txndata;
     /* Allocate multiinsert space */
-    colnvalues =
-        (pg_parser_translog_tbcol_nvalues*)rmalloc0(sizeof(pg_parser_translog_tbcol_nvalues));
+    colnvalues = (pg_parser_translog_tbcol_nvalues*)rmalloc0(sizeof(pg_parser_translog_tbcol_nvalues));
     if (NULL == colnvalues)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));

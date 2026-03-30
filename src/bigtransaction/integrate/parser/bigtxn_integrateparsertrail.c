@@ -33,8 +33,7 @@ static bool bigtxn_integrateparsertrail_txns2queue(bigtxn_integrateparsertrail* 
 
     tx_htab = parsertrail_obj->transcache->by_txns;
 
-    for (dlnode = parsertrail_obj->dtxns->head; NULL != dlnode;
-         dlnode = parsertrail_obj->dtxns->head)
+    for (dlnode = parsertrail_obj->dtxns->head; NULL != dlnode; dlnode = parsertrail_obj->dtxns->head)
     {
         parsertrail_obj->dtxns->head = dlnode->next;
         txn_obj = (txn*)dlnode->value;
@@ -94,8 +93,7 @@ bigtxn_integrateparsertrail* bigtxn_integrateparsertrail_init(void)
 
     traildecodecxt->decodingctx = increment_integrateparsertrail_init();
 
-    traildecodecxt->integrateparser_buffer =
-        MB2BYTE(guc_getConfigOptionInt(CFG_KEY_INTEGRATE_BUFFER));
+    traildecodecxt->integrateparser_buffer = MB2BYTE(guc_getConfigOptionInt(CFG_KEY_INTEGRATE_BUFFER));
     return traildecodecxt;
 }
 
@@ -116,9 +114,7 @@ void* bigtxn_integrateparsertrail_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(
-            RLOG_WARNING,
-            "integrate bigtxn parsertrail stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "integrate bigtxn parsertrail stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }

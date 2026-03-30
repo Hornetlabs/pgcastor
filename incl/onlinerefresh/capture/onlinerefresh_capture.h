@@ -40,33 +40,20 @@ extern void* onlinerefresh_capture_main(void* args);
 extern void onlinerefresh_capture_destroy(void* privdata);
 extern int onlinerefresh_capture_cmp(void* s1, void* s2);
 extern onlinerefresh_capture* onlinerefresh_capture_init(bool increment);
-extern void onlinerefresh_capture_increment_set(onlinerefresh_capture* onlinerefresh_capture,
-                                                bool                   increment);
-extern void onlinerefresh_capture_state_set(onlinerefresh_capture* onlinerefresh_capture,
-                                            int                    state);
-extern void onlinerefresh_capture_redo_set(onlinerefresh_capture* onlinerefresh_capture,
-                                           XLogRecPtr             redo);
-extern void onlinerefresh_capture_conninfo_set(onlinerefresh_capture* onlinerefresh_capture,
-                                               char*                  conninfo);
-extern void onlinerefresh_capture_snapshot_set(onlinerefresh_capture* onlinerefresh_capture,
-                                               snapshot*              snapshot);
-extern void onlinerefresh_capture_conn_set(onlinerefresh_capture* onlinerefresh_capture,
-                                           PGconn*                conn);
-extern void onlinerefresh_capture_snap_conn_set(onlinerefresh_capture* onlinerefresh_capture,
-                                                PGconn*                snap_conn);
+extern void onlinerefresh_capture_increment_set(onlinerefresh_capture* onlinerefresh_capture, bool increment);
+extern void onlinerefresh_capture_state_set(onlinerefresh_capture* onlinerefresh_capture, int state);
+extern void onlinerefresh_capture_redo_set(onlinerefresh_capture* onlinerefresh_capture, XLogRecPtr redo);
+extern void onlinerefresh_capture_conninfo_set(onlinerefresh_capture* onlinerefresh_capture, char* conninfo);
+extern void onlinerefresh_capture_snapshot_set(onlinerefresh_capture* onlinerefresh_capture, snapshot* snapshot);
+extern void onlinerefresh_capture_conn_set(onlinerefresh_capture* onlinerefresh_capture, PGconn* conn);
+extern void onlinerefresh_capture_snap_conn_set(onlinerefresh_capture* onlinerefresh_capture, PGconn* snap_conn);
 extern void onlinerefresh_capture_no_set(onlinerefresh_capture* onlinerefresh_capture, uuid_t* no);
-extern void onlinerefresh_capture_txid_set(onlinerefresh_capture* onlinerefresh_capture,
-                                           FullTransactionId      txid);
-extern void onlinerefresh_capture_xids_append(onlinerefresh_capture* onlinerefresh_capture,
-                                              TransactionId          xid);
-extern void onlinerefresh_capture_add_xids_from_snapshot(
-    onlinerefresh_capture* onlinerefresh_capture, snapshot* snap);
-extern bool onlinerefresh_capture_isxidinsnapshot(onlinerefresh_capture* onlinerefresh_capture,
-                                                  FullTransactionId      xid);
-extern bool onlinerefresh_capture_isxidinxids(onlinerefresh_capture* onlinerefresh_capture,
-                                              FullTransactionId      xid);
+extern void onlinerefresh_capture_txid_set(onlinerefresh_capture* onlinerefresh_capture, FullTransactionId txid);
+extern void onlinerefresh_capture_xids_append(onlinerefresh_capture* onlinerefresh_capture, TransactionId xid);
+extern void onlinerefresh_capture_add_xids_from_snapshot(onlinerefresh_capture* onlinerefresh_capture, snapshot* snap);
+extern bool onlinerefresh_capture_isxidinsnapshot(onlinerefresh_capture* onlinerefresh_capture, FullTransactionId xid);
+extern bool onlinerefresh_capture_isxidinxids(onlinerefresh_capture* onlinerefresh_capture, FullTransactionId xid);
 extern void onlinerefresh_capture_xids_delete(onlinerefresh_capture* olcapture, dlistnode* dlnode);
 extern bool onlinerefresh_capture_xids_isnull(onlinerefresh_capture* refresh);
-extern void onlinerefresh_capture_tables_set(onlinerefresh_capture* onlinerefresh_capture,
-                                             refresh_tables*        tables);
+extern void onlinerefresh_capture_tables_set(onlinerefresh_capture* onlinerefresh_capture, refresh_tables* tables);
 #endif

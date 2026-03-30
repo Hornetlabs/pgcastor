@@ -12,6 +12,7 @@
 #include "pg_parser_app_incl.h"
 
 #define SIZE_ZERO 0
+
 /**
  * @brief           Memory allocation function, and Initialize memory space
  *

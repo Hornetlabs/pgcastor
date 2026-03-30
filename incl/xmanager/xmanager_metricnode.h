@@ -73,9 +73,7 @@ extern int xmanager_metricnode_serialsize(xmanager_metricnode* metricnode);
 extern void xmanager_metricnode_serial(xmanager_metricnode* metricnode, uint8* blk, int* blkstart);
 
 /* Deserialize */
-extern bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode,
-                                         uint8*               blk,
-                                         int*                 blkstart);
+extern bool xmanager_metricnode_deserial(xmanager_metricnode* metricnode, uint8* blk, int* blkstart);
 
 extern xmanager_metricnode* xmanager_metricnode_init(xmanager_metricnodetype nodetype);
 

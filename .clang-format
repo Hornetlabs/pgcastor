@@ -45,7 +45,7 @@ AlignTrailingComments:
   Kind: Always
 
 # 换行设置
-ColumnLimit: 100
+ColumnLimit: 120
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
@@ -60,8 +60,16 @@ DerivePointerAlignment: false
 # 必须插入大括号 (不允许省略 {})
 InsertBraces: true
 
+# 函数声明和调用时的处理
 BinPackArguments: false
-BinPackParameters: false
+BinPackParameters: OnePerLine
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+
+# 结构体初始化对齐
+AlignArrayOfStructures: Left
+
+SeparateDefinitionBlocks: Always
 
 # 其他设置
 SortIncludes: false

@@ -11,57 +11,58 @@ typedef struct THRIDENTITY2NAME
 } thridentityname;
 
 static thridentityname m_threadname[] = {
-    {THRNODE_IDENTITY_NOP, "NOP"},
+    {THRNODE_IDENTITY_NOP,                                    "NOP"          },
 
     /*------------capture thread types begin---------------------*/
-    {THRNODE_IDENTITY_INC_CAPTURE_FLUSH, "IncFlush"},
-    {THRNODE_IDENTITY_INC_CAPTURE_SERIAL, "IncSerial"},
-    {THRNODE_IDENTITY_INC_CAPTURE_PARSER, "IncParser"},
-    {THRNODE_IDENTITY_INC_CAPTURE_LOADRECORD, "IncLoadRec"},
-    {THRNODE_IDENTITY_CAPTURE_METRIC, "Metric"},
-    {THRNODE_IDENTITY_INC_CAPTURE_BIGTXNMGR, "BigTxnMgr"},
-    {THRNODE_IDENTITY_INC_CAPTURE_BIGTXNFLUSH, "BigTxnFlush"},
-    {THRNODE_IDENTITY_INC_CAPTURE_BIGTXNSERIAL, "BigTxnSerial"},
-    {THRNODE_IDENTITY_CAPTURE_REFRESH_MGR, "RefreshManger"},
-    {THRNODE_IDENTITY_CAPTURE_REFRESH_JOB, "RefreshJob"},
-    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_MGR, "OLRManger"},
-    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_JOB, "OLRJob"},
-    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_FLUSH, "OLRIncFlush"},
-    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_SERIAL, "OLRIncSerial"},
-    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_PARSER, "OLRIncParser"},
-    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_LOADRECORDS, "OLRIncLoadRec"},
+    {THRNODE_IDENTITY_INC_CAPTURE_FLUSH,                      "IncFlush"     },
+    {THRNODE_IDENTITY_INC_CAPTURE_SERIAL,                     "IncSerial"    },
+    {THRNODE_IDENTITY_INC_CAPTURE_PARSER,                     "IncParser"    },
+    {THRNODE_IDENTITY_INC_CAPTURE_LOADRECORD,                 "IncLoadRec"   },
+    {THRNODE_IDENTITY_CAPTURE_METRIC,                         "Metric"       },
+    {THRNODE_IDENTITY_INC_CAPTURE_BIGTXNMGR,                  "BigTxnMgr"    },
+    {THRNODE_IDENTITY_INC_CAPTURE_BIGTXNFLUSH,                "BigTxnFlush"  },
+    {THRNODE_IDENTITY_INC_CAPTURE_BIGTXNSERIAL,               "BigTxnSerial" },
+    {THRNODE_IDENTITY_CAPTURE_REFRESH_MGR,                    "RefreshManger"},
+    {THRNODE_IDENTITY_CAPTURE_REFRESH_JOB,                    "RefreshJob"   },
+    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_MGR,               "OLRManger"    },
+    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_JOB,               "OLRJob"       },
+    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_FLUSH,         "OLRIncFlush"  },
+    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_SERIAL,        "OLRIncSerial" },
+    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_PARSER,        "OLRIncParser" },
+    {THRNODE_IDENTITY_CAPTURE_OLINEREFRESH_INC_LOADRECORDS,   "OLRIncLoadRec"},
 
     /*------------capture thread types   end---------------------*/
 
     /*------------integrate thread types begin-------------------*/
-    {THRNODE_IDENTITY_INC_INTEGRATE_SYNC, "IncSync"},
-    {THRNODE_IDENTITY_INC_INTEGRATE_REBUILD, "IncRebuild"},
-    {THRNODE_IDENTITY_INC_INTEGRATE_PARSER, "IncParser"},
-    {THRNODE_IDENTITY_INC_INTEGRATE_LOADRECORDS, "IncLoadRec"},
-    {THRNODE_IDENTITY_INTEGRATE_METRIC, "Metric"},
-    {THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNMGR, "BigTxnMgr"},
-    {THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNSYNC, "BigTxnSync"},
-    {THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNREBUILD, "BigTxnRebuild"},
-    {THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNPARSER, "BigTxnParser"},
-    {THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNLOADRECORDS, "BigTxnLoadRec"},
-    {THRNODE_IDENTITY_INTEGRATE_REFRESH_MGR, "RefreshManger"},
-    {THRNODE_IDENTITY_INTEGRATE_REFRESH_JOB, "RefreshJob"},
-    {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_MGR, "OLRManger"},
-    {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_JOB, "OLRJob"},
-    {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_SYNC, "OLRIncSync"},
-    {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_REBUILD, "OLRIncRebuild"},
-    {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_PARSER, "OLRIncParser"},
+    {THRNODE_IDENTITY_INC_INTEGRATE_SYNC,                     "IncSync"      },
+    {THRNODE_IDENTITY_INC_INTEGRATE_REBUILD,                  "IncRebuild"   },
+    {THRNODE_IDENTITY_INC_INTEGRATE_PARSER,                   "IncParser"    },
+    {THRNODE_IDENTITY_INC_INTEGRATE_LOADRECORDS,              "IncLoadRec"   },
+    {THRNODE_IDENTITY_INTEGRATE_METRIC,                       "Metric"       },
+    {THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNMGR,                "BigTxnMgr"    },
+    {THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNSYNC,               "BigTxnSync"   },
+    {THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNREBUILD,            "BigTxnRebuild"},
+    {THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNPARSER,             "BigTxnParser" },
+    {THRNODE_IDENTITY_INC_INTEGRATE_BIGTXNLOADRECORDS,        "BigTxnLoadRec"},
+    {THRNODE_IDENTITY_INTEGRATE_REFRESH_MGR,                  "RefreshManger"},
+    {THRNODE_IDENTITY_INTEGRATE_REFRESH_JOB,                  "RefreshJob"   },
+    {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_MGR,             "OLRManger"    },
+    {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_JOB,             "OLRJob"       },
+    {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_SYNC,        "OLRIncSync"   },
+    {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_REBUILD,     "OLRIncRebuild"},
+    {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_PARSER,      "OLRIncParser" },
     {THRNODE_IDENTITY_INTEGRATE_OLINEREFRESH_INC_LOADRECORDS, "OLRIncLoadRec"},
     /*------------integrate thread types   end-------------------*/
 
     /*------------xmanager thread types begin---------------------*/
-    {THRNODE_IDENTITY_XMANAGER_LISTEN, "Listens"},
-    {THRNODE_IDENTITY_XMANAGER_AUTH, "Auth"},
-    {THRNODE_IDENTITY_XMANAGER_METRIC, "Metric"},
+    {THRNODE_IDENTITY_XMANAGER_LISTEN,                        "Listens"      },
+    {THRNODE_IDENTITY_XMANAGER_AUTH,                          "Auth"         },
+    {THRNODE_IDENTITY_XMANAGER_METRIC,                        "Metric"       },
     /*------------xmanager thread types   end---------------------*/
 
     /* add before this line */
-    {THRNODE_IDENTITY_MAX, "ThreadMax"}};
+    {THRNODE_IDENTITY_MAX,                                    "ThreadMax"    }
+};
 
 /* thread pool initialization */
 threads* threads_init(void)
@@ -333,10 +334,7 @@ bool threads_countsubmgrjobthredsabovework(threads* thrs, List* jobthreads, int*
  *  return true:  no logic errors encountered during execution
  *  return false: logic error encountered during execution
  */
-bool threads_setsubmgrjobthredstermandcountexit(threads* thrs,
-                                                List*    jobthreads,
-                                                int      skipcnt,
-                                                int*     scnt)
+bool threads_setsubmgrjobthredstermandcountexit(threads* thrs, List* jobthreads, int skipcnt, int* scnt)
 {
     int       jobcnt = 0;
     ListCell* lc = NULL;
@@ -1156,10 +1154,7 @@ void threads_startthread(threads* thrs)
         /* create worker thread */
         osal_thread_create(&thr_node->thrid, NULL, thr_node->tmain, thr_node);
 
-        elog(RLOG_DEBUG,
-             "start thrid:%lu, threadname:%s",
-             thr_node->thrid,
-             m_threadname[thr_node->identity].name);
+        elog(RLOG_DEBUG, "start thrid:%lu, threadname:%s", thr_node->thrid, m_threadname[thr_node->identity].name);
 
         /* set thread name */
         osal_thread_setname_np(thr_node->thrid, m_threadname[thr_node->identity].name);
@@ -1194,8 +1189,8 @@ void threads_thrnoderecycle(threads* thrs)
         if (THRNODE_TYPE_TMGR == thr_node->type)
         {
             /* clean up manager node */
-            thrs->thrsubmgrs = dlist_deletebyvalue(
-                thrs->thrsubmgrs, &thr_node->no, threads_thrsubmgrcmp, thrsubmgr_free);
+            thrs->thrsubmgrs =
+                dlist_deletebyvalue(thrs->thrsubmgrs, &thr_node->no, threads_thrsubmgrcmp, thrsubmgr_free);
         }
 
         /* reclaim node */

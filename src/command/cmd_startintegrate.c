@@ -204,8 +204,7 @@ bool cmd_startintegrate(void)
     /*
      * Add main resident thread
      */
-    if (false ==
-        threads_addpersist(incintegrate->threads, &incintegrate->persistno, "INTEGRATE INCREMENT"))
+    if (false == threads_addpersist(incintegrate->threads, &incintegrate->persistno, "INTEGRATE INCREMENT"))
     {
         elog(RLOG_WARNING, "add integrate increment persist to threads error");
         bret = false;

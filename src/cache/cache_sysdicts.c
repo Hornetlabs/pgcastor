@@ -57,21 +57,22 @@ typedef struct SYSDICT2CACHENODE
 } sysdict2cachenode;
 
 static sysdict2cachenode m_sysdict2cache[] = {
-    {CATALOG_TYPE_NOP, NULL, NULL, NULL},
-    {CATALOG_TYPE_CLASS, class_catalogdata2transcache, class_catalogdatafree, NULL},
-    {CATALOG_TYPE_ATTRIBUTE, attribute_catalogdata2transcache, attribute_catalogdatafree, NULL},
-    {CATALOG_TYPE_TYPE, type_catalogdata2transcache, type_catalogdatafree, NULL},
-    {CATALOG_TYPE_NAMESPACE, namespace_catalogdata2transcache, namespace_catalogdatafree, NULL},
-    {CATALOG_TYPE_TABLESPACE, NULL, NULL, NULL},
-    {CATALOG_TYPE_ENUM, enum_catalogdata2transcache, enum_catalogdatafree, NULL},
-    {CATALOG_TYPE_RANGE, range_catalogdata2transcache, range_catalogdatafree, NULL},
-    {CATALOG_TYPE_PROC, proc_catalogdata2transcache, proc_catalogdatafree, NULL},
+    {CATALOG_TYPE_NOP,        NULL,                              NULL,                       NULL},
+    {CATALOG_TYPE_CLASS,      class_catalogdata2transcache,      class_catalogdatafree,      NULL},
+    {CATALOG_TYPE_ATTRIBUTE,  attribute_catalogdata2transcache,  attribute_catalogdatafree,  NULL},
+    {CATALOG_TYPE_TYPE,       type_catalogdata2transcache,       type_catalogdatafree,       NULL},
+    {CATALOG_TYPE_NAMESPACE,  namespace_catalogdata2transcache,  namespace_catalogdatafree,  NULL},
+    {CATALOG_TYPE_TABLESPACE, NULL,                              NULL,                       NULL},
+    {CATALOG_TYPE_ENUM,       enum_catalogdata2transcache,       enum_catalogdatafree,       NULL},
+    {CATALOG_TYPE_RANGE,      range_catalogdata2transcache,      range_catalogdatafree,      NULL},
+    {CATALOG_TYPE_PROC,       proc_catalogdata2transcache,       proc_catalogdatafree,       NULL},
     {CATALOG_TYPE_CONSTRAINT, constraint_catalogdata2transcache, constraint_catalogdatafree, NULL},
-    {CATALOG_TYPE_OPERATOR, NULL, NULL, NULL},
-    {CATALOG_TYPE_AUTHID, authid_catalogdata2transcache, authid_catalogdatafree, NULL},
-    {CATALOG_TYPE_DATABASE, database_catalogdata2transcache, database_catalogdatafree, NULL},
-    {CATALOG_TYPE_INDEX, index_catalogdata2transcache, index_catalogdatafree, NULL},
-    {CATALOG_TYPE_RELMAPFILE, relmapfile_catalogdata2transcache, relmapfile_catalogdatafree, NULL}};
+    {CATALOG_TYPE_OPERATOR,   NULL,                              NULL,                       NULL},
+    {CATALOG_TYPE_AUTHID,     authid_catalogdata2transcache,     authid_catalogdatafree,     NULL},
+    {CATALOG_TYPE_DATABASE,   database_catalogdata2transcache,   database_catalogdatafree,   NULL},
+    {CATALOG_TYPE_INDEX,      index_catalogdata2transcache,      index_catalogdatafree,      NULL},
+    {CATALOG_TYPE_RELMAPFILE, relmapfile_catalogdata2transcache, relmapfile_catalogdatafree, NULL}
+};
 
 static int m_sysdict2cachecnt = (sizeof(m_sysdict2cache)) / (sizeof(sysdict2cachenode));
 
@@ -115,10 +116,7 @@ void cache_sysdictsload(void** ref_sysdicts)
     }
     if ((r = osal_file_read(fd, buffer, FILE_BLK_SIZE)) > 0)
     {
-        rmemcpy0(array,
-                 0,
-                 buffer + sizeof(sysdict_header),
-                 (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
+        rmemcpy0(array, 0, buffer + sizeof(sysdict_header), (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
     }
 
     if (osal_file_close(fd))
@@ -195,8 +193,7 @@ cache_sysdicts* cache_sysdicts_integrate_init(void)
     rmemset1(&hctl, 0, 0, sizeof(hctl));
     hctl.keysize = sizeof(pg_parser_NameData);
     hctl.entrysize = sizeof(catalog_datname2oid_value);
-    sysdicts->by_datname2oid =
-        hash_create("integrate_datname2oid", 256, &hctl, HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_datname2oid = hash_create("integrate_datname2oid", 256, &hctl, HASH_ELEM | HASH_BLOBS);
 
     /* pg_index initialization */
     rmemset1(&hctl, 0, 0, sizeof(hctl));
@@ -531,9 +528,7 @@ void cache_sysdicts_txnsysdicthisitem2cache(cache_sysdicts* sysdicts, ListCell* 
     /* Process based on different data types */
     if ((m_sysdict2cachecnt - 1) < catalog_data->type)
     {
-        elog(RLOG_ERROR,
-             "sysdicthis 2 transcache logical error, unknown type:%d",
-             catalog_data->type);
+        elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d", catalog_data->type);
     }
 
     if (NULL == m_sysdict2cache[catalog_data->type].func)
@@ -627,9 +622,7 @@ void cache_sysdicts_txnsysdicthisfree(List* sysdicthis)
         /* Process based on different data types */
         if ((m_sysdict2cachecnt - 1) < catalog_data->type)
         {
-            elog(RLOG_ERROR,
-                 "sysdicthis 2 transcache logical error, unknown type:%d",
-                 catalog_data->type);
+            elog(RLOG_ERROR, "sysdicthis 2 transcache logical error, unknown type:%d", catalog_data->type);
         }
 
         if (NULL == m_sysdict2cache[catalog_data->type].freefunc)
@@ -660,9 +653,7 @@ void cache_sysdicts_catalogdatafreevoid(void* args)
     /* Process based on different data types */
     if ((m_sysdict2cachecnt - 1) < catalog_data->type)
     {
-        elog(RLOG_WARNING,
-             "sysdicthis 2 transcache logical error, unknown type:%d",
-             catalog_data->type);
+        elog(RLOG_WARNING, "sysdicthis 2 transcache logical error, unknown type:%d", catalog_data->type);
         return;
     }
 
@@ -728,8 +719,7 @@ void sysdictscache_write(cache_sysdicts* sysdicts, XLogRecPtr redolsn)
 
     indexcache_write(sysdicts->by_index, &offset, array);
 
-    rmemcpy1(
-        buffer, sizeof(sysdict_header), array, (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
+    rmemcpy1(buffer, sizeof(sysdict_header), array, (CATALOG_TYPE_NUM) * sizeof(sysdict_header_array));
 
     fd = osal_basic_open_file(SYSDICTS_TMP_FILE, O_RDWR | O_CREAT | BINARY);
 

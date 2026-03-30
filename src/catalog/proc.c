@@ -30,8 +30,7 @@ void proc_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(Oid);
     hash_ctl.entrysize = sizeof(catalog_proc_value);
-    sysdicts->by_proc =
-        hash_create("catalog_sysdicts_proc", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_proc = hash_create("catalog_sysdicts_proc", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     res = conn_exec(conn, query);
     if (NULL == res)
@@ -307,10 +306,7 @@ void proc_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalogd
         catalogInHash = hash_search(sysdicts->by_proc, &newcatalog->oid, HASH_FIND, &found);
         if (NULL == catalogInHash)
         {
-            elog(RLOG_WARNING,
-                 "by_proc hash not found, %u, %s",
-                 newcatalog->proc->oid,
-                 newcatalog->proc->proname.data);
+            elog(RLOG_WARNING, "by_proc hash not found, %u, %s", newcatalog->proc->oid, newcatalog->proc->proname.data);
             return;
         }
         rfree(catalogInHash->proc);

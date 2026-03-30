@@ -29,10 +29,9 @@ typedef enum PG_PARSER_TRANS_RMGR_HEAP_INFO
 /* heap flag for pg < 10 */
 #define PG_PARSER_HEAP_HASOID 0x0008 /* has an object-id field */
 
-#define pg_parser_HeapTupleHeaderGetOid(tup)                               \
-    (((tup)->t_infomask & PG_PARSER_HEAP_HASOID)                           \
-         ? *((uint32_t*)((char*)(tup) + (tup)->t_hoff - sizeof(uint32_t))) \
-         : pg_parser_InvalidOid)
+#define pg_parser_HeapTupleHeaderGetOid(tup)                                                                       \
+    (((tup)->t_infomask & PG_PARSER_HEAP_HASOID) ? *((uint32_t*)((char*)(tup) + (tup)->t_hoff - sizeof(uint32_t))) \
+                                                 : pg_parser_InvalidOid)
 
 /* delete statement flag */
 #define PG_PARSER_TRANS_XLH_DELETE_ALL_VISIBLE_CLEARED (1 << 0)
@@ -83,8 +82,7 @@ typedef struct pg_parser_xl_multi_insert_tuple
     /* TUPLE DATA FOLLOWS AT END OF STRUCT */
 } pg_parser_xl_multi_insert_tuple;
 
-#define pg_parser_SizeOfMultiInsertTuple \
-    (offsetof(pg_parser_xl_multi_insert_tuple, t_hoff) + sizeof(uint8_t))
+#define pg_parser_SizeOfMultiInsertTuple (offsetof(pg_parser_xl_multi_insert_tuple, t_hoff) + sizeof(uint8_t))
 
 typedef struct pg_parser_xl_heap_delete
 {
@@ -113,8 +111,7 @@ typedef struct pg_parser_xl_heap_update
 
 #define pg_parser_SizeOfHeapDelete (offsetof(pg_parser_xl_heap_delete, flags) + sizeof(uint8_t))
 
-#define pg_parser_SizeOfHeapUpdate \
-    (offsetof(pg_parser_xl_heap_update, new_offnum) + sizeof(uint16_t))
+#define pg_parser_SizeOfHeapUpdate (offsetof(pg_parser_xl_heap_update, new_offnum) + sizeof(uint16_t))
 
 extern bool pg_parser_trans_rmgr_heap2_pre(pg_parser_XLogReaderState*    state,
                                            pg_parser_translog_pre_base** result,
@@ -134,11 +131,11 @@ extern bool pg_parser_trans_rmgr_heap2_trans(pg_parser_XLogReaderState*     stat
 
 extern bool pg_parser_trans_rmgr_heap_trans_get_tuple(pg_parser_XLogReaderState*     state,
                                                       pg_parser_translog_tbcolbase** result,
-                                                      int32_t* pg_parser_errno);
+                                                      int32_t*                       pg_parser_errno);
 
 extern bool pg_parser_trans_rmgr_heap2_trans_get_tuple(pg_parser_XLogReaderState*     state,
                                                        pg_parser_translog_tbcolbase** result,
-                                                       int32_t* pg_parser_errno);
+                                                       int32_t*                       pg_parser_errno);
 
 bool pg_parser_check_fpw(pg_parser_XLogReaderState*    readstate,
                          pg_parser_translog_pre_base** pg_parser_result,

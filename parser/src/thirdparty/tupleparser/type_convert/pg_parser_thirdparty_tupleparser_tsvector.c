@@ -46,11 +46,10 @@ typedef struct
     WordEntryPos pos[FLEXIBLE_ARRAY_MEMBER];
 } WordEntryPosVector;
 
-#define ARRPTR(x) ((x)->entries)
-#define STRPTR(x) ((char*)&(x)->entries[(x)->size])
+#define ARRPTR(x)        ((x)->entries)
+#define STRPTR(x)        ((char*)&(x)->entries[(x)->size])
 
-#define _POSVECPTR(x, e) \
-    ((WordEntryPosVector*)(STRPTR(x) + PG_PARSER_SHORTALIGN((e)->pos + (e)->len)))
+#define _POSVECPTR(x, e) ((WordEntryPosVector*)(STRPTR(x) + PG_PARSER_SHORTALIGN((e)->pos + (e)->len)))
 
 #define POSDATALEN(x, e) (((e)->haspos) ? (_POSVECPTR(x, e)->npos) : 0)
 #define POSDATAPTR(x, e) (_POSVECPTR(x, e)->pos)

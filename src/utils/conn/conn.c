@@ -41,8 +41,7 @@ PGconn* conn_getphysical(const char* conninfo, char* appname)
     /* Iterate each configuration item */
     for (connopt = connopts; connopt->keyword != NULL; connopt++)
     {
-        if (NULL != connopt->val && '\0' != connopt->val[0] &&
-            0 != strcmp(connopt->keyword, "dbname"))
+        if (NULL != connopt->val && '\0' != connopt->val[0] && 0 != strcmp(connopt->keyword, "dbname"))
         {
             argcnt++;
         }
@@ -67,8 +66,7 @@ PGconn* conn_getphysical(const char* conninfo, char* appname)
 
     for (connopt = connopts; connopt->keyword != NULL; connopt++)
     {
-        if (connopt->val != NULL && '\0' != connopt->val[0] &&
-            0 != strcmp(connopt->keyword, "dbname"))
+        if (connopt->val != NULL && '\0' != connopt->val[0] && 0 != strcmp(connopt->keyword, "dbname"))
         {
             keywords[index] = connopt->keyword;
             values[index] = connopt->val;

@@ -1395,25 +1395,26 @@ static bool xsynch_febuildmsg_listcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 }
 
 static xsynch_febuildmsg_assemble m_cmd2msgmap[] = {
-    {T_XSYNCH_NOP, "unknown command", NULL},
-    {T_XSYNCH_IDENTITYCMD, "identity command", xsynch_febuildmsg_identitycmdassemble},
-    {T_XSYNCH_CREATECMD, "create command", xsynch_febuildmsg_createcmdassemble},
-    {T_XSYNCH_ALTERCMD, "alter command", xsynch_febuildmsg_altercmdassemble},
-    {T_XSYNCH_REMOVECMD, "remove command", xsynch_febuildmsg_removecmdassemble},
-    {T_XSYNCH_DROPCMD, "drop command", xsynch_febuildmsg_dropcmdassemble},
-    {T_XSYNCH_INITCMD, "init command", xsynch_febuildmsg_initcmdassemble},
-    {T_XSYNCH_EDITCMD, "edit command", xsynch_febuildmsg_editcmdassemble},
-    {T_XSYNCH_STARTCMD, "start command", xsynch_febuildmsg_startcmdassemble},
-    {T_XSYNCH_STOPCMD, "stop command", xsynch_febuildmsg_stopcmdassemble},
-    {T_XSYNCH_RELOADCMD, "reload command", xsynch_febuildmsg_reloadcmdassemble},
-    {T_XSYNCH_INFOCMD, "info command", xsynch_febuildmsg_infocmdassemble},
-    {T_XSYNCH_WATCHCMD, "watch command", xsynch_febuildmsg_watchcmdassemble},
-    {T_XSYNCH_CFGfILECMD, "config file command", xsynch_febuildmsg_cfgfilecmdassemble},
-    {T_XSYNCH_REFRESHCMD, "refresh command", xsynch_febuildmsg_refreshcmdassemble},
-    {T_XSYNCH_LISTCMD, "list command", xsynch_febuildmsg_listcmdassemble},
+    {T_XSYNCH_NOP,         "unknown command",     NULL                                 },
+    {T_XSYNCH_IDENTITYCMD, "identity command",    xsynch_febuildmsg_identitycmdassemble},
+    {T_XSYNCH_CREATECMD,   "create command",      xsynch_febuildmsg_createcmdassemble  },
+    {T_XSYNCH_ALTERCMD,    "alter command",       xsynch_febuildmsg_altercmdassemble   },
+    {T_XSYNCH_REMOVECMD,   "remove command",      xsynch_febuildmsg_removecmdassemble  },
+    {T_XSYNCH_DROPCMD,     "drop command",        xsynch_febuildmsg_dropcmdassemble    },
+    {T_XSYNCH_INITCMD,     "init command",        xsynch_febuildmsg_initcmdassemble    },
+    {T_XSYNCH_EDITCMD,     "edit command",        xsynch_febuildmsg_editcmdassemble    },
+    {T_XSYNCH_STARTCMD,    "start command",       xsynch_febuildmsg_startcmdassemble   },
+    {T_XSYNCH_STOPCMD,     "stop command",        xsynch_febuildmsg_stopcmdassemble    },
+    {T_XSYNCH_RELOADCMD,   "reload command",      xsynch_febuildmsg_reloadcmdassemble  },
+    {T_XSYNCH_INFOCMD,     "info command",        xsynch_febuildmsg_infocmdassemble    },
+    {T_XSYNCH_WATCHCMD,    "watch command",       xsynch_febuildmsg_watchcmdassemble   },
+    {T_XSYNCH_CFGfILECMD,  "config file command", xsynch_febuildmsg_cfgfilecmdassemble },
+    {T_XSYNCH_REFRESHCMD,  "refresh command",     xsynch_febuildmsg_refreshcmdassemble },
+    {T_XSYNCH_LISTCMD,     "list command",        xsynch_febuildmsg_listcmdassemble    },
 
     /* add before this */
-    {T_XSYNCH_MAX, "max command", NULL}};
+    {T_XSYNCH_MAX,         "max command",         NULL                                 }
+};
 
 /*
  * assemble data to buffer according to command type

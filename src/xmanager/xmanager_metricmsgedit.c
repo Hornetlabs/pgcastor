@@ -138,10 +138,7 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric*     xmetric,
         osal_file_close(fd);
         fd = -1;
         netpacket_destroy(npacket);
-        elog(RLOG_WARNING,
-             "xmanager metric assemble edit msg read file %s error, %s",
-             conffile,
-             strerror(errno));
+        elog(RLOG_WARNING, "xmanager metric assemble edit msg read file %s error, %s", conffile, strerror(errno));
         return false;
     }
 
@@ -166,9 +163,7 @@ static bool xmanager_metricmsg_assembleedit(xmanager_metric*     xmetric,
     return true;
 }
 
-bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric,
-                                  netpoolentry*    npoolentry,
-                                  netpacket*       npacket)
+bool xmanager_metricmsg_parseedit(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket)
 {
     int                  len = 0;
     int                  jobtype = 0;
@@ -253,6 +248,5 @@ xmanager_metricmsg_parseedit_error:
     }
 
     elog(RLOG_WARNING, errormsg);
-    return xmanager_metricmsg_assembleerrormsg(
-        xmetric, npoolentry->wpackets, XMANAGER_MSG_EDITCMD, errcode, errormsg);
+    return xmanager_metricmsg_assembleerrormsg(xmetric, npoolentry->wpackets, XMANAGER_MSG_EDITCMD, errcode, errormsg);
 }

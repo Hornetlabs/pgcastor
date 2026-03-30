@@ -126,18 +126,11 @@ bool fftrail_tbmetadata_serial(bool              force,
         fftbmd->columns[pgattrs->attnum - 1].typid = pgattrs->atttypid;
         fftbmd->columns[pgattrs->attnum - 1].flag = 0;
         fftbmd->columns[pgattrs->attnum - 1].num = pgattrs->attnum;
-        rmemcpy1(fftbmd->columns[pgattrs->attnum - 1].column,
-                 0,
-                 pgattrs->attname.data,
-                 strlen(pgattrs->attname.data));
+        rmemcpy1(fftbmd->columns[pgattrs->attnum - 1].column, 0, pgattrs->attname.data, strlen(pgattrs->attname.data));
         if (0 < pgattrs->atttypid)
         {
-            type = (pg_sysdict_Form_pg_type)ffstate->callback.gettype(ffstate->privdata,
-                                                                      pgattrs->atttypid);
-            rmemcpy1(fftbmd->columns[pgattrs->attnum - 1].typename,
-                     0,
-                     type->typname.data,
-                     strlen(type->typname.data));
+            type = (pg_sysdict_Form_pg_type)ffstate->callback.gettype(ffstate->privdata, pgattrs->atttypid);
+            rmemcpy1(fftbmd->columns[pgattrs->attnum - 1].typename, 0, type->typname.data, strlen(type->typname.data));
         }
 
         typid = pgattrs->atttypid;
@@ -150,8 +143,8 @@ bool fftrail_tbmetadata_serial(bool              force,
                 fftbmd->columns[pgattrs->attnum - 1].precision = -1;
                 fftbmd->columns[pgattrs->attnum - 1].scale = -1;
             }
-            else if (PG_SYSDICT_TIMEOID == typid || PG_SYSDICT_TIMETZOID == typid ||
-                     PG_SYSDICT_TIMESTAMPOID == typid || PG_SYSDICT_TIMESTAMPTZOID == typid)
+            else if (PG_SYSDICT_TIMEOID == typid || PG_SYSDICT_TIMETZOID == typid || PG_SYSDICT_TIMESTAMPOID == typid ||
+                     PG_SYSDICT_TIMESTAMPTZOID == typid)
             {
                 fftbmd->columns[pgattrs->attnum - 1].length = -1;
                 fftbmd->columns[pgattrs->attnum - 1].precision = pgattrs->atttypmod;
@@ -161,8 +154,7 @@ bool fftrail_tbmetadata_serial(bool              force,
             {
                 pgattrs->atttypmod -= (int32_t)sizeof(int32_t);
                 fftbmd->columns[pgattrs->attnum - 1].length = -1;
-                fftbmd->columns[pgattrs->attnum - 1].precision =
-                    (pgattrs->atttypmod >> 16) & 0xffff;
+                fftbmd->columns[pgattrs->attnum - 1].precision = (pgattrs->atttypmod >> 16) & 0xffff;
                 fftbmd->columns[pgattrs->attnum - 1].scale = pgattrs->atttypmod & 0xffff;
             }
             else if (PG_SYSDICT_BITOID == typid || PG_SYSDICT_VARBITOID == typid)
@@ -221,8 +213,8 @@ bool fftrail_tbmetadata_serial(bool              force,
     if ('\0' == class->nspname.data[0])
     {
         /* according to nspoid getschemainfo */
-        namespace = (pg_sysdict_Form_pg_namespace)ffstate->callback.getnamespace(
-            ffstate->privdata, class->relnamespace);
+        namespace =
+            (pg_sysdict_Form_pg_namespace)ffstate->callback.getnamespace(ffstate->privdata, class->relnamespace);
         fftbmd->schema = namespace->nspname.data;
     }
     else
@@ -241,8 +233,7 @@ bool fftrail_tbmetadata_serial(bool              force,
     }
 
     /* according to bufid get fbuffer */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
 
     /*
      * inprivatehas middleaddtableinfo
@@ -297,8 +288,7 @@ bool fftrail_tbmetadata_serial(bool              force,
             catalog_index_value* index_value = (catalog_index_value*)lfirst(lc);
 
             /* calculatefixeddeterminelength */
-            fftbmd->header.totallength +=
-                10; /* indexrelid(4) + indisprimary(1) + indidentify(1) + indnatts(4) */
+            fftbmd->header.totallength += 10; /* indexrelid(4) + indisprimary(1) + indidentify(1) + indnatts(4) */
 
             /* calculatechangelonglength */
             fftbmd->header.totallength += (index_value->index->indnatts * sizeof(uint32));
@@ -307,12 +297,10 @@ bool fftrail_tbmetadata_serial(bool              force,
 
     /* fillfilldata */
     /* tablenumber */
-    fftrail_data_data2buffer(
-        &fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&fftbmd->tbmdno);
+    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&fftbmd->tbmdno);
 
     /* table oid */
-    fftrail_data_data2buffer(
-        &fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&fftbmd->oid);
+    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&fftbmd->oid);
 
     /* tableidentifier */
     fftrail_data_data2buffer(&fftbmd->header,
@@ -340,8 +328,7 @@ bool fftrail_tbmetadata_serial(bool              force,
 
     /* table schemainfo */
     tmpcollen = (uint16)strlen(fftbmd->schema);
-    fftrail_data_data2buffer(
-        &fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&tmpcollen);
+    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&tmpcollen);
 
     fftrail_data_data2buffer(&fftbmd->header,
                              ffstate,
@@ -352,8 +339,7 @@ bool fftrail_tbmetadata_serial(bool              force,
 
     /* table name */
     tmpcollen = (uint16)strlen(fftbmd->table);
-    fftrail_data_data2buffer(
-        &fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&tmpcollen);
+    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&tmpcollen);
 
     fftrail_data_data2buffer(&fftbmd->header,
                              ffstate,
@@ -461,8 +447,7 @@ bool fftrail_tbmetadata_serial(bool              force,
     }
 
     /* indexnum */
-    fftrail_data_data2buffer(
-        &fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&indexnum);
+    fftrail_data_data2buffer(&fftbmd->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&indexnum);
 
     /* inhas index situationlowerputsetindexinnercontent */
     if (0 < indexnum)
@@ -560,10 +545,9 @@ bool fftrail_tbmetadata_serial(bool              force,
 /* tableinforeverseserialize */
 bool fftrail_tbmetadata_deserial(void** data, void* state)
 {
-    uint8  tokenid = 0;   /* token identifier */
-    uint8  tokeninfo = 0; /* token details */
-    uint32 recoffset =
-        0; /* foundationin record begin offset，used forpoint toneed needparse data */
+    uint8          tokenid = 0;    /* token identifier */
+    uint8          tokeninfo = 0;  /* token details */
+    uint32         recoffset = 0;  /* foundationin record begin offset，used forpoint toneed needparse data */
     uint32         dataoffset = 0; /* foundationin data offset，used forcalculatecurrent record
                                       datapartdivide remainsurplusemptybetween */
     uint16         tmpcollen = 0;

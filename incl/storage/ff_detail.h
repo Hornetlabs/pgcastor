@@ -7,8 +7,8 @@ typedef enum FF_CXT_TYPE
     FFTRAIL_CXT_TYPE_NOP = 0x00,     /* Invalid                   */
     FFTRAIL_CXT_TYPE_FHEADER = 0x01, /* File header                  */
     FFTRAIL_CXT_TYPE_DATA = 0x02,    /* Data information in file       */
-    FFTRAIL_CXT_TYPE_RESET = 0x03, /* Transaction reset, indicates unfinished transaction cleanup */
-    FFTRAIL_CXT_TYPE_FTAIL = 0x04, /* File tail information               */
+    FFTRAIL_CXT_TYPE_RESET = 0x03,   /* Transaction reset, indicates unfinished transaction cleanup */
+    FFTRAIL_CXT_TYPE_FTAIL = 0x04,   /* File tail information               */
 } ff_cxt_type;
 
 typedef struct FF_HEADER
@@ -82,13 +82,12 @@ typedef struct FF_DATA
     uint64       transid;
     uint8        transind;    /* Indicate position within transaction */
     uint64       totallength; /* Length of composing complete data */
-    uint16
-        reclength; /* Data length of current record, excluding rectail length and header content */
-    uint16   reccount;   /* Total count of records in current record */
-    uint8    formattype; /* Data source */
-    uint16   subtype;    /* Used to distinguish sub type, when no sub type is type */
-    uint64   orgpos;     /* Lsn offset recording statement end position */
-    r_crc32c crc32;
+    uint16       reclength;   /* Data length of current record, excluding rectail length and header content */
+    uint16       reccount;    /* Total count of records in current record */
+    uint8        formattype;  /* Data source */
+    uint16       subtype;     /* Used to distinguish sub type, when no sub type is type */
+    uint64       orgpos;      /* Lsn offset recording statement end position */
+    r_crc32c     crc32;
 } ff_data;
 
 /*

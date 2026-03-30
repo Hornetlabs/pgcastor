@@ -20,29 +20,28 @@
  *    memset() functions.  More research needs to be done, perhaps with
  *    MEMSET_LOOP_LIMIT tests in configure.
  */
-#define MemSet(start, val, len)                                                                 \
-    do                                                                                          \
-    {                                                                                           \
-        /* must be void* because we don't know if it is integer aligned yet */                  \
-        void*   _vstart = (void*)(start);                                                       \
-        int32_t _val = (val);                                                                   \
-        size_t  _len = (len);                                                                   \
-                                                                                                \
-        if ((((uintptr_t)_vstart) & LONG_ALIGN_MASK) == 0 && (_len & LONG_ALIGN_MASK) == 0 &&   \
-            _val == 0 &&                                                                        \
-            _len <= MEMSET_LOOP_LIMIT && /*                                                     \
-                                          *    If MEMSET_LOOP_LIMIT == 0, optimizer should find \
-                                          *    the whole "if" false at compile time.            \
-                                          */                                                    \
-            MEMSET_LOOP_LIMIT != 0)                                                             \
-        {                                                                                       \
-            long* _start = (long*)_vstart;                                                      \
-            long* _stop = (long*)((char*)_start + _len);                                        \
-            while (_start < _stop)                                                              \
-                *_start++ = 0;                                                                  \
-        }                                                                                       \
-        else                                                                                    \
-            rmemset1(_vstart, 0, _val, _len);                                                   \
+#define MemSet(start, val, len)                                                                            \
+    do                                                                                                     \
+    {                                                                                                      \
+        /* must be void* because we don't know if it is integer aligned yet */                             \
+        void*   _vstart = (void*)(start);                                                                  \
+        int32_t _val = (val);                                                                              \
+        size_t  _len = (len);                                                                              \
+                                                                                                           \
+        if ((((uintptr_t)_vstart) & LONG_ALIGN_MASK) == 0 && (_len & LONG_ALIGN_MASK) == 0 && _val == 0 && \
+            _len <= MEMSET_LOOP_LIMIT && /*                                                                \
+                                          *    If MEMSET_LOOP_LIMIT == 0, optimizer should find            \
+                                          *    the whole "if" false at compile time.                       \
+                                          */                                                               \
+            MEMSET_LOOP_LIMIT != 0)                                                                        \
+        {                                                                                                  \
+            long* _start = (long*)_vstart;                                                                 \
+            long* _stop = (long*)((char*)_start + _len);                                                   \
+            while (_start < _stop)                                                                         \
+                *_start++ = 0;                                                                             \
+        }                                                                                                  \
+        else                                                                                               \
+            rmemset1(_vstart, 0, _val, _len);                                                              \
     } while (0)
 
 bool pg_parser_image_get_block_image(pg_parser_XLogReaderState* record,
@@ -74,8 +73,7 @@ bool pg_parser_image_get_block_image(pg_parser_XLogReaderState* record,
     if (bkpb->bimg_info & PG_PARSER_TRANS_TRANSREC_BKPIMAGE_IS_COMPRESSED)
     {
         /* If a backup block image is compressed, decompress it. */
-        if (pg_parser_lz_decompress(
-                ptr, bkpb->bimg_len, tmp, block_size - bkpb->hole_length, true) < 0)
+        if (pg_parser_lz_decompress(ptr, bkpb->bimg_len, tmp, block_size - bkpb->hole_length, true) < 0)
         {
             return false;
         }
@@ -133,8 +131,7 @@ pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image(char*     pa
     }
     if (count != 0)
     {
-        if (!pg_parser_mcxt_malloc(
-                IMAGE_MCXT, (void**)&result, count * sizeof(pg_parser_translog_tuplecache)))
+        if (!pg_parser_mcxt_malloc(IMAGE_MCXT, (void**)&result, count * sizeof(pg_parser_translog_tuplecache)))
         {
             return NULL;
         }
@@ -182,8 +179,10 @@ pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image(char*     pa
     return result;
 }
 
-pg_parser_translog_tuplecache* pg_parser_image_getTupleFromCache(
-    pg_parser_translog_tuplecache* cache, uint32_t cnt, uint32_t off, uint32_t pageno)
+pg_parser_translog_tuplecache* pg_parser_image_getTupleFromCache(pg_parser_translog_tuplecache* cache,
+                                                                 uint32_t                       cnt,
+                                                                 uint32_t                       off,
+                                                                 uint32_t                       pageno)
 {
     uint32_t                       i = 0;
     pg_parser_translog_tuplecache* result = NULL;
@@ -203,7 +202,7 @@ pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image_with_dbtype(
                                                                                 char*     page,
                                                                                 uint32_t* tupcnt,
                                                                                 uint32_t  pageno,
-                                                                                uint8_t debug_level)
+                                                                                uint8_t   debug_level)
 {
     PG_PARSER_UNUSED(dbtype);
     PG_PARSER_UNUSED(dbversion);
@@ -211,6 +210,7 @@ pg_parser_translog_tuplecache* pg_parser_image_get_tuple_from_image_with_dbtype(
 
     return pg_parser_image_get_tuple_from_image(page, tupcnt, pageno, debug_level);
 }
+
 bool check_page_have_item(char* page)
 {
     pg_parser_PageHeader phdr = (pg_parser_PageHeader)page;

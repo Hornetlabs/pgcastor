@@ -632,8 +632,7 @@ char* osal_make_absolute_path(const char* path)
 }
 
 /* Create file with specified size */
-bool osal_create_file_with_size(
-    char* filepath, int fileFlags, uint64_t filesize, uint32_t blksize, uint8* blkdata)
+bool osal_create_file_with_size(char* filepath, int fileFlags, uint64_t filesize, uint32_t blksize, uint8* blkdata)
 {
     int      fd = -1;
     uint64_t index = 0;

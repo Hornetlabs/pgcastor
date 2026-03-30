@@ -108,12 +108,13 @@
 #define PG_PARSER_PAGESIZE_16K (uint32_t)16384
 #define PG_PARSER_PAGESIZE_32K (uint32_t)32786
 #define PG_PARSER_PAGESIZE_64K (uint32_t)65536
+
 typedef enum PG_PARSER_TRANSLOG_COLINFO
 {
     INFO_NOTHING = 0x00,
-    INFO_COL_IS_NULL = 0x01,  /* Null value marker during insert */
-    INFO_COL_MAY_NULL = 0x02, /* Data not recorded in WAL during update/delete old data retrieval */
-    INFO_COL_IS_TOAST = 0x03, /* Out-of-line storage */
+    INFO_COL_IS_NULL = 0x01,   /* Null value marker during insert */
+    INFO_COL_MAY_NULL = 0x02,  /* Data not recorded in WAL during update/delete old data retrieval */
+    INFO_COL_IS_TOAST = 0x03,  /* Out-of-line storage */
     INFO_COL_IS_CUSTOM = 0x04, /* Custom type */
     INFO_COL_IS_ARRAY = 0x05,  /* ARRAY type */
     INFO_COL_IS_BYTEA = 0x06,  /* Column is binary data */
@@ -144,6 +145,7 @@ typedef struct PG_PARSER_TRANSLOG_PRE
     char*    m_dbversion;  /* Database version */
     uint8_t* m_record;     /* record */
 } pg_parser_translog_pre;
+
 /*-------------------   Pre-parse interface input parameters  end --------------------*/
 
 /*-------------------   Pre-parse interface output parameters  begin --------------------*/
@@ -220,9 +222,9 @@ typedef struct PG_PARSER_TRANSLOG_PRE_TRANSCHKP
     pg_parser_translog_pre_base m_base;
     uint32_t                    m_this_timeline;
     uint32_t                    m_prev_timeline;
-    uint64_t                    m_nextid; /* Next transaction ID */
-    uint64_t m_redo_lsn; /* Redo start LSN, full page write will be flushed after this LSN
-                            (including this LSN) */
+    uint64_t                    m_nextid;   /* Next transaction ID */
+    uint64_t                    m_redo_lsn; /* Redo start LSN, full page write will be flushed after this LSN
+                                               (including this LSN) */
 } pg_parser_translog_pre_transchkp;
 
 typedef struct PG_PARSER_TRANSLOG_PRE_ENDRECOVERY
@@ -589,6 +591,7 @@ typedef struct PG_PARSER_TRANSLOG_DDLSTMT_TBCONSTRAINT_CHECK
 } pg_parser_translog_ddlstmt_tbconstraint_check;
 
 #define PG_PARSER_DDL_INDEX_UNIQUE (uint8_t)0x01
+
 /* Index */
 typedef struct PG_PARSER_TRANSLOG_DDLSTMT_INDEX
 {
@@ -739,6 +742,7 @@ typedef struct PG_PARSER_TRANSLOG_DDLSTMT_TYPE
     char*    m_type_name; /* Type name */
     void*    m_typptr;    /* Type sub-structure (composite, enum, range, domain) */
 } pg_parser_translog_ddlstmt_type;
+
 /* type DDL end*/
 
 /* sequence */
@@ -778,10 +782,9 @@ extern bool pg_parser_trans_preTrans(pg_parser_translog_pre*       pg_parser_pre
 extern bool pg_parser_trans_TransRecord(pg_parser_translog_translog2col* pg_parser_transData,
                                         pg_parser_translog_tbcolbase**   pg_parser_trans_result,
                                         int32_t*                         pg_parser_errno);
-extern bool pg_parser_trans_TransRecord_GetTuple(
-    pg_parser_translog_translog2col* pg_parser_transData,
-    pg_parser_translog_tbcolbase**   pg_parser_trans_result,
-    int32_t*                         pg_parser_errno);
+extern bool pg_parser_trans_TransRecord_GetTuple(pg_parser_translog_translog2col* pg_parser_transData,
+                                                 pg_parser_translog_tbcolbase**   pg_parser_trans_result,
+                                                 int32_t*                         pg_parser_errno);
 extern bool pg_parser_trans_DDLtrans(pg_parser_translog_systb2ddl* pg_parser_ddl,
                                      pg_parser_translog_ddlstmt**  pg_parser_ddl_result,
                                      int32_t*                      pg_parser_errno);
@@ -791,13 +794,10 @@ extern bool pg_parser_trans_external_trans(pg_parser_translog_external*     pg_p
 extern void pg_parser_trans_preTrans_free(pg_parser_translog_pre_base* pg_parser_result);
 extern void pg_parser_trans_TransRecord_free(pg_parser_translog_translog2col* pg_parser_trans_pre,
                                              pg_parser_translog_tbcolbase*    pg_parser_trans);
-extern void pg_parser_trans_TransRecord_Minsert_free(
-    pg_parser_translog_translog2col* pg_parser_trans_pre,
-    pg_parser_translog_tbcolbase*    pg_parser_trans);
-extern void pg_parser_trans_external_free(pg_parser_translog_external*    ext,
-                                          pg_parser_translog_tbcol_value* result);
-extern void pg_parser_trans_ddl_free(pg_parser_translog_systb2ddl* ddl,
-                                     pg_parser_translog_ddlstmt*   result);
+extern void pg_parser_trans_TransRecord_Minsert_free(pg_parser_translog_translog2col* pg_parser_trans_pre,
+                                                     pg_parser_translog_tbcolbase*    pg_parser_trans);
+extern void pg_parser_trans_external_free(pg_parser_translog_external* ext, pg_parser_translog_tbcol_value* result);
+extern void pg_parser_trans_ddl_free(pg_parser_translog_systb2ddl* ddl, pg_parser_translog_ddlstmt* result);
 
 extern bool pg_parser_trans_matchmissing(pg_parser_translog_tbcol_value* value1,
                                          pg_parser_translog_tbcol_value* value2,

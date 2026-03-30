@@ -43,8 +43,7 @@ onlinerefresh_integrate* onlinerefresh_integrate_init(bool increment);
 void* onlinerefresh_integrate_manage(void* args);
 
 /* Generate onlinerefresh node from persist */
-bool onlinerefresh_integrate_persist2onlinerefreshmgr(onlinerefresh_persist* persist,
-                                                      void**                 onlinerefresh);
+bool onlinerefresh_integrate_persist2onlinerefreshmgr(onlinerefresh_persist* persist, void** onlinerefresh);
 
 /* Check if onlinerefresh conflicts with started stock tables, return true if conflict */
 bool onlinerefresh_integrate_isconflict(dlistnode* in_dlnode);

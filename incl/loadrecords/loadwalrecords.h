@@ -10,26 +10,24 @@ typedef enum LOADWALRECORDS_STATUS
 
 typedef struct LOADWALRECORDS
 {
-    loadrecords loadrecords;
+    loadrecords      loadrecords;
 
     /* wal file version */
-    bool        need_decrypt;   /* Need decryption */
-    TimeLineID  timeline;       /* Timeline */
-    XLogRecPtr  block_startptr; /* lsn where block starts */
-    XLogRecPtr  startptr;       /* Starting lsn */
-    XLogRecPtr  endptr;         /* Ending lsn */
-    XLogRecPtr  prev;           /* lsn of last divided record */
+    bool             need_decrypt;   /* Need decryption */
+    TimeLineID       timeline;       /* Timeline */
+    XLogRecPtr       block_startptr; /* lsn where block starts */
+    XLogRecPtr       startptr;       /* Starting lsn */
+    XLogRecPtr       endptr;         /* Ending lsn */
+    XLogRecPtr       prev;           /* lsn of last divided record */
 
-    mpage*      page; /* Read buffer */
+    mpage*           page; /* Read buffer */
 
-    recordcross*
-        page_last_record_incomplete;   /* (If exists) Last incomplete record of parsed page* */
-    recordcross* seg_first_incomplete; /* (If exists) First incomplete record of current file* */
-    recordcross*
-              seg_first_incomplete_next; /* (If exists) First incomplete record of next wal file*/
+    recordcross*     page_last_record_incomplete; /* (If exists) Last incomplete record of parsed page* */
+    recordcross*     seg_first_incomplete;        /* (If exists) First incomplete record of current file* */
+    recordcross*     seg_first_incomplete_next;   /* (If exists) First incomplete record of next wal file*/
 
-    dlist*    records; /* Linked list of divided complete records */
-    loadpage* loadpage;
+    dlist*           records; /* Linked list of divided complete records */
+    loadpage*        loadpage;
     loadpageroutine* loadpageroutine;
 } loadwalrecords;
 

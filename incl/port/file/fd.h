@@ -51,8 +51,7 @@ int osal_file_truncate(File file, off_t offset);
 off_t osal_file_seek(File file, off_t offset);
 
 /* Create file with specified size */
-bool osal_create_file_with_size(
-    char* filepath, int fileFlags, uint64_t filesize, uint32_t blksize, uint8* blkdata);
+bool osal_create_file_with_size(char* filepath, int fileFlags, uint64_t filesize, uint32_t blksize, uint8* blkdata);
 
 /* Check if file exists */
 bool osal_file_exist(char* filepath);

@@ -30,8 +30,7 @@ bool fftrail_txnshiftfile(void* data, void* state)
     ffsmgrstate = (ffsmgr_state*)state;
     stmt = (txnstmt_shiftfile*)rstmt->stmt;
 
-    fbuffer = file_buffer_getbybufid(ffsmgrstate->callback.getfilebuffer(ffsmgrstate->privdata),
-                                     ffsmgrstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffsmgrstate->callback.getfilebuffer(ffsmgrstate->privdata), ffsmgrstate->bufid);
     fbuffer->extra.chkpoint.redolsn.wal.lsn = stmt->redolsn;
     fbuffer->extra.rewind.restartlsn.wal.lsn = stmt->restartlsn;
     fbuffer->extra.rewind.confirmlsn.wal.lsn = stmt->confirmlsn;

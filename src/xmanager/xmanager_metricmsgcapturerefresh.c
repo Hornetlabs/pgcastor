@@ -19,9 +19,7 @@
 /*
  * Handle capture onlinerefresh command
  */
-bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric,
-                                            netpoolentry*    npoolentry,
-                                            netpacket*       npacket)
+bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket)
 {
     /*
      * 1. Get capture metric node
@@ -69,8 +67,7 @@ bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric,
     rmemcpy0(errmsg, 0, uptr, resultlen);
 
     /* Get capture node */
-    fd2node = dlist_get(
-        xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
+    fd2node = dlist_get(xmetric->fd2metricnodes, (void*)((uintptr_t)npoolentry->fd), xmanager_metricfd2node_cmp);
     xmetricnode = fd2node->metricnode;
 
     /* Get xscsci node */
@@ -83,8 +80,7 @@ bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric,
         }
 
         xmetricxscscinode = (xmanager_metricxscscinode*)fd2node->metricnode;
-        if (NULL == xmetricxscscinode->asyncmsgs ||
-            true == dlist_isnull(xmetricxscscinode->asyncmsgs->msgs))
+        if (NULL == xmetricxscscinode->asyncmsgs || true == dlist_isnull(xmetricxscscinode->asyncmsgs->msgs))
         {
             continue;
         }
@@ -132,12 +128,10 @@ bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric,
             errmsg = NULL;
 
             /* Delete dlnodemsg from messages */
-            xmetricxscscinode->asyncmsgs->msgs =
-                dlist_delete(xmetricxscscinode->asyncmsgs->msgs, dlnodemsg, NULL);
+            xmetricxscscinode->asyncmsgs->msgs = dlist_delete(xmetricxscscinode->asyncmsgs->msgs, dlnodemsg, NULL);
 
             /* Add asyncmsg to results */
-            xmetricxscscinode->asyncmsgs->results =
-                dlist_put(xmetricxscscinode->asyncmsgs->results, asyncmsg);
+            xmetricxscscinode->asyncmsgs->results = dlist_put(xmetricxscscinode->asyncmsgs->results, asyncmsg);
             break;
         }
     }
@@ -156,9 +150,10 @@ bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric,
         return true;
     }
 
-    if (false ==
-        xmanager_metricmsg_assembleresponse(
-            xmetric, npoolentry, XMANAGER_MSG_REFRESHCMD, xmetricxscscinode->asyncmsgs->results))
+    if (false == xmanager_metricmsg_assembleresponse(xmetric,
+                                                     npoolentry,
+                                                     XMANAGER_MSG_REFRESHCMD,
+                                                     xmetricxscscinode->asyncmsgs->results))
     {
         elog(RLOG_WARNING, "assemble response to xscsci error, close xscsci connect");
 
@@ -172,8 +167,7 @@ bool xmanager_metricmsg_parsecapturerefresh(xmanager_metric* xmetric,
                                                              xmanager_metricnode_destroyvoid);
 
         /* Remove data from fd mapping list */
-        xmetric->fd2metricnodes =
-            dlist_delete(xmetric->fd2metricnodes, dlnode, xmanager_metricfd2node_destroyvoid);
+        xmetric->fd2metricnodes = dlist_delete(xmetric->fd2metricnodes, dlnode, xmanager_metricfd2node_destroyvoid);
         return true;
     }
 

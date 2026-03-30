@@ -59,9 +59,7 @@ void loadtrailrecords_filter(loadtrailrecords* loadrecords, uint64 fileid, uint6
  *   true           Still need to continue filtering
  *   false          No need to continue filtering
  */
-bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords,
-                                           uint64            fileid,
-                                           uint64            foffset);
+bool loadtrailrecords_filterremainmetadata(loadtrailrecords* loadrecords, uint64 fileid, uint64 foffset);
 
 /* Release */
 void loadtrailrecords_free(loadtrailrecords* loadrecords);

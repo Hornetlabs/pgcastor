@@ -76,8 +76,7 @@ static char* rebuild_makehatb(rebuild* rebuild, txnstmt_prepared* stmtprepared, 
     {
         hash_entry->tableop.optype = table_optype.optype;
         hash_entry->tableop.relid = table_optype.relid;
-        hash_entry->rbtree = rbtree_init(
-            rebuild_preparestmt_cmp, rebuild_preparestmt_free, rebuild_preparestmt_debug);
+        hash_entry->rbtree = rbtree_init(rebuild_preparestmt_cmp, rebuild_preparestmt_free, rebuild_preparestmt_debug);
         if (NULL == hash_entry->rbtree)
         {
             elog(RLOG_WARNING, "rebuild makehatb rbtree out of memory");
@@ -355,8 +354,7 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild, txnstmt* stmt, List**
         has_valid_column = false;
         for (index = 0; index < nvalues->m_valueCnt; index++)
         {
-            if (column[index].m_info == INFO_COL_MAY_NULL ||
-                column[index].m_info == INFO_COL_IS_DROPED)
+            if (column[index].m_info == INFO_COL_MAY_NULL || column[index].m_info == INFO_COL_IS_DROPED)
             {
                 continue;
             }
@@ -403,8 +401,8 @@ static bool rebuild_prepared_multiinsert(rebuild* rebuild, txnstmt* stmt, List**
         nstmt->type = TXNSTMT_TYPE_PREPARED;
         stmtprepared = (txnstmt_prepared*)nstmt->stmt;
 
-        if (false == rebuild_prepared_multiinsert2insert(
-                         nvalues, nvalues->m_rows[index_rowcnt].m_new_values, stmtprepared))
+        if (false ==
+            rebuild_prepared_multiinsert2insert(nvalues, nvalues->m_rows[index_rowcnt].m_new_values, stmtprepared))
         {
             txnstmt_free(nstmt);
             deleteStringInfo(preparestmtname);
@@ -455,10 +453,7 @@ static bool rebuild_prepared_insert(rebuild* rebuild, txnstmt* stmt, List** lsts
 
     /* Allocate memory */
     preparedstmt = makeStringInfo();
-    appendStringInfo(preparedstmt,
-                     "insert into \"%s\".\"%s\" (",
-                     row->m_base.m_schemaname,
-                     row->m_base.m_tbname);
+    appendStringInfo(preparedstmt, "insert into \"%s\".\"%s\" (", row->m_base.m_schemaname, row->m_base.m_tbname);
 
     /* Assemble column names */
     for (index = 0; index < row->m_valueCnt; index++)
@@ -485,10 +480,7 @@ static bool rebuild_prepared_insert(rebuild* rebuild, txnstmt* stmt, List** lsts
     }
     else
     {
-        elog(RLOG_WARNING,
-             "%s.%s no column, not currently supported",
-             row->m_base.m_schemaname,
-             row->m_base.m_tbname);
+        elog(RLOG_WARNING, "%s.%s no column, not currently supported", row->m_base.m_schemaname, row->m_base.m_tbname);
         deleteStringInfo(preparedstmt);
         return false;
     }
@@ -569,8 +561,7 @@ static int rebuild_appendbindparam(StringInfoData*                 stmt,
     int  index_colcnt = 0;
     for (index_colcnt = 0; index_colcnt < count; index_colcnt++)
     {
-        if (values[index_colcnt].m_info == INFO_COL_MAY_NULL ||
-            values[index_colcnt].m_info == INFO_COL_IS_DROPED)
+        if (values[index_colcnt].m_info == INFO_COL_MAY_NULL || values[index_colcnt].m_info == INFO_COL_IS_DROPED)
         {
             continue;
         }
@@ -607,14 +598,10 @@ static bool rebuild_prepared_delete(rebuild* rebuild, txnstmt* stmt, List** lsts
 
     /* Allocate space */
     preparedstmt = makeStringInfo();
-    appendStringInfo(preparedstmt,
-                     "DELETE FROM \"%s\".\"%s\" WHERE ",
-                     row->m_base.m_schemaname,
-                     row->m_base.m_tbname);
+    appendStringInfo(preparedstmt, "DELETE FROM \"%s\".\"%s\" WHERE ", row->m_base.m_schemaname, row->m_base.m_tbname);
 
     /* No primary key or unique constraint */
-    if (false == row->m_haspkey &&
-        false == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
+    if (false == row->m_haspkey && false == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
         appendStringInfo(preparedstmt,
                          "CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
@@ -624,8 +611,7 @@ static bool rebuild_prepared_delete(rebuild* rebuild, txnstmt* stmt, List** lsts
 
     colcnt = rebuild_appendbindparam(preparedstmt, row->m_old_values, row->m_valueCnt, 0, false);
 
-    if (false == row->m_haspkey &&
-        false == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
+    if (false == row->m_haspkey && false == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
         appendStringInfo(preparedstmt, " LIMIT 1)");
     }
@@ -692,8 +678,7 @@ static bool rebuild_prepared_update(rebuild* rebuild, txnstmt* stmt, List** lsts
 
     /* Allocate space */
     preparedstmt = makeStringInfo();
-    appendStringInfo(
-        preparedstmt, "UPDATE \"%s\".\"%s\" SET ", row->m_base.m_schemaname, row->m_base.m_tbname);
+    appendStringInfo(preparedstmt, "UPDATE \"%s\".\"%s\" SET ", row->m_base.m_schemaname, row->m_base.m_tbname);
 
     /* New values */
     colcnt = rebuild_appendbindparam(preparedstmt, row->m_new_values, row->m_valueCnt, 0, true);
@@ -701,8 +686,7 @@ static bool rebuild_prepared_update(rebuild* rebuild, txnstmt* stmt, List** lsts
     if (row->m_haspkey || true == rebuild_hasconskey(rebuild->sysdicts->by_index, row->m_relid))
     {
         appendStringInfo(preparedstmt, " WHERE ");
-        colcnt = rebuild_appendbindparam(
-            preparedstmt, row->m_old_values, row->m_valueCnt, colcnt, false);
+        colcnt = rebuild_appendbindparam(preparedstmt, row->m_old_values, row->m_valueCnt, colcnt, false);
     }
     else
     {
@@ -710,8 +694,7 @@ static bool rebuild_prepared_update(rebuild* rebuild, txnstmt* stmt, List** lsts
                          " WHERE CTID = (SELECT CTID FROM \"%s\".\"%s\" WHERE ",
                          row->m_base.m_schemaname,
                          row->m_base.m_tbname);
-        colcnt = rebuild_appendbindparam(
-            preparedstmt, row->m_old_values, row->m_valueCnt, colcnt, false);
+        colcnt = rebuild_appendbindparam(preparedstmt, row->m_old_values, row->m_valueCnt, colcnt, false);
         appendStringInfo(preparedstmt, " LIMIT 1)");
     }
 

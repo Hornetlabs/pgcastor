@@ -71,18 +71,15 @@ void bigtxn_persist_electionrewindbyxid(bigtxn_persist* persist, FullTransaction
         persist->rewind.trail.fileid = persistnode->begin.trail.fileid;
         persist->rewind.trail.offset = persistnode->begin.trail.offset + 1;
 
-        persist->dpersistnodes =
-            dlist_delete(persist->dpersistnodes, dlnode, bigtxn_persistnode_free);
+        persist->dpersistnodes = dlist_delete(persist->dpersistnodes, dlnode, bigtxn_persistnode_free);
         persist->count -= 1;
         break;
     }
 
-    for (dlnode = persist->dpersistnodes->head; NULL != dlnode;
-         dlnode = persist->dpersistnodes->head)
+    for (dlnode = persist->dpersistnodes->head; NULL != dlnode; dlnode = persist->dpersistnodes->head)
     {
         persistnode = (bigtxn_persistnode*)dlnode->value;
-        if (BIGTXN_PERSISTNODE_STAT_DONE != persistnode->stat &&
-            BIGTXN_PERSISTNODE_STAT_ABANDON != persistnode->stat)
+        if (BIGTXN_PERSISTNODE_STAT_DONE != persistnode->stat && BIGTXN_PERSISTNODE_STAT_ABANDON != persistnode->stat)
         {
             persist->rewind.trail.fileid = persistnode->begin.trail.fileid;
             persist->rewind.trail.offset = persistnode->begin.trail.offset;
@@ -91,8 +88,7 @@ void bigtxn_persist_electionrewindbyxid(bigtxn_persist* persist, FullTransaction
 
         persist->rewind.trail.fileid = persistnode->begin.trail.fileid;
         persist->rewind.trail.offset = persistnode->begin.trail.offset + 1;
-        persist->dpersistnodes =
-            dlist_delete(persist->dpersistnodes, dlnode, bigtxn_persistnode_free);
+        persist->dpersistnodes = dlist_delete(persist->dpersistnodes, dlnode, bigtxn_persistnode_free);
         persist->count -= 1;
     }
     return;
@@ -245,9 +241,9 @@ void bigtxn_persistnode_free(void* persistnode)
  * beginfileid + beginoffset + endfileid + endoffset + xid + stat
  *      8      +      8      +     8     +     8     +  8  +   4
  */
-#define BIGTRANSACTION_FILE_NODE_LEN                                     \
-    (sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + \
-     sizeof(FullTransactionId) + sizeof(bigtxn_persistnode_stat))
+#define BIGTRANSACTION_FILE_NODE_LEN                                                                 \
+    (sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + sizeof(uint64) + sizeof(FullTransactionId) + \
+     sizeof(bigtxn_persistnode_stat))
 
 bool bigtxn_write_persist(bigtxn_persist* persist)
 {

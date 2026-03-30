@@ -47,10 +47,7 @@
 #include "metric/capture/metric_capture.h"
 #include "increment/capture/increment_capture.h"
 
-static void capturestate_write_set_misc_callback(void*      state,
-                                                 XLogRecPtr confirm,
-                                                 XLogRecPtr restart,
-                                                 XLogRecPtr redo)
+static void capturestate_write_set_misc_callback(void* state, XLogRecPtr confirm, XLogRecPtr restart, XLogRecPtr redo)
 {
     increment_capture* inccapture = state;
     inccapture->writestate->base.confirmedlsn = confirm;
@@ -175,16 +172,14 @@ static void capturestate_walsynclsn_set(void*      privdata,
     increment_capture* inccapture = NULL;
     if (NULL == privdata)
     {
-        elog(RLOG_ERROR,
-             "increment capture metric walsynclsn set exception, privdata point is NULL");
+        elog(RLOG_ERROR, "increment capture metric walsynclsn set exception, privdata point is NULL");
     }
 
     inccapture = (increment_capture*)privdata;
 
     if (NULL == inccapture->metric)
     {
-        elog(RLOG_ERROR,
-             "increment capture metric walsynclsn set exception, capturestate point is NULL");
+        elog(RLOG_ERROR, "increment capture metric walsynclsn set exception, capturestate point is NULL");
     }
 
     inccapture->metric->redolsn = redolsn;
@@ -401,12 +396,10 @@ increment_capture* increment_capture_init(void)
     inccapture->olrefreshing = NULL;
 
     inccapture->bigtxnserialstate->privdata = (void*)inccapture;
-    inccapture->bigtxnserialstate->callback.bigtxn_parserstat_curtlid_get =
-        increment_capture_parserstat_curtlid_get;
+    inccapture->bigtxnserialstate->callback.bigtxn_parserstat_curtlid_get = increment_capture_parserstat_curtlid_get;
 
     inccapture->bigtxnwritestate->privdata = (void*)inccapture;
-    inccapture->bigtxnwritestate->txn2filebuffer =
-        inccapture->bigtxnserialstate->base.txn2filebuffer;
+    inccapture->bigtxnwritestate->txn2filebuffer = inccapture->bigtxnserialstate->base.txn2filebuffer;
     inccapture->bigtxnwritestate->callback.setmetricflushlsn = NULL;
 
     inccapture->splitwalctx->privdata = (void*)inccapture;
@@ -428,8 +421,7 @@ increment_capture* increment_capture_init(void)
     inccapture->serialstate->privdata = (void*)inccapture;
     inccapture->serialstate->parser2serialtxns = inccapture->parser2serialtxns;
     inccapture->serialstate->base.txn2filebuffer = inccapture->txn2filebuffer;
-    inccapture->serialstate->callback.parserstat_curtlid_get =
-        increment_capture_parserstat_curtlid_get;
+    inccapture->serialstate->callback.parserstat_curtlid_get = increment_capture_parserstat_curtlid_get;
 
     inccapture->writestate->privdata = (void*)inccapture;
     inccapture->writestate->txn2filebuffer = inccapture->txn2filebuffer;

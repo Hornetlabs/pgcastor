@@ -27,16 +27,15 @@
 /* Define function pointer for pre-processing FMGR */
 typedef bool (*pg_parser_trans_transrec_rmgrfunc_pre)(pg_parser_XLogReaderState*    state,
                                                       pg_parser_translog_pre_base** result,
-                                                      int32_t* pg_parser_errno);
+                                                      int32_t*                      pg_parser_errno);
 
 /* Define function pointer for FMGR processing during secondary parsing */
 typedef bool (*pg_parser_trans_transrec_rmgrfunc_trans)(pg_parser_XLogReaderState*     state,
                                                         pg_parser_translog_tbcolbase** result,
-                                                        int32_t* pg_parser_errno);
+                                                        int32_t*                       pg_parser_errno);
 
 /* static function statement */
-static bool pg_parser_trans_transrec_decode_checkPreTransParam(
-    pg_parser_translog_pre* pg_parser_pre_data);
+static bool pg_parser_trans_transrec_decode_checkPreTransParam(pg_parser_translog_pre* pg_parser_pre_data);
 
 static bool deal_invalid_record(pg_parser_XLogReaderState*    state,
                                 pg_parser_translog_pre_base** pg_parser_result,
@@ -44,32 +43,28 @@ static bool deal_invalid_record(pg_parser_XLogReaderState*    state,
 
 typedef struct PG_PARSER_TRANS_RMGR
 {
-    pg_parser_trans_rmgr_enum m_rmgrid; /* rmgrid value */
-    pg_parser_trans_transrec_rmgrfunc_pre
-        m_rmgrfunc_pre; /* rmgr-level handler for pre-parse interface */
-    pg_parser_trans_transrec_rmgrfunc_trans
-        m_rmgrfunc_trans; /* Function handler interface for secondary parsing */
+    pg_parser_trans_rmgr_enum               m_rmgrid;         /* rmgrid value */
+    pg_parser_trans_transrec_rmgrfunc_pre   m_rmgrfunc_pre;   /* rmgr-level handler for pre-parse interface */
+    pg_parser_trans_transrec_rmgrfunc_trans m_rmgrfunc_trans; /* Function handler interface for secondary parsing */
 } pg_parser_trans_rmgr;
 
 /**
  * @brief        rmgid dispatch
  */
 static pg_parser_trans_rmgr m_record_rmgr[] = {
-    {PG_PARSER_TRANSLOG_RMGR_XLOG_ID, pg_parser_trans_rmgr_xlog_pre, NULL},
-    {PG_PARSER_TRANSLOG_RMGR_XACT_ID, pg_parser_trans_rmgr_xact_pre, NULL},
-    {PG_PARSER_TRANSLOG_RMGR_RELMAP_ID, pg_parser_trans_rmgr_relmap_pre, NULL},
-    {PG_PARSER_TRANSLOG_RMGR_STANDBY_ID, pg_parser_trans_rmgr_standby_pre, NULL},
-    {PG_PARSER_TRANSLOG_RMGR_HEAP2_ID,
-     pg_parser_trans_rmgr_heap2_pre,
-     pg_parser_trans_rmgr_heap2_trans},
-    {PG_PARSER_TRANSLOG_RMGR_HEAP_ID,
-     pg_parser_trans_rmgr_heap_pre,
-     pg_parser_trans_rmgr_heap_trans},
-    {PG_PARSER_TRANSLOG_RMGR_SEQ_ID, pg_parser_trans_rmgr_seq_pre, NULL}};
+    {PG_PARSER_TRANSLOG_RMGR_XLOG_ID,    pg_parser_trans_rmgr_xlog_pre,    NULL                            },
+    {PG_PARSER_TRANSLOG_RMGR_XACT_ID,    pg_parser_trans_rmgr_xact_pre,    NULL                            },
+    {PG_PARSER_TRANSLOG_RMGR_RELMAP_ID,  pg_parser_trans_rmgr_relmap_pre,  NULL                            },
+    {PG_PARSER_TRANSLOG_RMGR_STANDBY_ID, pg_parser_trans_rmgr_standby_pre, NULL                            },
+    {PG_PARSER_TRANSLOG_RMGR_HEAP2_ID,   pg_parser_trans_rmgr_heap2_pre,   pg_parser_trans_rmgr_heap2_trans},
+    {PG_PARSER_TRANSLOG_RMGR_HEAP_ID,    pg_parser_trans_rmgr_heap_pre,    pg_parser_trans_rmgr_heap_trans },
+    {PG_PARSER_TRANSLOG_RMGR_SEQ_ID,     pg_parser_trans_rmgr_seq_pre,     NULL                            }
+};
 
 static pg_parser_trans_rmgr m_record_rmgr_get_tuple[] = {
     {PG_PARSER_TRANSLOG_RMGR_HEAP2_ID, NULL, pg_parser_trans_rmgr_heap2_trans_get_tuple},
-    {PG_PARSER_TRANSLOG_RMGR_HEAP_ID, NULL, pg_parser_trans_rmgr_heap_trans_get_tuple}};
+    {PG_PARSER_TRANSLOG_RMGR_HEAP_ID,  NULL, pg_parser_trans_rmgr_heap_trans_get_tuple }
+};
 
 /* Pre-parse interface */
 /* Name with ref in marks input/output parameters */
@@ -121,8 +116,7 @@ bool pg_parser_trans_preTrans(pg_parser_translog_pre*       pg_parser_pre_data,
         {
             continue;
         }
-        pre_trans_result =
-            m_record_rmgr[index].m_rmgrfunc_pre(readstate, pg_parser_result, pg_parser_errno);
+        pre_trans_result = m_record_rmgr[index].m_rmgrfunc_pre(readstate, pg_parser_result, pg_parser_errno);
         break;
     }
     if (false == pre_trans_result)
@@ -133,8 +127,7 @@ bool pg_parser_trans_preTrans(pg_parser_translog_pre*       pg_parser_pre_data,
             return false;
         }
         /* If there is full page write in record that does not need parsing, it needs to be saved */
-        if (!pg_parser_check_fpw(
-                readstate, pg_parser_result, pg_parser_errno, pg_parser_pre_data->m_dbtype))
+        if (!pg_parser_check_fpw(readstate, pg_parser_result, pg_parser_errno, pg_parser_pre_data->m_dbtype))
         {
             if (ERRNO_SUCCESS != *pg_parser_errno)
             {
@@ -154,13 +147,11 @@ bool pg_parser_trans_preTrans(pg_parser_translog_pre*       pg_parser_pre_data,
     return true;
 }
 
-static bool pg_parser_trans_transrec_decode_checkPreTransParam(
-    pg_parser_translog_pre* pg_parser_pre_data)
+static bool pg_parser_trans_transrec_decode_checkPreTransParam(pg_parser_translog_pre* pg_parser_pre_data)
 {
     if (PG_PARSER_DEBUG_SILENCE > pg_parser_pre_data->m_debugLevel ||
         PG_PARSER_WALLEVEL_REPLICA > pg_parser_pre_data->m_walLevel ||
-        PG_PARSER_WALLEVEL_LOGICAL < pg_parser_pre_data->m_walLevel ||
-        NULL == pg_parser_pre_data->m_record)
+        PG_PARSER_WALLEVEL_LOGICAL < pg_parser_pre_data->m_walLevel || NULL == pg_parser_pre_data->m_record)
     {
         return false;
     }
@@ -177,8 +168,7 @@ static bool deal_invalid_record(pg_parser_XLogReaderState*    readstate,
                                 pg_parser_translog_pre_base** pg_parser_result,
                                 int32_t*                      pg_parser_errno)
 {
-    if (!pg_parser_mcxt_malloc(
-            PARSER_MCXT, (void**)(pg_parser_result), sizeof(pg_parser_translog_pre_base)))
+    if (!pg_parser_mcxt_malloc(PARSER_MCXT, (void**)(pg_parser_result), sizeof(pg_parser_translog_pre_base)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_RECORD_00;
         return false;
@@ -218,46 +208,44 @@ bool pg_parser_trans_TransRecord(pg_parser_translog_translog2col* pg_parser_tran
                                                    pg_parser_transData->m_dbversion))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_FUNCERR_PRE_DECODE;
-        pg_parser_log_errlog(pg_parser_transData->m_debugLevel,
-                             "ERROR: in trans record, decode failed\n");
+        pg_parser_log_errlog(pg_parser_transData->m_debugLevel, "ERROR: in trans record, decode failed\n");
         return false;
     }
     readstate->trans_data = pg_parser_transData;
     *pg_parser_errno = ERRNO_SUCCESS;
-    pg_parser_log_errlog(
-        pg_parser_transData->m_debugLevel,
-        "DEBUG: input param:\n"
-        "m_walLevel: %hhu\n"
-        "m_debugLevel: %hhu\n"
-        "m_dbtype: %hd\n"
-        "m_pagesize: %u\n"
-        "m_tuplecnt: %u\n"
-        "m_dbversion: %s\n"
-        "m_sysdicts:\n"
-        "    class: %d\n"
-        "    attribute: %d\n"
-        "    namespace: %d\n"
-        "    type: %d\n"
-        "    range: %d\n"
-        "    enum: %d\n"
-        "    proc: %d\n"
-        "m_dbcharset: %s\n"
-        "m_tartgetcharset: %s\n",
-        pg_parser_transData->m_walLevel,
-        pg_parser_transData->m_debugLevel,
-        pg_parser_transData->m_dbtype,
-        pg_parser_transData->m_pagesize,
-        pg_parser_transData->m_tuplecnt,
-        pg_parser_transData->m_dbversion ? pg_parser_transData->m_dbversion : "NULL",
-        pg_parser_transData->m_sysdicts->m_pg_class.m_count,
-        pg_parser_transData->m_sysdicts->m_pg_attribute.m_count,
-        pg_parser_transData->m_sysdicts->m_pg_namespace.m_count,
-        pg_parser_transData->m_sysdicts->m_pg_type.m_count,
-        pg_parser_transData->m_sysdicts->m_pg_range.m_count,
-        pg_parser_transData->m_sysdicts->m_pg_enum.m_count,
-        pg_parser_transData->m_sysdicts->m_pg_proc.m_count,
-        pg_parser_transData->m_convert->m_dbcharset,
-        pg_parser_transData->m_convert->m_tartgetcharset);
+    pg_parser_log_errlog(pg_parser_transData->m_debugLevel,
+                         "DEBUG: input param:\n"
+                         "m_walLevel: %hhu\n"
+                         "m_debugLevel: %hhu\n"
+                         "m_dbtype: %hd\n"
+                         "m_pagesize: %u\n"
+                         "m_tuplecnt: %u\n"
+                         "m_dbversion: %s\n"
+                         "m_sysdicts:\n"
+                         "    class: %d\n"
+                         "    attribute: %d\n"
+                         "    namespace: %d\n"
+                         "    type: %d\n"
+                         "    range: %d\n"
+                         "    enum: %d\n"
+                         "    proc: %d\n"
+                         "m_dbcharset: %s\n"
+                         "m_tartgetcharset: %s\n",
+                         pg_parser_transData->m_walLevel,
+                         pg_parser_transData->m_debugLevel,
+                         pg_parser_transData->m_dbtype,
+                         pg_parser_transData->m_pagesize,
+                         pg_parser_transData->m_tuplecnt,
+                         pg_parser_transData->m_dbversion ? pg_parser_transData->m_dbversion : "NULL",
+                         pg_parser_transData->m_sysdicts->m_pg_class.m_count,
+                         pg_parser_transData->m_sysdicts->m_pg_attribute.m_count,
+                         pg_parser_transData->m_sysdicts->m_pg_namespace.m_count,
+                         pg_parser_transData->m_sysdicts->m_pg_type.m_count,
+                         pg_parser_transData->m_sysdicts->m_pg_range.m_count,
+                         pg_parser_transData->m_sysdicts->m_pg_enum.m_count,
+                         pg_parser_transData->m_sysdicts->m_pg_proc.m_count,
+                         pg_parser_transData->m_convert->m_dbcharset,
+                         pg_parser_transData->m_convert->m_tartgetcharset);
     /* Call parsing function classified by RMGRID */
 
     for (index = 0; index < rmgrcnts; index++)
@@ -275,8 +263,7 @@ bool pg_parser_trans_TransRecord(pg_parser_translog_translog2col* pg_parser_tran
                                  record->xl_rmid);
             return false;
         }
-        result = m_record_rmgr[index].m_rmgrfunc_trans(
-            readstate, pg_parser_trans_result, pg_parser_errno);
+        result = m_record_rmgr[index].m_rmgrfunc_trans(readstate, pg_parser_trans_result, pg_parser_errno);
         break;
     }
 
@@ -321,8 +308,7 @@ bool pg_parser_trans_TransRecord_GetTuple(pg_parser_translog_translog2col* pg_pa
                                                    pg_parser_transData->m_dbversion))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_PRE_FUNCERR_PRE_DECODE;
-        pg_parser_log_errlog(pg_parser_transData->m_debugLevel,
-                             "ERROR: in trans record, decode failed\n");
+        pg_parser_log_errlog(pg_parser_transData->m_debugLevel, "ERROR: in trans record, decode failed\n");
         return false;
     }
     readstate->trans_data = pg_parser_transData;
@@ -345,8 +331,7 @@ bool pg_parser_trans_TransRecord_GetTuple(pg_parser_translog_translog2col* pg_pa
                                  record->xl_rmid);
             return false;
         }
-        result = m_record_rmgr_get_tuple[index].m_rmgrfunc_trans(
-            readstate, pg_parser_trans_result, pg_parser_errno);
+        result = m_record_rmgr_get_tuple[index].m_rmgrfunc_trans(readstate, pg_parser_trans_result, pg_parser_errno);
         break;
     }
 
@@ -384,8 +369,7 @@ bool pg_parser_trans_external_trans(pg_parser_translog_external*     pg_parser_e
     pg_parser_translog_tbcol_value*         result = NULL;
     pg_parser_translog_convertinfo_with_zic zicinfo = {'\0'};
     PG_PARSER_UNUSED(pg_parser_errno);
-    if (!pg_parser_mcxt_malloc(
-            PARSER_MCXT, (void**)&result, sizeof(pg_parser_translog_tbcol_value)))
+    if (!pg_parser_mcxt_malloc(PARSER_MCXT, (void**)&result, sizeof(pg_parser_translog_tbcol_value)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_EXTERNAL_MEMERR_ALLOC_00;
         pg_parser_log_errlog(pg_parser_exdata->m_debuglevel,
@@ -401,11 +385,10 @@ bool pg_parser_trans_external_trans(pg_parser_translog_external*     pg_parser_e
     zicinfo.dbversion = pg_parser_exdata->m_dbversion;
     zicinfo.errorno = pg_parser_errno;
     zicinfo.debuglevel = pg_parser_exdata->m_debuglevel;
-    if (!pg_parser_convert_attr_to_str_external_value(
-            (pg_parser_Datum)pg_parser_exdata->m_chunkdata,
-            pg_parser_exdata->m_typout,
-            result,
-            &zicinfo))
+    if (!pg_parser_convert_attr_to_str_external_value((pg_parser_Datum)pg_parser_exdata->m_chunkdata,
+                                                      pg_parser_exdata->m_typout,
+                                                      result,
+                                                      &zicinfo))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_EXTERNAL_MEMERR_ALLOC_01;
         pg_parser_log_errlog(pg_parser_exdata->m_debuglevel,
@@ -478,9 +461,8 @@ void pg_parser_trans_preTrans_free(pg_parser_translog_pre_base* pg_parser_result
         if (PG_PARSER_TRANSLOG_XACT_COMMIT == (pg_parser_result)->m_type ||
             PG_PARSER_TRANSLOG_XACT_COMMIT_PREPARE == (pg_parser_result)->m_type)
         {
-            pg_parser_translog_pre_trans* trans = (pg_parser_translog_pre_trans*)pg_parser_result;
-            pg_parser_xl_xact_parsed_commit* commit =
-                (pg_parser_xl_xact_parsed_commit*)trans->m_transdata;
+            pg_parser_translog_pre_trans*    trans = (pg_parser_translog_pre_trans*)pg_parser_result;
+            pg_parser_xl_xact_parsed_commit* commit = (pg_parser_xl_xact_parsed_commit*)trans->m_transdata;
             if (commit)
             {
                 if (commit->subxacts)
@@ -504,8 +486,7 @@ void pg_parser_trans_preTrans_free(pg_parser_translog_pre_base* pg_parser_result
                  PG_PARSER_TRANSLOG_XACT_ABORT_PREPARE == (pg_parser_result)->m_type)
         {
             pg_parser_translog_pre_trans*   trans = (pg_parser_translog_pre_trans*)pg_parser_result;
-            pg_parser_xl_xact_parsed_abort* abort =
-                (pg_parser_xl_xact_parsed_abort*)trans->m_transdata;
+            pg_parser_xl_xact_parsed_abort* abort = (pg_parser_xl_xact_parsed_abort*)trans->m_transdata;
 
             if (abort)
             {
@@ -525,8 +506,7 @@ void pg_parser_trans_preTrans_free(pg_parser_translog_pre_base* pg_parser_result
         else if (PG_PARSER_TRANSLOG_FPW_TUPLE == (pg_parser_result)->m_type)
         {
             int32_t                             i = 0;
-            pg_parser_translog_pre_image_tuple* image =
-                (pg_parser_translog_pre_image_tuple*)pg_parser_result;
+            pg_parser_translog_pre_image_tuple* image = (pg_parser_translog_pre_image_tuple*)pg_parser_result;
             for (i = 0; i < (int32_t)image->m_tuplecnt; i++)
             {
                 pg_parser_mcxt_free(PARSER_MCXT, image->m_tuples[i].m_tupledata);
@@ -536,8 +516,7 @@ void pg_parser_trans_preTrans_free(pg_parser_translog_pre_base* pg_parser_result
         }
         else if (PG_PARSER_TRANSLOG_RELMAP == (pg_parser_result)->m_type)
         {
-            pg_parser_translog_pre_relmap* relmap =
-                (pg_parser_translog_pre_relmap*)pg_parser_result;
+            pg_parser_translog_pre_relmap* relmap = (pg_parser_translog_pre_relmap*)pg_parser_result;
             if (relmap->m_count > 0 && relmap->m_mapping)
             {
                 pg_parser_mcxt_free(PARSER_MCXT, relmap->m_mapping);
@@ -546,8 +525,7 @@ void pg_parser_trans_preTrans_free(pg_parser_translog_pre_base* pg_parser_result
         }
         else if (PG_PARSER_TRANSLOG_RUNNING_XACTS == (pg_parser_result)->m_type)
         {
-            pg_parser_translog_pre_running_xact* rxact =
-                (pg_parser_translog_pre_running_xact*)pg_parser_result;
+            pg_parser_translog_pre_running_xact* rxact = (pg_parser_translog_pre_running_xact*)pg_parser_result;
             if (rxact)
             {
                 if (rxact->m_standby)
@@ -559,8 +537,7 @@ void pg_parser_trans_preTrans_free(pg_parser_translog_pre_base* pg_parser_result
         }
         else if (PG_PARSER_TRANSLOG_HEAP_TRUNCATE == (pg_parser_result)->m_type)
         {
-            pg_parser_translog_pre_heap_truncate* truncate =
-                (pg_parser_translog_pre_heap_truncate*)pg_parser_result;
+            pg_parser_translog_pre_heap_truncate* truncate = (pg_parser_translog_pre_heap_truncate*)pg_parser_result;
             if (truncate)
             {
                 if (truncate->relids)
@@ -576,6 +553,7 @@ void pg_parser_trans_preTrans_free(pg_parser_translog_pre_base* pg_parser_result
         }
     }
 }
+
 static void pg_parser_free_node_tree(pg_parser_nodetree* node)
 {
     pg_parser_nodetree* next_node = NULL;
@@ -663,8 +641,7 @@ void pg_parser_free_value_ext(pg_parser_translog_tbcol_value* value)
     pg_parser_free_value(value);
 }
 
-void pg_parser_trans_external_free(pg_parser_translog_external*    ext,
-                                   pg_parser_translog_tbcol_value* result)
+void pg_parser_trans_external_free(pg_parser_translog_external* ext, pg_parser_translog_tbcol_value* result)
 {
     if (ext)
     {
@@ -879,8 +856,7 @@ void pg_parser_trans_ddl_free(pg_parser_translog_systb2ddl* ddl, pg_parser_trans
                             if (cons_return->m_type == PG_PARSER_DDL_CONSTRAINT_PRIMARYKEY)
                             {
                                 pg_parser_translog_ddlstmt_tbconstraint_key* pkey =
-                                    (pg_parser_translog_ddlstmt_tbconstraint_key*)
-                                        cons_return->m_constraint_stmt;
+                                    (pg_parser_translog_ddlstmt_tbconstraint_key*)cons_return->m_constraint_stmt;
                                 if (pkey->m_concols)
                                 {
                                     pg_parser_mcxt_free(PARSER_MCXT, pkey->m_concols);
@@ -889,8 +865,7 @@ void pg_parser_trans_ddl_free(pg_parser_translog_systb2ddl* ddl, pg_parser_trans
                             else if (cons_return->m_type == PG_PARSER_DDL_CONSTRAINT_FOREIGNKEY)
                             {
                                 pg_parser_translog_ddlstmt_tbconstraint_fkey* fkey =
-                                    (pg_parser_translog_ddlstmt_tbconstraint_fkey*)
-                                        cons_return->m_constraint_stmt;
+                                    (pg_parser_translog_ddlstmt_tbconstraint_fkey*)cons_return->m_constraint_stmt;
                                 if (fkey->m_concols_position)
                                 {
                                     pg_parser_mcxt_free(PARSER_MCXT, fkey->m_concols_position);
@@ -903,8 +878,7 @@ void pg_parser_trans_ddl_free(pg_parser_translog_systb2ddl* ddl, pg_parser_trans
                             else if (cons_return->m_type == PG_PARSER_DDL_CONSTRAINT_UNIQUE)
                             {
                                 pg_parser_translog_ddlstmt_tbconstraint_key* ukey =
-                                    (pg_parser_translog_ddlstmt_tbconstraint_key*)
-                                        cons_return->m_constraint_stmt;
+                                    (pg_parser_translog_ddlstmt_tbconstraint_key*)cons_return->m_constraint_stmt;
                                 if (ukey->m_concols)
                                 {
                                     pg_parser_mcxt_free(PARSER_MCXT, ukey->m_concols);
@@ -913,8 +887,7 @@ void pg_parser_trans_ddl_free(pg_parser_translog_systb2ddl* ddl, pg_parser_trans
                             else if (cons_return->m_type == PG_PARSER_DDL_CONSTRAINT_CHECK)
                             {
                                 pg_parser_translog_ddlstmt_tbconstraint_check* check =
-                                    (pg_parser_translog_ddlstmt_tbconstraint_check*)
-                                        cons_return->m_constraint_stmt;
+                                    (pg_parser_translog_ddlstmt_tbconstraint_check*)cons_return->m_constraint_stmt;
                                 if (check->m_check_node)
                                 {
                                     pg_parser_free_node_tree(check->m_check_node);
@@ -984,38 +957,31 @@ void pg_parser_trans_TransRecord_free(pg_parser_translog_translog2col* pg_parser
         {
             if (pg_parser_trans_pre->m_sysdicts->m_pg_attribute.m_pg_attributes)
             {
-                pg_parser_mcxt_free(
-                    PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_attribute.m_pg_attributes);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_attribute.m_pg_attributes);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_class.m_pg_class)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_class.m_pg_class);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_class.m_pg_class);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_enum.m_pg_enum)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_enum.m_pg_enum);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_enum.m_pg_enum);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_namespace.m_pg_namespace)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_namespace.m_pg_namespace);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_namespace.m_pg_namespace);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_proc.m_pg_proc)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_proc.m_pg_proc);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_proc.m_pg_proc);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_range.m_pg_range)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_range.m_pg_range);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_range.m_pg_range);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_type.m_pg_type)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_type.m_pg_type);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_type.m_pg_type);
             }
         }
         if (pg_parser_trans_pre->m_record)
@@ -1105,38 +1071,31 @@ void pg_parser_trans_TransRecord_Minsert_free(pg_parser_translog_translog2col* p
         {
             if (pg_parser_trans_pre->m_sysdicts->m_pg_attribute.m_pg_attributes)
             {
-                pg_parser_mcxt_free(
-                    PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_attribute.m_pg_attributes);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_attribute.m_pg_attributes);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_class.m_pg_class)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_class.m_pg_class);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_class.m_pg_class);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_enum.m_pg_enum)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_enum.m_pg_enum);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_enum.m_pg_enum);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_namespace.m_pg_namespace)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_namespace.m_pg_namespace);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_namespace.m_pg_namespace);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_proc.m_pg_proc)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_proc.m_pg_proc);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_proc.m_pg_proc);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_range.m_pg_range)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_range.m_pg_range);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_range.m_pg_range);
             }
             if (pg_parser_trans_pre->m_sysdicts->m_pg_type.m_pg_type)
             {
-                pg_parser_mcxt_free(PARSER_MCXT,
-                                    pg_parser_trans_pre->m_sysdicts->m_pg_type.m_pg_type);
+                pg_parser_mcxt_free(PARSER_MCXT, pg_parser_trans_pre->m_sysdicts->m_pg_type.m_pg_type);
             }
         }
         if (pg_parser_trans_pre->m_record)
@@ -1158,8 +1117,7 @@ void pg_parser_trans_TransRecord_Minsert_free(pg_parser_translog_translog2col* p
     {
         int32_t                           i = 0;
         int32_t                           j = 0;
-        pg_parser_translog_tbcol_nvalues* trans =
-            (pg_parser_translog_tbcol_nvalues*)pg_parser_trans;
+        pg_parser_translog_tbcol_nvalues* trans = (pg_parser_translog_tbcol_nvalues*)pg_parser_trans;
         if (trans->m_rowCnt > 0)
         {
             for (i = 0; i < trans->m_rowCnt; i++)

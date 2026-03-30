@@ -52,12 +52,12 @@
 typedef enum ONLINEREFRESH_INTEGRATE_STAT
 {
     ONLINEREFRESH_INTEGRATE_STAT_JOBNOP = 0x00,
-    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILREFRESHSTARTING, /* Job thread starting */
-    ONLINEREFRESH_INTEGRATE_STAT_JOBWORKING,              /* Bulk job thread working status */
-    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTREFRESHDONE, /* Waiting for bulk job thread to complete */
+    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILREFRESHSTARTING,    /* Job thread starting */
+    ONLINEREFRESH_INTEGRATE_STAT_JOBWORKING,                 /* Bulk job thread working status */
+    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTREFRESHDONE,       /* Waiting for bulk job thread to complete */
     ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTSTARTING, /* Incremental job thread starting */
-    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTDONE /* Waiting for bulk job thread to complete
-                                                         */
+    ONLINEREFRESH_INTEGRATE_STAT_JOBTRAILTINCREMENTDONE      /* Waiting for bulk job thread to complete
+                                                              */
 } onlinerefresh_integrate_stat;
 
 /* Check if abandon file exists */
@@ -100,12 +100,11 @@ static bool onlinerefresh_integrate_gettrailno(onlinerefresh_integrate*         
     catalog_schema = guc_getConfigOption(CFG_KEY_CATALOGSCHEMA);
 
     resetStringInfo(sql);
-    appendStringInfo(
-        sql,
-        "select rewind_fileid, rewind_offset, lsn from \"%s\".\"%s\" where name = '%s';",
-        catalog_schema,
-        SYNC_STATUSTABLE_NAME,
-        name);
+    appendStringInfo(sql,
+                     "select rewind_fileid, rewind_offset, lsn from \"%s\".\"%s\" where name = '%s';",
+                     catalog_schema,
+                     SYNC_STATUSTABLE_NAME,
+                     name);
     res = conn_exec(conn, sql->data);
     if (NULL == res)
     {
@@ -137,8 +136,7 @@ static bool onlinerefresh_integrate_gettrailno(onlinerefresh_integrate*         
 }
 
 /* Add refresh data to sync status table and truncate bulk table */
-static bool onlinerefresh_integrate_refsetsynctable(onlinerefresh_integrate* onlinerefresh,
-                                                    thrnode*                 thrnode)
+static bool onlinerefresh_integrate_refsetsynctable(onlinerefresh_integrate* onlinerefresh, thrnode* thrnode)
 {
     int        index = 0;
     char*      uuid = NULL;
@@ -174,21 +172,20 @@ onlinerefresh_integrate_setsynctableretry:
     for (index = 0; index < onlinerefresh->parallelcnt; index++)
     {
         resetStringInfo(sql);
-        appendStringInfo(
-            sql,
-            "INSERT INTO \"%s\".\"%s\" \n"
-            "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) "
-            "\n"
-            "VALUES (\'%s-%s%d\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
-            "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
-            "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
-            "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
-            catalog_schema,
-            SYNC_STATUSTABLE_NAME,
-            uuid,
-            REFRESH_REFRESH,
-            index,
-            2);
+        appendStringInfo(sql,
+                         "INSERT INTO \"%s\".\"%s\" \n"
+                         "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) "
+                         "\n"
+                         "VALUES (\'%s-%s%d\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
+                         "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
+                         "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
+                         "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
+                         catalog_schema,
+                         SYNC_STATUSTABLE_NAME,
+                         uuid,
+                         REFRESH_REFRESH,
+                         index,
+                         2);
         res = conn_exec(conn, sql->data);
         if (NULL == res)
         {
@@ -203,8 +200,7 @@ onlinerefresh_integrate_setsynctableretry:
     if (1 == guc_getConfigOptionInt(CFG_KEY_TRUNCATETABLE))
     {
         /* If clear fails, reconnect database and execute */
-        if (false == refresh_table_syncstats_truncatetable_fromsyncstats(
-                         onlinerefresh->tablesyncstats, (void*)conn))
+        if (false == refresh_table_syncstats_truncatetable_fromsyncstats(onlinerefresh->tablesyncstats, (void*)conn))
         {
             res = conn_exec(conn, "ROLLBACK");
             if (NULL == res)
@@ -238,8 +234,7 @@ onlinerefresh_integrate_setsynctableretry:
 }
 
 /* Add incremental data to sync status table */
-static bool onlinerefresh_integrate_incsetsynctable(onlinerefresh_integrate* onlinerefresh,
-                                                    thrnode*                 thrnode)
+static bool onlinerefresh_integrate_incsetsynctable(onlinerefresh_integrate* onlinerefresh, thrnode* thrnode)
 {
     char*      uuid = NULL;
     char*      catalog_schema = NULL;
@@ -266,19 +261,18 @@ onlinerefresh_integrate_incsetsynctableretry:
     catalog_schema = guc_getConfigOption(CFG_KEY_CATALOGSCHEMA);
 
     resetStringInfo(sql);
-    appendStringInfo(
-        sql,
-        "INSERT INTO \"%s\".\"%s\" \n"
-        "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) \n"
-        "VALUES (\'%s-%s\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
-        "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
-        "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
-        "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
-        catalog_schema,
-        SYNC_STATUSTABLE_NAME,
-        uuid,
-        REFRESH_INCREMENT,
-        2);
+    appendStringInfo(sql,
+                     "INSERT INTO \"%s\".\"%s\" \n"
+                     "(name, type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) \n"
+                     "VALUES (\'%s-%s\', %hd, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (name) DO UPDATE SET \n"
+                     "(type, stat, rewind_fileid, rewind_offset, emit_fileid, emit_offset, xid, lsn) =  \n"
+                     "(EXCLUDED.type, EXCLUDED.stat, EXCLUDED.rewind_fileid, EXCLUDED.rewind_offset, "
+                     "EXCLUDED.emit_fileid, EXCLUDED.emit_offset, EXCLUDED.xid, EXCLUDED.lsn); ",
+                     catalog_schema,
+                     SYNC_STATUSTABLE_NAME,
+                     uuid,
+                     REFRESH_INCREMENT,
+                     2);
     res = conn_exec(conn, sql->data);
     if (NULL == res)
     {
@@ -313,8 +307,7 @@ bool onlinerefresh_integrate_isconflict(dlistnode* in_dlnode)
     {
         onlinerefresh_node = (onlinerefresh_integrate*)dlnode->value;
 
-        if (false == refresh_table_syncstats_compare(onlinerefresh_node->tablesyncstats,
-                                                     current_node->tablesyncstats))
+        if (false == refresh_table_syncstats_compare(onlinerefresh_node->tablesyncstats, current_node->tablesyncstats))
         {
             continue;
         }
@@ -328,8 +321,7 @@ bool onlinerefresh_integrate_isconflict(dlistnode* in_dlnode)
     return false;
 }
 
-bool onlinerefresh_integrate_persist2onlinerefreshmgr(onlinerefresh_persist* persist,
-                                                      void**                 onlinerefresh)
+bool onlinerefresh_integrate_persist2onlinerefreshmgr(onlinerefresh_persist* persist, void** onlinerefresh)
 {
     dlist*                   result = NULL;
     dlistnode*               dnode = NULL;
@@ -504,11 +496,7 @@ static bool onlinerefresh_integrate_startincrementjob(onlinerefresh_integrate* o
         return false;
     }
     rmemset1(oliloadrecord->splittrailctx->capturedata, 0, '\0', MAXPGPATH);
-    snprintf(oliloadrecord->splittrailctx->capturedata,
-             MAXPGPATH,
-             "%s/%s",
-             olintegrate->data,
-             STORAGE_TRAIL_DIR);
+    snprintf(oliloadrecord->splittrailctx->capturedata, MAXPGPATH, "%s/%s", olintegrate->data, STORAGE_TRAIL_DIR);
 
     /* Set load path */
     if (false == loadtrailrecords_setloadsource(oliloadrecord->splittrailctx->loadrecords,
@@ -599,19 +587,14 @@ void* onlinerefresh_integrate_manage(void* args)
     olintegrate = (onlinerefresh_integrate*)thr_node->data;
 
     uuid = uuid2string(&olintegrate->no);
-    sprintf(olintegrate->data,
-            "%s/%s/%s",
-            guc_getConfigOption(CFG_KEY_TRAIL_DIR),
-            REFRESH_ONLINEREFRESH,
-            uuid);
+    sprintf(olintegrate->data, "%s/%s/%s", guc_getConfigOption(CFG_KEY_TRAIL_DIR), REFRESH_ONLINEREFRESH, uuid);
 
     rfree(uuid);
 
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "onlinerefresh integrate stat exception, expected stat is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "onlinerefresh integrate stat exception, expected stat is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         osal_thread_exit(NULL);
         return NULL;
@@ -666,11 +649,10 @@ void* onlinerefresh_integrate_manage(void* args)
             {
                 /* Set idle threads to exit and count exited threads */
                 jobcnt = olintegrate->parallelcnt;
-                if (false ==
-                    threads_setsubmgrjobthredstermandcountexit(olintegrate->thrsmgr->parents,
-                                                               olintegrate->thrsmgr->childthrrefs,
-                                                               0,
-                                                               &jobcnt))
+                if (false == threads_setsubmgrjobthredstermandcountexit(olintegrate->thrsmgr->parents,
+                                                                        olintegrate->thrsmgr->childthrrefs,
+                                                                        0,
+                                                                        &jobcnt))
                 {
                     elog(RLOG_WARNING, "integrate refresh set job threads term in idle error");
                     thr_node->stat = THRNODE_STAT_ABORT;
@@ -691,8 +673,8 @@ void* onlinerefresh_integrate_manage(void* args)
                 break;
             }
 
-            if (incsync_thrnode != NULL && increbuild_thrnode != NULL &&
-                incparser_thrnode != NULL && incloadrec_thrnode != NULL)
+            if (incsync_thrnode != NULL && increbuild_thrnode != NULL && incparser_thrnode != NULL &&
+                incloadrec_thrnode != NULL)
             {
                 /* Set sync thread to exit */
                 if (THRNODE_STAT_TERM > incsync_thrnode->stat)
@@ -722,10 +704,8 @@ void* onlinerefresh_integrate_manage(void* args)
                     continue;
                 }
 
-                if (THRNODE_STAT_EXITED != incloadrec_thrnode->stat ||
-                    THRNODE_STAT_EXITED != incparser_thrnode->stat ||
-                    THRNODE_STAT_EXITED != incsync_thrnode->stat ||
-                    THRNODE_STAT_EXITED != increbuild_thrnode->stat)
+                if (THRNODE_STAT_EXITED != incloadrec_thrnode->stat || THRNODE_STAT_EXITED != incparser_thrnode->stat ||
+                    THRNODE_STAT_EXITED != incsync_thrnode->stat || THRNODE_STAT_EXITED != increbuild_thrnode->stat)
                 {
                     continue;
                 }
@@ -790,9 +770,10 @@ void* onlinerefresh_integrate_manage(void* args)
 
             /* Set idle threads to exit and count the number of exited threads */
             jobcnt = olintegrate->parallelcnt;
-            if (false ==
-                threads_setsubmgrjobthredstermandcountexit(
-                    olintegrate->thrsmgr->parents, olintegrate->thrsmgr->childthrrefs, 0, &jobcnt))
+            if (false == threads_setsubmgrjobthredstermandcountexit(olintegrate->thrsmgr->parents,
+                                                                    olintegrate->thrsmgr->childthrrefs,
+                                                                    0,
+                                                                    &jobcnt))
             {
                 elog(RLOG_WARNING, "integrate refresh set job threads term in idle error");
                 thr_node->stat = THRNODE_STAT_ABORT;
@@ -831,13 +812,10 @@ void* onlinerefresh_integrate_manage(void* args)
                 /* Get loadrecord thread */
                 lc = olintegrate->thrsmgr->childthrrefs->head;
                 thr_ref = (thrref*)lfirst(lc);
-                incloadrec_thrnode =
-                    threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
+                incloadrec_thrnode = threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
                 if (NULL == incloadrec_thrnode)
                 {
-                    elog(RLOG_WARNING,
-                         "integrate onlinerefresh can not get load record thread by no:%lu",
-                         thr_ref->no);
+                    elog(RLOG_WARNING, "integrate onlinerefresh can not get load record thread by no:%lu", thr_ref->no);
                     thr_node->stat = THRNODE_STAT_ABORT;
                     osal_thread_exit(NULL);
                 }
@@ -845,13 +823,10 @@ void* onlinerefresh_integrate_manage(void* args)
                 /* Get parser thread */
                 lc = lc->next;
                 thr_ref = (thrref*)lfirst(lc);
-                incparser_thrnode =
-                    threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
+                incparser_thrnode = threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
                 if (NULL == incparser_thrnode)
                 {
-                    elog(RLOG_WARNING,
-                         "integrate onlinerefresh can not get parser thread by no:%lu",
-                         thr_ref->no);
+                    elog(RLOG_WARNING, "integrate onlinerefresh can not get parser thread by no:%lu", thr_ref->no);
                     thr_node->stat = THRNODE_STAT_ABORT;
                     osal_thread_exit(NULL);
                 }
@@ -859,13 +834,10 @@ void* onlinerefresh_integrate_manage(void* args)
                 /* Get rebuild thread */
                 lc = lc->next;
                 thr_ref = (thrref*)lfirst(lc);
-                increbuild_thrnode =
-                    threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
+                increbuild_thrnode = threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
                 if (NULL == increbuild_thrnode)
                 {
-                    elog(RLOG_WARNING,
-                         "integrate onlinerefresh can not get rebuild thread by no:%lu",
-                         thr_ref->no);
+                    elog(RLOG_WARNING, "integrate onlinerefresh can not get rebuild thread by no:%lu", thr_ref->no);
                     thr_node->stat = THRNODE_STAT_ABORT;
                     osal_thread_exit(NULL);
                 }
@@ -873,13 +845,10 @@ void* onlinerefresh_integrate_manage(void* args)
                 /* Get sync thread */
                 lc = lc->next;
                 thr_ref = (thrref*)lfirst(lc);
-                incsync_thrnode =
-                    threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
+                incsync_thrnode = threads_getthrnodebyno(olintegrate->thrsmgr->parents, thr_ref->no);
                 if (NULL == incsync_thrnode)
                 {
-                    elog(RLOG_WARNING,
-                         "integrate onlinerefresh can not get sync thread by no:%lu",
-                         thr_ref->no);
+                    elog(RLOG_WARNING, "integrate onlinerefresh can not get sync thread by no:%lu", thr_ref->no);
                     thr_node->stat = THRNODE_STAT_ABORT;
                     osal_thread_exit(NULL);
                 }
@@ -903,8 +872,7 @@ void* onlinerefresh_integrate_manage(void* args)
                 break;
             }
 
-            if (THRNODE_STAT_EXITED != incparser_thrnode->stat ||
-                THRNODE_STAT_EXITED != incsync_thrnode->stat)
+            if (THRNODE_STAT_EXITED != incparser_thrnode->stat || THRNODE_STAT_EXITED != incsync_thrnode->stat)
             {
                 /* Parser thread not exited, waiting */
                 continue;
@@ -924,8 +892,7 @@ void* onlinerefresh_integrate_manage(void* args)
                 continue;
             }
 
-            if (THRNODE_STAT_EXITED != incloadrec_thrnode->stat ||
-                THRNODE_STAT_EXITED != increbuild_thrnode->stat)
+            if (THRNODE_STAT_EXITED != incloadrec_thrnode->stat || THRNODE_STAT_EXITED != increbuild_thrnode->stat)
             {
                 continue;
             }
@@ -940,8 +907,7 @@ void* onlinerefresh_integrate_manage(void* args)
 onlinerefresh_integrate_main_done:
     /* All threads have exited, management thread can exit */
     jobcnt = olintegrate->thrsmgr->childthrrefs->length;
-    threads_setsubmgrjobthredsfree(
-        olintegrate->thrsmgr->parents, olintegrate->thrsmgr->childthrrefs, 0, jobcnt);
+    threads_setsubmgrjobthredsfree(olintegrate->thrsmgr->parents, olintegrate->thrsmgr->childthrrefs, 0, jobcnt);
     /* make compiler happy */
     return NULL;
 }

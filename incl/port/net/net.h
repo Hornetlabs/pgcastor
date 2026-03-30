@@ -32,10 +32,7 @@ rsocket osal_accept(rsocket sockfd, struct sockaddr* addr, socklen_t* addrlen);
 int osal_getsockname(rsocket sockfd, struct sockaddr* addr, socklen_t* addrlen);
 
 /* Get available address */
-int osal_getaddrinfo(const char*            node,
-                     const char*            service,
-                     const struct addrinfo* hints,
-                     struct addrinfo**      res);
+int osal_getaddrinfo(const char* node, const char* service, const struct addrinfo* hints, struct addrinfo** res);
 
 /* Event poll */
 int osal_poll(struct pollfd* fds, nfds_t nfds, int timeout);

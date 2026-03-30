@@ -62,8 +62,7 @@ pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info
 
     /* Extract type info from the tuple itself */
     tupType = pg_parser_HeapTupleHeaderGetTypeId(rec);
-    if (!pg_parser_sysdict_getTableInfo_byoid(
-            get_typrelid_by_typid(info->sysdicts, tupType), info->sysdicts, &tbinfo))
+    if (!pg_parser_sysdict_getTableInfo_byoid(get_typrelid_by_typid(info->sysdicts, tupType), info->sysdicts, &tbinfo))
     {
         return (pg_parser_Datum)0;
     }
@@ -83,8 +82,7 @@ pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info
         return (pg_parser_Datum)0;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            PGFUNC_RECORD_MCXT, (void**)&values, ncolumns * sizeof(pg_parser_Datum)))
+    if (!pg_parser_mcxt_malloc(PGFUNC_RECORD_MCXT, (void**)&values, ncolumns * sizeof(pg_parser_Datum)))
     {
         return (pg_parser_Datum)0;
     }
@@ -102,8 +100,7 @@ pg_parser_Datum record_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info
         pg_parser_translog_tbcol_value* colvalue = NULL;
         pg_parser_Datum                 attr;
 
-        if (!pg_parser_mcxt_malloc(
-                PGFUNC_RECORD_MCXT, (void**)&colvalue, sizeof(pg_parser_translog_tbcol_value)))
+        if (!pg_parser_mcxt_malloc(PGFUNC_RECORD_MCXT, (void**)&colvalue, sizeof(pg_parser_translog_tbcol_value)))
         {
             return (pg_parser_Datum)0;
         }

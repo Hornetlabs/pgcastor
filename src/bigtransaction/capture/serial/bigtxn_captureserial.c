@@ -35,8 +35,7 @@ static char* bigtxn_captureserial_getdbname(void* serial, Oid oid)
 
     cserial = (bigtxn_captureserial*)serial;
 
-    database = catalog_get_database_sysdict(
-        cserial->dicts->by_database, NULL, cserial->lasttxn->txndicts, oid);
+    database = catalog_get_database_sysdict(cserial->dicts->by_database, NULL, cserial->lasttxn->txndicts, oid);
     if (!database)
     {
         elog(RLOG_ERROR, "can't find database by oid: %u", oid);
@@ -55,8 +54,7 @@ static void* bigtxn_captureserial_getnamespace(void* serial, Oid oid)
 
     cserial = (bigtxn_captureserial*)serial;
 
-    namespace = catalog_get_namespace_sysdict(
-        cserial->dicts->by_namespace, NULL, cserial->lasttxn->txndicts, oid);
+    namespace = catalog_get_namespace_sysdict(cserial->dicts->by_namespace, NULL, cserial->lasttxn->txndicts, oid);
 
     if (!namespace)
     {
@@ -78,8 +76,7 @@ static void* bigtxn_captureserial_getclass(void* serial, Oid oid)
 
     cserial = (bigtxn_captureserial*)serial;
 
-    class =
-        catalog_get_class_sysdict(cserial->dicts->by_class, NULL, cserial->lasttxn->txndicts, oid);
+    class = catalog_get_class_sysdict(cserial->dicts->by_class, NULL, cserial->lasttxn->txndicts, oid);
 
     if (!class)
     {
@@ -97,8 +94,7 @@ static void* bigtxn_captureserial_getindex(void* serial, Oid oid)
 
     cserial = (bigtxn_captureserial*)serial;
 
-    index = catalog_get_index_sysdict_list(
-        cserial->dicts->by_index, NULL, cserial->lasttxn->txndicts, oid);
+    index = catalog_get_index_sysdict_list(cserial->dicts->by_index, NULL, cserial->lasttxn->txndicts, oid);
 
     return index;
 }
@@ -125,8 +121,11 @@ static void* bigtxn_captureserial_getatrrs(void* serial, Oid oid)
     for (index_attrs = 0; index_attrs < natts; index_attrs++)
     {
         void* temp_att = NULL;
-        temp_att = catalog_get_attribute_sysdict(
-            cserial->dicts->by_attribute, NULL, cserial->lasttxn->txndicts, oid, index_attrs + 1);
+        temp_att = catalog_get_attribute_sysdict(cserial->dicts->by_attribute,
+                                                 NULL,
+                                                 cserial->lasttxn->txndicts,
+                                                 oid,
+                                                 index_attrs + 1);
         if (!temp_att)
         {
             elog(RLOG_ERROR, "can't find pg_attribute relation");
@@ -250,8 +249,8 @@ static void bigtxn_captureserial_freeattributes(void* attrs)
 /* Write entry data to disk */
 static void bigtxn_captureserial_txn2disk(serialstate* serialstate, txn* txn)
 {
-    bool first = true;
-    bool txnformetadata = true; /* Used to indicate current transaction only contains metadata */
+    bool       first = true;
+    bool       txnformetadata = true; /* Used to indicate current transaction only contains metadata */
     ListCell*  lc = NULL;
     ff_txndata txndata = {{0}};
 
@@ -320,8 +319,9 @@ static void bigtxn_captureserial_txn2disk(serialstate* serialstate, txn* txn)
                 goto bigtxn_captureserial_txn2disk_reset;
             }
         }
-        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(
-            FFTRAIL_CXT_TYPE_DATA, (void*)&txndata, serialstate->ffsmgrstate);
+        serialstate->ffsmgrstate->ffsmgr->ffsmgr_serial(FFTRAIL_CXT_TYPE_DATA,
+                                                        (void*)&txndata,
+                                                        serialstate->ffsmgrstate);
     }
 }
 
@@ -345,8 +345,7 @@ static void capture_serial_buffer2waitflush(bigtxn_captureserial* cserial, txn* 
     serialstate* serialstate = NULL;
     serialstate = &cserial->base;
 
-    foldbuffer =
-        file_buffer_getbybufid(serialstate->txn2filebuffer, serialstate->ffsmgrstate->bufid);
+    foldbuffer = file_buffer_getbybufid(serialstate->txn2filebuffer, serialstate->ffsmgrstate->bufid);
     if (0 == foldbuffer->start)
     {
         return;
@@ -393,10 +392,8 @@ static void capture_serial_buffer2waitflush(bigtxn_captureserial* cserial, txn* 
 
     /* Set information for old buffer */
     foldbuffer->extra.rewind.fileaddr.trail.fileid = finfo->fileid;
-    foldbuffer->extra.rewind.fileaddr.trail.offset =
-        (((finfo->blknum - 1) * FILE_BUFFER_SIZE) + fbuffer->start);
-    foldbuffer->extra.rewind.curtlid =
-        cserial->callback.bigtxn_parserstat_curtlid_get(cserial->privdata);
+    foldbuffer->extra.rewind.fileaddr.trail.offset = (((finfo->blknum - 1) * FILE_BUFFER_SIZE) + fbuffer->start);
+    foldbuffer->extra.rewind.curtlid = cserial->callback.bigtxn_parserstat_curtlid_get(cserial->privdata);
     /* Add old buffer to pending flush queue */
     rmemcpy1(&fbuffer->extra, 0, &foldbuffer->extra, sizeof(file_buffer_extra));
     file_buffer_waitflush_add(serialstate->txn2filebuffer, foldbuffer);
@@ -416,8 +413,7 @@ static void bigtxn_captureserial_set_callback(bigtxn_captureserial* cserial)
     cserial->base.ffsmgrstate->callback.getnamespace = bigtxn_captureserial_getnamespace;
     cserial->base.ffsmgrstate->callback.getattributes = bigtxn_captureserial_getatrrs;
     cserial->base.ffsmgrstate->callback.gettype = bigtxn_captureserial_gettype;
-    cserial->base.ffsmgrstate->callback.catalog2transcache =
-        bigtxn_captureserial_transcatalog2transcache;
+    cserial->base.ffsmgrstate->callback.catalog2transcache = bigtxn_captureserial_transcatalog2transcache;
     cserial->base.ffsmgrstate->callback.freeattributes = bigtxn_captureserial_freeattributes;
     cserial->base.ffsmgrstate->callback.setonlinerefreshdataset = NULL;
     cserial->base.ffsmgrstate->callback.setredosysdicts = NULL;
@@ -453,8 +449,7 @@ static bool bigtxn_captureserial_initbigtxn(bigtxn_captureserial* cserial, txn* 
     if (true == found)
     {
         /* Need to reset flag */
-        elog(
-            RLOG_WARNING, "big transaction capture serial txn already in the hash, %lu", htxn->xid);
+        elog(RLOG_WARNING, "big transaction capture serial txn already in the hash, %lu", htxn->xid);
         return false;
     }
     htxn->xid = txn->xid;
@@ -467,16 +462,14 @@ static bool bigtxn_captureserial_initbigtxn(bigtxn_captureserial* cserial, txn* 
 
     /* Call initialization interface */
     cserial->base.ffsmgrstate->fdata = NULL;
-    cserial->base.ffsmgrstate->ffsmgr->ffsmgr_init(FFSMGR_IF_OPTYPE_SERIAL,
-                                                   cserial->base.ffsmgrstate);
+    cserial->base.ffsmgrstate->ffsmgr->ffsmgr_init(FFSMGR_IF_OPTYPE_SERIAL, cserial->base.ffsmgrstate);
     htxn->fdata = cserial->base.ffsmgrstate->fdata;
 
     /* Reset buffer at start of big transaction, first put old buffer into free queue */
     if (INVALID_BUFFERID != cserial->base.ffsmgrstate->bufid)
     {
         /* Do switch */
-        fbuffer =
-            file_buffer_getbybufid(cserial->base.txn2filebuffer, cserial->base.ffsmgrstate->bufid);
+        fbuffer = file_buffer_getbybufid(cserial->base.txn2filebuffer, cserial->base.ffsmgrstate->bufid);
 
         /* Do copy */
         if (NULL != cserial->lasttxn)
@@ -510,8 +503,7 @@ static bool bigtxn_captureserial_shiftbigtxn(bigtxn_captureserial* cserial, txn*
         }
 
         /* Preserve previous transaction information */
-        fbuffer =
-            file_buffer_getbybufid(cserial->base.txn2filebuffer, cserial->base.ffsmgrstate->bufid);
+        fbuffer = file_buffer_getbybufid(cserial->base.txn2filebuffer, cserial->base.ffsmgrstate->bufid);
 
         /* Do copy */
         file_buffer_copy(fbuffer, &cserial->lasttxn->fbuffer);
@@ -574,8 +566,7 @@ static bool bigtxn_captureserial_endbigtxn(bigtxn_captureserial* cserial, txn* t
     }
 
     /* Call release interface */
-    cserial->base.ffsmgrstate->ffsmgr->ffsmgr_free(FFSMGR_IF_OPTYPE_SERIAL,
-                                                   cserial->base.ffsmgrstate);
+    cserial->base.ffsmgrstate->ffsmgr->ffsmgr_free(FFSMGR_IF_OPTYPE_SERIAL, cserial->base.ffsmgrstate);
 
     if (TXN_TYPE_BIGTXN_END_COMMIT == txn->type)
     {
@@ -612,8 +603,7 @@ void* bigtxn_captureserial_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "capture bigtxn serial stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "capture bigtxn serial stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         osal_thread_exit(NULL);
     }

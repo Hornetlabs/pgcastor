@@ -31,18 +31,17 @@ typedef struct PROC2CMD
 } proc2cmd;
 
 static proc2cmd m_typ2cmd[] = {
-    {OPTYPE_NOP, PROC2CMDFLAG_NOP, XMANAGER_MSG_NOP, "NOP", NULL, "op nop unsupport"},
-    {OPTYPE_INIT, PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_INITCMD, "init", cmd_init, "init error"},
-    {OPTYPE_START, PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_STARTCMD, "start", cmd_start, "start error"},
-    {OPTYPE_STOP, PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_STOPCMD, "stop", cmd_stop, "stop error"},
-    {OPTYPE_STATUS, PROC2CMDFLAG_NOP, XMANAGER_MSG_NOP, "status", cmd_status, "status error"},
-    {OPTYPE_RELOAD, PROC2CMDFLAG_NOP, XMANAGER_MSG_RELOADCMD, "reload", cmd_reload, "reload error"},
+    {OPTYPE_NOP,           PROC2CMDFLAG_NOP,      XMANAGER_MSG_NOP,            "NOP",    NULL,              "op nop unsupport"},
+    {OPTYPE_INIT,          PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_INITCMD,        "init",   cmd_init,          "init error"      },
+    {OPTYPE_START,         PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_STARTCMD,       "start",  cmd_start,         "start error"     },
+    {OPTYPE_STOP,          PROC2CMDFLAG_XMANAGER, XMANAGER_MSG_STOPCMD,        "stop",   cmd_stop,          "stop error"      },
+    {OPTYPE_STATUS,        PROC2CMDFLAG_NOP,      XMANAGER_MSG_NOP,            "status", cmd_status,        "status error"    },
+    {OPTYPE_RELOAD,        PROC2CMDFLAG_NOP,      XMANAGER_MSG_RELOADCMD,      "reload", cmd_reload,        "reload error"    },
     {OPTYPE_ONLINEREFRESH,
-     PROC2CMDFLAG_XMANAGER,
-     XMANAGER_MSG_CAPTUREREFRESH,
-     "onlinerefresh",
-     cmd_onlinerefresh,
-     "onlinerefresh error"}};
+     PROC2CMDFLAG_XMANAGER,                       XMANAGER_MSG_CAPTUREREFRESH,
+     "onlinerefresh",                                                                    cmd_onlinerefresh,
+     "onlinerefresh error"                                                                                                    }
+};
 
 bool cmd(optype type, void* extra_config)
 {

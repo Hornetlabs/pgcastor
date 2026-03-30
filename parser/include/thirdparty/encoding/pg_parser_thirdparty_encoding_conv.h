@@ -4,9 +4,7 @@
 /*
  * Define function pointers, provide function prototypes for charset conversion functions.
  */
-typedef void (*pg_parser_Local_PGEncoding)(unsigned char* src_str,
-                                           unsigned char* dest_str,
-                                           int32_t        str_len);
+typedef void (*pg_parser_Local_PGEncoding)(unsigned char* src_str, unsigned char* dest_str, int32_t str_len);
 
 typedef enum enc
 {
@@ -75,9 +73,6 @@ typedef struct
     pg_parser_Local_PGEncoding func; /* pointer to compiled function */
 } pg_parser_FmgrBuiltinEncoding;
 
-extern char* pg_parser_encoding_convert(char* src_str,
-                                        bool* needfree,
-                                        char* dest_encoding,
-                                        char* src_encoding);
+extern char* pg_parser_encoding_convert(char* src_str, bool* needfree, char* dest_encoding, char* src_encoding);
 
 #endif

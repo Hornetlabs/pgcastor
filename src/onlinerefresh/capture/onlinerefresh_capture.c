@@ -99,8 +99,7 @@ static void onlinerefresh_capture_print(onlinerefresh_capture* olcapture)
     table = olcapture->tables->tables;
     while (NULL != table)
     {
-        elog(
-            RLOG_INFO, "onlinerefresh refresh table:%s - %s.%s", uuid, table->schema, table->table);
+        elog(RLOG_INFO, "onlinerefresh refresh table:%s - %s.%s", uuid, table->schema, table->table);
         table = table->next;
     }
 
@@ -199,9 +198,7 @@ static bool onlinerefresh_capture_gettlidfromparser(void* args, TimeLineID* tlid
     thr_node = threads_getthrnodebyno(olcapture->thrsmgr->parents, thr_ref_obj->no);
     if (NULL == thr_node)
     {
-        elog(RLOG_WARNING,
-             "capture onlinerefresh can not get parser thread by no:%lu",
-             thr_ref_obj->no);
+        elog(RLOG_WARNING, "capture onlinerefresh can not get parser thread by no:%lu", thr_ref_obj->no);
         return false;
     }
 
@@ -224,8 +221,7 @@ static void onlinerefresh_capture_setdata(onlinerefresh_capture* olcapture, char
     olcapture->data = data;
 }
 
-void onlinerefresh_capture_increment_set(onlinerefresh_capture* onlinerefresh_capture,
-                                         bool                   increment)
+void onlinerefresh_capture_increment_set(onlinerefresh_capture* onlinerefresh_capture, bool increment)
 {
     onlinerefresh_capture->increment = increment;
 }
@@ -235,14 +231,12 @@ void onlinerefresh_capture_redo_set(onlinerefresh_capture* onlinerefresh_capture
     onlinerefresh_capture->redo.wal.lsn = redo;
 }
 
-void onlinerefresh_capture_conninfo_set(onlinerefresh_capture* onlinerefresh_capture,
-                                        char*                  conninfo)
+void onlinerefresh_capture_conninfo_set(onlinerefresh_capture* onlinerefresh_capture, char* conninfo)
 {
     onlinerefresh_capture->conninfo = conninfo;
 }
 
-void onlinerefresh_capture_snapshot_set(onlinerefresh_capture* onlinerefresh_capture,
-                                        snapshot*              snapshot)
+void onlinerefresh_capture_snapshot_set(onlinerefresh_capture* onlinerefresh_capture, snapshot* snapshot)
 {
     onlinerefresh_capture->snapshot = snapshot;
 }
@@ -252,8 +246,7 @@ void onlinerefresh_capture_conn_set(onlinerefresh_capture* onlinerefresh_capture
     onlinerefresh_capture->conn = conn;
 }
 
-void onlinerefresh_capture_snap_conn_set(onlinerefresh_capture* onlinerefresh_capture,
-                                         PGconn*                snap_conn)
+void onlinerefresh_capture_snap_conn_set(onlinerefresh_capture* onlinerefresh_capture, PGconn* snap_conn)
 {
     onlinerefresh_capture->snap_conn = snap_conn;
 }
@@ -263,14 +256,12 @@ void onlinerefresh_capture_no_set(onlinerefresh_capture* onlinerefresh_capture, 
     onlinerefresh_capture->no = no;
 }
 
-void onlinerefresh_capture_txid_set(onlinerefresh_capture* onlinerefresh_capture,
-                                    FullTransactionId      txid)
+void onlinerefresh_capture_txid_set(onlinerefresh_capture* onlinerefresh_capture, FullTransactionId txid)
 {
     onlinerefresh_capture->txid = txid;
 }
 
-void onlinerefresh_capture_xids_append(onlinerefresh_capture* onlinerefresh_capture,
-                                       TransactionId          xid)
+void onlinerefresh_capture_xids_append(onlinerefresh_capture* onlinerefresh_capture, TransactionId xid)
 {
     FullTransactionId* xid_p = NULL;
     dlistnode*         xid_dlnode = NULL;
@@ -300,8 +291,7 @@ void onlinerefresh_capture_xids_append(onlinerefresh_capture* onlinerefresh_capt
     onlinerefresh_capture->xids = dlist_put(onlinerefresh_capture->xids, xid_p);
 }
 
-void onlinerefresh_capture_add_xids_from_snapshot(onlinerefresh_capture* onlinerefresh_capture,
-                                                  snapshot*              snap)
+void onlinerefresh_capture_add_xids_from_snapshot(onlinerefresh_capture* onlinerefresh_capture, snapshot* snap)
 {
     HASH_SEQ_STATUS status;
     snapshot_xid*   entry = NULL;
@@ -315,8 +305,7 @@ void onlinerefresh_capture_add_xids_from_snapshot(onlinerefresh_capture* onliner
     }
 }
 
-bool onlinerefresh_capture_isxidinsnapshot(onlinerefresh_capture* onlinerefresh_capture,
-                                           FullTransactionId      xid)
+bool onlinerefresh_capture_isxidinsnapshot(onlinerefresh_capture* onlinerefresh_capture, FullTransactionId xid)
 {
     TransactionId txid = (TransactionId)xid;
     bool          find = false;
@@ -331,8 +320,7 @@ bool onlinerefresh_capture_isxidinsnapshot(onlinerefresh_capture* onlinerefresh_
     return find;
 }
 
-bool onlinerefresh_capture_isxidinxids(onlinerefresh_capture* onlinerefresh_capture,
-                                       FullTransactionId      xid)
+bool onlinerefresh_capture_isxidinxids(onlinerefresh_capture* onlinerefresh_capture, FullTransactionId xid)
 {
     dlistnode*         dlnode = NULL;
     FullTransactionId* xid_p = NULL;
@@ -368,8 +356,7 @@ bool onlinerefresh_capture_xids_isnull(onlinerefresh_capture* olcapture)
     return dlist_isnull(olcapture->xids);
 }
 
-void onlinerefresh_capture_tables_set(onlinerefresh_capture* onlinerefresh_capture,
-                                      refresh_tables*        tables)
+void onlinerefresh_capture_tables_set(onlinerefresh_capture* onlinerefresh_capture, refresh_tables* tables)
 {
     onlinerefresh_capture->tables = tables;
 }
@@ -385,8 +372,7 @@ static bool onlinerefresh_capture_trymkdatadir(onlinerefresh_capture* olcapture)
     {
         /* Generate main directory */
         uuid_str = uuid2string(olcapture->no);
-        sprintf(
-            path, "%s/%s/%s", guc_getConfigOption(CFG_KEY_DATA), REFRESH_ONLINEREFRESH, uuid_str);
+        sprintf(path, "%s/%s/%s", guc_getConfigOption(CFG_KEY_DATA), REFRESH_ONLINEREFRESH, uuid_str);
         onlinerefresh_capture_setdata(olcapture, rstrdup(path));
         rfree(uuid_str);
     }
@@ -396,10 +382,7 @@ static bool onlinerefresh_capture_trymkdatadir(onlinerefresh_capture* olcapture)
     {
         if (0 != osal_make_dir(olcapture->data))
         {
-            elog(RLOG_WARNING,
-                 "could not create directory:%s, %s",
-                 olcapture->data,
-                 strerror(errno));
+            elog(RLOG_WARNING, "could not create directory:%s, %s", olcapture->data, strerror(errno));
             return false;
         }
     }
@@ -424,8 +407,7 @@ static bool onlinerefresh_capture_trymkrefreshdir(onlinerefresh_capture* olcaptu
     for (table = tables->tables; table != NULL; table = table->next)
     {
         resetStringInfo(path);
-        appendStringInfo(
-            path, "%s/%s/%s_%s", olcapture->data, REFRESH_REFRESH, table->schema, table->table);
+        appendStringInfo(path, "%s/%s/%s_%s", olcapture->data, REFRESH_REFRESH, table->schema, table->table);
         if (!osal_dir_exist(path->data))
         {
             resetStringInfo(path_partial);
@@ -441,19 +423,13 @@ static bool onlinerefresh_capture_trymkrefreshdir(onlinerefresh_capture* olcaptu
 
             if (0 != osal_make_dir(path_partial->data))
             {
-                elog(RLOG_WARNING,
-                     "could not create directory:%s, %s",
-                     path_partial->data,
-                     strerror(errno));
+                elog(RLOG_WARNING, "could not create directory:%s, %s", path_partial->data, strerror(errno));
                 return false;
             }
 
             if (0 != osal_make_dir(path_complete->data))
             {
-                elog(RLOG_WARNING,
-                     "could not create directory:%s, %s",
-                     path_complete->data,
-                     strerror(errno));
+                elog(RLOG_WARNING, "could not create directory:%s, %s", path_complete->data, strerror(errno));
                 return false;
             }
         }
@@ -706,11 +682,7 @@ static bool onlinerefresh_capture_tables2shardings(onlinerefresh_capture* olcapt
         uint32 remain = 0;
         int    shard_no = 1;
 
-        appendStringInfo(str,
-                         "select pg_relation_size('\"%s\".\"%s\"')/%d;",
-                         table->schema,
-                         table->table,
-                         g_blocksize);
+        appendStringInfo(str, "select pg_relation_size('\"%s\".\"%s\"')/%d;", table->schema, table->table, g_blocksize);
         res = PQexec(conn, str->data);
         if (PGRES_TUPLES_OK != PQresultStatus(res))
         {
@@ -781,8 +753,7 @@ static bool onlinerefresh_capture_tables2shardings(onlinerefresh_capture* olcapt
             /* Shard */
             refresh_table_sharding_set_schema(table_shard, table->schema);
             refresh_table_sharding_set_table(table_shard, table->table);
-            refresh_table_sharding_set_shardings(table_shard,
-                                                 ((ctid_blkid_max - 1) / max_shard_num) + 1);
+            refresh_table_sharding_set_shardings(table_shard, ((ctid_blkid_max - 1) / max_shard_num) + 1);
             refresh_table_sharding_set_shardno(table_shard, shard_no++);
             refresh_table_sharding_set_condition(table_shard, cond);
 
@@ -851,8 +822,7 @@ void* onlinerefresh_capture_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "onlinerefresh capture stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "onlinerefresh capture stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;
@@ -925,9 +895,7 @@ void* onlinerefresh_capture_main(void* args)
         incloadrec_thr_node = threads_getthrnodebyno(olcapture->thrsmgr->parents, thr_ref_obj->no);
         if (NULL == incloadrec_thr_node)
         {
-            elog(RLOG_WARNING,
-                 "capture onlinerefresh can not get load record thread by no:%lu",
-                 thr_ref_obj->no);
+            elog(RLOG_WARNING, "capture onlinerefresh can not get load record thread by no:%lu", thr_ref_obj->no);
             thr_node->stat = THRNODE_STAT_ABORT;
             pthread_exit(NULL);
         }
@@ -938,9 +906,7 @@ void* onlinerefresh_capture_main(void* args)
         incparser_thr_node = threads_getthrnodebyno(olcapture->thrsmgr->parents, thr_ref_obj->no);
         if (NULL == incparser_thr_node)
         {
-            elog(RLOG_WARNING,
-                 "capture onlinerefresh can not get parser thread by no:%lu",
-                 thr_ref_obj->no);
+            elog(RLOG_WARNING, "capture onlinerefresh can not get parser thread by no:%lu", thr_ref_obj->no);
             thr_node->stat = THRNODE_STAT_ABORT;
             pthread_exit(NULL);
         }
@@ -951,9 +917,7 @@ void* onlinerefresh_capture_main(void* args)
         incserial_thr_node = threads_getthrnodebyno(olcapture->thrsmgr->parents, thr_ref_obj->no);
         if (NULL == incserial_thr_node)
         {
-            elog(RLOG_WARNING,
-                 "capture onlinerefresh can not get serial thread by no:%lu",
-                 thr_ref_obj->no);
+            elog(RLOG_WARNING, "capture onlinerefresh can not get serial thread by no:%lu", thr_ref_obj->no);
             thr_node->stat = THRNODE_STAT_ABORT;
             pthread_exit(NULL);
         }
@@ -964,9 +928,7 @@ void* onlinerefresh_capture_main(void* args)
         incflush_thr_node = threads_getthrnodebyno(olcapture->thrsmgr->parents, thr_ref_obj->no);
         if (NULL == incflush_thr_node)
         {
-            elog(RLOG_WARNING,
-                 "capture onlinerefresh can not get inc flush thread by no:%lu",
-                 thr_ref_obj->no);
+            elog(RLOG_WARNING, "capture onlinerefresh can not get inc flush thread by no:%lu", thr_ref_obj->no);
             thr_node->stat = THRNODE_STAT_ABORT;
             pthread_exit(NULL);
         }
@@ -1051,11 +1013,10 @@ void* onlinerefresh_capture_main(void* args)
 
             /* Set idle threads to exit and count the number of exited threads */
             jobcnt = olcapture->parallelcnt;
-            if (false ==
-                threads_setsubmgrjobthredstermandcountexit(olcapture->thrsmgr->parents,
-                                                           olcapture->thrsmgr->childthrrefs,
-                                                           skipcnt,
-                                                           &jobcnt))
+            if (false == threads_setsubmgrjobthredstermandcountexit(olcapture->thrsmgr->parents,
+                                                                    olcapture->thrsmgr->childthrrefs,
+                                                                    skipcnt,
+                                                                    &jobcnt))
             {
                 elog(RLOG_WARNING, "capture refresh set job threads term in idle error");
                 thr_node->stat = THRNODE_STAT_ABORT;
@@ -1068,8 +1029,10 @@ void* onlinerefresh_capture_main(void* args)
             }
 
             /* Set stock data thread to exit, skip the first 4 increment threads */
-            threads_setsubmgrjobthredsfree(
-                olcapture->thrsmgr->parents, olcapture->thrsmgr->childthrrefs, skipcnt, jobcnt);
+            threads_setsubmgrjobthredsfree(olcapture->thrsmgr->parents,
+                                           olcapture->thrsmgr->childthrrefs,
+                                           skipcnt,
+                                           jobcnt);
 
             jobstat = ONLINEREFRESH_CAPTURE_STAT_JOBWAITINCREMENTDONE;
 
@@ -1103,8 +1066,7 @@ void* onlinerefresh_capture_main(void* args)
                 break;
             }
 
-            if (THRNODE_STAT_EXITED != incparser_thr_node->stat ||
-                THRNODE_STAT_EXITED != incserial_thr_node->stat ||
+            if (THRNODE_STAT_EXITED != incparser_thr_node->stat || THRNODE_STAT_EXITED != incserial_thr_node->stat ||
                 THRNODE_STAT_EXITED != incflush_thr_node->stat)
             {
                 /* Parser thread not exited, waiting */
@@ -1127,8 +1089,7 @@ void* onlinerefresh_capture_main(void* args)
 
             /* All threads have exited, management thread can exit */
             jobcnt = olcapture->thrsmgr->childthrrefs->length - olcapture->parallelcnt;
-            threads_setsubmgrjobthredsfree(
-                olcapture->thrsmgr->parents, olcapture->thrsmgr->childthrrefs, 0, jobcnt);
+            threads_setsubmgrjobthredsfree(olcapture->thrsmgr->parents, olcapture->thrsmgr->childthrrefs, 0, jobcnt);
 
             /* Set this thread to exit */
             thr_node->stat = THRNODE_STAT_EXIT;

@@ -13,6 +13,7 @@
 #define completion_matches rl_completion_matches
 #define XSCSCI_MATCHANY    NULL
 
+/* clang-format off */
 #define XSCSCI_VA_ARGS_NARGS_(_01, \
                               _02, \
                               _03, \
@@ -164,63 +165,108 @@ static const char* const m_commands[] = {"create",
                                          "exit",
                                          "quit",
                                          "list",
-                                         NULL};
+                                          NULL};
 
 /*
  * keywords after create progress
  */
-static const char* const m_createprogresscommands[] = {"capture", NULL};
+static const char* const m_createprogresscommands[] = {"capture",
+                                                        NULL};
 
 /*
  * keywords after create progress
  */
-static const char* const m_createcommands[] = {
-    "manager", "pgreceivelog", "capture", "integrate", "progress", NULL};
+static const char* const m_createcommands[] = {"manager",
+                                               "pgreceivelog",
+                                               "capture",
+                                               "integrate",
+                                               "progress",
+                                                NULL};
 
 /*
  * content after alter keyword
  */
 /* alter */
-static const char* const m_altercommands[] = {"progress", NULL};
+static const char* const m_altercommands[] = {"progress",
+                                               NULL};
 
 /* alter progress */
-static const char* const m_alterprogresscommands[] = {"add", "remove", NULL};
+static const char* const m_alterprogresscommands[] = {"add",
+                                                      "remove",
+                                                       NULL};
 
 /* content after remove keyword */
-static const char* const m_removecommands[] = {
-    "manager", "pgreceivelog", "capture", "integrate", NULL};
+static const char* const m_removecommands[] = {"manager",
+                                               "pgreceivelog",
+                                               "capture",
+                                               "integrate",
+                                                NULL};
 
 /* content after drop keyword */
-static const char* const m_dropcommands[] = {
-    "manager", "pgreceivelog", "capture", "integrate", "progress", NULL};
+static const char* const m_dropcommands[] = {"manager",
+                                             "pgreceivelog",
+                                             "capture",
+                                             "integrate",
+                                             "progress",
+                                              NULL};
 
 /* content after init keyword */
-static const char* const m_initcommands[] = {
-    "manager", "pgreceivelog", "capture", "integrate", NULL};
+static const char* const m_initcommands[] = {"manager",
+                                             "pgreceivelog",
+                                             "capture",
+                                             "integrate",
+                                              NULL};
 
 /* content after edit keyword */
-static const char* const m_editcommands[] = {
-    "manager", "pgreceivelog", "capture", "integrate", NULL};
+static const char* const m_editcommands[] = {"manager",
+                                             "pgreceivelog",
+                                             "capture",
+                                             "integrate",
+                                              NULL};
 
 /* content after start keyword */
-static const char* const m_startcommands[] = {
-    "manager", "pgreceivelog", "capture", "integrate", "all", NULL};
+static const char* const m_startcommands[] = {"manager",
+                                              "pgreceivelog",
+                                              "capture",
+                                              "integrate",
+                                              "all",
+                                               NULL};
 
 /* content after stop keyword */
-static const char* const m_stopcommands[] = {
-    "manager", "pgreceivelog", "capture", "integrate", "all", NULL};
+static const char* const m_stopcommands[] = {"manager",
+                                             "pgreceivelog",
+                                             "capture",
+                                             "integrate",
+                                             "all",
+                                              NULL};
 
 /* content after reload keyword */
-static const char* const m_reloadcommands[] = {
-    "manager", "pgreceivelog", "capture", "integrate", NULL};
+static const char* const m_reloadcommands[] = {"manager",
+                                               "pgreceivelog",
+                                               "capture",
+                                               "integrate",
+                                                NULL};
 
 /* content after info keyword */
-static const char* const m_infocommands[] = {
-    "manager", "pgreceivelog", "capture", "integrate", "progress", "all", NULL};
+static const char* const m_infocommands[] = {"manager",
+                                             "pgreceivelog",
+                                             "capture",
+                                             "integrate",
+                                             "progress",
+                                             "all",
+                                              NULL};
 
 /* content after watch keyword */
-static const char* const m_watchcommands[] = {
-    "manager", "pgreceivelog", "capture", "integrate", "progress", "all", NULL};
+static const char* const m_watchcommands[] = {"manager",
+                                              "pgreceivelog",
+                                              "capture",
+                                              "integrate",
+                                              "progress",
+                                              "all",
+                                               NULL};
+
+/* clang-format off */
+
 
 /* content after help keyword */
 
@@ -291,8 +337,7 @@ static bool xscsci_tabcomplete_matchesimpl(int prevwordscnt, char** prevwords, i
 }
 
 #define XSCSCI_TABCOMPLETE_MATCHES(...) \
-    xscsci_tabcomplete_matchesimpl(     \
-        prevwordcnt, prevwords, XSCSCI_VA_ARGS_NARGS(__VA_ARGS__), __VA_ARGS__)
+    xscsci_tabcomplete_matchesimpl(prevwordcnt, prevwords, XSCSCI_VA_ARGS_NARGS(__VA_ARGS__), __VA_ARGS__)
 
 /*
  * get count of words already entered

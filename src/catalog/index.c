@@ -99,8 +99,7 @@ void index_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
     /* Hash initialization */
     index_hash_ctl.keysize = sizeof(Oid);
     index_hash_ctl.entrysize = sizeof(catalog_index_hash_entry);
-    sysdicts->by_index =
-        hash_create("catalog_sysdict_index", 2048, &index_hash_ctl, HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_index = hash_create("catalog_sysdict_index", 2048, &index_hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     /* Exclude indexes of non-regular tables */
     sprintf(sql_exec,
@@ -142,19 +141,17 @@ void index_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
         sscanf(PQgetvalue(res, index_row, index_col++), "%u", &catalog_index->indexrelid);
 
         /* indisprimary */
-        catalog_index->indisprimary =
-            (((char*)PQgetvalue(res, index_row, index_col++))[0]) == 't' ? true : false;
+        catalog_index->indisprimary = (((char*)PQgetvalue(res, index_row, index_col++))[0]) == 't' ? true : false;
 
         /* indisreplident */
-        catalog_index->indisreplident =
-            (((char*)PQgetvalue(res, index_row, index_col++))[0]) == 't' ? true : false;
+        catalog_index->indisreplident = (((char*)PQgetvalue(res, index_row, index_col++))[0]) == 't' ? true : false;
 
         /* indnatts */
         sscanf(PQgetvalue(res, index_row, index_col++), "%d", &catalog_index->indnatts);
 
         /* indkey */
-        catalog_index->indkey = index_make_key_from_vector(PQgetvalue(res, index_row, index_col++),
-                                                           catalog_index->indnatts);
+        catalog_index->indkey =
+            index_make_key_from_vector(PQgetvalue(res, index_row, index_col++), catalog_index->indnatts);
 
         idx_val = (catalog_index_value*)rmalloc0(sizeof(catalog_index_value));
         if (NULL == idx_val)
@@ -275,8 +272,7 @@ static bool check_index_catalog_data_in_list(List* index_list, catalog_index_val
     return find;
 }
 
-static bool update_index_catalog_data_in_lsit(List*                index_list,
-                                              catalog_index_value* new_index_value)
+static bool update_index_catalog_data_in_lsit(List* index_list, catalog_index_value* new_index_value)
 {
     ListCell* cell = NULL;
     bool      find = false;
@@ -319,8 +315,7 @@ static bool update_index_catalog_data_in_lsit(List*                index_list,
             }
 
             /* Reassign */
-            rmemcpy0(
-                dict_index, 0, new_index_value->index, offsetof(pg_parser_sysdict_pgindex, indkey));
+            rmemcpy0(dict_index, 0, new_index_value->index, offsetof(pg_parser_sysdict_pgindex, indkey));
             find = true;
             break;
         }
@@ -377,10 +372,7 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemcpy0(dict_index->indkey,
-                     0,
-                     new_index_value->index->indkey,
-                     sizeof(uint32) * dict_index->indnatts);
+            rmemcpy0(dict_index->indkey, 0, new_index_value->index->indkey, sizeof(uint32) * dict_index->indnatts);
 
             index_value = (catalog_index_value*)rmalloc0(sizeof(catalog_index_value));
             if (NULL == index_value)
@@ -425,8 +417,7 @@ void index_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* catalog
                     {
                         index_dict_index_free(dict_index);
                         rfree(index_value);
-                        indexInHash->index_list =
-                            list_delete_cell(indexInHash->index_list, cell, cell_prev);
+                        indexInHash->index_list = list_delete_cell(indexInHash->index_list, cell, cell_prev);
                         break;
                     }
                     else

@@ -61,8 +61,7 @@ fftrail_txndelete_serial_retry:
                                   &dbmdno,
                                   &tbmdno,
                                   state);
-    } while (FFSMGR_STATUS_SHIFTFILE ==
-             ffstate->status); /* Content switched, need to write again */
+    } while (FFSMGR_STATUS_SHIFTFILE == ffstate->status); /* Content switched, need to write again */
 
     /* Set state */
     ffstate->status = FFSMGR_STATUS_USED;
@@ -77,8 +76,7 @@ fftrail_txndelete_serial_retry:
     }
 
     /* Get buffer info and set write position */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     tmpuptr = ffstate->recptr = fbuffer->data + fbuffer->start;
 
     /* Calculate length, compute total length of this record */
@@ -129,12 +127,10 @@ fftrail_txndelete_serial_retry:
         }
 
         /* colid(2) */
-        fftrail_data_data2buffer(
-            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&colid);
+        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&colid);
 
         /* flag(2) */
-        fftrail_data_data2buffer(
-            &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&flag);
+        fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_SMALLINT, 2, (uint8*)&flag);
 
         /* (length 4) */
         fftrail_data_data2buffer(&txndata->header,

@@ -194,10 +194,9 @@ typedef struct pg_parser_xl_xact_assignment
     uint32_t xsub[FLEXIBLE_ARRAY_MEMBER]; /* assigned subxids */
 } pg_parser_xl_xact_assignment;
 
-#define MinSizeOfXactAbort sizeof(xl_xact_abort)
+#define MinSizeOfXactAbort                  sizeof(xl_xact_abort)
 
-#define pg_parser_MinSizeOfXactCommit \
-    (offsetof(pg_parser_xl_xact_commit, xact_time) + sizeof(int64_t))
+#define pg_parser_MinSizeOfXactCommit       (offsetof(pg_parser_xl_xact_commit, xact_time) + sizeof(int64_t))
 #define pg_parser_MinSizeOfXactRelfilenodes offsetof(pg_parser_xl_xact_relfilenodes, xnodes)
 #define pg_parser_MinSizeOfXactInvals       offsetof(pg_parser_xl_xact_invals, msgs)
 

@@ -8,8 +8,6 @@
  *  3、add/remove job
  *  4. Assemble return message
  */
-extern bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric,
-                                          netpoolentry*    npoolentry,
-                                          netpacket*       npacket);
+extern bool xmanager_metricmsg_parsealter(xmanager_metric* xmetric, netpoolentry* npoolentry, netpacket* npacket);
 
 #endif

@@ -65,9 +65,8 @@ typedef enum FFTRAIL_GROUPTYPE
     FFTRAIL_GROUPTYPE_NOP = 0x00,     /* Invalid                         */
     FFTRAIL_GROUPTYPE_FHEADER = 0x01, /* File header                       */
     FFTRAIL_GROUPTYPE_DATA = 0x02,    /* Data information in file            */
-    FFTRAIL_GROUPTYPE_RESET =
-        0x03, /* Transaction reset, indicates unfinished transaction cleanup   */
-    FFTRAIL_GROUPTYPE_FTAIL = 0x04, /* File tail information                    */
+    FFTRAIL_GROUPTYPE_RESET = 0x03,   /* Transaction reset, indicates unfinished transaction cleanup   */
+    FFTRAIL_GROUPTYPE_FTAIL = 0x04,   /* File tail information                    */
 } fftrail_grouptype;
 
 typedef enum FFTRAIL_INFOTYPE
@@ -183,8 +182,7 @@ void fftrail_setrecordlength(void* state, uint8* record, uint16 reclength);
 
 bool fftrail_isrecordtransstart(void* state, uint8* record);
 
-bool fftrail_validrecord(
-    ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record);
+bool fftrail_validrecord(ff_cxt_type type, void* state, uint8 infotype, uint64 fileid, uint8* record);
 
 /*
  * Serialization
@@ -197,16 +195,10 @@ bool fftrail_serialpreshiftblock(void* state);
 bool fftrail_serialshiffile(void* state);
 
 /* Add specific data to buffer */
-uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype,
-                           uint16               tdatalen,
-                           uint8*               tdata,
-                           uint8*               buffer);
+uint8* fftrail_body2buffer(ftrail_tokendatatype tdtype, uint16 tdatalen, uint8* tdata, uint8* buffer);
 
 /* Write specific data from buffer to data */
-uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype,
-                           uint64               tdatalen,
-                           uint8*               tdata,
-                           uint8*               buffer);
+uint8* fftrail_buffer2body(ftrail_tokendatatype tdtype, uint64 tdatalen, uint8* tdata, uint8* buffer);
 
 /* Add token data to buffer */
 uint8* fftrail_token2buffer(uint8                tid,

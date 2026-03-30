@@ -21,11 +21,9 @@ extern void refresh_table_sharding_set_schema(refresh_table_sharding* shard, cha
 extern void refresh_table_sharding_set_table(refresh_table_sharding* shard, char* table);
 extern void refresh_table_sharding_set_shardings(refresh_table_sharding* shard, int num);
 extern void refresh_table_sharding_set_shardno(refresh_table_sharding* shard, int num);
-extern void refresh_table_sharding_set_condition(refresh_table_sharding*  shard,
-                                                 refresh_table_condition* cond);
+extern void refresh_table_sharding_set_condition(refresh_table_sharding* shard, refresh_table_condition* cond);
 extern refresh_table_condition* refresh_table_sharding_condition_init(void);
-extern void refresh_table_sharding_get_info_from_filename(char*                   filename,
-                                                          refresh_table_sharding* table_shard);
+extern void refresh_table_sharding_get_info_from_filename(char* filename, refresh_table_sharding* table_shard);
 extern void refresh_table_sharding_free(refresh_table_sharding* shard);
 extern void refresh_table_sharding_queuefree(void* data);
 

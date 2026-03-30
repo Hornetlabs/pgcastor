@@ -64,8 +64,7 @@ int main(int argc, char** argv)
         {
             optype = OPTYPE_RELOAD;
         }
-        else if (strlen(argv[3]) == strlen("onlinerefresh") &&
-                 0 == strcasecmp(argv[3], "onlinerefresh"))
+        else if (strlen(argv[3]) == strlen("onlinerefresh") && 0 == strcasecmp(argv[3], "onlinerefresh"))
         {
             int index_guc = 0;
             optype = OPTYPE_ONLINEREFRESH;
@@ -127,8 +126,7 @@ int main(int argc, char** argv)
     if (strlen(dbtype) == strlen(DBTYPE_POSTGRES) && 0 == strcmp(dbtype, DBTYPE_POSTGRES))
     {
         g_idbtype = DATABASE_TYPE_POSTGRESQL;
-        if (strlen(dbversion) == strlen(DBVERSION_POSTGRES_12) &&
-            0 == strcmp(dbversion, DBVERSION_POSTGRES_12))
+        if (strlen(dbversion) == strlen(DBVERSION_POSTGRES_12) && 0 == strcmp(dbversion, DBVERSION_POSTGRES_12))
         {
             g_idbversion = PGDBVERSION_12;
         }

@@ -181,9 +181,7 @@ refresh_tables* refresh_tables_copy(refresh_tables* refreshtables)
     return new_tables;
 }
 
-bool refresh_tables_hasrepeat(refresh_tables* syncdataset,
-                              refresh_tables* newdataset,
-                              refresh_table** prepeattable)
+bool refresh_tables_hasrepeat(refresh_tables* syncdataset, refresh_tables* newdataset, refresh_table** prepeattable)
 {
     refresh_table* table_new = NULL;
     refresh_table* table_sync = NULL;

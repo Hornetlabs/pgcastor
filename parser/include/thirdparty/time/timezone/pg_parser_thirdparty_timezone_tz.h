@@ -44,8 +44,7 @@ struct pg_parser_time_state
     pg_parser_time_t   ats[TIME_TZ_MAX_TIMES];
     unsigned char      types[TIME_TZ_MAX_TIMES];
     struct time_ttinfo ttis[TIME_TZ_MAX_TYPES];
-    char
-        chars[TIME_BIGGEST(TIME_BIGGEST(TIME_TZ_MAX_CHARS + 1, 4), (2 * (TIME_TZ_STRLEN_MAX + 1)))];
+    char               chars[TIME_BIGGEST(TIME_BIGGEST(TIME_TZ_MAX_CHARS + 1, 4), (2 * (TIME_TZ_STRLEN_MAX + 1)))];
     struct time_lsinfo lsis[TIME_TZ_MAX_LEAPS];
 
     /*

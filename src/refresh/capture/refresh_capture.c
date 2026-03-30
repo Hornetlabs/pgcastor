@@ -98,11 +98,7 @@ static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
         uint32 remain = 0;
         int    shard_no = 1;
 
-        appendStringInfo(str,
-                         "select pg_relation_size('\"%s\".\"%s\"')/%d;",
-                         table->schema,
-                         table->table,
-                         g_blocksize);
+        appendStringInfo(str, "select pg_relation_size('\"%s\".\"%s\"')/%d;", table->schema, table->table, g_blocksize);
         res = PQexec(conn, str->data);
         if (PGRES_TUPLES_OK != PQresultStatus(res))
         {
@@ -173,8 +169,7 @@ static bool refresh_capture_tables2shardings(refresh_capture* rcapture)
             /* sharding */
             refresh_table_sharding_set_schema(table_shard, table->schema);
             refresh_table_sharding_set_table(table_shard, table->table);
-            refresh_table_sharding_set_shardings(table_shard,
-                                                 ((ctid_blkid_max - 1) / max_shard_num) + 1);
+            refresh_table_sharding_set_shardings(table_shard, ((ctid_blkid_max - 1) / max_shard_num) + 1);
             refresh_table_sharding_set_shardno(table_shard, shard_no++);
             refresh_table_sharding_set_condition(table_shard, cond);
 
@@ -221,8 +216,7 @@ static void refresh_capture_trymkdir(refresh_tables* tables)
     for (table = tables->tables; table != NULL; table = table->next)
     {
         resetStringInfo(path);
-        appendStringInfo(
-            path, "%s/%s/%s_%s", data_path, REFRESH_REFRESH, table->schema, table->table);
+        appendStringInfo(path, "%s/%s/%s_%s", data_path, REFRESH_REFRESH, table->schema, table->table);
 
         elog(RLOG_DEBUG, "path:%s", path->data);
         if (!osal_dir_exist(path->data))
@@ -333,8 +327,7 @@ void* refresh_capture_main(void* args)
     /* check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "refresh capture stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "refresh capture stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;
@@ -397,8 +390,9 @@ void* refresh_capture_main(void* args)
             /* check if already started successfully */
             jobcnt = 0;
             delay++;
-            if (false == threads_countsubmgrjobthredsabovework(
-                             rcapture->thrsmgr->parents, rcapture->thrsmgr->childthrrefs, &jobcnt))
+            if (false == threads_countsubmgrjobthredsabovework(rcapture->thrsmgr->parents,
+                                                               rcapture->thrsmgr->childthrrefs,
+                                                               &jobcnt))
             {
                 elog(RLOG_WARNING, "capture refresh count job thread above work stat error");
                 thr_node->stat = THRNODE_STAT_ABORT;
@@ -441,9 +435,10 @@ void* refresh_capture_main(void* args)
 
             /* set idle threads to exit and count exited threads */
             jobcnt = rcapture->thrsmgr->childthrrefs->length;
-            if (false ==
-                threads_setsubmgrjobthredstermandcountexit(
-                    rcapture->thrsmgr->parents, rcapture->thrsmgr->childthrrefs, 0, &jobcnt))
+            if (false == threads_setsubmgrjobthredstermandcountexit(rcapture->thrsmgr->parents,
+                                                                    rcapture->thrsmgr->childthrrefs,
+                                                                    0,
+                                                                    &jobcnt))
             {
                 elog(RLOG_WARNING, "capture refresh set job threads term in idle error");
                 thr_node->stat = THRNODE_STAT_ABORT;

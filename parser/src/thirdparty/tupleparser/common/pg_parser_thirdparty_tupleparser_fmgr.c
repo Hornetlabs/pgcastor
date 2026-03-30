@@ -10,78 +10,79 @@
 #define FMGR_MCXT NULL
 
 const pg_parser_FmgrBuiltinNormal pg_parser_fmgr_builtins_normal[] = {
-    {"charout", charout},
-    {"nameout", nameout},
-    {"int2out", int2out},
-    {"int4out", int4out},
-    {"tidout", tidout},
-    {"xidout", xidout},
-    {"cidout", cidout},
-    {"oidvectorout", oidvectorout},
-    {"point_out", point_out},
-    {"lseg_out", lseg_out},
-    {"box_out", box_out},
-    {"float4out", float4out},
-    {"float8out", float8out},
-    {"macaddr_out", macaddr_out},
-    {"int8out", int8out},
-    {"inet_out", inet_out},
-    {"date_out", date_out},
-    {"time_out", time_out},
-    {"interval_out", interval_out},
-    {"yminterval_out", interval_out},
+    {"charout",        charout       },
+    {"nameout",        nameout       },
+    {"int2out",        int2out       },
+    {"int4out",        int4out       },
+    {"tidout",         tidout        },
+    {"xidout",         xidout        },
+    {"cidout",         cidout        },
+    {"oidvectorout",   oidvectorout  },
+    {"point_out",      point_out     },
+    {"lseg_out",       lseg_out      },
+    {"box_out",        box_out       },
+    {"float4out",      float4out     },
+    {"float8out",      float8out     },
+    {"macaddr_out",    macaddr_out   },
+    {"int8out",        int8out       },
+    {"inet_out",       inet_out      },
+    {"date_out",       date_out      },
+    {"time_out",       time_out      },
+    {"interval_out",   interval_out  },
+    {"yminterval_out", interval_out  },
     {"dsinterval_out", dsinterval_out},
-    {"boolout", boolout},
-    {"timetz_out", timetz_out},
-    {"cidr_out", cidr_out},
-    {"circle_out", circle_out},
-    {"line_out", line_out},
-    {"oidout", oidout},
-    {"cstring_out", cstring_out},
-    {"void_out", void_out},
-    {"shell_out", shell_out},
-    {"uuid_out", uuid_out},
-    {"tsqueryout", tsqueryout},
-    {"macaddr8_out", macaddr8_out},
-    {"pg_lsn_out", pg_lsn_out},
-    {"regprocout", oidout},
-    {"regclassout", regclassout}};
+    {"boolout",        boolout       },
+    {"timetz_out",     timetz_out    },
+    {"cidr_out",       cidr_out      },
+    {"circle_out",     circle_out    },
+    {"line_out",       line_out      },
+    {"oidout",         oidout        },
+    {"cstring_out",    cstring_out   },
+    {"void_out",       void_out      },
+    {"shell_out",      shell_out     },
+    {"uuid_out",       uuid_out      },
+    {"tsqueryout",     tsqueryout    },
+    {"macaddr8_out",   macaddr8_out  },
+    {"pg_lsn_out",     pg_lsn_out    },
+    {"regprocout",     oidout        },
+    {"regclassout",    regclassout   }
+};
 
 const int32_t pg_parser_fmgr_nbuiltins_normal =
     (sizeof(pg_parser_fmgr_builtins_normal) / sizeof(pg_parser_FmgrBuiltinNormal));
 
 const pg_parser_FmgrBuiltinSpecial pg_parser_fmgr_builtins_special[] = {
-    {"byteaout", byteaout},
-    {"record_out", record_out},
+    {"byteaout",         byteaout        },
+    {"record_out",       record_out      },
     {"pg_node_tree_out", pg_node_tree_out},
-    {"textout", textout},
-    {"int2vectorout", int2vectorout},
-    {"json_out", json_out},
-    {"cash_out", cash_out},
-    {"bpcharout", bpcharout},
-    {"varcharout", varcharout},
-    {"timestamptz_out", timestamptz_out},
-    {"timestamp_out", timestamp_out},
-    {"numeric_out", numeric_out},
-    {"xml_out", xml_out},
-    {"enum_out", enum_out},
-    {"anyenum_out", anyenum_out},
-    {"tsvectorout", tsvectorout},
-    {"bit_out", bit_out},
-    {"varbit_out", varbit_out},
-    {"path_out", path_out},
-    {"poly_out", poly_out},
-    {"array_out", array_out},
-    {"range_out", range_out},
-    {"jsonb_out", jsonb_out},
-    {"spheroid_out", spheroid_out},  /* postgis support */
-    {"box3d_out", box3d_out},        /* postgis support */
-    {"box2d_out", box2d_out},        /* postgis support */
-    {"box2df_out", box2df_out},      /* postgis support */
-    {"gidx_out", gidx_out},          /* postgis support */
-    {"raster_out", raster_out},      /* postgis support */
-    {"geometry_out", geometry_out},  /* postgis support */
-    {"geography_out", geography_out} /* postgis support */
+    {"textout",          textout         },
+    {"int2vectorout",    int2vectorout   },
+    {"json_out",         json_out        },
+    {"cash_out",         cash_out        },
+    {"bpcharout",        bpcharout       },
+    {"varcharout",       varcharout      },
+    {"timestamptz_out",  timestamptz_out },
+    {"timestamp_out",    timestamp_out   },
+    {"numeric_out",      numeric_out     },
+    {"xml_out",          xml_out         },
+    {"enum_out",         enum_out        },
+    {"anyenum_out",      anyenum_out     },
+    {"tsvectorout",      tsvectorout     },
+    {"bit_out",          bit_out         },
+    {"varbit_out",       varbit_out      },
+    {"path_out",         path_out        },
+    {"poly_out",         poly_out        },
+    {"array_out",        array_out       },
+    {"range_out",        range_out       },
+    {"jsonb_out",        jsonb_out       },
+    {"spheroid_out",     spheroid_out    }, /* postgis support */
+    {"box3d_out",        box3d_out       }, /* postgis support */
+    {"box2d_out",        box2d_out       }, /* postgis support */
+    {"box2df_out",       box2df_out      }, /* postgis support */
+    {"gidx_out",         gidx_out        }, /* postgis support */
+    {"raster_out",       raster_out      }, /* postgis support */
+    {"geometry_out",     geometry_out    }, /* postgis support */
+    {"geography_out",    geography_out   }  /* postgis support */
 };
 const int32_t pg_parser_fmgr_nbuiltins_special =
     (sizeof(pg_parser_fmgr_builtins_special) / sizeof(pg_parser_FmgrBuiltinSpecial));
@@ -122,8 +123,7 @@ bool pg_parser_convert_attr_to_str_value(pg_parser_Datum                        
 
     typoutput = typinfo.typoutput_proname;
     typoutput = typoutput_tolower(typoutput);
-    pg_parser_log_errlog(
-        zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
+    pg_parser_log_errlog(zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* Currently does not support anyarray_out */
     if (!strcmp("anyarray_out", typoutput))
     {
@@ -203,8 +203,7 @@ bool pg_parser_convert_attr_to_str_value(pg_parser_Datum                        
     }
     if ((colvalue->m_info == INFO_NOTHING))
     {
-        pg_parser_log_errlog(
-            zicinfo->debuglevel, "DEBUG: success get values[%s]\n", (char*)(colvalue->m_value));
+        pg_parser_log_errlog(zicinfo->debuglevel, "DEBUG: success get values[%s]\n", (char*)(colvalue->m_value));
     }
 
     return true;
@@ -231,8 +230,7 @@ char* pg_parser_convert_attr_to_str_char(pg_parser_Datum                        
 
     typoutput = typinfo.typoutput_proname;
     typoutput = typoutput_tolower(typoutput);
-    pg_parser_log_errlog(
-        zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
+    pg_parser_log_errlog(zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* Currently does not support anyarray_out */
     fmgr_normal = pg_parser_getNormalOutputFuncByName(typoutput);
     if (!strcmp("anyarray_out", typoutput))
@@ -279,8 +277,7 @@ char* pg_parser_convert_attr_to_str_char(pg_parser_Datum                        
         value_info = info.valueinfo;
     }
 
-    if (value_info == INFO_NOTHING &&
-        strcmp(zicinfo->convertinfo->m_tartgetcharset, zicinfo->convertinfo->m_dbcharset))
+    if (value_info == INFO_NOTHING && strcmp(zicinfo->convertinfo->m_tartgetcharset, zicinfo->convertinfo->m_dbcharset))
     {
         char* temp_ptr = result;
         bool  needfree = false;
@@ -300,9 +297,9 @@ char* pg_parser_convert_attr_to_str_char(pg_parser_Datum                        
     return result;
 }
 
-bool pg_parser_convert_attr_to_str_external_value(pg_parser_Datum                 attr,
-                                                  char*                           typoutput,
-                                                  pg_parser_translog_tbcol_value* colvalue,
+bool pg_parser_convert_attr_to_str_external_value(pg_parser_Datum                          attr,
+                                                  char*                                    typoutput,
+                                                  pg_parser_translog_tbcol_value*          colvalue,
                                                   pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
     bool                                is_special = false;
@@ -310,8 +307,7 @@ bool pg_parser_convert_attr_to_str_external_value(pg_parser_Datum               
     const pg_parser_FmgrBuiltinSpecial* fmgr_special = NULL;
 
     typoutput = typoutput_tolower(typoutput);
-    pg_parser_log_errlog(
-        zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
+    pg_parser_log_errlog(zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* Currently does not support anyarray_out */
     if (!strcmp("anyarray_out", typoutput))
     {
@@ -416,11 +412,10 @@ static const pg_parser_FmgrBuiltinSpecial* pg_parser_getSpecialOutputFuncByName(
     return NULL;
 }
 
-char* pg_parser_convert_attr_to_str_by_typid_typoptput(
-    pg_parser_Datum                          attr,
-    uint32_t                                 typid,
-    char*                                    typoutput,
-    pg_parser_translog_convertinfo_with_zic* zicinfo)
+char* pg_parser_convert_attr_to_str_by_typid_typoptput(pg_parser_Datum                          attr,
+                                                       uint32_t                                 typid,
+                                                       char*                                    typoutput,
+                                                       pg_parser_translog_convertinfo_with_zic* zicinfo)
 {
     char*                               result = NULL;
     bool                                is_special = false;
@@ -429,8 +424,7 @@ char* pg_parser_convert_attr_to_str_by_typid_typoptput(
     const pg_parser_FmgrBuiltinSpecial* fmgr_special = NULL;
 
     typoutput = typoutput_tolower(typoutput);
-    pg_parser_log_errlog(
-        zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
+    pg_parser_log_errlog(zicinfo->debuglevel, "DEBUG: ready use %s convert attr to str\n", typoutput);
     /* Currently does not support anyarray_out */
     if (!strcmp("anyarray_out", typoutput))
     {
@@ -482,8 +476,7 @@ char* pg_parser_convert_attr_to_str_by_typid_typoptput(
         value_info = info.valueinfo;
     }
 
-    if (value_info == INFO_NOTHING &&
-        strcmp(zicinfo->convertinfo->m_tartgetcharset, zicinfo->convertinfo->m_dbcharset))
+    if (value_info == INFO_NOTHING && strcmp(zicinfo->convertinfo->m_tartgetcharset, zicinfo->convertinfo->m_dbcharset))
     {
         char* temp_ptr = result;
         bool  needfree = false;

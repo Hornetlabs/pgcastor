@@ -119,10 +119,9 @@ extern void pg_parser_appendStringInfoChar(pg_parser_StringInfo str, char ch);
  * As above, but a macro for even more speed where it matters.
  * Caution: str argument will be evaluated multiple times.
  */
-#define pg_parser_appendStringInfoCharMacro(str, ch) \
-    (((str)->len + 1 >= (str)->maxlen)               \
-         ? pg_parser_appendStringInfoChar(str, ch)   \
-         : (void)((str)->data[(str)->len] = (ch), (str)->data[++(str)->len] = '\0'))
+#define pg_parser_appendStringInfoCharMacro(str, ch)                             \
+    (((str)->len + 1 >= (str)->maxlen) ? pg_parser_appendStringInfoChar(str, ch) \
+                                       : (void)((str)->data[(str)->len] = (ch), (str)->data[++(str)->len] = '\0'))
 
 /*------------------------
  * pg_parser_appendStringInfoSpaces
@@ -135,9 +134,7 @@ extern void pg_parser_appendStringInfoSpaces(pg_parser_StringInfo str, int32_t c
  * Append arbitrary binary data to a pg_parser_StringInfo, allocating more space
  * if necessary.
  */
-extern void pg_parser_appendBinaryStringInfo(pg_parser_StringInfo str,
-                                             const char*          data,
-                                             int32_t              datalen);
+extern void pg_parser_appendBinaryStringInfo(pg_parser_StringInfo str, const char* data, int32_t datalen);
 
 /*------------------------
  * pg_parser_enlargeStringInfo

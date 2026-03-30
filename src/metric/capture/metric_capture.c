@@ -463,8 +463,7 @@ void* metric_capture_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "increment capture metric stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "increment capture metric stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -624,12 +623,10 @@ void* metric_capture_main(void* args)
             }
         }
 
-        if (redolsn != mcapture->redolsn || restartlsn != mcapture->restartlsn ||
-            confirmlsn != mcapture->confirmlsn || loadlsn != mcapture->loadlsn ||
-            parselsn != mcapture->parselsn || flushlsn != mcapture->flushlsn ||
-            parsetimestamp != mcapture->parsetimestamp ||
-            flushtimestamp != mcapture->flushtimestamp || trailno != mcapture->trailno ||
-            trailstart != mcapture->trailstart)
+        if (redolsn != mcapture->redolsn || restartlsn != mcapture->restartlsn || confirmlsn != mcapture->confirmlsn ||
+            loadlsn != mcapture->loadlsn || parselsn != mcapture->parselsn || flushlsn != mcapture->flushlsn ||
+            parsetimestamp != mcapture->parsetimestamp || flushtimestamp != mcapture->flushtimestamp ||
+            trailno != mcapture->trailno || trailstart != mcapture->trailstart)
         {
             redolsn = mcapture->redolsn;
             restartlsn = mcapture->restartlsn;
@@ -668,19 +665,13 @@ void* metric_capture_main(void* args)
                  (uint32)(mcapture->flushlsn));
             elog(RLOG_INFO, "XSYNCH Capture ParseTimestamp:     %lu", mcapture->parsetimestamp);
             elog(RLOG_INFO, "XSYNCH Capture FlushTimestamp:     %lu", mcapture->flushtimestamp);
-            elog(RLOG_INFO,
-                 "XSYNCH Capture Trail:              %lX/%lX",
-                 mcapture->trailno,
-                 mcapture->trailstart);
+            elog(RLOG_INFO, "XSYNCH Capture Trail:              %lX/%lX", mcapture->trailno, mcapture->trailstart);
 
             /* Persist data to disk */
             fd = osal_basic_open_file(CAPTURE_STATUS_FILE_TEMP, O_RDWR | O_CREAT | BINARY);
             if (-1 == fd)
             {
-                elog(RLOG_WARNING,
-                     "open file:capture/%s error, %s",
-                     CAPTURE_STATUS_FILE_TEMP,
-                     strerror(errno));
+                elog(RLOG_WARNING, "open file:capture/%s error, %s", CAPTURE_STATUS_FILE_TEMP, strerror(errno));
                 continue;
             }
             osal_file_write(fd, (char*)mcapture, sizeof(metric_capture));
@@ -688,8 +679,7 @@ void* metric_capture_main(void* args)
             osal_file_close(fd);
 
             /* Rename */
-            if (osal_durable_rename(CAPTURE_STATUS_FILE_TEMP, CAPTURE_STATUS_FILE, RLOG_WARNING) !=
-                0)
+            if (osal_durable_rename(CAPTURE_STATUS_FILE_TEMP, CAPTURE_STATUS_FILE, RLOG_WARNING) != 0)
             {
                 elog(RLOG_WARNING,
                      "Error renaming capture file %s 2 %s",

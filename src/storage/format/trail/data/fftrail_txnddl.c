@@ -50,8 +50,7 @@ bool fftrail_txnddl_serial(void* data, void* state)
     }
 
     /* Write to trail file */
-    fbuffer =
-        file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
+    fbuffer = file_buffer_getbybufid(ffstate->callback.getfilebuffer(ffstate->privdata), ffstate->bufid);
     ffstate->recptr = fbuffer->data + fbuffer->start;
 
     /* Calculate length */
@@ -91,8 +90,7 @@ bool fftrail_txnddl_serial(void* data, void* state)
                              (uint8*)&ddlstmt->subtype);
 
     /* DDL string length */
-    fftrail_data_data2buffer(
-        &txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&rstmt->len);
+    fftrail_data_data2buffer(&txndata->header, ffstate, &fbuffer, FTRAIL_TOKENDATATYPE_INT, 4, (uint8*)&rstmt->len);
 
     /* DDL string content */
     fftrail_data_data2buffer(&txndata->header,

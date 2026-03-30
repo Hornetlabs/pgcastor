@@ -23,7 +23,6 @@ extern bool xmanager_metricprogressnode_serial(xmanager_metricnode* metricnode,
 extern xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkstart);
 
 /* Assemble progress info */
-extern void* xmanager_metricmsg_assembleprogress(xmanager_metric*     xmetric,
-                                                 xmanager_metricnode* pxmetricnode);
+extern void* xmanager_metricmsg_assembleprogress(xmanager_metric* xmetric, xmanager_metricnode* pxmetricnode);
 
 #endif

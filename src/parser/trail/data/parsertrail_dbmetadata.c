@@ -51,14 +51,12 @@ static bool parsertrail_dbmetadata2hash(parsertrail* parsertrail, ff_dbmetadata*
             hash_create("decodehdatabase", 256, &hctl, HASH_ELEM | HASH_BLOBS);
     }
 
-    dbentry = hash_search(
-        parsertrail->transcache->sysdicts->by_database, &ffdbmd->oid, HASH_ENTER, &found);
+    dbentry = hash_search(parsertrail->transcache->sysdicts->by_database, &ffdbmd->oid, HASH_ENTER, &found);
     if (false == found)
     {
         /* Add */
         dbentry->oid = ffdbmd->oid;
-        dbentry->database =
-            (pg_sysdict_Form_pg_database)rmalloc1(sizeof(pg_parser_sysdict_pgdatabase));
+        dbentry->database = (pg_sysdict_Form_pg_database)rmalloc1(sizeof(pg_parser_sysdict_pgdatabase));
         if (NULL == dbentry->database)
         {
             elog(RLOG_WARNING, "out of memory");
@@ -84,8 +82,7 @@ static bool parsertrail_dbmetadata2hash(parsertrail* parsertrail, ff_dbmetadata*
     }
 
     rmemcpy1(dbname.data, 0, ffdbmd->dbname, strlen(ffdbmd->dbname));
-    dbnameentry = hash_search(
-        parsertrail->transcache->sysdicts->by_datname2oid, dbname.data, HASH_ENTER, &found);
+    dbnameentry = hash_search(parsertrail->transcache->sysdicts->by_datname2oid, dbname.data, HASH_ENTER, &found);
     if (false == found)
     {
         /* Add */

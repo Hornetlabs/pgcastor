@@ -48,6 +48,7 @@
 #include "stmts/txnstmt_onlinerefresh.h"
 #include "works/parserwork/wal/onlinerefresh.h"
 #include "strategy/filter_dataset.h"
+
 /*
  * Transactions are caches that are being processed.
  * Processing cache is set as a hash table for fast lookup
@@ -395,8 +396,7 @@ bool transcache_refreshlsn(void* in_ctx, txn* txn)
     txn->redo.wal.lsn = ctx->base.redolsn;
     if (NULL != ctx->callback.setmetricsynclsn)
     {
-        ctx->callback.setmetricsynclsn(
-            ctx->privdata, ctx->base.redolsn, ctx->base.restartlsn, ctx->base.confirmedlsn);
+        ctx->callback.setmetricsynclsn(ctx->privdata, ctx->base.redolsn, ctx->base.restartlsn, ctx->base.confirmedlsn);
     }
 
     return true;
@@ -796,8 +796,7 @@ void transcache_free(transcache* transcache)
     /* Release chkpt */
     if (NULL != transcache->chkpts)
     {
-        for (chkptnode = transcache->chkpts->head; NULL != chkptnode;
-             chkptnode = transcache->chkpts->head)
+        for (chkptnode = transcache->chkpts->head; NULL != chkptnode; chkptnode = transcache->chkpts->head)
         {
             transcache->chkpts->head = chkptnode->next;
             rfree(chkptnode);

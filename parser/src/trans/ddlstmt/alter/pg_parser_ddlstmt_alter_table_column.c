@@ -14,10 +14,9 @@
 #define DDL_ALTER_COLUMN_TYPE_CREATE_TEMP_TABLE (uint8_t)0x01
 #define DDL_ALTER_COLUMN_TYPE_UPDATE_TABLE      (uint8_t)0x02
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_type(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno);
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_type(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                           pg_parser_ddlstate*           ddlstate,
+                                                                           int32_t* pg_parser_errno);
 
 static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_add_default(
     pg_parser_translog_systb2ddl* pg_parser_ddl,
@@ -29,11 +28,10 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_drop_defau
     pg_parser_ddlstate*           ddlstate,
     int32_t*                      pg_parser_errno);
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_drop_column(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_drop_column(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                                  pg_parser_translog_systb2dll_record* current_record,
+                                                                  pg_parser_ddlstate*                  ddlstate,
+                                                                  int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt*             result = NULL;
     pg_parser_translog_ddlstmt_altercolumn* dropcol = NULL;
@@ -41,16 +39,13 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_drop_column(
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(current_record);
     PG_PARSER_UNUSED(pg_parser_errno);
-    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                         "DEBUG, DDL PARSER: capture alter table drop column end \n");
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture alter table drop column end \n");
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_00;
         return NULL;
     }
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&dropcol, sizeof(pg_parser_translog_ddlstmt_altercolumn)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&dropcol, sizeof(pg_parser_translog_ddlstmt_altercolumn)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_01;
         return NULL;
@@ -64,8 +59,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_drop_column(
         return NULL;
     }
 
-    dropcol->m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-        "attname", ddlstate->m_att->m_old_values, ddlstate->m_att->m_valueCnt, dropcol->m_colname);
+    dropcol->m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname",
+                                                            ddlstate->m_att->m_old_values,
+                                                            ddlstate->m_att->m_valueCnt,
+                                                            dropcol->m_colname);
 
     result->m_base.m_ddltype = PG_PARSER_DDLTYPE_ALTER;
     result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_ALTER_TABLE_DROP_COLUMN;
@@ -76,29 +73,24 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_drop_column(
     return result;
 }
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_rename_column(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_rename_column(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                                    pg_parser_translog_systb2dll_record* current_record,
+                                                                    pg_parser_ddlstate*                  ddlstate,
+                                                                    int32_t* pg_parser_errno)
 {
     pg_parser_translog_ddlstmt*             result = NULL;
     pg_parser_translog_ddlstmt_altercolumn* renamecol = NULL;
-    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                         "DEBUG, DDL PARSER: capture alter table rename column end \n");
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: capture alter table rename column end \n");
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(current_record);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_02;
         return NULL;
     }
-    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT,
-                               (void**)&renamecol,
-                               sizeof(pg_parser_translog_ddlstmt_altercolumn)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&renamecol, sizeof(pg_parser_translog_ddlstmt_altercolumn)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_03;
         return NULL;
@@ -142,8 +134,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_notnull(
     PG_PARSER_UNUSED(current_record);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_04;
         return NULL;
@@ -177,11 +168,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_notnull(
     return result;
 }
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_null(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_null(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                                  pg_parser_translog_systb2dll_record* current_record,
+                                                                  pg_parser_ddlstate*                  ddlstate,
+                                                                  int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt*             result = NULL;
     pg_parser_translog_ddlstmt_altercolumn* colnull = NULL;
@@ -191,14 +181,12 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_null(
     PG_PARSER_UNUSED(current_record);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_06;
         return NULL;
     }
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&colnull, sizeof(pg_parser_translog_ddlstmt_altercolumn)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&colnull, sizeof(pg_parser_translog_ddlstmt_altercolumn)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_07;
         return NULL;
@@ -210,8 +198,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_null(
         pg_parser_ddl_init_ddlstate(ddlstate);
         return NULL;
     }
-    colnull->m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-        "attname", ddlstate->m_att->m_old_values, ddlstate->m_att->m_valueCnt, colnull->m_colname);
+    colnull->m_colname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("attname",
+                                                            ddlstate->m_att->m_old_values,
+                                                            ddlstate->m_att->m_valueCnt,
+                                                            colnull->m_colname);
 
     colnull->m_notnull = false;
     result->m_base.m_ddltype = PG_PARSER_DDLTYPE_ALTER;
@@ -241,9 +231,8 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_add_default(
                                        pg_parser_ddl->m_dbtype,
                                        pg_parser_ddl->m_dbversion))
         {
-            pg_parser_log_errlog(
-                pg_parser_ddl->m_debugLevel,
-                "DEBUG, DDL PARSER: alter table alter column add default, get attribute \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                 "DEBUG, DDL PARSER: alter table alter column add default, get attribute \n");
             ddlstate->m_att = current_record->m_record;
         }
     }
@@ -254,8 +243,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_add_default(
                                        pg_parser_ddl->m_dbtype,
                                        pg_parser_ddl->m_dbversion))
         {
-            result = pg_parser_ddl_assemble_alter_table_add_default(
-                pg_parser_ddl, ddlstate, pg_parser_errno);
+            result = pg_parser_ddl_assemble_alter_table_add_default(pg_parser_ddl, ddlstate, pg_parser_errno);
         }
     }
     return result;
@@ -279,9 +267,8 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_drop_default(
                                        pg_parser_ddl->m_dbtype,
                                        pg_parser_ddl->m_dbversion))
         {
-            pg_parser_log_errlog(
-                pg_parser_ddl->m_debugLevel,
-                "DEBUG, DDL PARSER: alter table alter column drop default, get attribute \n");
+            pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
+                                 "DEBUG, DDL PARSER: alter table alter column drop default, get attribute \n");
             ddlstate->m_att = current_record->m_record;
         }
     }
@@ -292,8 +279,7 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_drop_default(
                                        pg_parser_ddl->m_dbtype,
                                        pg_parser_ddl->m_dbversion))
         {
-            result = pg_parser_ddl_assemble_alter_table_drop_default(
-                pg_parser_ddl, ddlstate, pg_parser_errno);
+            result = pg_parser_ddl_assemble_alter_table_drop_default(pg_parser_ddl, ddlstate, pg_parser_errno);
         }
     }
     return result;
@@ -326,11 +312,10 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_alter_type(
                                                            current_record->m_record->m_new_values,
                                                            current_record->m_record->m_valueCnt,
                                                            temp_kind);
-            temp_relname =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("relname",
-                                                   current_record->m_record->m_new_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_relname);
+            temp_relname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("relname",
+                                                              current_record->m_record->m_new_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_relname);
             if ('r' == temp_kind[0] && (!strncmp(temp_relname, PG_SYSDICT_PG_TEMPTABLE_NAME, 7)))
             {
                 pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
@@ -354,19 +339,17 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_alter_type(
                                                            current_record->m_record->m_new_values,
                                                            current_record->m_record->m_valueCnt,
                                                            temp_kind);
-            temp_relname =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("relname",
-                                                   current_record->m_record->m_new_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_relname);
+            temp_relname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("relname",
+                                                              current_record->m_record->m_new_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_relname);
             if ('r' == temp_kind[0] && (strncmp(temp_relname, PG_SYSDICT_PG_TEMPTABLE_NAME, 7)))
             {
-                bool change_relfilenode =
-                    pg_parser_ddl_checkChangeColumn("relfilenode",
-                                                    current_record->m_record->m_new_values,
-                                                    current_record->m_record->m_old_values,
-                                                    current_record->m_record->m_valueCnt,
-                                                    pg_parser_errno);
+                bool change_relfilenode = pg_parser_ddl_checkChangeColumn("relfilenode",
+                                                                          current_record->m_record->m_new_values,
+                                                                          current_record->m_record->m_old_values,
+                                                                          current_record->m_record->m_valueCnt,
+                                                                          pg_parser_errno);
                 if (change_relfilenode)
                 {
                     pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
@@ -395,20 +378,19 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_alter_type(
                                                            current_record->m_record->m_old_values,
                                                            current_record->m_record->m_valueCnt,
                                                            temp_kind);
-            temp_relname =
-                PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("relname",
-                                                   current_record->m_record->m_old_values,
-                                                   current_record->m_record->m_valueCnt,
-                                                   temp_relname);
+            temp_relname = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("relname",
+                                                              current_record->m_record->m_old_values,
+                                                              current_record->m_record->m_valueCnt,
+                                                              temp_relname);
             if ('r' == temp_kind[0] && (!strncmp(temp_relname, PG_SYSDICT_PG_TEMPTABLE_NAME, 7)))
             {
-                result = pg_parser_ddl_assemble_alter_table_type(
-                    pg_parser_ddl, ddlstate, pg_parser_errno);
+                result = pg_parser_ddl_assemble_alter_table_type(pg_parser_ddl, ddlstate, pg_parser_errno);
             }
         }
     }
     return result;
 }
+
 pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_alter_type_short(
     pg_parser_translog_systb2ddl*        pg_parser_ddl,
     pg_parser_translog_systb2dll_record* current_record,
@@ -423,10 +405,9 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_alter_table_column_alter_type_short(
     return result;
 }
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_type(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno)
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_type(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                           pg_parser_ddlstate*           ddlstate,
+                                                                           int32_t* pg_parser_errno)
 {
     pg_parser_translog_ddlstmt*             result = NULL;
     pg_parser_translog_ddlstmt_altercolumn* alter_column = NULL;
@@ -437,8 +418,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_type(
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_08;
         return NULL;
@@ -465,13 +445,17 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_type(
                                                   ddlstate->m_att->m_valueCnt,
                                                   alter_column->m_colname);
     alter_column->m_relid = strtoul(temp_str, NULL, 10);
-    temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-        "atttypid", ddlstate->m_att->m_new_values, ddlstate->m_att->m_valueCnt, temp_str);
+    temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypid",
+                                                  ddlstate->m_att->m_new_values,
+                                                  ddlstate->m_att->m_valueCnt,
+                                                  temp_str);
     alter_column->m_type_new = strtoul(temp_str, NULL, 10);
     temp_str = NULL;
     typid = alter_column->m_type_new;
-    temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-        "atttypmod", ddlstate->m_att->m_new_values, ddlstate->m_att->m_valueCnt, temp_str);
+    temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atttypmod",
+                                                  ddlstate->m_att->m_new_values,
+                                                  ddlstate->m_att->m_valueCnt,
+                                                  temp_str);
     typmod = atoi(temp_str);
     if (0 <= typmod)
     {
@@ -483,8 +467,8 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_type(
             alter_column->m_precision = -1;
             alter_column->m_scale = -1;
         }
-        else if (PG_SYSDICT_TIMEOID == typid || PG_SYSDICT_TIMETZOID == typid ||
-                 PG_SYSDICT_TIMESTAMPOID == typid || PG_SYSDICT_TIMESTAMPTZOID == typid)
+        else if (PG_SYSDICT_TIMEOID == typid || PG_SYSDICT_TIMETZOID == typid || PG_SYSDICT_TIMESTAMPOID == typid ||
+                 PG_SYSDICT_TIMESTAMPTZOID == typid)
         {
             alter_column->m_length = -1;
             alter_column->m_precision = typmod;
@@ -522,8 +506,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_type(
     result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_ALTER_COLUMN_TYPE;
     result->m_ddlstmt = (void*)alter_column;
     result->m_next = NULL;
-    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                         "DEBUG, DDL PARSER: alter table alter column type end \n");
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: alter table alter column type end \n");
     pg_parser_ddl_init_ddlstate(ddlstate);
     return result;
 }
@@ -541,14 +524,12 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_add_defaul
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_0A;
         return NULL;
     }
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&coldefault, sizeof(pg_parser_translog_ddlstmt_default)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&coldefault, sizeof(pg_parser_translog_ddlstmt_default)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_0B;
         return NULL;
@@ -564,10 +545,14 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_add_defaul
                                                                ddlstate->m_att->m_new_values,
                                                                ddlstate->m_att->m_valueCnt,
                                                                coldefault->m_colname);
-    Node = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-        "adbin", ddlstate->m_att_def->m_new_values, ddlstate->m_att_def->m_valueCnt, Node);
-    temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME(
-        "atthasmissing", ddlstate->m_att->m_new_values, ddlstate->m_att->m_valueCnt, temp_str);
+    Node = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("adbin",
+                                              ddlstate->m_att_def->m_new_values,
+                                              ddlstate->m_att_def->m_valueCnt,
+                                              Node);
+    temp_str = PG_PARSER_DDL_GETCOLUMNVALUEBYNAME("atthasmissing",
+                                                  ddlstate->m_att->m_new_values,
+                                                  ddlstate->m_att->m_valueCnt,
+                                                  temp_str);
     if (temp_str[0] == 't')
     {
         coldefault->m_att_default = true;
@@ -582,8 +567,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_add_defaul
     result->m_base.m_ddlinfo = PG_PARSER_DDLINFO_ALTER_COLUMN_DEFAULT;
     result->m_ddlstmt = (void*)coldefault;
     result->m_next = NULL;
-    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel,
-                         "DEBUG, DDL PARSER: alter table alter column add default end \n");
+    pg_parser_log_errlog(pg_parser_ddl->m_debugLevel, "DEBUG, DDL PARSER: alter table alter column add default end \n");
     pg_parser_ddl_init_ddlstate(ddlstate);
     return result;
 }
@@ -599,14 +583,12 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_alter_table_drop_defau
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_0C;
         return NULL;
     }
-    if (!pg_parser_mcxt_malloc(
-            DDL_ALTERTABLE_MCXT, (void**)&coldefault, sizeof(pg_parser_translog_ddlstmt_default)))
+    if (!pg_parser_mcxt_malloc(DDL_ALTERTABLE_MCXT, (void**)&coldefault, sizeof(pg_parser_translog_ddlstmt_default)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_0D;
         return NULL;

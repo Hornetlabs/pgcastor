@@ -26,10 +26,10 @@
  * namelen 4 + parsetimestamp
  * namelen 4 + parsetimestamp
  */
-#define REFRESH_METRICCAPTURE_KEY_LEN                                                              \
-    (4 + 4 + strlen("redolsn") + 4 + strlen("restartlsn") + 4 + strlen("confirmlsn") + 4 +         \
-     strlen("loadlsn") + 4 + strlen("parselsn") + 4 + strlen("flushlsn") + 4 + strlen("trailno") + \
-     4 + strlen("trailstart") + 4 + strlen("parsetimestamp") + 4 + strlen("parsetimestamp"))
+#define REFRESH_METRICCAPTURE_KEY_LEN                                                                              \
+    (4 + 4 + strlen("redolsn") + 4 + strlen("restartlsn") + 4 + strlen("confirmlsn") + 4 + strlen("loadlsn") + 4 + \
+     strlen("parselsn") + 4 + strlen("flushlsn") + 4 + strlen("trailno") + 4 + strlen("trailstart") + 4 +          \
+     strlen("parsetimestamp") + 4 + strlen("parsetimestamp"))
 
 /* Initialize node */
 xmanager_metricnode* xmanager_metriccapturenode_init(void)
@@ -56,10 +56,7 @@ void xmanager_metriccapturenode_destroy(xmanager_metricnode* metricnode)
 }
 
 /* Serialize capture node */
-bool xmanager_metriccapturenode_serial(xmanager_metricnode* metricnode,
-                                       uint8**              blk,
-                                       int*                 blksize,
-                                       int*                 blkstart)
+bool xmanager_metriccapturenode_serial(xmanager_metricnode* metricnode, uint8** blk, int* blksize, int* blkstart)
 {
     bool                        bnew = false;
     int                         len = 0;
@@ -339,8 +336,7 @@ void* xmanager_metricmsg_assemblecapture(xmanager_metricnode* pxmetricnode)
     }
     else
     {
-        elog(RLOG_WARNING,
-             "xmanager metric assemble info capture msg data, invalid metricnode stat");
+        elog(RLOG_WARNING, "xmanager metric assemble info capture msg data, invalid metricnode stat");
         return NULL;
     }
 

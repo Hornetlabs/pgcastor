@@ -53,9 +53,6 @@ bool databaserecv_getconfigurefde(PGconn* conn, bool* fde);
 bool databaserecv_timelinehistory(PGconn* conn, TimeLineID tli, char** pfilename, char** pcontent);
 
 /* Execute start replication */
-bool databaserecv_startreplication(PGconn*    conn,
-                                   TimeLineID tli,
-                                   XLogRecPtr startpos,
-                                   char*      slotname);
+bool databaserecv_startreplication(PGconn* conn, TimeLineID tli, XLogRecPtr startpos, char* slotname);
 
 #endif

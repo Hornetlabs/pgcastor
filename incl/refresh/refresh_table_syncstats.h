@@ -55,12 +55,9 @@ void refresh_table_syncstat_oid_set(Oid oid, refresh_table_syncstat* syncstat);
 
 void refreshtablesyncstat_cnt_set(int cnt, refresh_table_syncstat* syncstat);
 
-bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats,
-                                     void*                    queue,
-                                     char*                    refreshdir);
+bool refresh_table_syncstat_genqueue(refresh_table_syncstats* tablesyncstats, void* queue, char* refreshdir);
 
-bool refresh_table_syncstat_cleardirbyall(refresh_table_syncstats* tablesyncstats,
-                                          char*                    refreshdir);
+bool refresh_table_syncstat_cleardirbyall(refresh_table_syncstats* tablesyncstats, char* refreshdir);
 
 void refresh_table_syncstat_free(refresh_table_syncstat* tablesyncstat);
 
@@ -70,11 +67,9 @@ bool refresh_table_syncstats_lock(refresh_table_syncstats* tablesyncstats);
 
 bool refresh_table_syncstats_unlock(refresh_table_syncstats* tablesyncstats);
 
-void refresh_table_syncstats_tablesyncing_set(refresh_tables*          refreshtables,
-                                              refresh_table_syncstats* tablesyncstats);
+void refresh_table_syncstats_tablesyncing_set(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats);
 
-void refresh_table_syncstats_tablesyncall_set(refresh_tables*          refreshtables,
-                                              refresh_table_syncstats* tablesyncstats);
+void refresh_table_syncstats_tablesyncall_set(refresh_tables* refreshtables, refresh_table_syncstats* tablesyncstats);
 
 /* according totablesyncinggenerate tablesyncall*/
 void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* tablesyncstats);
@@ -89,11 +84,9 @@ bool refresh_table_check_in_syncing(refresh_table_syncstats* tablesyncstats,
                                     refresh_table_sharding*  table_shard,
                                     refresh_table_syncstat** table_stat);
 
-bool refresh_table_syncstats_compare(refresh_table_syncstats* tablesA,
-                                     refresh_table_syncstats* tablesB);
+bool refresh_table_syncstats_compare(refresh_table_syncstats* tablesA, refresh_table_syncstats* tablesB);
 
-bool refresh_table_syncstats_truncatetable_fromsyncstats(refresh_table_syncstats* tablesyncstats,
-                                                         void*                    in_conn);
+bool refresh_table_syncstats_truncatetable_fromsyncstats(refresh_table_syncstats* tablesyncstats, void* in_conn);
 
 bool refresh_table_syncstats_write(refresh_table_syncstat* stats, char* refresh_path);
 
@@ -107,7 +100,6 @@ void refresh_table_syncstats_tablesyncing_setfromfile(refresh_tables*          r
                                                       refresh_table_syncstats* tablesyncstats,
                                                       char*                    refresh_path);
 
-refresh_tables* refresh_table_syncstats_tablesyncing2tables(
-    refresh_table_syncstats* tablesyncstats);
+refresh_tables* refresh_table_syncstats_tablesyncing2tables(refresh_table_syncstats* tablesyncstats);
 
 #endif

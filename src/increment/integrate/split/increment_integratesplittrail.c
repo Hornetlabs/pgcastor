@@ -33,9 +33,7 @@ void increment_integratesplittrail_state_set(increment_integratesplittrail* spli
  *    fileid set to loadtrail->fileid, loadtrail->offset set to 0
  *    emitoffset set to emitoffset
  */
-void increment_integratesplittrail_emit_set(increment_integratesplittrail* splittrail,
-                                            uint64                         fileid,
-                                            uint64                         emitoffset)
+void increment_integratesplittrail_emit_set(increment_integratesplittrail* splittrail, uint64 fileid, uint64 emitoffset)
 {
     /* Reset filtering start point */
     splittrail->loadrecords->fileid = fileid;
@@ -43,12 +41,12 @@ void increment_integratesplittrail_emit_set(increment_integratesplittrail* split
     splittrail->emitoffset = emitoffset;
 
     /* Reset parsing and filtering start points */
-    loadtrailrecords_setloadposition(
-        splittrail->loadrecords, splittrail->loadrecords->fileid, splittrail->loadrecords->foffset);
+    loadtrailrecords_setloadposition(splittrail->loadrecords,
+                                     splittrail->loadrecords->fileid,
+                                     splittrail->loadrecords->foffset);
 }
 
-static bool increment_integratesplittrail_state_checkandset(
-    increment_integratesplittrail* splittrail)
+static bool increment_integratesplittrail_state_checkandset(increment_integratesplittrail* splittrail)
 {
     if (INTEGRATE_STATUS_SPLIT_WORKING == splittrail->state)
     {
@@ -146,8 +144,7 @@ void* increment_integratesplitrail_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "increment integrate splittrail exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "increment integrate splittrail exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -181,10 +178,8 @@ void* increment_integratesplitrail_main(void* args)
             break;
         }
 
-        splittrail->callback.setmetricloadtrailno(splittrail->privdata,
-                                                  splittrail->loadrecords->fileid);
-        splittrail->callback.setmetricloadtrailstart(splittrail->privdata,
-                                                     splittrail->loadrecords->foffset);
+        splittrail->callback.setmetricloadtrailno(splittrail->privdata, splittrail->loadrecords->fileid);
+        splittrail->callback.setmetricloadtrailstart(splittrail->privdata, splittrail->loadrecords->foffset);
 
         if (true == dlist_isnull(splittrail->loadrecords->records))
         {
@@ -215,8 +210,7 @@ void* increment_integratesplitrail_main(void* args)
             continue;
         }
 
-        if (false == loadtrailrecords_filterremainmetadata(
-                         splittrail->loadrecords, fileid, splittrail->emitoffset))
+        if (false == loadtrailrecords_filterremainmetadata(splittrail->loadrecords, fileid, splittrail->emitoffset))
         {
             splittrail->filter = false;
         }

@@ -66,8 +66,7 @@ void* refresh_sharding2file_work(void* args)
     /* check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "refresh capture job exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "refresh capture job exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;
@@ -211,13 +210,9 @@ void* refresh_sharding2file_work(void* args)
              table_shard->sharding_no);
 
         /* move to complete */
-        if (osal_durable_rename(file_path_partial->data, file_path_complete->data, RLOG_WARNING) !=
-            0)
+        if (osal_durable_rename(file_path_partial->data, file_path_complete->data, RLOG_WARNING) != 0)
         {
-            elog(RLOG_WARNING,
-                 "Error renaming file %s 2 %s",
-                 file_path_partial->data,
-                 file_path_complete->data);
+            elog(RLOG_WARNING, "Error renaming file %s 2 %s", file_path_partial->data, file_path_complete->data);
         }
 
         /* reset */

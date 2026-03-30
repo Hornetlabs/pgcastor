@@ -2,6 +2,7 @@
 #include "pg_parser_os_incl.h"
 #include "pg_parser_app_incl.h"
 #include "thirdparty/common/pg_parser_thirdparty_builtins.h"
+
 /*
  * Round to nearest integer, with halfway cases going to the nearest even.
  */

@@ -3,8 +3,8 @@
 
 typedef struct SYNCSTATE
 {
-    HTAB* hpreparedno; /* oid-based prepared statements; those in hash don't need to be re-prepared
-                          on database; cleared on disconnect */
+    HTAB*   hpreparedno; /* oid-based prepared statements; those in hash don't need to be re-prepared
+                            on database; cleared on disconnect */
     PGconn* conn;
     char*   conninfo;
     char*   name;

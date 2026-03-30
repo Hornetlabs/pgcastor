@@ -39,8 +39,7 @@ static void refresh_sharding2db_connectdb(refresh_sharding2db* sharding2db)
  * if connection is OK, rollback transaction and re-add task to queue
  * if connection error, reconnect and re-add task to queue
  */
-static void refresh_sharding2db_checkconn(refresh_sharding2db*    sharding2db,
-                                          refresh_table_sharding* table_shard)
+static void refresh_sharding2db_checkconn(refresh_sharding2db* sharding2db, refresh_table_sharding* table_shard)
 {
     if (PQstatus(sharding2db->syncstats->base.conn) != CONNECTION_OK)
     {
@@ -78,9 +77,7 @@ static bool refresh_sharding2db_updatasyncstatustbstat(refresh_sharding2db* shar
     res = PQexec(sharding2db->syncstats->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING,
-             "Failed to update status table in: %s",
-             PQerrorMessage(sharding2db->syncstats->base.conn));
+        elog(RLOG_WARNING, "Failed to update status table in: %s", PQerrorMessage(sharding2db->syncstats->base.conn));
         PQclear(res);
         return false;
     }
@@ -105,9 +102,7 @@ static bool refresh_sharding2db_delrefresh(refresh_sharding2db* sharding2db)
     res = PQexec(sharding2db->syncstats->base.conn, sql_exec);
     if (PGRES_COMMAND_OK != PQresultStatus(res))
     {
-        elog(RLOG_WARNING,
-             "Failed to update status table in: %s",
-             PQerrorMessage(sharding2db->syncstats->base.conn));
+        elog(RLOG_WARNING, "Failed to update status table in: %s", PQerrorMessage(sharding2db->syncstats->base.conn));
         PQclear(res);
         return false;
     }
@@ -136,8 +131,7 @@ void* refresh_sharding2db_work(void* args)
     /* check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "refresh integrate job exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "refresh integrate job exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
         return NULL;
@@ -269,8 +263,9 @@ void* refresh_sharding2db_work(void* args)
             continue;
         }
 
-        refreshtablesyncstats_markstatdone(
-            table_shard, sharding2db->syncstats->tablesyncstats, sharding2db->refresh_path);
+        refreshtablesyncstats_markstatdone(table_shard,
+                                           sharding2db->syncstats->tablesyncstats,
+                                           sharding2db->refresh_path);
 
         /* received end, delete file first */
         if (0 == stat(file_path_complete->data, &st))

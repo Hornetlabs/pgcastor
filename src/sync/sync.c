@@ -18,10 +18,7 @@
 #include "refresh/refresh_tables.h"
 #include "onlinerefresh/integrate/dataset/onlinerefresh_integratedataset.h"
 
-static bool syncstate_prepare(syncstate*  syncstate,
-                              const char* stmtName,
-                              const char* query,
-                              int         nParams)
+static bool syncstate_prepare(syncstate* syncstate, const char* stmtName, const char* query, int nParams)
 {
     PGresult* res = NULL;
     res = PQprepare(syncstate->conn, stmtName, query, nParams, NULL);
@@ -339,8 +336,7 @@ stmts_write_retry:
         {
             txnstmt_prepared* preparedstmt = NULL;
             preparedstmt = (txnstmt_prepared*)stmtnode->stmt;
-            prepared_entry =
-                hash_search(sync_state->hpreparedno, &preparedstmt->number, HASH_ENTER, &find);
+            prepared_entry = hash_search(sync_state->hpreparedno, &preparedstmt->number, HASH_ENTER, &find);
             if (false == find)
             {
                 if (!syncstate_prepare(sync_state,
@@ -523,8 +519,7 @@ stmts_write_retry:
         {
             txnstmt_prepared* preparedstmt = NULL;
             preparedstmt = (txnstmt_prepared*)stmtnode->stmt;
-            prepared_entry =
-                hash_search(sync_state->hpreparedno, &preparedstmt->number, HASH_ENTER, &find);
+            prepared_entry = hash_search(sync_state->hpreparedno, &preparedstmt->number, HASH_ENTER, &find);
             if (false == find)
             {
                 if (!syncstate_prepare(sync_state,

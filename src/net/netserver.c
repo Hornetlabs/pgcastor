@@ -162,8 +162,7 @@ bool netserver_create(netserver* netserver)
             domain = AF_INET;
             /* Get address corresponding to host */
             rmemset1(&addr, 0, 0, sizeof(struct sockaddr_in));
-            bret = osal_host2sockaddr(
-                &addr, nsvrhost->host, netserver->port, domain, SOCK_STREAM, IPPROTO_TCP, 1);
+            bret = osal_host2sockaddr(&addr, nsvrhost->host, netserver->port, domain, SOCK_STREAM, IPPROTO_TCP, 1);
             if (false == bret)
             {
                 elog(RLOG_WARNING, "can not get addr info, %s", strerror(errno));
@@ -325,11 +324,7 @@ bool netserver_desc(netserver* netserver)
             return netserver->callback(netserver, nsock);
         }
 
-        osal_setsockopt(nsock,
-                        SOL_SOCKET,
-                        SO_KEEPALIVE,
-                        (char*)&netserver->keepalive,
-                        sizeof(netserver->keepalive));
+        osal_setsockopt(nsock, SOL_SOCKET, SO_KEEPALIVE, (char*)&netserver->keepalive, sizeof(netserver->keepalive));
 
         osal_setsockopt(nsock,
                         IPPROTO_TCP,

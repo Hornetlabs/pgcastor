@@ -20,34 +20,30 @@
 
 typedef bool (*pg_parser_trans_transrec_rmgr_info_func_trans)(pg_parser_XLogReaderState*     state,
                                                               pg_parser_translog_tbcolbase** result,
-                                                              int32_t* pg_parser_errno);
+                                                              int32_t*                       pg_parser_errno);
 
 typedef struct PG_PARSER_TRANS_RMGR_HEAP
 {
-    pg_parser_trans_rmgr_heap_info m_infoid; /* info value */
-    pg_parser_trans_transrec_rmgr_info_func_trans
-        m_infofunc_trans; /* info-level handler for secondary parsing */
+    pg_parser_trans_rmgr_heap_info                m_infoid;         /* info value */
+    pg_parser_trans_transrec_rmgr_info_func_trans m_infofunc_trans; /* info-level handler for secondary parsing */
 } pg_parser_trans_rmgr_heap;
 
 typedef struct PG_PARSER_TRANS_RMGR_HEAP2
 {
-    pg_parser_trans_rmgr_heap2_info m_infoid; /* info value */
-    pg_parser_trans_transrec_rmgr_info_func_trans
-        m_infofunc_trans; /* info-level handler for secondary parsing */
+    pg_parser_trans_rmgr_heap2_info               m_infoid;         /* info value */
+    pg_parser_trans_transrec_rmgr_info_func_trans m_infofunc_trans; /* info-level handler for secondary parsing */
 } pg_parser_trans_rmgr_heap2;
 
 typedef struct PG_PARSER_TRANS_RMGR_HEAP_GET_TUPLE
 {
-    pg_parser_trans_rmgr_heap_info m_infoid; /* info value */
-    pg_parser_trans_transrec_rmgr_info_func_trans
-        m_infofunc_trans; /* info-level handler for secondary parsing */
+    pg_parser_trans_rmgr_heap_info                m_infoid;         /* info value */
+    pg_parser_trans_transrec_rmgr_info_func_trans m_infofunc_trans; /* info-level handler for secondary parsing */
 } pg_parser_trans_rmgr_heap_get_tuple;
 
 typedef struct PG_PARSER_TRANS_RMGR_HEAP2_GET_TUPLE
 {
-    pg_parser_trans_rmgr_heap2_info m_infoid; /* info value */
-    pg_parser_trans_transrec_rmgr_info_func_trans
-        m_infofunc_trans; /* info-level handler for secondary parsing */
+    pg_parser_trans_rmgr_heap2_info               m_infoid;         /* info value */
+    pg_parser_trans_transrec_rmgr_info_func_trans m_infofunc_trans; /* info-level handler for secondary parsing */
 } pg_parser_trans_rmgr_heap2_get_tuple;
 
 /* static statement */
@@ -57,7 +53,7 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
 
 static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState*     state,
                                                      pg_parser_translog_tbcolbase** result,
-                                                     int32_t* pg_parser_errno);
+                                                     int32_t*                       pg_parser_errno);
 
 static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*     state,
                                                    pg_parser_translog_tbcolbase** result,
@@ -69,19 +65,19 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
 
 static bool pg_parser_trans_rmgr_heap_insert_get_tuple(pg_parser_XLogReaderState*     state,
                                                        pg_parser_translog_tbcolbase** result,
-                                                       int32_t* pg_parser_errno);
+                                                       int32_t*                       pg_parser_errno);
 
 static bool pg_parser_trans_rmgr_heap_delete_get_tuple(pg_parser_XLogReaderState*     state,
                                                        pg_parser_translog_tbcolbase** result,
-                                                       int32_t* pg_parser_errno);
+                                                       int32_t*                       pg_parser_errno);
 
 static bool pg_parser_trans_rmgr_heap2_minsert_get_tuple(pg_parser_XLogReaderState*     state,
                                                          pg_parser_translog_tbcolbase** result,
-                                                         int32_t* pg_parser_errno);
+                                                         int32_t*                       pg_parser_errno);
 
 static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState*     state,
                                                        pg_parser_translog_tbcolbase** result,
-                                                       int32_t* pg_parser_errno);
+                                                       int32_t*                       pg_parser_errno);
 
 static bool reassemble_tuplenew_from_wal_data(char*                             data,
                                               size_t                            len,
@@ -102,23 +98,26 @@ static void reassemble_mutituple_from_wal_data(char*                            
                                                char*                            dbversion);
 
 static pg_parser_trans_rmgr_heap2 m_record_rmgr_heap2_info[] = {
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP2_MULTI_INSERT, pg_parser_trans_rmgr_heap2_minsert_trans}};
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP2_MULTI_INSERT, pg_parser_trans_rmgr_heap2_minsert_trans}
+};
 
 static pg_parser_trans_rmgr_heap m_record_rmgr_heap_info[] = {
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_INSERT, pg_parser_trans_rmgr_heap_insert_trans},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_DELETE, pg_parser_trans_rmgr_heap_delete_trans},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_UPDATE, pg_parser_trans_rmgr_heap_update_trans},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_HOT_UPDATE, pg_parser_trans_rmgr_heap_update_trans}};
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_INSERT,     pg_parser_trans_rmgr_heap_insert_trans},
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_DELETE,     pg_parser_trans_rmgr_heap_delete_trans},
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_UPDATE,     pg_parser_trans_rmgr_heap_update_trans},
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_HOT_UPDATE, pg_parser_trans_rmgr_heap_update_trans}
+};
 
 static pg_parser_trans_rmgr_heap2_get_tuple m_record_rmgr_heap2_get_tuple_info[] = {
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP2_MULTI_INSERT,
-     pg_parser_trans_rmgr_heap2_minsert_get_tuple}};
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP2_MULTI_INSERT, pg_parser_trans_rmgr_heap2_minsert_get_tuple}
+};
 
 static pg_parser_trans_rmgr_heap_get_tuple m_record_rmgr_heap_get_tuple_info[] = {
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_INSERT, pg_parser_trans_rmgr_heap_insert_get_tuple},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_DELETE, pg_parser_trans_rmgr_heap_delete_get_tuple},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_UPDATE, pg_parser_trans_rmgr_heap_update_get_tuple},
-    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_HOT_UPDATE, pg_parser_trans_rmgr_heap_update_get_tuple}};
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_INSERT,     pg_parser_trans_rmgr_heap_insert_get_tuple},
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_DELETE,     pg_parser_trans_rmgr_heap_delete_get_tuple},
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_UPDATE,     pg_parser_trans_rmgr_heap_update_get_tuple},
+    {PG_PARSER_TRANS_TRANSREC_RMGR_HEAP_HOT_UPDATE, pg_parser_trans_rmgr_heap_update_get_tuple}
+};
 
 static uint8_t check_table_type(uint32_t oid)
 {
@@ -200,8 +199,7 @@ bool pg_parser_trans_rmgr_heap_trans_get_tuple(pg_parser_XLogReaderState*     st
         {
             continue;
         }
-        return m_record_rmgr_heap_get_tuple_info[index].m_infofunc_trans(
-            state, result, pg_parser_errno);
+        return m_record_rmgr_heap_get_tuple_info[index].m_infofunc_trans(state, result, pg_parser_errno);
         break;
     }
     /* Return false when not found */
@@ -223,8 +221,7 @@ bool pg_parser_trans_rmgr_heap2_trans_get_tuple(pg_parser_XLogReaderState*     s
         {
             continue;
         }
-        return m_record_rmgr_heap2_get_tuple_info[index].m_infofunc_trans(
-            state, result, pg_parser_errno);
+        return m_record_rmgr_heap2_get_tuple_info[index].m_infofunc_trans(state, result, pg_parser_errno);
         break;
     }
     /* Return false when not found */
@@ -257,20 +254,16 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
     if (!state || !result || !pg_parser_errno)
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_INSERT_CHECK;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap insert], invalid param\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap insert], invalid param\n");
         return false;
     }
 
     xlrec = (pg_parser_xl_heap_insert*)pg_parser_XLogRecGetData(state);
     /* Allocate memory for return value */
-    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
-                               (void**)(&insert_record),
-                               sizeof(pg_parser_translog_tbcol_values)))
+    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)(&insert_record), sizeof(pg_parser_translog_tbcol_values)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_00;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap insert], MALLOC failed\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap insert], MALLOC failed\n");
         return false;
     }
 
@@ -304,8 +297,7 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
         /* Has full page write, extract tuple */
         if (pg_parser_XLogRecHasBlockImage(state, 0))
         {
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_01;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -316,29 +308,26 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
             if (!pg_parser_image_get_block_image(state, 0, page, state->trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_INSERT_GET_IMAGE;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap insert], make full image failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap insert], make full image failed\n");
                 return false;
             }
             /* Process full page write data for return, extract tuple from full page write */
-            insert_record->m_tuple =
-                pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
-                                                                 state->trans_data->m_dbversion,
-                                                                 state->trans_data->m_pagesize,
-                                                                 page,
-                                                                 &insert_record->m_tupleCnt,
-                                                                 state->blocks[0].blkno,
-                                                                 state->trans_data->m_debugLevel);
+            insert_record->m_tuple = pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
+                                                                                      state->trans_data->m_dbversion,
+                                                                                      state->trans_data->m_pagesize,
+                                                                                      page,
+                                                                                      &insert_record->m_tupleCnt,
+                                                                                      state->blocks[0].blkno,
+                                                                                      state->trans_data->m_debugLevel);
             pg_parser_log_errlog(state->trans_data->m_debugLevel,
                                  "DEBUG: trans record is [heap insert], get %u tuples from image\n",
                                  insert_record->m_tupleCnt);
             if (!insert_record->m_tuple)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_INSERT_GET_TUPLE;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap insert], make return tuple failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap insert], make return tuple failed\n");
                 return false;
             }
             /* Set return type */
@@ -373,9 +362,8 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
             if (!tupledata)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_INSERT_GET_TUPLE2;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap insert], get tuple from block failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap insert], get tuple from block failed\n");
                 return false;
             }
             tuplelen = datalen - pg_parser_SizeOfHeapHeader;
@@ -383,9 +371,8 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
             if (!temp_tuple)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_INSERT_GET_TEMP_TUPLE2;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap insert], make tuple from block failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap insert], make tuple from block failed\n");
                 return false;
             }
             pg_parser_reassemble_tuple_from_wal_data(tupledata,
@@ -422,8 +409,7 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
                                  insert_record->m_tuple->m_itemoffnum,
                                  insert_record->m_tuple->m_pageno,
                                  insert_record->m_tuple->m_tuplelen);
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT, (void**)&(insert_record->m_tuple->m_tupledata), tuplen))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&(insert_record->m_tuple->m_tupledata), tuplen))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_03;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -431,8 +417,7 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
                 return false;
             }
 
-            rmemcpy0(
-                insert_record->m_tuple->m_tupledata, 0, tuple->tuple.t_data, tuple->tuple.t_len);
+            rmemcpy0(insert_record->m_tuple->m_tupledata, 0, tuple->tuple.t_data, tuple->tuple.t_len);
         }
     }
     tupdesc = pg_parser_get_desc(&tbinfo);
@@ -455,8 +440,7 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
                              "MALLOC col value failed \n");
         return false;
     }
-    pg_parser_log_errlog(
-        state->trans_data->m_debugLevel, "DEBUG: tupdesc->natts:%d\n", tupdesc->natts);
+    pg_parser_log_errlog(state->trans_data->m_debugLevel, "DEBUG: tupdesc->natts:%d\n", tupdesc->natts);
     zicinfo.convertinfo = state->trans_data->m_convert;
 
     /* Extract column values from tuple and convert to readable information */
@@ -479,8 +463,7 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
                              "DEBUG: column name: %s\n",
                              colvalue->m_colName ? colvalue->m_colName : "NULL");
 
-        origval = pg_parser_heap_getattr(
-            &tuple->tuple, natt + 1, tupdesc, &isnull, &ismissing, dbtype, dbversion);
+        origval = pg_parser_heap_getattr(&tuple->tuple, natt + 1, tupdesc, &isnull, &ismissing, dbtype, dbversion);
 
         colvalue->m_coltype = tupdesc->attrs[natt].atttypid;
 
@@ -509,8 +492,7 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
             colvalue->m_info = INFO_COL_MAY_NULL;
             continue;
         }
-        else if (!pg_parser_convert_attr_to_str_value(
-                     origval, state->trans_data->m_sysdicts, colvalue, &zicinfo))
+        else if (!pg_parser_convert_attr_to_str_value(origval, state->trans_data->m_sysdicts, colvalue, &zicinfo))
         {
             *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_INSERT_CONVERT_ATTR_TO_CHAR;
             pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -559,7 +541,7 @@ static bool pg_parser_trans_rmgr_heap_insert_trans(pg_parser_XLogReaderState*   
 /* insert */
 static bool pg_parser_trans_rmgr_heap_insert_get_tuple(pg_parser_XLogReaderState*     state,
                                                        pg_parser_translog_tbcolbase** result,
-                                                       int32_t* pg_parser_errno)
+                                                       int32_t*                       pg_parser_errno)
 {
     pg_parser_translog_tbcol_values* insert_record = NULL;
     pg_parser_xl_heap_insert*        xlrec = NULL;
@@ -574,13 +556,10 @@ static bool pg_parser_trans_rmgr_heap_insert_get_tuple(pg_parser_XLogReaderState
 
     xlrec = (pg_parser_xl_heap_insert*)pg_parser_XLogRecGetData(state);
     /* Allocate memory for return value */
-    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
-                               (void**)(&insert_record),
-                               sizeof(pg_parser_translog_tbcol_values)))
+    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)(&insert_record), sizeof(pg_parser_translog_tbcol_values)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_00;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap insert], MALLOC failed\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap insert], MALLOC failed\n");
         return false;
     }
 
@@ -589,15 +568,13 @@ static bool pg_parser_trans_rmgr_heap_insert_get_tuple(pg_parser_XLogReaderState
     relfilenode = state->blocks[0].rnode.relNode;
 
     /* Replica mode and system table */
-    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel ||
-        state->trans_data->m_iscatalog)
+    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel || state->trans_data->m_iscatalog)
     {
         void* temp_tuple = NULL;
         /* Has full page write, extract tuple */
         if (pg_parser_XLogRecHasBlockImage(state, 0))
         {
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_01;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -608,29 +585,26 @@ static bool pg_parser_trans_rmgr_heap_insert_get_tuple(pg_parser_XLogReaderState
             if (!pg_parser_image_get_block_image(state, 0, page, state->trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_INSERT_GET_IMAGE;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap insert], make full image failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap insert], make full image failed\n");
                 return false;
             }
             /* Process full page write data for return, extract tuple from full page write */
-            insert_record->m_tuple =
-                pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
-                                                                 state->trans_data->m_dbversion,
-                                                                 state->trans_data->m_pagesize,
-                                                                 page,
-                                                                 &insert_record->m_tupleCnt,
-                                                                 state->blocks[0].blkno,
-                                                                 state->trans_data->m_debugLevel);
+            insert_record->m_tuple = pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
+                                                                                      state->trans_data->m_dbversion,
+                                                                                      state->trans_data->m_pagesize,
+                                                                                      page,
+                                                                                      &insert_record->m_tupleCnt,
+                                                                                      state->blocks[0].blkno,
+                                                                                      state->trans_data->m_debugLevel);
             pg_parser_log_errlog(state->trans_data->m_debugLevel,
                                  "DEBUG: trans record is [heap insert], get %u tuples from image\n",
                                  insert_record->m_tupleCnt);
             if (!insert_record->m_tuple)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_INSERT_GET_TUPLE;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap insert], make return tuple failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap insert], make return tuple failed\n");
                 return false;
             }
             /* Set return type */
@@ -667,9 +641,8 @@ static bool pg_parser_trans_rmgr_heap_insert_get_tuple(pg_parser_XLogReaderState
             if (!tupledata)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_INSERT_GET_TUPLE2;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap insert], get tuple from block failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap insert], get tuple from block failed\n");
                 return false;
             }
 
@@ -679,9 +652,8 @@ static bool pg_parser_trans_rmgr_heap_insert_get_tuple(pg_parser_XLogReaderState
             if (!temp_tuple)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_INSERT_GET_TEMP_TUPLE2;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap insert], make tuple from block failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap insert], make tuple from block failed\n");
                 return false;
             }
             pg_parser_reassemble_tuple_from_wal_data(tupledata,
@@ -718,8 +690,7 @@ static bool pg_parser_trans_rmgr_heap_insert_get_tuple(pg_parser_XLogReaderState
                                  insert_record->m_tuple->m_itemoffnum,
                                  insert_record->m_tuple->m_pageno,
                                  insert_record->m_tuple->m_tuplelen);
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT, (void**)&(insert_record->m_tuple->m_tupledata), tuplen))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&(insert_record->m_tuple->m_tupledata), tuplen))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_03;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -727,8 +698,7 @@ static bool pg_parser_trans_rmgr_heap_insert_get_tuple(pg_parser_XLogReaderState
                 return false;
             }
 
-            rmemcpy0(
-                insert_record->m_tuple->m_tupledata, 0, tuple->tuple.t_data, tuple->tuple.t_len);
+            rmemcpy0(insert_record->m_tuple->m_tupledata, 0, tuple->tuple.t_data, tuple->tuple.t_len);
         }
     }
 
@@ -791,9 +761,8 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
     if (!pg_parser_sysdict_getTableInfo(relfilenode, state->trans_data->m_sysdicts, &tbinfo))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_TBINFO;
-        pg_parser_log_errlog(
-            state->trans_data->m_debugLevel,
-            "ERROR: trans record is [heap2 multi_insert], get table info failed\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                             "ERROR: trans record is [heap2 multi_insert], get table info failed\n");
         return false;
     }
     minsert_record->m_base.m_tbname = rstrdup(tbinfo.tbname);
@@ -827,39 +796,34 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
         minsert_record->m_base.m_tabletype = PG_PARSER_TRANSLOG_TABLETYPE_NORMAL;
     }
     /* Replica mode and system table */
-    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel ||
-        state->trans_data->m_iscatalog)
+    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel || state->trans_data->m_iscatalog)
     {
         /* Has full page write, extract tuple */
         if (pg_parser_XLogRecHasBlockImage(state, 0))
         {
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_08;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
                 return false;
             }
             /* Assemble complete page */
             if (!pg_parser_image_get_block_image(state, 0, page, state->trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_IMAGE;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap2 multi_insert], get image failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap2 multi_insert], get image failed\n");
                 return false;
             }
             /* Process full page write data for return, extract tuple from full page write */
-            minsert_record->m_tuple =
-                pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
-                                                                 state->trans_data->m_dbversion,
-                                                                 state->trans_data->m_pagesize,
-                                                                 page,
-                                                                 &minsert_record->m_tupleCnt,
-                                                                 state->blocks[0].blkno,
-                                                                 state->trans_data->m_debugLevel);
+            minsert_record->m_tuple = pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
+                                                                                       state->trans_data->m_dbversion,
+                                                                                       state->trans_data->m_pagesize,
+                                                                                       page,
+                                                                                       &minsert_record->m_tupleCnt,
+                                                                                       state->blocks[0].blkno,
+                                                                                       state->trans_data->m_debugLevel);
             if (!minsert_record->m_tuple)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_TUPLE;
@@ -868,10 +832,9 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
                                      "get tuple from image failed\n");
                 return false;
             }
-            pg_parser_log_errlog(
-                state->trans_data->m_debugLevel,
-                "DEBUG: trans record is [heap nulti insert], get %u tuples from image\n",
-                minsert_record->m_tupleCnt);
+            pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                 "DEBUG: trans record is [heap nulti insert], get %u tuples from image\n",
+                                 minsert_record->m_tupleCnt);
             /* Set return type */
             minsert_record->m_base.m_type |= PG_PARSER_TRANSLOG_RETURN_WITH_TUPLE;
 
@@ -894,8 +857,7 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
                                                     off_num);
                 if (!tuple[i])
                 {
-                    *pg_parser_errno =
-                        ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_TEMP_TUPLE;
+                    *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_TEMP_TUPLE;
                     pg_parser_log_errlog(state->trans_data->m_debugLevel,
                                          "ERROR: trans record is [heap2 multi_insert],"
                                          "get tuple failed\n");
@@ -923,27 +885,23 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
                 tuple[i] = pg_parser_heaptuple_get_tuple_space(datalen, dbtype, dbversion);
                 if (!tuple[i])
                 {
-                    *pg_parser_errno =
-                        ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_TEMP_TUPLE;
+                    *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_TEMP_TUPLE;
                     pg_parser_log_errlog(state->trans_data->m_debugLevel,
                                          "ERROR: trans record is [heap2 multi_insert],"
                                          "get tuple failed\n");
                     return false;
                 }
-                reassemble_mutituple_from_wal_data(
-                    data, datalen, tuple[i], xlhdr, dbtype, dbversion);
+                reassemble_mutituple_from_wal_data(data, datalen, tuple[i], xlhdr, dbtype, dbversion);
                 data += datalen;
             }
 
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT,
-                    (void**)&(minsert_record->m_tuple),
-                    sizeof(pg_parser_translog_tuplecache) * minsert_record->m_rowCnt))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
+                                       (void**)&(minsert_record->m_tuple),
+                                       sizeof(pg_parser_translog_tuplecache) * minsert_record->m_rowCnt))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_09;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
                 return false;
             }
             minsert_record->m_base.m_type |= PG_PARSER_TRANSLOG_RETURN_WITH_TUPLE;
@@ -974,15 +932,11 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
                                            tuple[i]->tuple.t_len))
                 {
                     *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_0B;
-                    pg_parser_log_errlog(
-                        state->trans_data->m_debugLevel,
-                        "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
+                    pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                         "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
                     return false;
                 }
-                rmemcpy0(minsert_record->m_tuple[i].m_tupledata,
-                         0,
-                         tuple[i]->tuple.t_data,
-                         tuple[i]->tuple.t_len);
+                rmemcpy0(minsert_record->m_tuple[i].m_tupledata, 0, tuple[i]->tuple.t_data, tuple[i]->tuple.t_len);
             }
             if (PG_PARSER_DEBUG_SILENCE < state->trans_data->m_debugLevel)
             {
@@ -1063,10 +1017,9 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
 
     for (i = 0; i < minsert_record->m_rowCnt; i++)
     {
-        if (!pg_parser_mcxt_malloc(
-                TRANS_RMGR_HEAP_MCXT,
-                (void**)&minsert_record->m_rows[i].m_new_values,
-                minsert_record->m_valueCnt * sizeof(pg_parser_translog_tbcol_value)))
+        if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
+                                   (void**)&minsert_record->m_rows[i].m_new_values,
+                                   minsert_record->m_valueCnt * sizeof(pg_parser_translog_tbcol_value)))
         {
             *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_0D;
             pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -1078,10 +1031,9 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
         for (natt = 0; natt < tupdesc->natts; natt++)
         {
             pg_parser_Datum                 origval = (pg_parser_Datum)0;
-            pg_parser_translog_tbcol_value* colvalue =
-                &minsert_record->m_rows[i].m_new_values[natt];
-            bool isnull = true;
-            bool ismissing = false;
+            pg_parser_translog_tbcol_value* colvalue = &minsert_record->m_rows[i].m_new_values[natt];
+            bool                            isnull = true;
+            bool                            ismissing = false;
             colvalue->m_info = INFO_NOTHING;
             if (tupdesc->attrs[natt].attisdropped)
             {
@@ -1095,8 +1047,8 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
                                  "DEBUG: column name: %s\n",
                                  colvalue->m_colName ? colvalue->m_colName : "NULL");
 
-            origval = pg_parser_heap_getattr(
-                &tuple[i]->tuple, natt + 1, tupdesc, &isnull, &ismissing, dbtype, dbversion);
+            origval =
+                pg_parser_heap_getattr(&tuple[i]->tuple, natt + 1, tupdesc, &isnull, &ismissing, dbtype, dbversion);
 
             colvalue->m_coltype = tupdesc->attrs[natt].atttypid;
 
@@ -1114,11 +1066,9 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
                 colvalue->m_info = INFO_COL_MAY_NULL;
                 continue;
             }
-            else if (!pg_parser_convert_attr_to_str_value(
-                         origval, state->trans_data->m_sysdicts, colvalue, &zicinfo))
+            else if (!pg_parser_convert_attr_to_str_value(origval, state->trans_data->m_sysdicts, colvalue, &zicinfo))
             {
-                *pg_parser_errno =
-                    ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_CONVERT_ATTR_TO_CHAR;
+                *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_CONVERT_ATTR_TO_CHAR;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
                                      "ERROR: trans record is [heap2 multi_insert],"
                                      "convert attr to str failed\n");
@@ -1157,7 +1107,7 @@ static bool pg_parser_trans_rmgr_heap2_minsert_trans(pg_parser_XLogReaderState* 
 /* multi insert */
 static bool pg_parser_trans_rmgr_heap2_minsert_get_tuple(pg_parser_XLogReaderState*     state,
                                                          pg_parser_translog_tbcolbase** result,
-                                                         int32_t* pg_parser_errno)
+                                                         int32_t*                       pg_parser_errno)
 {
     pg_parser_translog_tbcol_nvalues* minsert_record = NULL;
     pg_parser_xl_heap_multi_insert*   xlrec = NULL;
@@ -1206,39 +1156,34 @@ static bool pg_parser_trans_rmgr_heap2_minsert_get_tuple(pg_parser_XLogReaderSta
     }
 
     /* Replica mode and system table */
-    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel ||
-        state->trans_data->m_iscatalog)
+    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel || state->trans_data->m_iscatalog)
     {
         /* Has full page write, extract tuple */
         if (pg_parser_XLogRecHasBlockImage(state, 0))
         {
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_08;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
                 return false;
             }
             /* Assemble complete page */
             if (!pg_parser_image_get_block_image(state, 0, page, state->trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_IMAGE;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap2 multi_insert], get image failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap2 multi_insert], get image failed\n");
                 return false;
             }
             /* Process full page write data for return, extract tuple from full page write */
-            minsert_record->m_tuple =
-                pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
-                                                                 state->trans_data->m_dbversion,
-                                                                 state->trans_data->m_pagesize,
-                                                                 page,
-                                                                 &minsert_record->m_tupleCnt,
-                                                                 state->blocks[0].blkno,
-                                                                 state->trans_data->m_debugLevel);
+            minsert_record->m_tuple = pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
+                                                                                       state->trans_data->m_dbversion,
+                                                                                       state->trans_data->m_pagesize,
+                                                                                       page,
+                                                                                       &minsert_record->m_tupleCnt,
+                                                                                       state->blocks[0].blkno,
+                                                                                       state->trans_data->m_debugLevel);
             if (!minsert_record->m_tuple)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_TUPLE;
@@ -1247,10 +1192,9 @@ static bool pg_parser_trans_rmgr_heap2_minsert_get_tuple(pg_parser_XLogReaderSta
                                      "get tuple from image failed\n");
                 return false;
             }
-            pg_parser_log_errlog(
-                state->trans_data->m_debugLevel,
-                "DEBUG: trans record is [heap nulti insert], get %u tuples from image\n",
-                minsert_record->m_tupleCnt);
+            pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                 "DEBUG: trans record is [heap nulti insert], get %u tuples from image\n",
+                                 minsert_record->m_tupleCnt);
             /* Set return type */
             minsert_record->m_base.m_type |= PG_PARSER_TRANSLOG_RETURN_WITH_TUPLE;
 
@@ -1273,8 +1217,7 @@ static bool pg_parser_trans_rmgr_heap2_minsert_get_tuple(pg_parser_XLogReaderSta
                                                     off_num);
                 if (!tuple[i])
                 {
-                    *pg_parser_errno =
-                        ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_TEMP_TUPLE;
+                    *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_TEMP_TUPLE;
                     pg_parser_log_errlog(state->trans_data->m_debugLevel,
                                          "ERROR: trans record is [heap2 multi_insert],"
                                          "get tuple failed\n");
@@ -1302,27 +1245,23 @@ static bool pg_parser_trans_rmgr_heap2_minsert_get_tuple(pg_parser_XLogReaderSta
                 tuple[i] = pg_parser_heaptuple_get_tuple_space(datalen, dbtype, dbversion);
                 if (!tuple[i])
                 {
-                    *pg_parser_errno =
-                        ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_TEMP_TUPLE;
+                    *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP2_MULTI_INSERT_GET_TEMP_TUPLE;
                     pg_parser_log_errlog(state->trans_data->m_debugLevel,
                                          "ERROR: trans record is [heap2 multi_insert],"
                                          "get tuple failed\n");
                     return false;
                 }
-                reassemble_mutituple_from_wal_data(
-                    data, datalen, tuple[i], xlhdr, dbtype, dbversion);
+                reassemble_mutituple_from_wal_data(data, datalen, tuple[i], xlhdr, dbtype, dbversion);
                 data += datalen;
             }
 
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT,
-                    (void**)&(minsert_record->m_tuple),
-                    sizeof(pg_parser_translog_tuplecache) * minsert_record->m_rowCnt))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
+                                       (void**)&(minsert_record->m_tuple),
+                                       sizeof(pg_parser_translog_tuplecache) * minsert_record->m_rowCnt))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_09;
-                pg_parser_log_errlog(
-                    state->trans_data->m_debugLevel,
-                    "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
+                pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                     "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
                 return false;
             }
             minsert_record->m_base.m_type |= PG_PARSER_TRANSLOG_RETURN_WITH_TUPLE;
@@ -1353,15 +1292,11 @@ static bool pg_parser_trans_rmgr_heap2_minsert_get_tuple(pg_parser_XLogReaderSta
                                            tuple[i]->tuple.t_len))
                 {
                     *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_0B;
-                    pg_parser_log_errlog(
-                        state->trans_data->m_debugLevel,
-                        "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
+                    pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                         "ERROR: trans record is [heap2 multi_insert], MALLOC failed\n");
                     return false;
                 }
-                rmemcpy0(minsert_record->m_tuple[i].m_tupledata,
-                         0,
-                         tuple[i]->tuple.t_data,
-                         tuple[i]->tuple.t_len);
+                rmemcpy0(minsert_record->m_tuple[i].m_tupledata, 0, tuple[i]->tuple.t_data, tuple[i]->tuple.t_len);
             }
             if (PG_PARSER_DEBUG_SILENCE < state->trans_data->m_debugLevel)
             {
@@ -1416,20 +1351,16 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
     if (!state || !result || !pg_parser_errno)
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_DELETE_CHECK;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap2 delete], invalid param\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap2 delete], invalid param\n");
         return false;
     }
 
     xlrec = (pg_parser_xl_heap_delete*)pg_parser_XLogRecGetData(state);
     /* Allocate memory for return value */
-    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
-                               (void**)(&delete_record),
-                               sizeof(pg_parser_translog_tbcol_values)))
+    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)(&delete_record), sizeof(pg_parser_translog_tbcol_values)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_0E;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap2 delete], MALLOC failed\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap2 delete], MALLOC failed\n");
         return false;
     }
 
@@ -1470,14 +1401,12 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
     {
         delete_record->m_base.m_tabletype = PG_PARSER_TRANSLOG_TABLETYPE_NORMAL;
     }
-    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel ||
-        state->trans_data->m_iscatalog)
+    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel || state->trans_data->m_iscatalog)
     {
         /* Has full page write, extract tuple */
         if (pg_parser_XLogRecHasBlockImage(state, 0))
         {
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_0F;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -1494,14 +1423,13 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
                 return false;
             }
             /* Process full page write data for return, extract tuple from full page write */
-            delete_record->m_tuple =
-                pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
-                                                                 state->trans_data->m_dbversion,
-                                                                 state->trans_data->m_pagesize,
-                                                                 page,
-                                                                 &delete_record->m_tupleCnt,
-                                                                 state->blocks[0].blkno,
-                                                                 state->trans_data->m_debugLevel);
+            delete_record->m_tuple = pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
+                                                                                      state->trans_data->m_dbversion,
+                                                                                      state->trans_data->m_pagesize,
+                                                                                      page,
+                                                                                      &delete_record->m_tupleCnt,
+                                                                                      state->blocks[0].blkno,
+                                                                                      state->trans_data->m_debugLevel);
             if (!delete_record->m_tuple)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_DELETE_TUPLE;
@@ -1553,21 +1481,18 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
                 if (!strcmp(tbinfo.scname, "pg_toast") && !strncmp(tbinfo.tbname, "pg_toast", 8))
                 {
                     int index_colnum = 0;
-                    if (!pg_parser_mcxt_malloc(
-                            TRANS_RMGR_HEAP_MCXT,
-                            (void**)&delete_record->m_old_values,
-                            delete_record->m_valueCnt * sizeof(pg_parser_translog_tbcol_value)))
+                    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
+                                               (void**)&delete_record->m_old_values,
+                                               delete_record->m_valueCnt * sizeof(pg_parser_translog_tbcol_value)))
                     {
                         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_10;
-                        pg_parser_log_errlog(
-                            state->trans_data->m_debugLevel,
-                            "ERROR: trans record is [heap2 delete], MALLOC failed\n");
+                        pg_parser_log_errlog(state->trans_data->m_debugLevel,
+                                             "ERROR: trans record is [heap2 delete], MALLOC failed\n");
                         return false;
                     }
                     for (index_colnum = 0; index_colnum < delete_record->m_valueCnt; index_colnum++)
                     {
-                        pg_parser_translog_tbcol_value* colvalue =
-                            &delete_record->m_old_values[index_colnum];
+                        pg_parser_translog_tbcol_value* colvalue = &delete_record->m_old_values[index_colnum];
                         colvalue->m_colName = rstrdup(tbinfo.pgattr[index_colnum]->attname.data);
                         colvalue->m_freeFlag = true;
                         colvalue->m_coltype = tupdesc->attrs[index_colnum].atttypid;
@@ -1626,8 +1551,11 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
                                      "malloc temp tuple failed\n");
                 return false;
             }
-            pg_parser_reassemble_tuple_from_heap_tuple_header(
-                tuphdr, tuplelen, (pg_parser_ReorderBufferTupleBuf*)temp_tuple, dbtype, dbversion);
+            pg_parser_reassemble_tuple_from_heap_tuple_header(tuphdr,
+                                                              tuplelen,
+                                                              (pg_parser_ReorderBufferTupleBuf*)temp_tuple,
+                                                              dbtype,
+                                                              dbversion);
 
             tuple = (pg_parser_ReorderBufferTupleBuf*)temp_tuple;
         }
@@ -1639,10 +1567,9 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
         {
             /* Filter toast in logical mode, do not use goto here */
             int index_colnum = 0;
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT,
-                    (void**)&delete_record->m_old_values,
-                    delete_record->m_valueCnt * sizeof(pg_parser_translog_tbcol_value)))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
+                                       (void**)&delete_record->m_old_values,
+                                       delete_record->m_valueCnt * sizeof(pg_parser_translog_tbcol_value)))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_10;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -1651,8 +1578,7 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
             }
             for (index_colnum = 0; index_colnum < delete_record->m_valueCnt; index_colnum++)
             {
-                pg_parser_translog_tbcol_value* colvalue =
-                    &delete_record->m_old_values[index_colnum];
+                pg_parser_translog_tbcol_value* colvalue = &delete_record->m_old_values[index_colnum];
                 colvalue->m_colName = rstrdup(tbinfo.pgattr[index_colnum]->attname.data);
                 colvalue->m_freeFlag = true;
                 colvalue->m_coltype = tupdesc->attrs[index_colnum].atttypid;
@@ -1698,8 +1624,7 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
                                  "malloc tuple failed\n");
             return false;
         }
-        pg_parser_DecodeXLogTuple(
-            (char*)xlrec + pg_parser_SizeOfHeapDelete, datalen, tuple, dbtype, dbversion);
+        pg_parser_DecodeXLogTuple((char*)xlrec + pg_parser_SizeOfHeapDelete, datalen, tuple, dbtype, dbversion);
 
         /* Set return type, logical mode does not need to return page/tuple information */
         delete_record->m_base.m_type |= PG_PARSER_TRANSLOG_RETURN_WITH_DATA;
@@ -1709,8 +1634,7 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
                                delete_record->m_valueCnt * sizeof(pg_parser_translog_tbcol_value)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_10;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap2 delete], MALLOC failed\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap2 delete], MALLOC failed\n");
         return false;
     }
     zicinfo.convertinfo = state->trans_data->m_convert;
@@ -1744,8 +1668,7 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
                              "DEBUG: column name: %s\n",
                              colvalue->m_colName ? colvalue->m_colName : "NULL");
 
-        origval = pg_parser_heap_getattr(
-            &tuple->tuple, natt + 1, tupdesc, &isnull, &ismissing, dbtype, dbversion);
+        origval = pg_parser_heap_getattr(&tuple->tuple, natt + 1, tupdesc, &isnull, &ismissing, dbtype, dbversion);
 
         if (isnull)
         {
@@ -1762,8 +1685,7 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
         zicinfo.dbversion = dbversion;
         zicinfo.errorno = pg_parser_errno;
         zicinfo.debuglevel = state->trans_data->m_debugLevel;
-        if (!pg_parser_convert_attr_to_str_value(
-                origval, state->trans_data->m_sysdicts, colvalue, &zicinfo))
+        if (!pg_parser_convert_attr_to_str_value(origval, state->trans_data->m_sysdicts, colvalue, &zicinfo))
         {
             *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_DELETE_ATTR_TO_STR;
             pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -1812,7 +1734,7 @@ static bool pg_parser_trans_rmgr_heap_delete_trans(pg_parser_XLogReaderState*   
 
 static bool pg_parser_trans_rmgr_heap_delete_get_tuple(pg_parser_XLogReaderState*     state,
                                                        pg_parser_translog_tbcolbase** result,
-                                                       int32_t* pg_parser_errno)
+                                                       int32_t*                       pg_parser_errno)
 {
     pg_parser_translog_tbcol_values* delete_record = NULL;
     uint32_t                         relfilenode = 0;
@@ -1822,19 +1744,15 @@ static bool pg_parser_trans_rmgr_heap_delete_get_tuple(pg_parser_XLogReaderState
     if (!state || !result || !pg_parser_errno)
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_DELETE_CHECK;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap2 delete], invalid param\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap2 delete], invalid param\n");
         return false;
     }
 
     /* Allocate memory for return value */
-    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
-                               (void**)(&delete_record),
-                               sizeof(pg_parser_translog_tbcol_values)))
+    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)(&delete_record), sizeof(pg_parser_translog_tbcol_values)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_0E;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap2 delete], MALLOC failed\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap2 delete], MALLOC failed\n");
         return false;
     }
 
@@ -1843,14 +1761,12 @@ static bool pg_parser_trans_rmgr_heap_delete_get_tuple(pg_parser_XLogReaderState
     relfilenode = state->blocks[0].rnode.relNode;
 
     /* Replica mode and system table */
-    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel ||
-        state->trans_data->m_iscatalog)
+    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel || state->trans_data->m_iscatalog)
     {
         /* Has full page write, extract tuple */
         if (pg_parser_XLogRecHasBlockImage(state, 0))
         {
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&page, state->trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_0F;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -1867,14 +1783,13 @@ static bool pg_parser_trans_rmgr_heap_delete_get_tuple(pg_parser_XLogReaderState
                 return false;
             }
             /* Process full page write data for return, extract tuple from full page write */
-            delete_record->m_tuple =
-                pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
-                                                                 state->trans_data->m_dbversion,
-                                                                 state->trans_data->m_pagesize,
-                                                                 page,
-                                                                 &delete_record->m_tupleCnt,
-                                                                 state->blocks[0].blkno,
-                                                                 state->trans_data->m_debugLevel);
+            delete_record->m_tuple = pg_parser_image_get_tuple_from_image_with_dbtype(state->trans_data->m_dbtype,
+                                                                                      state->trans_data->m_dbversion,
+                                                                                      state->trans_data->m_pagesize,
+                                                                                      page,
+                                                                                      &delete_record->m_tupleCnt,
+                                                                                      state->blocks[0].blkno,
+                                                                                      state->trans_data->m_debugLevel);
             if (!delete_record->m_tuple)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_DELETE_TUPLE;
@@ -1943,20 +1858,16 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
     if (!state || !result || !pg_parser_errno)
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_CHECK;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap update], invalid param\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap update], invalid param\n");
         return false;
     }
 
     xlrec = (pg_parser_xl_heap_update*)pg_parser_XLogRecGetData(state);
     /* Allocate memory for return value */
-    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
-                               (void**)(&update_record),
-                               sizeof(pg_parser_translog_tbcol_values)))
+    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)(&update_record), sizeof(pg_parser_translog_tbcol_values)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_11;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap update], MALLOC failed\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap update], MALLOC failed\n");
         return false;
     }
 
@@ -1986,8 +1897,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
     {
         update_record->m_base.m_tabletype = PG_PARSER_TRANSLOG_TABLETYPE_NORMAL;
     }
-    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel ||
-        state->trans_data->m_iscatalog)
+    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel || state->trans_data->m_iscatalog)
     {
         /* Has full page write, extract tuple */
         if (pg_parser_XLogRecHasBlockImage(state, 0))
@@ -1996,8 +1906,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
             void*                            tuphdr_old = NULL;
             void*                            temp_tuple_new = NULL;
 
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT, (void**)&page_new, trans_data->m_pagesize))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&page_new, trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_12;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -2014,14 +1923,13 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
                 return false;
             }
             /* Process full page write data for return, extract tuple from full page write */
-            update_record->m_tuple =
-                pg_parser_image_get_tuple_from_image_with_dbtype(dbtype,
-                                                                 state->trans_data->m_dbversion,
-                                                                 state->trans_data->m_pagesize,
-                                                                 page_new,
-                                                                 &update_record->m_tupleCnt,
-                                                                 state->blocks[0].blkno,
-                                                                 state->trans_data->m_debugLevel);
+            update_record->m_tuple = pg_parser_image_get_tuple_from_image_with_dbtype(dbtype,
+                                                                                      state->trans_data->m_dbversion,
+                                                                                      state->trans_data->m_pagesize,
+                                                                                      page_new,
+                                                                                      &update_record->m_tupleCnt,
+                                                                                      state->blocks[0].blkno,
+                                                                                      state->trans_data->m_debugLevel);
             if (!update_record->m_tuple)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_TUPLE_RETURN;
@@ -2081,8 +1989,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
                 }
                 tuphdr_old = (void*)current_tuplecache->m_tupledata;
                 tuplelen_old = (size_t)current_tuplecache->m_tuplelen;
-                temp_tuple_old =
-                    pg_parser_heaptuple_get_tuple_space(tuplelen_old, dbtype, dbversion);
+                temp_tuple_old = pg_parser_heaptuple_get_tuple_space(tuplelen_old, dbtype, dbversion);
                 if (!temp_tuple_old)
                 {
                     *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_GET_OLD_TUPLE;
@@ -2091,12 +1998,11 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
                                          "get old tuple failed\n");
                     return false;
                 }
-                pg_parser_reassemble_tuple_from_heap_tuple_header(
-                    tuphdr_old,
-                    tuplelen_old,
-                    (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old,
-                    dbtype,
-                    dbversion);
+                pg_parser_reassemble_tuple_from_heap_tuple_header(tuphdr_old,
+                                                                  tuplelen_old,
+                                                                  (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old,
+                                                                  dbtype,
+                                                                  dbversion);
                 tuple_old = (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old;
             }
             temp_tuple_new = (void*)pg_parser_assemble_tuple(state->trans_data->m_dbtype,
@@ -2165,8 +2071,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
             tuphdr_old = (void*)current_tuplecache->m_tupledata;
             tuplelen_old = (size_t)current_tuplecache->m_tuplelen;
             temp_len = tuplelen_old - pg_parser_SizeOfHeapHeader;
-            temp_tuple_old =
-                (void*)pg_parser_heaptuple_get_tuple_space(temp_len, dbtype, dbversion);
+            temp_tuple_old = (void*)pg_parser_heaptuple_get_tuple_space(temp_len, dbtype, dbversion);
             if (!temp_tuple_old)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_GET_OLD_TUPLE;
@@ -2175,12 +2080,11 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
                                      "get old tuple failed\n");
                 return false;
             }
-            pg_parser_reassemble_tuple_from_heap_tuple_header(
-                tuphdr_old,
-                tuplelen_old,
-                (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old,
-                dbtype,
-                dbversion);
+            pg_parser_reassemble_tuple_from_heap_tuple_header(tuphdr_old,
+                                                              tuplelen_old,
+                                                              (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old,
+                                                              dbtype,
+                                                              dbversion);
             tuple_old = (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old;
             /* Combine old data, assemble new tuple from record */
             tupledata_new = pg_parser_XLogRecGetBlockData(state, 0, &datalen);
@@ -2192,20 +2096,18 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
                                      "get new tuple failed\n");
                 return false;
             }
-            if (!reassemble_tuplenew_from_wal_data(
-                    tupledata_new,
-                    datalen,
-                    (pg_parser_ReorderBufferTupleBuf**)(&temp_tuple_new),
-                    xlrec,
-                    state->blocks[0].blkno,
-                    pg_parser_InvalidTransactionId,
-                    tuphdr_old,
-                    tuplelen_old,
-                    dbtype,
-                    dbversion))
+            if (!reassemble_tuplenew_from_wal_data(tupledata_new,
+                                                   datalen,
+                                                   (pg_parser_ReorderBufferTupleBuf**)(&temp_tuple_new),
+                                                   xlrec,
+                                                   state->blocks[0].blkno,
+                                                   pg_parser_InvalidTransactionId,
+                                                   tuphdr_old,
+                                                   tuplelen_old,
+                                                   dbtype,
+                                                   dbversion))
             {
-                *pg_parser_errno =
-                    ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_MAKE_NEW_TUPLE_FROM_OLD;
+                *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_MAKE_NEW_TUPLE_FROM_OLD;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
                                      "ERROR: trans record is [heap update],"
                                      "make new tuple from old tuple failed\n");
@@ -2246,10 +2148,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
                 return false;
             }
 
-            rmemcpy0(update_record->m_tuple->m_tupledata,
-                     0,
-                     tuple_new->tuple.t_data,
-                     tuple_new->tuple.t_len);
+            rmemcpy0(update_record->m_tuple->m_tupledata, 0, tuple_new->tuple.t_data, tuple_new->tuple.t_len);
         }
     }
     else
@@ -2258,9 +2157,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
         use_logical = true;
         datalen = pg_parser_XLogRecGetDataLen(state) - pg_parser_SizeOfHeapUpdate;
 
-        have_old_tuple_data =
-            ((xlrec->flags & PG_PARSER_TRANS_XLH_UPDATE_CONTAINS_OLD) || datalen > 0) ? true
-                                                                                      : false;
+        have_old_tuple_data = ((xlrec->flags & PG_PARSER_TRANS_XLH_UPDATE_CONTAINS_OLD) || datalen > 0) ? true : false;
         /* Only process data when old data flag is present */
         if (have_old_tuple_data)
         {
@@ -2275,8 +2172,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
                                      "logical malloc tuple failed\n");
                 return false;
             }
-            pg_parser_DecodeXLogTuple(
-                (char*)xlrec + pg_parser_SizeOfHeapUpdate, datalen, tuple_old, dbtype, dbversion);
+            pg_parser_DecodeXLogTuple((char*)xlrec + pg_parser_SizeOfHeapUpdate, datalen, tuple_old, dbtype, dbversion);
         }
 
         /* Extract new tuple from record */
@@ -2327,8 +2223,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
                                update_record->m_valueCnt * sizeof(pg_parser_translog_tbcol_value)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_15;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap update], MALLOC failed\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap update], MALLOC failed\n");
         return false;
     }
 
@@ -2338,8 +2233,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
                                update_record->m_valueCnt * sizeof(pg_parser_translog_tbcol_value)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_16;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap update], MALLOC failed\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap update], MALLOC failed\n");
         return false;
     }
     pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -2374,8 +2268,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
             continue;
         }
 
-        origval = pg_parser_heap_getattr(
-            &tuple_old->tuple, natt + 1, tupdesc, &isnull, &ismissing, dbtype, dbversion);
+        origval = pg_parser_heap_getattr(&tuple_old->tuple, natt + 1, tupdesc, &isnull, &ismissing, dbtype, dbversion);
 
         if (isnull)
         {
@@ -2401,8 +2294,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
         colvalue->m_coltype = tupdesc->attrs[natt].atttypid;
         zicinfo.errorno = pg_parser_errno;
         zicinfo.debuglevel = state->trans_data->m_debugLevel;
-        if (!pg_parser_convert_attr_to_str_value(
-                origval, state->trans_data->m_sysdicts, colvalue, &zicinfo))
+        if (!pg_parser_convert_attr_to_str_value(origval, state->trans_data->m_sysdicts, colvalue, &zicinfo))
         {
             *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_OLD_VALUE_ATTR_TO_STR;
             pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -2432,8 +2324,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
                              "DEBUG: column name: %s\n",
                              colvalue->m_colName ? colvalue->m_colName : "NULL");
 
-        origval = pg_parser_heap_getattr(
-            &tuple_new->tuple, natt + 1, tupdesc, &isnull, &ismissing, dbtype, dbversion);
+        origval = pg_parser_heap_getattr(&tuple_new->tuple, natt + 1, tupdesc, &isnull, &ismissing, dbtype, dbversion);
         if (isnull)
         {
             colvalue->m_info = INFO_COL_IS_NULL;
@@ -2449,8 +2340,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
         colvalue->m_coltype = tupdesc->attrs[natt].atttypid;
         zicinfo.errorno = pg_parser_errno;
         zicinfo.debuglevel = state->trans_data->m_debugLevel;
-        if (!pg_parser_convert_attr_to_str_value(
-                origval, state->trans_data->m_sysdicts, colvalue, &zicinfo))
+        if (!pg_parser_convert_attr_to_str_value(origval, state->trans_data->m_sysdicts, colvalue, &zicinfo))
         {
             *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_NEW_VALUE_ATTR_TO_STR;
             pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -2510,7 +2400,7 @@ static bool pg_parser_trans_rmgr_heap_update_trans(pg_parser_XLogReaderState*   
 
 static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState*     state,
                                                        pg_parser_translog_tbcolbase** result,
-                                                       int32_t* pg_parser_errno)
+                                                       int32_t*                       pg_parser_errno)
 {
     pg_parser_translog_tbcol_values* update_record = NULL;
     pg_parser_xl_heap_update*        xlrec = NULL;
@@ -2527,13 +2417,10 @@ static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState
 
     xlrec = (pg_parser_xl_heap_update*)pg_parser_XLogRecGetData(state);
     /* Allocate memory for return value */
-    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT,
-                               (void**)(&update_record),
-                               sizeof(pg_parser_translog_tbcol_values)))
+    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)(&update_record), sizeof(pg_parser_translog_tbcol_values)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_11;
-        pg_parser_log_errlog(state->trans_data->m_debugLevel,
-                             "ERROR: trans record is [heap update], MALLOC failed\n");
+        pg_parser_log_errlog(state->trans_data->m_debugLevel, "ERROR: trans record is [heap update], MALLOC failed\n");
         return false;
     }
 
@@ -2541,8 +2428,7 @@ static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState
     update_record->m_base.m_originid = state->record_origin;
     relfilenode = state->blocks[0].rnode.relNode;
 
-    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel ||
-        state->trans_data->m_iscatalog)
+    if (PG_PARSER_WALLEVEL_REPLICA == state->trans_data->m_walLevel || state->trans_data->m_iscatalog)
     {
         /* Has full page write, extract tuple */
         if (pg_parser_XLogRecHasBlockImage(state, 0))
@@ -2551,8 +2437,7 @@ static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState
             void*                            tuphdr_old = NULL;
             void*                            temp_tuple_new = NULL;
 
-            if (!pg_parser_mcxt_malloc(
-                    TRANS_RMGR_HEAP_MCXT, (void**)&page_new, trans_data->m_pagesize))
+            if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&page_new, trans_data->m_pagesize))
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_12;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
@@ -2569,14 +2454,13 @@ static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState
                 return false;
             }
             /* Process full page write data for return, extract tuple from full page write */
-            update_record->m_tuple =
-                pg_parser_image_get_tuple_from_image_with_dbtype(dbtype,
-                                                                 state->trans_data->m_dbversion,
-                                                                 state->trans_data->m_pagesize,
-                                                                 page_new,
-                                                                 &update_record->m_tupleCnt,
-                                                                 state->blocks[0].blkno,
-                                                                 state->trans_data->m_debugLevel);
+            update_record->m_tuple = pg_parser_image_get_tuple_from_image_with_dbtype(dbtype,
+                                                                                      state->trans_data->m_dbversion,
+                                                                                      state->trans_data->m_pagesize,
+                                                                                      page_new,
+                                                                                      &update_record->m_tupleCnt,
+                                                                                      state->blocks[0].blkno,
+                                                                                      state->trans_data->m_debugLevel);
             if (!update_record->m_tuple)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_TUPLE_RETURN;
@@ -2637,8 +2521,7 @@ static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState
                 }
                 tuphdr_old = (void*)current_tuplecache->m_tupledata;
                 tuplelen_old = (size_t)current_tuplecache->m_tuplelen;
-                temp_tuple_old =
-                    pg_parser_heaptuple_get_tuple_space(tuplelen_old, dbtype, dbversion);
+                temp_tuple_old = pg_parser_heaptuple_get_tuple_space(tuplelen_old, dbtype, dbversion);
                 if (!temp_tuple_old)
                 {
                     *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_GET_OLD_TUPLE;
@@ -2647,12 +2530,11 @@ static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState
                                          "get old tuple failed\n");
                     return false;
                 }
-                pg_parser_reassemble_tuple_from_heap_tuple_header(
-                    tuphdr_old,
-                    tuplelen_old,
-                    (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old,
-                    dbtype,
-                    dbversion);
+                pg_parser_reassemble_tuple_from_heap_tuple_header(tuphdr_old,
+                                                                  tuplelen_old,
+                                                                  (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old,
+                                                                  dbtype,
+                                                                  dbversion);
 
                 tuple_old = (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old;
             }
@@ -2724,8 +2606,7 @@ static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState
             tuphdr_old = (void*)current_tuplecache->m_tupledata;
             tuplelen_old = (size_t)current_tuplecache->m_tuplelen;
             temp_len = tuplelen_old - pg_parser_SizeOfHeapHeader;
-            temp_tuple_old =
-                (void*)pg_parser_heaptuple_get_tuple_space(temp_len, dbtype, dbversion);
+            temp_tuple_old = (void*)pg_parser_heaptuple_get_tuple_space(temp_len, dbtype, dbversion);
             if (!temp_tuple_old)
             {
                 *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_GET_OLD_TUPLE;
@@ -2734,12 +2615,11 @@ static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState
                                      "get old tuple failed\n");
                 return false;
             }
-            pg_parser_reassemble_tuple_from_heap_tuple_header(
-                tuphdr_old,
-                tuplelen_old,
-                (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old,
-                dbtype,
-                dbversion);
+            pg_parser_reassemble_tuple_from_heap_tuple_header(tuphdr_old,
+                                                              tuplelen_old,
+                                                              (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old,
+                                                              dbtype,
+                                                              dbversion);
             tuple_old = (pg_parser_ReorderBufferTupleBuf*)temp_tuple_old;
             /* Combine old data, assemble new tuple from record */
             tupledata_new = pg_parser_XLogRecGetBlockData(state, 0, &datalen);
@@ -2751,20 +2631,18 @@ static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState
                                      "get new tuple failed\n");
                 return false;
             }
-            if (!reassemble_tuplenew_from_wal_data(
-                    tupledata_new,
-                    datalen,
-                    (pg_parser_ReorderBufferTupleBuf**)(&temp_tuple_new),
-                    xlrec,
-                    state->blocks[0].blkno,
-                    pg_parser_InvalidTransactionId,
-                    tuphdr_old,
-                    tuplelen_old,
-                    dbtype,
-                    dbversion))
+            if (!reassemble_tuplenew_from_wal_data(tupledata_new,
+                                                   datalen,
+                                                   (pg_parser_ReorderBufferTupleBuf**)(&temp_tuple_new),
+                                                   xlrec,
+                                                   state->blocks[0].blkno,
+                                                   pg_parser_InvalidTransactionId,
+                                                   tuphdr_old,
+                                                   tuplelen_old,
+                                                   dbtype,
+                                                   dbversion))
             {
-                *pg_parser_errno =
-                    ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_MAKE_NEW_TUPLE_FROM_OLD;
+                *pg_parser_errno = ERRNO_PG_PARSER_TRANS_FUNCERR_HEAP_UPDATE_MAKE_NEW_TUPLE_FROM_OLD;
                 pg_parser_log_errlog(state->trans_data->m_debugLevel,
                                      "ERROR: trans record is [heap update],"
                                      "make new tuple from old tuple failed\n");
@@ -2804,10 +2682,7 @@ static bool pg_parser_trans_rmgr_heap_update_get_tuple(pg_parser_XLogReaderState
                                      "ERROR: trans record is [heap update], MALLOC failed\n");
                 return false;
             }
-            rmemcpy0(update_record->m_tuple->m_tupledata,
-                     0,
-                     tuple_new->tuple.t_data,
-                     tuple_new->tuple.t_len);
+            rmemcpy0(update_record->m_tuple->m_tupledata, 0, tuple_new->tuple.t_data, tuple_new->tuple.t_len);
         }
     }
 
@@ -2861,12 +2736,10 @@ bool pg_parser_check_fpw(pg_parser_XLogReaderState*    readstate,
         return false;
     }
 
-    if (!pg_parser_mcxt_malloc(
-            TRANS_RMGR_HEAP_MCXT, (void**)&pre_tuple, sizeof(pg_parser_translog_pre_image_tuple)))
+    if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&pre_tuple, sizeof(pg_parser_translog_pre_image_tuple)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_18;
-        pg_parser_log_errlog(readstate->trans_data->m_debugLevel,
-                             "ERROR: check FPW, MALLOC failed\n");
+        pg_parser_log_errlog(readstate->trans_data->m_debugLevel, "ERROR: check FPW, MALLOC failed\n");
         return false;
     }
 
@@ -2877,23 +2750,19 @@ bool pg_parser_check_fpw(pg_parser_XLogReaderState*    readstate,
         pg_parser_translog_tuplecache* temp_tuple = NULL;
         uint32_t                       block_tuple_cnt = 0;
 
-        if (!pg_parser_XLogRecHasBlockImage(readstate, blcknum) ||
-            !readstate->blocks[blcknum].in_use)
+        if (!pg_parser_XLogRecHasBlockImage(readstate, blcknum) || !readstate->blocks[blcknum].in_use)
         {
             continue;
         }
 
-        if (!pg_parser_mcxt_malloc(
-                TRANS_RMGR_HEAP_MCXT, (void**)&page, readstate->pre_trans_data->m_pagesize))
+        if (!pg_parser_mcxt_malloc(TRANS_RMGR_HEAP_MCXT, (void**)&page, readstate->pre_trans_data->m_pagesize))
         {
             *pg_parser_errno = ERRNO_PG_PARSER_TRANS_MEMERR_ALLOC_17;
-            pg_parser_log_errlog(readstate->trans_data->m_debugLevel,
-                                 "ERROR: check FPW, MALLOC failed\n");
+            pg_parser_log_errlog(readstate->trans_data->m_debugLevel, "ERROR: check FPW, MALLOC failed\n");
             return false;
         }
         /* Assemble complete page */
-        if (!pg_parser_image_get_block_image(
-                readstate, blcknum, page, readstate->pre_trans_data->m_pagesize))
+        if (!pg_parser_image_get_block_image(readstate, blcknum, page, readstate->pre_trans_data->m_pagesize))
         {
             pg_parser_mcxt_free(TRANS_RMGR_HEAP_MCXT, page);
             *pg_parser_errno = ERRNO_PG_PARSER_PRE_MEMERR_ALLOC_IMAGE_FPW;
@@ -2903,14 +2772,13 @@ bool pg_parser_check_fpw(pg_parser_XLogReaderState*    readstate,
         pageno = readstate->blocks[blcknum].blkno;
 
         /* Extract tuple from page */
-        temp_tuple = pg_parser_image_get_tuple_from_image_with_dbtype(
-            readstate->pre_trans_data->m_dbtype,
-            readstate->pre_trans_data->m_dbversion,
-            readstate->pre_trans_data->m_pagesize,
-            page,
-            &block_tuple_cnt,
-            pageno,
-            readstate->pre_trans_data->m_debugLevel);
+        temp_tuple = pg_parser_image_get_tuple_from_image_with_dbtype(readstate->pre_trans_data->m_dbtype,
+                                                                      readstate->pre_trans_data->m_dbversion,
+                                                                      readstate->pre_trans_data->m_pagesize,
+                                                                      page,
+                                                                      &block_tuple_cnt,
+                                                                      pageno,
+                                                                      readstate->pre_trans_data->m_debugLevel);
         if (!temp_tuple)
         {
             /* If no valid tuple found in this page, do not report error and continue */
@@ -2920,16 +2788,14 @@ bool pg_parser_check_fpw(pg_parser_XLogReaderState*    readstate,
                                  "try get tuples from image, but get NULL\n");
             continue;
         }
-        pg_parser_log_errlog(
-            readstate->pre_trans_data->m_debugLevel,
-            "DEBUG: trans record is [xlog/heap/heap2 FPW], get %u tuples from image\n",
-            block_tuple_cnt);
+        pg_parser_log_errlog(readstate->pre_trans_data->m_debugLevel,
+                             "DEBUG: trans record is [xlog/heap/heap2 FPW], get %u tuples from image\n",
+                             block_tuple_cnt);
         if (pre_tuple->m_tuples)
         {
-            pg_parser_mcxt_realloc(
-                TRANS_RMGR_HEAP_MCXT,
-                (void**)&pre_tuple->m_tuples,
-                (pre_tuple->m_tuplecnt + block_tuple_cnt) * sizeof(pg_parser_translog_tuplecache));
+            pg_parser_mcxt_realloc(TRANS_RMGR_HEAP_MCXT,
+                                   (void**)&pre_tuple->m_tuples,
+                                   (pre_tuple->m_tuplecnt + block_tuple_cnt) * sizeof(pg_parser_translog_tuplecache));
             rmemcpy1((char*)(pre_tuple->m_tuples),
                      pre_tuple->m_tuplecnt * sizeof(pg_parser_translog_tuplecache),
                      temp_tuple,
@@ -2978,17 +2844,17 @@ static bool reassemble_tuplenew_from_wal_data(char*                             
                                               int16_t                           dbtype,
                                               char*                             dbversion)
 {
-    pg_parser_xl_heap_header  xlhdr;
-    pg_parser_HeapTupleHeader htup; /* Pointer for convenient coding when assembling new tuple. */
+    pg_parser_xl_heap_header         xlhdr;
+    pg_parser_HeapTupleHeader        htup; /* Pointer for convenient coding when assembling new tuple. */
     pg_parser_ReorderBufferTupleBuf* recorbuff_new = NULL;
     pg_parser_HeapTupleHeader        htup_old = htup_old_in;
     char*                            newp = NULL;
     char *                           recdata, *recdata_end;
     int                              suffixlen = 0;
     int                              prefixlen = 0;
-    int                       tuplen = 0; /* Record the length of user data in update wal record. */
-    int                       reass_tuple_len = 0;
-    pg_parser_ItemPointerData target_tid;
+    int                              tuplen = 0; /* Record the length of user data in update wal record. */
+    int                              reass_tuple_len = 0;
+    pg_parser_ItemPointerData        target_tid;
 
     recdata = data;
     recdata_end = data + len;
@@ -3009,8 +2875,7 @@ static bool reassemble_tuplenew_from_wal_data(char*                             
     tuplen = recdata_end - recdata;
     reass_tuple_len = pg_parser_SizeofHeapTupleHeader + tuplen + prefixlen + suffixlen;
 
-    recorbuff_new =
-        pg_parser_heaptuple_get_tuple_space(tuplen + prefixlen + suffixlen, dbtype, dbversion);
+    recorbuff_new = pg_parser_heaptuple_get_tuple_space(tuplen + prefixlen + suffixlen, dbtype, dbversion);
     if (!recorbuff_new)
     {
         return false;

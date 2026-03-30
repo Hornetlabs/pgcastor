@@ -17,8 +17,7 @@
 #include "onlinerefresh/integrate/rebuild/onlinerefresh_integraterebuild.h"
 
 /* Only used to update parsed position */
-static bool onlinerefresh_integraterebuild_updaterewindstmt_set(
-    onlinerefresh_integraterebuild* rebuild_obj, txn* txn)
+static bool onlinerefresh_integraterebuild_updaterewindstmt_set(onlinerefresh_integraterebuild* rebuild_obj, txn* txn)
 {
     txnstmt*              stmtnode = NULL;
     txnstmt_updaterewind* updaterewind = NULL;

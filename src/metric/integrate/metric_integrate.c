@@ -71,8 +71,7 @@ static bool metric_integrate_tryparsepacket(metric_integrate* mintegrate, netcli
 }
 
 /* Incremental message */
-static bool metric_integrate_assembleincrementpacket(metric_integrate* mintegrate,
-                                                     netclient*        netclient)
+static bool metric_integrate_assembleincrementpacket(metric_integrate* mintegrate, netclient* netclient)
 {
     int        len = 0;
     int        ivalue = 0;
@@ -197,8 +196,7 @@ static bool metric_integrate_assembleincrementpacket(metric_integrate* mintegrat
 }
 
 /* Assemble identity message */
-static bool metric_integrate_assembleidentitypacket(metric_integrate* mintegrate,
-                                                    netclient*        netclient)
+static bool metric_integrate_assembleidentitypacket(metric_integrate* mintegrate, netclient* netclient)
 {
     int8       result = 0;
     int        len = 0;
@@ -366,8 +364,7 @@ void* metric_integrate_main(void* args)
     /* Check status */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "increment integrate metric stat exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "increment integrate metric stat exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         pthread_exit(NULL);
     }
@@ -494,12 +491,9 @@ void* metric_integrate_main(void* args)
         }
 
         if (loadlsn != mintegrate->loadlsn || synclsn != mintegrate->synclsn ||
-            loadtrailno != mintegrate->loadtrailno ||
-            loadtrailstart != mintegrate->loadtrailstart ||
-            synctrailno != mintegrate->synctrailno ||
-            synctrailstart != mintegrate->synctrailstart ||
-            loadtimestamp != mintegrate->loadtimestamp ||
-            synctimestamp != mintegrate->synctimestamp)
+            loadtrailno != mintegrate->loadtrailno || loadtrailstart != mintegrate->loadtrailstart ||
+            synctrailno != mintegrate->synctrailno || synctrailstart != mintegrate->synctrailstart ||
+            loadtimestamp != mintegrate->loadtimestamp || synctimestamp != mintegrate->synctimestamp)
         {
             loadlsn = mintegrate->loadlsn;
             synclsn = mintegrate->synclsn;
@@ -526,27 +520,21 @@ void* metric_integrate_main(void* args)
                  "XSYNCH Integrate SyncTrail:            %lX/%lX",
                  mintegrate->synctrailno,
                  mintegrate->synctrailstart);
-            elog(
-                RLOG_INFO, "XSYNCH Integrate LoadTimestamp:        %lu", mintegrate->loadtimestamp);
-            elog(
-                RLOG_INFO, "XSYNCH Integrate SyncTimestamp:        %lu", mintegrate->synctimestamp);
+            elog(RLOG_INFO, "XSYNCH Integrate LoadTimestamp:        %lu", mintegrate->loadtimestamp);
+            elog(RLOG_INFO, "XSYNCH Integrate SyncTimestamp:        %lu", mintegrate->synctimestamp);
 
             /* Persist data to disk */
             fd = osal_basic_open_file(INTEGRATE_STATUS_FILE_TEMP, O_RDWR | O_CREAT | BINARY);
             if (-1 == fd)
             {
-                elog(RLOG_WARNING,
-                     "open file:integrate/%s error, %s",
-                     INTEGRATE_STATUS_FILE_TEMP,
-                     strerror(errno));
+                elog(RLOG_WARNING, "open file:integrate/%s error, %s", INTEGRATE_STATUS_FILE_TEMP, strerror(errno));
             }
             osal_file_write(fd, (char*)mintegrate, sizeof(metric_integrate));
 
             osal_file_close(fd);
 
             /* Rename */
-            if (osal_durable_rename(
-                    INTEGRATE_STATUS_FILE_TEMP, INTEGRATE_STATUS_FILE, RLOG_WARNING) != 0)
+            if (osal_durable_rename(INTEGRATE_STATUS_FILE_TEMP, INTEGRATE_STATUS_FILE, RLOG_WARNING) != 0)
             {
                 elog(RLOG_WARNING,
                      "Error renaming integrate file %s 2 %s",

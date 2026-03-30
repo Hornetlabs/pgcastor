@@ -106,8 +106,7 @@ extern void appendStringInfo(StringInfo str, const char* fmt, ...) pg_attribute_
  * pass the return value to enlargeStringInfo() before trying again; see
  * appendStringInfo for standard usage pattern.
  */
-extern int appendStringInfoVA(StringInfo str, const char* fmt, va_list args)
-    pg_attribute_printf(2, 0);
+extern int appendStringInfoVA(StringInfo str, const char* fmt, va_list args) pg_attribute_printf(2, 0);
 
 /*------------------------
  * appendStringInfoString
@@ -128,10 +127,9 @@ extern void appendStringInfoChar(StringInfo str, char ch);
  * As above, but a macro for even more speed where it matters.
  * Caution: str argument will be evaluated multiple times.
  */
-#define appendStringInfoCharMacro(str, ch) \
-    (((str)->len + 1 >= (str)->maxlen)     \
-         ? appendStringInfoChar(str, ch)   \
-         : (void)((str)->data[(str)->len] = (ch), (str)->data[++(str)->len] = '\0'))
+#define appendStringInfoCharMacro(str, ch)                             \
+    (((str)->len + 1 >= (str)->maxlen) ? appendStringInfoChar(str, ch) \
+                                       : (void)((str)->data[(str)->len] = (ch), (str)->data[++(str)->len] = '\0'))
 
 /*------------------------
  * appendStringInfoSpaces

@@ -27,8 +27,7 @@ void operator_getfromdb(PGconn* conn, cache_sysdicts* sysdicts)
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
     hash_ctl.keysize = sizeof(Oid);
     hash_ctl.entrysize = sizeof(catalog_operator_value);
-    sysdicts->by_operator =
-        hash_create("catalog_sysdicts_operator", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
+    sysdicts->by_operator = hash_create("catalog_sysdicts_operator", 2048, &hash_ctl, HASH_ELEM | HASH_BLOBS);
 
     res = conn_exec(conn, query);
     if (NULL == res)
@@ -173,9 +172,7 @@ HTAB* operatorcache_load(sysdict_header_array* array)
             entry = hash_search(operatorhtab, &operator->oid, HASH_ENTER, &found);
             if (found)
             {
-                elog(RLOG_ERROR,
-                     "operator_oid:%u already exist in by_operator",
-                     entry->operator->oid);
+                elog(RLOG_ERROR, "operator_oid:%u already exist in by_operator", entry->operator->oid);
             }
             entry->oid = operator->oid;
             entry->operator = operator;

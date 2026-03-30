@@ -8,16 +8,14 @@
 
 #define DDL_DROP_SEQUENCE_MCXT NULL
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_sequence(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno);
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_sequence(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                        pg_parser_ddlstate*           ddlstate,
+                                                                        int32_t*                      pg_parser_errno);
 
-pg_parser_translog_ddlstmt* pg_parser_DDL_drop_sequence(
-    pg_parser_translog_systb2ddl*        pg_parser_ddl,
-    pg_parser_translog_systb2dll_record* current_record,
-    pg_parser_ddlstate*                  ddlstate,
-    int32_t*                             pg_parser_errno)
+pg_parser_translog_ddlstmt* pg_parser_DDL_drop_sequence(pg_parser_translog_systb2ddl*        pg_parser_ddl,
+                                                        pg_parser_translog_systb2dll_record* current_record,
+                                                        pg_parser_ddlstate*                  ddlstate,
+                                                        int32_t*                             pg_parser_errno)
 {
     pg_parser_translog_ddlstmt* result = NULL;
     if (IS_DELETE(current_record->m_record))
@@ -33,10 +31,9 @@ pg_parser_translog_ddlstmt* pg_parser_DDL_drop_sequence(
     return result;
 }
 
-static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_sequence(
-    pg_parser_translog_systb2ddl* pg_parser_ddl,
-    pg_parser_ddlstate*           ddlstate,
-    int32_t*                      pg_parser_errno)
+static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_sequence(pg_parser_translog_systb2ddl* pg_parser_ddl,
+                                                                        pg_parser_ddlstate*           ddlstate,
+                                                                        int32_t*                      pg_parser_errno)
 {
     pg_parser_translog_ddlstmt*           result = NULL;
     pg_parser_translog_ddlstmt_drop_base* seq_return = NULL;
@@ -44,8 +41,7 @@ static pg_parser_translog_ddlstmt* pg_parser_ddl_assemble_drop_sequence(
     PG_PARSER_UNUSED(pg_parser_ddl);
     PG_PARSER_UNUSED(pg_parser_errno);
 
-    if (!pg_parser_mcxt_malloc(
-            DDL_DROP_SEQUENCE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
+    if (!pg_parser_mcxt_malloc(DDL_DROP_SEQUENCE_MCXT, (void**)&result, sizeof(pg_parser_translog_ddlstmt)))
     {
         *pg_parser_errno = ERRNO_PG_PARSER_DDL_MEMERR_ALLOC_43;
         return NULL;

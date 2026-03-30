@@ -59,15 +59,14 @@ static bool increment_integratesync_trailnoandlsn_get(increment_integratesyncsta
              syncworkstate->trailno,
              emitoffset,
              syncworkstate->lsn);
-        syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata,
-                                                     syncworkstate->trailno);
+        syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata, syncworkstate->trailno);
         syncworkstate->callback.setmetricsynclsn(syncworkstate->privdata, syncworkstate->lsn);
         syncworkstate->callback.setmetricsynctrailstart(syncworkstate->privdata, emitoffset);
         /* Set splittrail fileid and emitoffset */
-        syncworkstate->callback.splittrail_fileid_emitoffse_set(
-            syncworkstate->privdata, syncworkstate->trailno, emitoffset);
-        syncworkstate->callback.integratestate_rebuildfilter_set(syncworkstate->privdata,
-                                                                 syncworkstate->lsn);
+        syncworkstate->callback.splittrail_fileid_emitoffse_set(syncworkstate->privdata,
+                                                                syncworkstate->trailno,
+                                                                emitoffset);
+        syncworkstate->callback.integratestate_rebuildfilter_set(syncworkstate->privdata, syncworkstate->lsn);
         PQclear(res);
     }
     else
@@ -82,9 +81,7 @@ static bool increment_integratesync_trailnoandlsn_get(increment_integratesyncsta
         res = PQexec(sync_state->conn, sql_exec);
         if (PGRES_COMMAND_OK != PQresultStatus(res))
         {
-            elog(RLOG_WARNING,
-                 "Failed to INSERT INTO sync_status: %s",
-                 PQerrorMessage(sync_state->conn));
+            elog(RLOG_WARNING, "Failed to INSERT INTO sync_status: %s", PQerrorMessage(sync_state->conn));
             PQclear(res);
             PQfinish(sync_state->conn);
             sync_state->conn = NULL;
@@ -95,11 +92,9 @@ static bool increment_integratesync_trailnoandlsn_get(increment_integratesyncsta
         syncworkstate->trailno = 0;
         syncworkstate->lsn = InvalidXLogRecPtr;
         syncworkstate->callback.splittrail_fileid_emitoffse_set(syncworkstate->privdata, 0, 0);
-        syncworkstate->callback.integratestate_rebuildfilter_set(syncworkstate->privdata,
-                                                                 syncworkstate->lsn);
+        syncworkstate->callback.integratestate_rebuildfilter_set(syncworkstate->privdata, syncworkstate->lsn);
         syncworkstate->callback.setmetricsynclsn(syncworkstate->privdata, syncworkstate->lsn);
-        syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata,
-                                                     syncworkstate->trailno);
+        syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata, syncworkstate->trailno);
         syncworkstate->callback.setmetricsynctrailstart(syncworkstate->privdata, 0);
         syncworkstate->callback.setmetricsynctimestamp(syncworkstate->privdata, (TimestampTz)0);
     }
@@ -107,11 +102,11 @@ static bool increment_integratesync_trailnoandlsn_get(increment_integratesyncsta
     return true;
 }
 
-static void increment_integratesync_state_set(increment_integratesyncstate* syncworkstate,
-                                              int                           state)
+static void increment_integratesync_state_set(increment_integratesyncstate* syncworkstate, int state)
 {
     syncworkstate->state = state;
 }
+
 /* Incremental apply */
 void* increment_integratesync_main(void* args)
 {
@@ -129,8 +124,7 @@ void* increment_integratesync_main(void* args)
     /* Check state */
     if (THRNODE_STAT_STARTING != thr_node->stat)
     {
-        elog(RLOG_WARNING,
-             "increment integrate sync exception, expected state is THRNODE_STAT_STARTING");
+        elog(RLOG_WARNING, "increment integrate sync exception, expected state is THRNODE_STAT_STARTING");
         thr_node->stat = THRNODE_STAT_ABORT;
         osal_thread_exit(NULL);
     }
@@ -224,16 +218,13 @@ void* increment_integratesync_main(void* args)
             if (entry->confirm.wal.lsn != InvalidXLogRecPtr)
             {
                 syncworkstate->lsn = entry->confirm.wal.lsn;
-                syncworkstate->callback.setmetricsynclsn(syncworkstate->privdata,
-                                                         entry->confirm.wal.lsn);
+                syncworkstate->callback.setmetricsynclsn(syncworkstate->privdata, entry->confirm.wal.lsn);
             }
 
             syncworkstate->trailno = entry->segno;
             syncworkstate->callback.setmetricsynctrailno(syncworkstate->privdata, entry->segno);
-            syncworkstate->callback.setmetricsynctimestamp(syncworkstate->privdata,
-                                                           entry->endtimestamp);
-            syncworkstate->callback.setmetricsynctrailstart(syncworkstate->privdata,
-                                                            entry->end.trail.offset);
+            syncworkstate->callback.setmetricsynctimestamp(syncworkstate->privdata, entry->endtimestamp);
+            syncworkstate->callback.setmetricsynctrailstart(syncworkstate->privdata, entry->end.trail.offset);
         }
 
         /* TODO entry release */

@@ -55,24 +55,21 @@ typedef struct
 #define ARR_DIMS(a)     ((int32_t*)(((char*)(a)) + sizeof(ArrayType)))
 #define ARR_LBOUND(a)   ((int32_t*)(((char*)(a)) + sizeof(ArrayType) + sizeof(int32_t) * ARR_NDIM(a)))
 
-#define ARR_NULLBITMAP(a)                                                                   \
-    (ARR_HASNULL(a)                                                                         \
-         ? (uint8_t*)(((char*)(a)) + sizeof(ArrayType) + 2 * sizeof(int32_t) * ARR_NDIM(a)) \
-         : (uint8_t*)NULL)
+#define ARR_NULLBITMAP(a) \
+    (ARR_HASNULL(a) ? (uint8_t*)(((char*)(a)) + sizeof(ArrayType) + 2 * sizeof(int32_t) * ARR_NDIM(a)) : (uint8_t*)NULL)
 
-#define ARR_OVERHEAD_NONULLS(ndims) \
-    PG_PARSER_MAXALIGN(sizeof(ArrayType) + 2 * sizeof(int32_t) * (ndims))
+#define ARR_OVERHEAD_NONULLS(ndims) PG_PARSER_MAXALIGN(sizeof(ArrayType) + 2 * sizeof(int32_t) * (ndims))
 
 #define ARR_OVERHEAD_WITHNULLS(ndims, nitems) \
     PG_PARSER_MAXALIGN(sizeof(ArrayType) + 2 * sizeof(int32_t) * (ndims) + ((nitems) + 7) / 8)
 
-#define ARR_DATA_OFFSET(a) \
-    (ARR_HASNULL(a) ? (uint32_t)((a)->dataoffset) : ARR_OVERHEAD_NONULLS(ARR_NDIM(a)))
+#define ARR_DATA_OFFSET(a) (ARR_HASNULL(a) ? (uint32_t)((a)->dataoffset) : ARR_OVERHEAD_NONULLS(ARR_NDIM(a)))
 
 /*
  * Returns a pointer to the actual array data.
  */
 #define ARR_DATA_PTR(a) (((char*)(a)) + ARR_DATA_OFFSET(a))
+
 static int32_t ArrayGetNItems(int32_t ndim, const int32_t* dims)
 {
     int32_t ret;
@@ -121,8 +118,12 @@ static inline void array_iter_setup(array_iter* it, ArrayType* a)
     it->bitmask = 1;
 }
 
-static inline pg_parser_Datum array_iter_next(
-    array_iter* it, bool* isnull, int32_t i, int32_t elmlen, bool elmbyval, char elmalign)
+static inline pg_parser_Datum array_iter_next(array_iter* it,
+                                              bool*       isnull,
+                                              int32_t     i,
+                                              int32_t     elmlen,
+                                              bool        elmbyval,
+                                              char        elmalign)
 {
     pg_parser_Datum ret;
 
@@ -210,19 +211,19 @@ static int32_t pg_strcasecmp(const char* s1, const char* s2)
  */
 pg_parser_Datum array_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
 {
-    bool       is_toast = false;
-    bool       need_free = false;
-    ArrayType* v = (ArrayType*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
+    bool                      is_toast = false;
+    bool                      need_free = false;
+    ArrayType*                v = (ArrayType*)pg_parser_detoast_datum((struct pg_parser_varlena*)attr,
                                                        &is_toast,
                                                        &need_free,
                                                        info->zicinfo->dbtype,
                                                        info->zicinfo->dbversion);
-    uint32_t   element_type = 0;
-    int32_t    typlen;
-    bool       typbyval;
-    char       typalign;
-    char       typdelim;
-    char *     p, *tmp, *retval, **values, dims_str[(MAXDIM * 33) + 2];
+    uint32_t                  element_type = 0;
+    int32_t                   typlen;
+    bool                      typbyval;
+    char                      typalign;
+    char                      typdelim;
+    char *                    p, *tmp, *retval, **values, dims_str[(MAXDIM * 33) + 2];
     pg_parser_sysdict_pgtype* sys_type = NULL;
     /*
      * 33 per dim since we assume 15 digits per number + ':' +'[]'
@@ -320,15 +321,16 @@ pg_parser_Datum array_out(pg_parser_Datum attr, pg_parser_extraTypoutInfo* info)
         }
         else
         {
-            if (PG_SYSDICT_TYPTYPE_BASE == sys_type->typtype ||
-                PG_SYSDICT_TYPTYPE_DOMAIN == sys_type->typtype ||
-                PG_SYSDICT_TYPTYPE_ENUM == sys_type->typtype ||
-                PG_SYSDICT_TYPTYPE_RANGE == sys_type->typtype)
+            if (PG_SYSDICT_TYPTYPE_BASE == sys_type->typtype || PG_SYSDICT_TYPTYPE_DOMAIN == sys_type->typtype ||
+                PG_SYSDICT_TYPTYPE_ENUM == sys_type->typtype || PG_SYSDICT_TYPTYPE_RANGE == sys_type->typtype)
             {
                 bool istoast = false;
 
-                values[i] = pg_parser_convert_attr_to_str_char(
-                    itemvalue, info->sysdicts, element_type, &istoast, info->zicinfo);
+                values[i] = pg_parser_convert_attr_to_str_char(itemvalue,
+                                                               info->sysdicts,
+                                                               element_type,
+                                                               &istoast,
+                                                               info->zicinfo);
                 if (!values[i])
                 {
                     return (pg_parser_Datum)0;

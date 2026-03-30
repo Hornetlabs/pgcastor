@@ -70,10 +70,7 @@ bool osal_setunblock(rsocket sockfd)
 }
 
 /* Get available address */
-int osal_getaddrinfo(const char*            node,
-                     const char*            service,
-                     const struct addrinfo* hints,
-                     struct addrinfo**      res)
+int osal_getaddrinfo(const char* node, const char* service, const struct addrinfo* hints, struct addrinfo** res)
 {
     if (NULL != node && node[0] == '*')
     {
@@ -249,8 +246,7 @@ bool osal_host2sockaddr(struct sockaddr_in* addr,
 
     for (res = reshead; res; res = res->ai_next)
     {
-        if (family == res->ai_family && socktype == res->ai_socktype &&
-            sizeof(struct sockaddr_in) == res->ai_addrlen)
+        if (family == res->ai_family && socktype == res->ai_socktype && sizeof(struct sockaddr_in) == res->ai_addrlen)
         {
             *addr = *((struct sockaddr_in*)(res->ai_addr));
             osal_rfreeaddrinfo(reshead);

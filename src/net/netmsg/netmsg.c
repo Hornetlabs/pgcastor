@@ -10,7 +10,10 @@ typedef struct NETMSGS
     netmsgs_op func; /* Message processing */
 } netmsgs;
 
-static netmsgs m_netmsgsops[] = {{NETMSG_TYPE_NOP, "NOP", NULL}, {NETMSG_TYPE_MAX, " MAX ", NULL}};
+static netmsgs m_netmsgsops[] = {
+    {NETMSG_TYPE_NOP, "NOP",   NULL},
+    {NETMSG_TYPE_MAX, " MAX ", NULL}
+};
 
 /* Message dispatch processing */
 bool netmsg(void* privdata, uint32 msgtype, uint8* msg)
