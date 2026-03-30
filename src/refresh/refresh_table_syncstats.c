@@ -172,9 +172,9 @@ void refresh_table_syncstats_tablesyncing2tablesyncall(refresh_table_syncstats* 
         return;
     }
 
-    if (!tablesyncstats->tablesyncing || 0 == tablesyncstats->tablesyncing->cnt)
+    if (!tablesyncstats->tablesyncing)
     {
-        elog(RLOG_INFO, "refreshtables is NULL");
+        elog(RLOG_INFO, "tablesyncstats refreshtables is NULL");
         tablesyncstats->tablesyncall = NULL;
         return;
     }
@@ -724,9 +724,9 @@ refresh_tables* refresh_table_syncstats_tablesyncing2tables(refresh_table_syncst
         return refreshtables;
     }
 
-    if (!tablesyncstats->tablesyncing || 0 == tablesyncstats->tablesyncing->cnt)
+    if (!tablesyncstats->tablesyncing)
     {
-        elog(RLOG_INFO, "refreshtables is NULL");
+        elog(RLOG_INFO, "tablesyncstats refreshtables is NULL");
         refreshtables = NULL;
         return refreshtables;
     }
@@ -743,15 +743,12 @@ refresh_tables* refresh_table_syncstats_tablesyncing2tables(refresh_table_syncst
 
     while (cur_table)
     {
-        /* create a new sync status node */
-        refresh_table_syncstat* new_syncstat = refresh_table_syncstat_init();
-
         /* copy table information */
         table = refresh_table_init();
 
-        refresh_table_setschema(new_syncstat->schema, table);
-        refresh_table_settable(new_syncstat->table, table);
-        refresh_table_setoid(new_syncstat->oid, table);
+        refresh_table_setschema(cur_table->schema, table);
+        refresh_table_settable(cur_table->table, table);
+        refresh_table_setoid(cur_table->oid, table);
         refresh_tables_add(table, refreshtables);
 
         cur_table = cur_table->next;

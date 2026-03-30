@@ -451,7 +451,7 @@ onlinerefresh_persist* onlinerefresh_persist_read(void)
 
             rmemcpy1(&new_syncstat->cnt, 0, buffer + bufferoffset, sizeof(new_syncstat->cnt));
             bufferoffset += sizeof(new_syncstat->cnt);
-            rmemcpy1(&new_syncstat->completecnt, 0, buffer + bufferoffset, new_syncstat->completecnt);
+            rmemcpy1(&new_syncstat->completecnt, 0, buffer + bufferoffset, sizeof(new_syncstat->completecnt));
             bufferoffset += sizeof(new_syncstat->completecnt);
             rmemcpy1(&new_syncstat->tablestat, 0, buffer + bufferoffset, sizeof(new_syncstat->tablestat));
             bufferoffset += sizeof(new_syncstat->tablestat);

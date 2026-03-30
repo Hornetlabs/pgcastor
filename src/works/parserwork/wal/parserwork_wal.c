@@ -604,7 +604,7 @@ bool parserwork_buildrefreshtransaction(decodingcontext* decodingctx, refresh_ta
         return true;
     }
 
-    refreshtxn = txn_init(REFRESH_TXNID, 1, InvalidXLogRecPtr);
+    refreshtxn = txn_init(REFRESH_TXNID, REFRESH_LSN, REFRESH_LSN);
     if (NULL == refreshtxn)
     {
         elog(RLOG_ERROR, "out of memory, %s", strerror(errno));

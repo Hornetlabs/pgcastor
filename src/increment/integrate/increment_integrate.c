@@ -719,9 +719,11 @@ bool increment_integrate_tryjoinonrefresh(increment_integrate* incintegrate)
 
         /*
          * refresh is already done
-         *  1. Clean up the refreshtable file directory
-         *  2. Resource release
+         *  1. flush refresh information to disk
+         *  2. Clean up the refreshtable file directory
+         *  3. Resource release
          */
+        refresh_integrate_write(rintegrate);
         refresh_table_syncstat_cleardirbyall(rintegrate->sync_stats, rintegrate->refresh_path);
         refresh_integrate_free(rintegrate);
     }
