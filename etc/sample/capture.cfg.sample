@@ -2,13 +2,13 @@
 jobname = capture
 
 # 日志存放目录, 目录必须存在,不配置会存储在: data/log 下
-log_dir = /opt/ripple/log
+log_dir = /opt/pgcastor/log
 
 # 日志级别, 支持 debug/info/warning/error
 log_level = info
 
 # 工作目录
-data = /opt/ripple/capturedata
+data = /opt/pgcastor/capturedata
 
 # 数据库连接串
 url = "port=5432 dbname=postgres user=postgres"
@@ -23,7 +23,7 @@ dbtype = postgres
 dbversion = 12
 
 # 同步状态表所在模式
-catalog_schema = ripple
+catalog_schema = pgcastor
 
 # trail 文件的大小
 trail_max_size = 16
