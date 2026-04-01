@@ -90,7 +90,7 @@ void misc_lockfiles_create(const char* filename)
         if (len == 0)
         {
             elog(RLOG_ERROR,
-                 "lock file %s is empty, Either another ripple is starting, or the lock file is "
+                 "lock file %s is empty, Either another castor is starting, or the lock file is "
                  "the remnant of a previous server startup crash.",
                  filename);
         }
@@ -111,7 +111,7 @@ void misc_lockfiles_create(const char* filename)
             if (kill(other_pid, 0) == 0 || (errno != ESRCH && errno != EPERM))
             {
                 elog(RLOG_ERROR,
-                     "lock file %s already exists, Is another ripple (PID %d) running in data "
+                     "lock file %s already exists, Is another castor (PID %d) running in data "
                      "directory:%s",
                      filename,
                      (int)other_pid,

@@ -4,7 +4,7 @@
 
 #define SETMASK(mask) sigprocmask(SIG_SETMASK, mask, NULL)
 
-typedef void (*ripplesigfunc)(int signo);
+typedef void (*castorsigfunc)(int signo);
 
 /* Global variables */
 sigset_t     UnBlockSig, BlockSig;
@@ -25,11 +25,11 @@ static void signal_reload(int signo)
     if (CAPTURERELOAD_STATUS_UNSET == g_gotsigreload)
     {
         g_gotsigreload = CAPTURERELOAD_STATUS_RELOADING_PARSERWAL;
-        elog(RLOG_INFO, "ripple is about to reload.");
+        elog(RLOG_INFO, "castor is about to reload.");
     }
     else
     {
-        elog(RLOG_INFO, "ripple is processing reload.");
+        elog(RLOG_INFO, "castor is processing reload.");
     }
     return;
 }
@@ -55,7 +55,7 @@ static void signal_initmask(void)
     sigdelset(&BlockSig, SIGCONT);
 }
 
-static ripplesigfunc signal_pm(int signo, ripplesigfunc func)
+static castorsigfunc signal_pm(int signo, castorsigfunc func)
 {
     struct sigaction act, oact;
 

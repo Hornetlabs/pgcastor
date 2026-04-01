@@ -107,18 +107,18 @@ static void rewind_ptr_find_checkpoint(decodingcontext* decodingctx, pg_parser_t
 
 bool rewind_fastrewind(decodingcontext* decodingctx)
 {
-    int32                        rippleerrno = 0;
+    int32                        castorerrno = 0;
     pg_parser_translog_pre_base* preparserresutl = NULL;
 
     decodingctx->walpre.m_record = decodingctx->decode_record->data;
 
     /* Call pre-parsing and dispatch based on pre-parsed content */
-    if (false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
+    if (false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &castorerrno))
     {
         elog(RLOG_ERROR,
              "pg_parser_trans_preTrans error, %08X, %s",
-             rippleerrno,
-             pg_parser_errno_getErrInfo(rippleerrno));
+             castorerrno,
+             pg_parser_errno_getErrInfo(castorerrno));
         return false;
     }
 
@@ -143,18 +143,18 @@ bool rewind_fastrewind(decodingcontext* decodingctx)
 
 bool rewind_fastrewind_emit(decodingcontext* decodingctx)
 {
-    int32                        rippleerrno = 0;
+    int32                        castorerrno = 0;
     pg_parser_translog_pre_base* preparserresutl = NULL;
 
     decodingctx->walpre.m_record = decodingctx->decode_record->data;
 
     /* Call pre-parsing and dispatch based on pre-parsed content */
-    if (false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
+    if (false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &castorerrno))
     {
         elog(RLOG_ERROR,
              "pg_parser_trans_preTrans error, %08X, %s",
-             rippleerrno,
-             pg_parser_errno_getErrInfo(rippleerrno));
+             castorerrno,
+             pg_parser_errno_getErrInfo(castorerrno));
         return false;
     }
 

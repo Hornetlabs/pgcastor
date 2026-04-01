@@ -57,7 +57,7 @@ void decode_chkpt_init(decodingcontext* ctx, XLogRecPtr redolsn)
     ctx->trans_cache->chkpts->head = chkptnode;
     ctx->trans_cache->chkpts->tail = chkptnode;
 
-    elog(RLOG_INFO, "ripple redolsn from %X/%X", (uint32)(redolsn >> 32), (uint32)redolsn);
+    elog(RLOG_INFO, "castor redolsn from %X/%X", (uint32)(redolsn >> 32), (uint32)redolsn);
 }
 
 /* checkpoint commit */

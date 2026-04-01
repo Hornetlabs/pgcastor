@@ -131,20 +131,20 @@ static void onlinerefresh_status_print(void)
 static void cmd_onlinerefresh_get_onlinerefresh_status(void)
 {
     int         cnt = 0;
-    long        ripplepid;
+    long        castorpid;
     struct stat statbuf;
     char        szMsg[256] = {0};
 
-    ripplepid = misc_lockfiles_getpid();
-    if (0 == ripplepid)
+    castorpid = misc_lockfiles_getpid();
+    if (0 == castorpid)
     {
-        printf("Is ripple running?\n");
+        printf("Is castor running?\n");
         return;
     }
 
-    if (0 != kill((pid_t)ripplepid, SIGUSR1))
+    if (0 != kill((pid_t)castorpid, SIGUSR1))
     {
-        snprintf(szMsg, 128, "could not send status signal (PID:%ld) : %s\n", ripplepid, strerror(errno));
+        snprintf(szMsg, 128, "could not send status signal (PID:%ld) : %s\n", castorpid, strerror(errno));
         printf("%s\n", szMsg);
     }
 

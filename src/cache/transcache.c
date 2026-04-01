@@ -259,7 +259,7 @@ void transcache_removeTXNByXid(transcache* in_transcache, uint64_t xid)
     txn_entry = hash_search(in_transcache->by_txns, &xid, HASH_REMOVE, &find);
     if (false == find)
     {
-        elog(RLOG_WARNING, "ripple logical error");
+        elog(RLOG_WARNING, "castor logical error");
     }
     else
     {

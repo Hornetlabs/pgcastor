@@ -320,7 +320,7 @@ void mem_print(memprint_flag flag)
         cur = cur->next;
     }
     osal_thread_unlock(&m_nodes.listlock);
-    elog(RLOG_INFO, "ripple C Port Use Memory Size:%lu", totalsize);
+    elog(RLOG_INFO, "castor C Port Use Memory Size:%lu", totalsize);
 }
 
 /*

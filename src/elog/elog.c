@@ -110,7 +110,7 @@ void log_init(void)
     m_jobname = guc_getConfigOption(CFG_KEY_JOBNAME);
     if (NULL == m_jobname)
     {
-        m_jobname = "ripple";
+        m_jobname = "castor";
     }
 
     m_year = (pcnow->tm_year + 1900);
@@ -141,7 +141,7 @@ void log_init(void)
     /* Log cleanup */
     osal_file_truncate(m_logfd, 0);
 
-    printf("\nThe logs of the ripple will be stored in %s\n", m_logfilename);
+    printf("\nThe logs of the castor will be stored in %s\n", m_logfilename);
     m_init = true;
 
     osal_thread_mutex_init(&m_loglock, NULL);

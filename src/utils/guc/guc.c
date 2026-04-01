@@ -389,7 +389,7 @@ static struct config_string ConfigureNamesStringCapture[] = {
             NULL,
         },
         &(g_capturecfg.jobname),
-        "ripple",
+        "castor",
         NULL,
         NULL},
     /* End-of-list marker */
@@ -654,7 +654,7 @@ static struct config_string ConfigureNamesStringIntegrate[] = {
             NULL,
         },
         &(g_integratecfg.traildir),
-        "/opt/ripple/capture/trail",
+        "/opt/castor/capture/trail",
         NULL,
         NULL},
     {
@@ -709,7 +709,7 @@ static struct config_string ConfigureNamesStringIntegrate[] = {
             NULL,
         },
         &(g_integratecfg.jobname),
-        "ripple",
+        "castor",
         NULL,
         NULL},
     {
@@ -805,7 +805,7 @@ static struct config_string ConfigureNamesStringReceivewal[] = {
             NULL,
         },
         &(m_receivewalcfg.jobname),
-        "ripple",
+        "castor",
         NULL,
         NULL},
     {
@@ -1326,7 +1326,7 @@ static void guc_loadbuildin(proc_type type)
     {
         struct config_int* conf = &m_guccfg[type].cint[i];
 
-        conf->gen.vartype = RIPPLEC_INT;
+        conf->gen.vartype = C_INT;
         num_vars++;
     }
 
@@ -1334,7 +1334,7 @@ static void guc_loadbuildin(proc_type type)
     {
         struct config_string* conf = &m_guccfg[type].cstr[i];
 
-        conf->gen.vartype = RIPPLEC_STRING;
+        conf->gen.vartype = C_STRING;
         num_vars++;
     }
 
@@ -1671,7 +1671,7 @@ static bool parse_and_validate_value(struct config_generic* record,
 {
     switch (record->vartype)
     {
-        case RIPPLEC_INT:
+        case C_INT:
         {
             struct config_int* conf = (struct config_int*)record;
 
@@ -1692,7 +1692,7 @@ static bool parse_and_validate_value(struct config_generic* record,
             }
         }
         break;
-        case RIPPLEC_STRING:
+        case C_STRING:
         {
             /*
              * The value passed by the caller could be transient, so we
@@ -1740,7 +1740,7 @@ static int set_config_option(const char* name, const char* value, bool reload)
      */
     switch (record->vartype)
     {
-        case RIPPLEC_INT:
+        case C_INT:
         {
             struct config_int* conf = (struct config_int*)record;
 
@@ -1767,7 +1767,7 @@ static int set_config_option(const char* name, const char* value, bool reload)
             break;
 #undef newval
         }
-        case RIPPLEC_STRING:
+        case C_STRING:
         {
             struct config_string* conf = (struct config_string*)record;
 
@@ -1816,10 +1816,10 @@ char* guc_getConfigOption(const char* name)
 
     switch (record->vartype)
     {
-        case RIPPLEC_INT:
+        case C_INT:
             snprintf(buffer, sizeof(buffer), "%d", *((struct config_int*)record)->variable);
             return buffer;
-        case RIPPLEC_STRING:
+        case C_STRING:
             return *((struct config_string*)record)->variable;
     }
 
@@ -1839,7 +1839,7 @@ int guc_getConfigOptionInt(const char* name)
 
     switch (record->vartype)
     {
-        case RIPPLEC_INT:
+        case C_INT:
             return *((struct config_int*)record)->variable;
         default:
             elog(RLOG_ERROR, "config %s not int type");

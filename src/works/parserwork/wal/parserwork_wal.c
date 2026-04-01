@@ -246,7 +246,7 @@ void parserwork_walinitphase2(decodingcontext* decodingctx)
     decodingctx->trans_cache->capture_buffer = MB2BYTE(guc_getConfigOptionInt(CFG_KEY_CAPTURE_BUFFER));
 
     elog(RLOG_INFO,
-         "ripple parser from, redolsn %X/%X, restartlsn %X/%X, last commit lsn:%X/%X, fileid:%lu, "
+         "castor parser from, redolsn %X/%X, restartlsn %X/%X, last commit lsn:%X/%X, fileid:%lu, "
          "offset:%u, timeline:%u",
          (uint32)(decodingctx->base.redolsn >> 32),
          (uint32)decodingctx->base.redolsn,
@@ -303,7 +303,7 @@ bool parserwork_wal_initfromdb(decodingcontext* decodingctx)
     decodingctx->rewind_ptr->redolsn = checkpoint->redolsn;
 
     elog(RLOG_INFO,
-         "ripple redolsn fromdb, redolsn %X/%X, timeline:%u",
+         "castor redolsn fromdb, redolsn %X/%X, timeline:%u",
          (uint32)(checkpoint->redolsn >> 32),
          (uint32)checkpoint->redolsn,
          decodingctx->base.curtlid);

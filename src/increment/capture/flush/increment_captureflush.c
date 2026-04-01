@@ -36,7 +36,7 @@ static void writework_capture_reloadstate(increment_captureflush* wstate, int st
     {
         increment_captureflush_reloadsyncdatasets(wstate);
         g_gotsigreload = CAPTURERELOAD_STATUS_UNSET;
-        elog(RLOG_INFO, "Ripple reload complete!");
+        elog(RLOG_INFO, "castor reload complete!");
     }
     return;
 }

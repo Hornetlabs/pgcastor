@@ -28,15 +28,15 @@ static bool cmd_wait_stop()
     int cnt = 0;
     for (cnt = 0; cnt < (100 * WAITS_PER_SEC); cnt++)
     {
-        long ripplepid = 0;
+        long castorpid = 0;
 
-        ripplepid = misc_lockfiles_getpid();
-        if (0 == ripplepid)
+        castorpid = misc_lockfiles_getpid();
+        if (0 == castorpid)
         {
             return true;
         }
 
-        if (kill((pid_t)ripplepid, 0) != 0)
+        if (kill((pid_t)castorpid, 0) != 0)
         {
             if (0 == misc_lockfiles_getpid())
             {
@@ -57,7 +57,7 @@ static bool cmd_wait_stop()
 /* caputre */
 bool cmd_stopproc(void)
 {
-    long  ripplepid = 0;
+    long  castorpid = 0;
     char* wdata = NULL;
     char  szMsg[256] = {0};
 
@@ -65,8 +65,8 @@ bool cmd_stopproc(void)
 
     chdir(wdata);
 
-    ripplepid = misc_lockfiles_getpid();
-    if (0 == ripplepid)
+    castorpid = misc_lockfiles_getpid();
+    if (0 == castorpid)
     {
         cmd_printmsg("Is ");
         cmd_printmsg(m_typ2stop[g_proctype].desc);
@@ -74,11 +74,11 @@ bool cmd_stopproc(void)
         return false;
     }
 
-    snprintf(szMsg, 128, "found %s process:%d, will send sigterm\n", m_typ2stop[g_proctype].desc, (pid_t)ripplepid);
+    snprintf(szMsg, 128, "found %s process:%d, will send sigterm\n", m_typ2stop[g_proctype].desc, (pid_t)castorpid);
     cmd_printmsg(szMsg);
-    if (0 != kill((pid_t)ripplepid, SIGTERM))
+    if (0 != kill((pid_t)castorpid, SIGTERM))
     {
-        snprintf(szMsg, 128, "could not send stop signal (PID:%ld) : %s\n", ripplepid, strerror(errno));
+        snprintf(szMsg, 128, "could not send stop signal (PID:%ld) : %s\n", castorpid, strerror(errno));
         cmd_printmsg(szMsg);
         return false;
     }

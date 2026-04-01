@@ -67,7 +67,7 @@ void operatordata_write(List* operator_list, uint64* offset, sysdict_header_arra
     uint64                      page_offset = 0;
     ListCell*                   cell = NULL;
     char                        buffer[FILE_BLK_SIZE];
-    pg_sysdict_Form_pg_operator rippleoperator;
+    pg_sysdict_Form_pg_operator operatortb;
 
     array->type = CATALOG_TYPE_OPERATOR;
     array->offset = *offset;
@@ -83,7 +83,7 @@ void operatordata_write(List* operator_list, uint64* offset, sysdict_header_arra
 
     foreach (cell, operator_list)
     {
-        rippleoperator = (pg_sysdict_Form_pg_operator)lfirst(cell);
+        operatortb = (pg_sysdict_Form_pg_operator)lfirst(cell);
 
         if (page_offset + sizeof(pg_parser_sysdict_pgoperator) > FILE_BLK_SIZE)
         {
@@ -98,7 +98,7 @@ void operatordata_write(List* operator_list, uint64* offset, sysdict_header_arra
             *offset += FILE_BLK_SIZE;
             page_offset = 0;
         }
-        rmemcpy1(buffer, page_offset, rippleoperator, sizeof(pg_parser_sysdict_pgoperator));
+        rmemcpy1(buffer, page_offset, operatortb, sizeof(pg_parser_sysdict_pgoperator));
         page_offset += sizeof(pg_parser_sysdict_pgoperator);
     }
     if (page_offset > 0)

@@ -43,7 +43,7 @@ typedef enum CAPTURERELOAD_STATUS
 #define DBVERSION_POSTGRES_12       "12"
 
 #define LOCK_FILE                   "proc.lock"
-#define CONTROL_FILE                "ripple.ctrl"
+#define CONTROL_FILE                "castor.ctrl"
 #define DECODE_BASE_FILE            "base.dat"
 #define CACHEDIR                    "cache"
 #define STAT                        "stat"

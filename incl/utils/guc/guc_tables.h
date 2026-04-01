@@ -8,8 +8,8 @@
 
 enum config_type
 {
-    RIPPLEC_INT,
-    RIPPLEC_STRING
+    C_INT,
+    C_STRING
 };
 
 union config_var_val

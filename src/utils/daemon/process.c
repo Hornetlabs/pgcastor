@@ -46,7 +46,7 @@ void makedaemon(void)
     pid = osal_ipc_fork();
     if (-1 == pid)
     {
-        elog(RLOG_ERROR, "make ripple daemon error ipc fork");
+        elog(RLOG_ERROR, "make castor daemon error ipc fork");
     }
 
     /*  */
@@ -58,7 +58,7 @@ void makedaemon(void)
         osal_file_close(pipes[1]);
         if (0 != ret)
         {
-            elog(RLOG_ERROR, "ripple init error");
+            elog(RLOG_ERROR, "castor init error");
         }
 
         while ((ret = osal_file_read(pipes[0], pipemsg, 128)))

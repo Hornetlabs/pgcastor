@@ -23,7 +23,7 @@ static proc2reload m_typ2reload[] = {
 /* Reload */
 static void cmd_reloadcapture(void)
 {
-    long  ripplepid;
+    long  castorpid;
     char  szMsg[256] = {0};
     char* wdata = NULL;
 
@@ -31,20 +31,20 @@ static void cmd_reloadcapture(void)
 
     chdir(wdata);
 
-    ripplepid = misc_lockfiles_getpid();
-    if (0 == ripplepid)
+    castorpid = misc_lockfiles_getpid();
+    if (0 == castorpid)
     {
-        cmd_printmsg("Is ripple running?\n");
+        cmd_printmsg("Is castor running?\n");
         return;
     }
 
-    if (0 != kill((pid_t)ripplepid, SIGHUP))
+    if (0 != kill((pid_t)castorpid, SIGHUP))
     {
-        snprintf(szMsg, 128, "could not send reload signal (PID:%ld) : %s\n", ripplepid, strerror(errno));
+        snprintf(szMsg, 128, "could not send reload signal (PID:%ld) : %s\n", castorpid, strerror(errno));
         cmd_printmsg(szMsg);
     }
 
-    printf("ripple reload\n");
+    printf("castor reload\n");
 }
 
 /* Reload command */

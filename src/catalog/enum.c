@@ -139,7 +139,7 @@ HTAB* enumcache_load(sysdict_header_array* array)
     bool                    found = false;
     uint64                  fileoffset = 0;
     char                    buffer[FILE_BLK_SIZE];
-    pg_sysdict_Form_pg_enum rippleenum;
+    pg_sysdict_Form_pg_enum enumtb;
     catalog_enum_value*     entry = NULL;
 
     rmemset1(&hash_ctl, 0, '\0', sizeof(hash_ctl));
@@ -165,20 +165,20 @@ HTAB* enumcache_load(sysdict_header_array* array)
 
         while (offset + sizeof(pg_parser_sysdict_pgclass) < FILE_BLK_SIZE)
         {
-            rippleenum = (pg_sysdict_Form_pg_enum)rmalloc1(sizeof(pg_parser_sysdict_pgenum));
-            if (NULL == rippleenum)
+            enumtb = (pg_sysdict_Form_pg_enum)rmalloc1(sizeof(pg_parser_sysdict_pgenum));
+            if (NULL == enumtb)
             {
                 elog(RLOG_ERROR, "out of memory, %s", strerror(errno));
             }
-            rmemset0(rippleenum, 0, '\0', sizeof(pg_parser_sysdict_pgenum));
-            rmemcpy0(rippleenum, 0, buffer + offset, sizeof(pg_parser_sysdict_pgenum));
-            entry = (catalog_enum_value*)hash_search(enumhtab, &rippleenum->enumtypid, HASH_ENTER, &found);
+            rmemset0(enumtb, 0, '\0', sizeof(pg_parser_sysdict_pgenum));
+            rmemcpy0(enumtb, 0, buffer + offset, sizeof(pg_parser_sysdict_pgenum));
+            entry = (catalog_enum_value*)hash_search(enumhtab, &enumtb->enumtypid, HASH_ENTER, &found);
             if (!found)
             {
                 entry->enums = NIL;
             }
-            entry->enumtypid = rippleenum->enumtypid;
-            entry->enums = lappend(entry->enums, rippleenum);
+            entry->enumtypid = enumtb->enumtypid;
+            entry->enums = lappend(entry->enums, enumtb);
             offset += sizeof(pg_parser_sysdict_pgenum);
             if (fileoffset + offset == array[CATALOG_TYPE_ENUM - 1].len)
             {
@@ -367,7 +367,7 @@ void enumcache_write(HTAB* enumscache, uint64* offset, sysdict_header_array* arr
     ListCell*               cell = NULL;
     HASH_SEQ_STATUS         status;
     char                    buffer[FILE_BLK_SIZE];
-    pg_sysdict_Form_pg_enum rippleenum;
+    pg_sysdict_Form_pg_enum enumtb;
     catalog_enum_value*     entry = NULL;
 
     array[CATALOG_TYPE_ENUM - 1].type = CATALOG_TYPE_ENUM;
@@ -393,7 +393,7 @@ void enumcache_write(HTAB* enumscache, uint64* offset, sysdict_header_array* arr
 
     foreach (cell, enum_list)
     {
-        rippleenum = (pg_sysdict_Form_pg_enum)lfirst(cell);
+        enumtb = (pg_sysdict_Form_pg_enum)lfirst(cell);
 
         if (page_offset + sizeof(pg_parser_sysdict_pgenum) > FILE_BLK_SIZE)
         {
@@ -408,7 +408,7 @@ void enumcache_write(HTAB* enumscache, uint64* offset, sysdict_header_array* arr
             *offset += FILE_BLK_SIZE;
             page_offset = 0;
         }
-        rmemcpy1(buffer, page_offset, rippleenum, sizeof(pg_parser_sysdict_pgenum));
+        rmemcpy1(buffer, page_offset, enumtb, sizeof(pg_parser_sysdict_pgenum));
         page_offset += sizeof(pg_parser_sysdict_pgenum);
     }
 

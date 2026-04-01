@@ -34,13 +34,13 @@ static proc2status m_typ2status[] = {
 bool cmd_statuscapture(void)
 {
     int            fd = -1;
-    long           ripplepid;
+    long           castorpid;
     metric_capture mcapture = {0};
 
-    ripplepid = misc_lockfiles_getpid();
-    if (0 == ripplepid)
+    castorpid = misc_lockfiles_getpid();
+    if (0 == castorpid)
     {
-        cmd_printmsg("Is ripple capture running?\n");
+        cmd_printmsg("Is castor capture running?\n");
         return false;
     }
 
@@ -57,7 +57,7 @@ bool cmd_statuscapture(void)
     osal_file_close(fd);
 
     /* Output content */
-    printf("\n---------------RIPPLE PARSER INFO----------------\n");
+    printf("\n---------------CASTOR PARSER INFO----------------\n");
 
     printf("capture redolsn         :%X/%X\n", (uint32)(mcapture.redolsn >> 32), (uint32)(mcapture.redolsn));
     printf("capture restartlsn      :%X/%X\n", (uint32)(mcapture.restartlsn >> 32), (uint32)(mcapture.restartlsn));
@@ -77,13 +77,13 @@ bool cmd_statuscapture(void)
 bool cmd_statusintegrate(void)
 {
     int              fd = -1;
-    long             ripplepid;
+    long             castorpid;
     metric_integrate mintegrate = {0};
 
-    ripplepid = misc_lockfiles_getpid();
-    if (0 == ripplepid)
+    castorpid = misc_lockfiles_getpid();
+    if (0 == castorpid)
     {
-        cmd_printmsg("Is ripple integrate running?\n");
+        cmd_printmsg("Is castor integrate running?\n");
         return false;
     }
 
@@ -100,7 +100,7 @@ bool cmd_statusintegrate(void)
     osal_file_close(fd);
 
     /* Output content */
-    printf("\n---------------RIPPLE PARSER INFO----------------\n");
+    printf("\n---------------CASTOR PARSER INFO----------------\n");
 
     printf("integrate loadlsn:           %X/%X", (uint32)(mintegrate.loadlsn >> 32), (uint32)(mintegrate.loadlsn));
     printf("integrate synclsn:           %X/%X", (uint32)(mintegrate.synclsn >> 32), (uint32)(mintegrate.synclsn));

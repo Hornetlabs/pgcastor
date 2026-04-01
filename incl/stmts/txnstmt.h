@@ -31,7 +31,7 @@ typedef enum TXNSTMT_TYPE
     TXNSTMT_TYPE_MAX
 } txnstmt_type;
 
-typedef struct RIPPLETXNSTMT_DDL
+typedef struct TXNSTMT_DDL
 {
     uint16 type;
     uint16 subtype;

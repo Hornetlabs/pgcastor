@@ -300,7 +300,7 @@ static char* rebuild_burst_gettypename(List* lattrs, HTAB* htype, Oid typeoid, c
 
     if (false == find)
     {
-        elog(RLOG_WARNING, "ripple rebuild composekey not find attribute attnum %s", colname);
+        elog(RLOG_WARNING, "castor rebuild composekey not find attribute attnum %s", colname);
         return NULL;
     }
 
@@ -504,7 +504,7 @@ static bool rebuild_composekey(HTAB* hclass, HTAB* hattrs, HTAB* hindex, rebuild
 
     if (NULL == class)
     {
-        elog(RLOG_WARNING, "ripple rebuild composekey not find class by %lu", pburstnode->table.oid);
+        elog(RLOG_WARNING, "castor rebuild composekey not find class by %lu", pburstnode->table.oid);
         return false;
     }
 
@@ -549,7 +549,7 @@ static bool rebuild_composekey(HTAB* hclass, HTAB* hattrs, HTAB* hindex, rebuild
     pburstnode->table.keys = rebuild_burstcolumn_init(index->indnatts);
     if (NULL == pburstnode->table.keys)
     {
-        elog(RLOG_WARNING, "ripple rebuild composekey pburstnode table.keys is null ");
+        elog(RLOG_WARNING, "castor rebuild composekey pburstnode table.keys is null ");
         return false;
     }
     pburstnode->table.keycnt = index->indnatts;
@@ -559,7 +559,7 @@ static bool rebuild_composekey(HTAB* hclass, HTAB* hattrs, HTAB* hindex, rebuild
 
     if (NULL == lattrs || NULL == lattrs->head)
     {
-        elog(RLOG_WARNING, "ripple rebuild composekey not find attribute by %lu", pburstnode->table.oid);
+        elog(RLOG_WARNING, "castor rebuild composekey not find attribute by %lu", pburstnode->table.oid);
         return false;
     }
 
@@ -583,7 +583,7 @@ static bool rebuild_composekey(HTAB* hclass, HTAB* hattrs, HTAB* hindex, rebuild
 
         if (false == find)
         {
-            elog(RLOG_WARNING, "ripple rebuild composekey not find attribute attnum %u", indkey);
+            elog(RLOG_WARNING, "castor rebuild composekey not find attribute attnum %u", indkey);
             return false;
         }
     }
@@ -2127,7 +2127,7 @@ static bool rebuild_burst_assembleinsert(cache_sysdicts* sysdicts, rebuild_burst
 
     if (NULL == lattrs || NULL == lattrs->head)
     {
-        elog(RLOG_WARNING, "ripple burst assembleinsert not find attribute by %lu", burstnode->table.oid);
+        elog(RLOG_WARNING, "castor burst assembleinsert not find attribute by %lu", burstnode->table.oid);
         rfree(sortrow);
         return false;
     }

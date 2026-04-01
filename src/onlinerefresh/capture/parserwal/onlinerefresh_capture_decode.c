@@ -69,18 +69,18 @@ static XLogRecPtr m_parserlsn = 0;
 
 void parserwork_waldecode_onlinerefresh(decodingcontext* decodingctx)
 {
-    int32                        rippleerrno = 0;
+    int32                        castorerrno = 0;
     pg_parser_translog_pre_base* preparserresutl = NULL;
     decodingctx->walpre.m_record = decodingctx->decode_record->data;
 
     m_parserlsn = decodingctx->decode_record->start.wal.lsn;
     /* Call pre-parser, dispatch processing based on pre-parser content */
-    if (false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &rippleerrno))
+    if (false == pg_parser_trans_preTrans(&decodingctx->walpre, &preparserresutl, &castorerrno))
     {
         elog(RLOG_ERROR,
              "pg_parser_trans_preTrans error, %08X, %s",
-             rippleerrno,
-             pg_parser_errno_getErrInfo(rippleerrno));
+             castorerrno,
+             pg_parser_errno_getErrInfo(castorerrno));
     }
 
     /* Call dispatch function */

@@ -55,7 +55,7 @@ static void bigtxn_captureflush_reloadstate(increment_captureflush* wstate, int 
     {
         bigtxn_captureflush_reloadsyncdatasets(wstate);
         g_gotsigreload = CAPTURERELOAD_STATUS_UNSET;
-        elog(RLOG_INFO, "Ripple reload complete!");
+        elog(RLOG_INFO, "castor reload complete!");
     }
     return;
 }

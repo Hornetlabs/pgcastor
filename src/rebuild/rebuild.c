@@ -88,7 +88,7 @@ static char* rebuild_makehatb(rebuild* rebuild, txnstmt_prepared* stmtprepared, 
     pstmt = rebuild_preparestmt_init();
     if (NULL == pstmt)
     {
-        elog(RLOG_WARNING, "ripple rebuild preparestmt out of memory");
+        elog(RLOG_WARNING, "castor rebuild preparestmt out of memory");
         return NULL;
     }
     pstmt->number = stmtprepared->number;
