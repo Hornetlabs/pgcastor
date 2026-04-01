@@ -106,9 +106,6 @@ typedef enum THRNODE_IDENTITY
 
     /*------------add capture thread types above---------------------*/
 
-    /* separator thread */
-    THRNODE_IDENTITY_GAP,
-
     /*------------add integrate thread types BEGIN --------------*/
     /* sync/apply thread */
     THRNODE_IDENTITY_INC_INTEGRATE_SYNC,
