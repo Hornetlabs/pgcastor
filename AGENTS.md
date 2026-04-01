@@ -305,12 +305,13 @@ make -j4
 INI-style configuration files with key-value pairs:
 ```ini
 jobname = capture
-log_dir = /opt/ripple/log
+log_dir = /path/to/log
 log_level = info
-data = /opt/ripple/capturedata
+data = /path/to/capturedata
 url = "port=5432 dbname=postgres user=liu"
 dbtype = postgres
 dbversion = 12
+catalog_schema = xsynch
 ```
 
 ### Key Configuration Files

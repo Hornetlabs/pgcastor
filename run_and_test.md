@@ -8,6 +8,7 @@ This skill provides comprehensive instructions for running and testing the pgcas
 
 ### Completed Steps
 - Project compiled successfully (see `compile.md`)
+- PostgreSQL installation detected (see Step 1 in `compile.md` for detection mechanism)
 - Binaries located in `./install/` directory
 - PostgreSQL instances running on:
   - Source DB: port 5432
@@ -29,6 +30,61 @@ install/
     ├── capture_cap1.cfg
     └── integrate_int1.cfg
 ```
+
+## Step 0: Verify PostgreSQL Setup
+
+Before running tests, verify your PostgreSQL installation:
+
+### Verify PostgreSQL Installation
+
+```bash
+# Set PostgreSQL installation path (if not already set)
+# This should match the path used during compilation
+export PG_INSTALL_DIR=/home/liu/pg/pgsql  # Adjust to your installation
+
+# Verify PostgreSQL binaries
+ls -la $PG_INSTALL_DIR/bin/psql
+ls -la $PG_INSTALL_DIR/bin/pg_config
+
+# Check PostgreSQL version
+$PG_INSTALL_DIR/bin/psql --version
+```
+
+### Verify Database Instances
+
+```bash
+# Check source database (port 5432)
+$PG_INSTALL_DIR/bin/psql -p 5432 -d postgres -c "SELECT version();"
+
+# Check target database (port 5433)
+$PG_INSTALL_DIR/bin/psql -p 5433 -d postgres -c "SELECT version();"
+```
+
+**Expected Output:**
+```
+                                             version                                              
+--------------------------------------------------------------------------------------------------
+ PostgreSQL 12.x on x86_64-pc-linux-gnu, ...
+```
+
+**If PostgreSQL instances are not running:**
+```bash
+# Start PostgreSQL instances
+$PG_INSTALL_DIR/bin/pg_ctl -D $PG_INSTALL_DIR/data start
+$PG_INSTALL_DIR/bin/pg_ctl -D $PG_INSTALL_DIR/data2 start
+```
+
+### Verify Environment Variables
+
+```bash
+# Check if LD_LIBRARY_PATH includes PostgreSQL lib
+echo $LD_LIBRARY_PATH
+
+# Should include:
+# /home/liu/pg/pgsql/lib:...
+```
+
+---
 
 ## Environment Setup
 
@@ -178,7 +234,7 @@ url:            port=5432 dbname=postgres user=liu
 waldir:         /home/liu/pg/pgsql/data/pg_wal
 dbtype:         postgres
 dbversion:      12
-xsynchschema:   ripple
+xsynchschema:   xsynch
 logdir:   NULL
 tbinclude:*.*
 addtablepattern:          *.*
@@ -217,7 +273,7 @@ ls -la /home/liu/pgcastor/pgcastor-pro/capturedata/
   - trail/
   - capture.stat
   - proc.lock
-  - ripple.ctrl
+  - castor.ctrl
 
 ### Test 3: integrate (Integrate Process)
 
