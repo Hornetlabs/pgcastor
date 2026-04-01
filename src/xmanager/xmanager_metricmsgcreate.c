@@ -339,6 +339,14 @@ static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
     xmanager_metricnode          xmetricnode = {0};
     xmanager_metricprogressnode* xmetricprogressnode = NULL;
 
+    /* For capture-integrate path validation */
+    xmanager_metricnode*         capturenode = NULL;
+    xmanager_metricnode*         integratenode = NULL;
+    char                         capture_data[1024] = {'\0'};
+    char                         integrate_traildir[1024] = {'\0'};
+    int                          capture_data_len = 0;
+    int                          integrate_traildir_len = 0;
+
     xmetricprogressnode = (xmanager_metricprogressnode*)xmanager_metricprogressnode_init();
     if (NULL == xmetricprogressnode)
     {
@@ -353,6 +361,14 @@ static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
     jobcnt = r_ntoh32(jobcnt);
     uptr += 4;
 
+    /* Validate: exactly one capture and one integrate */
+    if (2 != jobcnt)
+    {
+        elog(RLOG_WARNING, "xmanager create progress command, need exactly one capture and one integrate");
+        xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+        return false;
+    }
+
     for (idx_jobcnt = 0; idx_jobcnt < jobcnt; idx_jobcnt++)
     {
         /* jobtype */
@@ -362,7 +378,15 @@ static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
 
         if (XMANAGER_METRICNODETYPE_INTEGRATE < jobtype)
         {
-            elog(RLOG_WARNING, "xmanager recv create progress command, need jobtype less then HGRECEIVELOG");
+            elog(RLOG_WARNING, "xmanager recv create progress command, need jobtype less then PGRECEIVELOG");
+            xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+            return false;
+        }
+
+        /* Only allow CAPTURE and INTEGRATE types */
+        if (XMANAGER_METRICNODETYPE_CAPTURE != jobtype && XMANAGER_METRICNODETYPE_INTEGRATE != jobtype)
+        {
+            elog(RLOG_WARNING, "xmanager create progress command, only support capture and integrate");
             xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
             return false;
         }
@@ -397,6 +421,106 @@ static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
             return false;
         }
 
+        /* Validate based on job type */
+        if (XMANAGER_METRICNODETYPE_CAPTURE == jobtype)
+        {
+            /* Check if capture already exists */
+            if (NULL != capturenode)
+            {
+                elog(RLOG_WARNING, "xmanager create progress command, only one capture allowed");
+                xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+                return false;
+            }
+
+            /* Validate capture.data is not empty (trail write directory) */
+            if (NULL == pxmetricnode->data || '\0' == pxmetricnode->data[0])
+            {
+                elog(RLOG_WARNING, "xmanager create progress command, capture %s data is empty", name);
+                xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+                return false;
+            }
+
+            /* Validate capture.conf is not empty */
+            if (NULL == pxmetricnode->conf || '\0' == pxmetricnode->conf[0])
+            {
+                elog(RLOG_WARNING, "xmanager create progress command, capture %s conf is empty", name);
+                xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+                return false;
+            }
+
+            /* NOTE: capture.traildir is NOT validated - it's always NULL for capture jobs */
+
+            /* Store capture data path for validation */
+            capturenode = pxmetricnode;
+            capture_data_len = strlen(pxmetricnode->data);
+            if (capture_data_len >= sizeof(capture_data))
+            {
+                elog(RLOG_WARNING, "xmanager create progress command, capture data path too long");
+                xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+                return false;
+            }
+            rmemcpy0(capture_data, 0, pxmetricnode->data, capture_data_len);
+
+            /* Remove trailing slash for comparison */
+            while (capture_data_len > 1 && '/' == capture_data[capture_data_len - 1])
+            {
+                capture_data[capture_data_len - 1] = '\0';
+                capture_data_len--;
+            }
+        }
+        else if (XMANAGER_METRICNODETYPE_INTEGRATE == jobtype)
+        {
+            /* Check if integrate already exists */
+            if (NULL != integratenode)
+            {
+                elog(RLOG_WARNING, "xmanager create progress command, only one integrate allowed");
+                xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+                return false;
+            }
+
+            /* Validate integrate.data is not empty */
+            if (NULL == pxmetricnode->data || '\0' == pxmetricnode->data[0])
+            {
+                elog(RLOG_WARNING, "xmanager create progress command, integrate %s data is empty", name);
+                xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+                return false;
+            }
+
+            /* Validate integrate.conf is not empty */
+            if (NULL == pxmetricnode->conf || '\0' == pxmetricnode->conf[0])
+            {
+                elog(RLOG_WARNING, "xmanager create progress command, integrate %s conf is empty", name);
+                xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+                return false;
+            }
+
+            /* Validate integrate.traildir is not empty (trail read directory) */
+            if (NULL == pxmetricnode->traildir || '\0' == pxmetricnode->traildir[0])
+            {
+                elog(RLOG_WARNING, "xmanager create progress command, integrate %s traildir is empty", name);
+                xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+                return false;
+            }
+
+            /* Store integrate traildir for validation */
+            integratenode = pxmetricnode;
+            integrate_traildir_len = strlen(pxmetricnode->traildir);
+            if (integrate_traildir_len >= sizeof(integrate_traildir))
+            {
+                elog(RLOG_WARNING, "xmanager create progress command, integrate traildir path too long");
+                xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+                return false;
+            }
+            rmemcpy0(integrate_traildir, 0, pxmetricnode->traildir, integrate_traildir_len);
+
+            /* Remove trailing slash for comparison */
+            while (integrate_traildir_len > 1 && '/' == integrate_traildir[integrate_traildir_len - 1])
+            {
+                integrate_traildir[integrate_traildir_len - 1] = '\0';
+                integrate_traildir_len--;
+            }
+        }
+
         /* Create new metricnode */
         jobxmetricnode = xmanager_metricnode_init(jobtype);
         if (NULL == jobxmetricnode)
@@ -413,6 +537,32 @@ static bool xmanager_metricmsg_parsecreateprocess(xmanager_metric* xmetric,
 
         xmetricprogressnode->progressjop = dlist_put(xmetricprogressnode->progressjop, jobxmetricnode);
         jobxmetricnode = NULL;
+    }
+
+    /* Validate capture-integrate path relationship */
+    if (NULL == capturenode)
+    {
+        elog(RLOG_WARNING, "xmanager create progress command, capture not specified");
+        xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+        return false;
+    }
+
+    if (NULL == integratenode)
+    {
+        elog(RLOG_WARNING, "xmanager create progress command, integrate not specified");
+        xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+        return false;
+    }
+
+    /* Compare normalized paths */
+    if (0 != strcmp(capture_data, integrate_traildir))
+    {
+        elog(RLOG_WARNING,
+             "xmanager create progress command, path mismatch: capture.data=%s, integrate.traildir=%s",
+             capture_data,
+             integrate_traildir);
+        xmanager_metricprogressnode_destroy((xmanager_metricnode*)xmetricprogressnode);
+        return false;
     }
 
     /* Set to initialized state */

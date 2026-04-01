@@ -27,13 +27,13 @@ typedef struct XMANAGER_METRICNODE
     /* Name */
     char*                   name;
 
-    /* Working directory, can be empty */
+    /* Working directory */
     char*                   data;
 
-    /* Config directory, can be empty */
+    /* Config directory */
     char*                   conf;
 
-    /* Trail file directory, can be empty */
+    /* Trail file directory */
     char*                   traildir;
 } xmanager_metricnode;
 

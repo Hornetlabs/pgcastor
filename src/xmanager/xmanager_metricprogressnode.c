@@ -328,428 +328,78 @@ xmanager_metricnode* xmanager_metricprogressnode_deserial(uint8* blk, int* blkst
     return (xmanager_metricnode*)xmetricprogressnode;
 }
 
-/* Get key-value pairs from configuration file */
-static bool xmanager_metricprogressnode_getdatafromcfgfile(const char* config_file, char* key, char* data)
+/*
+ * Format bytes to human readable format (GB/MB/KB/B)
+ * Rules:
+ *   - Auto-select largest unit
+ *   - KB and above: keep 2 decimal places
+ *   - Example: 1025B -> "1.00KB", 3758096384B -> "3.50GB"
+ */
+static void xmanager_format_lsnlag(uint64 bytes, char* buffer, size_t bufsize)
 {
-    FILE* fp = NULL;
-    char  fline[1024];
+    const uint64 KB = 1024;
+    const uint64 MB = 1024 * 1024;
+    const uint64 GB = 1024 * 1024 * 1024;
 
-    fp = osal_file_fopen(config_file, "rb");
-    if (!fp)
+    if (bytes >= GB)
     {
-        elog(RLOG_WARNING, "could not open configuration file:%s %s", config_file, strerror(errno));
-        return false;
+        double value = (double)bytes / GB;
+        snprintf(buffer, bufsize, "%.2fGB", value);
     }
-
-    /* Read a line of data */
-    rmemset1(fline, 0, '\0', sizeof(fline));
-    while (osal_file_fgets(fp, sizeof(fline), fline) != NULL)
+    else if (bytes >= MB)
     {
-        bool  quota = false;
-        char* uptr = fline;
-        int   pos = 0;
-        int   len = 0;
-
-        /* Skip leading whitespace characters */
-        while ('\0' != *uptr)
-        {
-            if (' ' != *uptr && '\t' != *uptr && '\r' != *uptr && '\n' != *uptr)
-            {
-                break;
-            }
-            uptr++;
-            pos++;
-        }
-
-        /* Skip empty lines and comments */
-        if ('\0' == *uptr || '#' == *uptr)
-        {
-            rmemset1(fline, 0, '\0', sizeof(fline));
-            continue;
-        }
-
-        /* Get key */
-        while ('\0' != *uptr)
-        {
-            if (' ' == *uptr || '\t' == *uptr || '\r' == *uptr || '\n' == *uptr || '=' == *uptr)
-            {
-                break;
-            }
-            len++;
-            uptr++;
-        }
-
-        /* Get key/name */
-        if (len != strlen(key) || 0 != memcmp(key, fline + pos, len))
-        {
-            rmemset1(fline, 0, '\0', sizeof(fline));
-            continue;
-        }
-        pos += len;
-
-        /* Get value */
-        len = 0;
-
-        /* Skip spaces, tabs, and newline characters */
-        while ('\0' != *uptr)
-        {
-            if (' ' != *uptr && '\t' != *uptr && '\r' != *uptr && '\n' != *uptr)
-            {
-                break;
-            }
-            pos++;
-            uptr++;
-        }
-
-        if ('=' != *uptr)
-        {
-            /* End of data */
-            elog(RLOG_WARNING, "config data error");
-            return false;
-        }
-
-        /* Get value */
-        /* Skip '=' character */
-        pos++;
-        uptr++;
-
-        /* Skip spaces and other characters */
-        while ('\0' != *uptr)
-        {
-            if (' ' != *uptr && '\t' != *uptr && '\r' != *uptr && '\n' != *uptr)
-            {
-                break;
-            }
-            uptr++;
-            pos++;
-        }
-
-        /* Skip empty lines and comment lines */
-        if ('\0' == *uptr || '#' == *uptr)
-        {
-            /* End of data */
-            elog(RLOG_WARNING, "config data error");
-            return false;
-        }
-
-        /* Skip spaces and other characters */
-        /* Check character type */
-        if (*uptr == '"')
-        {
-            uptr++;
-            pos++;
-            quota = true;
-            /* Get the next '"' character */
-            while ('\0' != *uptr)
-            {
-                if ('"' == *uptr)
-                {
-                    quota = false;
-                    break;
-                }
-                len++;
-                uptr++;
-            }
-
-            if (true == quota)
-            {
-                elog(RLOG_WARNING, "configuration data is incorrect, missing double quotation marks");
-                return false;
-            }
-        }
-        else
-        {
-            while ('\0' != *uptr)
-            {
-                if (' ' == *uptr || '\t' == *uptr || '\r' == *uptr || '\n' == *uptr)
-                {
-                    break;
-                }
-                len++;
-                uptr++;
-            }
-        }
-
-        len += 1;
-        rmemset1(data, 0, 0, len);
-        rmemcpy1(data, 0, fline + pos, len - 1);
-        break;
+        double value = (double)bytes / MB;
+        snprintf(buffer, bufsize, "%.2fMB", value);
     }
-    return true;
+    else if (bytes >= KB)
+    {
+        double value = (double)bytes / KB;
+        snprintf(buffer, bufsize, "%.2fKB", value);
+    }
+    else
+    {
+        snprintf(buffer, bufsize, "%luB", bytes);
+    }
 }
 
-/* Assemble progress capture info */
-static void* xmanager_metricmsg_assembleprogresscapture(xmanager_metric*     xmetric,
-                                                        xmanager_metricnode* xmetricnode,
-                                                        dlist*               job)
-{
-    bool       find = false;
-    uint8      u8value = 0;
-    int        rowlen = 0;
-    int        msglen = 0;
-    int        ivalue = 0;
-    int        rowcnt = 0;
-    uint32     hi = 0;
-    uint32     lo = 0;
-    int64      dbtime = 0;
-    uint8*     rowuptr = NULL;
-    uint8*     uptr = NULL;
-    PGconn*    conn = NULL;
-    PGresult*  res = NULL;
-    netpacket* npacket = NULL;
-    char       conninfo[512] = {'\0'};
-    char       sql_exec[1024] = {'\0'};
-
-    rmemset1(conninfo, 0, 0, 512);
-    xmanager_metricprogressnode_getdatafromcfgfile(xmetricnode->conf, CFG_KEY_URL, conninfo);
-
-    conn = conn_get(conninfo);
-    if (NULL == conn)
-    {
-        return NULL;
-    }
-
-    rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec, "SELECT pg_current_wal_lsn();");
-    res = conn_exec(conn, sql_exec);
-    if (NULL == res)
-    {
-        return NULL;
-    }
-
-    if (PQnfields(res) != 1 && PQntuples(res) != 1)
-    {
-        PQfinish(conn);
-        PQclear(res);
-        elog(RLOG_WARNING, "failed get excute SQL result: SELECT pg_current_wal_lsn()");
-        return NULL;
-    }
-
-    /* Read data from redolsn in "%X/%X" format and assign values to hi/lo */
-    if (sscanf(PQgetvalue(res, 0, 0), "%X/%X", &hi, &lo) != 2)
-    {
-        PQfinish(conn);
-        PQclear(res);
-        elog(RLOG_WARNING, " could not parse end position ");
-        return NULL;
-    }
-    PQclear(res);
-
-    rmemset1(sql_exec, 0, '\0', 1024);
-    sprintf(sql_exec,
-            "SELECT (EXTRACT(EPOCH\n"
-            "FROM (CURRENT_TIMESTAMP - TIMESTAMPTZ '2000-01-01 00:00:00+00') ) * 1000000 )::int8\n"
-            "AS pg_ts_usec;");
-    res = conn_exec(conn, sql_exec);
-    if (NULL == res)
-    {
-        return NULL;
-    }
-
-    if (PQnfields(res) != 1 && PQntuples(res) != 1)
-    {
-        PQfinish(conn);
-        PQclear(res);
-        elog(RLOG_WARNING, "failed get excute SQL result: SELECT CURRENT_TIMESTAMP");
-        return NULL;
-    }
-
-    /* Read dbtime */
-    if (sscanf(PQgetvalue(res, 0, 0), "%ld", &dbtime) != 1)
-    {
-        PQfinish(conn);
-        PQclear(res);
-        elog(RLOG_WARNING, "dbtime could not parse end position ");
-        return NULL;
-    }
-
-    PQfinish(conn);
-    PQclear(res);
-
-    /* 4 total length + 4 crc32 + 4 msgtype + 1 success/failure + 4 rowcnt */
-    msglen = 4 + 4 + 4 + 1 + 4;
-
-    /* rowlen */
-    msglen += 4;
-
-    /* name */
-    msglen += (4 + strlen("name"));
-
-    /* lsnlag */
-    msglen += (4 + strlen("lsnlag"));
-
-    /* timelag */
-    msglen += (4 + strlen("timelag"));
-
-    /* traillag */
-    msglen += (4 + strlen("traillag"));
-
-    rowcnt = job->length;
-
-    /* rowlen 4 + nullmapcnt 2 + nullmap 1 */
-    rowlen += (4 + 2 + 1);
-
-    /* name */
-    rowlen += 4;
-    rowlen += 128;
-
-    /* lsnlag */
-    rowlen += 4;
-    rowlen += 32;
-
-    /* timelag */
-    rowlen += 4;
-    rowlen += 128;
-
-    /* traillag */
-    rowlen += 4;
-    rowlen += 32;
-
-    msglen += (rowlen * (rowcnt - 1));
-
-    /* Allocate memory */
-    npacket = netpacket_init();
-    if (NULL == npacket)
-    {
-        elog(RLOG_WARNING, "xmanager metric assemble info msg out of memory");
-        return NULL;
-    }
-    msglen += 1;
-    npacket->data = netpacket_data_init(msglen);
-    if (NULL == npacket->data)
-    {
-        elog(RLOG_WARNING, "xmanager metric assemble info msg data, out of memory");
-        netpacket_destroy(npacket);
-        return NULL;
-    }
-    msglen -= 1;
-
-    /* Assemble data */
-    uptr = npacket->data;
-
-    /* Total data length */
-    uptr += 4;
-    npacket->used += 4;
-
-    /* crc32 */
-    uptr += 4;
-    npacket->used += 4;
-
-    /* Type */
-    ivalue = XMANAGER_MSG_STARTCMD;
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    npacket->used += 4;
-
-    /* Type success flag */
-    u8value = 0;
-    rmemcpy1(uptr, 0, &u8value, 1);
-    uptr += 1;
-    npacket->used += 1;
-
-    /* rowcnt */
-    ivalue = rowcnt;
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    npacket->used += 4;
-
-    rowlen = 0;
-    rowuptr = uptr;
-
-    /* Skip row length */
-    uptr += 4;
-    rowlen = 4;
-    npacket->used += 4;
-
-    /* Assemble column header */
-    /* name len */
-    ivalue = strlen("name");
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    rowlen += 4;
-    npacket->used += 4;
-
-    /* name */
-    ivalue = strlen("name");
-    rmemcpy1(uptr, 0, "name", ivalue);
-    uptr += ivalue;
-    rowlen += ivalue;
-    npacket->used += ivalue;
-
-    /* lsnlag len */
-    ivalue = strlen("lsnlag");
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    rowlen += 4;
-    npacket->used += 4;
-
-    /* lsnlag */
-    ivalue = strlen("lsnlag");
-    rmemcpy1(uptr, 0, "lsnlag", ivalue);
-    uptr += ivalue;
-    rowlen += ivalue;
-    npacket->used += ivalue;
-
-    /* timelag len */
-    ivalue = strlen("timelag");
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    rowlen += 4;
-    npacket->used += 4;
-
-    /* timelag */
-    ivalue = strlen("timelag");
-    rmemcpy1(uptr, 0, "timelag", ivalue);
-    uptr += ivalue;
-    rowlen += ivalue;
-    npacket->used += ivalue;
-
-    /* traillag len */
-    ivalue = strlen("traillag");
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(uptr, 0, &ivalue, 4);
-    uptr += 4;
-    rowlen += 4;
-    npacket->used += 4;
-
-    /* traillag */
-    ivalue = strlen("traillag");
-    rmemcpy1(uptr, 0, "traillag", ivalue);
-    uptr += ivalue;
-    rowlen += ivalue;
-    npacket->used += ivalue;
-
-    /* Row total length */
-    rowlen = r_hton32(rowlen);
-    rmemcpy1(rowuptr, 0, &rowlen, 4);
-
-    if (false == find)
-    {
-        elog(RLOG_WARNING, "xmanager metric assemble progress msg no valid found");
-        netpacket_destroy(npacket);
-        return NULL;
-    }
-
-    /* Total data length */
-    ivalue = npacket->used;
-    ivalue = r_hton32(ivalue);
-    rmemcpy1(npacket->data, 0, &ivalue, 4);
-
-    return npacket;
-}
-
-/* Assemble progress info */
+/*
+ * Calculate delay information between capture and integrate
+ *
+ * Delay calculation:
+ *   - LSN Lag: capture.flushlsn - integrate.synclsn (formatted as GB/MB/KB/B)
+ *   - Trail Lag: capture.trailno - integrate.synctrailno
+ *   - Time Lag: capture.flushtimestamp - integrate.synctimestamp (formatted as Xh Xm Xs)
+ *
+ * Requirement: One-to-one relationship only (one capture, one integrate)
+ */
 void* xmanager_metricmsg_assembleprogress(xmanager_metric* xmetric, xmanager_metricnode* pxmetricnode)
 {
-    dlistnode*                   dlnode = NULL;
-    xmanager_metricnode*         pmetricnode = NULL;
-    xmanager_metricprogressnode* xmetricprogressnode = NULL;
-    xmanager_metricnode          tmpmetricnode = {0};
+    uint8                         u8value = 0;
+    uint16                        u16value = 0;
+    int                           rowlen = 0;
+    int                           msglen = 0;
+    int                           ivalue = 0;
+    int                           len = 0;
+    uint8*                        rowuptr = NULL;
+    uint8*                        uptr = NULL;
+    netpacket*                    npacket = NULL;
+    dlistnode*                    dlnode = NULL;
+    xmanager_metricnode*          capturenode = NULL;
+    xmanager_metricnode*          integratenode = NULL;
+    xmanager_metriccapturenode*   capturemetric = NULL;
+    xmanager_metricintegratenode* integratemetric = NULL;
+    xmanager_metricprogressnode*  xmetricprogressnode = NULL;
+    xmanager_metricnode           tmpmetricnode = {0};
+
+    /* Delay data */
+    char                          lsnlag[64] = {'\0'};
+    char                          traillag[64] = {'\0'};
+    char                          timelag[128] = {'\0'};
+    uint64                        lsnlag_value = 0;
+    uint64                        traillag_value = 0;
+    int64                         timelag_value = 0;
+    int64                         seconds = 0;
+    int64                         microseconds = 0;
 
     xmetricprogressnode = (xmanager_metricprogressnode*)pxmetricnode;
 
@@ -759,47 +409,413 @@ void* xmanager_metricmsg_assembleprogress(xmanager_metric* xmetric, xmanager_met
         return NULL;
     }
 
+    /* Find capture and integrate nodes */
     for (dlnode = xmetricprogressnode->progressjop->head; NULL != dlnode; dlnode = dlnode->next)
     {
-        pmetricnode = (xmanager_metricnode*)dlnode->value;
+        xmanager_metricnode* pmetricnode = (xmanager_metricnode*)dlnode->value;
+
         if (XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
         {
-            break;
+            /* Ensure only one capture is allowed */
+            if (NULL != capturenode)
+            {
+                elog(RLOG_WARNING,
+                     "progress %s multiple capture not allowed, only one-to-one supported",
+                     xmetricprogressnode->base.name);
+                return NULL;
+            }
+            capturenode = pmetricnode;
         }
-        pmetricnode = NULL;
+        else if (XMANAGER_METRICNODETYPE_INTEGRATE == pmetricnode->type)
+        {
+            /* Ensure only one integrate is allowed */
+            if (NULL != integratenode)
+            {
+                elog(RLOG_WARNING,
+                     "progress %s multiple integrate not allowed, only one-to-one supported",
+                     xmetricprogressnode->base.name);
+                return NULL;
+            }
+            integratenode = pmetricnode;
+        }
     }
 
-    if (NULL == pmetricnode)
+    /* Both capture and integrate must exist */
+    if (NULL == capturenode)
     {
-        elog(RLOG_WARNING, "not find valid information in progress %s ", xmetricprogressnode->base.name);
+        elog(RLOG_WARNING, "progress %s not find capture", xmetricprogressnode->base.name);
         return NULL;
     }
 
-    tmpmetricnode.name = pmetricnode->name;
-    tmpmetricnode.type = pmetricnode->type;
-
-    /* Get metricnode */
-    pmetricnode = dlist_get(xmetric->metricnodes, &tmpmetricnode, xmanager_metricnode_cmp);
-    if (NULL == pmetricnode)
+    if (NULL == integratenode)
     {
-        elog(RLOG_WARNING, "not find valid progress job %s in metricnodes ", pmetricnode->name);
+        elog(RLOG_WARNING, "progress %s not find integrate", xmetricprogressnode->base.name);
         return NULL;
     }
 
-    /* Check if running, do not print info if not running */
-    if (XMANAGER_METRICNODESTAT_ONLINE > pmetricnode->stat)
+    /* Get actual metricnode for capture (with runtime metrics) */
+    tmpmetricnode.type = XMANAGER_METRICNODETYPE_CAPTURE;
+    tmpmetricnode.name = capturenode->name;
+
+    capturenode = dlist_get(xmetric->metricnodes, &tmpmetricnode, xmanager_metricnode_cmp);
+    if (NULL == capturenode)
     {
-        elog(RLOG_WARNING, "progress job %s not start", pmetricnode->name);
+        elog(RLOG_WARNING,
+             "progress %s capture %s not found in metricnodes",
+             xmetricprogressnode->base.name,
+             tmpmetricnode.name);
         return NULL;
     }
 
-    if (XMANAGER_METRICNODETYPE_CAPTURE == pmetricnode->type)
+    /* Check if capture is running */
+    if (XMANAGER_METRICNODESTAT_ONLINE > capturenode->stat)
     {
-        return xmanager_metricmsg_assembleprogresscapture(xmetric, pmetricnode, xmetricprogressnode->progressjop);
+        elog(RLOG_WARNING, "progress %s capture %s not running", xmetricprogressnode->base.name, capturenode->name);
+        return NULL;
+    }
+
+    /* Get actual metricnode for integrate (with runtime metrics) */
+    tmpmetricnode.type = XMANAGER_METRICNODETYPE_INTEGRATE;
+    tmpmetricnode.name = integratenode->name;
+
+    integratenode = dlist_get(xmetric->metricnodes, &tmpmetricnode, xmanager_metricnode_cmp);
+    if (NULL == integratenode)
+    {
+        elog(RLOG_WARNING,
+             "progress %s integrate %s not found in metricnodes",
+             xmetricprogressnode->base.name,
+             tmpmetricnode.name);
+        return NULL;
+    }
+
+    /* Check if integrate is running */
+    if (XMANAGER_METRICNODESTAT_ONLINE > integratenode->stat)
+    {
+        elog(RLOG_WARNING, "progress %s integrate %s not running", xmetricprogressnode->base.name, integratenode->name);
+        return NULL;
+    }
+
+    /* Cast to get detailed metrics */
+    capturemetric = (xmanager_metriccapturenode*)capturenode;
+    integratemetric = (xmanager_metricintegratenode*)integratenode;
+
+    /* Calculate LSN Lag */
+    if (capturemetric->flushlsn >= integratemetric->synclsn)
+    {
+        lsnlag_value = capturemetric->flushlsn - integratemetric->synclsn;
+        xmanager_format_lsnlag(lsnlag_value, lsnlag, sizeof(lsnlag));
     }
     else
     {
-        elog(RLOG_WARNING, "find invalid information in progress %s ", xmetricprogressnode->base.name);
+        snprintf(lsnlag, sizeof(lsnlag), "N/A");
+    }
+
+    /* Calculate Trail Lag */
+    if (capturemetric->trailno >= integratemetric->synctrailno)
+    {
+        traillag_value = capturemetric->trailno - integratemetric->synctrailno;
+        snprintf(traillag, sizeof(traillag), "%lu", traillag_value);
+    }
+    else
+    {
+        snprintf(traillag, sizeof(traillag), "N/A");
+    }
+
+    /* Calculate Time Lag */
+    if (capturemetric->flushtimestamp > 0 && integratemetric->synctimestamp > 0)
+    {
+        timelag_value = capturemetric->flushtimestamp - integratemetric->synctimestamp;
+
+        /* Convert to human readable format */
+        seconds = timelag_value / 1000000;
+        microseconds = timelag_value % 1000000;
+
+        if (seconds >= 3600)
+        {
+            snprintf(timelag, sizeof(timelag), "%ldh %ldm %lds", seconds / 3600, (seconds % 3600) / 60, seconds % 60);
+        }
+        else if (seconds >= 60)
+        {
+            snprintf(timelag, sizeof(timelag), "%ldm %lds", seconds / 60, seconds % 60);
+        }
+        else
+        {
+            snprintf(timelag, sizeof(timelag), "%lds %ldus", seconds, microseconds);
+        }
+    }
+    else
+    {
+        snprintf(timelag, sizeof(timelag), "N/A");
+    }
+
+    /* Build response message */
+    /* 4(total) + 4(crc) + 4(msgtype) + 1(success) + 4(rowcnt) + 4(rowlen) */
+    msglen = 4 + 4 + 4 + 1 + 4 + 4;
+
+    /* Column names */
+    msglen += (4 + strlen("name"));
+    msglen += (4 + strlen("capture"));
+    msglen += (4 + strlen("integrate"));
+    msglen += (4 + strlen("lsnlag"));
+    msglen += (4 + strlen("traillag"));
+    msglen += (4 + strlen("timelag"));
+
+    /* Row data: rowlen(4) + nullmapcnt(2) + nullmap(1) */
+    rowlen = 4 + 2 + 1;
+
+    /* name value */
+    rowlen += 4 + strlen(xmetricprogressnode->base.name);
+
+    /* capture value */
+    rowlen += 4 + strlen(capturemetric->base.name);
+
+    /* integrate value */
+    rowlen += 4 + strlen(integratemetric->base.name);
+
+    /* lsnlag value */
+    rowlen += 4 + strlen(lsnlag);
+
+    /* traillag value */
+    rowlen += 4 + strlen(traillag);
+
+    /* timelag value */
+    rowlen += 4 + strlen(timelag);
+
+    msglen += rowlen;
+
+    /* Allocate memory */
+    npacket = netpacket_init();
+    if (NULL == npacket)
+    {
+        elog(RLOG_WARNING, "xmanager metric assemble progress msg out of memory");
         return NULL;
     }
+
+    npacket->data = netpacket_data_init(msglen);
+    if (NULL == npacket->data)
+    {
+        elog(RLOG_WARNING, "xmanager metric assemble progress msg data, out of memory");
+        netpacket_destroy(npacket);
+        return NULL;
+    }
+
+    /* Assemble data */
+    uptr = npacket->data;
+
+    /* Total length */
+    uptr += 4;
+    npacket->used += 4;
+
+    /* crc32 */
+    uptr += 4;
+    npacket->used += 4;
+
+    /* Message type */
+    ivalue = XMANAGER_MSG_INFOCMD;
+    ivalue = r_hton32(ivalue);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    npacket->used += 4;
+
+    /* Success flag */
+    u8value = 0;
+    rmemcpy1(uptr, 0, &u8value, 1);
+    uptr += 1;
+    npacket->used += 1;
+
+    /* Row count */
+    ivalue = 2;
+    ivalue = r_hton32(ivalue);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    npacket->used += 4;
+
+    rowuptr = uptr;
+
+    /* Skip row length */
+    uptr += 4;
+    rowlen = 4;
+    npacket->used += 4;
+
+    /* Column name: name */
+    len = strlen("name");
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, "name", len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Column name: capture */
+    len = strlen("capture");
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, "capture", len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Column name: integrate */
+    len = strlen("integrate");
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, "integrate", len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Column name: lsnlag */
+    len = strlen("lsnlag");
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, "lsnlag", len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Column name: traillag */
+    len = strlen("traillag");
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, "traillag", len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Column name: timelag */
+    len = strlen("timelag");
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, "timelag", len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Total row length for header row */
+    rowlen = r_hton32(rowlen);
+    rmemcpy1(rowuptr, 0, &rowlen, 4);
+
+    /* ========== DATA ROW ========== */
+    rowuptr = uptr;
+
+    /* Skip row length for data row */
+    uptr += 4;
+    rowlen = 4;
+    npacket->used += 4;
+
+    /* Null column map count (2 bytes, matching capture/integrate format) */
+    u16value = 1;
+    u16value = r_hton16(u16value);
+    rmemcpy1(uptr, 0, &u16value, 2);
+    uptr += 2;
+    rowlen += 2;
+    npacket->used += 2;
+
+    /* Null column map (1 byte for 6 columns, all not null) */
+    u8value = 0;
+    rmemcpy1(uptr, 0, &u8value, 1);
+    uptr += 1;
+    rowlen += 1;
+    npacket->used += 1;
+
+    /* Row data: name */
+    len = strlen(xmetricprogressnode->base.name);
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, xmetricprogressnode->base.name, len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Row data: capture */
+    len = strlen(capturemetric->base.name);
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, capturemetric->base.name, len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Row data: integrate */
+    len = strlen(integratemetric->base.name);
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, integratemetric->base.name, len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Row data: lsnlag */
+    len = strlen(lsnlag);
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, lsnlag, len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Row data: traillag */
+    len = strlen(traillag);
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, traillag, len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Row data: timelag */
+    len = strlen(timelag);
+    ivalue = r_hton32(len);
+    rmemcpy1(uptr, 0, &ivalue, 4);
+    uptr += 4;
+    rowlen += 4;
+    npacket->used += 4;
+    rmemcpy1(uptr, 0, timelag, len);
+    uptr += len;
+    rowlen += len;
+    npacket->used += len;
+
+    /* Total row length for data row */
+    rowlen = r_hton32(rowlen);
+    rmemcpy1(rowuptr, 0, &rowlen, 4);
+
+    /* Total data length */
+    ivalue = npacket->used;
+    ivalue = r_hton32(ivalue);
+    rmemcpy1(npacket->data, 0, &ivalue, 4);
+
+    return npacket;
 }
