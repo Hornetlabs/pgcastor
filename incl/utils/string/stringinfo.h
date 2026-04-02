@@ -6,7 +6,6 @@
  *
  * All Copyright (c) 2024-2024, Byte Sync Development Group
  *
- * Author: liuzihe  Date: 2024/07/10
  *
  * incl/utils/string/stringinfo.h
  *
