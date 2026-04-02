@@ -21,7 +21,7 @@ extern void xscsci_prescan_finish(xscsci_prescan* state);
 extern void xscsci_prescan_setup(xscsci_prescan* state, const char* line, int line_len);
 
 /* lexical parse entry */
-extern xscsci_prescanresult xscsci_prescan_scan(xscsci_prescan* state, xsynch_exbuffer querybuf);
+extern xscsci_prescanresult xscsci_prescan_scan(xscsci_prescan* state, pgcastor_exbuffer querybuf);
 
 extern void xscsci_prescan_reset(xscsci_prescan* state);
 

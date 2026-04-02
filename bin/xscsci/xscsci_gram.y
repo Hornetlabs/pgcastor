@@ -2,10 +2,10 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
-    #include "xsynch_fe.h"
+    #include "pgcastor_fe.h"
     #include "xscsci_scan_private.h"
 
-    xsynch_cmd*                    g_scanparseresult;
+    pgcastor_cmd*                    g_scanparseresult;
 
 %}
 
@@ -16,14 +16,14 @@
 
 
 %union {
-        xsynch_jobkind              kind;
-        xsynch_action               action;
+        pgcastor_jobkind              kind;
+        pgcastor_action               action;
         int                         intval;
         char*                       str;
-        xsynch_cmd*                 node;
+        pgcastor_cmd*                 node;
         List*                       list;
-        xsynch_rangevar*            rvar;
-        xsynch_job*                 job;
+        pgcastor_rangevar*            rvar;
+        pgcastor_job*                 job;
 }
 
 /* 非关键字 tokens */
@@ -99,156 +99,156 @@ command:
 create_job:
             K_CREATE jobkind jobname job_items
             {
-                xsynch_createcmd* createcmd = NULL;
-                createcmd = XSYNCH_MAKECMD(XSYNCH_CREATECMD);
+                pgcastor_createcmd* createcmd = NULL;
+                createcmd = PGCASTOR_MAKECMD(PGCASTOR_CREATECMD);
                 createcmd->kind = $2;
                 createcmd->name = $3;
                 createcmd->job = $4;
 
-                $$ = (xsynch_cmd*)createcmd;
+                $$ = (pgcastor_cmd*)createcmd;
             }
             ;
 
 alter_progress:
             K_ALTER K_PROGRESS jobname jobaction job_items
             {
-                xsynch_altercmd* altercmd = NULL;
-                altercmd = XSYNCH_MAKECMD(XSYNCH_ALTERCMD);
-                altercmd->kind = XSYNCH_JOBKIND_PROCESS;
+                pgcastor_altercmd* altercmd = NULL;
+                altercmd = PGCASTOR_MAKECMD(PGCASTOR_ALTERCMD);
+                altercmd->kind = PGCASTOR_JOBKIND_PROCESS;
                 altercmd->action = $4;
                 altercmd->name = $3;
                 altercmd->job = $5;
 
-                $$ = (xsynch_cmd*)altercmd;
+                $$ = (pgcastor_cmd*)altercmd;
             }
             ;
 
 remove_jobconfig:
             K_REMOVE jobkind jobname
             {
-                xsynch_removecmd* removecmd = NULL;
-                removecmd = XSYNCH_MAKECMD(XSYNCH_REMOVECMD);
+                pgcastor_removecmd* removecmd = NULL;
+                removecmd = PGCASTOR_MAKECMD(PGCASTOR_REMOVECMD);
                 removecmd->kind = $2;
                 removecmd->name = $3;
 
-                $$ = (xsynch_cmd*)removecmd;
+                $$ = (pgcastor_cmd*)removecmd;
             }
             ;
 
 drop_job:
             K_DROP jobkind jobname
             {
-                xsynch_dropcmd* dropcmd = NULL;
-                dropcmd = XSYNCH_MAKECMD(XSYNCH_DROPCMD);
+                pgcastor_dropcmd* dropcmd = NULL;
+                dropcmd = PGCASTOR_MAKECMD(PGCASTOR_DROPCMD);
                 dropcmd->kind = $2;
                 dropcmd->name = $3;
 
-                $$ = (xsynch_cmd*)dropcmd;
+                $$ = (pgcastor_cmd*)dropcmd;
             }
             ;
 
 init_job:
             K_INIT jobkind jobname
             {
-                xsynch_initcmd* initcmd = NULL;
-                initcmd = XSYNCH_MAKECMD(XSYNCH_INITCMD);
+                pgcastor_initcmd* initcmd = NULL;
+                initcmd = PGCASTOR_MAKECMD(PGCASTOR_INITCMD);
                 initcmd->kind = $2;
                 initcmd->name = $3;
 
-                $$ = (xsynch_cmd*)initcmd;
+                $$ = (pgcastor_cmd*)initcmd;
             }
             ;
 
 edit_job:
             K_EDIT jobkind jobname
             {
-                xsynch_editcmd* editcmd = NULL;
-                editcmd = XSYNCH_MAKECMD(XSYNCH_EDITCMD);
+                pgcastor_editcmd* editcmd = NULL;
+                editcmd = PGCASTOR_MAKECMD(PGCASTOR_EDITCMD);
                 editcmd->kind = $2;
                 editcmd->name = $3;
 
-                $$ = (xsynch_cmd*)editcmd;
+                $$ = (pgcastor_cmd*)editcmd;
             }
             ;
 
 start_job:
             K_START jobkind jobname
             {
-                xsynch_startcmd* startcmd = NULL;
-                startcmd = XSYNCH_MAKECMD(XSYNCH_STARTCMD);
+                pgcastor_startcmd* startcmd = NULL;
+                startcmd = PGCASTOR_MAKECMD(PGCASTOR_STARTCMD);
                 startcmd->kind = $2;
                 startcmd->name = $3;
 
-                $$ = (xsynch_cmd*)startcmd;
+                $$ = (pgcastor_cmd*)startcmd;
             }
             ;
 
 stop_job:
             K_STOP jobkind jobname
             {
-                xsynch_stopcmd* stopcmd = NULL;
-                stopcmd = XSYNCH_MAKECMD(XSYNCH_STOPCMD);
+                pgcastor_stopcmd* stopcmd = NULL;
+                stopcmd = PGCASTOR_MAKECMD(PGCASTOR_STOPCMD);
                 stopcmd->kind = $2;
                 stopcmd->name = $3;
 
-                $$ = (xsynch_cmd*)stopcmd;
+                $$ = (pgcastor_cmd*)stopcmd;
             }
             ;
 
 reload_job:
             K_RELOAD jobkind jobname
             {
-                xsynch_reloadcmd* reloadcmd = NULL;
-                reloadcmd = XSYNCH_MAKECMD(XSYNCH_RELOADCMD);
+                pgcastor_reloadcmd* reloadcmd = NULL;
+                reloadcmd = PGCASTOR_MAKECMD(PGCASTOR_RELOADCMD);
                 reloadcmd->kind = $2;
                 reloadcmd->name = $3;
 
-                $$ = (xsynch_cmd*)reloadcmd;
+                $$ = (pgcastor_cmd*)reloadcmd;
             }
             ;
 
 info_job:
             K_INFO jobkind jobname
             {
-                xsynch_infocmd* infocmd = NULL;
-                infocmd = XSYNCH_MAKECMD(XSYNCH_INFOCMD);
+                pgcastor_infocmd* infocmd = NULL;
+                infocmd = PGCASTOR_MAKECMD(PGCASTOR_INFOCMD);
                 infocmd->kind = $2;
                 infocmd->name = $3;
 
-                $$ = (xsynch_cmd*)infocmd;
+                $$ = (pgcastor_cmd*)infocmd;
             }
             ;
 
 watch_job:
             K_WATCH jobkind jobname time_interval
             {
-                xsynch_watchcmd* watchcmd = NULL;
-                watchcmd = XSYNCH_MAKECMD(XSYNCH_WATCHCMD);
+                pgcastor_watchcmd* watchcmd = NULL;
+                watchcmd = PGCASTOR_MAKECMD(PGCASTOR_WATCHCMD);
                 watchcmd->kind = $2;
                 watchcmd->name = $3;
                 watchcmd->interval = $4;
 
-                $$ = (xsynch_cmd*)watchcmd;
+                $$ = (pgcastor_cmd*)watchcmd;
             }
             ;
 
 refresh_job:
             K_REFRESH jobname opt_tables
             {
-                xsynch_refreshcmd* refreshcmd = NULL;
-                refreshcmd = XSYNCH_MAKECMD(XSYNCH_REFRESHCMD);
+                pgcastor_refreshcmd* refreshcmd = NULL;
+                refreshcmd = PGCASTOR_MAKECMD(PGCASTOR_REFRESHCMD);
                 refreshcmd->name = $2;
                 refreshcmd->tables = $3;
-                $$ = (xsynch_cmd*)refreshcmd;
+                $$ = (pgcastor_cmd*)refreshcmd;
             }
     ;
 
 list_job:
             K_LIST
             {
-                xsynch_listcmd* listcmd = NULL;
-                listcmd = XSYNCH_MAKECMD(XSYNCH_LISTCMD);
-                $$ = (xsynch_cmd*)listcmd;
+                pgcastor_listcmd* listcmd = NULL;
+                listcmd = PGCASTOR_MAKECMD(PGCASTOR_LISTCMD);
+                $$ = (pgcastor_cmd*)listcmd;
             }
             ;
 
@@ -273,7 +273,7 @@ tables:     tables COMMA table_el
 
 table_el:   jobname '.' jobname
             {
-                $$ = xsynch_rangvar_init($1, $3);
+                $$ = pgcastor_rangvar_init($1, $3);
             }
     ;
 
@@ -293,7 +293,7 @@ job_items:  job_items COMMA job_item
 
 job_item:   jobkind jobname
             {
-                $$ = xsynch_job_init($1, $2);
+                $$ = pgcastor_job_init($1, $2);
             }
     ;
 
@@ -311,11 +311,11 @@ time_interval:
 jobaction:
             K_ADD
                 {
-                    $$ = XSYNCH_ACTION_ADD;
+                    $$ = PGCASTOR_ACTION_ADD;
                 }
             | K_REMOVE
                 {
-                    $$ = XSYNCH_ACTION_REMOVE;
+                    $$ = PGCASTOR_ACTION_REMOVE;
                 }
             ;
 
@@ -329,27 +329,27 @@ jobname:
 jobkind:
             K_MANAGER
                 {
-                    $$ = XSYNCH_JOBKIND_MANAGER;
+                    $$ = PGCASTOR_JOBKIND_MANAGER;
                 }
             | K_CAPTURE
                 { 
-                    $$ = XSYNCH_JOBKIND_CAPTURE; 
+                    $$ = PGCASTOR_JOBKIND_CAPTURE; 
                 }
             | K_INTEGRATE
                 {
-                    $$ = XSYNCH_JOBKIND_INTEGRATE;
+                    $$ = PGCASTOR_JOBKIND_INTEGRATE;
                 }
             | K_PGRECEIVELOG
                 {
-                    $$ = XSYNCH_JOBKIND_PGRECEIVELOG;
+                    $$ = PGCASTOR_JOBKIND_PGRECEIVELOG;
                 }
             | K_PROGRESS
                 {
-                    $$ = XSYNCH_JOBKIND_PROCESS;
+                    $$ = PGCASTOR_JOBKIND_PROCESS;
                 }
             | K_ALL
                 {
-                    $$ = XSYNCH_JOBKIND_ALL;
+                    $$ = PGCASTOR_JOBKIND_ALL;
                 }
             ;
 

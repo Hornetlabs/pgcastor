@@ -4,7 +4,7 @@
 typedef struct XMANAGER_METRIC
 {
     /* Config file root directory */
-    char*    xsynchpath;
+    char*    pgcastorpath;
     char*    configpath;
     netpool* npool;
     dlist*   metricnodes;
@@ -20,7 +20,7 @@ typedef struct XMANAGER_METRIC
 extern xmanager_metric* xmanager_metric_init(void);
 
 /* Set configpath */
-extern bool xmanager_metric_setxsynchpath(xmanager_metric* xmetric, char* xsynchpath);
+extern bool xmanager_metric_setpgcastorpath(xmanager_metric* xmetric, char* pgcastorpath);
 
 extern void* xmanager_metric_main(void* args);
 

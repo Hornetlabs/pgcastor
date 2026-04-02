@@ -660,7 +660,7 @@ bool cmd_startcapture(void)
     /* Load ControlData */
     misc_controldata_load();
 
-    g_xsynchstat = misc_controldata_stat_get();
+    g_pgcastorstat = misc_controldata_stat_get();
 
     /* Delete temporary files */
     datainit_clear(CATALOG_DIR);
@@ -676,7 +676,7 @@ bool cmd_startcapture(void)
     /* parser thread initialization */
     decodingctx = inccapture->decodingctx;
 
-    if (XSYNCHSTAT_REWIND == g_xsynchstat)
+    if (PGCASTORSTAT_REWIND == g_pgcastorstat)
     {
         /* Set stat */
         parserwork_stat_setrewind(decodingctx);

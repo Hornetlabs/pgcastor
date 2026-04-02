@@ -106,7 +106,7 @@ typedef struct CAPTURE_CFG
     char* waldir;             /* Transaction log directory                  */
     char* dbtype;             /* Database type                   */
     char* dbversion;          /* Database version                   */
-    char* xsynchschema;       /* Schema where xsynch tool is located         */
+    char* pgcastorschema;     /* Schema where pgcastor tool is located         */
     char* host;               /* IP address for listening at target           */
     char* compress_algorithm; /* Compression program */
     char* compress_level;     /* Compression level */
@@ -133,7 +133,7 @@ typedef struct INTEGRATE_CFG
     int   compatibility;      /* Compatible version                    */
     int   truncatetable;      /* Truncate table */
     int   gctime;             /* MemoryReclaim */
-    char* xsynchschema;       /* Schema where xsynch tool is located         */
+    char* pgcastorschema;     /* Schema where pgcastor tool is located         */
     char* compress_algorithm; /* Compression program */
     char* compress_level;     /* Compression level */
     char* logdir;             /* Log directory, default is log in running directory */

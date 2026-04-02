@@ -222,7 +222,7 @@ bool cmd_startintegrate(void)
     /* Unblock signals */
     singal_setmask();
 
-    elog(RLOG_INFO, "xsynch integrate start, pid:%d", getpid());
+    elog(RLOG_INFO, "pgcastor integrate start, pid:%d", getpid());
 
     log_destroyerrorstack();
 

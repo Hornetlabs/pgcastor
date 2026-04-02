@@ -505,23 +505,23 @@ void* metric_integrate_main(void* args)
             synctimestamp = mintegrate->synctimestamp;
 
             elog(RLOG_INFO,
-                 "XSYNCH Integrate LoadLSN:              %X/%X",
+                 "PGCASTOR Integrate LoadLSN:              %X/%X",
                  (uint32)(mintegrate->loadlsn >> 32),
                  (uint32)(mintegrate->loadlsn));
             elog(RLOG_INFO,
-                 "XSYNCH Integrate SyncLSN:              %X/%X",
+                 "PGCASTOR Integrate SyncLSN:              %X/%X",
                  (uint32)(mintegrate->synclsn >> 32),
                  (uint32)(mintegrate->synclsn));
             elog(RLOG_INFO,
-                 "XSYNCH Integrate LoadTrail:            %lX/%lX",
+                 "PGCASTOR Integrate LoadTrail:            %lX/%lX",
                  mintegrate->loadtrailno,
                  mintegrate->loadtrailstart);
             elog(RLOG_INFO,
-                 "XSYNCH Integrate SyncTrail:            %lX/%lX",
+                 "PGCASTOR Integrate SyncTrail:            %lX/%lX",
                  mintegrate->synctrailno,
                  mintegrate->synctrailstart);
-            elog(RLOG_INFO, "XSYNCH Integrate LoadTimestamp:        %lu", mintegrate->loadtimestamp);
-            elog(RLOG_INFO, "XSYNCH Integrate SyncTimestamp:        %lu", mintegrate->synctimestamp);
+            elog(RLOG_INFO, "PGCASTOR Integrate LoadTimestamp:        %lu", mintegrate->loadtimestamp);
+            elog(RLOG_INFO, "PGCASTOR Integrate SyncTimestamp:        %lu", mintegrate->synctimestamp);
 
             /* Persist data to disk */
             fd = osal_basic_open_file(INTEGRATE_STATUS_FILE_TEMP, O_RDWR | O_CREAT | BINARY);

@@ -9,23 +9,23 @@
 
 #include "app_c.h"
 #include "config.h"
-#include "xsynch_exbufferdata.h"
-#include "xsynch_fe.h"
-#include "xsynch_int.h"
-#include "xsynch_fenet.h"
-#include "xsynch_febuildmsg.h"
-#include "xsynch_feparsemsg.h"
+#include "pgcastor_exbufferdata.h"
+#include "pgcastor_fe.h"
+#include "pgcastor_int.h"
+#include "pgcastor_fenet.h"
+#include "pgcastor_febuildmsg.h"
+#include "pgcastor_feparsemsg.h"
 
-typedef void (*commandfuncfree)(xsynch_cmd* cmd);
+typedef void (*commandfuncfree)(pgcastor_cmd* cmd);
 
-typedef struct XSYNCH_COMMANDOPS
+typedef struct PGCASTOR_COMMANDOPS
 {
-    xsynch_cmdtag   type;
+    pgcastor_cmdtag   type;
     char*           desc;
     commandfuncfree free;
-} xsynch_commandops;
+} pgcastor_commandops;
 
-static bool XSynchParseoptions(xsynchconn* conn, char* connstr)
+static bool PGCastorParseoptions(pgcastorconn* conn, char* connstr)
 {
     bool  foundsplit = false;
     int   index = 0;
@@ -113,11 +113,11 @@ static bool XSynchParseoptions(xsynchconn* conn, char* connstr)
         {
             if (0 == strcmp("TCP", value))
             {
-                conn->socktype = XSYNCH_SOCKTYPE_TCP;
+                conn->socktype = PGCASTOR_SOCKTYPE_TCP;
             }
             else if (0 == strcmp("UNIXDOMAIN", value))
             {
-                conn->socktype = XSYNCH_SOCKTYPE_UNIXDOMAIN;
+                conn->socktype = PGCASTOR_SOCKTYPE_UNIXDOMAIN;
             }
             else
             {
@@ -153,29 +153,29 @@ static bool XSynchParseoptions(xsynchconn* conn, char* connstr)
     return true;
 }
 
-/* initialize xsynch_result */
-void* XsynchResultInit(void)
+/* initialize pgcastor_result */
+void* PGCastorResultInit(void)
 {
-    xsynch_result* result = NULL;
+    pgcastor_result* result = NULL;
 
-    result = (xsynch_result*)malloc(sizeof(xsynch_result));
+    result = (pgcastor_result*)malloc(sizeof(pgcastor_result));
     if (NULL == result)
     {
         return NULL;
     }
-    memset(result, 0, sizeof(xsynch_result));
+    memset(result, 0, sizeof(pgcastor_result));
     result->rowcnt = 0;
     result->rows = NULL;
 
     return result;
 }
 
-/* reset xsynch_result content */
-void XsynchResultReset(void* in_result)
+/* reset pgcastor_result content */
+void PGCastorResultReset(void* in_result)
 {
-    xsynch_result* result = NULL;
+    pgcastor_result* result = NULL;
 
-    result = (xsynch_result*)in_result;
+    result = (pgcastor_result*)in_result;
 
     if (NULL == result)
     {
@@ -184,7 +184,7 @@ void XsynchResultReset(void* in_result)
 
     if (NULL != result->rows)
     {
-        XsynchRowFree(result->rowcnt, result->rows);
+        PGCastorRowFree(result->rowcnt, result->rows);
     }
 
     result->rowcnt = 0;
@@ -194,33 +194,33 @@ void XsynchResultReset(void* in_result)
 }
 
 /* initialize row */
-xsynchrow* XsynchRowInit(int rowcnt)
+pgcastorrow* PGCastorRowInit(int rowcnt)
 {
-    xsynchrow* row = NULL;
+    pgcastorrow* row = NULL;
 
-    row = (xsynchrow*)malloc(sizeof(xsynchrow) * rowcnt);
+    row = (pgcastorrow*)malloc(sizeof(pgcastorrow) * rowcnt);
     if (NULL == row)
     {
         return NULL;
     }
-    memset(row, 0, sizeof(xsynchrow) * rowcnt);
+    memset(row, 0, sizeof(pgcastorrow) * rowcnt);
     row->columncnt = 0;
     row->columns = NULL;
 
     return row;
 }
 
-/* initialize xsynchpair */
-xsynchpair* XsynchPairInit(int colcnt)
+/* initialize pgcastorpair */
+pgcastorpair* PGCastorPairInit(int colcnt)
 {
-    xsynchpair* col = NULL;
+    pgcastorpair* col = NULL;
 
-    col = (xsynchpair*)malloc(sizeof(xsynchpair) * colcnt);
+    col = (pgcastorpair*)malloc(sizeof(pgcastorpair) * colcnt);
     if (NULL == col)
     {
         return NULL;
     }
-    memset(col, 0, sizeof(xsynchpair) * colcnt);
+    memset(col, 0, sizeof(pgcastorpair) * colcnt);
 
     col->key = NULL;
     col->keylen = 0;
@@ -230,13 +230,13 @@ xsynchpair* XsynchPairInit(int colcnt)
 }
 
 /* free pair resources */
-void XsynchPairFree(int colcnt, void* in_col)
+void PGCastorPairFree(int colcnt, void* in_col)
 {
     int         idx_col = 0;
-    xsynchpair* col = NULL;
-    xsynchpair* tmpcol = NULL;
+    pgcastorpair* col = NULL;
+    pgcastorpair* tmpcol = NULL;
 
-    col = (xsynchpair*)in_col;
+    col = (pgcastorpair*)in_col;
 
     if (0 == colcnt || NULL == col)
     {
@@ -262,12 +262,12 @@ void XsynchPairFree(int colcnt, void* in_col)
 }
 
 /* free rows resources */
-void XsynchRowFree(int rowcnt, void* in_rows)
+void PGCastorRowFree(int rowcnt, void* in_rows)
 {
     int        idx_row = 0;
-    xsynchrow* rows = NULL;
-    xsynchrow* tmprow = NULL;
-    rows = (xsynchrow*)in_rows;
+    pgcastorrow* rows = NULL;
+    pgcastorrow* tmprow = NULL;
+    rows = (pgcastorrow*)in_rows;
 
     if (0 == rowcnt || NULL == rows)
     {
@@ -277,7 +277,7 @@ void XsynchRowFree(int rowcnt, void* in_rows)
     for (idx_row = 0; idx_row < rowcnt; idx_row++)
     {
         tmprow = &rows[idx_row];
-        XsynchPairFree(tmprow->columncnt, tmprow->columns);
+        PGCastorPairFree(tmprow->columncnt, tmprow->columns);
     }
     free(rows);
 
@@ -285,82 +285,82 @@ void XsynchRowFree(int rowcnt, void* in_rows)
 }
 
 /* set connection parameters */
-xsynchconn* XSynchSetParam(char* connstr)
+pgcastorconn* PGCastorSetParam(char* connstr)
 {
     /*
-     * 1. parse connstr and write to xsynchconn structure
+     * 1. parse connstr and write to pgcastorconn structure
      * 2. check if port is valid, if not set port to RMANAGER_PORT from config.h
      * 3. check if host is valid, if not set host to RMANAGER_UNIXDOMAINPREFIX from config.h
      * concatenated with port 4. execute connection 5. check if connected 6. tcpkeepalive settings
      * etc 7. send identity message
      * 8. receive identity message
      */
-    xsynchconn* xconn = NULL;
+    pgcastorconn* xconn = NULL;
 
-    xconn = malloc(sizeof(xsynchconn));
+    xconn = malloc(sizeof(pgcastorconn));
     if (NULL == xconn)
     {
         return NULL;
     }
-    memset(xconn, '\0', sizeof(xsynchconn));
+    memset(xconn, '\0', sizeof(pgcastorconn));
 
     if (NULL == connstr)
     {
         snprintf(xconn->host, 512, "%s/%s.%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX, RMANAGER_PORT);
         snprintf(xconn->port, 128, "%s", RMANAGER_PORT);
         xconn->keepalive = 0;
-        xconn->socktype = XSYNCH_SOCKTYPE_UNIXDOMAIN;
+        xconn->socktype = PGCASTOR_SOCKTYPE_UNIXDOMAIN;
     }
     else
     {
-        if (false == XSynchParseoptions(xconn, connstr))
+        if (false == PGCastorParseoptions(xconn, connstr))
         {
             free(xconn);
             return NULL;
         }
 
-        if (XSYNCH_SOCKTYPE_NOP == xconn->socktype)
+        if (PGCASTOR_SOCKTYPE_NOP == xconn->socktype)
         {
             return NULL;
         }
     }
 
-    xconn->sendmsg = xsynch_exbufferdata_init();
+    xconn->sendmsg = pgcastor_exbufferdata_init();
     if (NULL == xconn->sendmsg)
     {
         free(xconn);
         return NULL;
     }
 
-    xconn->recvmsg = xsynch_exbufferdata_init();
+    xconn->recvmsg = pgcastor_exbufferdata_init();
     if (NULL == xconn->recvmsg)
     {
-        xsynch_exbufferdata_free(xconn->sendmsg);
+        pgcastor_exbufferdata_free(xconn->sendmsg);
         free(xconn);
         return NULL;
     }
 
-    xconn->errmsg = xsynch_exbufferdata_init();
+    xconn->errmsg = pgcastor_exbufferdata_init();
     if (NULL == xconn->errmsg)
     {
-        xsynch_exbufferdata_free(xconn->sendmsg);
-        xsynch_exbufferdata_free(xconn->recvmsg);
+        pgcastor_exbufferdata_free(xconn->sendmsg);
+        pgcastor_exbufferdata_free(xconn->recvmsg);
         free(xconn);
         return NULL;
     }
 
-    xconn->result = (xsynch_result*)XsynchResultInit();
+    xconn->result = (pgcastor_result*)PGCastorResultInit();
     if (NULL == xconn->result)
     {
-        xsynch_exbufferdata_free(xconn->sendmsg);
-        xsynch_exbufferdata_free(xconn->recvmsg);
-        xsynch_exbufferdata_free(xconn->errmsg);
+        pgcastor_exbufferdata_free(xconn->sendmsg);
+        pgcastor_exbufferdata_free(xconn->recvmsg);
+        pgcastor_exbufferdata_free(xconn->errmsg);
         free(xconn);
         return NULL;
     }
 
     /* connect to xmanager */
-    if (false == xsynch_fenet_conn(xconn))
+    if (false == pgcastor_fenet_conn(xconn))
     {
         return xconn;
     }
@@ -368,76 +368,76 @@ xsynchconn* XSynchSetParam(char* connstr)
 }
 
 /* connect */
-bool XSynchConn(xsynchconn* conn)
+bool PGCastorConn(pgcastorconn* conn)
 {
     int                rownumber = 0;
-    xsynchrow*         rows = NULL;
-    xsynch_identitycmd icmd = {{0}};
+    pgcastorrow*         rows = NULL;
+    pgcastor_identitycmd icmd = {{0}};
 
     /* check if connected */
-    if (false == xsynch_fenet_isconn(conn))
+    if (false == pgcastor_fenet_isconn(conn))
     {
         /* connect to xmanager */
-        if (false == xsynch_fenet_conn(conn))
+        if (false == pgcastor_fenet_conn(conn))
         {
             return false;
         }
     }
 
     /* build command */
-    icmd.type.type = T_XSYNCH_IDENTITYCMD;
+    icmd.type.type = T_PGCASTOR_IDENTITYCMD;
     icmd.jobname = "xscsci";
     icmd.user = NULL;
     icmd.passwd = NULL;
-    icmd.kind = XSYNCH_JOBKIND_XSCSCI;
+    icmd.kind = PGCASTOR_JOBKIND_XSCSCI;
 
-    if (false == xsynch_febuildmsg_cmd2msg(&icmd.type, conn->sendmsg))
+    if (false == pgcastor_febuildmsg_cmd2msg(&icmd.type, conn->sendmsg))
     {
         return false;
     }
 
     /* send cmd */
-    if (false == xsynch_fenet_sendcmd(conn))
+    if (false == pgcastor_fenet_sendcmd(conn))
     {
         return false;
     }
 
-    XSynchGetResult(conn, &rownumber, &rows);
+    PGCastorGetResult(conn, &rownumber, &rows);
 
     /* parse data */
     return true;
 }
 
 /* send command */
-bool XSynchSendCmd(xsynchconn* conn, xsynch_cmd* cmd)
+bool PGCastorSendCmd(pgcastorconn* conn, pgcastor_cmd* cmd)
 {
     /*
      * 1. check if connection is valid, return error if invalid
      * 2. assemble data stream based on cmd
-     *      xsynch_febuildmsg_cmd2msg
+     *      pgcastor_febuildmsg_cmd2msg
      *
      * 3. send data to xmanager
      * 4. get xmanager return result
      */
 
     /* check if connected */
-    if (false == xsynch_fenet_isconn(conn))
+    if (false == pgcastor_fenet_isconn(conn))
     {
         /* connect to xmanager */
-        if (false == XSynchConn(conn))
+        if (false == PGCastorConn(conn))
         {
             return false;
         }
     }
 
     /* assemble data stream based on cmd */
-    if (false == xsynch_febuildmsg_cmd2msg(cmd, conn->sendmsg))
+    if (false == pgcastor_febuildmsg_cmd2msg(cmd, conn->sendmsg))
     {
         return false;
     }
 
     /* send cmd */
-    if (false == xsynch_fenet_sendcmd(conn))
+    if (false == pgcastor_fenet_sendcmd(conn))
     {
         return false;
     }
@@ -445,13 +445,13 @@ bool XSynchSendCmd(xsynchconn* conn, xsynch_cmd* cmd)
 }
 
 /* test if xmanager is started */
-bool XSynchPing(xsynchconn* conn)
+bool PGCastorPing(pgcastorconn* conn)
 {
     /* check if connected */
-    if (false == xsynch_fenet_isconn(conn))
+    if (false == pgcastor_fenet_isconn(conn))
     {
         /* connect to xmanager */
-        if (false == XSynchConn(conn))
+        if (false == PGCastorConn(conn))
         {
             return false;
         }
@@ -461,11 +461,11 @@ bool XSynchPing(xsynchconn* conn)
 }
 
 /* get return result */
-void XSynchGetResult(xsynchconn* conn, int* rownumber, xsynchrow** rows)
+void PGCastorGetResult(pgcastorconn* conn, int* rownumber, pgcastorrow** rows)
 {
     /*
      * 1. parse data in conn->recvmsg
-     *      xsynch_feparsemsg_msg2result
+     *      pgcastor_feparsemsg_msg2result
      * 2. clean data in conn->recvmsg
      * 3. return rownumber and rows
      */
@@ -474,12 +474,12 @@ void XSynchGetResult(xsynchconn* conn, int* rownumber, xsynchrow** rows)
     *rows = NULL;
 
     /* error getting result, print error message and clean data */
-    if (false == xsynch_feparsemsg_msg2result(conn->recvmsg, conn))
+    if (false == pgcastor_feparsemsg_msg2result(conn->recvmsg, conn))
     {
         printf("get result failed:%s \n", conn->errmsg->data);
-        xsynch_exbufferdata_reset(conn->recvmsg);
-        xsynch_exbufferdata_reset(conn->errmsg);
-        XsynchResultReset(conn->result);
+        pgcastor_exbufferdata_reset(conn->recvmsg);
+        pgcastor_exbufferdata_reset(conn->errmsg);
+        PGCastorResultReset(conn->result);
         return;
     }
 
@@ -493,12 +493,12 @@ void XSynchGetResult(xsynchconn* conn, int* rownumber, xsynchrow** rows)
 }
 
 /* get error information */
-void XSynchGetErrmsg(xsynchconn* conn)
+void PGCastorGetErrmsg(pgcastorconn* conn)
 {
     /*
      * output error information
      */
-    if (NULL == conn || XSYNCHCONN_STATUS_OK != conn->connstatus)
+    if (NULL == conn || PGCASTORCONN_STATUS_OK != conn->connstatus)
     {
         return;
     }
@@ -512,39 +512,39 @@ void XSynchGetErrmsg(xsynchconn* conn)
 }
 
 /* clean return result */
-void XSynchClear(xsynchconn* conn)
+void PGCastorClear(pgcastorconn* conn)
 {
     if (NULL == conn)
     {
         return;
     }
 
-    xsynch_exbufferdata_reset(conn->sendmsg);
-    xsynch_exbufferdata_reset(conn->recvmsg);
-    xsynch_exbufferdata_reset(conn->errmsg);
+    pgcastor_exbufferdata_reset(conn->sendmsg);
+    pgcastor_exbufferdata_reset(conn->recvmsg);
+    pgcastor_exbufferdata_reset(conn->errmsg);
 
     if (conn->result)
     {
-        XsynchResultReset(conn->result);
+        PGCastorResultReset(conn->result);
     }
     return;
 }
 
-/* cleanup xsynchconn */
-void XSynchFinish(xsynchconn* conn)
+/* cleanup pgcastorconn */
+void PGCastorFinish(pgcastorconn* conn)
 {
     if (NULL == conn)
     {
         return;
     }
 
-    xsynch_exbufferdata_free(conn->sendmsg);
-    xsynch_exbufferdata_free(conn->recvmsg);
-    xsynch_exbufferdata_free(conn->errmsg);
+    pgcastor_exbufferdata_free(conn->sendmsg);
+    pgcastor_exbufferdata_free(conn->recvmsg);
+    pgcastor_exbufferdata_free(conn->errmsg);
 
     if (conn->result)
     {
-        XsynchResultReset(conn->result);
+        PGCastorResultReset(conn->result);
         free(conn->result);
     }
 
@@ -553,7 +553,7 @@ void XSynchFinish(xsynchconn* conn)
     return;
 }
 
-void xsynch_rangvar_destroy(xsynch_rangevar* rs)
+void pgcastor_rangvar_destroy(pgcastor_rangevar* rs)
 {
     if (NULL == rs)
     {
@@ -574,22 +574,22 @@ void xsynch_rangvar_destroy(xsynch_rangevar* rs)
     rs = NULL;
 }
 
-xsynch_rangevar* xsynch_rangvar_init(char* schema, char* table)
+pgcastor_rangevar* pgcastor_rangvar_init(char* schema, char* table)
 {
-    xsynch_rangevar* rs = NULL;
+    pgcastor_rangevar* rs = NULL;
 
-    rs = malloc(sizeof(xsynch_rangevar));
+    rs = malloc(sizeof(pgcastor_rangevar));
     if (NULL == rs)
     {
         return NULL;
     }
-    memset(rs, 0, sizeof(xsynch_rangevar));
+    memset(rs, 0, sizeof(pgcastor_rangevar));
     rs->schema = schema;
     rs->table = table;
     return rs;
 }
 
-void xsynch_rangvar_free(xsynch_rangevar* rangevar)
+void pgcastor_rangvar_free(pgcastor_rangevar* rangevar)
 {
     if (NULL == rangevar)
     {
@@ -609,22 +609,22 @@ void xsynch_rangvar_free(xsynch_rangevar* rangevar)
     return;
 }
 
-xsynch_job* xsynch_job_init(int jobkind, char* jobname)
+pgcastor_job* pgcastor_job_init(int jobkind, char* jobname)
 {
-    xsynch_job* job = NULL;
+    pgcastor_job* job = NULL;
 
-    job = malloc(sizeof(xsynch_job));
+    job = malloc(sizeof(pgcastor_job));
     if (NULL == job)
     {
         return NULL;
     }
-    memset(job, 0, sizeof(xsynch_job));
+    memset(job, 0, sizeof(pgcastor_job));
     job->kind = jobkind;
     job->jobname = jobname;
     return job;
 }
 
-void xsynch_job_free(xsynch_job* job)
+void pgcastor_job_free(pgcastor_job* job)
 {
     if (NULL == job)
     {
@@ -641,16 +641,16 @@ void xsynch_job_free(xsynch_job* job)
 }
 
 /* identity resource release */
-static void xsynch_command_identityfree(xsynch_cmd* cmd)
+static void pgcastor_command_identityfree(pgcastor_cmd* cmd)
 {
-    xsynch_identitycmd* identity = NULL;
+    pgcastor_identitycmd* identity = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    identity = (xsynch_identitycmd*)cmd;
+    identity = (pgcastor_identitycmd*)cmd;
 
     if (NULL != identity->jobname)
     {
@@ -671,18 +671,18 @@ static void xsynch_command_identityfree(xsynch_cmd* cmd)
 }
 
 /* create resource release */
-static void xsynch_command_createfree(xsynch_cmd* cmd)
+static void pgcastor_command_createfree(pgcastor_cmd* cmd)
 {
     ListCell*         lc = NULL;
-    xsynch_job*       job = NULL;
-    xsynch_createcmd* create = NULL;
+    pgcastor_job*       job = NULL;
+    pgcastor_createcmd* create = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    create = (xsynch_createcmd*)cmd;
+    create = (pgcastor_createcmd*)cmd;
 
     if (NULL != create->name)
     {
@@ -693,8 +693,8 @@ static void xsynch_command_createfree(xsynch_cmd* cmd)
     {
         foreach (lc, create->job)
         {
-            job = (xsynch_job*)lfirst(lc);
-            xsynch_job_free(job);
+            job = (pgcastor_job*)lfirst(lc);
+            pgcastor_job_free(job);
         }
 
         list_free(create->job);
@@ -704,18 +704,18 @@ static void xsynch_command_createfree(xsynch_cmd* cmd)
 }
 
 /* alter resource release */
-static void xsynch_command_alterfree(xsynch_cmd* cmd)
+static void pgcastor_command_alterfree(pgcastor_cmd* cmd)
 {
     ListCell*        lc = NULL;
-    xsynch_job*      job = NULL;
-    xsynch_altercmd* alter = NULL;
+    pgcastor_job*      job = NULL;
+    pgcastor_altercmd* alter = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    alter = (xsynch_altercmd*)cmd;
+    alter = (pgcastor_altercmd*)cmd;
 
     if (NULL != alter->name)
     {
@@ -726,8 +726,8 @@ static void xsynch_command_alterfree(xsynch_cmd* cmd)
     {
         foreach (lc, alter->job)
         {
-            job = (xsynch_job*)lfirst(lc);
-            xsynch_job_free(job);
+            job = (pgcastor_job*)lfirst(lc);
+            pgcastor_job_free(job);
         }
 
         list_free(alter->job);
@@ -738,16 +738,16 @@ static void xsynch_command_alterfree(xsynch_cmd* cmd)
 }
 
 /* remove resource release */
-static void xsynch_command_removefree(xsynch_cmd* cmd)
+static void pgcastor_command_removefree(pgcastor_cmd* cmd)
 {
-    xsynch_removecmd* remove = NULL;
+    pgcastor_removecmd* remove = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    remove = (xsynch_removecmd*)cmd;
+    remove = (pgcastor_removecmd*)cmd;
 
     if (NULL != remove->name)
     {
@@ -759,16 +759,16 @@ static void xsynch_command_removefree(xsynch_cmd* cmd)
 }
 
 /* drop resource release */
-static void xsynch_command_dropfree(xsynch_cmd* cmd)
+static void pgcastor_command_dropfree(pgcastor_cmd* cmd)
 {
-    xsynch_dropcmd* drop = NULL;
+    pgcastor_dropcmd* drop = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    drop = (xsynch_dropcmd*)cmd;
+    drop = (pgcastor_dropcmd*)cmd;
 
     if (NULL != drop->name)
     {
@@ -780,16 +780,16 @@ static void xsynch_command_dropfree(xsynch_cmd* cmd)
 }
 
 /* init resource release */
-static void xsynch_command_initfree(xsynch_cmd* cmd)
+static void pgcastor_command_initfree(pgcastor_cmd* cmd)
 {
-    xsynch_initcmd* init = NULL;
+    pgcastor_initcmd* init = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    init = (xsynch_initcmd*)cmd;
+    init = (pgcastor_initcmd*)cmd;
 
     if (NULL != init->name)
     {
@@ -801,16 +801,16 @@ static void xsynch_command_initfree(xsynch_cmd* cmd)
 }
 
 /* edit resource release */
-static void xsynch_command_editfree(xsynch_cmd* cmd)
+static void pgcastor_command_editfree(pgcastor_cmd* cmd)
 {
-    xsynch_editcmd* edit = NULL;
+    pgcastor_editcmd* edit = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    edit = (xsynch_editcmd*)cmd;
+    edit = (pgcastor_editcmd*)cmd;
 
     if (NULL != edit->name)
     {
@@ -822,16 +822,16 @@ static void xsynch_command_editfree(xsynch_cmd* cmd)
 }
 
 /* start resource release */
-static void xsynch_command_startfree(xsynch_cmd* cmd)
+static void pgcastor_command_startfree(pgcastor_cmd* cmd)
 {
-    xsynch_startcmd* start = NULL;
+    pgcastor_startcmd* start = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    start = (xsynch_startcmd*)cmd;
+    start = (pgcastor_startcmd*)cmd;
 
     if (NULL != start->name)
     {
@@ -843,16 +843,16 @@ static void xsynch_command_startfree(xsynch_cmd* cmd)
 }
 
 /* stop resource release */
-static void xsynch_command_stopfree(xsynch_cmd* cmd)
+static void pgcastor_command_stopfree(pgcastor_cmd* cmd)
 {
-    xsynch_stopcmd* stop = NULL;
+    pgcastor_stopcmd* stop = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    stop = (xsynch_stopcmd*)cmd;
+    stop = (pgcastor_stopcmd*)cmd;
 
     if (NULL != stop->name)
     {
@@ -864,16 +864,16 @@ static void xsynch_command_stopfree(xsynch_cmd* cmd)
 }
 
 /* reload resource release */
-static void xsynch_command_reloadfree(xsynch_cmd* cmd)
+static void pgcastor_command_reloadfree(pgcastor_cmd* cmd)
 {
-    xsynch_reloadcmd* reload = NULL;
+    pgcastor_reloadcmd* reload = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    reload = (xsynch_reloadcmd*)cmd;
+    reload = (pgcastor_reloadcmd*)cmd;
 
     if (NULL != reload->name)
     {
@@ -885,16 +885,16 @@ static void xsynch_command_reloadfree(xsynch_cmd* cmd)
 }
 
 /* info resource release */
-static void xsynch_command_infofree(xsynch_cmd* cmd)
+static void pgcastor_command_infofree(pgcastor_cmd* cmd)
 {
-    xsynch_infocmd* info = NULL;
+    pgcastor_infocmd* info = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    info = (xsynch_infocmd*)cmd;
+    info = (pgcastor_infocmd*)cmd;
 
     if (NULL != info->name)
     {
@@ -906,16 +906,16 @@ static void xsynch_command_infofree(xsynch_cmd* cmd)
 }
 
 /* watch resource release */
-static void xsynch_command_watchfree(xsynch_cmd* cmd)
+static void pgcastor_command_watchfree(pgcastor_cmd* cmd)
 {
-    xsynch_watchcmd* watch = NULL;
+    pgcastor_watchcmd* watch = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    watch = (xsynch_watchcmd*)cmd;
+    watch = (pgcastor_watchcmd*)cmd;
 
     if (NULL != watch->name)
     {
@@ -927,16 +927,16 @@ static void xsynch_command_watchfree(xsynch_cmd* cmd)
 }
 
 /* cfgfile resource release */
-static void xsynch_command_cfgfilefree(xsynch_cmd* cmd)
+static void pgcastor_command_cfgfilefree(pgcastor_cmd* cmd)
 {
-    xsynch_cfgfilecmd* cfgfile = NULL;
+    pgcastor_cfgfilecmd* cfgfile = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    cfgfile = (xsynch_cfgfilecmd*)cmd;
+    cfgfile = (pgcastor_cfgfilecmd*)cmd;
 
     if (NULL != cfgfile->name)
     {
@@ -958,18 +958,18 @@ static void xsynch_command_cfgfilefree(xsynch_cmd* cmd)
 }
 
 /* refresh resource release */
-static void xsynch_command_refreshfree(xsynch_cmd* cmd)
+static void pgcastor_command_refreshfree(pgcastor_cmd* cmd)
 {
     ListCell*          lc = NULL;
-    xsynch_rangevar*   rs = NULL;
-    xsynch_refreshcmd* refresh = NULL;
+    pgcastor_rangevar*   rs = NULL;
+    pgcastor_refreshcmd* refresh = NULL;
 
     if (NULL == cmd)
     {
         return;
     }
 
-    refresh = (xsynch_refreshcmd*)cmd;
+    refresh = (pgcastor_refreshcmd*)cmd;
 
     if (NULL != refresh->name)
     {
@@ -980,8 +980,8 @@ static void xsynch_command_refreshfree(xsynch_cmd* cmd)
     {
         foreach (lc, refresh->tables)
         {
-            rs = (xsynch_rangevar*)lfirst(lc);
-            xsynch_rangvar_free(rs);
+            rs = (pgcastor_rangevar*)lfirst(lc);
+            pgcastor_rangvar_free(rs);
         }
 
         list_free(refresh->tables);
@@ -992,7 +992,7 @@ static void xsynch_command_refreshfree(xsynch_cmd* cmd)
 }
 
 /* list resource release */
-static void xsynch_command_listfree(xsynch_cmd* cmd)
+static void pgcastor_command_listfree(pgcastor_cmd* cmd)
 {
     if (NULL == cmd)
     {
@@ -1003,29 +1003,29 @@ static void xsynch_command_listfree(xsynch_cmd* cmd)
     return;
 }
 
-static xsynch_commandops m_commandfree[] = {
-    {T_XSYNCH_NOP,         "NOP",              NULL                       },
-    {T_XSYNCH_IDENTITYCMD, "IDENTITY COMMAND", xsynch_command_identityfree},
-    {T_XSYNCH_CREATECMD,   "CREATE COMMAND",   xsynch_command_createfree  },
-    {T_XSYNCH_ALTERCMD,    "ALTER COMMAND",    xsynch_command_alterfree   },
-    {T_XSYNCH_REMOVECMD,   "REMOVE COMMAND",   xsynch_command_removefree  },
-    {T_XSYNCH_DROPCMD,     "DROP COMMAND",     xsynch_command_dropfree    },
-    {T_XSYNCH_INITCMD,     "INIT COMMAND",     xsynch_command_initfree    },
-    {T_XSYNCH_EDITCMD,     "EDIT COMMAND",     xsynch_command_editfree    },
-    {T_XSYNCH_STARTCMD,    "START COMMAND",    xsynch_command_startfree   },
-    {T_XSYNCH_STOPCMD,     "STOP COMMAND",     xsynch_command_stopfree    },
-    {T_XSYNCH_RELOADCMD,   "RELOAD COMMAND",   xsynch_command_reloadfree  },
-    {T_XSYNCH_INFOCMD,     "INFO COMMAND",     xsynch_command_infofree    },
-    {T_XSYNCH_WATCHCMD,    "WATCH COMMAND",    xsynch_command_watchfree   },
-    {T_XSYNCH_CFGfILECMD,  "never trigger",    xsynch_command_cfgfilefree },
-    {T_XSYNCH_REFRESHCMD,  "REFRESH COMMAND",  xsynch_command_refreshfree },
-    {T_XSYNCH_LISTCMD,     "LIST COMMAND",     xsynch_command_listfree    },
-    {T_XSYNCH_MAX,         "MAX COMMAND",      NULL                       }
+static pgcastor_commandops m_commandfree[] = {
+    {T_PGCASTOR_NOP,         "NOP",              NULL                       },
+    {T_PGCASTOR_IDENTITYCMD, "IDENTITY COMMAND", pgcastor_command_identityfree},
+    {T_PGCASTOR_CREATECMD,   "CREATE COMMAND",   pgcastor_command_createfree  },
+    {T_PGCASTOR_ALTERCMD,    "ALTER COMMAND",    pgcastor_command_alterfree   },
+    {T_PGCASTOR_REMOVECMD,   "REMOVE COMMAND",   pgcastor_command_removefree  },
+    {T_PGCASTOR_DROPCMD,     "DROP COMMAND",     pgcastor_command_dropfree    },
+    {T_PGCASTOR_INITCMD,     "INIT COMMAND",     pgcastor_command_initfree    },
+    {T_PGCASTOR_EDITCMD,     "EDIT COMMAND",     pgcastor_command_editfree    },
+    {T_PGCASTOR_STARTCMD,    "START COMMAND",    pgcastor_command_startfree   },
+    {T_PGCASTOR_STOPCMD,     "STOP COMMAND",     pgcastor_command_stopfree    },
+    {T_PGCASTOR_RELOADCMD,   "RELOAD COMMAND",   pgcastor_command_reloadfree  },
+    {T_PGCASTOR_INFOCMD,     "INFO COMMAND",     pgcastor_command_infofree    },
+    {T_PGCASTOR_WATCHCMD,    "WATCH COMMAND",    pgcastor_command_watchfree   },
+    {T_PGCASTOR_CFGfILECMD,  "never trigger",    pgcastor_command_cfgfilefree },
+    {T_PGCASTOR_REFRESHCMD,  "REFRESH COMMAND",  pgcastor_command_refreshfree },
+    {T_PGCASTOR_LISTCMD,     "LIST COMMAND",     pgcastor_command_listfree    },
+    {T_PGCASTOR_MAX,         "MAX COMMAND",      NULL                       }
 };
 
-void xsynch_command_free(xsynch_cmd* cmd)
+void pgcastor_command_free(pgcastor_cmd* cmd)
 {
-    if (T_XSYNCH_MAX < cmd->type)
+    if (T_PGCASTOR_MAX < cmd->type)
     {
         printf("command unknown cmd type %d\n", cmd->type);
         return;

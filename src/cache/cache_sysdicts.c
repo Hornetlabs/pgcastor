@@ -569,7 +569,7 @@ HTAB* cache_sysdicts_buildrelfilenode2oid(Oid dbid, void* data)
     rmemset1(&hctl, 0, '\0', sizeof(hctl));
     hctl.keysize = sizeof(RelFileNode);
     hctl.entrysize = sizeof(relfilenode2oid);
-    by_relfilenode = hash_create("xsynch_relfilenode2oid", 2048, &hctl, HASH_ELEM | HASH_BLOBS);
+    by_relfilenode = hash_create("pgcastor_relfilenode2oid", 2048, &hctl, HASH_ELEM | HASH_BLOBS);
 
     /* Load corresponding relationship */
     hash_seq_init(&status, sysdicts->by_class);

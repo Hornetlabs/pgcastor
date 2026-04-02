@@ -10,7 +10,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "app_c.h"
-#include "xsynch_exbufferdata.h"
+#include "pgcastor_exbufferdata.h"
 #include "xscsci_input.h"
 #include "xscsci_tabcomplete.h"
 
@@ -167,16 +167,16 @@ char* xscsci_input_getsinteractive(char* prefix)
     return line;
 }
 
-void xscsci_input_appendhistory(const char* s, xsynch_exbuffer historybuf)
+void xscsci_input_appendhistory(const char* s, pgcastor_exbuffer historybuf)
 {
-    xsynch_exbufferdata_appendstr(historybuf, s);
+    pgcastor_exbufferdata_appendstr(historybuf, s);
     if (!s[0] || s[strlen(s) - 1] != '\n')
     {
-        xsynch_exbufferdata_appendchar(historybuf, '\n');
+        pgcastor_exbufferdata_appendchar(historybuf, '\n');
     }
 }
 
-void xscsci_input_sendhistory(xsynch_exbuffer historybuf, char** prevhistorybuf)
+void xscsci_input_sendhistory(pgcastor_exbuffer historybuf, char** prevhistorybuf)
 {
     int   index = 0;
     char* s = historybuf->data;
@@ -188,7 +188,7 @@ void xscsci_input_sendhistory(xsynch_exbuffer historybuf, char** prevhistorybuf)
 
     if (NULL != *prevhistorybuf && 0 == strcmp(s, *prevhistorybuf))
     {
-        xsynch_exbufferdata_reset(historybuf);
+        pgcastor_exbufferdata_reset(historybuf);
         return;
     }
 
@@ -201,5 +201,5 @@ void xscsci_input_sendhistory(xsynch_exbuffer historybuf, char** prevhistorybuf)
     *prevhistorybuf = strdup(s);
     add_history(s);
     m_historylinesadded++;
-    xsynch_exbufferdata_reset(historybuf);
+    pgcastor_exbufferdata_reset(historybuf);
 }

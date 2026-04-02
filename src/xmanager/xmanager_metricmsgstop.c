@@ -130,14 +130,14 @@ bool xmanager_metricmsg_parsestop(xmanager_metric* xmetric, netpoolentry* npoole
     /* Execute start command execcmd */
     if (XMANAGER_METRICNODETYPE_PGRECEIVELOG == jobtype)
     {
-        snprintf(execcmd, 1024, "%s/bin/pgreceivelog/receivelog -f %s stop", xmetric->xsynchpath, pxmetricnode->conf);
+        snprintf(execcmd, 1024, "%s/bin/pgreceivelog/receivelog -f %s stop", xmetric->pgcastorpath, pxmetricnode->conf);
     }
     else
     {
         snprintf(execcmd,
                  1024,
                  "%s/bin/%s -f %s stop",
-                 xmetric->xsynchpath,
+                 xmetric->pgcastorpath,
                  xmanager_metricnode_getname(jobtype),
                  pxmetricnode->conf);
     }

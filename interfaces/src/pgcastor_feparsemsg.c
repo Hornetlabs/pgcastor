@@ -10,21 +10,21 @@
 #include <inttypes.h>
 
 #include "app_c.h"
-#include "xsynch_exbufferdata.h"
-#include "xsynch_fe.h"
-#include "xsynch_int.h"
-#include "xsynch_feparsemsg.h"
+#include "pgcastor_exbufferdata.h"
+#include "pgcastor_fe.h"
+#include "pgcastor_int.h"
+#include "pgcastor_feparsemsg.h"
 
-typedef struct XSYNCH_FEPARSEMSG_PARSER
+typedef struct PGCASTOR_FEPARSEMSG_PARSER
 {
-    xsynch_cmdtag cmd;
+    pgcastor_cmdtag cmd;
     char*         desc;
 
-    bool          (*parser)(xsynch_exbuffer msg, xsynch_conn* conn);
-} xsynch_feparsemsg_parser;
+    bool          (*parser)(pgcastor_exbuffer msg, pgcastor_conn* conn);
+} pgcastor_feparsemsg_parser;
 
 /* edit message parser */
-static bool xsynch_feparsemsg_editmsgparser(xsynch_exbuffer msg, xsynch_conn* conn)
+static bool pgcastor_feparsemsg_editmsgparser(pgcastor_exbuffer msg, pgcastor_conn* conn)
 {
     int    datalen = 0;
     uint32 rowcnt = 0;
@@ -57,23 +57,23 @@ static bool xsynch_feparsemsg_editmsgparser(xsynch_exbuffer msg, xsynch_conn* co
 
     if (datalen <= 0)
     {
-        xsynch_exbufferdata_append(conn->errmsg, "get wrong data length");
+        pgcastor_exbufferdata_append(conn->errmsg, "get wrong data length");
         return false;
     }
 
     /* write information to rows */
     conn->result->rowcnt = rowcnt;
-    conn->result->rows = XsynchRowInit(conn->result->rowcnt);
+    conn->result->rows = PGCastorRowInit(conn->result->rowcnt);
 
     conn->result->rows->columncnt = 1;
-    conn->result->rows->columns = XsynchPairInit(conn->result->rows->columncnt);
+    conn->result->rows->columns = PGCastorPairInit(conn->result->rows->columncnt);
 
     conn->result->rows->columns->valuelen = datalen;
 
     conn->result->rows->columns->value = (char*)malloc(datalen);
     if (NULL == conn->result->rows->columns->value)
     {
-        xsynch_exbufferdata_append(conn->errmsg, "malloc colvalue oom");
+        pgcastor_exbufferdata_append(conn->errmsg, "malloc colvalue oom");
         return false;
     }
     memset(conn->result->rows->columns->value, '\0', datalen);
@@ -83,7 +83,7 @@ static bool xsynch_feparsemsg_editmsgparser(xsynch_exbuffer msg, xsynch_conn* co
 }
 
 /* row data message parsing */
-static bool xsynch_feparsemsg_rowsmsgparser(xsynch_exbuffer msg, xsynch_conn* conn)
+static bool pgcastor_feparsemsg_rowsmsgparser(pgcastor_exbuffer msg, pgcastor_conn* conn)
 {
     uint16      nullmapcnt = 0;
     uint32      rowlen = 0;
@@ -95,9 +95,9 @@ static bool xsynch_feparsemsg_rowsmsgparser(xsynch_exbuffer msg, xsynch_conn* co
     uint32      offset = 0;
     uint8*      nullmap = NULL;
     char*       cptr = NULL;
-    xsynchrow*  rows = NULL;
-    xsynchpair* keys = NULL;
-    xsynchpair* columns = NULL;
+    pgcastorrow*  rows = NULL;
+    pgcastorpair* keys = NULL;
+    pgcastorpair* columns = NULL;
 
     cptr = msg->data;
 
@@ -110,7 +110,7 @@ static bool xsynch_feparsemsg_rowsmsgparser(xsynch_exbuffer msg, xsynch_conn* co
 
     if (rowcnt <= 0)
     {
-        xsynch_exbufferdata_append(conn->errmsg, "get wrong rowcnt");
+        pgcastor_exbufferdata_append(conn->errmsg, "get wrong rowcnt");
         return false;
     }
 
@@ -131,7 +131,7 @@ static bool xsynch_feparsemsg_rowsmsgparser(xsynch_exbuffer msg, xsynch_conn* co
     }
 
     /* initialize first row structure */
-    keys = XsynchPairInit(colcnt);
+    keys = PGCastorPairInit(colcnt);
 
     /* generate column header data */
     for (idx_col = 0; idx_col < colcnt; idx_col++)
@@ -146,7 +146,7 @@ static bool xsynch_feparsemsg_rowsmsgparser(xsynch_exbuffer msg, xsynch_conn* co
         columns->key = (char*)malloc(columns->keylen);
         if (NULL == columns->key)
         {
-            xsynch_exbufferdata_append(conn->errmsg, "malloc colkey oom");
+            pgcastor_exbufferdata_append(conn->errmsg, "malloc colkey oom");
             return false;
         }
         memset(columns->key, '\0', columns->keylen);
@@ -156,13 +156,13 @@ static bool xsynch_feparsemsg_rowsmsgparser(xsynch_exbuffer msg, xsynch_conn* co
 
     /* generate column data */
     conn->result->rowcnt = rowcnt - 1;
-    conn->result->rows = XsynchRowInit(conn->result->rowcnt);
+    conn->result->rows = PGCastorRowInit(conn->result->rowcnt);
 
     for (idx_row = 0; idx_row < conn->result->rowcnt; idx_row++)
     {
         rows = &conn->result->rows[idx_row];
         rows->columncnt = colcnt;
-        rows->columns = XsynchPairInit(conn->result->rows->columncnt);
+        rows->columns = PGCastorPairInit(conn->result->rows->columncnt);
 
         memcpy(&rowlen, cptr, 4);
         rowlen = r_ntoh32(rowlen);
@@ -180,7 +180,7 @@ static bool xsynch_feparsemsg_rowsmsgparser(xsynch_exbuffer msg, xsynch_conn* co
             nullmap = malloc(nullmapcnt);
             if (NULL == nullmap)
             {
-                xsynch_exbufferdata_append(conn->errmsg, "malloc nullmap oom");
+                pgcastor_exbufferdata_append(conn->errmsg, "malloc nullmap oom");
                 return false;
             }
             memcpy(nullmap, cptr, nullmapcnt);
@@ -214,7 +214,7 @@ static bool xsynch_feparsemsg_rowsmsgparser(xsynch_exbuffer msg, xsynch_conn* co
 
             if (NULL == columns->value)
             {
-                xsynch_exbufferdata_append(conn->errmsg, "malloc colvalue oom");
+                pgcastor_exbufferdata_append(conn->errmsg, "malloc colvalue oom");
                 return false;
             }
 
@@ -230,36 +230,36 @@ static bool xsynch_feparsemsg_rowsmsgparser(xsynch_exbuffer msg, xsynch_conn* co
         }
     }
 
-    XsynchPairFree(colcnt, keys);
+    PGCastorPairFree(colcnt, keys);
     return true;
 }
 
-static xsynch_feparsemsg_parser m_msg2rows[] = {
-    {T_XSYNCH_NOP,         "unknown command",     NULL                           },
-    {T_XSYNCH_IDENTITYCMD, "identity command",    NULL                           },
-    {T_XSYNCH_CREATECMD,   "create command",      NULL                           },
-    {T_XSYNCH_ALTERCMD,    "alter command",       NULL                           },
-    {T_XSYNCH_REMOVECMD,   "remove command",      NULL                           },
-    {T_XSYNCH_DROPCMD,     "drop command",        NULL                           },
-    {T_XSYNCH_INITCMD,     "init command",        NULL                           },
-    {T_XSYNCH_EDITCMD,     "edit command",        xsynch_feparsemsg_editmsgparser},
-    {T_XSYNCH_STARTCMD,    "start command",       xsynch_feparsemsg_rowsmsgparser},
-    {T_XSYNCH_STOPCMD,     "stop command",        xsynch_feparsemsg_rowsmsgparser},
-    {T_XSYNCH_RELOADCMD,   "reload command",      NULL                           },
-    {T_XSYNCH_INFOCMD,     "info command",        xsynch_feparsemsg_rowsmsgparser},
-    {T_XSYNCH_WATCHCMD,    "watch command",       xsynch_feparsemsg_rowsmsgparser},
-    {T_XSYNCH_CFGfILECMD,  "config file command", NULL                           },
-    {T_XSYNCH_REFRESHCMD,  "refresh command",     NULL                           },
-    {T_XSYNCH_LISTCMD,     "list command",        xsynch_feparsemsg_rowsmsgparser},
+static pgcastor_feparsemsg_parser m_msg2rows[] = {
+    {T_PGCASTOR_NOP,         "unknown command",     NULL                           },
+    {T_PGCASTOR_IDENTITYCMD, "identity command",    NULL                           },
+    {T_PGCASTOR_CREATECMD,   "create command",      NULL                           },
+    {T_PGCASTOR_ALTERCMD,    "alter command",       NULL                           },
+    {T_PGCASTOR_REMOVECMD,   "remove command",      NULL                           },
+    {T_PGCASTOR_DROPCMD,     "drop command",        NULL                           },
+    {T_PGCASTOR_INITCMD,     "init command",        NULL                           },
+    {T_PGCASTOR_EDITCMD,     "edit command",        pgcastor_feparsemsg_editmsgparser},
+    {T_PGCASTOR_STARTCMD,    "start command",       pgcastor_feparsemsg_rowsmsgparser},
+    {T_PGCASTOR_STOPCMD,     "stop command",        pgcastor_feparsemsg_rowsmsgparser},
+    {T_PGCASTOR_RELOADCMD,   "reload command",      NULL                           },
+    {T_PGCASTOR_INFOCMD,     "info command",        pgcastor_feparsemsg_rowsmsgparser},
+    {T_PGCASTOR_WATCHCMD,    "watch command",       pgcastor_feparsemsg_rowsmsgparser},
+    {T_PGCASTOR_CFGfILECMD,  "config file command", NULL                           },
+    {T_PGCASTOR_REFRESHCMD,  "refresh command",     NULL                           },
+    {T_PGCASTOR_LISTCMD,     "list command",        pgcastor_feparsemsg_rowsmsgparser},
 
     /* add before this */
-    {T_XSYNCH_MAX,         "max command",         NULL                           }
+    {T_PGCASTOR_MAX,         "max command",         NULL                           }
 };
 
 /*
  * convert received descriptor to parse result
  */
-bool xsynch_feparsemsg_msg2result(xsynch_exbuffer msg, xsynch_conn* conn)
+bool pgcastor_feparsemsg_msg2result(pgcastor_exbuffer msg, pgcastor_conn* conn)
 {
     uint8 success = 0;
     int   cmdtype = 0;
@@ -285,11 +285,11 @@ bool xsynch_feparsemsg_msg2result(xsynch_exbuffer msg, xsynch_conn* conn)
     memcpy(&success, cptr, 1);
     cptr += 1;
 
-    XsynchResultReset(conn->result);
+    PGCastorResultReset(conn->result);
 
     /* reset error message */
     conn->errcode = 0;
-    if (false == xsynch_exbufferdata_reset(conn->errmsg))
+    if (false == pgcastor_exbufferdata_reset(conn->errmsg))
     {
         return false;
     }
@@ -308,14 +308,14 @@ bool xsynch_feparsemsg_msg2result(xsynch_exbuffer msg, xsynch_conn* conn)
         cptr += 4;
 
         /* write error message */
-        if (false == xsynch_exbufferdata_appendbinary(conn->errmsg, cptr, (errlen - 4)))
+        if (false == pgcastor_exbufferdata_appendbinary(conn->errmsg, cptr, (errlen - 4)))
         {
             return false;
         }
         return true;
     }
 
-    if (T_XSYNCH_MAX < cmdtype)
+    if (T_PGCASTOR_MAX < cmdtype)
     {
         return false;
     }

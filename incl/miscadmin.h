@@ -7,7 +7,7 @@ extern pthread_t     g_mainthrid;
 extern char          g_cfgpath[512];
 extern char          g_profilepath[512];
 extern volatile bool g_closestd;
-extern volatile int  g_xsynchstat;
+extern volatile int  g_pgcastorstat;
 extern volatile int  g_gotsigreload;
 
 extern uint64        g_walrecno;

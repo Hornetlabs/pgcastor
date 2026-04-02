@@ -57,10 +57,10 @@ xmanager* xmanager_init(void)
     }
     rmemset0(xmgr, 0, '\0', sizeof(xmanager));
 
-    xmgr->xsynchpath = getenv("XSYNCH");
-    if (NULL == xmgr->xsynchpath)
+    xmgr->pgcastorpath = getenv("PGCASTOR");
+    if (NULL == xmgr->pgcastorpath)
     {
-        elog(RLOG_WARNING, "please config XSYNCH, like: export XSYNCH=PATH");
+        elog(RLOG_WARNING, "please config PGCASTOR, like: export PGCASTOR=PATH");
         return NULL;
     }
 
@@ -118,7 +118,7 @@ xmanager* xmanager_init(void)
         xmanager_destroy(xmgr);
         return NULL;
     }
-    if (false == xmanager_metric_setxsynchpath(xmgr->metric, xmgr->xsynchpath))
+    if (false == xmanager_metric_setpgcastorpath(xmgr->metric, xmgr->pgcastorpath))
     {
         elog(RLOG_WARNING, "xmanager metric set config path error");
         xmanager_destroy(xmgr);

@@ -4,18 +4,18 @@
 #include <string.h>
 
 #include "app_c.h"
-#include "xsynch_fe.h"
+#include "pgcastor_fe.h"
 #include "xscsci_output.h"
 
 /* output results */
-void xscsci_output(int rownumber, xsynchrow* rows)
+void xscsci_output(int rownumber, pgcastorrow* rows)
 {
     int         colcnt = 0;
     int         indexcnt = 0;
     int         indexrow = 0;
     int         maxcollen = 0;
     int*        colwidth = NULL;
-    xsynchpair* col = NULL;
+    pgcastorpair* col = NULL;
     const char* value = NULL;
 
     if (rownumber <= 0)
@@ -104,5 +104,5 @@ void xscsci_output(int rownumber, xsynchrow* rows)
         free(colwidth);
     }
 
-    XsynchRowFree(rownumber, rows);
+    PGCastorRowFree(rownumber, rows);
 }

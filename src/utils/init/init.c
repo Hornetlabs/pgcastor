@@ -111,7 +111,7 @@ bool init(void)
 
     printf("-------------------------------------\n");
     printf("|                                   |\n");
-    printf("|           xsynch init success     |\n");
+    printf("|       pgcastor init success       |\n");
     printf("|                                   |\n");
     printf("-------------------------------------\n");
     return true;

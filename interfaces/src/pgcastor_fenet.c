@@ -17,12 +17,12 @@
 
 #include "app_c.h"
 #include "config.h"
-#include "xsynch_exbufferdata.h"
-#include "xsynch_fe.h"
-#include "xsynch_int.h"
-#include "xsynch_fenet.h"
+#include "pgcastor_exbufferdata.h"
+#include "pgcastor_fe.h"
+#include "pgcastor_int.h"
+#include "pgcastor_fenet.h"
 
-static bool xsynch_fenet_desc(int sock, uint16 flag, short int* prevent, int* perror)
+static bool pgcastor_fenet_desc(int sock, uint16 flag, short int* prevent, int* perror)
 {
     int           pos = 0;
     int           iret = 0;
@@ -64,31 +64,31 @@ static bool xsynch_fenet_desc(int sock, uint16 flag, short int* prevent, int* pe
 }
 
 /* check connection status */
-bool xsynch_fenet_isconn(xsynch_conn* conn)
+bool pgcastor_fenet_isconn(pgcastor_conn* conn)
 {
     uint16    flag = 0;
     short int revent = 0;
     int       rerror = 0;
 
-    if (XSYNCHCONN_STATUS_NOP == conn->connstatus)
+    if (PGCASTORCONN_STATUS_NOP == conn->connstatus)
     {
         return false;
     }
 
     flag = POLLOUT;
-    if (false == xsynch_fenet_desc(conn->sock, flag, &revent, &rerror))
+    if (false == pgcastor_fenet_desc(conn->sock, flag, &revent, &rerror))
     {
         close(conn->sock);
-        conn->connstatus = XSYNCHCONN_STATUS_NOP;
+        conn->connstatus = PGCASTORCONN_STATUS_NOP;
         conn->sock = -1;
 
         if (1 == rerror)
         {
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "can not get sock status.");
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "can not get sock status.");
         }
         else if (2 == rerror)
         {
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "xmanager disconnected.");
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "xmanager disconnected.");
         }
         return false;
     }
@@ -97,16 +97,16 @@ bool xsynch_fenet_isconn(xsynch_conn* conn)
     {
         close(conn->sock);
         conn->sock = -1;
-        conn->connstatus = XSYNCHCONN_STATUS_NOP;
+        conn->connstatus = PGCASTORCONN_STATUS_NOP;
         return false;
     }
 
-    conn->connstatus = XSYNCHCONN_STATUS_OK;
+    conn->connstatus = PGCASTORCONN_STATUS_OK;
     return true;
 }
 
 /* get available address */
-static int xsynch_getaddrinfo(const char*            node,
+static int pgcastor_getaddrinfo(const char*            node,
                               const char*            service,
                               const struct addrinfo* hints,
                               struct addrinfo**      res)
@@ -136,7 +136,7 @@ static int xsynch_getaddrinfo(const char*            node,
 /*
  * get address by name or ip address
  * */
-static bool xsynch_host2sockaddr(struct sockaddr_in* addr,
+static bool pgcastor_host2sockaddr(struct sockaddr_in* addr,
                                  const char*         host,
                                  const char*         service,
                                  int                 family,
@@ -159,7 +159,7 @@ static bool xsynch_host2sockaddr(struct sockaddr_in* addr,
         hints.ai_flags |= AI_PASSIVE;
     }
 
-    ret = xsynch_getaddrinfo(host, service, &hints, &reshead);
+    ret = pgcastor_getaddrinfo(host, service, &hints, &reshead);
     if (0 != ret)
     {
         return false;
@@ -180,7 +180,7 @@ static bool xsynch_host2sockaddr(struct sockaddr_in* addr,
 }
 
 /* set to non-blocking mode */
-static bool xsynch_setunblock(int sockfd)
+static bool pgcastor_setunblock(int sockfd)
 {
     /*
      * 1. get descriptor status
@@ -205,7 +205,7 @@ static bool xsynch_setunblock(int sockfd)
 }
 
 /* connect to xmanager */
-bool xsynch_fenet_conn(xsynch_conn* conn)
+bool pgcastor_fenet_conn(pgcastor_conn* conn)
 {
     int                yes = 1;
     int                addrlen = 0;
@@ -216,29 +216,29 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
     char               unixdoamin[512] = {0};
 
     conn->errcode = 0;
-    if (XSYNCH_SOCKTYPE_TCP == conn->socktype)
+    if (PGCASTOR_SOCKTYPE_TCP == conn->socktype)
     {
         domain = AF_INET;
-        if (false == xsynch_host2sockaddr(&addrin, conn->host, conn->port, domain, SOCK_STREAM, IPPROTO_TCP, 1))
+        if (false == pgcastor_host2sockaddr(&addrin, conn->host, conn->port, domain, SOCK_STREAM, IPPROTO_TCP, 1))
         {
             conn->errcode = 1;
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "get server addr error.");
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "get server addr error.");
             return false;
         }
 
         connaddr = (struct sockaddr*)&addrin;
         addrlen = sizeof(struct sockaddr_in);
     }
-    else if (XSYNCH_SOCKTYPE_UNIXDOMAIN == conn->socktype)
+    else if (PGCASTOR_SOCKTYPE_UNIXDOMAIN == conn->socktype)
     {
         domain = AF_LOCAL;
         snprintf(unixdoamin, 512, "%s/%s%s", RMANAGER_UNIXDOMAINDIR, RMANAGER_UNIXDOMAINPREFIX, conn->port);
         if (sizeof(addrun.sun_path) <= strlen(unixdoamin))
         {
             conn->errcode = 1;
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "unix domain dir too long.");
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "unix domain dir too long.");
             return false;
         }
         memset(addrun.sun_path, '\0', sizeof(addrun.sun_path));
@@ -252,14 +252,14 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
     if (-1 == conn->sock)
     {
         conn->errcode = 1;
-        xsynch_exbufferdata_reset(conn->errmsg);
-        xsynch_exbufferdata_append(conn->errmsg, "%s", "unix domain dir too long.");
+        pgcastor_exbufferdata_reset(conn->errmsg);
+        pgcastor_exbufferdata_append(conn->errmsg, "%s", "unix domain dir too long.");
         return false;
     }
 
     /* set to non-blocking mode */
-    xsynch_setunblock(conn->sock);
-    if (XSYNCH_SOCKTYPE_TCP == conn->socktype)
+    pgcastor_setunblock(conn->sock);
+    if (PGCASTOR_SOCKTYPE_TCP == conn->socktype)
     {
         setsockopt(conn->sock, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes));
 
@@ -291,32 +291,32 @@ bool xsynch_fenet_conn(xsynch_conn* conn)
         if (errno != EINPROGRESS)
         {
             conn->errcode = 1;
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "conn server error.");
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "conn server error.");
             close(conn->sock);
             conn->sock = -1;
             return false;
         }
-        conn->connstatus = XSYNCHCONN_STATUS_INPROCESS;
+        conn->connstatus = PGCASTORCONN_STATUS_INPROCESS;
     }
 
-    if (XSYNCHCONN_STATUS_INPROCESS == conn->connstatus)
+    if (PGCASTORCONN_STATUS_INPROCESS == conn->connstatus)
     {
-        if (false == xsynch_fenet_isconn(conn))
+        if (false == pgcastor_fenet_isconn(conn))
         {
             conn->errcode = 1;
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "conn server error.");
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "conn server error.");
             return false;
         }
     }
 
-    conn->connstatus = XSYNCHCONN_STATUS_OK;
+    conn->connstatus = PGCASTORCONN_STATUS_OK;
     return true;
 }
 
 /* send data and get return result */
-bool xsynch_fenet_sendcmd(xsynch_conn* conn)
+bool pgcastor_fenet_sendcmd(pgcastor_conn* conn)
 {
     bool      bhdr = 0;
     uint16    flag = 0;
@@ -331,11 +331,11 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
     conn->errcode = 0;
 
     /* check if connected */
-    if (false == xsynch_fenet_isconn(conn))
+    if (false == pgcastor_fenet_isconn(conn))
     {
         conn->errcode = 1;
-        xsynch_exbufferdata_reset(conn->errmsg);
-        xsynch_exbufferdata_append(conn->errmsg, "%s", "please start xmanager.");
+        pgcastor_exbufferdata_reset(conn->errmsg);
+        pgcastor_exbufferdata_append(conn->errmsg, "%s", "please start xmanager.");
         return false;
     }
 
@@ -347,11 +347,11 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
         flag = POLLOUT;
 
         /* monitor */
-        if (false == xsynch_fenet_desc(conn->sock, flag, &revent, &rerror))
+        if (false == pgcastor_fenet_desc(conn->sock, flag, &revent, &rerror))
         {
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "xmanager disconnected.");
-            goto xsynch_fenet_sendcmd_error;
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "xmanager disconnected.");
+            goto pgcastor_fenet_sendcmd_error;
         }
 
         if (0 == revent)
@@ -361,9 +361,9 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
 
         if (POLLHUP == (revent & POLLHUP) || POLLERR == (revent & POLLERR))
         {
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "net status error.");
-            goto xsynch_fenet_sendcmd_error;
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "net status error.");
+            goto pgcastor_fenet_sendcmd_error;
         }
 
         /* trigger POLLIN event */
@@ -383,27 +383,27 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
                 continue;
             }
 
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "send command to xmanager error.");
-            goto xsynch_fenet_sendcmd_error;
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "send command to xmanager error.");
+            goto pgcastor_fenet_sendcmd_error;
         }
 
         if (0 == rlen)
         {
             /* already closed */
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "xmanager closed sock.");
-            goto xsynch_fenet_sendcmd_error;
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "xmanager closed sock.");
+            goto pgcastor_fenet_sendcmd_error;
         }
         cptr += rlen;
         sendlen -= rlen;
     }
-    xsynch_exbufferdata_reset(conn->sendmsg);
+    pgcastor_exbufferdata_reset(conn->sendmsg);
 
     /*
      * get data
      */
-    xsynch_exbufferdata_reset(conn->recvmsg);
+    pgcastor_exbufferdata_reset(conn->recvmsg);
     cptr = conn->recvmsg->data;
     bhdr = true;
     recvlen = hdrlen;
@@ -412,11 +412,11 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
         flag = POLLIN;
 
         /* monitor */
-        if (false == xsynch_fenet_desc(conn->sock, flag, &revent, &rerror))
+        if (false == pgcastor_fenet_desc(conn->sock, flag, &revent, &rerror))
         {
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "xmanager disconnected.");
-            goto xsynch_fenet_sendcmd_error;
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "xmanager disconnected.");
+            goto pgcastor_fenet_sendcmd_error;
         }
 
         if (0 == revent)
@@ -426,9 +426,9 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
 
         if (POLLHUP == (revent & POLLHUP) || POLLERR == (revent & POLLERR))
         {
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "net status error.");
-            goto xsynch_fenet_sendcmd_error;
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "net status error.");
+            goto pgcastor_fenet_sendcmd_error;
         }
 
         /* trigger POLLOUT event */
@@ -447,17 +447,17 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
             {
                 continue;
             }
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "recv message from xmanager error.");
-            goto xsynch_fenet_sendcmd_error;
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "recv message from xmanager error.");
+            goto pgcastor_fenet_sendcmd_error;
         }
 
         if (0 == rlen)
         {
             /* already closed */
-            xsynch_exbufferdata_reset(conn->errmsg);
-            xsynch_exbufferdata_append(conn->errmsg, "%s", "xmanager closed sock.");
-            goto xsynch_fenet_sendcmd_error;
+            pgcastor_exbufferdata_reset(conn->errmsg);
+            pgcastor_exbufferdata_append(conn->errmsg, "%s", "xmanager closed sock.");
+            goto pgcastor_fenet_sendcmd_error;
         }
 
         recvlen -= rlen;
@@ -467,7 +467,7 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
             memcpy(&recvlen, cptr, sizeof(unsigned int));
             recvlen = r_ntoh32(recvlen);
 
-            xsynch_exbufferdata_enlarge(conn->recvmsg, recvlen);
+            pgcastor_exbufferdata_enlarge(conn->recvmsg, recvlen);
             cptr = conn->recvmsg->data;
             conn->recvmsg->len = hdrlen;
             cptr += hdrlen;
@@ -480,9 +480,9 @@ bool xsynch_fenet_sendcmd(xsynch_conn* conn)
     }
     return true;
 
-xsynch_fenet_sendcmd_error:
+pgcastor_fenet_sendcmd_error:
     close(conn->sock);
     conn->sock = -1;
-    conn->connstatus = XSYNCHCONN_STATUS_NOP;
+    conn->connstatus = PGCASTORCONN_STATUS_NOP;
     return false;
 }

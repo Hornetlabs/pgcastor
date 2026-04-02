@@ -9,28 +9,28 @@
 #include <errno.h>
 
 #include "app_c.h"
-#include "xsynch_exbufferdata.h"
-#include "xsynch_fe.h"
-#include "xsynch_int.h"
-#include "xsynch_febuildmsg.h"
+#include "pgcastor_exbufferdata.h"
+#include "pgcastor_fe.h"
+#include "pgcastor_int.h"
+#include "pgcastor_febuildmsg.h"
 
-typedef struct XSYNCH_FEBUILDMSG_ASSEMBLE
+typedef struct PGCASTOR_FEBUILDMSG_ASSEMBLE
 {
-    xsynch_cmdtag cmd;
+    pgcastor_cmdtag cmd;
     char*         desc;
 
-    bool          (*assemble)(xsynch_cmd* cmd, xsynch_exbuffer msg);
-} xsynch_febuildmsg_assemble;
+    bool          (*assemble)(pgcastor_cmd* cmd, pgcastor_exbuffer msg);
+} pgcastor_febuildmsg_assemble;
 
 /* identity message */
-static bool xsynch_febuildmsg_identitycmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_identitycmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int                 msglen = 0;
     int                 msgjobtype = 0;
     int                 msgjobnamelen = 0;
-    int                 msgtype = T_XSYNCH_IDENTITYCMD;
+    int                 msgtype = T_PGCASTOR_IDENTITYCMD;
     char*               cptr = NULL;
-    xsynch_identitycmd* icmd = (xsynch_identitycmd*)cmd;
+    pgcastor_identitycmd* icmd = (pgcastor_identitycmd*)cmd;
 
     /* byte order conversion */
     msglen = 8;
@@ -52,7 +52,7 @@ static bool xsynch_febuildmsg_identitycmdassemble(xsynch_cmd* cmd, xsynch_exbuff
     msglen += 4;
     msglen += msgjobnamelen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -106,18 +106,18 @@ static bool xsynch_febuildmsg_identitycmdassemble(xsynch_cmd* cmd, xsynch_exbuff
 }
 
 /* create identifier message */
-static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_createcmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int               msglen = 0;
     int               ivalue = 0;
     int               valuelen = 0;
     int               msgjobtype = 0;
     int               msgjobnamelen = 0;
-    int               msgtype = T_XSYNCH_CREATECMD;
+    int               msgtype = T_PGCASTOR_CREATECMD;
     char*             cptr = NULL;
     ListCell*         lc = NULL;
-    xsynch_job*       job = NULL;
-    xsynch_createcmd* createcmd = (xsynch_createcmd*)cmd;
+    pgcastor_job*       job = NULL;
+    pgcastor_createcmd* createcmd = (pgcastor_createcmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -146,7 +146,7 @@ static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
 
         foreach (lc, createcmd->job)
         {
-            job = (xsynch_job*)lfirst(lc);
+            job = (pgcastor_job*)lfirst(lc);
 
             /* jobtype 4 + jobnamelen 4 */
             msglen += (4 + 4);
@@ -154,7 +154,7 @@ static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
         }
     }
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -215,7 +215,7 @@ static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
 
         foreach (lc, createcmd->job)
         {
-            job = (xsynch_job*)lfirst(lc);
+            job = (pgcastor_job*)lfirst(lc);
 
             /* job type */
             ivalue = job->kind;
@@ -251,7 +251,7 @@ static bool xsynch_febuildmsg_createcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
 }
 
 /* alter identifier message */
-static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_altercmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int8             action = 0;
     int              msglen = 0;
@@ -259,11 +259,11 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
     int              valuelen = 0;
     int              msgjobtype = 0;
     int              msgjobnamelen = 0;
-    int              msgtype = T_XSYNCH_ALTERCMD;
+    int              msgtype = T_PGCASTOR_ALTERCMD;
     char*            cptr = NULL;
     ListCell*        lc = NULL;
-    xsynch_job*      job = NULL;
-    xsynch_altercmd* altercmd = (xsynch_altercmd*)cmd;
+    pgcastor_job*      job = NULL;
+    pgcastor_altercmd* altercmd = (pgcastor_altercmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -294,7 +294,7 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
 
         foreach (lc, altercmd->job)
         {
-            job = (xsynch_job*)lfirst(lc);
+            job = (pgcastor_job*)lfirst(lc);
 
             /* jobtype 4 + jobnamelen 4 */
             msglen += (4 + 4);
@@ -302,7 +302,7 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
         }
     }
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -366,7 +366,7 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
 
         foreach (lc, altercmd->job)
         {
-            job = (xsynch_job*)lfirst(lc);
+            job = (pgcastor_job*)lfirst(lc);
 
             /* job cnt */
             ivalue = job->kind;
@@ -403,14 +403,14 @@ static bool xsynch_febuildmsg_altercmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
 }
 
 /* remove identifier message */
-static bool xsynch_febuildmsg_removecmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_removecmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int               msglen = 0;
     int               msgjobtype = 0;
     int               msgjobnamelen = 0;
-    int               msgtype = T_XSYNCH_REMOVECMD;
+    int               msgtype = T_PGCASTOR_REMOVECMD;
     char*             cptr = NULL;
-    xsynch_removecmd* removecmd = (xsynch_removecmd*)cmd;
+    pgcastor_removecmd* removecmd = (pgcastor_removecmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -431,7 +431,7 @@ static bool xsynch_febuildmsg_removecmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
     msglen += 4;
     msglen += msgjobnamelen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -482,14 +482,14 @@ static bool xsynch_febuildmsg_removecmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
 }
 
 /* drop identifier message */
-static bool xsynch_febuildmsg_dropcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_dropcmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int             msglen = 0;
     int             msgjobtype = 0;
     int             msgjobnamelen = 0;
-    int             msgtype = T_XSYNCH_DROPCMD;
+    int             msgtype = T_PGCASTOR_DROPCMD;
     char*           cptr = NULL;
-    xsynch_dropcmd* dropcmd = (xsynch_dropcmd*)cmd;
+    pgcastor_dropcmd* dropcmd = (pgcastor_dropcmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -510,7 +510,7 @@ static bool xsynch_febuildmsg_dropcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     msglen += 4;
     msglen += msgjobnamelen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -561,14 +561,14 @@ static bool xsynch_febuildmsg_dropcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 }
 
 /* init identifier message */
-static bool xsynch_febuildmsg_initcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_initcmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int             msglen = 0;
     int             msgjobtype = 0;
     int             msgjobnamelen = 0;
-    int             msgtype = T_XSYNCH_INITCMD;
+    int             msgtype = T_PGCASTOR_INITCMD;
     char*           cptr = NULL;
-    xsynch_initcmd* initcmd = (xsynch_initcmd*)cmd;
+    pgcastor_initcmd* initcmd = (pgcastor_initcmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -589,7 +589,7 @@ static bool xsynch_febuildmsg_initcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     msglen += 4;
     msglen += msgjobnamelen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -640,14 +640,14 @@ static bool xsynch_febuildmsg_initcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 }
 
 /* edit identifier message */
-static bool xsynch_febuildmsg_editcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_editcmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int             msglen = 0;
     int             msgjobtype = 0;
     int             msgjobnamelen = 0;
-    int             msgtype = T_XSYNCH_EDITCMD;
+    int             msgtype = T_PGCASTOR_EDITCMD;
     char*           cptr = NULL;
-    xsynch_editcmd* editcmd = (xsynch_editcmd*)cmd;
+    pgcastor_editcmd* editcmd = (pgcastor_editcmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -668,7 +668,7 @@ static bool xsynch_febuildmsg_editcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     msglen += 4;
     msglen += msgjobnamelen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -719,14 +719,14 @@ static bool xsynch_febuildmsg_editcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 }
 
 /* start identifier message */
-static bool xsynch_febuildmsg_startcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_startcmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int              msglen = 0;
     int              msgjobtype = 0;
     int              msgjobnamelen = 0;
-    int              msgtype = T_XSYNCH_STARTCMD;
+    int              msgtype = T_PGCASTOR_STARTCMD;
     char*            cptr = NULL;
-    xsynch_startcmd* startcmd = (xsynch_startcmd*)cmd;
+    pgcastor_startcmd* startcmd = (pgcastor_startcmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -747,7 +747,7 @@ static bool xsynch_febuildmsg_startcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
     msglen += 4;
     msglen += msgjobnamelen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -798,14 +798,14 @@ static bool xsynch_febuildmsg_startcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
 }
 
 /* stop identifier message */
-static bool xsynch_febuildmsg_stopcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_stopcmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int             msglen = 0;
     int             msgjobtype = 0;
     int             msgjobnamelen = 0;
-    int             msgtype = T_XSYNCH_STOPCMD;
+    int             msgtype = T_PGCASTOR_STOPCMD;
     char*           cptr = NULL;
-    xsynch_stopcmd* stopcmd = (xsynch_stopcmd*)cmd;
+    pgcastor_stopcmd* stopcmd = (pgcastor_stopcmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -826,7 +826,7 @@ static bool xsynch_febuildmsg_stopcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     msglen += 4;
     msglen += msgjobnamelen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -877,14 +877,14 @@ static bool xsynch_febuildmsg_stopcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 }
 
 /* reload identifier message */
-static bool xsynch_febuildmsg_reloadcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_reloadcmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int               msglen = 0;
     int               msgjobtype = 0;
     int               msgjobnamelen = 0;
-    int               msgtype = T_XSYNCH_RELOADCMD;
+    int               msgtype = T_PGCASTOR_RELOADCMD;
     char*             cptr = NULL;
-    xsynch_reloadcmd* reloadcmd = (xsynch_reloadcmd*)cmd;
+    pgcastor_reloadcmd* reloadcmd = (pgcastor_reloadcmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -905,7 +905,7 @@ static bool xsynch_febuildmsg_reloadcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
     msglen += 4;
     msglen += msgjobnamelen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -956,14 +956,14 @@ static bool xsynch_febuildmsg_reloadcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer
 }
 
 /* info identifier message */
-static bool xsynch_febuildmsg_infocmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_infocmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int             msglen = 0;
     int             msgjobtype = 0;
     int             msgjobnamelen = 0;
-    int             msgtype = T_XSYNCH_INFOCMD;
+    int             msgtype = T_PGCASTOR_INFOCMD;
     char*           cptr = NULL;
-    xsynch_infocmd* infocmd = (xsynch_infocmd*)cmd;
+    pgcastor_infocmd* infocmd = (pgcastor_infocmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -984,7 +984,7 @@ static bool xsynch_febuildmsg_infocmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     msglen += 4;
     msglen += msgjobnamelen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -1035,14 +1035,14 @@ static bool xsynch_febuildmsg_infocmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
 }
 
 /* watch identifier message */
-static bool xsynch_febuildmsg_watchcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_watchcmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int              msglen = 0;
     int              msgjobtype = 0;
     int              msgjobnamelen = 0;
-    int              msgtype = T_XSYNCH_WATCHCMD;
+    int              msgtype = T_PGCASTOR_WATCHCMD;
     char*            cptr = NULL;
-    xsynch_watchcmd* watchcmd = (xsynch_watchcmd*)cmd;
+    pgcastor_watchcmd* watchcmd = (pgcastor_watchcmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -1063,7 +1063,7 @@ static bool xsynch_febuildmsg_watchcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
     msglen += 4;
     msglen += msgjobnamelen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -1114,17 +1114,17 @@ static bool xsynch_febuildmsg_watchcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer 
 }
 
 /* cfgfile identifier message */
-static bool xsynch_febuildmsg_cfgfilecmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_cfgfilecmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int                msglen = 0;
     int                msgjobtype = 0;
     int                msgjobnamelen = 0;
     int                msgfilenamelen = 0;
-    int                msgtype = T_XSYNCH_CFGfILECMD;
+    int                msgtype = T_PGCASTOR_CFGfILECMD;
     int                tmplen = 0;
     int                datalen = 0;
     char*              cptr = NULL;
-    xsynch_cfgfilecmd* cfgfilecmd = (xsynch_cfgfilecmd*)cmd;
+    pgcastor_cfgfilecmd* cfgfilecmd = (pgcastor_cfgfilecmd*)cmd;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
@@ -1160,7 +1160,7 @@ static bool xsynch_febuildmsg_cfgfilecmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
     msglen += 4;
     msglen += datalen;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -1233,7 +1233,7 @@ static bool xsynch_febuildmsg_cfgfilecmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
 }
 
 /* refresh message */
-static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_refreshcmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     /*
      * msglen
@@ -1247,10 +1247,10 @@ static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
     int                msglen = 0;
     char*              cptr = NULL;
     ListCell*          lc = NULL;
-    xsynch_rangevar*   rvar = NULL;
-    xsynch_refreshcmd* refreshcmd = NULL;
+    pgcastor_rangevar*   rvar = NULL;
+    pgcastor_refreshcmd* refreshcmd = NULL;
 
-    refreshcmd = (xsynch_refreshcmd*)cmd;
+    refreshcmd = (pgcastor_refreshcmd*)cmd;
 
     /* calculate total length */
     /* total length + crc32 */
@@ -1268,7 +1268,7 @@ static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
 
     foreach (lc, refreshcmd->tables)
     {
-        rvar = (xsynch_rangevar*)lfirst(lc);
+        rvar = (pgcastor_rangevar*)lfirst(lc);
 
         /* schema */
         msglen += 4;
@@ -1281,7 +1281,7 @@ static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
 
     /* allocate space */
     msg->len = 0;
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -1301,7 +1301,7 @@ static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
     cptr += 4;
 
     /* message type */
-    ivalue = T_XSYNCH_REFRESHCMD;
+    ivalue = T_PGCASTOR_REFRESHCMD;
     ivalue = r_hton32(ivalue);
     memcpy(cptr, &ivalue, 4);
     msg->len += 4;
@@ -1329,7 +1329,7 @@ static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
 
     foreach (lc, refreshcmd->tables)
     {
-        rvar = (xsynch_rangevar*)lfirst(lc);
+        rvar = (pgcastor_rangevar*)lfirst(lc);
 
         /* schema */
         ivalue = strlen(rvar->schema);
@@ -1360,17 +1360,17 @@ static bool xsynch_febuildmsg_refreshcmdassemble(xsynch_cmd* cmd, xsynch_exbuffe
 }
 
 /* list message */
-static bool xsynch_febuildmsg_listcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer msg)
+static bool pgcastor_febuildmsg_listcmdassemble(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     int   msglen = 0;
-    int   msgtype = T_XSYNCH_LISTCMD;
+    int   msgtype = T_PGCASTOR_LISTCMD;
     char* cptr = NULL;
 
     msglen = 4 + 4;
     msgtype = r_hton32(msgtype);
     msglen += 4;
 
-    if (false == xsynch_exbufferdata_enlarge(msg, msglen))
+    if (false == pgcastor_exbufferdata_enlarge(msg, msglen))
     {
         return false;
     }
@@ -1394,32 +1394,32 @@ static bool xsynch_febuildmsg_listcmdassemble(xsynch_cmd* cmd, xsynch_exbuffer m
     return true;
 }
 
-static xsynch_febuildmsg_assemble m_cmd2msgmap[] = {
-    {T_XSYNCH_NOP,         "unknown command",     NULL                                 },
-    {T_XSYNCH_IDENTITYCMD, "identity command",    xsynch_febuildmsg_identitycmdassemble},
-    {T_XSYNCH_CREATECMD,   "create command",      xsynch_febuildmsg_createcmdassemble  },
-    {T_XSYNCH_ALTERCMD,    "alter command",       xsynch_febuildmsg_altercmdassemble   },
-    {T_XSYNCH_REMOVECMD,   "remove command",      xsynch_febuildmsg_removecmdassemble  },
-    {T_XSYNCH_DROPCMD,     "drop command",        xsynch_febuildmsg_dropcmdassemble    },
-    {T_XSYNCH_INITCMD,     "init command",        xsynch_febuildmsg_initcmdassemble    },
-    {T_XSYNCH_EDITCMD,     "edit command",        xsynch_febuildmsg_editcmdassemble    },
-    {T_XSYNCH_STARTCMD,    "start command",       xsynch_febuildmsg_startcmdassemble   },
-    {T_XSYNCH_STOPCMD,     "stop command",        xsynch_febuildmsg_stopcmdassemble    },
-    {T_XSYNCH_RELOADCMD,   "reload command",      xsynch_febuildmsg_reloadcmdassemble  },
-    {T_XSYNCH_INFOCMD,     "info command",        xsynch_febuildmsg_infocmdassemble    },
-    {T_XSYNCH_WATCHCMD,    "watch command",       xsynch_febuildmsg_watchcmdassemble   },
-    {T_XSYNCH_CFGfILECMD,  "config file command", xsynch_febuildmsg_cfgfilecmdassemble },
-    {T_XSYNCH_REFRESHCMD,  "refresh command",     xsynch_febuildmsg_refreshcmdassemble },
-    {T_XSYNCH_LISTCMD,     "list command",        xsynch_febuildmsg_listcmdassemble    },
+static pgcastor_febuildmsg_assemble m_cmd2msgmap[] = {
+    {T_PGCASTOR_NOP,         "unknown command",     NULL                                 },
+    {T_PGCASTOR_IDENTITYCMD, "identity command",    pgcastor_febuildmsg_identitycmdassemble},
+    {T_PGCASTOR_CREATECMD,   "create command",      pgcastor_febuildmsg_createcmdassemble  },
+    {T_PGCASTOR_ALTERCMD,    "alter command",       pgcastor_febuildmsg_altercmdassemble   },
+    {T_PGCASTOR_REMOVECMD,   "remove command",      pgcastor_febuildmsg_removecmdassemble  },
+    {T_PGCASTOR_DROPCMD,     "drop command",        pgcastor_febuildmsg_dropcmdassemble    },
+    {T_PGCASTOR_INITCMD,     "init command",        pgcastor_febuildmsg_initcmdassemble    },
+    {T_PGCASTOR_EDITCMD,     "edit command",        pgcastor_febuildmsg_editcmdassemble    },
+    {T_PGCASTOR_STARTCMD,    "start command",       pgcastor_febuildmsg_startcmdassemble   },
+    {T_PGCASTOR_STOPCMD,     "stop command",        pgcastor_febuildmsg_stopcmdassemble    },
+    {T_PGCASTOR_RELOADCMD,   "reload command",      pgcastor_febuildmsg_reloadcmdassemble  },
+    {T_PGCASTOR_INFOCMD,     "info command",        pgcastor_febuildmsg_infocmdassemble    },
+    {T_PGCASTOR_WATCHCMD,    "watch command",       pgcastor_febuildmsg_watchcmdassemble   },
+    {T_PGCASTOR_CFGfILECMD,  "config file command", pgcastor_febuildmsg_cfgfilecmdassemble },
+    {T_PGCASTOR_REFRESHCMD,  "refresh command",     pgcastor_febuildmsg_refreshcmdassemble },
+    {T_PGCASTOR_LISTCMD,     "list command",        pgcastor_febuildmsg_listcmdassemble    },
 
     /* add before this */
-    {T_XSYNCH_MAX,         "max command",         NULL                                 }
+    {T_PGCASTOR_MAX,         "max command",         NULL                                 }
 };
 
 /*
  * assemble data to buffer according to command type
  */
-bool xsynch_febuildmsg_cmd2msg(xsynch_cmd* cmd, xsynch_exbuffer msg)
+bool pgcastor_febuildmsg_cmd2msg(pgcastor_cmd* cmd, pgcastor_exbuffer msg)
 {
     /*
      * when assembling length and other info data, need to convert host byte order to network byte

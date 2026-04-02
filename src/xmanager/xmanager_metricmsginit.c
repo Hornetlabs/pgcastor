@@ -134,14 +134,14 @@ bool xmanager_metricmsg_parseinit(xmanager_metric* xmetric, netpoolentry* npoole
     /* Execute init command execcmd */
     if (XMANAGER_METRICNODETYPE_PGRECEIVELOG == jobtype)
     {
-        snprintf(execcmd, 1024, "%s/bin/pgreceivelog/receivelog -f %s init", xmetric->xsynchpath, pxmetricnode->conf);
+        snprintf(execcmd, 1024, "%s/bin/pgreceivelog/receivelog -f %s init", xmetric->pgcastorpath, pxmetricnode->conf);
     }
     else
     {
         snprintf(execcmd,
                  1024,
                  "%s/bin/%s -f %s init",
-                 xmetric->xsynchpath,
+                 xmetric->pgcastorpath,
                  xmanager_metricnode_getname(jobtype),
                  pxmetricnode->conf);
     }

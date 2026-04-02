@@ -9,8 +9,8 @@ extern bool xscsci_input_init(void);
  */
 extern char* xscsci_input_getsinteractive(char* prefix);
 
-extern void xscsci_input_appendhistory(const char* s, xsynch_exbuffer historybuf);
+extern void xscsci_input_appendhistory(const char* s, pgcastor_exbuffer historybuf);
 
-extern void xscsci_input_sendhistory(xsynch_exbuffer historybuf, char** prevhistorybuf);
+extern void xscsci_input_sendhistory(pgcastor_exbuffer historybuf, char** prevhistorybuf);
 
 #endif

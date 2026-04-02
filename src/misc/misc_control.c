@@ -94,7 +94,7 @@ void misc_controldata_stat_setinit(void)
         return;
     }
 
-    m_ctrlfiledata->stat = XSYNCHSTAT_INIT;
+    m_ctrlfiledata->stat = PGCASTORSTAT_INIT;
 }
 
 /* Set state to rewind */
@@ -105,7 +105,7 @@ void misc_controldata_stat_setrewind(void)
         return;
     }
 
-    m_ctrlfiledata->stat = XSYNCHSTAT_REWIND;
+    m_ctrlfiledata->stat = PGCASTORSTAT_REWIND;
 }
 
 /* Set state to rewinding */
@@ -116,7 +116,7 @@ void misc_controldata_stat_setrewinding(void)
         return;
     }
 
-    m_ctrlfiledata->stat = XSYNCHSTAT_REWINDING;
+    m_ctrlfiledata->stat = PGCASTORSTAT_REWINDING;
 }
 
 /* Set state to running */
@@ -127,7 +127,7 @@ void misc_controldata_stat_setrunning(void)
         return;
     }
 
-    m_ctrlfiledata->stat = XSYNCHSTAT_RUNNING;
+    m_ctrlfiledata->stat = PGCASTORSTAT_RUNNING;
 }
 
 /* Set state to shutdown */
@@ -138,7 +138,7 @@ void misc_controldata_stat_setshutdown(void)
         return;
     }
 
-    m_ctrlfiledata->stat = XSYNCHSTAT_SHUTDOWN;
+    m_ctrlfiledata->stat = PGCASTORSTAT_SHUTDOWN;
 }
 
 /* Set state to recovery */
@@ -149,7 +149,7 @@ void misc_controldata_stat_setrecovery(void)
         return;
     }
 
-    m_ctrlfiledata->stat = XSYNCHSTAT_RECOVERY;
+    m_ctrlfiledata->stat = PGCASTORSTAT_RECOVERY;
 }
 
 /* Get state value */

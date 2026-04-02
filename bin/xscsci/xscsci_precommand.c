@@ -11,17 +11,17 @@
 #include <dirent.h>
 
 #include "app_c.h"
-#include "xsynch_exbufferdata.h"
-#include "xsynch_fe.h"
+#include "pgcastor_exbufferdata.h"
+#include "pgcastor_fe.h"
 #include "xscsci_output.h"
 #include "xscsci.h"
 #include "xscsci_precommand.h"
 
-typedef void (*precommandfunc)(xsciscistat* xscisc, xsynch_cmd* cmd);
+typedef void (*precommandfunc)(xsciscistat* xscisc, pgcastor_cmd* cmd);
 
 typedef struct XSCSCI_PRECOMMANDOPS
 {
-    xsynch_cmdtag  type;
+    pgcastor_cmdtag  type;
     char*          desc;
     precommandfunc func;
 } xscsci_precommandops;
@@ -261,8 +261,8 @@ static bool xscsci_precommand_getdatafromcfgfile(const char* config_file, char* 
     return true;
 }
 
-/* edit: read config file to generate xsynch_cfgfilecmd->data */
-static bool xscsci_precommand_edit_setcmddata(FILE* fp, xsynch_cfgfilecmd* cfgcmd)
+/* edit: read config file to generate pgcastor_cfgfilecmd->data */
+static bool xscsci_precommand_edit_setcmddata(FILE* fp, pgcastor_cfgfilecmd* cfgcmd)
 {
     size_t rlen = 0;
     size_t offset = 0;
@@ -307,29 +307,29 @@ static bool xscsci_precommand_edit_setcmddata(FILE* fp, xsynch_cfgfilecmd* cfgcm
     return true;
 }
 
-static void xscsci_precommand_create(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_create(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     struct stat       st;
     int               rownum = 0;
     char              samplepath[512] = {'\0'};
     char              confpath[512] = {'\0'};
-    xsynchrow*        rows = NULL;
-    xsynch_createcmd* createcmd = NULL;
+    pgcastorrow*        rows = NULL;
+    pgcastor_createcmd* createcmd = NULL;
 
     if (cmd == NULL)
     {
         return;
     }
 
-    createcmd = (xsynch_createcmd*)cmd;
+    createcmd = (pgcastor_createcmd*)cmd;
 
-    if (XSYNCH_JOBKIND_MANAGER == createcmd->kind)
+    if (PGCASTOR_JOBKIND_MANAGER == createcmd->kind)
     {
         /* create xmanager config file from template */
         snprintf(confpath,
                  sizeof(confpath),
                  "%s/%s/%s_%s.cfg",
-                 xscisc->xsynchhome,
+                 xscisc->pgcastorhome,
                  "config",
                  "manager",
                  createcmd->name);
@@ -342,7 +342,7 @@ static void xscsci_precommand_create(xsciscistat* xscisc, xsynch_cmd* cmd)
         snprintf(samplepath,
                  sizeof(samplepath),
                  "%s/%s/%s/%s",
-                 xscisc->xsynchhome,
+                 xscisc->pgcastorhome,
                  "config",
                  "sample",
                  "manager.cfg.sample");
@@ -358,33 +358,33 @@ static void xscsci_precommand_create(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
 
     return;
 }
 
-static void xscsci_precommand_alter(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_alter(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int              rownum = 0;
-    xsynchrow*       rows = NULL;
-    xsynch_altercmd* altercmd = NULL;
+    pgcastorrow*       rows = NULL;
+    pgcastor_altercmd* altercmd = NULL;
 
     if (cmd == NULL)
     {
         return;
     }
 
-    altercmd = (xsynch_altercmd*)cmd;
+    altercmd = (pgcastor_altercmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS != altercmd->kind)
+    if (PGCASTOR_JOBKIND_PROCESS != altercmd->kind)
     {
         printf("Alter only supports progress\n");
         return;
@@ -396,46 +396,46 @@ static void xscsci_precommand_alter(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
 
     return;
 }
 
-static void xscsci_precommand_remove(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_remove(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int               rownum = 0;
     char              confpath[512] = {'\0'};
-    xsynchrow*        rows = NULL;
-    xsynch_removecmd* removecmd = NULL;
+    pgcastorrow*        rows = NULL;
+    pgcastor_removecmd* removecmd = NULL;
 
     if (cmd == NULL)
     {
         return;
     }
 
-    removecmd = (xsynch_removecmd*)cmd;
+    removecmd = (pgcastor_removecmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS == removecmd->kind || XSYNCH_JOBKIND_ALL == removecmd->kind)
+    if (PGCASTOR_JOBKIND_PROCESS == removecmd->kind || PGCASTOR_JOBKIND_ALL == removecmd->kind)
     {
         printf("Remove not supports all or progress\n");
         return;
     }
 
-    if (XSYNCH_JOBKIND_MANAGER == removecmd->kind)
+    if (PGCASTOR_JOBKIND_MANAGER == removecmd->kind)
     {
         /* delete config file */
         snprintf(confpath,
                  sizeof(confpath),
                  "%s/%s/%s_%s.cfg",
-                 xscisc->xsynchhome,
+                 xscisc->pgcastorhome,
                  "config",
                  "manager",
                  removecmd->name);
@@ -450,55 +450,55 @@ static void xscsci_precommand_remove(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
 
     return;
 }
 
-static void xscsci_precommand_reload(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_reload(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int               rownum = 0;
-    xsynchrow*        rows = NULL;
-    xsynch_reloadcmd* reloadcmd = NULL;
+    pgcastorrow*        rows = NULL;
+    pgcastor_reloadcmd* reloadcmd = NULL;
 
     if (cmd == NULL)
     {
         return;
     }
 
-    reloadcmd = (xsynch_reloadcmd*)cmd;
+    reloadcmd = (pgcastor_reloadcmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS == reloadcmd->kind || XSYNCH_JOBKIND_ALL == reloadcmd->kind)
+    if (PGCASTOR_JOBKIND_PROCESS == reloadcmd->kind || PGCASTOR_JOBKIND_ALL == reloadcmd->kind)
     {
         printf("Reload not supports all or progress\n");
         return;
     }
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
 
     return;
 }
 
-static void xscsci_precommand_drop(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_drop(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int             rownum = 0;
-    xsynchrow*      rows = NULL;
-    xsynch_dropcmd* dropcmd = NULL;
+    pgcastorrow*      rows = NULL;
+    pgcastor_dropcmd* dropcmd = NULL;
     char            data[512] = {'\0'};
     char            confpath[512] = {'\0'};
 
@@ -507,18 +507,18 @@ static void xscsci_precommand_drop(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    dropcmd = (xsynch_dropcmd*)cmd;
+    dropcmd = (pgcastor_dropcmd*)cmd;
 
-    if (XSYNCH_JOBKIND_ALL == dropcmd->kind)
+    if (PGCASTOR_JOBKIND_ALL == dropcmd->kind)
     {
         printf("Drop not supports all or progress\n");
         return;
     }
 
-    if (XSYNCH_JOBKIND_MANAGER == dropcmd->kind)
+    if (PGCASTOR_JOBKIND_MANAGER == dropcmd->kind)
     {
         /* delete data directory */
-        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config", "manager", dropcmd->name);
+        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->pgcastorhome, "config", "manager", dropcmd->name);
         xscsci_precommand_getdatafromcfgfile(confpath, "data", data);
 
         if (false == xscsci_precommand_removedir(data))
@@ -539,42 +539,42 @@ static void xscsci_precommand_drop(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
 
     return;
 }
 
-static void xscsci_precommand_info(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_info(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int        rownum = 0;
-    xsynchrow* rows = NULL;
+    pgcastorrow* rows = NULL;
 
     if (cmd == NULL)
     {
         return;
     }
 
-    if (false == XSynchPing(xscisc->conn))
+    if (false == PGCastorPing(xscisc->conn))
     {
         printf("xmanager not running\n");
         return;
     }
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
 
@@ -582,55 +582,55 @@ static void xscsci_precommand_info(xsciscistat* xscisc, xsynch_cmd* cmd)
 }
 
 /* refresh command */
-static void xscsci_precommand_refresh(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_refresh(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int        rownum = 0;
-    xsynchrow* rows = NULL;
+    pgcastorrow* rows = NULL;
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
     return;
 }
 
 /* list command */
-static void xscsci_precommand_list(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_list(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int        rownum = 0;
-    xsynchrow* rows = NULL;
+    pgcastorrow* rows = NULL;
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
     return;
 }
 
-static void xscsci_precommand_watch(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_watch(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int              rownum = 0;
-    xsynchrow*       rows = NULL;
-    xsynch_watchcmd* watch = NULL;
+    pgcastorrow*       rows = NULL;
+    pgcastor_watchcmd* watch = NULL;
 
     if (cmd == NULL)
     {
         return;
     }
 
-    watch = (xsynch_watchcmd*)cmd;
+    watch = (pgcastor_watchcmd*)cmd;
 
-    if (false == XSynchPing(xscisc->conn))
+    if (false == PGCastorPing(xscisc->conn))
     {
         printf("xmanager not running\n");
         return;
@@ -638,13 +638,13 @@ static void xscsci_precommand_watch(xsciscistat* xscisc, xsynch_cmd* cmd)
 
     while (true)
     {
-        if (false == XSynchSendCmd(xscisc->conn, cmd))
+        if (false == PGCastorSendCmd(xscisc->conn, cmd))
         {
             printf("precommand send cmd failed %d\n", cmd->type);
             return;
         }
 
-        XSynchGetResult(xscisc->conn, &rownum, &rows);
+        PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
         xscsci_output(rownum, rows);
         rows = NULL;
@@ -656,16 +656,16 @@ static void xscsci_precommand_watch(xsciscistat* xscisc, xsynch_cmd* cmd)
     return;
 }
 
-static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_edit(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     time_t            now;
     int               fd = -1;
     int               rownum = 0;
     FILE*             fp = NULL;
     struct tm*        pcnow = NULL;
-    xsynchrow*        rows = NULL;
-    xsynch_editcmd*   editcmd = NULL;
-    xsynch_cfgfilecmd cfgcmd = {{'\0'}};
+    pgcastorrow*        rows = NULL;
+    pgcastor_editcmd*   editcmd = NULL;
+    pgcastor_cfgfilecmd cfgcmd = {{'\0'}};
     char              cfgpath[512] = {'\0'};
     char              filename[512] = {'\0'};
     char              confpath[512] = {'\0'};
@@ -676,30 +676,30 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    editcmd = (xsynch_editcmd*)cmd;
+    editcmd = (pgcastor_editcmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS == editcmd->kind || XSYNCH_JOBKIND_ALL == editcmd->kind)
+    if (PGCASTOR_JOBKIND_PROCESS == editcmd->kind || PGCASTOR_JOBKIND_ALL == editcmd->kind)
     {
         printf("Edit not supports all or progress\n");
         return;
     }
 
-    if (XSYNCH_JOBKIND_MANAGER == editcmd->kind)
+    if (PGCASTOR_JOBKIND_MANAGER == editcmd->kind)
     {
-        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->xsynchhome, "config", "manager", editcmd->name);
+        snprintf(confpath, sizeof(confpath), "%s/%s/%s_%s.cfg", xscisc->pgcastorhome, "config", "manager", editcmd->name);
         sprintf(syscmd, "vim %s", confpath);
         system(syscmd);
         printf("Edit manager %s\n", editcmd->name);
         return;
     }
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     /* error occurred */
     if (0 == rownum)
@@ -719,7 +719,7 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
     snprintf(cfgpath,
              512,
              "%s/%s/.%s_%d-%d-%d-%02d%02d%02d.conf",
-             xscisc->xsynchhome,
+             xscisc->pgcastorhome,
              "config",
              editcmd->name,
              pcnow->tm_year + 1900,
@@ -770,7 +770,7 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    cfgcmd.type.type = T_XSYNCH_CFGfILECMD;
+    cfgcmd.type.type = T_PGCASTOR_CFGfILECMD;
     cfgcmd.kind = editcmd->kind;
     cfgcmd.name = editcmd->name;
     cfgcmd.filename = filename;
@@ -784,7 +784,7 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
     }
     fclose(fp);
 
-    if (false == XSynchSendCmd(xscisc->conn, &cfgcmd.type))
+    if (false == PGCastorSendCmd(xscisc->conn, &cfgcmd.type))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
@@ -798,11 +798,11 @@ static void xscsci_precommand_edit(xsciscistat* xscisc, xsynch_cmd* cmd)
     return;
 }
 
-static void xscsci_precommand_init(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_init(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int             rownum = 0;
-    xsynchrow*      rows = NULL;
-    xsynch_initcmd* initcmd = NULL;
+    pgcastorrow*      rows = NULL;
+    pgcastor_initcmd* initcmd = NULL;
     char            cwd[512] = {'\0'};
     char            syscmd[1024] = {'\0'};
 
@@ -811,15 +811,15 @@ static void xscsci_precommand_init(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    initcmd = (xsynch_initcmd*)cmd;
+    initcmd = (pgcastor_initcmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS == initcmd->kind || XSYNCH_JOBKIND_ALL == initcmd->kind)
+    if (PGCASTOR_JOBKIND_PROCESS == initcmd->kind || PGCASTOR_JOBKIND_ALL == initcmd->kind)
     {
         printf("Init not supports all or progress\n");
         return;
     }
 
-    if (XSYNCH_JOBKIND_MANAGER == initcmd->kind)
+    if (PGCASTOR_JOBKIND_MANAGER == initcmd->kind)
     {
         /* system initialize xmanager */
 
@@ -832,7 +832,7 @@ static void xscsci_precommand_init(xsciscistat* xscisc, xsynch_cmd* cmd)
                  sizeof(syscmd),
                  "%s/xmanager -f  %s/%s/%s_%s.cfg init",
                  cwd,
-                 xscisc->xsynchhome,
+                 xscisc->pgcastorhome,
                  "config",
                  "manager",
                  initcmd->name);
@@ -843,24 +843,24 @@ static void xscsci_precommand_init(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
 
     return;
 }
 
-static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_start(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int              rownum = 0;
-    xsynchrow*       rows = NULL;
-    xsynch_startcmd* startcmd = NULL;
+    pgcastorrow*       rows = NULL;
+    pgcastor_startcmd* startcmd = NULL;
     char             cwd[512] = {'\0'};
     char             syscmd[1024] = {'\0'};
 
@@ -869,15 +869,15 @@ static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
         return;
     }
 
-    startcmd = (xsynch_startcmd*)cmd;
+    startcmd = (pgcastor_startcmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS == startcmd->kind)
+    if (PGCASTOR_JOBKIND_PROCESS == startcmd->kind)
     {
         printf("Start not supports progress\n");
         return;
     }
 
-    if (XSYNCH_JOBKIND_MANAGER == startcmd->kind)
+    if (PGCASTOR_JOBKIND_MANAGER == startcmd->kind)
     {
         /* system start xmanager */
         if (getcwd(cwd, sizeof(cwd)) == NULL)
@@ -889,7 +889,7 @@ static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
                  sizeof(syscmd),
                  "%s/xmanager -f  %s/%s/%s_%s.cfg start",
                  cwd,
-                 xscisc->xsynchhome,
+                 xscisc->pgcastorhome,
                  "config",
                  "manager",
                  startcmd->name);
@@ -899,7 +899,7 @@ static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
         }
         return;
     }
-    else if (XSYNCH_JOBKIND_ALL == startcmd->kind)
+    else if (PGCASTOR_JOBKIND_ALL == startcmd->kind)
     {
         if (getcwd(cwd, sizeof(cwd)) == NULL)
         {
@@ -910,7 +910,7 @@ static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
                  sizeof(syscmd),
                  "%s/xmanager -f  %s/%s/%s_%s.cfg start",
                  cwd,
-                 xscisc->xsynchhome,
+                 xscisc->pgcastorhome,
                  "config",
                  "manager",
                  startcmd->name);
@@ -920,45 +920,45 @@ static void xscsci_precommand_start(xsciscistat* xscisc, xsynch_cmd* cmd)
         }
     }
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
 
     return;
 }
 
-static void xscsci_precommand_stop(xsciscistat* xscisc, xsynch_cmd* cmd)
+static void xscsci_precommand_stop(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
     int             rownum = 0;
-    xsynchrow*      rows = NULL;
-    xsynch_stopcmd* stopcmd = NULL;
+    pgcastorrow*      rows = NULL;
+    pgcastor_stopcmd* stopcmd = NULL;
 
     if (cmd == NULL)
     {
         return;
     }
 
-    stopcmd = (xsynch_stopcmd*)cmd;
+    stopcmd = (pgcastor_stopcmd*)cmd;
 
-    if (XSYNCH_JOBKIND_PROCESS == stopcmd->kind)
+    if (PGCASTOR_JOBKIND_PROCESS == stopcmd->kind)
     {
         printf("Stop not supports progress\n");
         return;
     }
 
-    if (false == XSynchSendCmd(xscisc->conn, cmd))
+    if (false == PGCastorSendCmd(xscisc->conn, cmd))
     {
         printf("precommand send cmd failed %d\n", cmd->type);
         return;
     }
 
-    XSynchGetResult(xscisc->conn, &rownum, &rows);
+    PGCastorGetResult(xscisc->conn, &rownum, &rows);
 
     xscsci_output(rownum, rows);
 
@@ -966,28 +966,28 @@ static void xscsci_precommand_stop(xsciscistat* xscisc, xsynch_cmd* cmd)
 }
 
 static xscsci_precommandops m_precommandops[] = {
-    {T_XSYNCH_NOP,         "NOP",              NULL                     },
-    {T_XSYNCH_IDENTITYCMD, "IDENTITY COMMAND", NULL                     },
-    {T_XSYNCH_CREATECMD,   "CREATE COMMAND",   xscsci_precommand_create },
-    {T_XSYNCH_ALTERCMD,    "ALTER COMMAND",    xscsci_precommand_alter  },
-    {T_XSYNCH_REMOVECMD,   "REMOVE COMMAND",   xscsci_precommand_remove },
-    {T_XSYNCH_DROPCMD,     "DROP COMMAND",     xscsci_precommand_drop   },
-    {T_XSYNCH_INITCMD,     "INIT COMMAND",     xscsci_precommand_init   },
-    {T_XSYNCH_EDITCMD,     "EDIT COMMAND",     xscsci_precommand_edit   },
-    {T_XSYNCH_STARTCMD,    "START COMMAND",    xscsci_precommand_start  },
-    {T_XSYNCH_STOPCMD,     "STOP COMMAND",     xscsci_precommand_stop   },
-    {T_XSYNCH_RELOADCMD,   "RELOAD COMMAND",   xscsci_precommand_reload },
-    {T_XSYNCH_INFOCMD,     "INFO COMMAND",     xscsci_precommand_info   },
-    {T_XSYNCH_WATCHCMD,    "WATCH COMMAND",    xscsci_precommand_watch  },
-    {T_XSYNCH_CFGfILECMD,  "never trigger",    NULL                     },
-    {T_XSYNCH_REFRESHCMD,  "REFRESH COMMAND",  xscsci_precommand_refresh},
-    {T_XSYNCH_LISTCMD,     "LIST COMMAND",     xscsci_precommand_list   },
-    {T_XSYNCH_MAX,         "MAX COMMAND",      NULL                     }
+    {T_PGCASTOR_NOP,         "NOP",              NULL                     },
+    {T_PGCASTOR_IDENTITYCMD, "IDENTITY COMMAND", NULL                     },
+    {T_PGCASTOR_CREATECMD,   "CREATE COMMAND",   xscsci_precommand_create },
+    {T_PGCASTOR_ALTERCMD,    "ALTER COMMAND",    xscsci_precommand_alter  },
+    {T_PGCASTOR_REMOVECMD,   "REMOVE COMMAND",   xscsci_precommand_remove },
+    {T_PGCASTOR_DROPCMD,     "DROP COMMAND",     xscsci_precommand_drop   },
+    {T_PGCASTOR_INITCMD,     "INIT COMMAND",     xscsci_precommand_init   },
+    {T_PGCASTOR_EDITCMD,     "EDIT COMMAND",     xscsci_precommand_edit   },
+    {T_PGCASTOR_STARTCMD,    "START COMMAND",    xscsci_precommand_start  },
+    {T_PGCASTOR_STOPCMD,     "STOP COMMAND",     xscsci_precommand_stop   },
+    {T_PGCASTOR_RELOADCMD,   "RELOAD COMMAND",   xscsci_precommand_reload },
+    {T_PGCASTOR_INFOCMD,     "INFO COMMAND",     xscsci_precommand_info   },
+    {T_PGCASTOR_WATCHCMD,    "WATCH COMMAND",    xscsci_precommand_watch  },
+    {T_PGCASTOR_CFGfILECMD,  "never trigger",    NULL                     },
+    {T_PGCASTOR_REFRESHCMD,  "REFRESH COMMAND",  xscsci_precommand_refresh},
+    {T_PGCASTOR_LISTCMD,     "LIST COMMAND",     xscsci_precommand_list   },
+    {T_PGCASTOR_MAX,         "MAX COMMAND",      NULL                     }
 };
 
-void xscsci_precommand(xsciscistat* xscisc, xsynch_cmd* cmd)
+void xscsci_precommand(xsciscistat* xscisc, pgcastor_cmd* cmd)
 {
-    if (T_XSYNCH_MAX < cmd->type)
+    if (T_PGCASTOR_MAX < cmd->type)
     {
         printf("precommand unknown cmd type %d\n", cmd->type);
         return;

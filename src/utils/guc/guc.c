@@ -268,7 +268,7 @@ static struct config_string ConfigureNamesStringCapture[] = {
             NULL,
         },
         &(g_capturecfg.data),
-        "/opt/xsynch/data",
+        "/opt/pgcastor/data",
         NULL,
         NULL},
     {
@@ -333,8 +333,8 @@ static struct config_string ConfigureNamesStringCapture[] = {
             gettext_noop("The schema where the sync_status table is located"),
             NULL,
         },
-        &(g_capturecfg.xsynchschema),
-        "xsynch",
+        &(g_capturecfg.pgcastorschema),
+        "pgcastor",
         NULL,
         NULL},
     {
@@ -632,7 +632,7 @@ static struct config_string ConfigureNamesStringIntegrate[] = {
             NULL,
         },
         &(g_integratecfg.data),
-        "/opt/xsynch/data",
+        "/opt/pgcastor/data",
         NULL,
         NULL},
     {
@@ -664,8 +664,8 @@ static struct config_string ConfigureNamesStringIntegrate[] = {
             gettext_noop("The schema where the sync_status table is located"),
             NULL,
         },
-        &(g_integratecfg.xsynchschema),
-        "xsynch",
+        &(g_integratecfg.pgcastorschema),
+        "pgcastor",
         NULL,
         NULL},
     {
@@ -1010,7 +1010,7 @@ static struct config_string ConfigureNamesStringXmanager[] = {
             NULL,
         },
         &(m_xmanagercfg.data),
-        "/opt/xsynch/xmanagerdata",
+        "/opt/pgcastor/xmanagerdata",
         NULL,
         NULL},
     {
@@ -1101,7 +1101,7 @@ static void guc_capturedebug(void)
     printf("waldir:         %s\n", g_capturecfg.waldir == NULL ? "NULL" : g_capturecfg.waldir);
     printf("dbtype:         %s\n", g_capturecfg.dbtype == NULL ? "NULL" : g_capturecfg.dbtype);
     printf("dbversion:      %s\n", g_capturecfg.dbversion == NULL ? "NULL" : g_capturecfg.dbversion);
-    printf("xsynchschema:   %s\n", g_capturecfg.xsynchschema == NULL ? "NULL" : g_capturecfg.xsynchschema);
+    printf("pgcastorschema:   %s\n", g_capturecfg.pgcastorschema == NULL ? "NULL" : g_capturecfg.pgcastorschema);
     printf("logdir:   %s\n", g_capturecfg.logdir == NULL ? "NULL" : g_capturecfg.logdir);
 
     if (NULL != g_table)

@@ -39,7 +39,7 @@ xmanager_metric* xmanager_metric_init(void)
         elog(RLOG_WARNING, "xmanager metric net pool init error");
         return NULL;
     }
-    xmetric->xsynchpath = NULL;
+    xmetric->pgcastorpath = NULL;
     xmetric->configpath = NULL;
     xmetric->metricqueue = NULL;
     xmetric->privdata = NULL;
@@ -55,25 +55,25 @@ xmanager_metric* xmanager_metric_init(void)
 }
 
 /* Set configpath */
-bool xmanager_metric_setxsynchpath(xmanager_metric* xmetric, char* xsynchpath)
+bool xmanager_metric_setpgcastorpath(xmanager_metric* xmetric, char* pgcastorpath)
 {
     int len = 0;
-    if (NULL == xsynchpath || '\0' == xsynchpath[0])
+    if (NULL == pgcastorpath || '\0' == pgcastorpath[0])
     {
         return true;
     }
 
-    /* xsynchpath/config */
-    len = strlen(xsynchpath);
+    /* pgcastorpath/config */
+    len = strlen(pgcastorpath);
     len += 1;
-    xmetric->xsynchpath = rmalloc0(len);
-    if (NULL == xmetric->xsynchpath)
+    xmetric->pgcastorpath = rmalloc0(len);
+    if (NULL == xmetric->pgcastorpath)
     {
-        elog(RLOG_WARNING, "xmanager set xsynch path error, out of memory");
+        elog(RLOG_WARNING, "xmanager set pgcastor path error, out of memory");
         return false;
     }
-    rmemset0(xmetric->xsynchpath, 0, '\0', len);
-    snprintf(xmetric->xsynchpath, len, "%s", xsynchpath);
+    rmemset0(xmetric->pgcastorpath, 0, '\0', len);
+    snprintf(xmetric->pgcastorpath, len, "%s", pgcastorpath);
 
     len += 7;
     xmetric->configpath = rmalloc0(len);
@@ -83,7 +83,7 @@ bool xmanager_metric_setxsynchpath(xmanager_metric* xmetric, char* xsynchpath)
         return false;
     }
     rmemset0(xmetric->configpath, 0, '\0', len);
-    snprintf(xmetric->configpath, len, "%s/config", xsynchpath);
+    snprintf(xmetric->configpath, len, "%s/config", pgcastorpath);
     return true;
 }
 
@@ -679,10 +679,10 @@ void xmanager_metric_destroy(xmanager_metric* xmetric)
         return;
     }
 
-    if (NULL != xmetric->xsynchpath)
+    if (NULL != xmetric->pgcastorpath)
     {
-        rfree(xmetric->xsynchpath);
-        xmetric->xsynchpath = NULL;
+        rfree(xmetric->pgcastorpath);
+        xmetric->pgcastorpath = NULL;
     }
 
     if (NULL != xmetric->configpath)

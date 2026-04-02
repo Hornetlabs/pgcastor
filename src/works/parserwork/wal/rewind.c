@@ -211,7 +211,7 @@ void rewind_stat_setrewinding(rewind_info* rewind_ptr)
         elog(RLOG_ERROR, "rewind_ptr ptr is NULL");
     }
     rewind_ptr->stat = REWIND_REWINDING;
-    g_xsynchstat = XSYNCHSTAT_REWINDING;
+    g_pgcastorstat = PGCASTORSTAT_REWINDING;
 }
 
 void rewind_stat_setemiting(rewind_info* rewind_ptr)
@@ -232,7 +232,7 @@ void rewind_stat_setemited(rewind_info* rewind_ptr)
 
     rewind_ptr->stat = REWIND_EMITED;
     misc_controldata_stat_setrunning();
-    g_xsynchstat = XSYNCHSTAT_RUNNING;
+    g_pgcastorstat = PGCASTORSTAT_RUNNING;
 
     misc_controldata_flush();
 }

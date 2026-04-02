@@ -8,17 +8,17 @@
 #include <errno.h>
 
 #include "app_c.h"
-#include "xsynch_exbufferdata.h"
+#include "pgcastor_exbufferdata.h"
 
 /* initialize content */
-bool xsynch_exbufferdata_initdata(xsynch_exbuffer exbuffer)
+bool pgcastor_exbufferdata_initdata(pgcastor_exbuffer exbuffer)
 {
-    exbuffer->data = (char*)malloc(XSYNCH_EXPBUFFER_DEFAULTSIZE);
+    exbuffer->data = (char*)malloc(PGCASTOR_EXPBUFFER_DEFAULTSIZE);
     if (NULL == exbuffer->data)
     {
         return false;
     }
-    exbuffer->maxlen = XSYNCH_EXPBUFFER_DEFAULTSIZE;
+    exbuffer->maxlen = PGCASTOR_EXPBUFFER_DEFAULTSIZE;
     memset(exbuffer->data, '\0', exbuffer->maxlen);
     exbuffer->len = 0;
 
@@ -26,18 +26,18 @@ bool xsynch_exbufferdata_initdata(xsynch_exbuffer exbuffer)
 }
 
 /* create an ex buffer */
-xsynch_exbuffer xsynch_exbufferdata_init(void)
+pgcastor_exbuffer pgcastor_exbufferdata_init(void)
 {
-    xsynch_exbuffer exbuffer = NULL;
+    pgcastor_exbuffer exbuffer = NULL;
 
-    exbuffer = (xsynch_exbuffer)malloc(sizeof(xsynch_exbufferdata));
+    exbuffer = (pgcastor_exbuffer)malloc(sizeof(pgcastor_exbufferdata));
     if (NULL == exbuffer)
     {
         return NULL;
     }
-    memset(exbuffer, 0, sizeof(xsynch_exbufferdata));
+    memset(exbuffer, 0, sizeof(pgcastor_exbufferdata));
 
-    if (false == xsynch_exbufferdata_initdata(exbuffer))
+    if (false == pgcastor_exbufferdata_initdata(exbuffer))
     {
         free(exbuffer);
         return NULL;
@@ -47,7 +47,7 @@ xsynch_exbuffer xsynch_exbufferdata_init(void)
 }
 
 /* reset */
-bool xsynch_exbufferdata_reset(xsynch_exbuffer exbuffer)
+bool pgcastor_exbufferdata_reset(pgcastor_exbuffer exbuffer)
 {
     if (NULL == exbuffer)
     {
@@ -56,7 +56,7 @@ bool xsynch_exbufferdata_reset(xsynch_exbuffer exbuffer)
 
     if (NULL == exbuffer->data)
     {
-        if (false == xsynch_exbufferdata_initdata(exbuffer))
+        if (false == pgcastor_exbufferdata_initdata(exbuffer))
         {
             return false;
         }
@@ -71,7 +71,7 @@ bool xsynch_exbufferdata_reset(xsynch_exbuffer exbuffer)
  * expand buffer
  *  no length or input parameter checking
  */
-bool xsynch_exbufferdata_enlarge(xsynch_exbuffer exbuffer, size_t needed)
+bool pgcastor_exbufferdata_enlarge(pgcastor_exbuffer exbuffer, size_t needed)
 {
     size_t newlen = 0;
     char*  newdata = NULL;
@@ -100,7 +100,7 @@ bool xsynch_exbufferdata_enlarge(xsynch_exbuffer exbuffer, size_t needed)
     return false;
 }
 
-static bool xsynch_exbufferdata_appendva(xsynch_exbuffer exbuffer, const char* fmt, bool* enlargememory, va_list args)
+static bool pgcastor_exbufferdata_appendva(pgcastor_exbuffer exbuffer, const char* fmt, bool* enlargememory, va_list args)
 {
     int    nprinted;
     size_t avail;
@@ -125,7 +125,7 @@ static bool xsynch_exbufferdata_appendva(xsynch_exbuffer exbuffer, const char* f
     }
 
     /* Increase the buffer size and try again. */
-    if (false == xsynch_exbufferdata_enlarge(exbuffer, needed))
+    if (false == pgcastor_exbufferdata_enlarge(exbuffer, needed))
     {
         return false;
     }
@@ -135,7 +135,7 @@ static bool xsynch_exbufferdata_appendva(xsynch_exbuffer exbuffer, const char* f
 }
 
 /* append content */
-bool xsynch_exbufferdata_append(xsynch_exbuffer exbuffer, const char* fmt, ...)
+bool pgcastor_exbufferdata_append(pgcastor_exbuffer exbuffer, const char* fmt, ...)
 {
     bool    done = false;
     bool    enlargememory = true;
@@ -151,7 +151,7 @@ bool xsynch_exbufferdata_append(xsynch_exbuffer exbuffer, const char* fmt, ...)
         }
         va_start(args, fmt);
 
-        done = xsynch_exbufferdata_appendva(exbuffer, fmt, &enlargememory, args);
+        done = pgcastor_exbufferdata_appendva(exbuffer, fmt, &enlargememory, args);
         va_end(args);
     } while (false == done);
 
@@ -159,9 +159,9 @@ bool xsynch_exbufferdata_append(xsynch_exbuffer exbuffer, const char* fmt, ...)
 }
 
 /* append string data */
-bool xsynch_exbufferdata_appendbinary(xsynch_exbuffer exbuffer, const char* data, size_t datalen)
+bool pgcastor_exbufferdata_appendbinary(pgcastor_exbuffer exbuffer, const char* data, size_t datalen)
 {
-    if (false == xsynch_exbufferdata_enlarge(exbuffer, datalen))
+    if (false == pgcastor_exbufferdata_enlarge(exbuffer, datalen))
     {
         return false;
     }
@@ -180,15 +180,15 @@ bool xsynch_exbufferdata_appendbinary(xsynch_exbuffer exbuffer, const char* data
 }
 
 /* append string */
-bool xsynch_exbufferdata_appendstr(xsynch_exbuffer exbuffer, const char* data)
+bool pgcastor_exbufferdata_appendstr(pgcastor_exbuffer exbuffer, const char* data)
 {
-    return xsynch_exbufferdata_appendbinary(exbuffer, data, strlen(data));
+    return pgcastor_exbufferdata_appendbinary(exbuffer, data, strlen(data));
 }
 
 /* append character */
-bool xsynch_exbufferdata_appendchar(xsynch_exbuffer exbuffer, char ch)
+bool pgcastor_exbufferdata_appendchar(pgcastor_exbuffer exbuffer, char ch)
 {
-    if (false == xsynch_exbufferdata_enlarge(exbuffer, 1))
+    if (false == pgcastor_exbufferdata_enlarge(exbuffer, 1))
     {
         return false;
     }
@@ -200,7 +200,7 @@ bool xsynch_exbufferdata_appendchar(xsynch_exbuffer exbuffer, char ch)
 }
 
 /* free buffer */
-void xsynch_exbufferdata_free(xsynch_exbuffer exbuffer)
+void pgcastor_exbufferdata_free(pgcastor_exbuffer exbuffer)
 {
     if (NULL == exbuffer)
     {

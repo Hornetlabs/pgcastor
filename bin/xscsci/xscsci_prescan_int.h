@@ -9,7 +9,7 @@ typedef struct XSCSCI_PRESCAN
 {
     yyscan_t        scanner;
     /* output buffer */
-    xsynch_exbuffer outputbuf;
+    pgcastor_exbuffer outputbuf;
 
     int             startstate;
 

@@ -2,7 +2,7 @@
 
 /* LCOV_EXCL_START */
 #include "app_c.h"
-#include "xsynch_exbufferdata.h"
+#include "pgcastor_exbufferdata.h"
 #include "xscsci_prescan_int.h"
 #include "xscsci_prescan.h"
 
@@ -73,7 +73,7 @@ other           .
 
 %{
     xscsci_prescan* m_curstate = yyextra;
-    xsynch_exbuffer m_outputbuf = m_curstate->outputbuf;
+    pgcastor_exbuffer m_outputbuf = m_curstate->outputbuf;
     BEGIN(m_curstate->startstate);
 %}
 
@@ -141,7 +141,7 @@ void xscsci_prescan_reset(xscsci_prescan* state)
 
 void xscsci_prescan_emit(xscsci_prescan* state, const char *txt, int len)
 {
-    xsynch_exbufferdata_appendbinary(state->outputbuf, txt, len);
+    pgcastor_exbufferdata_appendbinary(state->outputbuf, txt, len);
 }
 
 xscsci_prescan* xscsci_prescan_create(void)
@@ -191,7 +191,7 @@ void xscsci_prescan_setup(xscsci_prescan* state,
     state->scanline = line;
 }
 
-xscsci_prescanresult xscsci_prescan_scan(xscsci_prescan* state, xsynch_exbuffer querybuf)
+xscsci_prescanresult xscsci_prescan_scan(xscsci_prescan* state, pgcastor_exbuffer querybuf)
 {
     int lexresult               = 0;
     xscsci_prescanresult result = 0;

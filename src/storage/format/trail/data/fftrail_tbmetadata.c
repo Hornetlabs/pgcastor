@@ -242,7 +242,7 @@ bool fftrail_tbmetadata_serial(bool              force,
     ffdbentry = hash_search(ffprivdata->databases, &dbid, HASH_FIND, &found);
     if (false == found)
     {
-        elog(RLOG_ERROR, "xsynch trail database logical error");
+        elog(RLOG_ERROR, "pgcastor trail database logical error");
     }
     fftbmd->header.dbmdno = ffdbentry->no;
     *dbmdno = ffdbentry->no;

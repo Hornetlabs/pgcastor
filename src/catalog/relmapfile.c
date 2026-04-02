@@ -28,7 +28,7 @@ void relmapfile_catalogdata2transcache(cache_sysdicts* sysdicts, catalogdata* ca
 
     if (CATALOG_TYPE_RELMAPFILE != catalogdata->type)
     {
-        elog(RLOG_ERROR, "xsynch logical error");
+        elog(RLOG_ERROR, "pgcastor logical error");
     }
     relmapfile = (replmapfile*)catalogdata->catalog;
 

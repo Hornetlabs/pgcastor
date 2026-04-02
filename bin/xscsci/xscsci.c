@@ -9,8 +9,8 @@
 #include <signal.h>
 
 #include "app_c.h"
-#include "xsynch_exbufferdata.h"
-#include "xsynch_fe.h"
+#include "pgcastor_exbufferdata.h"
+#include "pgcastor_fe.h"
 #include "xscsci_input.h"
 #include "xscsci_prescan.h"
 #include "xscsci_scan_private.h"
@@ -36,7 +36,7 @@ static xsciscistat* xscsci_init(void)
         return NULL;
     }
     memset(xscisc, 0, sizeof(xsciscistat));
-    xscisc->xsynchhome = NULL;
+    xscisc->pgcastorhome = NULL;
     xscisc->conn = NULL;
 
     return xscisc;
@@ -107,33 +107,33 @@ static void xscsci_singal_setmask(void)
 }
 
 /*
- * get XSYNCH environment variable
+ * get PGCASTOR environment variable
  * check if configured and if it is a directory
  */
-static bool xscsci_getxsynchhome(xsciscistat* xscisc)
+static bool xscsci_getpgcastorhome(xsciscistat* xscisc)
 {
     struct stat st;
 
-    xscisc->xsynchhome = getenv("XSYNCH");
+    xscisc->pgcastorhome = getenv("PGCASTOR");
 
     /* environment variable not found */
-    if (NULL == xscisc->xsynchhome)
+    if (NULL == xscisc->pgcastorhome)
     {
-        printf("XSYNCH configuration error: not set XSYNCH \n");
+        printf("PGCASTOR configuration error: not set PGCASTOR \n");
         return false;
     }
 
     /* check if exists */
-    if (stat(xscisc->xsynchhome, &st) != 0)
+    if (stat(xscisc->pgcastorhome, &st) != 0)
     {
-        printf("XSYNCH configuration error: %s (%s)\n", xscisc->xsynchhome, strerror(errno));
+        printf("PGCASTOR configuration error: %s (%s)\n", xscisc->pgcastorhome, strerror(errno));
         return false;
     }
 
     /* check if is directory */
     if (!S_ISDIR(st.st_mode))
     {
-        printf("XSYNCH configuration error: %s is not a directory\n", xscisc->xsynchhome);
+        printf("PGCASTOR configuration error: %s is not a directory\n", xscisc->pgcastorhome);
         return false;
     }
     return true;
@@ -207,7 +207,7 @@ static bool xscsci_parseargs(int argc, char** argv, char** connstr)
 /* help documentation */
 static void xscsci_help(void)
 {
-    printf("you can use xscsci, the command-line to xsynch.\n");
+    printf("you can use xscsci, the command-line to pgcastor.\n");
 
     /* create command support */
     printf("---------use create command create a job----------------\n");
@@ -305,10 +305,10 @@ int main(int argc, char** argv)
     char*                    line = NULL;
     char*                    connstr = NULL;
     char*                    prevhistorybuf = NULL;
-    volatile xsynch_exbuffer querybuf = NULL;
+    volatile pgcastor_exbuffer querybuf = NULL;
     xscsci_prescan*          prescan = NULL;
-    xsynch_cmd*              cmd = NULL;
-    xsynch_exbuffer          historybuf = NULL;
+    pgcastor_cmd*              cmd = NULL;
+    pgcastor_exbuffer          historybuf = NULL;
     xsciscistat*             xscisc = NULL;
 
     if (false == xscsci_parseargs(argc, argv, &connstr))
@@ -317,14 +317,14 @@ int main(int argc, char** argv)
     }
 
     /* initialize */
-    querybuf = xsynch_exbufferdata_init();
+    querybuf = pgcastor_exbufferdata_init();
     if (NULL == querybuf)
     {
         printf("out of memory, %s\n", strerror(errno));
         xscsci_exit(1);
     }
 
-    historybuf = xsynch_exbufferdata_init();
+    historybuf = pgcastor_exbufferdata_init();
     if (NULL == historybuf)
     {
         printf("out of memory, %s\n", strerror(errno));
@@ -345,7 +345,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    if (false == xscsci_getxsynchhome(xscisc))
+    if (false == xscsci_getpgcastorhome(xscisc))
     {
         exit(1);
     }
@@ -355,8 +355,8 @@ int main(int argc, char** argv)
     /*
      * connect to manager
      */
-    xscisc->conn = XSynchSetParam(connstr);
-    XSynchConn(xscisc->conn);
+    xscisc->conn = PGCastorSetParam(connstr);
+    PGCastorConn(xscisc->conn);
     free(connstr);
 
     /* readline initialization */
@@ -417,7 +417,7 @@ int main(int argc, char** argv)
             {
                 /* error */
                 printf("%s has unsupport char\n", line);
-                xsynch_exbufferdata_reset(querybuf);
+                pgcastor_exbufferdata_reset(querybuf);
                 break;
             }
             else if (XSCSCI_PRESCANRESULT_EOL == result)
@@ -427,7 +427,7 @@ int main(int argc, char** argv)
                 /* add newline */
                 if (0 < querybuf->len)
                 {
-                    xsynch_exbufferdata_appendchar(querybuf, '\n');
+                    pgcastor_exbufferdata_appendchar(querybuf, '\n');
 
                     /* add to history data */
                     xscsci_input_appendhistory(line, historybuf);
@@ -468,7 +468,7 @@ int main(int argc, char** argv)
                 parserret = xscsci_scan_yyparse();
                 if (0 != parserret)
                 {
-                    xsynch_exbufferdata_reset(querybuf);
+                    pgcastor_exbufferdata_reset(querybuf);
                     break;
                 }
 
@@ -481,12 +481,12 @@ int main(int argc, char** argv)
                 /* display returned content */
                 xscsci_precommand(xscisc, cmd);
 
-                XSynchGetErrmsg(xscisc->conn);
+                PGCastorGetErrmsg(xscisc->conn);
 
-                XSynchClear(xscisc->conn);
+                PGCastorClear(xscisc->conn);
 
-                xsynch_exbufferdata_reset(querybuf);
-                xsynch_command_free(cmd);
+                pgcastor_exbufferdata_reset(querybuf);
+                pgcastor_command_free(cmd);
                 hasmore = true;
             }
         }
