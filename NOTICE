@@ -1,0 +1,29 @@
+pgcastor
+Copyright 2024-2026 Byte Sync Development Group
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+--------------------------------------------------------------------------------
+
+POSTGRESQL
+
+This product includes portions of PostgreSQL Database Management System.
+
+Copyright (c) 1996-2019, PostgreSQL Global Development Group
+Portions Copyright (c) 1994, Regents of the University of California
+
+See LICENSE file for PostgreSQL License terms.
+
+--------------------------------------------------------------------------------
+
+MINIZ
+
+This product includes miniz compression library.
+
+Copyright 2013-2014 RAD Game Tools and Valve Software
+Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
+Copyright 2016 Martin Raiber
+Copyright 2011 Alex Evans (PNG writer function)
+
+See LICENSE file for MIT License and Unlicense terms.

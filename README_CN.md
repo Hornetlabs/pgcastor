@@ -109,11 +109,11 @@
 ```bash
 # 克隆仓库
 git clone <仓库地址>
-cd pgcastor-pro
+cd pgcastor
 
 # 构建
 mkdir -p build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=debug -DPOSTGRES_INSTALL_DIR=/path/to/pgsql
+cmake .. -DPOSTGRES_INSTALL_DIR=/path/to/pgsql
 make -j4
 ```
 
@@ -127,23 +127,50 @@ export PGCASTOR=$(pwd)/install
 
 ### 3. 启动服务
 
+- **postgresql**
 ```bash
-# 创建并启动管理器
-./bin/xscsci/xscsci
-xscsci=> create manager mgr1
-xscsci=> init manager mgr1
-xscsci=> start manager mgr1
+# 修改源端配置文件, 请确保源端数据库的wal_level为logical
+sed -i 's/#\?wal_level\s*=.*/wal_level = logical/' data_source/postgresql.conf
 
-# 创建并启动捕获器
-xscsci=> create capture cap1
-xscsci=> init capture cap1
-xscsci=> start capture cap1
-
-# 创建并启动集成器
-xscsci=> create integrate int1
-xscsci=> init integrate int1
-xscsci=> start integrate int1
+# 修改完成后需要重启源端数据库
+pg_ctl -D data_source restart
 ```
+
+- **xscsci**启动 配置文件请参考 [主要配置文件](#主要配置文件)
+```bash
+# 启动xscsci
+./bin/xscsci/xscsci
+
+# 创建manager
+xscsci=> create manager mgr1;
+# 编辑manager配置文件
+xscsci=> edit manager mgr1;
+# 初始化manager
+xscsci=> init manager mgr1;
+# 启动manager
+xscsci=> start manager mgr1;
+
+# 创建capture
+xscsci=> create capture cap1;
+# 编辑capture配置文件
+xscsci=> edit capture cap1;
+# 初始化capture
+xscsci=> init capture cap1;
+# 启动capture
+xscsci=> start capture cap1;
+
+# 创建integrate
+xscsci=> create integrate int1;
+# 编辑integrate
+xscsci=> edit integrate int1;
+# 初始化integrate
+xscsci=> init integrate int1;
+# 启动integrate
+xscsci=> start integrate int1;
+```
+
+### 4. 捕获数据
+- 前序工作已经完成, 现在你可以在源端数据库执行dml和ddl命令, 在目标端查询是否正确执行成功了
 
 ---
 
@@ -225,57 +252,62 @@ rm -rf build
 
 ```bash
 # 添加到 ~/.bashrc 或 ~/.zshrc
-export PGCASTOR=/path/to/pgcastor-pro/install
-export LD_LIBRARY_PATH=/path/to/pgsql/lib:$PGCASTOR/../lib:$PGCASTOR/../interfaces/lib:$LD_LIBRARY_PATH
+export PGCASTOR=/path/to/pgcastor/install
+export LD_LIBRARY_PATH=/path/to/pgsql/lib:$PGCASTOR/lib:$LD_LIBRARY_PATH
 ```
 
 ### PostgreSQL 要求
 
-- 源数据库：端口 5432（默认）
-- 目标数据库：端口 5433（或按配置）
-- postgresql.conf 中设置 `wal_level = logical`
-- `max_replication_slots` >= 1
-
-### 初始化组件
-
-#### 1. 初始化 xmanager
-
-```bash
-./xmanager -f config/manager_mgr1.cfg init
-```
-
-预期输出：
-```
----------xmanager config begin--------------
-jobname:    xmgr
-data:       /path/to/xdata
-host:       127.0.0.1
-port:       6543
----------xmanager config   end--------------
--------------------------------------
-|           pgcastor init success     |
--------------------------------------
-```
-
-#### 2. 初始化 capture
-
-```bash
-./capture -f config/capture_cap1.cfg init
-```
-
-#### 3. 初始化 integrate
-
-```bash
-./integrate -f config/integrate_int1.cfg init
-```
+- 源数据库postgresql.conf 中设置 `wal_level = logical`
 
 ### 启动服务
 
+#### 1. manager
+
 ```bash
-# 按顺序启动：manager -> capture -> integrate
-./xmanager -f config/manager_mgr1.cfg start
-./capture -f config/capture_cap1.cfg start
-./integrate -f config/integrate_int1.cfg start
+# 启动xscsci
+./bin/xscsci/xscsci
+
+# 创建manager
+xscsci=> create manager mgr1;
+# 编辑manager配置文件
+xscsci=> edit manager mgr1;
+# 初始化manager
+xscsci=> init manager mgr1;
+# 启动manager
+xscsci=> start manager mgr1;
+```
+
+#### 2. capture
+
+```bash
+# 启动xscsci
+./bin/xscsci/xscsci
+
+# 创建capture
+xscsci=> create capture cap1;
+# 编辑capture配置文件
+xscsci=> edit capture cap1;
+# 初始化capture
+xscsci=> init capture cap1;
+# 启动capture
+xscsci=> start capture cap1;
+```
+
+#### 3. integrate
+
+```bash
+# 启动xscsci
+./bin/xscsci/xscsci
+
+# 创建integrate
+xscsci=> create integrate int1;
+# 编辑integrate
+xscsci=> edit integrate int1;
+# 初始化integrate
+xscsci=> init integrate int1;
+# 启动integrate
+xscsci=> start integrate int1;
 ```
 
 ### 验证部署
@@ -285,10 +317,10 @@ port:       6543
 ps aux | grep -E "(xmanager|capture|integrate)" | grep -v grep
 
 # 检查 xmanager 端口
-ss -tlnp | grep 6543
+ss -tlnp | grep your_cfg_port
 
 # 检查数据目录
-ls -la xdata/ capturedata/ integratedata/
+ls -la your_manager_cfg_data/ your_capture_cfg_data/ your_integrate_cfg_data/
 ```
 
 ### 测试数据同步
@@ -303,6 +335,16 @@ ls -la xdata/ capturedata/ integratedata/
 # 在目标数据库验证
 /path/to/pgsql/bin/psql -p 5433 -d postgres -c "SELECT * FROM test_sync;"
 ```
+
+---
+
+## 解析库支持功能
+
+### 数据类型
+
+### DML
+
+### DDL
 
 ---
 
@@ -322,65 +364,57 @@ ls -la xdata/ capturedata/ integratedata/
 
 | 命令 | 描述 |
 |------|------|
-| `create manager <名称>` | 创建管理器作业 |
-| `create capture <名称>` | 创建捕获器作业 |
-| `create integrate <名称>` | 创建集成器作业 |
-| `create pgreceivelog <名称>` | 创建WAL接收器作业 |
+| `create manager <名称>;` | 创建管理器作业 |
+| `create capture <名称>;` | 创建捕获器作业 |
+| `create integrate <名称>;` | 创建集成器作业 |
+| `create progress <名称>;` | 创建进度监控作业 |
 
 #### 生命周期命令
 
 | 命令 | 描述 |
 |------|------|
-| `init manager <名称>` | 初始化管理器 |
-| `init capture <名称>` | 初始化捕获器 |
-| `init integrate <名称>` | 初始化集成器 |
-| `start manager <名称>` | 启动管理器 |
-| `start capture <名称>` | 启动捕获器 |
-| `start integrate <名称>` | 启动集成器 |
-| `stop manager <名称>` | 停止管理器 |
-| `stop capture <名称>` | 停止捕获器 |
-| `stop integrate <名称>` | 停止集成器 |
+| `init manager <名称>;` | 初始化管理器 |
+| `init capture <名称>;` | 初始化捕获器 |
+| `init integrate <名称>;` | 初始化集成器 |
+| `start manager <名称>;` | 启动管理器 |
+| `start capture <名称>;` | 启动捕获器 |
+| `start integrate <名称>;` | 启动集成器 |
+| `start all;` | 启动所有任务 |
+| `stop manager <名称>;` | 停止管理器 |
+| `stop capture <名称>;` | 停止捕获器 |
+| `stop integrate <名称>;` | 停止集成器 |
+| `stop all;` | 停止所有任务 |
+
+### 编辑配置文件命令
+
+| 命令 | 描述 |
+|------|------|
+| `edit manager <名称>;` | 编辑管理器配置文件 |
+| `edit capture <名称>;` | 编辑捕获器配置文件 |
+| `edit integrate <名称>;` | 编辑集成器配置文件 |
+
 
 #### 信息查询命令
 
 | 命令 | 描述 |
 |------|------|
-| `status manager <名称>` | 显示管理器状态 |
-| `status capture <名称>` | 显示捕获器状态 |
-| `status integrate <名称>` | 显示集成器状态 |
-| `info manager <名称>` | 显示管理器信息 |
-| `info capture <名称>` | 显示捕获器信息 |
-| `info integrate <名称>` | 显示集成器信息 |
-| `watch <类型> <名称>` | 实时监控作业状态 |
+| `info manager <名称>;` | 显示管理器信息 |
+| `info capture <名称>;` | 显示捕获器信息 |
+| `info integrate <名称>;` | 显示集成器信息 |
+| `info progress <名称>;` | 显示进度监控器信息 |
+| `info all;` | 显示所有信息 |
+| `watch <类型> <名称>;` | 实时监控作业状态 |
 
 #### 其他命令
 
 | 命令 | 描述 |
 |------|------|
-| `edit <类型> <名称>` | 编辑作业配置 |
-| `reload <类型> <名称>` | 重新加载配置 |
-| `remove <类型> <名称>` | 删除配置文件 |
-| `drop <类型> <名称>` | 删除作业 |
-| `alter <类型> <名称>` | 修改进度成员 |
+| `remove <类型> <名称>;` | 删除配置文件 |
+| `drop <类型> <名称>;` | 删除作业 |
+| `alter progress <名称> add;` | 添加进度监控成员 |
+| `alter progress <名称> remove;` | 移除进度监控成员 |
 | `help` | 显示帮助 |
 | `exit` | 退出 xscsci |
-
-### 直接执行命令
-
-每个组件都可以直接运行：
-
-```bash
-# 通用命令格式
-./<组件> -f <配置文件> <操作>
-
-# 操作: init, start, stop, status, reload
-
-# 示例
-./capture -f config/capture_cap1.cfg init
-./capture -f config/capture_cap1.cfg start
-./capture -f config/capture_cap1.cfg stop
-./capture -f config/capture_cap1.cfg status
-```
 
 ---
 
@@ -401,56 +435,245 @@ dbversion = 12
 catalog_schema = pgcastor
 ```
 
-### 主要配置文件
+### 主要配置文件样例
 
-| 文件 | 用途 |
+| 文件 | 用途 | 说明 |
+|------|------|------|
+| `etc/sample/capture.cfg.sample` | 捕获器配置 | 从源数据库捕获WAL变更 |
+| `etc/sample/integrate.cfg.sample` | 集成器配置 | 将变更应用到目标数据库 |
+| `etc/sample/xmanager.cfg.sample` | 管理器配置 | 管理和协调所有作业 |
+| `etc/sample/receivelog.cfg.sample` | WAL接收器配置 | 接收和归档WAL日志 |
+
+---
+
+### capture.cfg.sample 参数
+
+捕获器配置文件，用于从源数据库捕获变更。
+
+#### 基础配置
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `jobname` | 作业名称 | `capture` | ✓ |
+| `log_dir` | 日志目录（必须存在，未配置时使用 `data/log`） | `/opt/pgcastor/log` | |
+| `log_level` | 日志级别（`debug`/`info`/`warning`/`error`） | `info` | |
+| `data` | 工作目录 | `/opt/pgcastor/capturedata` | ✓ |
+
+#### 数据库连接
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `url` | 数据库连接字符串 | `"port=5432 dbname=postgres user=postgres"` | ✓ |
+| `wal_dir` | PostgreSQL WAL目录 | `/opt/postgresql/data/pg_wal` | ✓ |
+| `dbtype` | 数据库类型（目前支持 `postgres`） | `postgres` | ✓ |
+| `dbversion` | PostgreSQL 版本（`12`/`13`/`14`） | `12` | ✓ |
+
+#### 同步配置
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `catalog_schema` | 同步状态表所在模式 | `pgcastor` | ✓ |
+| `ddl` | 是否同步 DDL（`1`=开，`0`=关） | `1` | |
+| `table` | 要同步的表（格式：`schema.table`） | `"public.test"` | ✓ |
+| `tableexclude` | 排除的表（可多行） | `*.*` | |
+| `addtablepattern` | 通过 CREATE TABLE 自动捕获的表模式 | `"public.%"` | |
+
+#### 性能调优
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `trail_max_size` | Trail 文件大小（MB） | `16` | ✓ |
+| `capture_buffer` | 捕获作业最大内存使用（MB） | `8192` | ✓ |
+| `max_work_per_refresh` | 现有数据同步的线程数 | `10` | ✓ |
+| `max_page_per_refreshsharding` | 现有表分片阈值 | `10000` | ✓ |
+
+#### 初始同步
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `refreshstragety` | 是否同步现有数据（`0`=关/`1`=开） | `0` | |
+
+#### 其他选项
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `compress_algorithm` | 压缩算法（现有数据同步，支持 `bzip2`） | `bzip2` | |
+| `compatibility` | 兼容版本（Trail 文件格式） | `10` | |
+
+---
+
+### integrate.cfg.sample 参数
+
+集成器配置文件，用于将捕获的变更应用到目标数据库。
+
+#### 基础配置
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `jobname` | 作业名称 | `integrate` | ✓ |
+| `log_dir` | 日志目录（必须存在，未配置时使用 `data/log`） | `/opt/pgcastor/log` | |
+| `log_level` | 日志级别（`info`/`debug`） | `info` | |
+| `data` | 工作目录 | `/opt/pgcastor/integratedata` | ✓ |
+
+#### 数据库连接
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `url` | 目标数据库连接字符串 | `"port=5438 dbname=postgres user=postgres"` | ✓ |
+
+#### Trail 文件
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `trail_dir` | Trail 文件目录（应为 capture 的 data 目录） | `/opt/pgcastor/capturedata` | ✓ |
+| `trail_max_size` | Trail 文件大小（MB，**必须与 capture 一致**） | `16` | ✓ |
+
+#### 同步配置
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `catalog_schema` | 初始化时的状态表模式（建议创建独立模式） | `pgcastor` | ✓ |
+
+#### 性能调优
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `integrate_buffer` | 大事务分片内存（MB） | `128` | ✓ |
+| `max_work_per_refresh` | 现有数据应用的线程数 | `10` | ✓ |
+| `integrate_method` | 集成应用模式（`burst`/`empty`） | `burst` | |
+
+#### 事务处理
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `mergetxn` | 是否合并事务（`0`=否/`1`=是，未配置默认 `0`） | `1` | |
+| `txbundlesize` | 事务合并阈值——每个事务的语句数（范围：0~10000000） | `1000` | |
+
+#### 数据处理
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `truncate_table` | 应用现有数据时是否清空表（`0`=否/`1`=是） | `0` | |
+| `compress_algorithm` | 压缩算法（**必须与 capture 配置一致**，`bunzip2`） | `bunzip2` | |
+| `compress_level` | 压缩级别 | `9` | |
+
+#### 其他选项
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `compatibility` | 兼容版本 | `10` | |
+
+---
+
+### xmanager.cfg.sample 参数
+
+管理器配置文件，用于管理和协调所有 PGCastor 作业。
+
+#### 基础配置
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `jobname` | 作业名称 | `xmanager` | ✓ |
+| `log_dir` | 日志目录（必须存在，未配置时使用 `data/log`） | `/opt/pgcastor/log` | |
+| `log_level` | 日志级别（`info`/`debug`） | `info` | |
+| `data` | 工作目录 | `/opt/pgcastor/xmanagerdata` | ✓ |
+
+#### 网络配置
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `host` | xmanager 本地 IP 地址 | `127.0.0.1` | ✓ |
+| `port` | 网络端口号 | `6543` | ✓ |
+
+#### TCP 保活机制
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `tcp_keepalive` | 启用 TCP 保活机制（`0`=关/`1`=开） | `1` | |
+| `tcp_user_timeout` | 等待对端 ACK 的超时时间（毫秒，范围：0~300000） | `60000` | |
+| `tcp_keepalives_idle` | TCP 连接无活动后发送保活探测前的秒数（范围：0~300） | `30` | |
+| `tcp_keepalives_interval` | 保活探测间隔秒数（范围：0~300） | `3` | |
+| `tcp_keepalives_count` | 保活探测次数（范围：0~100） | `10` | |
+
+#### 其他选项
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `unixdomaindir` | Unix 域套接字目录 | `/tmp` | |
+
+---
+
+### receivelog.cfg.sample 参数
+
+WAL 接收器配置文件，用于接收和归档 PostgreSQL WAL 日志。
+
+#### 日志配置
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `log_level` | 日志级别 | `info` | |
+| `log_dir` | 日志目录 | `/opt/receivewaldata/log` | |
+
+#### 工作目录
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `data` | 工作目录/事务日志目录 | `/opt/receivewaldata` | ✓ |
+
+#### 同步参数
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `timeline` | 同步起始时间线 | `1` | |
+| `startpos` | 同步起始 LSN | `"0/02000000"` | |
+
+#### 连接配置
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `primary_conn_info` | 源数据库连接字符串 | `"port=9527 dbname=postgres user=postgres"` | ✓ |
+
+#### 其他选项
+
+| 参数 | 描述 | 示例值 | 必填 |
+|------|------|--------|------|
+| `restore_command` | 日志缺失时从源端复制的命令（`%f` `%p` 为固定格式） | `"scp user@ip:/opt/pg/archive/%f %p"` | |
+| `slot_name` | 复制槽名称（必须存在于数据库中，可为空） | `"recvwal"` | |
+
+---
+
+### 配置注意事项
+
+#### 1. capture 和 integrate 参数对应关系
+
+以下参数在 capture 和 integrate 中必须保持一致：
+
+| 参数 | 说明 |
 |------|------|
-| `etc/capture.cfg` | 捕获器作业配置模板 |
-| `etc/integrate.cfg` | 集成器作业配置模板 |
-| `etc/xmanager.cfg` | 管理器配置模板 |
-| `etc/receivewal.cfg` | WAL接收器配置模板 |
+| `trail_max_size` | Trail 文件大小必须完全一致 |
+| `compress_algorithm` | 压缩算法必须对应（capture 用 `bzip2`，integrate 用 `bunzip2`） |
 
-### capture.cfg 参数
+#### 2. 性能调优建议
 
-| 参数 | 描述 | 示例 |
-|------|------|------|
-| `jobname` | 作业标识符 | `capture` |
-| `url` | 源数据库连接字符串 | `port=5432 dbname=postgres` |
-| `data` | 工作目录 | `/path/to/capturedata` |
-| `wal_dir` | PostgreSQL WAL目录 | `/path/to/data/pg_wal` |
-| `dbtype` | 数据库类型 | `postgres` |
-| `dbversion` | PostgreSQL版本 | `12` |
-| `catalog_schema` | 同步表所在架构 | `pgcastor` |
-| `table` | 要捕获的表 | `*.*`（所有表）|
-| `ddl` | 启用DDL同步 | `1`（开启）|
+- **capture_buffer**：建议设置为系统可用内存的 50%-70%
+- **max_work_per_refresh**：根据 CPU 核心数设置，建议为核心数的 1-2 倍
+- **txbundlesize**：事务合并阈值越大性能越好，但故障恢复时间更长
 
-### integrate.cfg 参数
+#### 3. 常见配置错误
 
-| 参数 | 描述 | 示例 |
-|------|------|------|
-| `jobname` | 作业标识符 | `integrate` |
-| `url` | 目标数据库连接字符串 | `port=5433 dbname=postgres` |
-| `data` | 工作目录 | `/path/to/integratedata` |
-| `trail_dir` | Trail文件目录 | `/path/to/capturedata` |
-| `catalog_schema` | 同步表所在架构 | `pgcastor` |
-
-### xmanager.cfg 参数
-
-| 参数 | 描述 | 默认值 |
-|------|------|--------|
-| `jobname` | 管理器标识符 | `xmgr` |
-| `data` | 工作目录 | - |
-| `port` | 网络端口 | `6543` |
-| `host` | 绑定地址 | `127.0.0.1` |
-| `tcp_keepalive` | 启用TCP保活 | `on` |
+- ❌ capture 和 integrate 的 `trail_max_size` 不一致
+- ❌ 忘记创建 `log_dir` 目录导致启动失败
+- ❌ `wal_dir` 路径错误导致无法读取 WAL
+- ❌ `table` 参数格式错误（应为 `schema.table`）
+- ❌ `catalog_schema` 模式不存在
 
 ---
 
 ## 目录结构
 
 ```
-pgcastor-pro/
-├── bin/                    # 可执行文件和源码
+pgcastor/
+├── bin/                   # 可执行文件和源码
 │   ├── capture/           # 捕获器组件
 │   ├── integrate/         # 集成器组件
 │   ├── receivepglog/      # WAL接收器
@@ -461,7 +684,7 @@ pgcastor-pro/
 │   ├── command/           # 命令处理
 │   ├── elog/              # 日志系统
 │   ├── net/               # 网络层
-│   ├── parser/            # SQL/WAL解析
+│   ├── parser/            # TRAIL解析
 │   ├── utils/             # 工具函数
 │   └── ...
 ├── incl/                  # 头文件
@@ -469,11 +692,10 @@ pgcastor-pro/
 │   ├── src/              # 接口源码
 │   ├── incl/             # 接口头文件
 │   └── lib/              # libpgcastor.so
-├── parser/               # 解析器库
+├── parser/               # wal解析器
 ├── lib/                  # libcastor_static.a
 ├── etc/                  # 配置模板
-├── build/                # 构建目录
-└── work_memory/          # 工作文件
+└── build/                # 构建目录
 ```
 
 ---
@@ -535,7 +757,6 @@ sudo yum install postgresql12-devel            # CentOS
 
 1. 验证所有进程运行：`ps aux | grep -E "(xmanager|capture|integrate)"`
 2. 检查trail文件：`ls -la capturedata/trail/`
-3. 检查复制槽：`psql -c "SELECT * FROM pg_replication_slots;"`
 
 ### 端口被占用
 
@@ -547,31 +768,16 @@ kill -9 <PID>
 
 ---
 
-## 文档
-
-| 文档 | 描述 |
-|------|------|
-| `AGENTS.md` | 项目架构和代码分析 |
-| `compile.md` | 详细编译指南 |
-| `run_and_test.md` | 部署和测试指南 |
-| `CODE_STYLE.md` | 编码规范 |
-
----
-
 ## 许可证
 
-Copyright (c) 2024-2024, Byte Sync Development Group
+参考LICENSE
+Copyright (c) 2024-2026, Byte Sync Development Group
 
 ---
 
 ## 贡献指南
 
-1. Fork 仓库
-2. 创建功能分支
-3. 进行修改
-4. 运行测试
-5. 提交 Pull Request
+参考CONTRIBUTING.md
 
 ---
 
-*更多信息请参阅 [AGENTS.md](AGENTS.md) 了解架构详情，或 [compile.md](compile.md) 了解详细构建说明。*
