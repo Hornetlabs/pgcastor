@@ -14,10 +14,10 @@ timeline = 1
 restore_command = "scp user@ip:/opt/pg/archive/%f %p"
 
 # Synchronization start LSN
-startpos="0/02000000"
+startpos = "0/02000000"
 
 # Source connection string
-primary_conn_info="port=9527 dbname=postgres user=sunqk"
+primary_conn_info = "port=9527 dbname=postgres user=postgres"
 
 # Replication slot name (must exist in database), can be empty
-slot_name="recvwal"
+slot_name = "recvwal"

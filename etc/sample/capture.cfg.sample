@@ -57,4 +57,3 @@ compress_algorithm = bzip2
 
 # Compatibility version --- trail file format, not yet enabled
 compatibility = 10
-
