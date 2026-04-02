@@ -1,35 +1,35 @@
-# job 名称
+# Job name
 jobname = xmanager
 
-# 日志存放目录, 目录必须存在,不配置会存储在: data/log 下
+# Log directory, must exist. If not configured, logs will be stored in: data/log
 log_dir = /opt/pgcastor/log
 
-# xmanager 日志级别 info / debug
+# xmanager log level: info / debug
 log_level = info
 
-# xmanager 存放本地缓存的目录
+# Directory for xmanager local cache
 data = /opt/pgcastor/xmanagerdata
 
-# 网络端使用的端口号
+# Network port number
 port = 6543
 
-# xmanager 本机ip地址
+# xmanager local IP address
 host = 127.0.0.1
 
-#  tcp keepalive 机制启用, 0 关闭, 1 开启
+# Enable TCP keepalive mechanism, 0=off, 1=on
 tcp_keepalive = 1
 
-# 等待对端 ack 的超时时间, 单位为毫秒, 配置区间0---300000
+# Timeout for waiting for peer ACK, in milliseconds, range: 0-300000
 tcp_user_timeout = 60000
 
-# 在开始发送保活探测数据包之前，TCP连接处于非活动状态的时间,单位秒, 配置区间:0--300
+# Time TCP connection is inactive before sending keepalive probes, in seconds, range: 0-300
 tcp_keepalives_idle = 30
 
-# 发送 keepavlie 的间隔, 单位秒, 配置区间: 0--300
+# Keepalive probe interval, in seconds, range: 0-300
 tcp_keepalives_interval = 3
 
-# 发送 keepalive 的次数, 配置区间: 0--100
+# Number of keepalive probes, range: 0-100
 tcp_keepalives_count = 10
 
-# unix domain 
+# Unix domain socket directory
 unixdomaindir = /tmp

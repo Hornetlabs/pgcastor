@@ -4,7 +4,7 @@ log_level = info
 # Log directory
 log_dir="/opt/receivewaldata/log"
 
-/* Working directory/Transaction log directory */
+# Working directory/Transaction log directory
 data = "/opt/receivewaldata"
 
 # Synchronization start timeline
